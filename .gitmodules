@@ -1,0 +1,18 @@
+[submodule "libs/imgui-node-editor"]
+	path = libs/imgui-node-editor
+	url = https://github.com/Monika0000/imgui-node-editor
+[submodule "libs/ImGuizmo"]
+	path = libs/ImGuizmo
+	url = https://github.com/SpaRcle-Studio/ImGuizmo
+[submodule "libs/EvoVulkan"]
+	path = libs/EvoVulkan
+	url = https://github.com/Monika0000/EvoVulkan
+[submodule "libs/freetype"]
+	path = libs/freetype
+	url = https://github.com/SpaRcle-Studio/freetype
+[submodule "libs/harfbuzz"]
+	path = libs/harfbuzz
+	url = https://github.com/harfbuzz/harfbuzz
+[submodule "libs/imgui"]
+	path = libs/imgui
+	url = https://github.com/Monika0000/imgui
