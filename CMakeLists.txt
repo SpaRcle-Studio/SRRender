@@ -37,6 +37,9 @@ if (SR_GRAPHICS_STATIC_LIBRARY)
 
     endif()
 else()
+    add_library(Graphics SHARED ${SR_GRAPHICS_SOURCES})
+    add_library(Graphics::lib ALIAS Graphics)
+
     if (MINGW)
         target_link_libraries(Graphics ${Vulkan_LIBRARY} Dwmapi.lib)
     else()
@@ -46,9 +49,6 @@ else()
             target_link_libraries(Graphics ${Vulkan_LIBRARY})
         endif()
     endif()
-
-    add_library(Graphics SHARED ${SR_GRAPHICS_SOURCES})
-    add_library(Graphics::lib ALIAS Graphics)
 endif()
 
 if (UNIX AND NOT APPLE)
