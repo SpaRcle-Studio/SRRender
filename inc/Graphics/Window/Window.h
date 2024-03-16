@@ -9,6 +9,7 @@
 #include <Utils/Types/Thread.h>
 #include <Utils/Types/Function.h>
 #include <Utils/Math/Vector2.h>
+#include <Utils/Types/SafePointer.h>
 
 #include <Graphics/Window/BasicWindowImpl.h>
 
