@@ -40,11 +40,11 @@ namespace SR_GRAPH_UI_NS {
         RotateCenter = Rotate | Center,
         RotateAll = X | Y | Z | Rotate | Center,
 
-        ScaleX = X | Rotate,
-        ScaleY = Y | Rotate,
-        ScaleZ = Z | Rotate,
+        ScaleX = X | Scale,
+        ScaleY = Y | Scale,
+        ScaleZ = Z | Scale,
         ScaleCenter = Scale | Center,
-        ScaleAll = ScaleX | ScaleY | ScaleZ | Center,
+        ScaleAll = X | Y | Z | Scale | Center,
 
         BoundsX = X | Bounds,
         BoundsY = Y | Bounds,
@@ -85,7 +85,11 @@ namespace SR_GRAPH_UI_NS {
         void UpdateGizmoTransform();
 
         virtual void OnGizmoTranslated(const SR_MATH_NS::FVector3& delta);
+        virtual void OnGizmoScaled(const SR_MATH_NS::FVector3& delta);
         virtual void OnGizmoRotated(const SR_MATH_NS::Quaternion& delta);
+
+        virtual void BeginGizmo() { }
+        virtual void EndGizmo() { }
 
         SR_NODISCARD virtual bool IsGizmoAvailable() const { return true; }
         SR_NODISCARD virtual bool IsHandledAnotherObject() const { return false; }
@@ -110,6 +114,8 @@ namespace SR_GRAPH_UI_NS {
 
         float_t m_zoomFactor = 0.0665f;
         float_t m_moveFactor = 0.1f;
+
+        SR_MATH_NS::FPoint m_lastMousePos = SR_MATH_NS::InfinityFV2;
 
         GizmoMode m_mode = GizmoMode::Local;
         GizmoOperationFlag m_operation = GizmoOperation::TranslateAll;

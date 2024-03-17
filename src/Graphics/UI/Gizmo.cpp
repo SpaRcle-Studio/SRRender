@@ -117,8 +117,8 @@ namespace SR_GRAPH_UI_NS {
 
         static const SR_UTILS_NS::StringAtom gizmoFile = "Engine/Models/gizmo-translation.fbx";
 
-        LoadMesh(GizmoOperation::TranslateCenter, gizmoFile, "Center", GizmoMeshLoadMode::Visual);
-        LoadMesh(GizmoOperation::TranslateCenter, gizmoFile, "CenterSelection", GizmoMeshLoadMode::Selection);
+        LoadMesh(GizmoOperation::TranslateCenter, gizmoFile, "CenterTranslation", GizmoMeshLoadMode::Visual);
+        LoadMesh(GizmoOperation::TranslateCenter, gizmoFile, "CenterTranslationSelection", GizmoMeshLoadMode::Selection);
 
         LoadMesh(GizmoOperation::TranslateAltX, gizmoFile, "PlaneX", GizmoMeshLoadMode::All);
         LoadMesh(GizmoOperation::TranslateAltY, gizmoFile, "PlaneY", GizmoMeshLoadMode::All);
@@ -137,6 +137,13 @@ namespace SR_GRAPH_UI_NS {
         LoadMesh(GizmoOperation::RotateZ, gizmoFile, "RotateZ", GizmoMeshLoadMode::All);
 
         LoadMesh(GizmoOperation::RotateCenter, gizmoFile, "RotateCenter", GizmoMeshLoadMode::All);
+
+        LoadMesh(GizmoOperation::ScaleCenter, gizmoFile, "CenterScale", GizmoMeshLoadMode::Visual);
+        LoadMesh(GizmoOperation::ScaleCenter, gizmoFile, "CenterScaleSelection", GizmoMeshLoadMode::Selection);
+
+        LoadMesh(GizmoOperation::ScaleX, gizmoFile, "ScaleX", GizmoMeshLoadMode::All);
+        LoadMesh(GizmoOperation::ScaleY, gizmoFile, "ScaleY", GizmoMeshLoadMode::All);
+        LoadMesh(GizmoOperation::ScaleZ, gizmoFile, "ScaleZ", GizmoMeshLoadMode::All);
 
         m_isGizmoDirty = false;
     }
@@ -189,11 +196,15 @@ namespace SR_GRAPH_UI_NS {
 
         UpdateGizmoTransform();
 
-        if (!SR_UTILS_NS::Input::Instance().GetMouse(SR_UTILS_NS::MouseCode::MouseLeft)) {
+        if (m_activeOperation != GizmoOperation::None && !SR_UTILS_NS::Input::Instance().GetMouse(SR_UTILS_NS::MouseCode::MouseLeft)) {
+            EndGizmo();
             m_activeOperation = GizmoOperation::None;
         }
 
         auto&& mousePos = GetCamera()->GetMousePos();
+        if (!m_lastMousePos.IsFinite()) {
+            m_lastMousePos = mousePos;
+        }
 
         if (IsLocal()) {
             m_modelMatrix = m_modelMatrix.OrthogonalNormalize(); /// normalized for local scape
@@ -250,9 +261,13 @@ namespace SR_GRAPH_UI_NS {
 
             m_rotationVectorSource = screenRay.RotationVector(m_rotationPlan, m_modelMatrix.v.position.XYZ());
             m_rotationAngleOrigin = screenRay.ComputeAngleOnPlan(m_rotationPlan, m_modelMatrix.v.position.XYZ(), m_rotationVectorSource);
+
+            BeginGizmo();
         }
 
         ProcessGizmo(mousePos);
+
+        m_lastMousePos = mousePos;
 
         Super::FixedUpdate();
     }
@@ -281,19 +296,19 @@ namespace SR_GRAPH_UI_NS {
         auto&& screenRay = GetCamera()->GetScreenRay(mousePos);
         const float_t screenFactor = GetCamera()->CalculateScreenFactor(m_modelMatrix, m_moveFactor);
 
+        auto&& newPos = screenRay.IntersectPlane(m_translationPlan);
+        auto&& newOrigin = newPos - m_relativeOrigin * screenFactor;
+        auto&& delta = newOrigin - m_modelMatrix.v.position.XYZ();
+        SR_MATH_NS::FVector3 axisValue;
+
+        if (!(m_activeOperation & GizmoOperation::Alternative) && !(m_activeOperation & GizmoOperation::Center)) {
+            axisValue = m_modelMatrix.GetAxis(GetAxis()).XYZ();
+            const float_t lengthOnAxis = axisValue.Dot(delta);
+            delta = axisValue * lengthOnAxis;
+        }
+
         if (m_activeOperation & GizmoOperation::Translate) {
-            auto&& newPos = screenRay.IntersectPlane(m_translationPlan);
-            auto&& newOrigin = newPos - m_relativeOrigin * screenFactor;
-            auto&& delta = newOrigin - m_modelMatrix.v.position.XYZ();
-
-            if (!(m_activeOperation & GizmoOperation::Alternative) && !(m_activeOperation & GizmoOperation::Center)) {
-                auto&& axisValue = m_modelMatrix.GetAxis(GetAxis()).XYZ();
-                const float lengthOnAxis = axisValue.Dot(delta);
-                delta = axisValue * lengthOnAxis;
-            }
-
             OnGizmoTranslated(delta);
-
             UpdateGizmoTransform();
         }
 
@@ -310,6 +325,40 @@ namespace SR_GRAPH_UI_NS {
 
             UpdateGizmoTransform();
         }
+
+        if (m_activeOperation & GizmoOperation::Scale) {
+            uint8_t axisIndex = SR_UINT8_MAX;
+
+            if (m_activeOperation & GizmoOperation::X) {
+                axisIndex = 0;
+            }
+            else if (m_activeOperation & GizmoOperation::Y) {
+                axisIndex = 1;
+            }
+            else if (m_activeOperation & GizmoOperation::Z) {
+                axisIndex = 2;
+            }
+
+            SR_MATH_NS::FVector3 scale = SR_MATH_NS::FVector3::One();
+
+            if (axisIndex != SR_UINT8_MAX) {
+                axisValue = IsLocal() ? axisValue : SR_MATH_NS::FVector3::AxisByIndex(axisIndex);
+                auto&& baseVector = m_translationPlanOrigin - m_modelMatrix.v.position.XYZ();
+                const float_t ratio = axisValue.Dot(baseVector + delta) / axisValue.Dot(baseVector);
+                scale[axisIndex] = SR_MAX(ratio, SR_BIG_EPSILON);
+            }
+            else {
+                const float_t scaleDelta = (mousePos.x - m_lastMousePos.x) + (mousePos.y - m_lastMousePos.y);
+                scale = SR_MATH_NS::FVector3(SR_MAX(1.f + scaleDelta, SR_BIG_EPSILON));
+            }
+
+            OnGizmoScaled(scale);
+
+            UpdateGizmoTransform();
+        }
+
+        m_translationPlanOrigin = screenRay.IntersectPlane(m_translationPlan);
+        m_relativeOrigin = (m_translationPlanOrigin - m_modelMatrix.v.position.XYZ()) * (1.f / screenFactor);
     }
 
     SR_MATH_NS::AxisFlag Gizmo::GetAxis() const {
@@ -426,5 +475,9 @@ namespace SR_GRAPH_UI_NS {
     void Gizmo::SetOperation(GizmoOperationFlag operation) {
         m_operation = operation;
         m_isGizmoDirty = true;
+    }
+
+    void Gizmo::OnGizmoScaled(const SR_MATH_NS::FVector3& delta) {
+        GetTransform()->Scale(delta);
     }
 }

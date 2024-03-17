@@ -40,6 +40,8 @@ namespace SR_GTYPES_NS {
 
         void OnLayerChanged() override;
 
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
+
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD bool IsUpdatable() const noexcept override { return false; }
