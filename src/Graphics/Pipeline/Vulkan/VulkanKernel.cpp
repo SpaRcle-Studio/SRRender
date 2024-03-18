@@ -183,4 +183,7 @@ namespace SR_GRAPH_NS {
             pWindow->PollEvents();
         });
     }
+
+    VulkanKernel::~VulkanKernel() {
+    }
 }

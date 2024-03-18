@@ -20,6 +20,8 @@ namespace SR_GTYPES_NS {
         for (auto&& pTexture : GetTexturesFromMatProperties(m_properties)) {
             RemoveDependency(pTexture);
         }
+
+        m_properties.ClearContainer();
     }
 
     void Material::Use() {

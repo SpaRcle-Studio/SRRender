@@ -240,6 +240,8 @@ namespace SR_GRAPH_NS::Memory {
     VirtualProgramInfo::ShaderProgramInfo ShaderProgramManager::AllocateShaderProgram(const SRShaderCreateInfo &createInfo) const {
         SR_TRACY_ZONE;
 
+        SRAssert(m_pipeline);
+
         /// Выделяем новую шейдерную программу
         auto&& frameBufferId = m_pipeline->GetCurrentFrameBufferId();
 

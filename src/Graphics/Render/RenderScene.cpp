@@ -397,7 +397,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    RenderScene::PipelinePtr RenderScene::GetPipeline() const {
+    const RenderScene::PipelinePtr& RenderScene::GetPipeline() const {
         return GetContext()->GetPipeline();
     }
 

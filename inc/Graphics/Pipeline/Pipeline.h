@@ -87,7 +87,7 @@ namespace SR_GRAPH_NS {
         virtual void ReCreateOverlay();
         virtual void SetOverlaySurfaceDirty();
 
-        virtual SR_HTYPES_NS::SharedPtr<Overlay> GetOverlay(OverlayType overlayType) const;
+        virtual const SR_HTYPES_NS::SharedPtr<Overlay>& GetOverlay(OverlayType overlayType) const;
         virtual bool BeginDrawOverlay(OverlayType overlayType);
         virtual void EndDrawOverlay(OverlayType overlayType);
 

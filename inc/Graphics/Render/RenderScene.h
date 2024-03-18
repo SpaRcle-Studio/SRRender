@@ -93,7 +93,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD RenderContext* GetContext() const;
         SR_NODISCARD LightSystem* GetLightSystem() const { return m_lightSystem; }
         SR_NODISCARD SR_ANIMATIONS_NS::Skeleton* GetCurrentSkeleton() const { return m_currentSkeleton; }
-        SR_NODISCARD PipelinePtr GetPipeline() const;
+        SR_NODISCARD const RenderScene::PipelinePtr& GetPipeline() const;
         SR_NODISCARD WindowPtr GetWindow() const;
         SR_NODISCARD const WidgetManagers& GetWidgetManagers() const;
         SR_NODISCARD MeshCluster& GetOpaque();

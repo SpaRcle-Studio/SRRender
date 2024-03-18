@@ -300,11 +300,12 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    SR_HTYPES_NS::SharedPtr<Overlay> Pipeline::GetOverlay(OverlayType overlayType) const {
+    const SR_HTYPES_NS::SharedPtr<Overlay>& Pipeline::GetOverlay(OverlayType overlayType) const {
         SR_TRACY_ZONE;
         auto&& pIt = m_overlays.find(overlayType);
         if (pIt == m_overlays.end() || !pIt->second) {
-            return SR_HTYPES_NS::SharedPtr<Overlay>();
+            static SR_HTYPES_NS::SharedPtr<Overlay> pEmpty;
+            return pEmpty;
         }
         return pIt->second;
     }

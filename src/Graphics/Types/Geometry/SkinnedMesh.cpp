@@ -211,8 +211,10 @@ namespace SR_GTYPES_NS {
             SetGeometryName(GetRawMesh()->GetGeometryName(GetMeshId()));
         }
 
-        if (auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>()) {
-            pSkeleton->ResetSkeleton();
+        if (GetSkeleton().IsValid()) {
+            if (auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>()) {
+                pSkeleton->ResetSkeleton();
+            }
         }
 
         ReRegisterMesh();

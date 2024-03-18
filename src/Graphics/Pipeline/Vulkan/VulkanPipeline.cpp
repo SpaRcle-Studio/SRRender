@@ -63,6 +63,8 @@ namespace SR_GRAPH_NS {
             m_kernel->Destroy();
         }
 
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().Reset();
+
         return Super::Destroy();
     }
 
@@ -231,6 +233,11 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateUBO(uint32_t uboSize) {
+        if (!m_memory) {
+            SR_ERROR("VulkanPipeline::AllocateUBO() : memory manager is nullptr!");
+            return SR_ID_INVALID;
+        }
+
         ++m_state.operations;
         ++m_state.allocations;
         m_state.allocatedMemory += uboSize;
@@ -246,6 +253,11 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocDescriptorSet(const std::vector<DescriptorType>& types) {
+        if (!m_memory) {
+            SR_ERROR("VulkanPipeline::AllocDescriptorSet() : memory manager is nullptr!");
+            return SR_ID_INVALID;
+        }
+
         ++m_state.operations;
         ++m_state.allocations;
 
@@ -353,6 +365,11 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) {
+        if (!m_memory) {
+            SR_ERROR("VulkanPipeline::AllocateShaderProgram() : memory manager is nullptr!");
+            return SR_ID_INVALID;
+        }
+
         SR_TRACY_ZONE;
 
         ++m_state.operations;
@@ -497,6 +514,11 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateTexture(const SRTextureCreateInfo& createInfo) {
+        if (!m_memory) {
+            SR_ERROR("VulkanPipeline::AllocateTexture() : memory manager is nullptr!");
+            return SR_ID_INVALID;
+        }
+
         SR_TRACY_ZONE;
 
         SRTextureCreateInfo textureCreateInfo = createInfo;
@@ -723,6 +745,11 @@ namespace SR_GRAPH_NS {
     int32_t VulkanPipeline::AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) {
         SR_TRACY_ZONE;
 
+        if (!m_memory) {
+            SR_ERROR("VulkanPipeline::AllocateFrameBuffer() : memory manager is nullptr!");
+            return SR_ID_INVALID;
+        }
+
         ++m_state.allocations;
         ++m_state.operations;
 
@@ -813,7 +840,6 @@ namespace SR_GRAPH_NS {
 
     bool VulkanPipeline::InitEvoVulkanHooks() {
         SR_TRACY_ZONE;
-
         SR_GRAPH("VulkanPipeline::InitEvoVulkanHooks() : initialize evo vulkan hooks...");
 
         auto&& GetUsedMemoryFn = [pPipeline = GetThis()]() -> uint32_t {
@@ -1042,7 +1068,9 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::OnResize(const SR_MATH_NS::UVector2& size) {
-        m_kernel->SetSize(size.x, size.y);
+        if (m_kernel) {
+            m_kernel->SetSize(size.x, size.y);
+        }
         Super::OnResize(size);
     }
 
@@ -1103,6 +1131,11 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateCubeMap(const SRCubeMapCreateInfo& createInfo) {
+        if (!m_memory) {
+            SR_ERROR("VulkanPipeline::AllocateCubeMap() : memory manager is nullptr!");
+            return SR_ID_INVALID;
+        }
+
         ++m_state.operations;
         ++m_state.allocations;
 
@@ -1133,6 +1166,11 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateVBO(void* pVertices, Vertices::VertexType type, size_t count) {
+        if (!m_memory) {
+            SR_ERROR("VulkanPipeline::AllocateVBO() : memory manager is nullptr!");
+            return SR_ID_INVALID;
+        }
+
         const auto size = Vertices::GetVertexSize(type);
 
         ++m_state.operations;
@@ -1147,6 +1185,11 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateIBO(void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) {
+        if (!m_memory) {
+            SR_ERROR("VulkanPipeline::AllocateIBO() : memory manager is nullptr!");
+            return SR_ID_INVALID;
+        }
+
         ++m_state.operations;
         ++m_state.allocations;
         m_state.allocatedMemory += indexSize * count;
@@ -1364,7 +1407,7 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::PrepareFrame() {
         Super::PrepareFrame();
 
-        if (m_kernel->IsDirty()) {
+        if (m_kernel && m_kernel->IsDirty()) {
             m_kernel->ReCreate(EvoVulkan::Core::FrameResult::Dirty);
         }
 

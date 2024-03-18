@@ -268,7 +268,7 @@ namespace SR_GRAPH_NS {
             m_techniques.empty();
     }
 
-    RenderContext::PipelinePtr RenderContext::GetPipeline() const {
+    const RenderContext::PipelinePtr& RenderContext::GetPipeline() const {
         return m_pipeline;
     }
 
@@ -412,10 +412,11 @@ namespace SR_GRAPH_NS {
     RenderContext::~RenderContext() {
         SRAssert(IsEmpty());
 
-        m_pipeline.AutoFree([](auto&& pPipeline) {
-            pPipeline->Destroy();
-            delete pPipeline;
-        });
+        if (m_pipeline) {
+            m_pipeline->Destroy();
+        }
+
+        m_pipeline.AutoFree();
     }
 
     bool RenderContext::InitPipeline() {
@@ -431,6 +432,7 @@ namespace SR_GRAPH_NS {
     #elif defined(SR_LINUX)
         pipelinePreInitInfo.GLSLCompilerPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Utilities/glslc");
     #endif
+
         if (!m_pipeline->PreInit(pipelinePreInitInfo)) {
             SR_ERROR("Engine::InitializeRender() : failed to pre-initialize the pipeline!");
             return false;
