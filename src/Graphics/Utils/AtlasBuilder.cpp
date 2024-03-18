@@ -1,5 +1,5 @@
 #include <Graphics/Utils/AtlasBuilder.h>
-
+#include <filesystem>
 
 namespace SR_GRAPH_NS {
 // Public
@@ -13,7 +13,7 @@ namespace SR_GRAPH_NS {
 
     AtlasBuilder::AtlasBuilder(const SR_UTILS_NS::Path& folder) {
         if (!CreateAtlas(folder)) {
-            SR_ERROR("AtlasBuilder::AtlasBuilder: Failed to create Atlas by path " + folder.ToString());
+            SR_ERROR("AtlasBuilder::AtlasBuilder() : Failed to create Atlas by path " + folder.ToString());
         }
 
         m_isCached = true;
@@ -59,13 +59,13 @@ namespace SR_GRAPH_NS {
 // Private
     bool AtlasBuilder::CreateAtlas(const SR_UTILS_NS::Path& folder) const { // NOLINT
         if (!folder.Exists()) {
-            SR_ERROR("AtlasBuilder::CreateAtlas: The specified path does not exist: " + folder.ToString());
+            SR_ERROR("AtlasBuilder::CreateAtlas() : The specified path does not exist: " + folder.ToString());
 
             return false;
         }
 
         std::vector<SR_UTILS_NS::Path> sprites;
-        for (auto&& file : std::filesystem::directory_iterator(folder.ToString())) {
+        for (auto&& file : std::filesystem::directory_iterator(folder.ToString())) { /// ай-ай-ай, ян
             sprites.emplace_back(file.path().string());
         }
 
