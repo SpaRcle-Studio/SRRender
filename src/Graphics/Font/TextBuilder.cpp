@@ -215,7 +215,7 @@ namespace SR_GRAPH_NS {
         m_kerning = kerning;
     }
 
-    ImageFormat TextBuilder::GetColorFormat() const noexcept {
+    ImageFormat TextBuilder::GetColorFormat() const noexcept {  // NOLINT
         return ImageFormat::RGBA8_UNORM;
     }
 
