@@ -11,6 +11,7 @@
 #include <Graphics/Types/Texture.h>
 
 #include <stbi/stb_image.c>
+#include <stbi/stbi_image_write.c>
 
 namespace SR_GRAPH_NS {
     TextureData::TextureData(uint32_t width, uint32_t height, uint8_t channels, uint8_t* data, ImageLoadFormat format)
@@ -48,13 +49,15 @@ namespace SR_GRAPH_NS {
         auto&& pTextureData = new TextureData(width, height, channels, imageData, format);
         pTextureData->m_path = path;
         pTextureData->m_deleter = [](uint8_t* pData) {
-            TextureLoader::Free(pData);
+            if (!TextureLoader::Free(pData)) {
+                SR_ERROR("TextureData::Load() : failed to free pData.");
+            }
         };
 
         return pTextureData;
     }
 
-    TextureData::Ptr TextureData::Create(uint32_t width, uint32_t height, ImageLoadFormat format, uint8_t* pData, DeleterFn deleter) {
+    TextureData::Ptr TextureData::Create(uint32_t width, uint32_t height, uint8_t* pData, DeleterFn&& deleter, ImageLoadFormat format) {
         uint8_t channels = 0;
         switch(format) {
             case ImageLoadFormat::Grey: channels = 1; break;
@@ -69,6 +72,18 @@ namespace SR_GRAPH_NS {
 
         return pTextureData;
     }
+
+    bool TextureData::Save(const SR_UTILS_NS::Path& path) const {
+        auto result = stbi_write_png(path.CStr(), m_width, m_height, m_channels, m_data, m_width * m_channels);
+
+        if (!result) {
+            SR_ERROR("TextureData::Save() : failed to write raw data to png.");
+            return false;
+        }
+
+        return true;
+    }
+
 
     bool TextureLoader::Load(Types::Texture* texture, std::string path) {
         if (!SRVerifyFalse(!texture)) {

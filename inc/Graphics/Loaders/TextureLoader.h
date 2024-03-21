@@ -31,13 +31,16 @@ namespace SR_GRAPH_NS {
 
     public:
         static TextureData::Ptr Load(const SR_UTILS_NS::Path& path, ImageLoadFormat format = ImageLoadFormat::RGBA);
-        static TextureData::Ptr Create(uint32_t width, uint32_t height, ImageLoadFormat format, uint8_t* pData, DeleterFn deleter);
+        static TextureData::Ptr Create(uint32_t width, uint32_t height, uint8_t* pData, DeleterFn&& deleter, ImageLoadFormat format = ImageLoadFormat::RGBA);
+
+        SR_NODISCARD bool Save(const SR_UTILS_NS::Path& path) const;
 
     public:
         SR_NODISCARD uint32_t GetWidth() const { return m_width; }
         SR_NODISCARD uint32_t GetHeight() const { return m_height; }
         SR_NODISCARD uint8_t GetChannels() const { return m_channels; }
         SR_NODISCARD const uint8_t* GetData() const { return m_data; }
+        SR_NODISCARD uint32_t GetNumberOfBytes() const { return (m_data) ? (m_width * m_height * m_channels) : 0; }
         SR_NODISCARD SR_UTILS_NS::Path GetPath() const { return m_path; }
         SR_NODISCARD ImageLoadFormat GetFormat() const { return m_format; }
 
