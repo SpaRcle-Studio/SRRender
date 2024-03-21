@@ -40,7 +40,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool AtlasBuilder::Generate(const SR_UTILS_NS::Path& path) const {  // NOLINT
-        auto&& rootNodeName = std::format("AtlasOf{}", path.GetBaseName());
+        auto&& rootNodeName = SR_FORMAT("AtlasOf{}", path.GetBaseName());
         auto&& document = SR_XML_NS::Document::New();
 
         auto&& rootNode = document.Root().AppendNode(rootNodeName);
