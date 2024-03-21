@@ -275,6 +275,8 @@ namespace SR_GRAPH_NS {
         void RegisterMesh(const MeshRegistrationInfo& info);
         bool UnRegisterMesh(const MeshRegistrationInfo& info);
 
+        MeshRegistrationInfo CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh) const;
+
     private:
         FilterCallback m_layerFilter;
         ShaderReplaceCallback m_shaderReplaceCallback;

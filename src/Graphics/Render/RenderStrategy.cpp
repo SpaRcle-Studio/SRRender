@@ -28,7 +28,7 @@ namespace SR_GRAPH_NS {
         while (!m_reRegisterMeshes.empty()) {
             auto&& info = m_reRegisterMeshes.front();
             if (UnRegisterMesh(info)) {
-                RegisterMesh(info);
+                RegisterMesh(CreateMeshRegistrationInfo(info.pMesh));
             }
             m_reRegisterMeshes.pop_front();
         }
@@ -93,22 +93,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        MeshRegistrationInfo info;
-
-        info.pMesh = pMesh;
-        info.pShader = pMesh->GetShader();
-        info.layer = pMesh->GetMeshLayer();
-        info.pScene = GetRenderScene();
-
-        if (pMesh->IsSupportVBO()) {
-            info.VBO = pMesh->GetVBO();
-        }
-
-        if (pMesh->HasSortingPriority()) {
-            info.priority = pMesh->GetSortingPriority();
-        }
-
-        RegisterMesh(info);
+        RegisterMesh(CreateMeshRegistrationInfo(pMesh));
     }
 
     bool RenderStrategy::UnRegisterMesh(SR_GTYPES_NS::Mesh* pMesh) {
@@ -213,6 +198,25 @@ namespace SR_GRAPH_NS {
 
     void RenderStrategy::ReRegisterMesh(const MeshRegistrationInfo& info) {
         m_reRegisterMeshes.emplace_back(info);
+    }
+
+    MeshRegistrationInfo RenderStrategy::CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh) const {
+        MeshRegistrationInfo info;
+
+        info.pMesh = pMesh;
+        info.pShader = pMesh->GetShader();
+        info.layer = pMesh->GetMeshLayer();
+        info.pScene = GetRenderScene();
+
+        if (pMesh->IsSupportVBO()) {
+            info.VBO = pMesh->GetVBO();
+        }
+
+        if (pMesh->HasSortingPriority()) {
+            info.priority = pMesh->GetSortingPriority();
+        }
+
+        return info;
     }
 
     /// ----------------------------------------------------------------------------------------------------------------
