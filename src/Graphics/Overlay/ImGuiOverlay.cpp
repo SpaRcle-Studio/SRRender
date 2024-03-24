@@ -102,4 +102,12 @@ namespace SR_GRAPH_NS {
 
         return false;
     }
+
+    bool ImGuiOverlay::IsViewportsEnabled() const {
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            return true;
+        }
+
+        return false;
+    }
 }

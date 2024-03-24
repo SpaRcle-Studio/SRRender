@@ -2,6 +2,8 @@
 // Created by Monika on 07.12.2022.
 //
 
+#include <Utils/Common/Features.h>
+
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Overlay/Overlay.h>
 #include <Graphics/Types/Shader.h>
@@ -294,6 +296,7 @@ namespace SR_GRAPH_NS {
 
     bool Pipeline::PreInit(const PipelinePreInitInfo& info) {
         m_requiredSampleCount = info.samplesCount;
+
         m_preInitInfo = info;
         SRAssert2(m_requiredSampleCount >= 1 && m_requiredSampleCount <= 64, "Sample count must be greater 0 and less or equals 64!");
 
@@ -381,5 +384,17 @@ namespace SR_GRAPH_NS {
 
     void Pipeline::ClearColorBuffer(const ClearColors& clearColors) {
         ++m_state.operations;
+    }
+
+    bool Pipeline::Init() {
+        return true;
+    }
+
+    bool Pipeline::IsMultiSamplingSupported() const noexcept {
+        if (!SR_UTILS_NS::Features::Instance().Enabled("Multisampling", true)) {
+            return false;
+        }
+
+        return m_isMultiSampleSupported;
     }
 }

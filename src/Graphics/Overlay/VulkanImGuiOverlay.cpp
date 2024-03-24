@@ -88,6 +88,57 @@ namespace SR_GRAPH_NS {
                 return DefWindowProc(hwnd, msg, wParam, lParam);
         }
     }
+
+    struct ImGui_ImplWin32_ViewportData
+    {
+        HWND    Hwnd;
+        bool    HwndOwned;
+        DWORD   DwStyle;
+        DWORD   DwExStyle;
+
+        ImGui_ImplWin32_ViewportData() { Hwnd = NULL; HwndOwned = false;  DwStyle = DwExStyle = 0; }
+        ~ImGui_ImplWin32_ViewportData() { IM_ASSERT(Hwnd == NULL); }
+    };
+
+    static void ImGui_ImplWin32_GetWin32StyleFromViewportFlags(ImGuiViewportFlags flags, DWORD* out_style, DWORD* out_ex_style)
+    {
+        if (flags & ImGuiViewportFlags_NoDecoration)
+            *out_style = WS_POPUP;
+        else
+            *out_style = WS_OVERLAPPEDWINDOW;
+
+        if (flags & ImGuiViewportFlags_NoTaskBarIcon)
+            *out_ex_style = WS_EX_TOOLWINDOW;
+        else
+            *out_ex_style = WS_EX_APPWINDOW;
+
+        if (flags & ImGuiViewportFlags_TopMost)
+            *out_ex_style |= WS_EX_TOPMOST;
+    }
+
+    static void ImGui_ImplWin32_CreateWindow(ImGuiViewport* viewport)
+    {
+        ImGui_ImplWin32_ViewportData* vd = IM_NEW(ImGui_ImplWin32_ViewportData)();
+        viewport->PlatformUserData = vd;
+
+        // Select style and parent window
+        ImGui_ImplWin32_GetWin32StyleFromViewportFlags(viewport->Flags, &vd->DwStyle, &vd->DwExStyle);
+        HWND parent_window = NULL;
+        if (viewport->ParentViewportId != 0)
+            if (ImGuiViewport* parent_viewport = ImGui::FindViewportByID(viewport->ParentViewportId))
+                parent_window = (HWND)parent_viewport->PlatformHandle;
+
+        // Create window
+        RECT rect = { (LONG)viewport->Pos.x, (LONG)viewport->Pos.y, (LONG)(viewport->Pos.x + viewport->Size.x), (LONG)(viewport->Pos.y + viewport->Size.y) };
+        ::AdjustWindowRectEx(&rect, vd->DwStyle, FALSE, vd->DwExStyle);
+        vd->Hwnd = ::CreateWindowEx(
+                vd->DwExStyle, "ImGui Platform", "Untitled", vd->DwStyle,   // Style, class name, window name
+                rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,    // Window area
+                parent_window, NULL, ::GetModuleHandle(NULL), NULL);                    // Parent window, Menu, Instance, Param
+        vd->HwndOwned = true;
+        viewport->PlatformRequestResize = false;
+        viewport->PlatformHandle = viewport->PlatformHandleRaw = vd->Hwnd;
+    }
 #endif
 
     static void (*ImGui_Platform_CreateWindow)(ImGuiViewport* vp) = nullptr;
@@ -124,6 +175,8 @@ namespace SR_GRAPH_NS {
         if (!Super::Init()) {
             return false;
         }
+
+        SR_GRAPH_LOG("VulkanImGuiOverlay::Init() : initialization vulkan ImGui overlay...");
 
         auto&& pKernel = m_pipeline.DynamicCast<VulkanPipeline>()->GetKernel();
         if (!pKernel->GetDevice() || !pKernel->GetDevice()->IsReady()) {
@@ -251,6 +304,13 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        if (m_undockingActive != IsUndockingActive()) {
+            SR_LOG("VulkanImGuiOverlay::BeginDraw() : undocking active changed!");
+            m_undockingActive = IsUndockingActive();
+            m_surfaceDirty = true;
+            return false;
+        }
+
         ImGui_ImplVulkan_NewFrame();
 
         #ifdef SR_WIN32
@@ -272,12 +332,24 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanImGuiOverlay::EndDraw() {
+        if (m_undockingActive != IsUndockingActive()) {
+            SR_LOG("VulkanImGuiOverlay::EndDraw() : undocking active changed!");
+            m_undockingActive = IsUndockingActive();
+            m_surfaceDirty = true;
+
+            ImGui::Render();
+
+            if (IsViewportsEnabled()) {
+                ImGui::UpdatePlatformWindows();
+            }
+
+            return;
+        }
+
         ImGui::Render();
 
-        ImGuiIO &io = ImGui::GetIO(); (void)io;
-
         /// Update and Render additional Platform Windows
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+        if (IsViewportsEnabled()) {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
         }
@@ -300,7 +372,7 @@ namespace SR_GRAPH_NS {
             },
             { } /** input attachments */,
             countMSAASamples,
-            false /** depth buffer */,
+            VK_IMAGE_ASPECT_NONE /** depth buffer */,
             m_device->GetDepthFormat()
         );
 
@@ -311,13 +383,17 @@ namespace SR_GRAPH_NS {
 
         auto&& pKernel = m_pipeline.DynamicCast<VulkanPipeline>()->GetKernel();
 
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigViewportsNoDecoration = false;
+
         ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
 
         ImGuiViewport* mainViewport = platform_io.Viewports.front();
         mainViewport->PlatformHandle = pKernel->GetSurface()->GetHandle();
 
         platform_io.Platform_CreateVkSurface = CreatePlatformSurface;
-        ImGui_Platform_CreateWindow = platform_io.Platform_CreateWindow;
+
+        ImGui_Platform_CreateWindow = ImGui_ImplWin32_CreateWindow;
         platform_io.Platform_CreateWindow = Replacement_Platform_CreateWindow;
 
         /// Setup Platform/Renderer bindings
@@ -379,6 +455,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool VulkanImGuiOverlay::ReCreate() {
+        SR_GRAPH_LOG("VulkanImGuiOverlay::ReCreate() : re-creating vulkan ImGui overlay...");
+
         DestroyBuffers();
 
         if (!m_device || !m_swapChain) {

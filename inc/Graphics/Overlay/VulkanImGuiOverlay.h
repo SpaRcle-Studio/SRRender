@@ -16,6 +16,12 @@ namespace SR_GRAPH_NS {
             : Super(std::move(pPipeline))
         { }
 
+        ~VulkanImGuiOverlay() override {
+            SRAssert2(m_frameBuffs.empty(), "Vulkan ImGUI Overlay frame buffers are not empty");
+            SRAssert2(m_cmdPools.empty(), "Vulkan ImGUI Overlay command pools are not empty");
+            SRAssert2(m_cmdBuffs.empty(), "Vulkan ImGUI Overlay command buffers are not empty");
+        }
+
     public:
         SR_NODISCARD bool Init() override;
         SR_NODISCARD bool ReCreate() override;
@@ -55,6 +61,8 @@ namespace SR_GRAPH_NS {
         EvoVulkan::Types::Device* m_device = nullptr;
         EvoVulkan::Types::Swapchain* m_swapChain = nullptr;
         EvoVulkan::Types::MultisampleTarget* m_multiSample = nullptr;
+
+        bool m_undockingActive = false;
 
     };
 }

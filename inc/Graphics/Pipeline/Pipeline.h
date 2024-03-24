@@ -43,7 +43,7 @@ namespace SR_GRAPH_NS {
         virtual bool PreInit(const PipelinePreInitInfo& info);
 
         /// Подключаем окно и настраиваем взаимодействие рендера с ним
-        virtual bool Init() { return true; }
+        virtual bool Init();
 
         /// Профайлинг и прочие пост-штучки
         virtual bool PostInit() { return true; }
@@ -156,7 +156,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const PipelineState& GetPreviousState() const { return m_previousState; }
         SR_NODISCARD const PipelineState& GetBuildState() const { return m_buildState; }
         SR_NODISCARD uint8_t GetSamplesCount() const;
-        SR_NODISCARD bool IsMultiSamplingSupported() const noexcept { return m_isMultiSampleSupported; }
+        SR_NODISCARD bool IsMultiSamplingSupported() const noexcept;
         SR_NODISCARD virtual bool IsVSyncEnabled() const { return false; }
         /// Изменился ли текущий шейдер после UseShader. Даже если был вызван UnUseShader. Низкоуровневая проверка.
         SR_NODISCARD bool IsShaderChanged() const noexcept { return m_isShaderChanged; }

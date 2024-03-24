@@ -8,6 +8,7 @@
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Types/DataStorage.h>
 #include <Utils/Types/SafePointer.h>
+#include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/Function.h>
 #include <Utils/Input/InputSystem.h>
 #include <Utils/Input/InputHandler.h>
@@ -44,13 +45,7 @@ namespace SR_GRAPH_GUI_NS {
     public:
         explicit Widget(std::string name, SR_MATH_NS::IVector2 size = SR_MATH_NS::IVector2MAX)
             : m_name(std::move(name))
-            , m_open(false)
-            , m_center(false)
-            , m_internalFlags(WIDGET_FLAG_NONE)
-            , m_windowFlags(ImGuiWindowFlags_::ImGuiWindowFlags_None)
             , m_size(size)
-            , m_manager(nullptr)
-            , m_widgetFlags(WIDGET_FLAG_NONE)
         { }
 
         ~Widget() override = default;
@@ -67,6 +62,8 @@ namespace SR_GRAPH_GUI_NS {
         SR_NODISCARD SR_HTYPES_NS::DataStorage& GetStrongStorage() const { return m_strongStorage; }
 
         virtual void Init() { }
+
+        virtual void SetSize(const SR_MATH_NS::IVector2& size) { m_size = size; }
 
         virtual bool OpenFile(const SR_UTILS_NS::Path& path) { return false; }
 
@@ -90,6 +87,7 @@ namespace SR_GRAPH_GUI_NS {
         void SetCenter(bool value) { m_center = value; }
         void SetName(const std::string& name) { m_name = name; }
         void SetFlags(WindowFlags flags) { m_windowFlags = flags; }
+        void AddFlags(WindowFlags flags) { m_windowFlags |= flags; }
 
         void TextCenter(const std::string& text) const;
 
@@ -106,19 +104,19 @@ namespace SR_GRAPH_GUI_NS {
 
     private:
         std::string m_name;
-        std::atomic<bool> m_open;
-        std::atomic<bool> m_center;
-        std::atomic<WidgetFlagBits> m_internalFlags;
-        WindowFlags m_windowFlags;
+        std::atomic<bool> m_open = false;
+        std::atomic<bool> m_center = false;
+        std::atomic<WidgetFlagBits> m_internalFlags = WIDGET_FLAG_NONE;
+        WindowFlags m_windowFlags = ImGuiWindowFlags_None;
         SR_MATH_NS::IVector2 m_size;
-        WidgetManager* m_manager;
+        WidgetManager* m_manager = nullptr;
 
         mutable SR_HTYPES_NS::DataStorage m_weakStorage;
         mutable SR_HTYPES_NS::DataStorage m_strongStorage;
 
     protected:
         mutable std::recursive_mutex m_mutex;
-        WidgetFlagBits m_widgetFlags;
+        WidgetFlagBits m_widgetFlags = WIDGET_FLAG_NONE;
 
     };
 }

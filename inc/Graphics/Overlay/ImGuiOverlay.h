@@ -21,6 +21,7 @@ namespace SR_GRAPH_NS {
     public:
         SR_NODISCARD bool Init() override;
         SR_NODISCARD bool IsUndockingActive() const override;
+        SR_NODISCARD bool IsViewportsEnabled() const;
 
         SR_NODISCARD ImFont* GetIconFont() const { return m_iconFont; }
         SR_NODISCARD ImFont* GetMainFont() const { return m_mainFont; }

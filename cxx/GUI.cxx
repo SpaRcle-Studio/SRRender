@@ -1,5 +1,6 @@
 #include <Utils/macros.h>
 
+#include "../../Graphics/src/Graphics/GUI/WidgetContainer.cpp"
 #include "../../Graphics/src/Graphics/GUI/Link.cpp"
 #include "../../Graphics/src/Graphics/GUI/ICanvas.cpp"
 #include "../../Graphics/src/Graphics/GUI/Node.cpp"
