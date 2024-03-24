@@ -398,7 +398,12 @@ namespace SR_GRAPH_NS {
 
         platform_io.Platform_CreateVkSurface = CreatePlatformSurface;
 
+    #ifdef SR_WIN32
         ImGui_Platform_CreateWindow = ImGui_ImplWin32_CreateWindow;
+    #else
+        SRHalt("Unsupported platform!");
+    #endif
+
         platform_io.Platform_CreateWindow = Replacement_Platform_CreateWindow;
 
         /// Setup Platform/Renderer bindings
