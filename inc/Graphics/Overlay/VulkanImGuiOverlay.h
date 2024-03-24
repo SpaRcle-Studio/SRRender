@@ -28,8 +28,13 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD std::string GetName() const override { return "Vulkan ImGUI"; }
 
-        SR_NODISCARD VkCommandBuffer Render(uint32_t frame);
+        SR_NODISCARD EvoVulkan::SubmitInfo& Render(uint32_t frame);
         SR_NODISCARD void* GetTextureDescriptorSet(uint32_t textureId) override;
+
+        SR_NODISCARD VkSemaphore GetSemaphore() { return m_semaphore; }
+        SR_NODISCARD EvoVulkan::SubmitInfo& GetSubmitInfo() { return m_submitInfo; }
+
+        void ResetSubmitInfo();
 
         void Destroy() override;
 
@@ -41,10 +46,14 @@ namespace SR_GRAPH_NS {
         void DeInitializeRenderer();
         void DestroyBuffers();
 
+        uint32_t GetCountImages() const;
+
     private:
         static const std::vector<VkDescriptorPoolSize> POOL_SIZES;
 
     private:
+        EvoVulkan::SubmitInfo m_submitInfo = { };
+
         VkSemaphore m_semaphore = VK_NULL_HANDLE;
 
         VkCommandBufferBeginInfo m_cmdBuffBI = { };

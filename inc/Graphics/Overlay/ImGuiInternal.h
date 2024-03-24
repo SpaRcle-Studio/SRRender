@@ -33,24 +33,22 @@ namespace SR_GRAPH_NS {
     struct ImGui_ImplVulkan_Data
     {
         ImGui_ImplVulkan_InitInfo   VulkanInitInfo;
-        VkRenderPass                RenderPass;
         VkDeviceSize                BufferMemoryAlignment;
         VkPipelineCreateFlags       PipelineCreateFlags;
         VkDescriptorSetLayout       DescriptorSetLayout;
         VkPipelineLayout            PipelineLayout;
         VkPipeline                  Pipeline;
-        uint32_t                    Subpass;
         VkShaderModule              ShaderModuleVert;
         VkShaderModule              ShaderModuleFrag;
 
-        /// Font data
+        // Font data
         VkSampler                   FontSampler;
         VkDeviceMemory              FontMemory;
         VkImage                     FontImage;
         VkImageView                 FontView;
         VkDescriptorSet             FontDescriptorSet;
-        VkDeviceMemory              UploadBufferMemory;
-        VkBuffer                    UploadBuffer;
+        VkCommandPool               FontCommandPool;
+        VkCommandBuffer             FontCommandBuffer;
 
         /// Render buffers for main window
         ImGui_ImplVulkanH_WindowRenderBuffers MainWindowRenderBuffers;

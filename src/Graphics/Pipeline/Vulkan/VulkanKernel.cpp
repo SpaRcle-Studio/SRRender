@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/Pipeline/Vulkan/VulkanKernel.h>
+#include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
+#include <Graphics/Overlay/VulkanImGuiOverlay.h>
 
 namespace SR_GRAPH_NS {
     VulkanKernel::VulkanKernel(VulkanKernel::PipelinePtr pPipeline)
@@ -76,7 +78,7 @@ namespace SR_GRAPH_NS {
 
             auto&& vkSubmitInfo = submitInfo.ToVk();
 
-            if (auto result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
+            if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
                 VK_ERROR("renderFunction() : failed to queue submit (frame buffer)! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
 
                 if (result == VK_ERROR_DEVICE_LOST) {
@@ -87,19 +89,14 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        auto&& pImGuiOverlay = m_pipeline->GetOverlay(OverlayType::ImGui).DynamicCast<VulkanImGuiOverlay>();
-
         m_submitInfo.commandBuffers.clear();
-
         m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_currentBuffer]);
 
-        if (m_GUIEnabled && pImGuiOverlay && !pImGuiOverlay->IsSurfaceDirty()) {
-            m_submitInfo.commandBuffers.emplace_back(pImGuiOverlay->Render(m_currentBuffer));
+        auto&& pImGuiOverlay = m_pipeline->GetOverlay(OverlayType::ImGui).DynamicCast<VulkanImGuiOverlay>();
 
-            /// AddSubmitQueue(vkImgui->GetSubmitInfo(
-            ///      GetSubmitInfo().signalSemaphoreCount,
-            ///      GetSubmitInfo().pSignalSemaphores
-            /// ));
+        if (m_GUIEnabled && pImGuiOverlay && !pImGuiOverlay->IsSurfaceDirty()) {
+            auto&& submitInfo = pImGuiOverlay->Render(m_currentBuffer);
+            m_submitInfo.commandBuffers.emplace_back(submitInfo.commandBuffers.front());
         }
 
         {
@@ -108,7 +105,7 @@ namespace SR_GRAPH_NS {
             auto&& vkSubmitInfo = m_submitInfo.ToVk();
 
             /// Submit to queue
-            if (auto result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
+            if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
                 VK_ERROR("renderFunction() : failed to queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
 
                 if (result == VK_ERROR_DEVICE_LOST) {

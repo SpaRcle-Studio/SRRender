@@ -94,12 +94,12 @@ namespace SR_GRAPH_GUI_NS {
         ImVec2 uv0, uv1;
 
         /// if (m_pipeLine == Graphics::PipelineType::OpenGL) {
-        ///     uv0 = ImVec2(0, 1);
-        ///     uv1 = ImVec2(1, 0);
+        uv0 = ImVec2(0, 0);
+        uv1 = ImVec2(1, 1);
         /// }
         /// else {
-        uv0 = ImVec2(-1, 0);
-        uv1 = ImVec2(0, 1);
+        //uv0 = ImVec2(-1, 0);
+        //uv1 = ImVec2(0, 1);
         ///}
 
         /// Default is to use texture ID as ID. User can still push string/integer prefixes.
@@ -137,9 +137,9 @@ namespace SR_GRAPH_GUI_NS {
 
         switch (pipelineType) {
             case PipelineType::Vulkan:
-                return DrawImage(pDescriptor, ImVec2(fSize.x, fSize.y), ImVec2(-1, 0), ImVec2(0, 1), { 1, 1, 1, 1 }, { 0, 0, 0, 0 }, imposition);
+                return DrawImage(pDescriptor, ImVec2(fSize.x, fSize.y), ImVec2(0, 0), ImVec2(1, 1), { 1, 1, 1, 1 }, { 0, 0, 0, 0 }, imposition);
             case PipelineType::OpenGL:
-                return DrawImage(pDescriptor, ImVec2(fSize.x, fSize.y), ImVec2(0, 1), ImVec2(1, 0), { 1, 1, 1, 1 }, { 0, 0, 0, 0 }, imposition);
+                return DrawImage(pDescriptor, ImVec2(fSize.x, fSize.y), ImVec2(0, 0), ImVec2(1, 1), { 1, 1, 1, 1 }, { 0, 0, 0, 0 }, imposition);
             default:
                 return ImVec2(); /// NOLINT
         }

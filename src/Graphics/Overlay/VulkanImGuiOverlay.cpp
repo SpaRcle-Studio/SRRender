@@ -143,6 +143,12 @@ namespace SR_GRAPH_NS {
 
     static void (*ImGui_Platform_CreateWindow)(ImGuiViewport* vp) = nullptr;
 
+    static void CheckVulkanResult(VkResult result) {
+        if (result != VK_SUCCESS) {
+            SR_ERROR("VulkanImGuiOverlay::CheckVulkanError() : vulkan error! Error: {}", EvoVulkan::Tools::Convert::result_to_string(result));
+        }
+    }
+
     void Replacement_Platform_CreateWindow(ImGuiViewport* vp)
     {
         if (ImGui_Platform_CreateWindow != nullptr) {
@@ -222,12 +228,6 @@ namespace SR_GRAPH_NS {
         /// Create vulkan command buffers
         m_cmdBuffs.resize(m_swapChain->GetCountImages());
 
-        auto&& semaphoreCI = EvoVulkan::Tools::Initializers::SemaphoreCreateInfo();
-        if (vkCreateSemaphore(*m_device, &semaphoreCI, nullptr, &m_semaphore) != VK_SUCCESS) {
-            VK_ERROR("VkImGUI::Init() : failed to create vulkan semaphore!");
-            return false;
-        }
-
         for (auto&& cmdBuff : m_cmdBuffs) {
             if (auto&& pool = m_device->CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT); pool != VK_NULL_HANDLE) {
                 m_cmdPools.emplace_back(pool);
@@ -267,13 +267,15 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanImGuiOverlay::Destroy() {
-        SR_SAFE_DELETE_PTR(m_pool);
+        DeInitializeRenderer();
 
         for (auto&& cmdPool : m_cmdPools) {
             if (cmdPool != VK_NULL_HANDLE) {
                 vkDestroyCommandPool(*m_device, cmdPool, nullptr);
             }
         }
+
+        SR_SAFE_DELETE_PTR(m_pool);
 
         m_cmdPools.clear();
         m_cmdBuffs.clear();
@@ -282,8 +284,6 @@ namespace SR_GRAPH_NS {
             vkDestroySemaphore(*m_device, m_semaphore, nullptr);
             m_semaphore = VK_NULL_HANDLE;
         }
-
-        DeInitializeRenderer();
 
         if (m_initialized) {
         #ifdef SR_WIN32
@@ -397,32 +397,31 @@ namespace SR_GRAPH_NS {
         platform_io.Platform_CreateWindow = Replacement_Platform_CreateWindow;
 
         /// Setup Platform/Renderer bindings
-        uint32_t images = m_swapChain->GetCountImages();
+        uint32_t images = GetCountImages();
 
         ImGui_ImplVulkan_InitInfo init_info = {
-            .Instance       = pKernel->GetInstance(),
-            .PhysicalDevice = *pKernel->GetDevice(),
-            .Device         = *pKernel->GetDevice(),
-            .QueueFamily    = pKernel->GetDevice()->GetQueues()->GetGraphicsIndex(),
-            .Queue          = pKernel->GetDevice()->GetQueues()->GetGraphicsQueue(),
-            .PipelineCache  = pKernel->GetPipelineCache(),
-            .DescriptorPool = *m_pool,
-            .Subpass        = 0,
-            .MinImageCount  = images,
-            .ImageCount     = images,
-            .MSAASamples    = countMSAASamples,
-            .Allocator      = nullptr
+            .Instance                    = pKernel->GetInstance(),
+            .PhysicalDevice              = *pKernel->GetDevice(),
+            .Device                      = *pKernel->GetDevice(),
+            .QueueFamily                 = pKernel->GetDevice()->GetQueues()->GetGraphicsIndex(),
+            .Queue                       = pKernel->GetDevice()->GetQueues()->GetGraphicsQueue(),
+            .DescriptorPool              = *m_pool,
+            .RenderPass                  = m_renderPass,
+            .MinImageCount               = images,
+            .ImageCount                  = images,
+            .MSAASamples                 = countMSAASamples,
+            .PipelineCache               = pKernel->GetPipelineCache(),
+            .Subpass                     = 0,
+            .UseDynamicRendering         = false,
+            .PipelineRenderingCreateInfo = { },
+            .Allocator                   = nullptr,
+            .CheckVkResultFn             = CheckVulkanResult,
+            .MinAllocationSize           = 0,
         };
 
-        if (!ImGui_ImplVulkan_Init(&init_info, m_renderPass)) {
+        if (!ImGui_ImplVulkan_Init(&init_info)) {
             SR_ERROR("VulkanImGuiOverlay::InitializeRenderer() : failed to init vulkan imgui implementation!");
             return false;
-        }
-        else {
-            auto&& pSingle = EvoVulkan::Types::CmdBuffer::BeginSingleTime(m_device, pKernel->GetCmdPool());
-            ImGui_ImplVulkan_CreateFontsTexture(*pSingle);
-            pSingle->End();
-            delete pSingle;
         }
 
         return true;
@@ -464,9 +463,20 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        if (m_semaphore != VK_NULL_HANDLE) {
+            vkDestroySemaphore(*m_device, m_semaphore, nullptr);
+            m_semaphore = VK_NULL_HANDLE;
+        }
+
+        auto&& semaphoreCI = EvoVulkan::Tools::Initializers::SemaphoreCreateInfo();
+        if (vkCreateSemaphore(*m_device, &semaphoreCI, nullptr, &m_semaphore) != VK_SUCCESS) {
+            VK_ERROR("VkImGUI::Init() : failed to create vulkan semaphore!");
+            return false;
+        }
+
         auto&& surfaceSize = SR_MATH_NS::UVector2(m_swapChain->GetSurfaceWidth(), m_swapChain->GetSurfaceHeight());
 
-        m_frameBuffs.resize(m_swapChain->GetCountImages());
+        m_frameBuffs.resize(GetCountImages());
 
         auto&& fbInfo = EvoVulkan::Tools::Initializers::FrameBufferCI(m_renderPass, surfaceSize.x, surfaceSize.y);
         auto&& attaches = std::vector<VkImageView>(1);
@@ -499,8 +509,16 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    VkCommandBuffer VulkanImGuiOverlay::Render(uint32_t frame) {
+    EvoVulkan::SubmitInfo& VulkanImGuiOverlay::Render(uint32_t frame) {
         SR_TRACY_ZONE_S("VulkanImGuiOverlay::Render");
+
+        if (frame >= m_cmdBuffs.size()) {
+            SR_ERROR("VulkanImGuiOverlay::Render() : out of range!");
+            return m_submitInfo;
+        }
+
+        m_submitInfo.commandBuffers.clear();
+        m_submitInfo.commandBuffers.emplace_back(m_cmdBuffs[frame]);
 
         auto&& buffer = m_cmdBuffs[frame];
 
@@ -544,7 +562,7 @@ namespace SR_GRAPH_NS {
 
         vkEndCommandBuffer(m_cmdBuffs[frame]);
 
-        return buffer;
+        return m_submitInfo;
     }
 
     void* VulkanImGuiOverlay::GetTextureDescriptorSet(uint32_t textureId) {
@@ -571,5 +589,21 @@ namespace SR_GRAPH_NS {
         }
 
         return nullptr;
+    }
+
+    uint32_t VulkanImGuiOverlay::GetCountImages() const {
+        return m_swapChain ? m_swapChain->GetCountImages() : 0;
+    }
+
+    void VulkanImGuiOverlay::ResetSubmitInfo() {
+        auto&& pKernel = m_pipeline.DynamicCast<VulkanPipeline>()->GetKernel();
+        if (!pKernel) {
+            SR_ERROR("VulkanImGuiOverlay::ResetSubmitInfo() : kernel is nullptr!");
+            return;
+        }
+
+        m_submitInfo = { };
+        m_submitInfo.SetWaitDstStageMask(pKernel->GetSubmitPipelineStages());
+        m_submitInfo.AddSignalSemaphore(m_semaphore);
     }
 }
