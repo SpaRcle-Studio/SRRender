@@ -70,13 +70,14 @@ namespace SR_GRAPH_NS {
             case WM_CREATE: {
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
-            case WM_DESTROY:
             case WM_CLOSE: {
                 auto&& viewport = ImGui::FindViewportByPlatformHandle(hwnd);
                 if (auto&& widget = SR_GRAPH_GUI_NS::ViewportsTableManager::Instance().GetWidgetByViewport(viewport)) {
                     widget->Close();
                 }
-
+                SR_FALLTHROUGH;
+            }
+            case WM_DESTROY: {
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             case WM_SETCURSOR: {
@@ -138,6 +139,13 @@ namespace SR_GRAPH_NS {
         vd->HwndOwned = true;
         viewport->PlatformRequestResize = false;
         viewport->PlatformHandle = viewport->PlatformHandleRaw = vd->Hwnd;
+
+        vd->DwExStyle &= ~WS_CAPTION;
+        vd->DwExStyle &= ~WS_SIZEBOX;
+        vd->DwExStyle &= ~WS_SYSMENU;
+
+        SetWindowLong(vd->Hwnd, GWL_STYLE, vd->DwExStyle);
+        UpdateWindow(vd->Hwnd);
     }
 #endif
 
@@ -383,9 +391,6 @@ namespace SR_GRAPH_NS {
 
         auto&& pKernel = m_pipeline.DynamicCast<VulkanPipeline>()->GetKernel();
 
-        ImGuiIO& io = ImGui::GetIO();
-        io.ConfigViewportsNoDecoration = false;
-
         ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
 
         ImGuiViewport* mainViewport = platform_io.Viewports.front();
@@ -430,6 +435,12 @@ namespace SR_GRAPH_NS {
     void VulkanImGuiOverlay::DeInitializeRenderer() {
         SR_INFO("VulkanImGuiOverlay::DeInitializeRenderer() : de-initialization vulkan ImGui renderer...");
 
+        auto&& pVulkanBackend = ImGui::GetCurrentContext() ? (ImGui_ImplVulkan_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
+
+        if (pVulkanBackend) {
+            ImGui_ImplVulkan_Shutdown();
+        }
+
         DestroyBuffers();
 
         if (m_renderPass.IsReady()) {
@@ -437,12 +448,6 @@ namespace SR_GRAPH_NS {
         }
         else {
             SR_ERROR("VulkanImGuiOverlay::DeInitializeRenderer() : render pass isn't ready!");
-        }
-
-        auto&& pVulkanBackend = ImGui::GetCurrentContext() ? (ImGui_ImplVulkan_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
-
-        if (pVulkanBackend) {
-            ImGui_ImplVulkan_Shutdown();
         }
     }
 

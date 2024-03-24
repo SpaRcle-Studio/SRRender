@@ -386,7 +386,7 @@ namespace SR_GRAPH_NS {
             m_hWnd = CreateWindowEx(
                 0, className.c_str(),
                 name.c_str(),
-                m_dwStyle | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+                m_dwStyle,
                 position.x - 8, position.y,
                 m_size.x,
                 m_size.y,

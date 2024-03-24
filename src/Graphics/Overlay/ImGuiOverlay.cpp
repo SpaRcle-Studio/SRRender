@@ -55,6 +55,8 @@ namespace SR_GRAPH_NS {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigDockingWithShift = true;
         io.ConfigWindowsResizeFromEdges = true;
+        io.ConfigViewportsNoDecoration = true;
+        io.ConfigWindowsMoveFromTitleBarOnly = true;
 
         if (SR_UTILS_NS::Features::Instance().Enabled("Undocking", false)) {
             io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
