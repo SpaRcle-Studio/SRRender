@@ -28,12 +28,14 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeWidget::UpdateTouch() {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         const auto deltaTime = ImGui::GetIO().DeltaTime;
         for (auto&& entry : m_nodeTouchTime) {
             if (entry.second > 0.0f) {
                 entry.second -= deltaTime;
             }
         }
+    #endif
     }
 
     void NodeWidget::Clear() {
@@ -52,6 +54,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeWidget::Draw() {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (!m_editor) {
             ImGui::Text("Invalid editor!");
             return;
@@ -93,6 +96,7 @@ namespace SR_GRAPH_GUI_NS {
             }
         }
         ImGui::EndChild();
+    #endif
     }
 
     void NodeWidget::RemoveLink(Link *pLink) {
@@ -144,10 +148,12 @@ namespace SR_GRAPH_GUI_NS {
     void NodeWidget::OnClose() {
         Clear();
 
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (m_editor) {
             ax::NodeEditor::DestroyEditor(m_editor);
             m_editor = nullptr;
         }
+    #endif
 
         Super::OnClose();
     }
@@ -180,7 +186,9 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::SameLine();
 
         if (ImGui::Button("Zoom")) {
+        #ifdef SR_USE_IMGUI_NODE_EDITOR
             ax::NodeEditor::NavigateToContent();
+        #endif
         }
 
         ImGui::SameLine();
@@ -212,6 +220,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeWidget::DrawPopupMenu() {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         auto&& openPopupPosition = ImGui::GetMousePos();
 
         ax::NodeEditor::Suspend();
@@ -227,6 +236,7 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::PopStyleVar();
 
         ax::NodeEditor::Resume();
+    #endif
     }
 
     void NodeWidget::Init() {
@@ -400,6 +410,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeWidget::DrawLeftPanel() {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
@@ -473,9 +484,11 @@ namespace SR_GRAPH_GUI_NS {
         }
 
         ImGui::PopStyleVar(3);
+    #endif
     }
 
     void NodeWidget::DrawNodeEditor() {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         for (auto&& [id, node] : m_nodes) {
             node->Draw(m_nodeBuilder, nullptr);
         }
@@ -549,6 +562,7 @@ namespace SR_GRAPH_GUI_NS {
         }
 
         DrawPopupMenu();
+    #endif
     }
 
     NodeWidgetProperty* NodeWidget::FindProperty(const std::string& name) {

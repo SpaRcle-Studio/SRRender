@@ -24,6 +24,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeBuilder::Begin(Node* pNode) {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         m_hasHeader = false;
         m_headerMin = m_headerMax = ImVec2();
 
@@ -37,9 +38,11 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::PushID(m_currentNodeId);
 
         SetStage(Stage::Begin);
+    #endif
     }
 
     void NodeBuilder::End() {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         SetStage(Stage::End);
 
         ax::NodeEditor::EndNode();
@@ -86,6 +89,7 @@ namespace SR_GRAPH_GUI_NS {
         ax::NodeEditor::PopStyleVar();
 
         SetStage(Stage::Invalid);
+    #endif
     }
 
     void NodeBuilder::Header(const ImVec4 &color) {
@@ -115,6 +119,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeBuilder::Input(Pin *pPin) {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (m_currentStage == Stage::Begin) {
             SetStage(Stage::Content);
         }
@@ -135,15 +140,18 @@ namespace SR_GRAPH_GUI_NS {
         if (!m_currentNode->IsConnector()) {
             ImGui::BeginHorizontal(pPin->GetId());
         }
+    #endif
     }
 
     void NodeBuilder::EndInput() {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (!m_currentNode->IsConnector()) {
             ImGui::EndHorizontal();
         }
         SRAssert(m_currentPin);
         m_currentPin->End();
         m_currentPin = nullptr;
+    #endif
     }
 
     void NodeBuilder::Middle() {
@@ -154,6 +162,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeBuilder::Output(Pin *pPin) {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (m_currentStage == Stage::Begin) {
             SetStage(Stage::Content);
         }
@@ -176,18 +185,22 @@ namespace SR_GRAPH_GUI_NS {
         if (!m_currentNode->IsConnector()) {
             ImGui::BeginHorizontal(pPin->GetId());
         }
+    #endif
     }
 
     void NodeBuilder::EndOutput() {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (!m_currentNode->IsConnector()) {
             ImGui::EndHorizontal();
         }
         SRAssert(m_currentPin);
         m_currentPin->End();
         m_currentPin = nullptr;
+    #endif
     }
 
     bool NodeBuilder::SetStage(NodeBuilder::Stage stage) {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (stage == m_currentStage)
             return false;
 
@@ -331,7 +344,7 @@ namespace SR_GRAPH_GUI_NS {
             case Stage::Invalid:
                 break;
         }
-
+    #endif
         return true;
     }
 }

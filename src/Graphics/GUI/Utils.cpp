@@ -116,6 +116,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     bool ButtonBehaviorNoNavFocus(const ImRect &bb, ImGuiID id, bool *out_hovered, bool *out_held, ImGuiButtonFlags flags) {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         ImGuiContext& g = *GImGui;
         ImGuiWindow* window = ImGui::GetCurrentWindow();
 
@@ -281,6 +282,9 @@ namespace SR_GRAPH_GUI_NS {
         if (out_held) *out_held = held;
 
         return pressed;
+    #else
+        return false;
+    #endif
     }
 
     bool DrawDataType(SR_SRLM_NS::DataType* pData, bool* pIsEnum, void* pProvider, float_t width, uint32_t deep) {

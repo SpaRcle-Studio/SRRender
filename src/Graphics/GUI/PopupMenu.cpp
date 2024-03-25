@@ -33,9 +33,11 @@ namespace SR_GRAPH_GUI_NS {
             return;
         }
 
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (ax::NodeEditor::ShowBackgroundContextMenu()) {
             ImGui::OpenPopup(m_name.c_str());
         }
+    #endif
 
         if (ImGui::BeginPopup(m_name.c_str())) {
             for (uint16_t i = 0; i < m_menuItems.size(); ++i) {

@@ -7,8 +7,6 @@
 #include <Utils/SRLM/DataType.h>
 #include <Utils/Platform/Platform.h>
 
-#include <utility>
-
 namespace SR_GRAPH_GUI_NS {
     Pin::Pin()
         : Pin(std::string(), PinKind::None, nullptr)
@@ -185,10 +183,14 @@ namespace SR_GRAPH_GUI_NS {
             case PinKind::None:
                 break;
             case PinKind::Output:
+            #ifdef SR_USE_IMGUI_NODE_EDITOR
                 ax::NodeEditor::BeginPin(GetId(), ax::NodeEditor::PinKind::Output);
+            #endif
                 break;
             case PinKind::Input:
+            #ifdef SR_USE_IMGUI_NODE_EDITOR
                 ax::NodeEditor::BeginPin(GetId(), ax::NodeEditor::PinKind::Input);
+            #endif
                 break;
             default:
                 break;
@@ -196,7 +198,9 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Pin::End() const {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         ax::NodeEditor::EndPin();
+    #endif
     }
 
     void Pin::DrawPinIcon(bool connected, uint32_t alpha) {

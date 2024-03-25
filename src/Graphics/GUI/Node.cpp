@@ -89,6 +89,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Node::Draw(NodeBuilder* pBuilder, Pin* pNewLinkPin) {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (IsConnector()) {
             ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_NodeBorderWidth, 0.0f);
             ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_GroupBorderWidth, 0.0f);
@@ -299,6 +300,7 @@ namespace SR_GRAPH_GUI_NS {
             ax::NodeEditor::PopStyleVar(2);
             ax::NodeEditor::PopStyleColor();
         }
+    #endif
     }
 
     void Node::PostDraw() {
@@ -340,7 +342,9 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     Node& Node::SetPosition(const SR_MATH_NS::FVector2& pos) {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         ax::NodeEditor::SetNodePosition(GetId(), ImVec2(pos.x, pos.y));
+    #endif
         return *this;
     }
 
@@ -387,8 +391,12 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     SR_MATH_NS::FVector2 Node::GetPosition() const {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         auto&& pos = ax::NodeEditor::GetNodePosition(GetId());
         return SR_MATH_NS::FVector2(pos.x, pos.y);
+    #else
+        return SR_MATH_NS::FVector2();
+    #endif
     }
 
     int32_t Node::GetPinIndex(const Pin* pPin) const {

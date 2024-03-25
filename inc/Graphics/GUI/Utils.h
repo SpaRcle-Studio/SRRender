@@ -796,7 +796,7 @@ namespace SR_GRAPH_GUI_NS {
 
     SR_MAYBE_UNUSED static bool BeginNodeCombo(const char* label, const char* preview_value, ImGuiComboFlags flags = 0)
     {
-        using namespace ImGui;
+        /*using namespace ImGui;
 
         // Always consume the SetNextWindowSizeConstraint() call in our early return paths
         ImGuiContext& g = *GImGui;
@@ -912,14 +912,16 @@ namespace SR_GRAPH_GUI_NS {
             IM_ASSERT(0);   // This should never happen as we tested for IsPopupOpen() above
             return false;
         }
-        return true;
+        return true;*/
+        return false;
     }
 
     SR_MAYBE_UNUSED static void EndNodeCombo()
     {
         ImGui::EndPopup();
-
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         ax::NodeEditor::Resume();
+    #endif
     }
 }
 

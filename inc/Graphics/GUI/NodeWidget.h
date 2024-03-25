@@ -65,8 +65,10 @@ namespace SR_GRAPH_GUI_NS {
     protected:
         PopupItemSubWidget::Ptr m_creationPopup;
 
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         NodesTouchTimes m_nodeTouchTime;
         ax::NodeEditor::EditorContext* m_editor = nullptr;
+    #endif
 
         SR_GRAPH_GUI_NS::NodeBuilder* m_nodeBuilder = nullptr;
 

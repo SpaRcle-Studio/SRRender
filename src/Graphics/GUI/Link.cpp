@@ -13,7 +13,9 @@ namespace SR_GRAPH_NS::GUI {
     }
 
     void Link::Draw() const {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
         ax::NodeEditor::Link(GetId(), m_startPin->GetId(), m_endPin->GetId());
+    #endif
     }
 
     Link::Link()

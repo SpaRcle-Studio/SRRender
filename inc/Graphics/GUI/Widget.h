@@ -43,12 +43,14 @@ namespace SR_GRAPH_GUI_NS {
         using ScenePtr = SR_HTYPES_NS::SafePtr<SR_WORLD_NS::Scene>;
 
     public:
+        Widget() = default;
+
         explicit Widget(std::string name, SR_MATH_NS::IVector2 size = SR_MATH_NS::IVector2MAX)
             : m_name(std::move(name))
             , m_size(size)
         { }
 
-        ~Widget() override = default;
+        ~Widget() override;
 
     public:
         SR_NODISCARD bool IsOpen() const { return m_open; }
@@ -79,6 +81,8 @@ namespace SR_GRAPH_GUI_NS {
 
         void SetManager(WidgetManager* pManager);
 
+        void AddSubWidget(Widget* pWidget);
+
     protected:
         virtual void Draw() = 0;
         virtual void OnClose() { }
@@ -101,6 +105,9 @@ namespace SR_GRAPH_GUI_NS {
         void InternalCheckFocused();
         void InternalCheckHovered();
         void DrawWindow();
+
+    protected:
+        std::vector<Widget*> m_subWidgets;
 
     private:
         std::string m_name;

@@ -5,6 +5,13 @@
 #include <Graphics/GUI/Widget.h>
 
 namespace SR_GRAPH_GUI_NS {
+    Widget::~Widget() {
+        for (auto&& pWidget : m_subWidgets) {
+            delete pWidget;
+        }
+        m_subWidgets.clear();
+    }
+
     void Widget::DrawAsSubWindow() {
         m_widgetFlags = WIDGET_FLAG_NONE;
 
@@ -24,6 +31,10 @@ namespace SR_GRAPH_GUI_NS {
         auto&& size = m_size.Contains(SR_INT32_MAX) ? ImVec2(0, 0) : ImVec2(m_size.x, m_size.y);
         if (ImGui::BeginChild(m_name.c_str(), size, false, flags)) {
             Draw();
+
+            for (auto&& pWidget : m_subWidgets) {
+                pWidget->DrawAsSubWindow();
+            }
         }
 
         if (IsFocused() || IsHovered())
@@ -136,6 +147,9 @@ namespace SR_GRAPH_GUI_NS {
 
     void Widget::SetManager(WidgetManager* manager) {
         m_manager = manager;
+        for (auto&& pWidget : m_subWidgets) {
+            pWidget->SetManager(manager);
+        }
     }
 
     Widget::RenderScenePtr Widget::GetRenderScene() const {
@@ -152,5 +166,11 @@ namespace SR_GRAPH_GUI_NS {
 
     void Widget::ResetStrongStorage() {
         m_strongStorage.Clear();
+    }
+
+    void Widget::AddSubWidget(Widget* pWidget) {
+        m_subWidgets.emplace_back(pWidget);
+        pWidget->SetManager(m_manager);
+        pWidget->Init();
     }
 }

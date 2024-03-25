@@ -15,6 +15,7 @@ void SR_GRAPH_GUI_NS::Icon(const ImVec2& size, IconType type, bool filled, const
 }
 
 void SR_GRAPH_GUI_NS::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& b, IconType type, bool filled, ImU32 color, ImU32 innerColor) {
+#ifdef SR_USE_IMGUI_NODE_EDITOR
     auto rect           = ImRect(a, b);
     //auto rect_x         = rect.Min.x;
     auto rect_y         = rect.Min.y;
@@ -230,4 +231,5 @@ void SR_GRAPH_GUI_NS::DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVe
                     color);
         }
     }
+#endif
 }
