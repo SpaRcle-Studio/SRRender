@@ -6,9 +6,10 @@
 #define GAMEENGINE_TEXTURELOADER_H
 
 #include <Graphics/Memory/TextureConfigs.h>
+#include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/Function.h>
 
-namespace SR_HTYPES_NS {
+namespace SR_GTYPES_NS {
     class Texture;
 }
 
@@ -55,6 +56,7 @@ namespace SR_GRAPH_NS {
     };
 
     class TextureLoader {
+        using TexturePtr = SR_GTYPES_NS::Texture*;
     public:
         TextureLoader() = delete;
         TextureLoader(const TextureLoader&) = delete;
@@ -62,11 +64,11 @@ namespace SR_GRAPH_NS {
         ~TextureLoader() = delete;
 
     public:
-        static Types::Texture* GetDefaultTexture() noexcept;
+        static TexturePtr GetDefaultTexture() noexcept;
 
     public:
-        static bool Load(Types::Texture* texture, std::string path);
-        static bool LoadFromMemory(Types::Texture* texture, const std::string& data, const Memory::TextureConfig &config);
+        static bool Load(TexturePtr texture, std::string path);
+        static bool LoadFromMemory(TexturePtr texture, const std::string& data, const Memory::TextureConfig &config);
         static bool Free(unsigned char* data);
 
     };

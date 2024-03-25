@@ -75,9 +75,7 @@ namespace SR_GRAPH_NS {
 
     bool TextureData::Save(const SR_UTILS_NS::Path& path) const {
         auto result = stbi_write_png(path.CStr(), m_width, m_height, m_channels, m_data, m_width * m_channels);
-
         if (!result) {
-            SR_ERROR("TextureData::Save() : failed to write raw data to png.");
             return false;
         }
 
@@ -85,7 +83,7 @@ namespace SR_GRAPH_NS {
     }
 
 
-    bool TextureLoader::Load(Types::Texture* texture, std::string path) {
+    bool TextureLoader::Load(TexturePtr texture, std::string path) {
         if (!SRVerifyFalse(!texture)) {
             return false;
         }
@@ -129,11 +127,11 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    SR_GTYPES_NS::Texture* TextureLoader::GetDefaultTexture() noexcept {
+    TextureLoader::TexturePtr TextureLoader::GetDefaultTexture() noexcept {
         return nullptr;
     }
 
-    bool TextureLoader::LoadFromMemory(Types::Texture* texture, const std::string& data, const Memory::TextureConfig &config) {
+    bool TextureLoader::LoadFromMemory(TexturePtr texture, const std::string& data, const Memory::TextureConfig &config) {
         if (!SRVerifyFalse(!texture)) {
             return false;
         }
