@@ -215,7 +215,7 @@ namespace SR_SRSL_NS {
 
         for (auto&& [name, pVariable] : m_shader->GetConstants()) {
             if (pFunction->IsVariableUsed(name)) {
-                auto&& type = SRSLTypeInfo::Instance().GetTypeName(pVariable->pType);
+                auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
                 code += SR_FORMAT("const {} {} = {};\n", type.c_str(), name.c_str(), GenerateExpression(pVariable->pExpr, 0).c_str());
             }
         }
@@ -246,7 +246,7 @@ namespace SR_SRSL_NS {
                 }
 
                 if (pFunction->IsVariableUsed(name)) {
-                    auto&& type = SRSLTypeInfo::Instance().GetTypeName(pVariable->pType);
+                    auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
                     code += SR_FORMAT("layout (location = {}) in {} {};\n", location, type.c_str(), name.c_str());
                 }
                 ++location;
@@ -290,7 +290,7 @@ namespace SR_SRSL_NS {
 
             for (auto&& [name, pVariable] : m_shader->GetShared()) {
                 if (pFunction->IsVariableUsed(name)) {
-                    auto&& type = SRSLTypeInfo::Instance().GetTypeName(pVariable->pType);
+                    auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
                     code += SR_FORMAT("layout (location = {}) out {} {};\n", location, type.c_str(), name.c_str());
                     ++location;
                 }
@@ -417,24 +417,24 @@ namespace SR_SRSL_NS {
             code += "\n" + GenerateTab(deep + 1) + "}";
         }
         else if (pExpr->args.empty()) {
-            code += pExpr->token;
+            code += ReplaceToken(pExpr->token);
         }
         else if (pExpr->args.size() == 1) {
-            code += "(" + pExpr->token + GenerateExpression(pExpr->args[0], 0) + ")";
+            code += "(" + ReplaceToken(pExpr->token) + GenerateExpression(pExpr->args[0], 0) + ")";
         }
         else if (pExpr->args.size() == 2 && (pExpr->token == "=" || pExpr->token == ".")) {
             if (pExpr->token == ".") {
-                code += GenerateExpression(pExpr->args[0], 0) + pExpr->token + GenerateExpression(pExpr->args[1], 0);
+                code += GenerateExpression(pExpr->args[0], 0) + ReplaceToken(pExpr->token) + GenerateExpression(pExpr->args[1], 0);
             }
             else {
-                code += GenerateExpression(pExpr->args[0], 0) + " " + pExpr->token + " " + GenerateExpression(pExpr->args[1], 0);
+                code += GenerateExpression(pExpr->args[0], 0) + " " + ReplaceToken(pExpr->token) + " " + GenerateExpression(pExpr->args[1], 0);
             }
         }
         else if (pExpr->args.size() == 2 && pExpr->token.empty()) { /// increment or decrement
             code += GenerateExpression(pExpr->args[0], 0) + GenerateExpression(pExpr->args[1], 0);
         }
         else if (pExpr->args.size() == 2) {
-            code += "(" + GenerateExpression(pExpr->args[0], 0) + " " + pExpr->token + " " +  GenerateExpression(pExpr->args[1], 0) + ")";
+            code += "(" + GenerateExpression(pExpr->args[0], 0) + " " + ReplaceToken(pExpr->token) + " " +  GenerateExpression(pExpr->args[1], 0) + ")";
         }
 
         return code;
@@ -527,7 +527,7 @@ namespace SR_SRSL_NS {
             for (auto&& field : uniformBlock.fields) {
                 hasUsage |= pFunction->IsVariableUsed(field.name);
 
-                auto&& typeName = SRSLTypeInfo::Instance().GetTypeName(field.type);
+                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));
                 auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
 
                 std::string strDimension;
@@ -582,7 +582,8 @@ namespace SR_SRSL_NS {
             for (auto&& field : m_shader->GetPushConstants().fields) {
                 hasUsage |= pFunction->IsVariableUsed(field.name);
 
-                auto&& typeName = SRSLTypeInfo::Instance().GetTypeName(field.type);
+                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));
+
                 auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
 
                 std::string strDimension;
@@ -711,5 +712,12 @@ namespace SR_SRSL_NS {
         }
 
         return code;
+    }
+
+    std::string GLSLCodeGenerator::ReplaceToken(const std::string &token) const {
+        if (token == "bool") {
+            return "int";
+        }
+        return token;
     }
 }

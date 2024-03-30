@@ -796,21 +796,20 @@ std::list<std::pair<std::string, SR_GRAPH_NS::SRSL::SRSLVariable>> SR_GRAPH_NS::
     }
 
     std::map<ShaderVarType, uint32_t> order = {
-            { ShaderVarType::Skeleton128,1 },
-            { ShaderVarType::Mat4,       2 },
-            { ShaderVarType::Mat3,       3 },
-            { ShaderVarType::Mat2,       4 },
-            { ShaderVarType::Vec4,       5 },
-            { ShaderVarType::Vec3,       6 },
-            { ShaderVarType::Vec2,       7 },
-            { ShaderVarType::Float,      8 },
-            { ShaderVarType::Int,        9 },
+            { ShaderVarType::Skeleton128,1  },
+            { ShaderVarType::Mat4,       2  },
+            { ShaderVarType::Mat3,       3  },
+            { ShaderVarType::Mat2,       4  },
+            { ShaderVarType::Vec4,       5  },
+            { ShaderVarType::Vec3,       6  },
+            { ShaderVarType::Vec2,       7  },
+            { ShaderVarType::Float,      8  },
+            { ShaderVarType::Int,        9  },
+            { ShaderVarType::Bool,       10 },
     };
 
     variables.sort([&order](const std::pair<std::string, SRSLVariable> &a, const std::pair<std::string, SRSLVariable> &b) {
         return order[a.second.type] < order[b.second.type];
-        //return GetShaderVarSize(a.second.type) > GetShaderVarSize(b.second.type);
-        //return GetShaderVarSize(a.second.type) < GetShaderVarSize(b.second.type);
     });
 
     return variables;

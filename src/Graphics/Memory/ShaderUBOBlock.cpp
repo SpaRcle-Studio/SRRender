@@ -10,6 +10,9 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     void ShaderUBOBlock::Append(uint64_t hashId, uint64_t size, uint64_t alignedSize, bool hidden) {
+        SRAssert2(size > 1, "Size must be greater than 1!");
+        SRAssert2(alignedSize > 1, "Aligned size must be greater than 1!");
+
         ++m_dataCount;
 
         auto&& offset = OffsetBlock(alignedSize);
@@ -39,6 +42,8 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     void ShaderUBOBlock::Append(uint64_t hashId, uint64_t size, bool hidden) {
+        SRAssert2(size > 1, "Size must be greater than 1!");
+
         ++m_dataCount;
 
         auto&& offset = OffsetBlock(size);

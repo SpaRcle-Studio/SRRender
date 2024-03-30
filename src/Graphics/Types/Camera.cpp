@@ -350,12 +350,19 @@ namespace SR_GTYPES_NS {
         return SR_PLATFORM_NS::GetMousePos();
     }
 
-    SR_MATH_NS::Ray Camera::GetScreenRay(float_t x, float_t y) const {
-        return GetScreenRay(SR_MATH_NS::FPoint(x, y));
+    SR_MATH_NS::Ray Camera::GetScreenRay(float_t x, float_t y,  bool orthogonal) const {
+        return GetScreenRay(SR_MATH_NS::FPoint(x, y), orthogonal);
     }
 
-    SR_MATH_NS::Ray Camera::GetScreenRay(const SR_MATH_NS::FPoint& screenPos) const {
-        SR_MATH_NS::Matrix4x4 viewProjInverse = (GetProjection() * GetViewTranslate()).Inverse();
+    SR_MATH_NS::Ray Camera::GetScreenRay(const SR_MATH_NS::FPoint& screenPos,  bool orthogonal) const {
+        SR_MATH_NS::Matrix4x4 viewProjInverse;
+
+        if (orthogonal) {
+            viewProjInverse = GetOrthogonal().Inverse();
+        }
+        else {
+            viewProjInverse = (GetProjection() * GetViewTranslate()).Inverse();
+        }
 
         SR_MATH_NS::Ray ray;
 
@@ -391,16 +398,23 @@ namespace SR_GTYPES_NS {
         return ScreenToWorldPoint(SR_MATH_NS::FVector3(screenPos.x, screenPos.y, depth));
     }
 
-    float_t Camera::CalculateScreenFactor(const SR_MATH_NS::Matrix4x4& modelMatrix, float_t sizeClipSpace) const {
-        return CalculateScreenFactor(modelMatrix, GetViewTranslate(), sizeClipSpace);
+    float_t Camera::CalculateScreenFactor(const SR_MATH_NS::Matrix4x4& modelMatrix, float_t sizeClipSpace, bool orthogonal) const {
+        return CalculateScreenFactor(modelMatrix, GetViewTranslate(), sizeClipSpace, orthogonal);
     }
 
-    float_t Camera::CalculateScreenFactor(const SR_MATH_NS::Matrix4x4& modelMatrix, const SR_MATH_NS::Matrix4x4& viewMatrix, float_t sizeClipSpace) const {
-        auto&& mvp = GetProjection() * viewMatrix * modelMatrix;
+    float_t Camera::CalculateScreenFactor(const SR_MATH_NS::Matrix4x4& modelMatrix, const SR_MATH_NS::Matrix4x4& viewMatrix, float_t sizeClipSpace, bool orthogonal) const {
+        SR_MATH_NS::Matrix4x4 mvp;
+
+        if (orthogonal) {
+            mvp = GetOrthogonal() * modelMatrix;
+        }
+        else {
+            mvp = GetProjection() * viewMatrix * modelMatrix;
+        }
 
         auto&& modelInverse = modelMatrix.Inverse();
 
-        auto&& rightViewInverse = viewMatrix.Inverse().v.right;
+        auto&& rightViewInverse = orthogonal ? SR_MATH_NS::Matrix4x4::Identity().Inverse().v.right : viewMatrix.Inverse().v.right;
         rightViewInverse = modelInverse.TransformVector(rightViewInverse.XYZ());
 
         const float_t aspectRatio = GetAspect();

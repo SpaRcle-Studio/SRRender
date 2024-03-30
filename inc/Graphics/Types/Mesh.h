@@ -73,6 +73,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual bool IsSupportVBO() const = 0;
 
         SR_NODISCARD std::vector<MaterialProperty>& GetOverrideUniforms() noexcept { return m_overrideUniforms; }
+        SR_NODISCARD std::vector<MaterialProperty>& GetOverrideConstants() noexcept { return m_overrideConstant; }
         SR_NODISCARD ShaderPtr GetShader() const;
         SR_NODISCARD MaterialPtr GetMaterial() const { return m_material; }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
@@ -82,6 +83,9 @@ namespace SR_GTYPES_NS {
 
         MaterialProperty& OverrideUniform(SR_UTILS_NS::StringAtom name);
         void RemoveUniformOverride(SR_UTILS_NS::StringAtom name);
+
+        MaterialProperty& OverrideConstant(SR_UTILS_NS::StringAtom name);
+        void RemoveConstantOverride(SR_UTILS_NS::StringAtom name);
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
 
@@ -94,6 +98,7 @@ namespace SR_GTYPES_NS {
         virtual void UseMaterial();
         virtual void UseModelMatrix() { }
         virtual void UseSamplers();
+        virtual void UseOverrideUniforms();
 
         bool UnRegisterMesh();
         void ReRegisterMesh();

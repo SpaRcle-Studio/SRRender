@@ -15,6 +15,7 @@ namespace SR_GRAPH_NS {
 
     void ColorBufferPass::UseUniforms(ShaderPtr pShader, MeshPtr pMesh) {
         pMesh->UseModelMatrix();
+        pMesh->UseOverrideUniforms();
 
         IncrementColorIndex();
         SetMeshIndex(pMesh, GetColorIndex());

@@ -125,7 +125,7 @@ namespace SR_SRSL_NS {
     };
 
     static std::map<std::string, uint64_t> SR_SRSL_TYPE_SIZE_TABLE = { /** NOLINT */
-            { "bool",         1         },
+            { "bool",         4         },
 
             { "int",          4         },
             { "float",        4         },

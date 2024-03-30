@@ -130,16 +130,22 @@ namespace SR_GRAPH_NS::Types {
         return m_material ? m_material->GetShader() : nullptr;
     }
 
-    void Mesh::UseMaterial() {
+    void Mesh::UseOverrideUniforms() {
         SR_TRACY_ZONE;
-
-        m_material->Use();
 
         for (auto&& property : m_overrideUniforms) {
             if (!property.IsSampler()) {
                 property.Use(GetRenderContext()->GetCurrentShader());
             }
         }
+    }
+
+    void Mesh::UseMaterial() {
+        SR_TRACY_ZONE;
+
+        m_material->Use();
+
+        UseOverrideUniforms();
     }
 
     bool Mesh::BindMesh() {
@@ -291,7 +297,7 @@ namespace SR_GRAPH_NS::Types {
             }
         }
         m_overrideUniforms.emplace_back();
-        m_overrideUniforms.back().SetName("color");
+        m_overrideUniforms.back().SetName(name);
         return m_overrideUniforms.back();
     }
 
@@ -301,6 +307,39 @@ namespace SR_GRAPH_NS::Types {
         for (auto pIt = m_overrideUniforms.begin(); pIt != m_overrideUniforms.end(); ++pIt) {
             if (name == pIt->GetName()) {
                 m_overrideUniforms.erase(pIt);
+                return;
+            }
+        }
+    }
+
+    MaterialProperty& Mesh::OverrideConstant(SR_UTILS_NS::StringAtom name) {
+        SR_TRACY_ZONE;
+
+        if (auto&& pPipeline = GetPipeline()) {
+            pPipeline->SetDirty(true);
+        }
+
+        for (auto&& constant : m_overrideConstant) {
+            if (constant.GetName() == name) {
+                return constant;
+            }
+        }
+        m_overrideConstant.emplace_back();
+        m_overrideConstant.back().SetName(name);
+        return m_overrideConstant.back();
+    }
+
+    void Mesh::RemoveConstantOverride(SR_UTILS_NS::StringAtom name) {
+        SR_TRACY_ZONE;
+
+        for (auto pIt = m_overrideConstant.begin(); pIt != m_overrideConstant.end(); ++pIt) {
+            if (name == pIt->GetName()) {
+                m_overrideConstant.erase(pIt);
+
+                if (auto&& pPipeline = GetPipeline()) {
+                    pPipeline->SetDirty(true);
+                }
+
                 return;
             }
         }

@@ -114,6 +114,7 @@ namespace SR_GRAPH_UI_NS {
 
         GetGameObject()->SetLayer("Gizmo");
         GetGameObject()->GetOrAddChild("Selection")->SetLayer("GizmoSelection");
+        SR_MAYBE_UNUSED auto&& debugObject = GetGameObject()->GetOrAddChild("Debug");
 
         static const SR_UTILS_NS::StringAtom gizmoFile = "Engine/Models/gizmo-translation.fbx";
 
@@ -162,6 +163,9 @@ namespace SR_GRAPH_UI_NS {
 
         if (auto&& pGameObject = GetGameObject()) {
             for (auto&& pChild : pGameObject->GetChildren()) {
+                if (pChild->GetName() == "Debug") {
+                    continue;
+                }
                 pChild->Destroy();
             }
         }
@@ -182,6 +186,7 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
+        PrepareGizmo();
         LoadGizmo();
 
         auto&& pCamera = GetCamera();
@@ -211,6 +216,20 @@ namespace SR_GRAPH_UI_NS {
         }
 
         m_hoveredOperation = GizmoOperation::None;
+
+        for (auto&& [flag, info]: m_meshes) {
+            if (info.pVisual) {
+                info.pVisual->OverrideUniform("useOrthogonal")
+                    .SetData(IsGizmo2DSpace())
+                    .SetShaderVarType(ShaderVarType::Bool);
+            }
+
+            if (info.pSelection) {
+                info.pSelection->OverrideUniform("useOrthogonal")
+                    .SetData(IsGizmo2DSpace())
+                    .SetShaderVarType(ShaderVarType::Bool);
+            }
+        }
 
         if (m_activeOperation == GizmoOperation::None) {
             auto&& pMesh = pTechnique->PickMeshAt(mousePos);
@@ -253,8 +272,9 @@ namespace SR_GRAPH_UI_NS {
                 m_rotationPlan = SR_MATH_NS::BuildPlan(m_modelMatrix.v.position, rotationNormal);
             }
 
-            auto&& screenRay = GetCamera()->GetScreenRay(mousePos);
-            const float_t screenFactor = GetCamera()->CalculateScreenFactor(m_modelMatrix, m_moveFactor);
+            auto&& screenRay = GetCamera()->GetScreenRay(mousePos, IsGizmo2DSpace());
+
+            const float_t screenFactor = GetCamera()->CalculateScreenFactor(m_modelMatrix, m_moveFactor, IsGizmo2DSpace());
 
             m_translationPlanOrigin = screenRay.IntersectPlane(m_translationPlan);
             m_relativeOrigin = (m_translationPlanOrigin - m_modelMatrix.v.position.XYZ()) * (1.f / screenFactor);
@@ -293,8 +313,8 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        auto&& screenRay = GetCamera()->GetScreenRay(mousePos);
-        const float_t screenFactor = GetCamera()->CalculateScreenFactor(m_modelMatrix, m_moveFactor);
+        auto&& screenRay = GetCamera()->GetScreenRay(mousePos, IsGizmo2DSpace());
+        const float_t screenFactor = GetCamera()->CalculateScreenFactor(m_modelMatrix, m_moveFactor, IsGizmo2DSpace());
 
         auto&& newPos = screenRay.IntersectPlane(m_translationPlan);
         auto&& newOrigin = newPos - m_relativeOrigin * screenFactor;
@@ -404,9 +424,11 @@ namespace SR_GRAPH_UI_NS {
             GetTransform()->SetRotation(m_modelMatrix.GetQuat());
         }
 
+        GetTransform()->SetScale(m_zoomFactor);
+
         if (m_zoomFactor > 0.f) {
             auto&& modelMatrix = SR_MATH_NS::Matrix4x4::FromTranslate(GetTransform()->GetTranslation());
-            const float_t screenFactor = GetCamera()->CalculateScreenFactor(modelMatrix, m_zoomFactor);
+            const float_t screenFactor = GetCamera()->CalculateScreenFactor(modelMatrix, m_zoomFactor, IsGizmo2DSpace());
             GetTransform()->SetScale(screenFactor);
         }
 
@@ -473,6 +495,10 @@ namespace SR_GRAPH_UI_NS {
     }
 
     void Gizmo::SetOperation(GizmoOperationFlag operation) {
+        if (m_operation == operation) {
+            return;
+        }
+
         m_operation = operation;
         m_isGizmoDirty = true;
     }

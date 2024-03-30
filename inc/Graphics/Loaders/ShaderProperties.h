@@ -95,10 +95,20 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsSampler() const noexcept;
 
         MaterialProperty& SetDisplayName(SR_UTILS_NS::StringAtom value) noexcept { m_displayName = value; return *this; }
-        MaterialProperty& SetData(const ShaderPropertyVariant& value) noexcept { m_data = value; return *this; }
         MaterialProperty& SetShaderVarType(ShaderVarType value) noexcept { m_type = value; return *this; }
         MaterialProperty& SetMaterial(SR_GTYPES_NS::Material* value) noexcept { m_material = value; return *this; }
         MaterialProperty& SetPushConstant(bool value) noexcept { m_pushConstant = value; return *this; }
+
+        template<typename T> MaterialProperty& SetData(const T& value) noexcept {
+            if constexpr (std::is_same_v<T, bool>) {
+                m_data = static_cast<int32_t>(value);
+            }
+            else {
+                m_data = value;
+            }
+
+            return *this;
+        }
 
         void Use(SR_GTYPES_NS::Shader* pShader) const noexcept;
 
@@ -215,6 +225,7 @@ namespace SR_GRAPH_NS {
         switch (type) {
             case ShaderVarType::Int:
             case ShaderVarType::Float:
+            case ShaderVarType::Bool:
                 return 4;
             case ShaderVarType::Vec2:
                 return 4 * 2;
@@ -239,6 +250,8 @@ namespace SR_GRAPH_NS {
 
     SR_MAYBE_UNUSED static ShaderPropertyVariant GetVariantFromShaderVarType(ShaderVarType type) {
         switch (type) {
+            case ShaderVarType::Bool:
+                return static_cast<int32_t>(0);
             case ShaderVarType::Int:
                 return static_cast<int32_t>(0);
             case ShaderVarType::Float:

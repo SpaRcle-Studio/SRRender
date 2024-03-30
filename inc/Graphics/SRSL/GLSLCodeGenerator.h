@@ -31,6 +31,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD std::optional<std::string> GenerateRayMissPrimaryStage();
         SR_NODISCARD std::optional<std::string> GenerateRayMissSecondaryStage();
 
+        SR_NODISCARD std::string ReplaceToken(const std::string& token) const;
         SR_NODISCARD std::string GetVersion(ShaderStage stage) const;
         SR_NODISCARD std::string GenerateInputLocations(ShaderStage stage) const;
         SR_NODISCARD std::string GenerateOutputLocations(ShaderStage stage) const;

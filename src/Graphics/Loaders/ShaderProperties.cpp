@@ -28,6 +28,9 @@ namespace SR_GRAPH_NS {
                 case ShaderVarType::Int:
                     pMaterialProperty->SetData(propertyXml.GetAttribute<int32_t>());
                     break;
+                case ShaderVarType::Bool:
+                    pMaterialProperty->SetData(propertyXml.GetAttribute<bool>());
+                    break;
                 case ShaderVarType::Float:
                     pMaterialProperty->SetData(propertyXml.GetAttribute<float_t>());
                     break;
@@ -75,6 +78,7 @@ namespace SR_GRAPH_NS {
 
         switch (GetShaderVarType()) {
             case ShaderVarType::Int:
+            case ShaderVarType::Bool:
                 pShader->SetInt(hashId, std::get<int32_t>(GetData()));
                 break;
             case ShaderVarType::Float:

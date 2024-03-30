@@ -70,6 +70,7 @@ namespace SR_GRAPH_UI_NS {
 
         SR_NODISCARD bool IsGizmoActive() const { return m_activeOperation != GizmoOperation::None; }
         SR_NODISCARD bool IsGizmoHovered() const { return m_hoveredOperation != GizmoOperation::None; }
+        SR_NODISCARD bool IsGizmo2DSpace() const { return !SR_MATH_NS::IsMaskIncludedSubMask(m_operation, GizmoOperation::Z); }
 
         void SetMode(GizmoMode mode) { m_mode = mode; }
         void SetOperation(GizmoOperationFlag operation);
@@ -83,6 +84,8 @@ namespace SR_GRAPH_UI_NS {
         void ReleaseGizmo();
         void LoadMesh(GizmoOperationFlag operation, SR_UTILS_NS::StringAtom path, SR_UTILS_NS::StringAtom name, GizmoMeshLoadMode mode);
         void UpdateGizmoTransform();
+
+        virtual void PrepareGizmo() { }
 
         virtual void OnGizmoTranslated(const SR_MATH_NS::FVector3& delta);
         virtual void OnGizmoScaled(const SR_MATH_NS::FVector3& delta);

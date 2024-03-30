@@ -163,12 +163,12 @@ namespace SR_GRAPH_NS::VulkanTools {
         EvoVulkan::Types::CmdPool*                m_pool                    = nullptr;
 
         std::pair<uint32_t, int32_t>              m_countUBO                = { 32768 * 2, 0 };
-        std::pair<uint32_t, int32_t>              m_countVBO                = { 1024, 0 };
-        std::pair<uint32_t, int32_t>              m_countIBO                = { 1024, 0 };
+        std::pair<uint32_t, int32_t>              m_countVBO                = { 4096, 0 };
+        std::pair<uint32_t, int32_t>              m_countIBO                = { 4096, 0 };
         std::pair<uint32_t, int32_t>              m_countFBO                = { 128, 0 };
         std::pair<uint32_t, int32_t>              m_countShaderPrograms     = { 1024, 0 };
         std::pair<uint32_t, int32_t>              m_countDescriptorSets     = { 32768 * 2, 0 };
-        std::pair<uint32_t, int32_t>              m_countTextures           = { 1024, 0 };
+        std::pair<uint32_t, int32_t>              m_countTextures           = { 4096, 0 };
 
         EvoVulkan::Types::VmaBuffer**             m_UBOs                    = nullptr;
         EvoVulkan::Types::VmaBuffer**             m_VBOs                    = nullptr;
