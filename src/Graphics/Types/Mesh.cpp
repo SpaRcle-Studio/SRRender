@@ -3,8 +3,8 @@
 //
 
 #include <Utils/ECS/Component.h>
-#include <Utils/ResourceManager/ResourceManager.h>
-#include <Utils/ResourceManager/IResource.h>
+#include <Utils/Resources/ResourceManager.h>
+#include <Utils/Resources/IResource.h>
 
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Render/RenderContext.h>

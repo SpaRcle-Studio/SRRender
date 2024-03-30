@@ -2,8 +2,8 @@
 // Created by Nikita on 20.11.2020.
 //
 
-#include <Utils/ResourceManager/ResourceManager.h>
-#include <Utils/ResourceManager/FileWatcher.h>
+#include <Utils/Resources/ResourceManager.h>
+#include <Utils/Resources/FileWatcher.h>
 #include <Utils/Common/StringUtils.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/Vertices.h>

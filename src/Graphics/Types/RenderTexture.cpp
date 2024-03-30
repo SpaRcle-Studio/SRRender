@@ -2,7 +2,7 @@
 // Created by Monika on 18.07.2022.
 //
 
-#include <Utils/ResourceManager/ResourceManager.h>
+#include <Utils/Resources/ResourceManager.h>
 #include <Graphics/Types/RenderTexture.h>
 
 namespace SR_GTYPES_NS {

@@ -6,7 +6,7 @@
 #define GAMEENGINE_ISHADERPROGRAM_H
 
 #include <Utils/FileSystem/FileSystem.h>
-#include <Utils/ResourceManager/ResourceManager.h>
+#include <Utils/Resources/ResourceManager.h>
 #include <Utils/Common/StringUtils.h>
 #include <Utils/Common/Hashes.h>
 #include <Utils/Common/Enumerations.h>

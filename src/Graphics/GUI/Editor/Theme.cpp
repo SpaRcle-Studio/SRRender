@@ -5,7 +5,7 @@
 #include <Graphics/GUI/Editor/Theme.h>
 
 #include <Utils/Xml.h>
-#include <Utils/ResourceManager/ResourceManager.h>
+#include <Utils/Resources/ResourceManager.h>
 
 namespace SR_GRAPH_NS::GUI {
     Theme *Theme::Load(const SR_UTILS_NS::Path &path) {

@@ -5,7 +5,7 @@
 #ifndef GAMEENGINE_MATERIAL_H
 #define GAMEENGINE_MATERIAL_H
 
-#include <Utils/ResourceManager/IResource.h>
+#include <Utils/Resources/IResource.h>
 #include <Utils/Math/Vector3.h>
 #include <Utils/Math/Vector4.h>
 

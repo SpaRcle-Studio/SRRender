@@ -2,7 +2,7 @@
 // Created by Nikita on 17.11.2020.
 //
 
-#include <Utils/ResourceManager/ResourceManager.h>
+#include <Utils/Resources/ResourceManager.h>
 #include <Utils/Common/StringUtils.h>
 
 #include <Graphics/Types/Texture.h>

@@ -5,7 +5,7 @@
 #ifndef GAMEENGINE_SKYBOX_H
 #define GAMEENGINE_SKYBOX_H
 
-#include <Utils/ResourceManager/IResource.h>
+#include <Utils/Resources/IResource.h>
 #include <Graphics/Memory/IGraphicsResource.h>
 
 namespace SR_GRAPH_NS {

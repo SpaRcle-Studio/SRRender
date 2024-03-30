@@ -6,7 +6,7 @@
 #include <Utils/Types/Thread.h>
 #include <Utils/Input/InputSystem.h>
 #include <Utils/Platform/Platform.h>
-#include <Utils/ResourceManager/ResourceManager.h>
+#include <Utils/Resources/ResourceManager.h>
 
 #include <Graphics/Window/Window.h>
 #include <Graphics/Types/Camera.h>

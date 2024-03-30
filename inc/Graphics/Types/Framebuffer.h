@@ -7,7 +7,7 @@
 
 #include <Utils/Debug.h>
 #include <Utils/Math/Vector2.h>
-#include <Utils/ResourceManager/IResource.h>
+#include <Utils/Resources/IResource.h>
 
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Pipeline/TextureHelper.h>

@@ -7,7 +7,7 @@
 
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Common/Hashes.h>
-#include <Utils/ResourceManager/IResource.h>
+#include <Utils/Resources/IResource.h>
 #include <Utils/Math/Rect.h>
 
 #include <Graphics/Types/Vertices.h>

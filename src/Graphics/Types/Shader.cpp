@@ -2,7 +2,7 @@
 // Created by Nikita on 17.11.2020.
 //
 
-#include <Utils/ResourceManager/ResourceManager.h>
+#include <Utils/Resources/ResourceManager.h>
 #include <Utils/Xml.h>
 #include <Utils/Types/Thread.h>
 #include <Utils/Types/DataStorage.h>
