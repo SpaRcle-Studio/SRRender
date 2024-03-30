@@ -68,7 +68,8 @@ namespace SR_GRAPH_NS {
     { }
 
     std::optional<AtlasBuilder> AtlasCreationStrategy::ChooseAndCreate(const SR_UTILS_NS::Path& destFolder) const {
-        if (!m_destination.Copy(destFolder)) return std::nullopt;
+        if (!m_destination.Copy(destFolder))
+            return std::nullopt;
 
         bool isSpritesSameSize = true;
         for (auto&& pSprite : m_sprites) {
@@ -83,9 +84,12 @@ namespace SR_GRAPH_NS {
 
         // Choose a creation strategy
         // if (isSpritesSameSize && isDividedBy2)  return CreateSquare();
-        if (!isSpritesSameSize && isDividedBy2) return CreateTightSquare();
+        if (!isSpritesSameSize && isDividedBy2)
+            return CreateTightSquare();
 
         // return CreateLine();
+
+        return std::nullopt;
     }
 
     SR_UTILS_NS::Path AtlasCreationStrategy::CreateTargetFile(AtlasCreationStrategy::AtlasPtr atlas) const {

@@ -72,7 +72,7 @@ namespace SR_GRAPH_UI_NS {
         }
 
         if (mode == GizmoMeshLoadMode::Visual) {
-            if (operation & GizmoOperation::Rotate) {
+            if (SR_MATH_NS::IsMaskIncludedSubMask(operation, GizmoOperation::Rotate)) {
                 auto&& gameObject = GetGameObjectByOperation(mode, operation);
                 gameObject->AddComponent(pMeshComponent);
                 gameObject->SetLayer("Gizmo");
@@ -83,7 +83,7 @@ namespace SR_GRAPH_UI_NS {
             m_meshes[operation].pVisual = pMeshComponent;
         }
         else if (mode == GizmoMeshLoadMode::Selection) {
-            if (operation & GizmoOperation::Rotate) {
+            if (SR_MATH_NS::IsMaskIncludedSubMask(operation, GizmoOperation::Rotate)) {
                 auto&& gameObject = GetGameObjectByOperation(mode, operation);
                 gameObject->AddComponent(pMeshComponent);
                 gameObject->SetLayer("GizmoSelection");
@@ -133,11 +133,15 @@ namespace SR_GRAPH_UI_NS {
         LoadMesh(GizmoOperation::TranslateY, gizmoFile, "ArrowYSelection", GizmoMeshLoadMode::Selection);
         LoadMesh(GizmoOperation::TranslateZ, gizmoFile, "ArrowZSelection", GizmoMeshLoadMode::Selection);
 
-        LoadMesh(GizmoOperation::RotateX, gizmoFile, "RotateX", GizmoMeshLoadMode::All);
-        LoadMesh(GizmoOperation::RotateY, gizmoFile, "RotateY", GizmoMeshLoadMode::All);
-        LoadMesh(GizmoOperation::RotateZ, gizmoFile, "RotateZ", GizmoMeshLoadMode::All);
+        if (!SR_MATH_NS::IsMaskIncludedSubMask(m_operation, GizmoOperation::Rotate2D)) {
+            LoadMesh(GizmoOperation::RotateX, gizmoFile, "RotateX", GizmoMeshLoadMode::All);
+            LoadMesh(GizmoOperation::RotateY, gizmoFile, "RotateY", GizmoMeshLoadMode::All);
+            LoadMesh(GizmoOperation::RotateZ, gizmoFile, "RotateZ", GizmoMeshLoadMode::All);
 
-        LoadMesh(GizmoOperation::RotateCenter, gizmoFile, "RotateCenter", GizmoMeshLoadMode::All);
+            LoadMesh(GizmoOperation::RotateCenter, gizmoFile, "RotateCenter", GizmoMeshLoadMode::All);
+        }
+
+        LoadMesh(GizmoOperation::Rotate2D, gizmoFile, "Rotate2D", GizmoMeshLoadMode::All);
 
         LoadMesh(GizmoOperation::ScaleCenter, gizmoFile, "CenterScale", GizmoMeshLoadMode::Visual);
         LoadMesh(GizmoOperation::ScaleCenter, gizmoFile, "CenterScaleSelection", GizmoMeshLoadMode::Selection);
@@ -342,6 +346,7 @@ namespace SR_GRAPH_UI_NS {
             m_rotationAngleOrigin = screenRay.ComputeAngleOnPlan(m_rotationPlan, m_modelMatrix.v.position.XYZ(), m_rotationVectorSource);
 
             OnGizmoRotated(SR_MATH_NS::Quaternion(rotationAxisLocalSpace.XYZ(), deltaAngle));
+            //OnGizmoRotated(SR_MATH_NS::Quaternion(SR_MATH_NS::FVector3(0, 0, 1), 0.00001f));
 
             UpdateGizmoTransform();
         }
@@ -437,7 +442,11 @@ namespace SR_GRAPH_UI_NS {
                 continue;
             }
 
-            if (!(flag & GizmoOperation::Rotate)) {
+            if (!SR_MATH_NS::IsMaskIncludedSubMask(flag, GizmoOperation::Rotate)) {
+                continue;
+            }
+
+            if (SR_MATH_NS::IsMaskIncludedSubMask(flag, GizmoOperation::Rotate2D)) {
                 continue;
             }
 
