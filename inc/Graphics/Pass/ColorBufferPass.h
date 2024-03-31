@@ -21,8 +21,10 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_GTYPES_NS::Framebuffer* GetColorFrameBuffer() const noexcept override;
         SR_NODISCARD bool IsNeedUseMaterials() const noexcept override { return false; }
 
+        void UseConstants(ShaderUseInfo info) override;
+
     protected:
-        void UseUniforms(ShaderPtr pShader, MeshPtr pMesh) override;
+        void UseUniforms(ShaderUseInfo info, MeshPtr pMesh) override;
 
     };
 }

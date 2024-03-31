@@ -144,8 +144,6 @@ namespace SR_GRAPH_NS::Types {
         SR_TRACY_ZONE;
 
         m_material->Use();
-
-        UseOverrideUniforms();
     }
 
     bool Mesh::BindMesh() {

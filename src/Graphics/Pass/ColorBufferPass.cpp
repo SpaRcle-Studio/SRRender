@@ -13,18 +13,26 @@ namespace SR_GRAPH_NS {
         Super::Update();
     }
 
-    void ColorBufferPass::UseUniforms(ShaderPtr pShader, MeshPtr pMesh) {
+    void ColorBufferPass::UseUniforms(ShaderUseInfo info, MeshPtr pMesh) {
+        if (info.useMaterial) {
+            pMesh->UseMaterial();
+        }
+
         pMesh->UseModelMatrix();
         pMesh->UseOverrideUniforms();
 
         IncrementColorIndex();
         SetMeshIndex(pMesh, GetColorIndex());
 
-        static const uint64_t colorHashName = SR_UTILS_NS::StringAtom("color").GetHash();
-        pShader->SetVec3(colorHashName, GetMeshColor());
+        info.pShader->SetVec3(SHADER_COLOR_BUFFER_VALUE, GetMeshColor());
     }
 
     SR_GTYPES_NS::Framebuffer* ColorBufferPass::GetColorFrameBuffer() const noexcept {
         return GetFramebuffer();
+    }
+
+    void ColorBufferPass::UseConstants(ShaderUseInfo info) {
+        Super::UseConstants(info);
+        info.pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 1);
     }
 }

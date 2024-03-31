@@ -10,7 +10,7 @@
 namespace SR_GRAPH_NS::UI {
     class Canvas;
 
-    class Anchor : public SR_UTILS_NS::Component {
+    class SR_DEPRECATED_EX("TODO: delete it. Use Transform2D instead") Anchor : public SR_UTILS_NS::Component {
         SR_ENTITY_SET_VERSION(1000);
         SR_INITIALIZE_COMPONENT(Anchor);
         using Super = SR_UTILS_NS::Component;

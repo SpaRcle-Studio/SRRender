@@ -15,7 +15,7 @@ namespace SR_GRAPH_NS {
         return Super::Load(passNode);
     }
 
-    void CascadedShadowMapPass::UseUniforms(IMeshClusterPass::ShaderPtr pShader, IMeshClusterPass::MeshPtr pMesh) {
+    void CascadedShadowMapPass::UseUniforms(ShaderUseInfo info, IMeshClusterPass::MeshPtr pMesh) {
         SR_TRACY_ZONE;
 
         pMesh->UseModelMatrix();
@@ -24,10 +24,10 @@ namespace SR_GRAPH_NS {
             UpdateCascades();
         }
 
-        pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
+        info.pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
 
         const auto lightPos = GetRenderScene()->GetLightSystem()->m_position;
-        pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
+        info.pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
     }
 
     void CascadedShadowMapPass::UpdateCascades() {
@@ -119,9 +119,9 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void CascadedShadowMapPass::UseConstants(IMeshClusterPass::ShaderPtr pShader) {
-        pShader->SetConstInt(SHADER_SHADOW_CASCADE_INDEX, GetCurrentFrameBufferLayer());
-        Super::UseConstants(pShader);
+    void CascadedShadowMapPass::UseConstants(ShaderUseInfo info) {
+        info.pShader->SetConstInt(SHADER_SHADOW_CASCADE_INDEX, GetCurrentFrameBufferLayer());
+        Super::UseConstants(info);
     }
 
     bool CascadedShadowMapPass::CheckCamera() {

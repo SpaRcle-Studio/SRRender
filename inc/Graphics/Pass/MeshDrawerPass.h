@@ -6,6 +6,7 @@
 #define SR_ENGINE_MESH_DRAWER_PASS_H
 
 #include <Graphics/Pass/BasePass.h>
+#include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/SRSL/ShaderType.h>
 
 namespace SR_GRAPH_NS {
@@ -40,10 +41,10 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
         SR_NODISCARD virtual bool IsNeedUseMaterials() const noexcept { return m_useMaterials; }
 
-        virtual void UseUniforms(ShaderPtr pShader, MeshPtr pMesh);
-        virtual void UseSharedUniforms(ShaderPtr pShader);
-        virtual void UseConstants(ShaderPtr pShader);
-        virtual void UseSamplers(ShaderPtr pShader);
+        virtual void UseUniforms(ShaderUseInfo info, MeshPtr pMesh);
+        virtual void UseSharedUniforms(ShaderUseInfo info);
+        virtual void UseConstants(ShaderUseInfo info);
+        virtual void UseSamplers(ShaderUseInfo info);
 
     protected:
         void OnResize(const SR_MATH_NS::UVector2& size) override;
@@ -53,7 +54,7 @@ namespace SR_GRAPH_NS {
         void PrepareSamplers();
         void ClearOverrideShaders();
 
-        ShaderPtr ReplaceShader(ShaderPtr pShader) const;
+        ShaderUseInfo ReplaceShader(ShaderPtr pShader) const;
 
         bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const;
 
@@ -72,8 +73,8 @@ namespace SR_GRAPH_NS {
 
         Samplers m_samplers;
 
-        std::map<ShaderPtr, ShaderPtr> m_shaderReplacements;
-        std::map<SR_SRSL_NS::ShaderType, ShaderPtr> m_shaderTypeReplacements;
+        ska::flat_hash_map<ShaderPtr, ShaderUseInfo> m_shaderReplacements;
+        ska::flat_hash_map<SR_SRSL_NS::ShaderType, ShaderUseInfo> m_shaderTypeReplacements;
         std::set<SR_UTILS_NS::StringAtom> m_allowedLayers;
         std::set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
 

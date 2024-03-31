@@ -31,21 +31,29 @@ namespace SR_GRAPH_NS {
         if (auto&& shaderOverrideNode = passNode.TryGetNode("Shaders")) {
             for (auto&& overrideNode : shaderOverrideNode.TryGetNodes("Override")) {
                 auto&& shaderPath = overrideNode.TryGetAttribute("Shader").ToString(std::string());
-                if (shaderPath.empty()) {
+                const bool ignoreReplace = overrideNode.TryGetAttribute("Ignore").ToBool(false);
+                const bool useMaterial = overrideNode.TryGetAttribute("UseMaterial").ToBool(false);
+
+                if (shaderPath.empty() && !ignoreReplace) {
                     SR_ERROR("MeshDrawerPass::Load() : override shader is not set!");
                     continue;
                 }
 
+                ShaderUseInfo shaderReplaceInfo;
+                shaderReplaceInfo.ignoreReplace = ignoreReplace;
+                shaderReplaceInfo.useMaterial = useMaterial;
+
                 if (auto&& shaderTypeAttribute = overrideNode.TryGetAttribute("Type")) {
                     auto&& shaderType = SR_UTILS_NS::EnumReflector::FromString<SR_SRSL_NS::ShaderType>(shaderTypeAttribute.ToString());
-                    if (m_shaderTypeReplacements[shaderType]) {
+                    if (m_shaderTypeReplacements.count(shaderType) == 1) {
                         SRHalt("Shader is already set!");
                         continue;
                     }
 
                     if (auto&& pShader = SR_GTYPES_NS::Shader::Load(shaderPath)) {
                         pShader->AddUsePoint();
-                        m_shaderTypeReplacements[shaderType] = pShader;
+                        shaderReplaceInfo.pShader = pShader;
+                        m_shaderTypeReplacements[shaderType] = shaderReplaceInfo;
                     }
                 }
                 else if (auto&& shaderPathAttribute = overrideNode.TryGetAttribute("Path")) {
@@ -62,21 +70,34 @@ namespace SR_GRAPH_NS {
                         continue;
                     }
 
-                    auto&& pShader = SR_GTYPES_NS::Shader::Load(shaderPath);
-                    if (pShader) {
-                        pShader->AddUsePoint();
-                    }
-
                     auto&& pKeyShader = SR_GTYPES_NS::Shader::Load(shaderPathAttribute.ToString());
                     if (pKeyShader) {
                         pKeyShader->AddUsePoint();
                     }
                     else {
-                        pShader->RemoveUsePoint();
+                        SR_ERROR("MeshDrawerPass::Load() : failed to load key shader!\n\tPath: " + shaderPathAttribute.ToString());
                         continue;
                     }
 
-                    m_shaderReplacements[pKeyShader] = pShader;
+                    if (ignoreReplace) {
+                        pKeyShader->AddUsePoint();
+                        shaderReplaceInfo.pShader = pKeyShader;
+                        m_shaderReplacements[pKeyShader] = shaderReplaceInfo;
+                        continue;
+                    }
+
+                    auto&& pShader = SR_GTYPES_NS::Shader::Load(shaderPath);
+                    if (pShader) {
+                        pShader->AddUsePoint();
+                    }
+                    else {
+                        SR_ERROR("MeshDrawerPass::Load() : failed to load shader!\n\tPath: " + shaderPathAttribute.ToString());
+                        pKeyShader->RemoveUsePoint();
+                        continue;
+                    }
+
+                    shaderReplaceInfo.pShader = pShader;
+                    m_shaderReplacements[pKeyShader] = shaderReplaceInfo;
                 }
             }
         }
@@ -164,14 +185,17 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MeshDrawerPass::UseUniforms(ShaderPtr pShader, MeshPtr pMesh) {
+    void MeshDrawerPass::UseUniforms(ShaderUseInfo info, MeshPtr pMesh) {
         if (IsNeedUseMaterials()) {
             pMesh->UseMaterial();
+            pMesh->UseOverrideUniforms();
         }
     }
 
-    void MeshDrawerPass::UseSharedUniforms(ShaderPtr pShader) {
+    void MeshDrawerPass::UseSharedUniforms(ShaderUseInfo info) {
         SR_TRACY_ZONE;
+
+        auto&& pShader = info.pShader;
 
         pShader->SetFloat(SHADER_TIME, SR_HTYPES_NS::Time::Instance().Clock());
 
@@ -195,17 +219,17 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MeshDrawerPass::UseConstants(ShaderPtr pShader) {
-        pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 0);
+    void MeshDrawerPass::UseConstants(ShaderUseInfo info) {
+        info.pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 0);
     }
 
-    void MeshDrawerPass::UseSamplers(ShaderPtr pShader) {
+    void MeshDrawerPass::UseSamplers(ShaderUseInfo info) {
         for (auto&& sampler : m_samplers) {
             if (sampler.textureId == SR_ID_INVALID) {
                 continue;
             }
 
-            pShader->SetSampler2D(sampler.id, sampler.textureId);
+            info.pShader->SetSampler2D(sampler.id, sampler.textureId);
         }
     }
 
@@ -225,18 +249,21 @@ namespace SR_GRAPH_NS {
         return GetRenderScene()->GetRenderStrategy();
     }
 
-    BasePass::ShaderPtr MeshDrawerPass::ReplaceShader(ShaderPtr pShader) const {
+    ShaderUseInfo MeshDrawerPass::ReplaceShader(ShaderPtr pShader) const {
         SR_TRACY_ZONE;
 
         if (!pShader) {
-            return nullptr;
+            return ShaderUseInfo(pShader);
         }
 
         if (m_shaderReplacements.empty() && m_shaderTypeReplacements.empty()) {
-            return pShader;
+            return ShaderUseInfo(pShader);
         }
 
         if (auto&& pIt = m_shaderReplacements.find(pShader); pIt != m_shaderReplacements.end()) {
+            if (pIt->second.ignoreReplace) {
+                return ShaderUseInfo(pShader);
+            }
             return pIt->second;
         }
 
@@ -244,7 +271,7 @@ namespace SR_GRAPH_NS {
             return pIt->second;
         }
 
-        return pShader;
+        return ShaderUseInfo(pShader);
     }
 
     void MeshDrawerPass::OnResize(const SR_MATH_NS::UVector2& size) {
@@ -308,14 +335,18 @@ namespace SR_GRAPH_NS {
     }
 
     void MeshDrawerPass::ClearOverrideShaders() {
-        for (auto&& [type, pShader] : m_shaderTypeReplacements) {
-            pShader->RemoveUsePoint();
+        for (auto&& [type, replaceInfo] : m_shaderTypeReplacements) {
+            if (replaceInfo.pShader) {
+                replaceInfo.pShader->RemoveUsePoint();
+            }
         }
         m_shaderTypeReplacements.clear();
 
-        for (auto&& [pShaderKey, pShader] : m_shaderReplacements) {
+        for (auto&& [pShaderKey, replaceInfo] : m_shaderReplacements) {
             pShaderKey->RemoveUsePoint();
-            pShader->RemoveUsePoint();
+            if (replaceInfo.pShader) {
+                replaceInfo.pShader->RemoveUsePoint();
+            }
         }
         m_shaderReplacements.clear();
     }

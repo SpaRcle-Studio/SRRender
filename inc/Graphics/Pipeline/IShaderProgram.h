@@ -2,8 +2,8 @@
 // Created by Nikita on 29.03.2021.
 //
 
-#ifndef GAMEENGINE_ISHADERPROGRAM_H
-#define GAMEENGINE_ISHADERPROGRAM_H
+#ifndef SR_ENGINE_GRAPHICS_I_SHADER_PROGRAM_H
+#define SR_ENGINE_GRAPHICS_I_SHADER_PROGRAM_H
 
 #include <Utils/FileSystem/FileSystem.h>
 #include <Utils/Resources/ResourceManager.h>
@@ -16,9 +16,23 @@
 
 namespace SR_GTYPES_NS {
     class Texture;
+    class Shader;
 }
 
 namespace SR_GRAPH_NS {
+    struct ShaderUseInfo {
+        ShaderUseInfo() = default;
+        explicit ShaderUseInfo(SR_GTYPES_NS::Shader* pShader)
+            : pShader(pShader)
+            , ignoreReplace(false)
+            , useMaterial(true)
+        { }
+
+        SR_GTYPES_NS::Shader* pShader = nullptr;
+        bool ignoreReplace = false;
+        bool useMaterial = false;
+    };
+
     SR_ENUM_NS_CLASS_T(ShaderBindResult, uint8_t,
         Failed = 0,  /// false
         Success = 1, /// true
@@ -269,4 +283,4 @@ namespace SR_GRAPH_NS {
     }
 }
 
-#endif //GAMEENGINE_ISHADERPROGRAM_H
+#endif //SR_ENGINE_GRAPHICS_I_SHADER_PROGRAM_H

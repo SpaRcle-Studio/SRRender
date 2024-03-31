@@ -7,6 +7,8 @@
 
 #include <Graphics/Pass/OffScreenMeshDrawerPass.h>
 
+#include <Utils/Math/Matrix4x4.h>
+
 namespace SR_GRAPH_NS {
     class CascadedShadowMapPass : public OffScreenMeshDrawerPass {
         SR_REGISTER_LOGICAL_NODE(CascadedShadowMapPass, Cascaded Shadow Map Pass, { "Passes" })
@@ -18,8 +20,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::vector<float_t>& GetSplitDepths() const { return m_cascadeSplitDepths; }
 
     protected:
-        void UseConstants(ShaderPtr pShader) override;
-        void UseUniforms(ShaderPtr pShader, MeshPtr pMesh) override;
+        void UseConstants(ShaderUseInfo info) override;
+        void UseUniforms(ShaderUseInfo info, MeshPtr pMesh) override;
 
         bool CheckCamera();
         void UpdateCascades();

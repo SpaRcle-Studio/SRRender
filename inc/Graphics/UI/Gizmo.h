@@ -24,7 +24,9 @@ namespace SR_GRAPH_UI_NS {
         Rotate = 1 << 6,
         Scale = 1 << 7,
         Bounds = 1 << 8,
+
         Space2D = 1 << 9,
+
         Rotate2D = Space2D | Rotate | Z,
 
         TranslateX = X | Translate,
@@ -70,8 +72,17 @@ namespace SR_GRAPH_UI_NS {
         void OnDestroy() override;
         void FixedUpdate() override;
 
-        SR_NODISCARD bool IsGizmoActive() const { return m_activeOperation != GizmoOperation::None; }
-        SR_NODISCARD bool IsGizmoHovered() const { return m_hoveredOperation != GizmoOperation::None; }
+        SR_NODISCARD bool IsGizmoEnabled() const {
+            return SR_MATH_NS::IsAnyMaskIncludedSubMask(m_operation, { GizmoOperation::Translate, GizmoOperation::Rotate, GizmoOperation::Scale, GizmoOperation::Bounds });
+        }
+
+        SR_NODISCARD bool IsGizmoActive() const {
+            return SR_MATH_NS::IsAnyMaskIncludedSubMask(m_activeOperation, { GizmoOperation::Translate, GizmoOperation::Rotate, GizmoOperation::Scale, GizmoOperation::Bounds });
+        }
+
+        SR_NODISCARD bool IsGizmoHovered() const {
+            return SR_MATH_NS::IsAnyMaskIncludedSubMask(m_hoveredOperation, { GizmoOperation::Translate, GizmoOperation::Rotate, GizmoOperation::Scale, GizmoOperation::Bounds });
+        }
 
         SR_NODISCARD bool IsGizmo2DSpace() const {
             return SR_MATH_NS::IsMaskIncludedSubMask(m_operation, GizmoOperation::Space2D);

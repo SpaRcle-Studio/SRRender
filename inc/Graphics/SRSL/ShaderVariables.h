@@ -44,6 +44,7 @@ namespace SR_SRSL_NS {
             { "VIEW_DIRECTION",                 "vec3"          },
             { "LINE_START_POINT",               "vec3"          },
             { "LINE_END_POINT",                 "vec3"          },
+            { "COLOR_BUFFER_VALUE",             "vec3"          },
 
             { "SSAO_SAMPLES",                   "vec4[64]"      },
 

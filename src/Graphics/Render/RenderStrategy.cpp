@@ -118,9 +118,9 @@ namespace SR_GRAPH_NS {
         return !m_priorityCallback || m_priorityCallback(priority);
     }
 
-    RenderStrategy::ShaderPtr RenderStrategy::ReplaceShader(RenderStrategy::ShaderPtr pShader) const {
+    ShaderUseInfo RenderStrategy::ReplaceShader(RenderStrategy::ShaderPtr pShader) const {
         SR_TRACY_ZONE;
-        return m_shaderReplaceCallback ? m_shaderReplaceCallback(pShader) : pShader;
+        return m_shaderReplaceCallback ? m_shaderReplaceCallback(pShader) : ShaderUseInfo(pShader);
     }
 
     void RenderStrategy::RegisterMesh(const MeshRegistrationInfo& info) {
@@ -265,7 +265,7 @@ namespace SR_GRAPH_NS {
         return false;
     }
 
-    void MeshRenderStage::Update(ShaderPtr pShader) {
+    void MeshRenderStage::Update(ShaderUseInfo info) {
         SR_TRACY_ZONE;
 
         if (!IsRendered()) {
@@ -287,13 +287,13 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            m_renderStrategy->GetMeshDrawerPass()->UseUniforms(pShader, pMeshUnwrapped);
+            m_renderStrategy->GetMeshDrawerPass()->UseUniforms(info, pMeshUnwrapped);
 
             if (m_uboManager.BindUBO(virtualUbo) == Memory::UBOManager::BindResult::Duplicated) {
                 SR_ERROR("VBORenderStage::Update() : memory has been duplicated!");
             }
 
-            pShader->Flush();
+            info.pShader->Flush();
         }
     }
 
@@ -613,7 +613,8 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        auto&& pShader = m_renderStrategy->ReplaceShader(m_shader);
+        auto&& shaderUseInfo = m_renderStrategy->ReplaceShader(m_shader);
+        auto&& pShader = shaderUseInfo.pShader;
         if (!pShader || !HasActiveMesh()) {
             return false;
         }
@@ -626,8 +627,8 @@ namespace SR_GRAPH_NS {
 
         if (GetRenderContext()->GetPipeline()->IsShaderChanged()) {
             auto&& pMeshPass = m_renderStrategy->GetMeshDrawerPass();
-            pMeshPass->UseConstants(pShader);
-            pMeshPass->UseSamplers(pShader);
+            pMeshPass->UseConstants(shaderUseInfo);
+            pMeshPass->UseSamplers(shaderUseInfo);
         }
 
         if (!pShader->IsSamplersValid()) {
@@ -662,7 +663,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        auto&& pShader = m_renderStrategy->ReplaceShader(m_shader);
+        auto&& shaderUseInfo = m_renderStrategy->ReplaceShader(m_shader);
+        auto&& pShader = shaderUseInfo.pShader;
         if (!pShader) {
             return;
         }
@@ -675,13 +677,13 @@ namespace SR_GRAPH_NS {
 
         GetRenderContext()->SetCurrentShader(pShader);
 
-        m_renderStrategy->GetMeshDrawerPass()->UseSharedUniforms(pShader);
+        m_renderStrategy->GetMeshDrawerPass()->UseSharedUniforms(shaderUseInfo);
 
         for (auto&& [VBO, pVBOStage] : m_VBOStages) {
-            pVBOStage->Update(pShader);
+            pVBOStage->Update(shaderUseInfo);
         }
 
-        m_meshStage->Update(pShader);
+        m_meshStage->Update(shaderUseInfo);
 
         GetRenderScene()->SetCurrentSkeleton(nullptr);
         GetRenderContext()->SetCurrentShader(nullptr);

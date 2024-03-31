@@ -7,6 +7,7 @@
 
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Utils/MeshUtils.h>
+#include <Graphics/Pipeline/IShaderProgram.h>
 
 #include <Utils/ECS/Transform.h>
 
@@ -89,7 +90,7 @@ namespace SR_GRAPH_NS {
 
         virtual bool Render();
 
-        void Update(ShaderPtr pShader);
+        void Update(ShaderUseInfo info);
 
         bool RegisterMesh(const MeshRegistrationInfo& info) override;
         bool UnRegisterMesh(const MeshRegistrationInfo& info) override;
@@ -232,7 +233,7 @@ namespace SR_GRAPH_NS {
         using PriorityCallback = SR_HTYPES_NS::Function<bool(int64_t)>;
         using ShaderCallback = SR_HTYPES_NS::Function<void(SR_GTYPES_NS::Shader*)>;
         using MeshShaderCallback = SR_HTYPES_NS::Function<void(SR_GTYPES_NS::Shader*,SR_GTYPES_NS::Mesh*)>;
-        using ShaderReplaceCallback = SR_HTYPES_NS::Function<SR_GTYPES_NS::Shader*(SR_GTYPES_NS::Shader*)>;
+        using ShaderReplaceCallback = SR_HTYPES_NS::Function<SR_GRAPH_NS::ShaderUseInfo(SR_GTYPES_NS::Shader*)>;
     public:
         explicit RenderStrategy(RenderScene* pRenderScene);
         ~RenderStrategy() override;
@@ -255,7 +256,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD RenderContext* GetRenderContext() const;
         SR_NODISCARD RenderScene* GetRenderScene() const { return m_renderScene; }
-        SR_NODISCARD ShaderPtr ReplaceShader(ShaderPtr pShader) const;
+        SR_NODISCARD ShaderUseInfo ReplaceShader(ShaderPtr pShader) const;
         SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const;
         SR_NODISCARD bool IsNeedCheckMeshActivity() const noexcept { return m_isNeedCheckMeshActivity; }
         SR_NODISCARD bool IsDebugModeEnabled() const noexcept { return m_enableDebugMode; }
