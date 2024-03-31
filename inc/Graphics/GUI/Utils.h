@@ -477,8 +477,8 @@ namespace SR_GRAPH_GUI_NS {
             const std::string& label,
             SR_MATH_NS::FVector3& values,
             float_t resetValue = 0.0f,
-            float_t columnWidth = 70.0f,
             float_t drag = 0.1,
+            float_t columnWidth = 70.0f,
             uint32_t index = 0,
             bool active = true)
     {
