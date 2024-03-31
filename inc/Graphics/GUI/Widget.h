@@ -37,6 +37,7 @@ namespace SR_GRAPH_GUI_NS {
 
     class Widget : public SR_UTILS_NS::NonCopyable, public SR_UTILS_NS::InputHandler {
         friend class WidgetManager;
+        using Super = SR_UTILS_NS::InputHandler;
     public:
         using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
         using ContextPtr = RenderContext*;
@@ -82,6 +83,10 @@ namespace SR_GRAPH_GUI_NS {
         void SetManager(WidgetManager* pManager);
 
         void AddSubWidget(Widget* pWidget);
+
+        void OnKeyDown(const SR_UTILS_NS::KeyboardInputData* pData) override;
+        void OnKeyUp(const SR_UTILS_NS::KeyboardInputData* pData) override;
+        void OnKeyPress(const SR_UTILS_NS::KeyboardInputData* pData) override;
 
     protected:
         virtual void Draw() = 0;

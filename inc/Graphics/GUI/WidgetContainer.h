@@ -20,10 +20,16 @@ namespace SR_GRAPH_GUI_NS {
         WidgetContainerElement& SetIsActive(IsActiveFn&& isActive) { m_isActive = std::move(isActive); return *this; }
         WidgetContainerElement& SetText(std::string text) { m_text = std::move(text); return *this; }
         WidgetContainerElement& SetCustomDraw(CustomDrawCallback&& customDraw) { m_customDraw = std::move(customDraw); return *this; }
+        WidgetContainerElement& SetWidth(float_t width) { m_width = width; return *this; }
+        WidgetContainerElement& SetItemSpacing(const SR_MATH_NS::FVector2& spacing) { m_itemSpacing = spacing; return *this; }
+
+        SR_NODISCARD SR_MATH_NS::FVector2 GetItemSpacing() const noexcept { return m_itemSpacing; }
 
         virtual void Draw();
 
     private:
+        SR_MATH_NS::FVector2 m_itemSpacing = { 0.f, 0.f };
+        float_t m_width = 22.f;
         Callback m_onClick;
         CustomDrawCallback m_customDraw;
         IsActiveFn m_isActive;

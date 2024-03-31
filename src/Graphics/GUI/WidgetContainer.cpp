@@ -19,9 +19,10 @@ namespace SR_GRAPH_GUI_NS {
         if (m_customDraw) {
             m_customDraw(this);
         }
-        else if (ImGui::Button(m_text.c_str(), ImVec2(22, 22)) && m_onClick) {
+        else if (ImGui::Button(m_text.c_str(), ImVec2(m_width, 22)) && m_onClick) {
             m_onClick(isActive);
         }
+
 
         if (isActive) {
             ImGui::PopStyleColor();
@@ -33,16 +34,21 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 
         for (uint32_t i = 0; i < m_elements.size(); ++i) {
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                ImVec2(m_elements[i]->GetItemSpacing().x, m_elements[i]->GetItemSpacing().y)
+            );
+
             m_elements[i]->Draw();
             if (i + 1 < m_elements.size()) {
                 ImGui::SameLine();
             }
+
+            ImGui::PopStyleVar();
         }
 
-        ImGui::PopStyleVar(5);
+        ImGui::PopStyleVar(4);
     }
 
     WidgetContainerElement& WidgetContainer::AddElement(std::string text) {

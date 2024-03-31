@@ -173,4 +173,25 @@ namespace SR_GRAPH_GUI_NS {
         pWidget->SetManager(m_manager);
         pWidget->Init();
     }
+
+    void Widget::OnKeyDown(const SR_UTILS_NS::KeyboardInputData* pData) {
+        for (auto&& pWidget : m_subWidgets) {
+            pWidget->OnKeyDown(pData);
+        }
+        Super::OnKeyDown(pData);
+    }
+
+    void Widget::OnKeyUp(const SR_UTILS_NS::KeyboardInputData* pData) {
+        for (auto&& pWidget : m_subWidgets) {
+            pWidget->OnKeyUp(pData);
+        }
+        Super::OnKeyDown(pData);
+    }
+
+    void Widget::OnKeyPress(const SR_UTILS_NS::KeyboardInputData* pData) {
+        for (auto&& pWidget : m_subWidgets) {
+            pWidget->OnKeyPress(pData);
+        }
+        Super::OnKeyDown(pData);
+    }
 }
