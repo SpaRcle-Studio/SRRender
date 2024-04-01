@@ -26,11 +26,11 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         while (!m_reRegisterMeshes.empty()) {
-            auto&& info = m_reRegisterMeshes.front();
+            const auto info = m_reRegisterMeshes.front();
+            m_reRegisterMeshes.pop_front();
             if (UnRegisterMesh(info)) {
                 RegisterMesh(CreateMeshRegistrationInfo(info.pMesh));
             }
-            m_reRegisterMeshes.pop_front();
         }
 
         bool isRendered = false;
@@ -144,6 +144,13 @@ namespace SR_GRAPH_NS {
 
     bool RenderStrategy::UnRegisterMesh(const MeshRegistrationInfo& info) {
         bool unregistered = false;
+
+        for (auto pIt = m_reRegisterMeshes.begin(); pIt != m_reRegisterMeshes.end(); ++pIt) {
+            if (pIt->pMesh == info.pMesh) {
+                m_reRegisterMeshes.erase(pIt);
+                break;
+            }
+        }
 
         if (auto&& pLayerIt = m_layers.find(info.layer); pLayerIt != m_layers.end()) {
             unregistered = pLayerIt->second->UnRegisterMesh(info);
