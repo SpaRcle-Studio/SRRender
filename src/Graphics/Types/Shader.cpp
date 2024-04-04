@@ -144,7 +144,7 @@ namespace SR_GRAPH_NS::Types {
             SR_LOG("Shader::Load() : load \"" + path.ToString() + "\" shader...");
         }
 
-        if (!SRVerifyFalse2(path.Empty(), "Invalid shader path!")) {
+        if (!SRVerifyFalse2(path.IsEmpty(), "Invalid shader path!")) {
             SR_WARN("Shader::Load() : failed to load shader!");
             return nullptr;
         }

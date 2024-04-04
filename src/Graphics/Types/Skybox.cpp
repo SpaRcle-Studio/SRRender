@@ -302,7 +302,7 @@ namespace SR_GTYPES_NS {
         auto&& resourcesManager = SR_UTILS_NS::ResourceManager::Instance();
 
         for (auto&& path : m_paths) {
-            SRAssert(!path.Empty());
+            SRAssert(!path.IsEmpty());
 
             auto&& pWatch = resourcesManager.StartWatch(path);
 

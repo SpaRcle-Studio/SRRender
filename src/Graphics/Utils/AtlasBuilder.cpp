@@ -83,16 +83,16 @@ namespace SR_GRAPH_NS {
         bool isDividedBy2 = m_sprites.size() % 2 == 0;
 
         // Choose a creation strategy
-        // if (isSpritesSameSize && isDividedBy2)  return CreateSquare();
+        // if (isSpritesSameSize && isDividedBy2)
+        //    return CreateRectangleAtlas();
         if (!isSpritesSameSize && isDividedBy2)
-            return CreateTightSquare();
-
-        // return CreateLine();
+            return CreateTightRectangleAtlas();
+        // return CreateLineAtlas();
 
         return std::nullopt;
     }
 
-    SR_UTILS_NS::Path AtlasCreationStrategy::CreateTargetFile(AtlasCreationStrategy::AtlasPtr atlas) const {
+    SR_UTILS_NS::Path AtlasCreationStrategy::CreateTargePath(AtlasCreationStrategy::AtlasPtr atlas) const {
         auto&& fileName = SR_UTILS_NS::sha256<SR_HTYPES_NS::HashT<16>>(atlas->GetData(), atlas->GetNumberOfBytes()).to_string();
         auto&& targetPath = m_destination.Concat(fileName);
 
@@ -103,10 +103,11 @@ namespace SR_GRAPH_NS {
         return targetPath;
     }
 
-    // void AtlasCreationStrategy::CreateSquare() {
-    // }
+//    AtlasCreationStrategy::AtlasPtr AtlasCreationStrategy::CreateRectangleAtlas() {
+//        return nullptr;
+//    }
 
-    std::optional<AtlasBuilder> AtlasCreationStrategy::CreateTightSquare() const {
+    std::optional<AtlasBuilder> AtlasCreationStrategy::CreateTightRectangleAtlas() const {
         uint32_t totalBytes = 0;
         for (auto&& pSprite : m_sprites) {
             totalBytes += pSprite->GetNumberOfBytes();
@@ -126,8 +127,8 @@ namespace SR_GRAPH_NS {
             delete[] pData;
         });
 
-        auto&& targetPath = CreateTargetFile(pTextureData);
-        if (targetPath.Empty()) {
+        auto&& targetPath = CreateTargePath(pTextureData);
+        if (targetPath.IsEmpty()) {
             SR_ERROR("AtlasCreationStrategy::CreateTightSquare() : failed to save data on disk.");
             return std::nullopt;
         }
@@ -135,6 +136,8 @@ namespace SR_GRAPH_NS {
         return std::make_optional<AtlasBuilder>(targetPath, SR_MATH_NS::USVector2{},  0, 0);
     }
 
-    // void AtlasCreationStrategy::CreateLine() {
-    // }
+
+//    AtlasCreationStrategy::AtlasPtr AtlasCreationStrategy::CreateLineAtlas() {
+//        return nullptr;
+//    }
 }

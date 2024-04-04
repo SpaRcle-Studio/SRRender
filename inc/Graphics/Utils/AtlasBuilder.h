@@ -53,10 +53,10 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD std::optional<AtlasBuilder> ChooseAndCreate(const SR_UTILS_NS::Path& destFolder) const;
 
     private:
-        SR_NODISCARD SR_UTILS_NS::Path CreateTargetFile(AtlasPtr atlas) const;
+        SR_NODISCARD SR_UTILS_NS::Path CreateTargePath(AtlasPtr atlas) const;
 
         // std::optional<AtlasBuilder> CreateSquare() const;
-        SR_NODISCARD std::optional<AtlasBuilder> CreateTightSquare() const;
+        SR_NODISCARD std::optional<AtlasBuilder> CreateTightRectangleAtlas() const;
         // std::optional<AtlasBuilder> CreateLine() const;
 
     private:

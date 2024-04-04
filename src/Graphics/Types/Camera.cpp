@@ -134,7 +134,7 @@ namespace SR_GTYPES_NS {
 
     const SR_UTILS_NS::Path& Camera::GetRenderTechniquePath() {
         /// default technique
-        if (m_renderTechnique.path.Empty()) {
+        if (m_renderTechnique.path.IsEmpty()) {
             m_renderTechnique.path = RenderTechnique::DEFAULT_RENDER_TECHNIQUE;
         }
 
