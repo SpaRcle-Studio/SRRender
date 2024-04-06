@@ -24,7 +24,6 @@ namespace SR_GRAPH_NS {
 
     class Render;
     class RenderContext;
-    class Environment;
 
     class Window : public SR_HTYPES_NS::SafePtr<Window> {
     public:

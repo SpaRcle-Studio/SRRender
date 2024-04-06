@@ -102,9 +102,48 @@ namespace SR_GTYPES_NS {
             .SetReadOnly()
             .SetDontSave();
 
-        //m_properties.AddStandardProperty("Custom layer", &);
+        /// TODO: это какое-то полное очко. Надо писать кодогенерацию для полей классов.
+        /*m_properties.AddArrayReferenceProperty("Override uniforms")
+            .SetIsProperty()
+            .SetAddElement([this](uint32_t index) {
+                m_overrideUniforms.insert(m_overrideUniforms.begin() + index, MaterialProperty());
+            })
+            .SetRemoveElement([this](uint32_t index) {
+                m_overrideUniforms.erase(m_overrideUniforms.begin() + index);
+            })
+            .SetPropertyGetter([this](uint32_t index) -> SR_UTILS_NS::Property* {
+                if (index < m_overrideUniforms.size()) {
+                    return &m_overrideUniforms[index];
+                }
+                return nullptr;
+            })
+            .SetSaveArray([this](SR_HTYPES_NS::Marshal& marshal) {
+                uint32_t count = 0;
+                for (auto&& property : m_overrideUniforms) {
+                    count += property.IsDontSave() ? 0 : 1;
+                }
+                marshal.Write<uint32_t>(count);
+                for (auto&& property : m_overrideUniforms) {
+                    if (!property.IsDontSave()) {
+                        SR_HTYPES_NS::Marshal propertyMarshal;
+                        property.SaveProperty(propertyMarshal);
 
-        //m_customMaterialProperties = &materialContainer.AddArray<MaterialProperty>("Custom properties");
+                        marshal.Write<uint32_t>(propertyMarshal.Size());
+                        marshal.Append(std::move(propertyMarshal));
+                    }
+                }
+            })
+            .SetLoadArray([this](SR_HTYPES_NS::Marshal& marshal) {
+                m_overrideUniforms.clear();
+                const auto count = marshal.Read<uint32_t>();
+                for (uint32_t i = 0; i < count; ++i) {
+                    const auto size = marshal.Read<uint32_t>();
+                    SR_HTYPES_NS::Marshal propertyMarshal = marshal.ReadBytes(size);
+                    MaterialProperty property;
+                    property.LoadProperty(propertyMarshal);
+                    OverrideUniform(property.GetName()) = std::move(property);
+                }
+            });*/
 
         return Entity::InitializeEntity();
     }

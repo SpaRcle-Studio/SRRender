@@ -13,9 +13,10 @@ namespace SR_GRAPH_NS {
     }
 
     bool GroupPass::Load(const SR_XML_NS::Node& passNode) {
-        SR_TRACY_ZONE;
-
         for (auto&& subPassNode : passNode.TryGetNodes()) {
+            SR_TRACY_ZONE;
+            SR_TRACY_ZONE_TEXT(subPassNode.Name());
+
             if (auto&& pPass = SR_ALLOCATE_RENDER_PASS(subPassNode, GetTechnique())) {
                 m_passes.emplace_back(pPass);
                 pPass->SetParent(this);

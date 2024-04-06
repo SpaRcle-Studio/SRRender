@@ -22,11 +22,10 @@ namespace SR_GTYPES_NS {
         auto&& pTexture = new Texture();
 
         pTexture->m_isFromMemory = true;
-        pTexture->m_isFont = true;
 
-        pTexture->m_width = pFont->GetWidth();
-        pTexture->m_height = pFont->GetHeight();
-        pTexture->m_data = pFont->CopyData();
+        pTexture->m_textureData = TextureData::Create(pFont->GetWidth(), pFont->GetHeight(), pFont->CopyData(), [](const uint8_t* pData) {
+            delete[] pData;
+        });
 
         pTexture->m_config.m_alpha = SR_UTILS_NS::BoolExt::True;
         pTexture->m_config.m_format = ImageFormat::RGBA8_UNORM;
@@ -40,26 +39,26 @@ namespace SR_GTYPES_NS {
         return pTexture;
     }
 
-    Texture::Ptr Texture::LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const Memory::TextureConfig &config) {
-        Texture* texture = new Texture();
+    Texture::Ptr Texture::LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const Memory::TextureConfig& config) {
+        auto&& pTexture = new Texture();
 
-        texture->m_isFromMemory = true;
-        texture->m_rawMemory = true;
+        auto&& pCopyData = new uint8_t[bytes];
+        memcpy(pCopyData, pData, bytes);
 
-        texture->m_width = w;
-        texture->m_height = h;
+        pTexture->m_textureData = TextureData::Create(w, h, pCopyData, [](const uint8_t* pData) {
+            delete[] pData;
+        });
 
-        texture->m_data = new uint8_t[bytes];
-        memcpy(texture->m_data, pData, bytes);
+        pTexture->m_isFromMemory = true;
+        pTexture->m_config = config;
+        pTexture->SetId("RawTexture");
 
-        texture->m_config = config;
-
-        texture->SetId("RawTexture");
-
-        return texture;
+        return pTexture;
     }
 
     Texture::Ptr Texture::Load(const std::string& rawPath, const std::optional<Memory::TextureConfig>& config) {
+        SR_TRACY_ZONE;
+
         auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
         if (!resourceManager.GetResPath().Concat(rawPath).Exists(SR_UTILS_NS::Path::Type::File)) {
             SR_ERROR("Texture::Load() : texture \"{}\" does not exist!", rawPath);
@@ -119,6 +118,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool Texture::Load() {
+        SR_TRACY_ZONE;
+
         bool hasErrors = !IResource::Load();
 
         if (!IsCalculated()) {
@@ -127,7 +128,9 @@ namespace SR_GTYPES_NS {
                 path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
             }
 
-            if (!TextureLoader::Load(this, path.ToString())) {
+            m_textureData = TextureLoader::Load(path);
+            if (!m_textureData) {
+                SR_ERROR("Texture::Load() : failed to load texture!");
                 hasErrors |= true;
             }
         }
@@ -143,12 +146,14 @@ namespace SR_GTYPES_NS {
     }
 
     bool Texture::Calculate() {
+        SR_TRACY_ZONE;
+
         if (m_isCalculated) {
             SR_ERROR("Texture::Calculate() : texture is already calculated!");
             return false;
         }
 
-        if (!m_data) {
+        if (!m_textureData) {
             SR_ERROR("Texture::Calculate() : data is invalid!");
             return false;
         }
@@ -178,9 +183,9 @@ namespace SR_GTYPES_NS {
         EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
 
         SRTextureCreateInfo createInfo;
-        createInfo.pData = m_data;
-        createInfo.width = m_width;
-        createInfo.height = m_height;
+        createInfo.pData = m_textureData->GetData();
+        createInfo.width = m_textureData->GetWidth();
+        createInfo.height = m_textureData->GetHeight();
         createInfo.compression = m_config.m_compression;
         createInfo.cpuUsage = m_config.m_cpuUsage;
         createInfo.alpha = m_config.m_alpha == SR_UTILS_NS::BoolExt::None;
@@ -255,20 +260,21 @@ namespace SR_GTYPES_NS {
     }
 
     Texture* Texture::LoadFromMemory(const std::string& data, const Memory::TextureConfig &config) {
-        Texture::Ptr texture = new Texture();
+        auto&& pTexture = new Texture();
 
-        if (!TextureLoader::LoadFromMemory(texture, data, config)) {
-            SRHalt("Texture::LoadFromMemory() : failed to load the texture!");
-            delete texture;
+        pTexture->m_textureData = TextureLoader::LoadFromMemory(data, config);
+        if (!pTexture->m_textureData) {
+            SR_ERROR("Texture::LoadFromMemory() : failed to load texture from memory!");
+            pTexture->DeleteResource();
             return nullptr;
         }
 
-        texture->m_isFromMemory = true;
+        pTexture->m_isFromMemory = true;
 
-        texture->SetConfig(config);
-        texture->SetId("TextureFromMemory");
+        pTexture->SetConfig(config);
+        pTexture->SetId("TextureFromMemory");
 
-        return texture;
+        return pTexture;
     }
 
     void* Texture::GetDescriptor() {
@@ -286,23 +292,23 @@ namespace SR_GTYPES_NS {
     }
 
     void Texture::FreeTextureData() {
-        if (!m_data) {
-            return;
-        }
-
-        /// шрифт сам освободит свои данные
-        if (!m_isFont && !m_rawMemory) {
-            TextureLoader::Free(m_data);
-        }
-        else if (m_rawMemory) {
-            delete[] m_data;
-        }
-
-        m_data = nullptr;
+        m_textureData.Reset();
     }
 
     SR_UTILS_NS::IResource::RemoveUPResult Texture::RemoveUsePoint() {
         SRAssert2(!(IsCalculated() && GetCountUses() == 1), "Possible multi threading error!");
         return IResource::RemoveUsePoint();
+    }
+
+    uint32_t Texture::GetWidth() const noexcept {
+        return m_textureData ? m_textureData->GetWidth() : 0;
+    }
+
+    uint32_t Texture::GetHeight() const noexcept {
+        return m_textureData ? m_textureData->GetHeight() : 0;
+    }
+
+    uint32_t Texture::GetChannels() const noexcept {
+        return m_textureData ? m_textureData->GetChannels() : 0;
     }
 }

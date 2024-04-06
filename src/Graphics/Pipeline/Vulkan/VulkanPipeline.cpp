@@ -568,7 +568,7 @@ namespace SR_GRAPH_NS {
         );
 
         if (textureCreateInfo.compression != TextureCompression::None) {
-            free(textureCreateInfo.pData); //! free compressed data. Original data isn't will free
+            free(const_cast<uint8_t*>(textureCreateInfo.pData)); /// Free compressed data. Original data isn't will be free.
         }
 
         if (id < 0) {

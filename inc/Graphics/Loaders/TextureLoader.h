@@ -2,25 +2,19 @@
 // Created by Nikita on 03.12.2020.
 //
 
-#ifndef GAMEENGINE_TEXTURELOADER_H
-#define GAMEENGINE_TEXTURELOADER_H
+#ifndef SR_GRAPHICS_TEXTURE_LOADER_H
+#define SR_GRAPHICS_TEXTURE_LOADER_H
 
-#include <Graphics/Memory/TextureConfigs.h>
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/Function.h>
+
+#include <Graphics/Memory/TextureConfigs.h>
 
 namespace SR_GTYPES_NS {
     class Texture;
 }
 
 namespace SR_GRAPH_NS {
-    SR_ENUM_NS_CLASS_T(ImageLoadFormat, uint8_t,
-        Unknown,
-        Grey,
-        GreyAlpha,
-        RGB,
-        RGBA);
-
     class TextureData : public SR_HTYPES_NS::SharedPtr<TextureData>, SR_UTILS_NS::NonCopyable {
         using Super = SR_HTYPES_NS::SharedPtr<TextureData>;
         using DeleterFn = SR_HTYPES_NS::Function<void(uint8_t*)>;
@@ -64,14 +58,15 @@ namespace SR_GRAPH_NS {
         ~TextureLoader() = delete;
 
     public:
-        static TexturePtr GetDefaultTexture() noexcept;
+        static TextureData::Ptr Load(const SR_UTILS_NS::Path& path);
+        static TextureData::Ptr LoadFromMemory(const std::string& data, const Memory::TextureConfig& config);
 
-    public:
-        static bool Load(TexturePtr texture, std::string path);
-        static bool LoadFromMemory(TexturePtr texture, const std::string& data, const Memory::TextureConfig &config);
         static bool Free(unsigned char* data);
+
+    private:
+        static TextureData::Ptr LoadFromCache(const SR_UTILS_NS::Path& path);
 
     };
 }
 
-#endif //GAMEENGINE_TEXTURELOADER_H
+#endif //SR_GRAPHICS_TEXTURE_LOADER_H

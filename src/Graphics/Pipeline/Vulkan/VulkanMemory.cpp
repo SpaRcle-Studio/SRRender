@@ -375,7 +375,7 @@ int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateTexture(
 }
 
 int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateTexture(
-    uint8_t *pixels, uint32_t w, uint32_t h,
+    const uint8_t *pixels, uint32_t w, uint32_t h,
     VkFormat format,
     VkFilter filter,
     SR_GRAPH_NS::TextureCompression /*compression*/,

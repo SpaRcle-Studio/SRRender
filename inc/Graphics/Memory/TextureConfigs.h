@@ -2,10 +2,11 @@
 // Created by Monika on 26.01.2022.
 //
 
-#ifndef SR_ENGINE_TEXTURECONFIGS_H
-#define SR_ENGINE_TEXTURECONFIGS_H
+#ifndef SR_ENGINE_TEXTURE_CONFIGS_H
+#define SR_ENGINE_TEXTURE_CONFIGS_H
 
 #include <Utils/Common/Singleton.h>
+
 #include <Graphics/Pipeline/TextureHelper.h>
 
 namespace SR_GRAPH_NS::Memory {
@@ -73,4 +74,4 @@ namespace SR_GRAPH_NS::Memory {
     };
 }
 
-#endif //SR_ENGINE_TEXTURECONFIGS_H
+#endif //SR_ENGINE_TEXTURE_CONFIGS_H

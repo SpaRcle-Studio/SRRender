@@ -38,6 +38,8 @@ namespace SR_GTYPES_NS {
     }
 
     Material* Material::Load(SR_UTILS_NS::Path rawPath) {
+        SR_TRACY_ZONE;
+
         auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
 
         Material* pMaterial = nullptr;
@@ -191,6 +193,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool Material::Load() {
+        SR_TRACY_ZONE;
+
         const auto&& path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(GetResourcePath());
 
         auto&& document = SR_XML_NS::Document::Load(path);
@@ -219,6 +223,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Material::Unload() {
+        SR_TRACY_ZONE;
         SetShader(nullptr);
 
         for (auto&& pTexture : GetTexturesFromMatProperties(m_properties)) {
@@ -231,6 +236,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool Material::Reload() {
+        SR_TRACY_ZONE;
+
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Medium) {
             SR_LOG("Material::Reload() : reloading \"" + std::string(GetResourceId()) + "\" material...");
         }

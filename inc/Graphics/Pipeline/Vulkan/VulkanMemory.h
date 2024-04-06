@@ -138,7 +138,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         SR_NODISCARD int32_t AllocateFBO(const VulkanFrameBufferAllocInfo& info);
 
         SR_NODISCARD int32_t AllocateTexture(
-                uint8_t* pixels,
+                const uint8_t* pixels,
                 uint32_t w,
                 uint32_t h,
                 VkFormat format,

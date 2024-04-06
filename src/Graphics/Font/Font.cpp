@@ -207,7 +207,7 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    void Font::FreeTextureData(uint8_t *pData) {
+    void Font::FreeTextureData(const uint8_t* pData) {
         if (!pData) {
             return;
         }
@@ -215,13 +215,13 @@ namespace SR_GTYPES_NS {
         delete[] pData;
     }
 
-    uint8_t *Font::CopyData() const noexcept {
+    uint8_t* Font::CopyData() const noexcept {
         if (!m_textureData) {
             return nullptr;
         }
 
-        uint32_t size = m_imageWidth * m_imageHeight;
-        uint8_t* pCopy = new uint8_t [size * 4];
+        const uint32_t size = m_imageWidth * m_imageHeight;
+        auto&& pCopy = new uint8_t[size * 4];
         memcpy(pCopy, m_textureData, size * 4 * sizeof(uint8_t));
 
         return pCopy;

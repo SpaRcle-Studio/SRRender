@@ -8,7 +8,7 @@
 #include <cmp_core.h>
 
 namespace SR_GRAPH_NS {
-    uint8_t* Compress(uint32_t w, uint32_t h, uint8_t *pixels, TextureCompression method) {
+    uint8_t* Compress(uint32_t w, uint32_t h, const uint8_t *pixels, TextureCompression method) {
         uint32_t blockCount = (w / 4) * (h / 4);
         auto* cmpBuffer = (uint8_t*)malloc(16 * blockCount * 4);
         for (uint32_t col = 0; col < w / 4; col++) {

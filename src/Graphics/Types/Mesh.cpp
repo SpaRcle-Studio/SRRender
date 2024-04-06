@@ -101,6 +101,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Mesh::SetMaterial(const SR_UTILS_NS::Path& path) {
+        SR_TRACY_ZONE;
         if (m_material && m_material->GetResourcePath() == path) {
             return;
         }
@@ -108,6 +109,8 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Mesh::SetMaterial(MaterialPtr pMaterial) {
+        SR_TRACY_ZONE;
+
         if (pMaterial == m_material) {
             return;
         }
@@ -280,6 +283,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Mesh::ReRegisterMesh() {
+        SR_TRACY_ZONE;
         if (m_registrationInfo.has_value()) {
             auto pRenderScene = m_registrationInfo.value().pScene;
             pRenderScene->ReRegister(m_registrationInfo.value());

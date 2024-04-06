@@ -10,9 +10,9 @@
 #include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Memory/TextureConfigs.h>
 #include <Graphics/Memory/IGraphicsResource.h>
+#include <Graphics/Loaders/TextureLoader.h>
 
 namespace SR_GRAPH_NS {
-    class Environment;
     class TextureLoader;
     class RenderContext;
     class Render;
@@ -36,9 +36,9 @@ namespace SR_GTYPES_NS {
         static Texture::Ptr LoadFont(Font* pFont);
 
     public:
-        SR_NODISCARD SR_FORCE_INLINE uint32_t GetWidth() const noexcept { return m_width; }
-        SR_NODISCARD SR_FORCE_INLINE uint32_t GetHeight() const noexcept { return m_height; }
-        SR_NODISCARD SR_FORCE_INLINE uint32_t GetChannels() const noexcept { return m_channels; }
+        SR_NODISCARD uint32_t GetWidth() const noexcept;
+        SR_NODISCARD uint32_t GetHeight() const noexcept;
+        SR_NODISCARD uint32_t GetChannels() const noexcept;
         SR_NODISCARD int32_t GetId() noexcept;
         SR_NODISCARD void* GetDescriptor();
         SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
@@ -59,20 +59,14 @@ namespace SR_GTYPES_NS {
         void FreeTextureData();
 
     private:
-        bool                       m_isFont       = false;
-        uint8_t*                   m_data         = nullptr;
+        TextureData::Ptr m_textureData;
+        RenderContextPtr m_context = { };
 
-        int32_t                    m_id           = SR_ID_INVALID;
-        uint32_t                   m_width        = 0;
-        uint32_t                   m_height       = 0;
-        uint8_t                    m_channels     = 0;
+        int32_t m_id = SR_ID_INVALID;
 
-        std::atomic<bool>          m_hasErrors    = false;
-        std::atomic<bool>          m_rawMemory    = false;
+        std::atomic<bool> m_hasErrors = false;
 
-        Memory::TextureConfig      m_config       = Memory::TextureConfig();
-
-        RenderContextPtr           m_context      = { };
+        Memory::TextureConfig m_config = Memory::TextureConfig();
 
     };
 }

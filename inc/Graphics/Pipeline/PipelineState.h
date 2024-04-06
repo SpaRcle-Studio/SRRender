@@ -28,7 +28,7 @@ namespace SR_GRAPH_NS {
     };
 
     struct SRTextureCreateInfo {
-        uint8_t* pData = nullptr;
+        const uint8_t* pData = nullptr;
         ImageFormat format = ImageFormat::None;
         TextureFilter filter = TextureFilter::Unknown;
         TextureCompression compression = TextureCompression::None;

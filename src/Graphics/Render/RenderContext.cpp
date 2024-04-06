@@ -353,6 +353,7 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderContext::SetCurrentShader(RenderContext::ShaderPtr pShader) {
+        SR_TRACY_ZONE;
         m_pipeline->SetCurrentShader(pShader);
         SRAssert2(!pShader || pShader->IsAvailable(), "The shader was not bound and not available!");
     }

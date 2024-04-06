@@ -429,6 +429,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Shader::IsAvailable() const {
+        SR_TRACY_ZONE;
         return m_manager.IsAvailable(m_shaderProgram);
     }
 

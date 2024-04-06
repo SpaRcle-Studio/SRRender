@@ -10,7 +10,6 @@
 
 namespace SR_GRAPH_NS {
     class Render;
-    class Environment;
 }
 
 namespace SR_GTYPES_NS {

@@ -7,6 +7,8 @@
 
 namespace SR_GRAPH_NS {
     void LoadMaterialProperties(const SR_GTYPES_NS::Material* pMaterial, const SR_XML_NS::Node& propertiesNode, MaterialProperties* pProperties) {
+        SR_TRACY_ZONE;
+
         for (auto&& propertyXml : propertiesNode.TryGetNodes()) {
             auto&& type = SR_UTILS_NS::EnumReflector::FromString<ShaderVarType>(propertyXml.GetAttribute("Type").ToString());
             auto&& id = propertyXml.GetAttribute("Id").ToString();

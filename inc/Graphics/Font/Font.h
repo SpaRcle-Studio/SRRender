@@ -19,7 +19,7 @@ namespace SR_GTYPES_NS {
         ~Font() override = default;
 
     public:
-        static void FreeTextureData(uint8_t* pData);
+        static void FreeTextureData(const uint8_t* pData);
 
     public:
         static Font* Load(const SR_UTILS_NS::Path& rawPath);
