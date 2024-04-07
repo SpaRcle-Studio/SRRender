@@ -30,10 +30,14 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD std::vector<uint32_t> GetIndices() const override;
         SR_NODISCARD std::string GetMeshIdentifier() const override;
+        SR_NODISCARD FrustumCullingType GetFrustumCullingType() const override { return m_frustumCullingType; }
 
     private:
         bool Calculate() override;
         void Draw() override;
+
+    private:
+        FrustumCullingType m_frustumCullingType = FrustumCullingType::Sphere;
 
     };
 }

@@ -1166,6 +1166,8 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateVBO(void* pVertices, Vertices::VertexType type, size_t count) {
+        SR_TRACY_ZONE;
+
         if (!m_memory) {
             SR_ERROR("VulkanPipeline::AllocateVBO() : memory manager is nullptr!");
             return SR_ID_INVALID;
@@ -1185,6 +1187,8 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateIBO(void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) {
+        SR_TRACY_ZONE;
+
         if (!m_memory) {
             SR_ERROR("VulkanPipeline::AllocateIBO() : memory manager is nullptr!");
             return SR_ID_INVALID;

@@ -94,6 +94,7 @@ namespace SR_GRAPH_NS {
             }
 
             template<Vertices::VertexType vertexType, MeshMemoryType memType> bool Register(const std::string& identifier, uint32_t size, uint32_t id) {
+                SR_TRACY_ZONE;
                 SR_LOCK_GUARD;
 
                 if (Find<vertexType, memType>(identifier).has_value()) {
@@ -109,6 +110,7 @@ namespace SR_GRAPH_NS {
             }
 
             template<MeshMemoryType memType> FreeResult Free(int32_t id) {
+                SR_TRACY_ZONE;
                 SR_LOCK_GUARD;
 
                 if (auto iter = FindById(id, memType); !iter.has_value()) {
@@ -122,6 +124,7 @@ namespace SR_GRAPH_NS {
 
             template<Vertices::VertexType vertexType, MeshMemoryType memType> int32_t CopyIfExists(const std::string& identifier) {
                 SR_LOCK_GUARD;
+                SR_TRACY_ZONE;
 
                 if (auto memory = Find<vertexType, memType>(identifier); memory.has_value()) {
                     return memory.value()->second.Copy();

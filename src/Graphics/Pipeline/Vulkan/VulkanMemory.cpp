@@ -274,6 +274,8 @@ int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateDescriptorSet(uint32_t 
 }
 
 int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateVBO(uint32_t buffSize, void *data) {
+    SR_TRACY_ZONE;
+
     VkBufferUsageFlags bufferUsageFlagBits = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
     if (m_kernel->GetDevice()->IsRayTracingSupported()) {
@@ -301,6 +303,8 @@ int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateVBO(uint32_t buffSize, 
 }
 
 int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateIBO(uint32_t buffSize, void *data)  {
+    SR_TRACY_ZONE;
+
     VkBufferUsageFlags bufferUsageFlagBits = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
     if (m_kernel->GetDevice()->IsRayTracingSupported()) {
@@ -347,7 +351,7 @@ int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateShaderProgram(EvoVulkan
 }
 
 int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateTexture(
-        std::array<uint8_t *, 6> pixels,
+        std::array<const uint8_t*, 6> pixels,
         uint32_t w,
         uint32_t h,
         VkFormat format,

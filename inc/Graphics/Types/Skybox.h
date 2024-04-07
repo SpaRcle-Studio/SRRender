@@ -2,18 +2,15 @@
 // Created by Nikita on 20.11.2020.
 //
 
-#ifndef GAMEENGINE_SKYBOX_H
-#define GAMEENGINE_SKYBOX_H
+#ifndef SR_ENGINE_GRAPHICS_SKYBOX_H
+#define SR_ENGINE_GRAPHICS_SKYBOX_H
 
 #include <Utils/Resources/IResource.h>
-#include <Graphics/Memory/IGraphicsResource.h>
 
-namespace SR_GRAPH_NS {
-    class Render;
-}
+#include <Graphics/Memory/IGraphicsResource.h>
+#include <Graphics/Loaders/TextureLoader.h>
 
 namespace SR_GTYPES_NS {
-    class Texture;
     class Shader;
 
     class Skybox : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
@@ -28,7 +25,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD Shader* GetShader() const { return m_shader; }
         SR_NODISCARD int32_t GetVBO();
         SR_NODISCARD int32_t GetIBO();
-        SR_NODISCARD int32_t GetVirtualUBO();
+        SR_NODISCARD int32_t GetVirtualUBO() const;
 
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
 
@@ -64,10 +61,9 @@ namespace SR_GTYPES_NS {
         std::atomic<bool> m_hasErrors = false;
         std::atomic<bool> m_dirtyShader = false;
 
-        std::array<uint8_t*, 6> m_data;
-        std::array<SR_UTILS_NS::Path, 6> m_paths;
+        std::array<TextureData::Ptr, 6> m_data;
 
     };
 }
 
-#endif //GAMEENGINE_SKYBOX_H
+#endif //SR_ENGINE_GRAPHICS_SKYBOX_H

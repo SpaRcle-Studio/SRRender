@@ -39,6 +39,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_UTILS_NS::Path GetPath() const { return m_path; }
         SR_NODISCARD ImageLoadFormat GetFormat() const { return m_format; }
 
+        void SetPath(const SR_UTILS_NS::Path& path) { m_path = path; }
+
     private:
         uint32_t m_width = 0;
         uint32_t m_height = 0;

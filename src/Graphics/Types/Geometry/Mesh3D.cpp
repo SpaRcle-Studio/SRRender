@@ -94,6 +94,7 @@ namespace SR_GTYPES_NS {
     }
 
     std::vector<uint32_t> Mesh3D::GetIndices() const {
+        SR_TRACY_ZONE;
         return GetRawMesh()->GetIndices(GetMeshId());
     }
 
@@ -126,6 +127,8 @@ namespace SR_GTYPES_NS {
     }
 
     std::string Mesh3D::GetMeshIdentifier() const {
+        SR_TRACY_ZONE;
+
         if (auto&& pRawMesh = GetRawMesh()) {
             return SR_FORMAT("{}|{}|{}", pRawMesh->GetResourceId().c_str(), GetMeshId(), pRawMesh->GetReloadCount());
         }
@@ -160,6 +163,8 @@ namespace SR_GTYPES_NS {
                 SetMeshId(static_cast<MeshIndex>(*reinterpret_cast<int16_t*>(pData)));
             })
             .SetType(SR_UTILS_NS::StandardType::Int16);
+
+        m_properties.AddEnumProperty("FrustumCullingType", &m_frustumCullingType);
 
         return Super::InitializeEntity();
     }

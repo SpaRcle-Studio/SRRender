@@ -134,6 +134,7 @@ namespace SR_GRAPH_NS {
             }
 
             auto&& marshal = SR_HTYPES_NS::Marshal();
+            marshal.Write<std::string>(path.ToStringRef());
             marshal.Write<uint32_t>(width);
             marshal.Write<uint32_t>(height);
             marshal.Write(static_cast<uint8_t>(format));
@@ -147,6 +148,8 @@ namespace SR_GRAPH_NS {
         auto&& pTextureData = TextureData::Create(width, height, pImgData, [](uint8_t* pData) {
             TextureLoader::Free(pData);
         }, format);
+
+        pTextureData->SetPath(path);
 
         SRAssert2(pTextureData, "TextureLoader::Load() : failed to create TextureData!");
 
@@ -209,6 +212,7 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
+        auto&& sourcePath = marshal.Read<std::string>();
         auto&& width = marshal.Read<uint32_t>();
         auto&& height = marshal.Read<uint32_t>();
         auto&& format = static_cast<ImageLoadFormat>(marshal.Read<uint8_t>());
@@ -222,9 +226,13 @@ namespace SR_GRAPH_NS {
             marshal.Stream::Read(pData, size);
         }
 
-        return TextureData::Create(width, height, pData, [](uint8_t* pData) {
+        auto&& pTextureData = TextureData::Create(width, height, pData, [](uint8_t* pData) {
             free(pData);
         }, format);
+
+        pTextureData->SetPath(sourcePath);
+
+        return pTextureData;
     }
 }
 

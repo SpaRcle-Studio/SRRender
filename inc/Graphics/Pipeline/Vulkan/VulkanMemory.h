@@ -148,7 +148,7 @@ namespace SR_GRAPH_NS::VulkanTools {
                 bool cpuUsage);
 
         SR_NODISCARD int32_t AllocateTexture(
-                std::array<uint8_t*, 6> pixels,
+                std::array<const uint8_t*, 6> pixels,
                 uint32_t w,
                 uint32_t h,
                 VkFormat format,

@@ -18,6 +18,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool SkyboxPass::Load(const SR_XML_NS::Node &passNode) {
+        SR_TRACY_ZONE;
+
         auto&& path = passNode.GetAttribute<SR_UTILS_NS::Path>();
 
         if (m_skybox) {

@@ -14,6 +14,15 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    SR_ENUM_NS_CLASS_T(FrustumCullingType, uint8_t,
+        None = 0,
+        Sphere,
+        AABB,
+        OBB,
+        DOP8,
+        ConvexHull
+    );
+
     class RenderScene;
 
     struct MeshRegistrationInfo {

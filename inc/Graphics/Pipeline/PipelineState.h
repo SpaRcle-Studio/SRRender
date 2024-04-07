@@ -40,7 +40,7 @@ namespace SR_GRAPH_NS {
     };
 
     struct SRCubeMapCreateInfo {
-        std::array<uint8_t*, 6> data = {};
+        std::array<const uint8_t*, 6> data = {};
         uint32_t width = 0;
         uint32_t height = 0;
         bool cpuUsage = false;

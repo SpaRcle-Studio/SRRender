@@ -30,17 +30,13 @@ namespace SR_GTYPES_NS {
         );
 
         for (auto&& img : m_data) {
-            if (!img) {
-                continue;
-            }
-
-            stbi_image_free(img);
-            img = nullptr;
+            img.Reset();
         }
     }
 
     Skybox* Skybox::Load(const SR_UTILS_NS::Path& rawPath) {
-        SR_GLOBAL_LOCK
+        SR_GLOBAL_LOCK;
+        SR_TRACY_ZONE;
 
         SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
 
@@ -52,48 +48,34 @@ namespace SR_GTYPES_NS {
 
         SR_LOG("Skybox::Load() : loading \"" + path.ToString() + "\" skybox...");
 
-        std::array<uint8_t*, 6> sides = { };
+        std::array<TextureData::Ptr, 6> sides = { };
         for (auto&& side : sides) {
             side = nullptr;
         }
 
-        std::array<SR_UTILS_NS::Path, 6> paths;
-
         static constexpr const char* files[6] { "right", "left", "top", "bottom", "front", "back" };
 
-        int32_t W, H, C;
+        int32_t W = 0, H = 0, C = 0;
 
         for (uint8_t i = 0; i < 6; ++i) {
             auto&& file = folder.Concat(files[i]).ConcatExt(path.GetExtension());
+            auto&& pTextureData = TextureLoader::Load(file);
 
-            paths[i] = file;
-
-            int32_t w = 0, h = 0, comp = 0;
-            uint8_t *data = stbi_load(file.CStr(), &w, &h, &comp, STBI_rgb_alpha);
-
-            if (!data) {
-                SR_ERROR("Skybox::Load() : failed to load skybox!\n\tReason: " + std::basic_string<char>(stbi_failure_reason()) + "\n\tPath: " + file.ToString());
-
-                for (auto&& img : sides) {
-                    if (img) {
-                        stbi_image_free(img);
-                        img = nullptr;
-                    }
-                }
-
+            if (!pTextureData) {
+                SR_ERROR("Skybox::Load() : failed to load skybox texture!\n\tPath: " + file.ToString());
                 return nullptr;
             }
 
             if (i == 0) {
-                W = w;
-                H = h;
-                C = comp;
+                W = pTextureData->GetWidth();
+                H = pTextureData->GetHeight();
+                C = pTextureData->GetChannels();
             }
-            else if (h != H || w != W || C != comp) {
+            else if (pTextureData->GetWidth() != W || pTextureData->GetHeight() != H || C != pTextureData->GetChannels()) {
                 SR_WARN("Skybox::Load() : \"" + path.ToString() + "\" skybox has different sizes!");
             }
 
-            sides[i] = data;
+            sides[i] = pTextureData;
         }
 
         auto&& pSkybox = new Skybox();
@@ -101,7 +83,6 @@ namespace SR_GTYPES_NS {
         pSkybox->m_width = W;
         pSkybox->m_height = H;
         pSkybox->m_data = sides;
-        pSkybox->m_paths = paths;
 
         pSkybox->SetId(path.ToString());
 
@@ -118,7 +99,16 @@ namespace SR_GTYPES_NS {
         createInfo.cpuUsage = SR_UTILS_NS::Features::Instance().Enabled("SkyboxCPUUsage", false);
         createInfo.width = m_width;
         createInfo.height = m_height;
-        createInfo.data = m_data;
+
+        for (uint32_t i = 0; i < 6; ++i) {
+            if (!m_data[i]) {
+                SR_ERROR("Skybox::Calculate() : failed to calculate cube map! Side {} is invalid!", i);
+                m_hasErrors = true;
+                return false;
+            }
+
+            createInfo.data[i] = m_data[i]->GetData();
+        }
 
         if (m_cubeMap = m_pipeline->AllocateCubeMap(createInfo); m_cubeMap < 0) {
             SR_ERROR("Skybox::Calculate() : failed to calculate cube map!");
@@ -294,17 +284,19 @@ namespace SR_GTYPES_NS {
         return m_IBO;
     }
 
-    int32_t Skybox::GetVirtualUBO() {
+    int32_t Skybox::GetVirtualUBO() const {
         return m_virtualUBO;
     }
 
     void Skybox::StartWatch() {
         auto&& resourcesManager = SR_UTILS_NS::ResourceManager::Instance();
 
-        for (auto&& path : m_paths) {
-            SRAssert(!path.IsEmpty());
+        for (auto&& pTextureData : m_data) {
+            if (!pTextureData) {
+                continue;
+            }
 
-            auto&& pWatch = resourcesManager.StartWatch(path);
+            auto&& pWatch = resourcesManager.StartWatch(pTextureData->GetPath());
 
             pWatch->SetCallBack([this](auto &&pWatcher) {
                 SignalWatch();

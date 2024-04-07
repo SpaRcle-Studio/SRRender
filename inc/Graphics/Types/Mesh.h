@@ -71,6 +71,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual bool HasSortingPriority() const { return false; }
         SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetMeshLayer() const { return SR_UTILS_NS::StringAtom(); }
         SR_NODISCARD virtual bool IsSupportVBO() const = 0;
+        SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const { return FrustumCullingType::None; }
 
         SR_NODISCARD std::vector<MaterialProperty>& GetOverrideUniforms() noexcept { return m_overrideUniforms; }
         SR_NODISCARD std::vector<MaterialProperty>& GetOverrideConstants() noexcept { return m_overrideConstant; }
