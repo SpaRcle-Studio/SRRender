@@ -160,7 +160,7 @@ namespace SR_GRAPH_NS::Types {
 
         if (!pShader->Reload()) {
             SR_ERROR("Shader::Load() : failed to reload shader!\n\tPath: " + path.ToString());
-            delete pShader;
+            pShader->DeleteResource();
             return nullptr;
         }
 
