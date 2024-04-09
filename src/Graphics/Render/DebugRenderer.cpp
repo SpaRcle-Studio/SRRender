@@ -151,7 +151,7 @@ namespace SR_GRAPH_NS {
     ) {
         SR_LOCK_GUARD;
 
-        if (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(SR_UTILS_NS::Path(path, true /** fast */))) {
+        if (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(SR_UTILS_NS::Path(path))) {
             return DrawMesh(pRawMesh, 0, id, pos, rot, scale, color, time);
         }
 

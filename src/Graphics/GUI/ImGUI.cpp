@@ -128,7 +128,7 @@ namespace SR_GRAPH_GUI_NS {
         return pressed;
     }
 
-    ImVec2 DrawTexture(void* pDescriptor, const SR_MATH_NS::IVector2& size, SR_GRAPH_NS::PipelineType pipelineType, bool imposition) {
+    ImVec2 DrawTexture(const void* pDescriptor, const SR_MATH_NS::IVector2& size, SR_GRAPH_NS::PipelineType pipelineType, bool imposition) {
         if (!pDescriptor) {
             return ImVec2(); /// NOLINT
         }
@@ -137,9 +137,9 @@ namespace SR_GRAPH_GUI_NS {
 
         switch (pipelineType) {
             case PipelineType::Vulkan:
-                return DrawImage(pDescriptor, ImVec2(fSize.x, fSize.y), ImVec2(0, 0), ImVec2(1, 1), { 1, 1, 1, 1 }, { 0, 0, 0, 0 }, imposition);
+                return DrawImage(const_cast<void*>(pDescriptor), ImVec2(fSize.x, fSize.y), ImVec2(0, 0), ImVec2(1, 1), { 1, 1, 1, 1 }, { 0, 0, 0, 0 }, imposition);
             case PipelineType::OpenGL:
-                return DrawImage(pDescriptor, ImVec2(fSize.x, fSize.y), ImVec2(0, 0), ImVec2(1, 1), { 1, 1, 1, 1 }, { 0, 0, 0, 0 }, imposition);
+                return DrawImage(const_cast<void*>(pDescriptor), ImVec2(fSize.x, fSize.y), ImVec2(0, 0), ImVec2(1, 1), { 1, 1, 1, 1 }, { 0, 0, 0, 0 }, imposition);
             default:
                 return ImVec2(); /// NOLINT
         }
@@ -266,7 +266,7 @@ namespace SR_GRAPH_GUI_NS {
         return ImGui::SplitterBehavior(bb, id, split_vertically ? ImGuiAxis_X : ImGuiAxis_Y, size1, size2, min_size1, min_size2, 0.0f);
     }
 
-    ImVec2 DrawTexture(SR_GRAPH_NS::Pipeline* pPipeline, uint32_t textureId, const SR_MATH_NS::IVector2 &size, bool imposition) {
+    ImVec2 DrawTexture(const SR_GRAPH_NS::Pipeline* pPipeline, uint32_t textureId, const SR_MATH_NS::IVector2 &size, bool imposition) {
         void* pDescriptor = nullptr;
 
         switch (pPipeline->GetType()) {

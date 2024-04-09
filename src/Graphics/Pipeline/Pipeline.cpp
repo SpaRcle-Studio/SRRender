@@ -364,7 +364,7 @@ namespace SR_GRAPH_NS {
         m_state.pFrameBuffer = pFBO;
     }
 
-    void* Pipeline::GetOverlayTextureDescriptorSet(uint32_t textureId, OverlayType overlayType) {
+    void* Pipeline::GetOverlayTextureDescriptorSet(uint32_t textureId, OverlayType overlayType) const {
         ++m_state.operations;
         auto&& pIt = m_overlays.find(overlayType);
         if (pIt == m_overlays.end() || !pIt->second) {

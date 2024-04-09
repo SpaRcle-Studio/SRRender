@@ -883,15 +883,15 @@ namespace SR_GRAPH_NS {
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().ReadHash = [](const std::string& path) -> uint64_t {
-            return SR_UTILS_NS::FileSystem::ReadHashFromFile(SR_UTILS_NS::Path(path, true));
+            return SR_UTILS_NS::FileSystem::ReadHashFromFile(SR_UTILS_NS::Path(path));
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().GetFileHash = [](const std::string& path) -> uint64_t {
-            return SR_UTILS_NS::FileSystem::GetFileHash(SR_UTILS_NS::Path(path, true));
+            return SR_UTILS_NS::FileSystem::GetFileHash(SR_UTILS_NS::Path(path));
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().WriteHash = [](const std::string& path, uint64_t hash) -> bool {
-            SR_UTILS_NS::FileSystem::WriteHashToFile(SR_UTILS_NS::Path(path, false), hash);
+            SR_UTILS_NS::FileSystem::WriteHashToFile(SR_UTILS_NS::Path(path), hash);
             return true;
         };
 

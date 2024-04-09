@@ -162,7 +162,7 @@ namespace SR_GTYPES_NS {
 
         const auto&& material = marshal.Read<std::string>();
         if (material != "None") {
-            if (auto&& pMaterial = SR_GTYPES_NS::Material::Load(SR_UTILS_NS::Path(material, true))) {
+            if (auto&& pMaterial = SR_GTYPES_NS::Material::Load(SR_UTILS_NS::Path(material))) {
                 pText->SetMaterial(pMaterial);
             }
             else {
@@ -172,7 +172,7 @@ namespace SR_GTYPES_NS {
 
         const auto&& font = marshal.Read<std::string>();
         if (font != "None") {
-            if (auto&& pFont = SR_GTYPES_NS::Font::Load(SR_UTILS_NS::Path(font, true))) {
+            if (auto&& pFont = SR_GTYPES_NS::Font::Load(SR_UTILS_NS::Path(font))) {
                 pText->SetFont(pFont);
             }
             else {

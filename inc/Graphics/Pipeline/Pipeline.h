@@ -122,7 +122,7 @@ namespace SR_GRAPH_NS {
         virtual void SetFrameBufferLayer(uint32_t layer) { ++m_state.operations; m_state.frameBufferLayer = layer; }
         virtual void SetCurrentFrameBuffer(FramebufferPtr pFrameBuffer);
 
-        virtual void* GetOverlayTextureDescriptorSet(uint32_t textureId, OverlayType overlayType);
+        virtual void* GetOverlayTextureDescriptorSet(uint32_t textureId, OverlayType overlayType) const;
 
         virtual void PipelineError(const std::string& msg) const;
 

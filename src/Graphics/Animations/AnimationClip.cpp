@@ -135,9 +135,6 @@ namespace SR_ANIMATIONS_NS {
     }
 
     SR_UTILS_NS::Path AnimationClip::InitializeResourcePath() const {
-        return SR_UTILS_NS::Path(
-                std::move(SR_UTILS_NS::StringUtils::SubstringView(GetResourceId(), '|', 1)),
-                true /** fast */
-        );
+        return SR_UTILS_NS::Path(std::move(SR_UTILS_NS::StringUtils::SubstringView(GetResourceId(), '|', 1)));
     }
 }
