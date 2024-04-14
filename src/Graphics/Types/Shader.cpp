@@ -273,14 +273,14 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Shader::Flush() const {
-        if (!m_isCalculated || m_hasErrors) {
+        if (!m_isCalculated || m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
         SR_TRACY_ZONE;
 
         auto&& ubo = m_pipeline->GetCurrentUBO();
-        if (ubo != SR_ID_INVALID && m_uniformBlock.Valid()) {
+        if (ubo != SR_ID_INVALID && m_uniformBlock.Valid()) SR_LIKELY_ATTRIBUTE {
             m_pipeline->UpdateUBO(ubo, m_uniformBlock.m_memory, m_uniformBlock.m_size);
         }
 

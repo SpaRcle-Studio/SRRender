@@ -25,10 +25,10 @@ namespace SR_GRAPH_NS {
     class Render;
     class RenderContext;
 
-    class Window : public SR_HTYPES_NS::SafePtr<Window> {
+    class Window : public SR_HTYPES_NS::SharedPtr<Window> {
     public:
-        using Super = SR_HTYPES_NS::SafePtr<Window>;
-        using Ptr = SR_HTYPES_NS::SafePtr<Window>;
+        using Super = SR_HTYPES_NS::SharedPtr<Window>;
+        using Ptr = SR_HTYPES_NS::SharedPtr<Window>;
         using WindowHandle = void*;
         using ScrollCallback = SR_HTYPES_NS::Function<void(double_t xOffset, double_t yOffset)>;
         using FocusCallback = SR_HTYPES_NS::Function<void(bool)>;
@@ -42,11 +42,14 @@ namespace SR_GRAPH_NS {
 
     public:
         bool Initialize(const std::string& name, const SR_MATH_NS::UVector2& size);
+
+        bool Open();
         void Close();
 
         void PollEvents();
 
-        SR_NODISCARD SR_HTYPES_NS::Thread::Ptr GetThread() const;
+        //void Update();
+
         SR_NODISCARD SR_MATH_NS::UVector2 GetSize() const;
         SR_NODISCARD SR_MATH_NS::IVector2 GetPosition() const;
         SR_NODISCARD bool IsWindowFocus() const;
@@ -56,7 +59,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsFullScreen() const;
         SR_NODISCARD bool IsMaximized() const;
         SR_NODISCARD bool IsVisible() const;
-        SR_NODISCARD uint32_t GetFramesPerSecond() const { return m_framesPerSecond; }
 
         SR_NODISCARD SR_MATH_NS::IVector2 ScreenToClient(const SR_MATH_NS::IVector2& pos) const;
         SR_NODISCARD SR_MATH_NS::IVector2 ClientToScreen(const SR_MATH_NS::IVector2& pos) const;
@@ -76,16 +78,12 @@ namespace SR_GRAPH_NS {
         }
 
     private:
-        void ThreadFunction();
+        SR_MATH_NS::UVector2 m_initialSize;
+        std::string m_name;
 
-    private:
         CloseCallback m_closeCallback;
         DrawCallback m_drawCallback;
         ScrollCallback m_scrollCallback;
-
-        int32_t m_framesPerSecond = 0;
-
-        SR_HTYPES_NS::Thread::Ptr m_thread = nullptr;
 
         BasicWindowImpl* m_windowImpl = nullptr;
 

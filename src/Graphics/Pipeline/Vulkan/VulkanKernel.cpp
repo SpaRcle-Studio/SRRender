@@ -31,9 +31,15 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        return m_pipeline->GetWindow().Do<bool>([](Window* pWindow) -> bool {
-            return pWindow->IsValid();
-        }, false);
+        if (m_pipeline->GetWindow() && m_pipeline->GetWindow()->IsValid()) {
+            return true;
+        }
+
+        return false;
+
+        //return m_pipeline->GetWindow().Do<bool>([](Window* pWindow) -> bool {
+        //    return pWindow->IsValid();
+        //}, false);
     }
 
     void VulkanKernel::SetGUIEnabled(bool enabled) {
@@ -176,11 +182,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        m_pipeline->GetWindow().Do([](Window* pWindow) {
+        if (auto&& pWindow = m_pipeline->GetWindow()) {
             pWindow->PollEvents();
-        });
-    }
-
-    VulkanKernel::~VulkanKernel() {
+        }
     }
 }

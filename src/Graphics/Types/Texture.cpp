@@ -260,6 +260,8 @@ namespace SR_GTYPES_NS {
     }
 
     Texture* Texture::LoadFromMemory(const std::string& data, const Memory::TextureConfig &config) {
+        SR_TRACY_ZONE;
+
         auto&& pTexture = new Texture();
 
         pTexture->m_textureData = TextureLoader::LoadFromMemory(data, config);

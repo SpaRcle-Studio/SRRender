@@ -31,7 +31,7 @@ namespace SR_GRAPH_NS {
         using ShaderPtr = SR_GTYPES_NS::Shader*;
         using FramebufferPtr = SR_GTYPES_NS::Framebuffer*;
         using RenderContextPtr = SR_HTYPES_NS::SafePtr<SR_GRAPH_NS::RenderContext>;
-        using WindowPtr = SR_HTYPES_NS::SafePtr<Window>;
+        using WindowPtr = SR_HTYPES_NS::SharedPtr<Window>;
         using ShaderProgram = int32_t;
     public:
         explicit Pipeline(const RenderContextPtr& pContext);
@@ -80,6 +80,8 @@ namespace SR_GRAPH_NS {
         virtual void SetViewport(int32_t width = -1, int32_t height = -1) { ++m_state.operations; };
         virtual void SetScissor(int32_t width = -1, int32_t height = -1) { ++m_state.operations; };
 
+        virtual void SwitchWindow(const WindowPtr& pWindow);
+
         /// ------------------------------------------ Работа с Overlay ------------------------------------------------
 
         virtual bool InitOverlay();
@@ -104,7 +106,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD FramebufferPtr GetCurrentFrameBuffer() const noexcept { ++m_state.operations; return m_state.pFrameBuffer; }
         SR_NODISCARD int32_t GetCurrentShaderId() const { ++m_state.operations; return m_state.shaderId; }
         SR_NODISCARD int32_t GetCurrentFrameBufferId() const noexcept { ++m_state.operations; return m_state.frameBufferId; }
-        SR_NODISCARD int32_t GetCurrentUBO() const noexcept { ++m_state.operations; return m_state.UBOId; }
+        SR_NODISCARD int32_t GetCurrentUBO() const { ++m_state.operations; return m_state.UBOId; }
         SR_NODISCARD int32_t GetCurrentDescriptorSet() const noexcept { ++m_state.operations; return m_state.descriptorSetId; }
         SR_NODISCARD bool IsDirty() const noexcept { ++m_state.operations; return m_dirty; }
         SR_NODISCARD FrameBufferQueue& GetQueue() noexcept { ++m_state.operations; return m_fboQueue; }
@@ -153,6 +155,7 @@ namespace SR_GRAPH_NS {
 
         virtual void SetVSyncEnabled(bool enabled) { }
 
+        SR_NODISCARD uint32_t GetFramesPerSecond() const noexcept { return m_framesPerSecond; }
         SR_NODISCARD const PipelineState& GetPreviousState() const { return m_previousState; }
         SR_NODISCARD const PipelineState& GetBuildState() const { return m_buildState; }
         SR_NODISCARD uint8_t GetSamplesCount() const;
@@ -255,6 +258,10 @@ namespace SR_GRAPH_NS {
         uint8_t m_requiredSampleCount = 0;
         uint8_t m_supportedSampleCount = 0;
         bool m_isMultiSampleSupported = false;
+
+        uint32_t m_frames = 0;
+        uint32_t m_framesPerSecond = 0;
+        std::optional<SR_UTILS_NS::TimePointType> m_lastSecond;
 
         bool m_isShaderChanged = true;
 

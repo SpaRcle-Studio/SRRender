@@ -16,7 +16,7 @@ namespace SR_GRAPH_NS {
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
     public:
         explicit VulkanKernel(PipelinePtr pPipeline);
-        ~VulkanKernel() override;
+        ~VulkanKernel() override = default;
 
     public:
         bool OnResize() override;

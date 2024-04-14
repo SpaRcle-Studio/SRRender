@@ -33,6 +33,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool VulkanPipeline::InitOverlay() {
+        SR_TRACY_ZONE;
+
     #ifdef SR_USE_IMGUI
         if (SR_UTILS_NS::Features::Instance().Enabled("ImGUI", false)) {
             auto&& pImGuiOverlay = m_overlays[OverlayType::ImGui];
@@ -69,6 +71,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool VulkanPipeline::PreInit(const PipelinePreInitInfo& info) {
+        SR_TRACY_ZONE;
+
         if (!Pipeline::PreInit(info)) {
             PipelineError("VulkanPipeline::PreInit() : failed to pre-initialize pipeline!");
             return false;
@@ -145,6 +149,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool VulkanPipeline::Init() {
+        SR_TRACY_ZONE;
+
         SR_GRAPH_LOG("VulkanPipeline::Init() : initializing vulkan...");
 
         auto&& createSurfaceFn = [this](const VkInstance &instance) -> VkSurfaceKHR {
@@ -202,8 +208,10 @@ namespace SR_GRAPH_NS {
         #endif
         };
 
-        if (auto&& pImpl = m_window->GetImplementation<BasicWindowImpl>()) {
-            m_kernel->SetSize(pImpl->GetSurfaceWidth(), pImpl->GetSurfaceHeight());
+        if (m_window) {
+            if (auto&& pImpl = m_window->GetImplementation<BasicWindowImpl>()) {
+                m_kernel->SetSize(pImpl->GetSurfaceWidth(), pImpl->GetSurfaceHeight());
+            }
         }
 
         static const std::vector<const char*> deviceExtensions = {
@@ -211,7 +219,7 @@ namespace SR_GRAPH_NS {
             //VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME,
         };
 
-        if (!m_kernel->Init(createSurfaceFn, m_window->GetHandle(), deviceExtensions, true, m_preInitInfo.vsync)) {
+        if (!m_kernel->Init(createSurfaceFn, m_window ? m_window->GetHandle() : nullptr, deviceExtensions, true, m_preInitInfo.vsync)) {
             PipelineError("VulkanPipeline::Init() : failed to initialize Evo Vulkan kernel!");
             return false;
         }
@@ -628,12 +636,12 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size) {
         Super::UpdateUBO(UBO, pData, size);
 
-        if (UBO >= m_memory->m_countUBO.first) {
+        if (UBO >= m_memory->m_countUBO.first) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("VulkanPipeline::UpdateUBO() : uniform index out of range! \n\tCount uniforms: {}\n\tIndex: {}", m_memory->m_countUBO.first, UBO);
             return;
         }
 
-        if (!m_memory->m_UBOs[UBO]) {
+        if (!m_memory->m_UBOs[UBO]) SR_UNLIKELY_ATTRIBUTE {
             SRHaltOnce0();
             return;
         }

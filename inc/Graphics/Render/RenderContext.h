@@ -55,19 +55,21 @@ namespace SR_GRAPH_NS {
         using FramebufferPtr = SR_GTYPES_NS::Framebuffer*;
         using CameraPtr = SR_GTYPES_NS::Camera*;
         using ShaderPtr = SR_GTYPES_NS::Shader*;
-        using WindowPtr = SR_HTYPES_NS::SafePtr<Window>;
+        using WindowPtr = SR_HTYPES_NS::SharedPtr<Window>;
         using RenderScenes = std::list<std::pair<SR_WORLD_NS::Scene::Ptr, RenderScenePtr>>;
     public:
         using Ptr = SR_HTYPES_NS::SafePtr<RenderContext>;
 
     public:
-        explicit RenderContext(const WindowPtr& pWindow);
+        RenderContext();
         virtual ~RenderContext();
 
     public:
+        void SwitchWindow(WindowPtr pWindow);
+
         void UpdateFramebuffers();
 
-        void Update() noexcept;
+        bool Update() noexcept;
 
         bool Init();
         void Close();
@@ -114,6 +116,7 @@ namespace SR_GRAPH_NS {
         bool InitPipeline();
 
         template<typename T> bool RegisterResource(T* pResource) {
+            SRAssert2(!m_isClosed, "RenderContext is closed");
             if (auto&& pGraphicsResource = dynamic_cast<Memory::IGraphicsResource*>(pResource)) {
                 if (pGraphicsResource->GetRenderContext()) {
                     return false;
@@ -151,6 +154,8 @@ namespace SR_GRAPH_NS {
         TexturePtr m_noneTexture = nullptr;
 
         PipelinePtr m_pipeline = nullptr;
+
+        bool m_isClosed = false;
 
     };
 

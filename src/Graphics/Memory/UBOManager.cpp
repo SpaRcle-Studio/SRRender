@@ -154,17 +154,17 @@ namespace SR_GRAPH_NS::Memory {
         auto&& pShader = m_pipeline->GetCurrentShader();
 
 	#ifdef SR_DEBUG
-        if (virtualUbo == SR_ID_INVALID) {
+        if (virtualUbo == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("UBOManager::BindUBO() : invalid virtual ubo!");
             return BindResult::Failed;
         }
 
-        if (!m_identifier && !m_singleIdentifierMode && !m_ignoreIdentifier) {
+        if (!m_identifier && !m_singleIdentifierMode && !m_ignoreIdentifier) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("UBOManager::BindUBO() : identifier is nullptr!");
             return BindResult::Failed;
         }
 
-        if (!pShader) {
+        if (!pShader) SR_UNLIKELY_ATTRIBUTE {
             SRHaltOnce("Current shader is nullptr!");
             return BindResult::Failed;
         }
@@ -178,7 +178,7 @@ namespace SR_GRAPH_NS::Memory {
         bool isFound = false;
 
         for (auto&& data : info.m_data) {
-            if (data.pIdentifier == (m_ignoreIdentifier ? nullptr : m_identifier) && data.shaderInfo.pShader == pShader) {
+            if (data.pIdentifier == (m_ignoreIdentifier ? nullptr : m_identifier) && data.shaderInfo.pShader == pShader) SR_LIKELY_ATTRIBUTE {
                 descriptor = data.descriptor;
                 ubo = data.ubo;
                 isFound = true;
@@ -187,7 +187,7 @@ namespace SR_GRAPH_NS::Memory {
         }
 
         /// если не нашли камеру, то дублируем память под новую камеру
-        if (!isFound)
+        if (!isFound) SR_UNLIKELY_ATTRIBUTE
         {
             VirtualUBOInfo::ShaderInfo shaderInfo = { };
             shaderInfo.pShader = pShader;
@@ -210,11 +210,11 @@ namespace SR_GRAPH_NS::Memory {
             result = BindResult::Duplicated;
         }
 
-        if (ubo != SR_ID_INVALID) {
+        if (ubo != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
             m_pipeline->BindUBO(ubo);
         }
 
-        if (descriptor != SR_ID_INVALID) {
+        if (descriptor != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
             m_pipeline->BindDescriptorSet(descriptor);
         }
 

@@ -20,7 +20,7 @@ namespace SR_GRAPH_NS {
 
         pMesh->UseModelMatrix();
 
-        if (CheckCamera()) {
+        if (CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
             UpdateCascades();
         }
 
@@ -125,19 +125,19 @@ namespace SR_GRAPH_NS {
     }
 
     bool CascadedShadowMapPass::CheckCamera() {
-        if (!m_camera) {
+        if (!m_camera) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
-        if (m_cameraPosition.Distance(m_camera->GetPosition()) > 1.0) {
+        if (m_cameraPosition.Distance(m_camera->GetPosition()) > 1.0) SR_UNLIKELY_ATTRIBUTE {
             goto dirty;
         }
 
-        if (m_cameraRotation != m_camera->GetRotation()) {
+        if (m_cameraRotation != m_camera->GetRotation()) SR_UNLIKELY_ATTRIBUTE {
             goto dirty;
         }
 
-        if (m_screenSize != m_camera->GetSize()) {
+        if (m_screenSize != m_camera->GetSize()) SR_UNLIKELY_ATTRIBUTE {
             goto dirty;
         }
 

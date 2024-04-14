@@ -12,7 +12,7 @@
 namespace SR_GRAPH_NS {
     class X11SurfaceInit {
     public:
-        static VkSurfaceKHR Init(const SR_HTYPES_NS::SafePtr<SR_GRAPH_NS::Window>& window, VkInstance instance);
+        static VkSurfaceKHR Init(const SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::Window>& window, VkInstance instance);
         static const char* GetSurfaceExtensionName();
     };
 }

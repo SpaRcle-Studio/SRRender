@@ -10,7 +10,7 @@
 #include <vulkan/vulkan_xlib.h>
 
 namespace SR_GRAPH_NS {
-    VkSurfaceKHR X11SurfaceInit::Init(const SR_HTYPES_NS::SafePtr<SR_GRAPH_NS::Window>& window, VkInstance instance) {
+    VkSurfaceKHR X11SurfaceInit::Init(const SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::Window>& window, VkInstance instance) {
         if (auto&& pImpl = window->GetImplementation<X11Window>()) {
             VkXcbSurfaceCreateInfoKHR surfaceInfo = { };
             surfaceInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;

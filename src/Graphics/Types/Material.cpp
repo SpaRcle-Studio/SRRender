@@ -123,7 +123,6 @@ namespace SR_GTYPES_NS {
         });
     }
 
-
     void Material::UseSamplers() {
         InitContext();
 

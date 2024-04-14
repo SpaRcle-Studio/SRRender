@@ -45,6 +45,8 @@ namespace SR_GRAPH_NS::VulkanTools {
 
     private:
         bool Initialize(EvoVulkan::Core::VulkanKernel* kernel) {
+            SR_TRACY_ZONE;
+
             if (m_isInit) {
                 return false;
             }

@@ -43,7 +43,7 @@ namespace SR_GRAPH_NS {
         using WidgetManagerPtr = GUI::WidgetManager*;
         using WidgetManagers = std::vector<WidgetManagerPtr>;
         using ScenePtr = SR_HTYPES_NS::SafePtr<SR_WORLD_NS::Scene>;
-        using WindowPtr = SR_HTYPES_NS::SafePtr<Window>;
+        using WindowPtr = SR_HTYPES_NS::SharedPtr<Window>;
         using CameraPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Camera>;
         using MeshPtr = SR_GTYPES_NS::Mesh*;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
@@ -59,6 +59,8 @@ namespace SR_GRAPH_NS {
 
     public:
         void Render() noexcept;
+        void Submit() noexcept;
+
         void Synchronize();
 
         void OnResourceReloaded(SR_UTILS_NS::IResource* pResource);
@@ -118,7 +120,6 @@ namespace SR_GRAPH_NS {
         void Build();
         void BuildQueue();
         void Update() noexcept;
-        void Submit() noexcept;
 
     private:
         SR_HTYPES_NS::SharedPtr<RenderStrategy> m_renderStrategy;

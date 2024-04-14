@@ -57,12 +57,12 @@ namespace SR_GRAPH_NS {
 
         PrepareFrame();
 
+        PrepareRender();
+
         /// ImGui будет нарисован поверх независимо от порядка отрисовки.
         /// Однако, если его нарисовать в конце, то пользователь может
         /// изменить данные отрисовки сцены и сломать уже нарисованную сцену
         Overlay();
-
-        PrepareRender();
 
         if (IsDirty() || GetPipeline()->IsDirty()) {
             Build();
@@ -73,8 +73,6 @@ namespace SR_GRAPH_NS {
         if (!m_hasDrawData) {
             RenderBlackScreen();
         }
-
-        Submit();
     }
 
     void RenderScene::SetDirty() {
@@ -193,6 +191,7 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderScene::SetTechnique(const SR_UTILS_NS::Path &path) {
+        SRAssert2(GetContext()->GetPipeline(), "RenderScene::SetTechnique() : pipeline is nullptr!");
         SetTechnique(RenderTechnique::Load(path));
     }
 
@@ -312,6 +311,13 @@ namespace SR_GRAPH_NS {
 
     void RenderScene::Register(const CameraPtr& pCamera) {
         CameraInfo info;
+
+        if (auto&& pWindow = GetWindow()) {
+            pCamera->UpdateProjection(pWindow->GetSize().x, pWindow->GetSize().y);
+        }
+        else {
+            pCamera->UpdateProjection(m_surfaceSize.x, m_surfaceSize.y);
+        }
 
         info.pCamera = pCamera;
 

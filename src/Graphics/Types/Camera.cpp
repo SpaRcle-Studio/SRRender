@@ -15,15 +15,9 @@
 namespace SR_GTYPES_NS {
     SR_REGISTER_COMPONENT(Camera);
 
-    Camera::Camera(uint32_t width, uint32_t height)
+    Camera::Camera()
         : Super()
-        , m_viewportSize(SR_MATH_NS::UVector2(width, height))
-    {
-        if (width != 0 && height != 0) {
-            UpdateProjection();
-            UpdateView();
-        }
-    }
+    { }
 
     Camera::~Camera() {
         if (m_renderTechnique.pTechnique) {
@@ -84,24 +78,13 @@ namespace SR_GTYPES_NS {
         const auto&& FOV = marshal.Read<float_t>();
         const auto&& priority = marshal.Read<int32_t>();
 
-        auto&& pWindow = dataStorage->GetValue<Window::Ptr>();
-
-        if (!SRVerifyFalse(!pWindow)) {
-            return nullptr;
-        }
-
-        auto&& viewportSize = pWindow->GetSize();
-
-        auto&& pCamera = new Camera(viewportSize.x, viewportSize.y);
+        auto&& pCamera = new Camera();
 
         pCamera->SetFar(_far);
         pCamera->SetNear(_near);
         pCamera->SetFOV(FOV);
         pCamera->SetPriority(priority);
         pCamera->SetRenderTechnique(renderTechniquePath);
-
-        pCamera->UpdateView();
-        pCamera->UpdateProjection();
 
         return pCamera;
     }
@@ -317,7 +300,7 @@ namespace SR_GTYPES_NS {
     }
 
     SR_UTILS_NS::Component *Camera::CopyComponent() const {
-        auto&& pCamera = new Camera(m_viewportSize.x, m_viewportSize.y);
+        auto&& pCamera = new Camera();
 
         pCamera->m_priority = m_priority;
 

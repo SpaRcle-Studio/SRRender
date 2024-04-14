@@ -2,13 +2,14 @@
 // Created by Monika on 07.12.2022.
 //
 
-#include <Utils/Common/Features.h>
-
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Overlay/Overlay.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Render/RenderContext.h>
+
+#include <Utils/Types/Time.h>
+#include <Utils/Common/Features.h>
 
 #ifdef SR_DEBUG
     #define SR_PIPELINE_RENDER_GUARD(ret)                   \
@@ -24,7 +25,6 @@
 namespace SR_GRAPH_NS {
     Pipeline::Pipeline(const RenderContextPtr& pContext)
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Manually)
-        , m_window(pContext->GetWindow())
         , m_renderContext(pContext)
     { }
 
@@ -33,9 +33,25 @@ namespace SR_GRAPH_NS {
     }
 
     void Pipeline::DrawFrame() {
+        SR_TRACY_ZONE;
+
         ++m_state.operations;
         m_previousState = m_state;
         m_state = PipelineState();
+
+        ++m_frames;
+
+        auto&& now = SR_HTYPES_NS::Time::ClockT::now();
+
+        if (!m_lastSecond.has_value()) {
+            m_lastSecond = now;
+        }
+
+        if (now - m_lastSecond.value() >= std::chrono::seconds(1)) {
+            m_framesPerSecond = m_frames;
+            m_frames = 0;
+            m_lastSecond = now;
+        }
     }
 
     bool Pipeline::BeginRender() {
@@ -396,5 +412,10 @@ namespace SR_GRAPH_NS {
         }
 
         return m_isMultiSampleSupported;
+    }
+
+    void Pipeline::SwitchWindow(const Pipeline::WindowPtr& pWindow) {
+        ++m_state.operations;
+        m_window = pWindow;
     }
 }

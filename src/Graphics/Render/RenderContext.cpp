@@ -18,12 +18,13 @@
 #include <Graphics/Types/Skybox.h>
 
 namespace SR_GRAPH_NS {
-    RenderContext::RenderContext(const RenderContext::WindowPtr& pWindow)
+    RenderContext::RenderContext()
         : Super(this)
-        , m_window(pWindow)
-    { }
+    {
+        m_pipeline = new VulkanPipeline(GetThis());
+    }
 
-    void RenderContext::Update() noexcept {
+    bool RenderContext::Update() noexcept {
         SR_TRACY_ZONE;
 
         /**
@@ -80,14 +81,14 @@ namespace SR_GRAPH_NS {
             pRenderScene.AutoFree();
             pIt = m_scenes.erase(pIt);
         }
+
+        return dirty;
     }
 
     bool RenderContext::Init() {
         SR_TRACY_ZONE;
 
         SR_INFO("RenderContext::Init() : initializing render context...");
-
-        m_pipeline = new VulkanPipeline(GetThis());
 
         if (!InitPipeline()) {
             SR_ERROR("RenderContext::Init() : failed to initialize pipeline!");
@@ -96,7 +97,7 @@ namespace SR_GRAPH_NS {
 
         SR_INFO("RenderContext::Init() : initializing overlay...");
 
-        if (!m_pipeline->InitOverlay()) {
+        if (m_window && !m_pipeline->InitOverlay()) {
             SR_ERROR("RenderContext::Init() : failed to initialize overlay!");
             return false;
         }
@@ -162,6 +163,11 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderContext::Close() {
+        SR_LOG("RenderContext::Close() : closing render context...");
+
+        SRAssert2(!m_isClosed, "Render context is already closed!");
+        m_isClosed = true;
+
         if (m_noneTexture) {
             m_noneTexture->RemoveUsePoint();
             m_noneTexture = nullptr;
@@ -181,10 +187,43 @@ namespace SR_GRAPH_NS {
             m_defaultUIMaterial->RemoveUsePoint();
             m_defaultUIMaterial = nullptr;
         }
+
+        uint32_t syncStep = 0;
+        const uint32_t maxErrStep = 50;
+
+        SR_UTILS_NS::ResourceManager::Instance().UpdateWatchers(0.f);
+        SR_UTILS_NS::ResourceManager::Instance().ReloadResources(0.f);
+
+        SR_UTILS_NS::ResourceManager::Instance().Synchronize(true);
+
+        while (!IsEmpty()) {
+            SR_TRACY_ZONE_N("Sync free resources iteration");
+
+            SR_SYSTEM_LOG("RenderContext::Close() : synchronizing resources (step " + std::to_string(++syncStep) + ")");
+
+            while (Update()) {
+                SR_NOOP;
+            }
+
+            SR_UTILS_NS::ResourceManager::Instance().Synchronize(true);
+
+            if (maxErrStep == syncStep) {
+                SR_ERROR("RenderContext::Close() : [FATAL] resources can not be released!");
+                SR_UTILS_NS::ResourceManager::Instance().PrintMemoryDump();
+                SR_PLATFORM_NS::Terminate();
+                break;
+            }
+
+            SR_HTYPES_NS::Thread::Sleep(50);
+        }
+
+        SR_LOG("RenderContext::Close() : render context successfully closed!");
     }
 
     RenderContext::RenderScenePtr RenderContext::CreateScene(const SR_WORLD_NS::Scene::Ptr &scene) {
         SR_TRACY_ZONE;
+
+        SRAssert2(!m_isClosed, "Render context is closed!");
 
         RenderScenePtr pRenderScene;
 
@@ -258,6 +297,10 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderContext::IsEmpty() const {
+        if (m_defaultTexture || m_noneTexture || m_defaultMaterial || m_defaultUIMaterial) {
+            return false;
+        }
+
         return
             m_shaders.empty() &&
             m_framebuffers.empty() &&
@@ -411,7 +454,7 @@ namespace SR_GRAPH_NS {
     }
 
     RenderContext::~RenderContext() {
-        SRAssert(IsEmpty());
+        SRAssert2(IsEmpty(), "Render context is not empty!");
 
         if (m_pipeline) {
             m_pipeline->Destroy();
@@ -421,6 +464,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderContext::InitPipeline() {
+        SR_TRACY_ZONE;
+
         SR_GRAPH("RenderContext::InitPipeline() : initializing the render pipeline...");
 
         PipelinePreInitInfo pipelinePreInitInfo;
@@ -464,5 +509,10 @@ namespace SR_GRAPH_NS {
         }
 
         return false;
+    }
+
+    void RenderContext::SwitchWindow(RenderContext::WindowPtr pWindow) {
+        m_window = std::move(pWindow);
+        m_pipeline->SwitchWindow(m_window);
     }
 }

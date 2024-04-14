@@ -20,6 +20,10 @@ namespace SR_GTYPES_NS {
     class Shader;
 }
 
+namespace SR_UTILS_NS {
+    class IResource;
+}
+
 namespace SR_GRAPH_NS {
     SR_ENUM_NS_STRUCT_T(MeshClusterType, uint64_t,
         None        = 1 << 0,

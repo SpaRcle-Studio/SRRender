@@ -30,7 +30,7 @@ namespace SR_GTYPES_NS {
         using Ptr = SR_HTYPES_NS::SharedPtr<Camera>;
 
     public:
-        explicit Camera(uint32_t width = 0, uint32_t height = 0);
+        Camera();
         ~Camera() override;
 
     public:
