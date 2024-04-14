@@ -24,7 +24,6 @@ namespace SR_GTYPES_NS {
         void SetStartPoint(const SR_MATH_NS::FVector3& startPoint);
         void SetEndPoint(const SR_MATH_NS::FVector3& endPoint);
         void SetColor(const SR_MATH_NS::FVector4& color);
-
         void Draw() override;
 
         void UseMaterial() override;

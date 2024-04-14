@@ -174,16 +174,16 @@ namespace SR_GRAPH_NS::Types {
     }
 
     int32_t Shader::GetId() noexcept {
-        if (m_hasErrors) {
+        if (m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
-        if (!m_isCalculated && !Init()) {
+        if (!m_isCalculated && !Init()) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("Shader::Use() : failed to initialize shader!");
             return false;
         }
 
-        return Memory::ShaderProgramManager::Instance().GetProgram(m_shaderProgram);
+        return m_manager.GetProgram(m_shaderProgram);
     }
 
     void Shader::SetBool(uint64_t hashId, bool v) noexcept { SetValue<false>(hashId, &v); }

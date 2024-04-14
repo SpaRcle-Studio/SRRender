@@ -31,6 +31,8 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     UBOManager::VirtualUBO UBOManager::AllocateUBO(uint32_t uboSize, uint32_t samples) {
+        SR_TRACY_ZONE;
+
         if (!m_identifier && !m_singleIdentifierMode && !m_ignoreIdentifier) {
             SRHalt("UBOManager::AllocateUBO() : identifier is nullptr!");
             return SR_ID_INVALID;
@@ -101,6 +103,7 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     UBOManager::VirtualUBO UBOManager::GenerateUnique() const {
+        SR_TRACY_ZONE;
         /// TODO: следует делать одновременно поиск с конца
         for (uint32_t i = 0; i < m_virtualTableSize; ++i) {
             if (m_virtualTable[i].Valid()) {
@@ -116,6 +119,8 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     bool UBOManager::AllocMemory(UBO *ubo, Descriptor* descriptor, uint32_t uboSize, uint32_t samples, int32_t shader) {
+        SR_TRACY_ZONE;
+
         auto&& shaderIdStash = m_pipeline->GetCurrentShaderId();
 
         m_pipeline->SetCurrentShaderId(shader);
@@ -222,7 +227,9 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     UBOManager::VirtualUBO UBOManager::ReAllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize, uint32_t samples) {
-        if (virtualUbo == SR_ID_INVALID) {
+        SR_TRACY_ZONE;
+
+        if (virtualUbo == SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
             const auto&& virtualUBO = AllocateUBO(uboSize, samples);
             return virtualUBO;
         }
@@ -230,7 +237,7 @@ namespace SR_GRAPH_NS::Memory {
         auto&& pShader = m_pipeline->GetCurrentShader();
         auto&& shaderProgram = pShader ? pShader->GetId() : SR_ID_INVALID;
 
-        if (shaderProgram == SR_ID_INVALID) {
+        if (shaderProgram == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("UBOManager::ReAllocateUBO() : shader program do not set!");
             return virtualUbo;
         }

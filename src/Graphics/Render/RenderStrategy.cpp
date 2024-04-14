@@ -328,13 +328,13 @@ namespace SR_GRAPH_NS {
 
         m_isRendered = false;
 
-        if (!IsValid()) {
+        if (!IsValid()) SR_UNLIKELY_ATTRIBUTE {
             SetError("VBO is not valid!");
             return false;
         }
 
-        if ((m_isRendered = !m_meshes.empty())) {
-            if (!m_meshes[0]->BindMesh()) {
+        if ((m_isRendered = !m_meshes.empty())) SR_LIKELY_ATTRIBUTE {
+            if (!m_meshes[0]->BindMesh()) SR_UNLIKELY_ATTRIBUTE {
                 return false;
             }
         }

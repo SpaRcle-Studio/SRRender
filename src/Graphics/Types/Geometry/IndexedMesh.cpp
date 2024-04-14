@@ -121,8 +121,8 @@ namespace SR_GTYPES_NS {
         Mesh::FreeVideoMemory();
     }
 
-    int32_t IndexedMesh::GetVBO()  {
-        if (!IsCalculated() && !Calculate()) {
+    int32_t IndexedMesh::GetVBO() {
+        if (!IsCalculated() && !Calculate()) SR_UNLIKELY_ATTRIBUTE {
             return SR_ID_INVALID;
         }
 
@@ -130,7 +130,7 @@ namespace SR_GTYPES_NS {
     }
 
     int32_t IndexedMesh::GetIBO() {
-        if (!IsCalculated() && !Calculate()) {
+        if (!IsCalculated() && !Calculate()) SR_UNLIKELY_ATTRIBUTE {
             return SR_ID_INVALID;
         }
 

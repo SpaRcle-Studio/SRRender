@@ -335,6 +335,7 @@ namespace SR_GRAPH_NS {
     }
 
     void Pipeline::ResetDescriptorSet() {
+        SR_TRACY_ZONE;
         ++m_state.operations;
         m_state.descriptorSetId = SR_ID_INVALID;
     }

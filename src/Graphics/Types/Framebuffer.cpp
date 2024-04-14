@@ -219,11 +219,11 @@ namespace SR_GTYPES_NS {
     }
 
     int32_t Framebuffer::GetId() {
-        if (m_hasErrors) {
+        if (m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
             return SR_ID_INVALID;
         }
 
-        if ((!IsCalculated() || m_dirty) && !Update()) {
+        if ((!IsCalculated() || m_dirty) && !Update()) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("Framebuffer::GetId() : failed to initialize framebuffer!");
         }
 

@@ -19,10 +19,7 @@ namespace SR_GRAPH_NS::Memory {
         using Identifier = uint64_t;
         using ShaderProgram = int32_t;
     public:
-        VirtualProgramInfo() {
-            m_data.reserve(8);
-        }
-
+        VirtualProgramInfo() = default;
         ~VirtualProgramInfo() override = default;
 
         VirtualProgramInfo(VirtualProgramInfo&& ref) noexcept {
@@ -44,7 +41,50 @@ namespace SR_GRAPH_NS::Memory {
             SR_NODISCARD bool Valid() const { return id != SR_ID_INVALID; }
         };
 
-        ska::flat_hash_map<Identifier, ShaderProgramInfo> m_data;
+        SR_NODISCARD bool Valid() const { return !m_data.empty(); }
+
+        ShaderProgramInfo* SetProgramInfo(Identifier identifier, const ShaderProgramInfo& info) {
+            for (auto&& [id, data] : m_data) {
+                if (id == identifier) SR_UNLIKELY_ATTRIBUTE {
+                    data = info;
+                    return &data;
+                }
+            }
+
+            return &m_data.emplace_back(identifier, info).second;
+        }
+
+        SR_NODISCARD bool HasProgram(Identifier identifier) const {
+            for (auto&& [id, data] : m_data) {
+                if (id == identifier) SR_LIKELY_ATTRIBUTE {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        SR_NODISCARD ShaderProgramInfo* GetProgramInfo(Identifier identifier) {
+            for (auto&& [id, data] : m_data) {
+                if (id == identifier) SR_LIKELY_ATTRIBUTE {
+                    return &data;
+                }
+            }
+
+            return nullptr;
+        }
+
+        SR_NODISCARD const ShaderProgramInfo* GetProgramInfo(Identifier identifier) const {
+            for (auto&& [id, data] : m_data) {
+                if (id == identifier) SR_LIKELY_ATTRIBUTE {
+                    return &data;
+                }
+            }
+
+            return nullptr;
+        }
+
+        std::vector<std::pair<Identifier, ShaderProgramInfo>> m_data;
         SRShaderCreateInfo m_createInfo;
 
     };
@@ -84,13 +124,13 @@ namespace SR_GRAPH_NS::Memory {
         SR_NODISCARD VirtualProgramInfo::Identifier GetCurrentIdentifier() const;
         SR_NODISCARD VirtualProgramInfo::ShaderProgramInfo AllocateShaderProgram(const SRShaderCreateInfo& createInfo) const;
         SR_NODISCARD ShaderBindResult BindShaderProgram(VirtualProgramInfo::ShaderProgramInfo& shaderProgramInfo, const SRShaderCreateInfo& createInfo);
-        SR_NODISCARD VirtualProgram GenerateUnique() const;
 
     protected:
         void OnSingletonDestroy() override;
 
     private:
-        ska::flat_hash_map<VirtualProgram, VirtualProgramInfo> m_virtualTable;
+        std::vector<VirtualProgramInfo> m_programs;
+        std::list<VirtualProgram> m_unusedPrograms;
         PipelinePtr m_pipeline;
 
     };

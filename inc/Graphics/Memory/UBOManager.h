@@ -74,6 +74,7 @@ namespace SR_GRAPH_NS::Memory {
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
     public:
         enum class BindResult : uint8_t {
+            None,
             Success,
             Duplicated,
             Failed

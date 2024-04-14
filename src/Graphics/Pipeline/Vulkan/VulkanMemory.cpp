@@ -220,6 +220,8 @@ bool SR_GRAPH_NS::VulkanTools::MemoryManager::FreeTexture(uint32_t ID) {
 }
 
 int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateUBO(uint32_t UBOSize) {
+    SR_TRACY_ZONE;
+
     for (uint32_t i = 0; i < m_countUBO.first; ++i) {
         if (m_UBOs[i] == nullptr) {
             m_UBOs[i] = EvoVulkan::Types::VmaBuffer::Create(

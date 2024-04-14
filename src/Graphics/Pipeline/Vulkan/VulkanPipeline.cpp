@@ -261,6 +261,8 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocDescriptorSet(const std::vector<DescriptorType>& types) {
+        SR_TRACY_ZONE;
+
         if (!m_memory) {
             SR_ERROR("VulkanPipeline::AllocDescriptorSet() : memory manager is nullptr!");
             return SR_ID_INVALID;
@@ -297,26 +299,25 @@ namespace SR_GRAPH_NS {
     }
 
     void* VulkanPipeline::GetCurrentFBOHandle() const {
-        void* pHandle = (void*)(VkRenderPass)m_kernel->GetRenderPass(); /// Ну типо кадровый буфер
-
-        if (m_state.pFrameBuffer) {
-            if (auto&& FBO = m_state.pFrameBuffer->GetId(); FBO == SR_ID_INVALID) {
+        if (m_state.pFrameBuffer) SR_LIKELY_ATTRIBUTE {
+            if (auto&& FBO = m_state.pFrameBuffer->GetId(); FBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 PipelineError("Vulkan::GetCurrentFBOHandle() : invalid FBO!");
             }
-            else if (auto&& framebuffer = m_memory->m_FBOs[FBO - 1]; !framebuffer) {
+            else if (auto&& framebuffer = m_memory->m_FBOs[FBO - 1]; !framebuffer) SR_UNLIKELY_ATTRIBUTE {
                 PipelineError("Vulkan::GetCurrentFBOHandle() : frame buffer object don't exist!");
             }
-            else {
-                if (auto&& layers = framebuffer->GetLayers(); !layers.empty()) {
-                    pHandle = (void*)layers.at(SR_MIN(layers.size() - 1, m_state.frameBufferLayer))->GetFramebuffer();
+            else SR_LIKELY_ATTRIBUTE {
+                if (auto&& layers = framebuffer->GetLayers(); !layers.empty()) SR_LIKELY_ATTRIBUTE {
+                    return (void*)layers.at(SR_MIN(layers.size() - 1, m_state.frameBufferLayer))->GetFramebuffer();
                 }
                 else {
                     PipelineError("Vulkan::GetCurrentFBOHandle() : frame buffer have not layers!");
                 }
             }
+            return nullptr;
         }
 
-        return pHandle;
+        return (void*)(VkRenderPass)m_kernel->GetRenderPass(); /// Ну типо кадровый буфер
     }
 
     std::set<void*> VulkanPipeline::GetFBOHandles() const {
@@ -1480,9 +1481,12 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::BindVBO(uint32_t VBO) {
         Super::BindVBO(VBO);
 
-        if (VBO == SR_ID_INVALID) {
+    #ifdef SR_DEBUG
+        if (VBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("VulkanPipeline::BindVBO() : VBO is not exists!");
             return;
         }
+    #endif
 
         vkCmdBindVertexBuffers(m_currentCmd, 0, 1, m_memory->m_VBOs[VBO]->GetCRef(), m_offsets);
     }
@@ -1490,9 +1494,12 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::BindIBO(uint32_t IBO) {
         Super::BindIBO(IBO);
 
-        if (IBO == SR_ID_INVALID) {
+    #ifdef SR_DEBUG
+        if (IBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("VulkanPipeline::BindIBO() : IBO is not exists!");
             return;
         }
+    #endif
 
         vkCmdBindIndexBuffer(m_currentCmd, *m_memory->m_IBOs[IBO], 0, VK_INDEX_TYPE_UINT32);
     }
@@ -1545,6 +1552,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::DrawIndices(uint32_t count) {
+        SR_TRACY_ZONE;
+
         Super::DrawIndices(count);
 
         if (m_currentDescriptorSets) {

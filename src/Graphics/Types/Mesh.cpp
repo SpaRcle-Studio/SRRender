@@ -150,14 +150,14 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Mesh::BindMesh() {
-        if (auto&& VBO = GetVBO(); VBO != SR_ID_INVALID) {
+        if (auto&& VBO = GetVBO(); VBO != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
             m_pipeline->BindVBO(VBO);
         }
         else {
             return false;
         }
 
-        if (auto&& IBO = GetIBO(); IBO != SR_ID_INVALID) {
+        if (auto&& IBO = GetIBO(); IBO != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
             m_pipeline->BindIBO(IBO);
         }
         else {

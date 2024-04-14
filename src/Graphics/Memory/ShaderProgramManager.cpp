@@ -13,66 +13,60 @@
 namespace SR_GRAPH_NS::Memory {
     ShaderProgramManager::ShaderProgramManager()
         : SR_UTILS_NS::Singleton<ShaderProgramManager>()
-    {
-        m_virtualTable.max_load_factor(0.75f);
-        m_virtualTable.reserve(1024);
-    }
+    { }
 
     void ShaderProgramManager::OnSingletonDestroy() {
         Singleton::OnSingletonDestroy();
     }
 
-    ShaderProgramManager::VirtualProgram ShaderProgramManager::Allocate(const SRShaderCreateInfo &createInfo) {
-        SR_LOCK_GUARD;
-
+    ShaderProgramManager::VirtualProgram ShaderProgramManager::Allocate(const SRShaderCreateInfo& createInfo) {
         SR_TRACY_ZONE;
 
-        VirtualProgram virtualProgram = GenerateUnique();
-
-        if (virtualProgram == SR_ID_INVALID) {
-            SR_ERROR("ShaderProgramManager::Allocate() : failed to generate virtual program!");
-            return SR_ID_INVALID;
-        }
-
         VirtualProgramInfo virtualProgramInfo;
-        virtualProgramInfo.m_createInfo = SRShaderCreateInfo(createInfo);
+        virtualProgramInfo.m_createInfo = createInfo;
 
-        if (auto&& shaderProgramInfo = AllocateShaderProgram(createInfo); shaderProgramInfo.Valid()) {
-            virtualProgramInfo.m_data[GetCurrentIdentifier()] = shaderProgramInfo;
+        if (auto&& shaderProgramInfo = AllocateShaderProgram(createInfo); shaderProgramInfo.Valid()) SR_LIKELY_ATTRIBUTE {
+            virtualProgramInfo.SetProgramInfo(GetCurrentIdentifier(), shaderProgramInfo);
         }
         else {
             SR_ERROR("ShaderProgramManager::Allocate() : failed to allocate shader program!");
             return SR_ID_INVALID;
         }
 
-        m_virtualTable.insert(std::make_pair(
-            virtualProgram,
-            std::move(virtualProgramInfo)
-        ));
+        VirtualProgram virtualProgram;
+        if (!m_unusedPrograms.empty()) SR_LIKELY_ATTRIBUTE {
+            virtualProgram = m_unusedPrograms.back();
+            m_unusedPrograms.pop_back();
+            m_programs[virtualProgram] = std::move(virtualProgramInfo);
+        }
+        else {
+            virtualProgram = static_cast<VirtualProgram>(m_programs.size());
+            m_programs.emplace_back(std::move(virtualProgramInfo));
+        }
 
         return virtualProgram;
     }
 
     ShaderProgramManager::VirtualProgram ShaderProgramManager::ReAllocate(VirtualProgram program, const SRShaderCreateInfo& createInfo) {
-        SR_LOCK_GUARD;
+        SR_TRACY_ZONE;
 
-        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Medium) {
-            SR_GRAPH_LOG("ShaderProgramManager::ReAllocate() : re-allocate shader program...");
-        }
-
-        if (program == SR_ID_INVALID) {
+        if (program == SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
             return Allocate(createInfo);
         }
 
-        auto&& pIt = m_virtualTable.find(program);
-        if (pIt == m_virtualTable.end()) {
+        if (program >= static_cast<VirtualProgram>(m_programs.size())) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("ShaderProgramManager::ReAllocate() : virtual program not found!");
             return SR_ID_INVALID;
         }
 
-        auto&& [_, virtualProgramInfo] = *pIt;
+        auto&& virtualProgramInfo = m_programs[program];
 
-        EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
+        if (!virtualProgramInfo.Valid()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ShaderProgramManager::ReAllocate() : virtual program is invalid!");
+            return SR_ID_INVALID;
+        }
+
+        /// EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
 
         /// очишаем старые шейдерные программы
         for (auto&& [fbo /** unused */, shaderProgramInfo] : virtualProgramInfo.m_data) {
@@ -84,65 +78,39 @@ namespace SR_GRAPH_NS::Memory {
         virtualProgramInfo.m_createInfo = SRShaderCreateInfo(createInfo);
 
         if (auto&& shaderProgramInfo = AllocateShaderProgram(createInfo); shaderProgramInfo.Valid()) {
-            virtualProgramInfo.m_data[GetCurrentIdentifier()] = shaderProgramInfo;
-            EVK_POP_LOG_LEVEL();
+            virtualProgramInfo.SetProgramInfo(GetCurrentIdentifier(), shaderProgramInfo);
+            /// EVK_POP_LOG_LEVEL();
         }
         else {
             SR_ERROR("ShaderProgramManager::ReAllocate() : failed to allocate shader program!");
-            EVK_POP_LOG_LEVEL();
+            /// EVK_POP_LOG_LEVEL();
             return SR_ID_INVALID;
         }
 
         return program;
     }
 
-    ShaderProgramManager::VirtualProgram ShaderProgramManager::GenerateUnique() const {
-        volatile VirtualProgram virtualProgram = SR_ID_INVALID;
-
-        auto&& random = SR_UTILS_NS::Random::Instance();
-
-        while (true) {
-            VirtualProgram unique = random.Int32();
-
-            /// можно использовать только положительные индексы
-            if (unique < 0) {
-                unique = -unique;
-            }
-
-            SRAssertOnce(unique >= 0);
-
-            if (m_virtualTable.count(unique) == 0 && unique != SR_ID_INVALID) {
-                virtualProgram = unique;
-                break;
-            }
-
-            SR_WARN("ShaderProgramManager::GenerateUnique() : collision detected!");
-        }
-
-        return virtualProgram;
-    }
-
     ShaderBindResult ShaderProgramManager::BindProgram(VirtualProgram virtualProgram) noexcept {
-        SR_LOCK_GUARD;
-
-        auto&& pIt = m_virtualTable.find(virtualProgram);
-        if (pIt == std::end(m_virtualTable)) {
-            SRHalt("ShaderProgramManager::BindProgram() : virtual program not found!");
+        if (virtualProgram >= static_cast<VirtualProgram>(m_programs.size())) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ShaderProgramManager::BindProgram() : invalid virtual program range!");
             return ShaderBindResult::Failed;
         }
 
         ShaderBindResult result = ShaderBindResult::Success;
 
-        auto&& [_, virtualProgramInfo] = *pIt;
+        auto&& virtualProgramInfo = m_programs[virtualProgram];
+        if (!virtualProgramInfo.Valid()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ShaderProgramManager::BindProgram() : invalid virtual program!");
+            return ShaderBindResult::Failed;
+        }
+
         auto&& identifier = GetCurrentIdentifier();
-    retry:
-        auto&& fboIt = virtualProgramInfo.m_data.find(identifier);
-        if (fboIt == std::end(virtualProgramInfo.m_data))
-        {
+
+        auto&& pProgramInfo = virtualProgramInfo.GetProgramInfo(identifier);
+        if (!pProgramInfo) SR_UNLIKELY_ATTRIBUTE {
             if (auto&& shaderProgramInfo = AllocateShaderProgram(virtualProgramInfo.m_createInfo); shaderProgramInfo.Valid()) {
-                virtualProgramInfo.m_data[identifier] = shaderProgramInfo;
+                pProgramInfo = virtualProgramInfo.SetProgramInfo(identifier, shaderProgramInfo);
                 result = ShaderBindResult::Duplicated;
-                goto retry;
             }
             else {
                 SR_ERROR("ShaderProgramManager::BindProgram() : failed to allocate shader program!");
@@ -150,18 +118,14 @@ namespace SR_GRAPH_NS::Memory {
             }
         }
 
-        SRAssert2(result != ShaderBindResult::Failed, "unexcepted result!");
+        auto&& bindResult = BindShaderProgram(*pProgramInfo, virtualProgramInfo.m_createInfo);
 
-        auto&& bindResult = BindShaderProgram(fboIt->second, virtualProgramInfo.m_createInfo);
-
-        if (bindResult == ShaderBindResult::Failed) {
+        if (bindResult == ShaderBindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("ShaderProgramManager::BindProgram() : failed to bind shader program!");
             return ShaderBindResult::Failed;
         }
 
-        SRAssert2(bindResult != ShaderBindResult::Duplicated, "unexcepted duplication!");
-
-        if (result == ShaderBindResult::Duplicated) {
+        if (result == ShaderBindResult::Duplicated) SR_UNLIKELY_ATTRIBUTE {
             return result;
         }
 
@@ -175,66 +139,67 @@ namespace SR_GRAPH_NS::Memory {
     bool ShaderProgramManager::FreeProgram(VirtualProgram *program) {
         SR_TRACY_ZONE;
 
-        if (!SRVerifyFalse(!program)) {
+        if (!SRVerifyFalse(!program)) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
-        auto&& pIt = m_virtualTable.find(*program);
-        if (pIt == std::end(m_virtualTable)) {
-            SRHalt("ShaderProgramManager::FreeProgram() : virtual program not found!");
+        if (static_cast<uint64_t>(*program) >= m_programs.size()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ShaderProgramManager::FreeProgram() : invalid virtual program range!");
             return false;
         }
 
-        auto&& [_, info] = *pIt;
+        auto&& virtualProgramInfo = m_programs[*program];
+        if (!virtualProgramInfo.Valid()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ShaderProgramManager::FreeProgram() : invalid virtual program!");
+            return false;
+        }
 
-        for (auto&& [fbo /** unused */, shaderProgramInfo] : info.m_data) {
+        for (auto&& [fbo /** unused */, shaderProgramInfo] : virtualProgramInfo.m_data) {
             m_pipeline->FreeShader(&shaderProgramInfo.id);
         }
 
-        m_virtualTable.erase(pIt);
-
+        m_programs[*program] = VirtualProgramInfo();
+        m_unusedPrograms.emplace_back(*program);
         *program = SR_ID_INVALID;
 
         return true;
     }
 
     bool ShaderProgramManager::IsAvailable(ShaderProgramManager::VirtualProgram virtualProgram) const noexcept {
-        SR_LOCK_GUARD;
         SR_TRACY_ZONE;
 
-        auto&& pIt = m_virtualTable.find(virtualProgram);
-        if (pIt == std::end(m_virtualTable)) {
+        if (static_cast<uint64_t>(virtualProgram) >= m_programs.size()) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
-        auto&& [_, info] = *pIt;
-        auto&& identifier = GetCurrentIdentifier();
-        auto&& fboIt = info.m_data.find(identifier);
+        auto&& virtualProgramInfo = m_programs[virtualProgram];
+        if (!virtualProgramInfo.Valid()) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
 
-        return fboIt != std::end(info.m_data);
+        return virtualProgramInfo.HasProgram(GetCurrentIdentifier());
     }
 
     ShaderProgramManager::ShaderProgram ShaderProgramManager::GetProgram(VirtualProgram virtualProgram) const noexcept {
-        SR_LOCK_GUARD;
         SR_TRACY_ZONE;
 
-        auto&& pIt = m_virtualTable.find(virtualProgram);
-        if (pIt == std::end(m_virtualTable)) {
-            SRHalt("ShaderProgramManager::GetProgram() : virtual program not found!");
-            return SR_ID_INVALID;
+        if (static_cast<uint64_t>(virtualProgram) >= m_programs.size()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ShaderProgramManager::GetProgram() : invalid virtual program range!");
+            return false;
         }
 
-        auto&& [_, info] = *pIt;
-        auto&& identifier = GetCurrentIdentifier();
-        auto&& fboIt = info.m_data.find(identifier);
-
-        if (fboIt == std::end(info.m_data))
-        {
-            SRHalt("ShaderProgramManager::GetProgram() : framebuffer not found!");
-            return SR_ID_INVALID;
+        auto&& virtualProgramInfo = m_programs[virtualProgram];
+        if (!virtualProgramInfo.Valid()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ShaderProgramManager::GetProgram() : invalid virtual program!");
+            return false;
         }
 
-        return fboIt->second.id;
+        if (auto&& pInfo = virtualProgramInfo.GetProgramInfo(GetCurrentIdentifier())) SR_LIKELY_ATTRIBUTE {
+            return pInfo->id;
+        }
+
+        SRHalt("ShaderProgramManager::GetProgram() : framebuffer not found!");
+        return SR_ID_INVALID;
     }
 
     VirtualProgramInfo::ShaderProgramInfo ShaderProgramManager::AllocateShaderProgram(const SRShaderCreateInfo &createInfo) const {
@@ -304,27 +269,32 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     const VirtualProgramInfo* ShaderProgramManager::GetInfo(ShaderProgramManager::VirtualProgram virtualProgram) const noexcept {
-        SR_LOCK_GUARD;
-
-        auto&& pIt = m_virtualTable.find(virtualProgram);
-        if (pIt == std::end(m_virtualTable)) {
-            SRHalt("ShaderProgramManager::GetInfo() : virtual program not found!");
+        if (static_cast<uint64_t>(virtualProgram) >= m_programs.size()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ShaderProgramManager::GetProgram() : invalid virtual program range!");
             return nullptr;
         }
 
-        return &pIt->second;
+        auto&& virtualProgramInfo = m_programs[virtualProgram];
+        if (!virtualProgramInfo.Valid()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ShaderProgramManager::GetProgram() : invalid virtual program!");
+            return nullptr;
+        }
+
+        return &virtualProgramInfo;
     }
 
     bool ShaderProgramManager::HasProgram(ShaderProgramManager::VirtualProgram virtualProgram) const noexcept {
-        SR_LOCK_GUARD;
-        return m_virtualTable.find(virtualProgram) != std::end(m_virtualTable);
+        if (static_cast<uint64_t>(virtualProgram) >= m_programs.size()) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
+
+        return m_programs[virtualProgram].Valid();
     }
 
     void ShaderProgramManager::CollectUnusedShaders() {
         SR_TRACY_ZONE;
-        SR_LOCK_GUARD;
 
-        if (m_virtualTable.empty()) {
+        if (m_programs.size() - m_unusedPrograms.size() == 0) {
             return;
         }
 
@@ -333,17 +303,21 @@ namespace SR_GRAPH_NS::Memory {
         uint32_t count = 0;
 
         /// не удаляем сами виртуальные программы, они могут еще пригодиться
-        for (auto&& [virtualProgram, info] : m_virtualTable) {
-            for (auto pProgramIt = info.m_data.begin(); pProgramIt != info.m_data.end(); ) {
-                auto&& [identifier, program] = *pProgramIt;
+        for (auto&& virtualProgram : m_programs) {
+            if (virtualProgram.m_data.empty()) {
+                continue;
+            }
+
+            for (auto pIt = virtualProgram.m_data.begin(); pIt != virtualProgram.m_data.end(); ) {
+                auto&& [identifier, program] = *pIt;
 
                 if (handles.count(reinterpret_cast<void*>(identifier)) == 0) {
                     m_pipeline->FreeShader(&program.id);
-                    pProgramIt = info.m_data.erase(pProgramIt);
+                    pIt = virtualProgram.m_data.erase(pIt);
                     ++count;
                 }
                 else {
-                    ++pProgramIt;
+                    ++pIt;
                 }
             }
         }

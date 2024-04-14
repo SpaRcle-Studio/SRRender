@@ -19,14 +19,13 @@ namespace SR_GTYPES_NS {
     void DebugLine::Draw() {
         SR_TRACY_ZONE;
 
-        if ((!IsCalculated() && !Calculate()) || m_hasErrors) {
+        if ((!IsCalculated() && !Calculate()) || m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
         auto&& pShader = m_material->GetShader();
 
-        if (m_dirtyMaterial)
-        {
+        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
             m_dirtyMaterial = false;
 
             m_virtualUBO = m_uboManager.ReAllocateUBO(m_virtualUBO, pShader->GetUBOBlockSize(), pShader->GetSamplersCount());
@@ -39,19 +38,20 @@ namespace SR_GTYPES_NS {
 
             pShader->InitUBOBlock();
             pShader->Flush();
+            m_pipeline->DrawIndices(2);
+
+            return;
         }
 
-        switch (m_uboManager.BindUBO(m_virtualUBO)) {
-            case Memory::UBOManager::BindResult::Duplicated:
-                pShader->InitUBOBlock();
-                pShader->Flush();
-                SR_FALLTHROUGH;
-            case Memory::UBOManager::BindResult::Success:
-                m_pipeline->DrawIndices(2);
-                break;
-            case Memory::UBOManager::BindResult::Failed:
-            default:
-                break;
+        Memory::UBOManager::BindResult result = m_uboManager.BindUBO(m_virtualUBO);
+
+        if (result == Memory::UBOManager::BindResult::Success) SR_LIKELY_ATTRIBUTE {
+            m_pipeline->DrawIndices(2);
+        }
+        else if (result == Memory::UBOManager::BindResult::Duplicated) SR_UNLIKELY_ATTRIBUTE {
+            pShader->InitUBOBlock();
+            pShader->Flush();
+            m_pipeline->DrawIndices(2);
         }
     }
 

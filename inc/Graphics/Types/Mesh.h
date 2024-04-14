@@ -121,8 +121,8 @@ namespace SR_GTYPES_NS {
 
         MaterialPtr m_material = nullptr;
 
-        std::atomic<bool> m_hasErrors = false;
-        std::atomic<bool> m_dirtyMaterial = false;
+        bool m_hasErrors = false;
+        bool m_dirtyMaterial = false;
 
         int32_t m_virtualUBO = SR_ID_INVALID;
 
