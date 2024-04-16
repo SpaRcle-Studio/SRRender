@@ -242,6 +242,8 @@ int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateUBO(uint32_t UBOSize) {
 }
 
 int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateDescriptorSet(uint32_t shaderProgram, const std::vector<uint64_t> &types) {
+    SR_TRACY_ZONE;
+
     if (shaderProgram >= m_countShaderPrograms.first) {
         SRHalt("MemoryManager::AllocateDescriptorSet() : shader list index out of range! (" + std::to_string(shaderProgram) + ")");
         return -1;

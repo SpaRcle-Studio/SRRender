@@ -88,8 +88,6 @@ namespace SR_GRAPH_NS::Memory {
         void SetIdentifier(void* pIdentifier);
         void* GetIdentifier() const noexcept;
 
-        void SetIgnoreIdentifiers(bool value);
-
     public:
         SR_NODISCARD VirtualUBO ReAllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize, uint32_t samples);
         SR_NODISCARD VirtualUBO AllocateUBO(uint32_t uboSize, uint32_t samples);
@@ -100,18 +98,13 @@ namespace SR_GRAPH_NS::Memory {
         SR_NODISCARD bool AllocMemory(UBO* ubo, Descriptor* descriptor, uint32_t uboSize, uint32_t samples, int32_t shader);
         void FreeMemory(UBO* ubo, Descriptor* descriptor);
 
-        SR_NODISCARD VirtualUBO GenerateUnique() const;
-
     private:
         PipelinePtr m_pipeline;
 
-        VirtualUBOInfo* m_virtualTable = nullptr;
-        uint32_t m_virtualTableSize = 0;
+        std::vector<VirtualUBOInfo> m_virtualUBOs;
+        std::list<VirtualUBO> m_freeUBOs;
 
         void* m_identifier = nullptr;
-
-        bool m_singleIdentifierMode = false;
-        bool m_ignoreIdentifier = false;
 
     };
 }

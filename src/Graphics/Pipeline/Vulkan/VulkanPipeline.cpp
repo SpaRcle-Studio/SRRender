@@ -263,7 +263,7 @@ namespace SR_GRAPH_NS {
     int32_t VulkanPipeline::AllocDescriptorSet(const std::vector<DescriptorType>& types) {
         SR_TRACY_ZONE;
 
-        if (!m_memory) {
+        if (!m_memory) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("VulkanPipeline::AllocDescriptorSet() : memory manager is nullptr!");
             return SR_ID_INVALID;
         }
@@ -271,28 +271,17 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
         ++m_state.allocations;
 
-        auto&& vkTypes = VulkanTools::CastAbsDescriptorTypeToVk(types);
+        auto&& vkTypes = VulkanTools::ReferenceCastAbsDescriptorTypeToVk(types);
 
-    #ifdef SR_DEBUG
-        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Full) {
-            SR_GRAPH_LOG("VulkanPipeline::AllocDescriptorSet() : allocate new descriptor set...");
-        }
-    #endif
-
-        if (m_state.shaderId < 0) {
+        if (m_state.shaderId < 0) SR_UNLIKELY_ATTRIBUTE {
             PipelineError("VulkanPipeline::AllocDescriptorSet() : shader program do not set!");
             SRHaltOnce0();
             return SR_ID_INVALID;
         }
 
-        EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
-
         if (auto&& id = m_memory->AllocateDescriptorSet(m_state.shaderId, vkTypes); id >= 0) {
-            EVK_POP_LOG_LEVEL();
             return id;
         }
-
-        EVK_POP_LOG_LEVEL();
 
         PipelineError("VulkanPipeline::AllocDescriptorSet() : failed to allocate descriptor set!");
         return SR_ID_INVALID;

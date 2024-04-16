@@ -241,8 +241,11 @@ namespace SR_GRAPH_NS::VulkanTools {
         }
     }
 
-    SR_MAYBE_UNUSED static SR_FORCE_INLINE std::vector<uint64_t> CastAbsDescriptorTypeToVk(const std::vector<DescriptorType>& descriptorTypes) {
-        std::vector<uint64_t> vkDescriptorTypes;
+    SR_MAYBE_UNUSED static SR_FORCE_INLINE const std::vector<uint64_t>& ReferenceCastAbsDescriptorTypeToVk(const std::vector<DescriptorType>& descriptorTypes) {
+        SR_TRACY_ZONE;
+
+        static std::vector<uint64_t> vkDescriptorTypes;
+        vkDescriptorTypes.clear();
 
         for (auto&& descriptorType : descriptorTypes) {
             switch (descriptorType) {

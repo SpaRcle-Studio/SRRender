@@ -41,7 +41,7 @@ namespace SR_GRAPH_NS::Memory {
             SR_NODISCARD bool Valid() const { return id != SR_ID_INVALID; }
         };
 
-        SR_NODISCARD bool Valid() const { return !m_data.empty(); }
+        SR_NODISCARD bool Valid() const { return m_createInfo.Validate(); }
 
         ShaderProgramInfo* SetProgramInfo(Identifier identifier, const ShaderProgramInfo& info) {
             for (auto&& [id, data] : m_data) {

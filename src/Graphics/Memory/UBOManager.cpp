@@ -12,28 +12,21 @@ namespace SR_GRAPH_NS::Memory {
     UBOManager::UBOManager()
         : Super()
     {
-        m_virtualTableSize = 1024 * 64;
-        m_virtualTable = new VirtualUBOInfo[m_virtualTableSize];
-        m_singleIdentifierMode = SR_UTILS_NS::Features::Instance().Enabled("SingleUBOIdentifierMode", false);
+        m_virtualUBOs.reserve(4096);
     }
 
     void UBOManager::SetIdentifier(void* pIdentifier) {
-        m_identifier = m_singleIdentifierMode ? nullptr : pIdentifier;
+        m_identifier = pIdentifier;
     }
 
     void* UBOManager::GetIdentifier() const noexcept {
         return m_identifier;
     }
 
-    void UBOManager::SetIgnoreIdentifiers(bool value) {
-        SR_LOCK_GUARD;
-        m_ignoreIdentifier = value;
-    }
-
     UBOManager::VirtualUBO UBOManager::AllocateUBO(uint32_t uboSize, uint32_t samples) {
         SR_TRACY_ZONE;
 
-        if (!m_identifier && !m_singleIdentifierMode && !m_ignoreIdentifier) {
+        if (!m_identifier) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("UBOManager::AllocateUBO() : identifier is nullptr!");
             return SR_ID_INVALID;
         }
@@ -41,15 +34,8 @@ namespace SR_GRAPH_NS::Memory {
         auto&& pShader = m_pipeline->GetCurrentShader();
         auto&& shaderProgram = pShader ? pShader->GetId() : SR_ID_INVALID;
 
-        if (shaderProgram == SR_ID_INVALID) {
+        if (shaderProgram == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("UBOManager::AllocateUBO() : shader program do not set!");
-            return SR_ID_INVALID;
-        }
-
-        const VirtualUBO virtualUbo = GenerateUnique();
-
-        if (virtualUbo == SR_ID_INVALID) {
-            SR_ERROR("UBOManager::AllocateUBO() : failed to get unique id!");
             return SR_ID_INVALID;
         }
 
@@ -70,52 +56,51 @@ namespace SR_GRAPH_NS::Memory {
         VirtualUBOInfo virtualUboInfo;
 
         virtualUboInfo.m_data.emplace_back(VirtualUBOInfo::Data {
-                m_ignoreIdentifier ? nullptr : m_identifier,
-                descriptor,
-                ubo,
-                shaderInfo
+            m_identifier,
+            descriptor,
+            ubo,
+            shaderInfo
         });
 
-        m_virtualTable[virtualUbo] = std::move(virtualUboInfo);
+        VirtualUBO virtualUbo;
+        if (!m_freeUBOs.empty()) SR_LIKELY_ATTRIBUTE {
+            virtualUbo = m_freeUBOs.front();
+            m_freeUBOs.pop_front();
+            m_virtualUBOs[virtualUbo] = std::move(virtualUboInfo);
+        }
+        else SR_UNLIKELY_ATTRIBUTE {
+            virtualUbo = static_cast<VirtualUBO>(m_virtualUBOs.size());
+            m_virtualUBOs.emplace_back(std::move(virtualUboInfo));
+        }
 
         return virtualUbo;
     }
 
     bool UBOManager::FreeUBO(UBOManager::VirtualUBO *virtualUbo) {
-        if (!SRVerifyFalse(!virtualUbo)) {
+        if (!SRVerifyFalse(!virtualUbo)) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
-        if (*virtualUbo >= m_virtualTableSize) {
+        if (static_cast<uint64_t>(*virtualUbo) >= m_virtualUBOs.size()) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("UBOManager::FreeUBO() : ubo not found!");
             return false;
         }
 
-        auto&& info = m_virtualTable[*virtualUbo];
+        auto&& info = m_virtualUBOs[*virtualUbo];
+        if (!info.Valid()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("UBOManager::FreeUBO() : ubo is invalid!");
+            return false;
+        }
+
         for (auto&& [pIdentifier, descriptor, ubo, shaderInfo] : info.m_data) {
             FreeMemory(&ubo, &descriptor);
         }
 
-        m_virtualTable[*virtualUbo].Reset();
+        m_virtualUBOs[*virtualUbo].Reset();
+        m_freeUBOs.emplace_back(*virtualUbo);
         *virtualUbo = SR_ID_INVALID;
 
         return true;
-    }
-
-    UBOManager::VirtualUBO UBOManager::GenerateUnique() const {
-        SR_TRACY_ZONE;
-        /// TODO: следует делать одновременно поиск с конца
-        for (uint32_t i = 0; i < m_virtualTableSize; ++i) {
-            if (m_virtualTable[i].Valid()) {
-                continue;
-            }
-
-            return static_cast<VirtualUBO>(i);
-        }
-
-        SR_ERROR("UBOManager::GenerateUnique() : the virtual table overflow!");
-
-        return SR_ID_INVALID;
     }
 
     bool UBOManager::AllocMemory(UBO *ubo, Descriptor* descriptor, uint32_t uboSize, uint32_t samples, int32_t shader) {
@@ -164,7 +149,7 @@ namespace SR_GRAPH_NS::Memory {
             return BindResult::Failed;
         }
 
-        if (!m_identifier && !m_singleIdentifierMode && !m_ignoreIdentifier) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_identifier) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("UBOManager::BindUBO() : identifier is nullptr!");
             return BindResult::Failed;
         }
@@ -175,7 +160,7 @@ namespace SR_GRAPH_NS::Memory {
         }
 	#endif
 
-        auto&& info = m_virtualTable[virtualUbo];
+        auto&& info = m_virtualUBOs[virtualUbo];
         BindResult result = BindResult::Success;
 
         Descriptor descriptor = SR_ID_INVALID;
@@ -183,7 +168,7 @@ namespace SR_GRAPH_NS::Memory {
         bool isFound = false;
 
         for (auto&& data : info.m_data) {
-            if (data.pIdentifier == (m_ignoreIdentifier ? nullptr : m_identifier) && data.shaderInfo.pShader == pShader) SR_LIKELY_ATTRIBUTE {
+            if (data.pIdentifier == m_identifier && data.shaderInfo.pShader == pShader) SR_LIKELY_ATTRIBUTE {
                 descriptor = data.descriptor;
                 ubo = data.ubo;
                 isFound = true;
@@ -200,13 +185,13 @@ namespace SR_GRAPH_NS::Memory {
             shaderInfo.uboSize = pShader->GetUBOBlockSize();
             shaderInfo.samples = pShader->GetSamplersCount();
 
-            if (!AllocMemory(&ubo, &descriptor, shaderInfo.uboSize, shaderInfo.samples, shaderInfo.shaderProgram)) {
+            if (!AllocMemory(&ubo, &descriptor, shaderInfo.uboSize, shaderInfo.samples, shaderInfo.shaderProgram)) SR_UNLIKELY_ATTRIBUTE {
                 SR_ERROR("UBOManager::BindUBO() : failed to allocate memory!");
                 return BindResult::Failed;
             }
 
             info.m_data.emplace_back(VirtualUBOInfo::Data {
-                m_ignoreIdentifier ? nullptr : m_identifier,
+                m_identifier,
                 descriptor,
                 ubo,
                 shaderInfo
@@ -242,7 +227,16 @@ namespace SR_GRAPH_NS::Memory {
             return virtualUbo;
         }
 
-        auto&& info = m_virtualTable[virtualUbo];
+        if (static_cast<uint64_t>(virtualUbo) >= m_virtualUBOs.size()) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("UBOManager::ReAllocateUBO() : ubo not found!");
+            return virtualUbo;
+        }
+
+        auto&& info = m_virtualUBOs[virtualUbo];
+        if (!info.Valid()) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("UBOManager::ReAllocateUBO() : ubo is invalid!");
+            return virtualUbo;
+        }
 
         /// очищаем ВСЕ старые данные
         for (auto&& [pIdentifier, descriptor, ubo, shaderInfo] : info.m_data) {
@@ -266,7 +260,7 @@ namespace SR_GRAPH_NS::Memory {
         shaderInfo.uboSize = uboSize;
 
         info.m_data.emplace_back(VirtualUBOInfo::Data {
-            m_ignoreIdentifier ? nullptr : m_identifier,
+            m_identifier,
             descriptor,
             ubo,
             shaderInfo

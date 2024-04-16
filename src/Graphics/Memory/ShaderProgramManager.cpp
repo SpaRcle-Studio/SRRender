@@ -13,7 +13,9 @@
 namespace SR_GRAPH_NS::Memory {
     ShaderProgramManager::ShaderProgramManager()
         : SR_UTILS_NS::Singleton<ShaderProgramManager>()
-    { }
+    {
+        m_programs.reserve(1024);
+    }
 
     void ShaderProgramManager::OnSingletonDestroy() {
         Singleton::OnSingletonDestroy();
