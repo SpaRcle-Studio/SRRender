@@ -74,7 +74,6 @@ namespace SR_GRAPH_NS {
         bool FreeCubeMap(int32_t* id) override;
         bool FreeShader(int32_t* id) override;
         bool FreeTexture(int32_t* id) override;
-
         bool IsSamplerValid(int32_t id) const override;
 
     public:

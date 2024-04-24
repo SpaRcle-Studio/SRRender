@@ -12,7 +12,7 @@ namespace SR_GRAPH_NS::Memory {
     UBOManager::UBOManager()
         : Super()
     {
-        m_virtualUBOs.reserve(4096);
+        m_uboPool.Reserve(4096);
     }
 
     void UBOManager::SetIdentifier(void* pIdentifier) {
@@ -62,42 +62,21 @@ namespace SR_GRAPH_NS::Memory {
             shaderInfo
         });
 
-        VirtualUBO virtualUbo;
-        if (!m_freeUBOs.empty()) SR_LIKELY_ATTRIBUTE {
-            virtualUbo = m_freeUBOs.front();
-            m_freeUBOs.pop_front();
-            m_virtualUBOs[virtualUbo] = std::move(virtualUboInfo);
-        }
-        else SR_UNLIKELY_ATTRIBUTE {
-            virtualUbo = static_cast<VirtualUBO>(m_virtualUBOs.size());
-            m_virtualUBOs.emplace_back(std::move(virtualUboInfo));
-        }
-
-        return virtualUbo;
+        return m_uboPool.Add(std::move(virtualUboInfo));
     }
 
-    bool UBOManager::FreeUBO(UBOManager::VirtualUBO *virtualUbo) {
+    bool UBOManager::FreeUBO(UBOManager::VirtualUBO* virtualUbo) {
+        SR_TRACY_ZONE;
+
         if (!SRVerifyFalse(!virtualUbo)) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
-        if (static_cast<uint64_t>(*virtualUbo) >= m_virtualUBOs.size()) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("UBOManager::FreeUBO() : ubo not found!");
-            return false;
-        }
-
-        auto&& info = m_virtualUBOs[*virtualUbo];
-        if (!info.Valid()) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("UBOManager::FreeUBO() : ubo is invalid!");
-            return false;
-        }
-
+        auto&& info = m_uboPool.Remove(*virtualUbo);
         for (auto&& [pIdentifier, descriptor, ubo, shaderInfo] : info.m_data) {
             FreeMemory(&ubo, &descriptor);
         }
 
-        m_virtualUBOs[*virtualUbo].Reset();
-        m_freeUBOs.emplace_back(*virtualUbo);
         *virtualUbo = SR_ID_INVALID;
 
         return true;
@@ -160,7 +139,7 @@ namespace SR_GRAPH_NS::Memory {
         }
 	#endif
 
-        auto&& info = m_virtualUBOs[virtualUbo];
+        auto&& info = m_uboPool.At(virtualUbo);
         BindResult result = BindResult::Success;
 
         Descriptor descriptor = SR_ID_INVALID;
@@ -227,12 +206,7 @@ namespace SR_GRAPH_NS::Memory {
             return virtualUbo;
         }
 
-        if (static_cast<uint64_t>(virtualUbo) >= m_virtualUBOs.size()) SR_UNLIKELY_ATTRIBUTE {
-            SR_ERROR("UBOManager::ReAllocateUBO() : ubo not found!");
-            return virtualUbo;
-        }
-
-        auto&& info = m_virtualUBOs[virtualUbo];
+        auto&& info = m_uboPool.At(virtualUbo);
         if (!info.Valid()) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("UBOManager::ReAllocateUBO() : ubo is invalid!");
             return virtualUbo;

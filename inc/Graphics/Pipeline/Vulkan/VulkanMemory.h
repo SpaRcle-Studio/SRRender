@@ -2,8 +2,8 @@
 // Created by Nikita on 27.05.2021.
 //
 
-#ifndef GAMEENGINE_VULKANMEMORY_H
-#define GAMEENGINE_VULKANMEMORY_H
+#ifndef SR_ENGINE_GRAPHICS_VULKAN_MEMORY_H
+#define SR_ENGINE_GRAPHICS_VULKAN_MEMORY_H
 
 #include <Utils/Common/NonCopyable.h>
 
@@ -17,12 +17,6 @@
 
 #include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Pipeline/Vulkan/DynamicTextureDescriptorSet.h>
-
-#define ZERO_VULKAN_MEMORY_MANAGER(type, count, array) { \
-    array = new type[count];                             \
-    for (uint32_t i = 0; i < count; ++i)                 \
-        array[i] = nullptr;                              \
-}                                                        \
 
 namespace SR_GRAPH_NS::VulkanTools {
     struct VulkanFrameBufferAllocInfo {
@@ -44,62 +38,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         ~MemoryManager() override = default;
 
     private:
-        bool Initialize(EvoVulkan::Core::VulkanKernel* kernel) {
-            SR_TRACY_ZONE;
-
-            if (m_isInit) {
-                return false;
-            }
-
-            m_kernel = kernel;
-            m_descriptorManager = m_kernel->GetDescriptorManager();
-            m_allocator = m_kernel->GetAllocator();
-            m_device = m_kernel->GetDevice();
-            m_pool = m_kernel->GetCmdPool();
-
-            if (!m_descriptorManager || !m_device || !m_pool) {
-                SR_ERROR("MemoryManager::Initialize() : failed to get a (descriptor manager/device/cmd pool)!");
-                return false;
-            }
-
-            ZERO_VULKAN_MEMORY_MANAGER(EvoVulkan::Types::VmaBuffer*, m_countUBO.first, m_UBOs)
-            ZERO_VULKAN_MEMORY_MANAGER(EvoVulkan::Types::VmaBuffer*, m_countVBO.first, m_VBOs)
-            ZERO_VULKAN_MEMORY_MANAGER(EvoVulkan::Types::VmaBuffer*, m_countIBO.first, m_IBOs)
-            ZERO_VULKAN_MEMORY_MANAGER(EvoVulkan::Complexes::FrameBuffer*, m_countFBO.first, m_FBOs)
-            ZERO_VULKAN_MEMORY_MANAGER(EvoVulkan::Complexes::Shader*, m_countShaderPrograms.first, m_ShaderPrograms)
-            ZERO_VULKAN_MEMORY_MANAGER(EvoVulkan::Types::DescriptorSet, m_countDescriptorSets.first, m_descriptorSets)
-            ZERO_VULKAN_MEMORY_MANAGER(EvoVulkan::Types::Texture*, m_countTextures.first, m_textures)
-
-            m_isInit = true;
-            return true;
-        }
-    private:
-        SR_NODISCARD int32_t FindFreeTextureIndex() const {
-            for (uint32_t i = 0; i < m_countTextures.first; i++)
-                if (m_textures[i] == nullptr)
-                    return (int32_t)i;
-            return -1;
-        }
-
-        template<typename T> bool FreeMemory(uint32_t id, uint32_t maxCount, T** pool) const {
-            if (id >= maxCount) {
-                SR_ERROR("MemoryManager::FreeMemory() : the list index is out of range!");
-                return false;
-            }
-
-            if (auto* memory = pool[id]) {
-                delete memory;
-
-                pool[id] = nullptr;
-
-                return true;
-            }
-            else {
-                SR_ERROR("MemoryManager::FreeMemory() : the id does not exist! (" + std::to_string(id) + ")");
-            }
-
-            return false;
-        }
+        bool Initialize(EvoVulkan::Core::VulkanKernel* kernel);
 
     public:
         static MemoryManager* Create(EvoVulkan::Core::VulkanKernel* kernel) {
@@ -115,16 +54,16 @@ namespace SR_GRAPH_NS::VulkanTools {
         void Free();
 
     public:
-        SR_NODISCARD bool FreeDescriptorSet(uint32_t ID);
+        SR_NODISCARD bool FreeDescriptorSet(uint32_t id);
 
-        SR_NODISCARD bool FreeShaderProgram(uint32_t ID);
+        SR_NODISCARD bool FreeShaderProgram(uint32_t id);
 
-        SR_NODISCARD bool FreeVBO(uint32_t ID);
-        SR_NODISCARD bool FreeUBO(uint32_t ID);
-        SR_NODISCARD bool FreeIBO(uint32_t ID);
-        SR_NODISCARD bool FreeFBO(uint32_t ID);
+        SR_NODISCARD bool FreeVBO(uint32_t id);
+        SR_NODISCARD bool FreeUBO(uint32_t id);
+        SR_NODISCARD bool FreeIBO(uint32_t id);
+        SR_NODISCARD bool FreeFBO(uint32_t id);
 
-        SR_NODISCARD bool FreeTexture(uint32_t ID);
+        SR_NODISCARD bool FreeTexture(uint32_t id);
 
     public:
         SR_NODISCARD int32_t AllocateDescriptorSet(uint32_t shaderProgram, const std::vector<uint64_t>& types);
@@ -158,33 +97,47 @@ namespace SR_GRAPH_NS::VulkanTools {
                 uint8_t mipLevels,
                 bool cpuUsage);
 
-    public:
-        EvoVulkan::Core::DescriptorManager*       m_descriptorManager       = nullptr;
-        EvoVulkan::Types::Device*                 m_device                  = nullptr;
-        EvoVulkan::Memory::Allocator*             m_allocator               = nullptr;
-        EvoVulkan::Types::CmdPool*                m_pool                    = nullptr;
+        SR_NODISCARD const EvoVulkan::Types::Texture* GetTexture(uint32_t id) const { return m_texturePool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD const EvoVulkan::Types::VmaBuffer* GetVBO(uint32_t id) const { return m_vboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD const EvoVulkan::Types::VmaBuffer* GetUBO(uint32_t id) const { return m_uboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD const EvoVulkan::Types::VmaBuffer* GetIBO(uint32_t id) const { return m_iboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD const EvoVulkan::Complexes::FrameBuffer* GetFBO(uint32_t id) const { return m_fboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD const EvoVulkan::Complexes::Shader* GetShaderProgram(uint32_t id) const { return m_shaderProgramPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD const EvoVulkan::Types::DescriptorSet& GetDescriptorSet(uint32_t id) const { return m_descriptorSetPool.At(static_cast<int32_t>(id)); }
 
-        std::pair<uint32_t, int32_t>              m_countUBO                = { 32768 * 2, 0 };
-        std::pair<uint32_t, int32_t>              m_countVBO                = { 4096, 0 };
-        std::pair<uint32_t, int32_t>              m_countIBO                = { 4096, 0 };
-        std::pair<uint32_t, int32_t>              m_countFBO                = { 128, 0 };
-        std::pair<uint32_t, int32_t>              m_countShaderPrograms     = { 1024, 0 };
-        std::pair<uint32_t, int32_t>              m_countDescriptorSets     = { 32768 * 2, 0 };
-        std::pair<uint32_t, int32_t>              m_countTextures           = { 4096, 0 };
+        SR_NODISCARD EvoVulkan::Types::Texture* GetTexture(uint32_t id) { return m_texturePool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD EvoVulkan::Types::VmaBuffer* GetVBO(uint32_t id) { return m_vboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD EvoVulkan::Types::VmaBuffer* GetUBO(uint32_t id) { return m_uboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD EvoVulkan::Types::VmaBuffer* GetIBO(uint32_t id) { return m_iboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD EvoVulkan::Complexes::FrameBuffer* GetFBO(uint32_t id) { return m_fboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD EvoVulkan::Complexes::Shader* GetShaderProgram(uint32_t id) { return m_shaderProgramPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD EvoVulkan::Types::DescriptorSet& GetDescriptorSet(uint32_t id) { return m_descriptorSetPool.At(static_cast<int32_t>(id)); }
 
-        EvoVulkan::Types::VmaBuffer**             m_UBOs                    = nullptr;
-        EvoVulkan::Types::VmaBuffer**             m_VBOs                    = nullptr;
-        EvoVulkan::Types::VmaBuffer**             m_IBOs                    = nullptr;
-        EvoVulkan::Complexes::FrameBuffer**       m_FBOs                    = nullptr;
-        EvoVulkan::Complexes::Shader**            m_ShaderPrograms          = nullptr;
-        EvoVulkan::Types::DescriptorSet*          m_descriptorSets          = nullptr;
-        EvoVulkan::Types::Texture**               m_textures                = nullptr;
+        SR_NODISCARD bool IsTextureValid(uint32_t id) const { return m_texturePool.IsAlive(id); }
+
+        void ForEachFBO(const SR_HTYPES_NS::Function<void(int32_t, EvoVulkan::Complexes::FrameBuffer*)>& func) const {
+            m_fboPool.ForEach(func);
+        }
 
     private:
-        bool                                      m_isInit                  = false;
-        EvoVulkan::Core::VulkanKernel*            m_kernel                  = nullptr;
+        EvoVulkan::Core::DescriptorManager* m_descriptorManager = nullptr;
+        EvoVulkan::Types::Device* m_device = nullptr;
+        EvoVulkan::Memory::Allocator* m_allocator = nullptr;
+        EvoVulkan::Types::CmdPool* m_pool = nullptr;
+
+        SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::DescriptorSet, int32_t> m_descriptorSetPool;
+        SR_HTYPES_NS::ObjectPool<EvoVulkan::Complexes::Shader*, int32_t> m_shaderProgramPool;
+        SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::VmaBuffer*, int32_t> m_vboPool;
+        SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::VmaBuffer*, int32_t> m_uboPool;
+        SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::VmaBuffer*, int32_t> m_iboPool;
+        SR_HTYPES_NS::ObjectPool<EvoVulkan::Complexes::FrameBuffer*, int32_t> m_fboPool;
+        SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::Texture*, int32_t> m_texturePool;
+
+    private:
+        bool m_isInit = false;
+        EvoVulkan::Core::VulkanKernel* m_kernel = nullptr;
 
     };
 }
 
-#endif //GAMEENGINE_VULKANMEMORY_H
+#endif //SR_ENGINE_GRAPHICS_VULKAN_MEMORY_H

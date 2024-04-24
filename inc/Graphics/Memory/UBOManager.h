@@ -7,6 +7,7 @@
 
 #include <Utils/Common/Singleton.h>
 #include <Utils/Types/Map.h>
+#include <Utils/Types/ObjectPool.h>
 #include <Utils/Types/SharedPtr.h>
 
 namespace SR_GTYPES_NS {
@@ -100,9 +101,7 @@ namespace SR_GRAPH_NS::Memory {
 
     private:
         PipelinePtr m_pipeline;
-
-        std::vector<VirtualUBOInfo> m_virtualUBOs;
-        std::list<VirtualUBO> m_freeUBOs;
+        SR_HTYPES_NS::ObjectPool<VirtualUBOInfo, VirtualUBO> m_uboPool;
 
         void* m_identifier = nullptr;
 

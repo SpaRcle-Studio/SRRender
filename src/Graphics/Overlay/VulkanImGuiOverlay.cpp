@@ -588,12 +588,7 @@ namespace SR_GRAPH_NS {
 
         auto&& pMemoryManager = m_pipeline.DynamicCast<VulkanPipeline>()->GetMemoryManager();
 
-        if (textureId >= pMemoryManager->m_countTextures.first) {
-            SR_ERROR("VulkanImGuiOverlay::GetTextureDescriptorSet() : out of range!");
-            return nullptr;
-        }
-
-        if (auto&& pTexture = pMemoryManager->m_textures[textureId]) {
+        if (auto&& pTexture = pMemoryManager->GetTexture(textureId)) {
             auto&& layout = ((ImGui_ImplVulkan_Data*)ImGui::GetIO().BackendRendererUserData)->DescriptorSetLayout;
             return reinterpret_cast<void*>(pTexture->GetDescriptorSet(layout).m_self);
         }

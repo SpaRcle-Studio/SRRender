@@ -289,20 +289,20 @@ namespace SR_GRAPH_NS {
 
     void* VulkanPipeline::GetCurrentFBOHandle() const {
         if (m_state.pFrameBuffer) SR_LIKELY_ATTRIBUTE {
-            if (auto&& FBO = m_state.pFrameBuffer->GetId(); FBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            auto&& FBO = m_state.pFrameBuffer->GetId();
+
+            if (FBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 PipelineError("Vulkan::GetCurrentFBOHandle() : invalid FBO!");
+                return nullptr;
             }
-            else if (auto&& framebuffer = m_memory->m_FBOs[FBO - 1]; !framebuffer) SR_UNLIKELY_ATTRIBUTE {
-                PipelineError("Vulkan::GetCurrentFBOHandle() : frame buffer object don't exist!");
+
+            auto&& framebuffer = m_memory->GetFBO(FBO - 1);
+
+            if (auto&& layers = framebuffer->GetLayers(); !layers.empty()) SR_LIKELY_ATTRIBUTE {
+                return (void*)layers.at(SR_MIN(layers.size() - 1, m_state.frameBufferLayer))->GetFramebuffer();
             }
-            else SR_LIKELY_ATTRIBUTE {
-                if (auto&& layers = framebuffer->GetLayers(); !layers.empty()) SR_LIKELY_ATTRIBUTE {
-                    return (void*)layers.at(SR_MIN(layers.size() - 1, m_state.frameBufferLayer))->GetFramebuffer();
-                }
-                else {
-                    PipelineError("Vulkan::GetCurrentFBOHandle() : frame buffer have not layers!");
-                }
-            }
+
+            PipelineError("Vulkan::GetCurrentFBOHandle() : frame buffer have not layers!");
             return nullptr;
         }
 
@@ -318,18 +318,13 @@ namespace SR_GRAPH_NS {
             handles.insert(pHandle);
         }
 
-        for (uint64_t i = 0; i < m_memory->m_countFBO.first; ++i) {
-            auto&& pFBO = m_memory->m_FBOs[i];
-            if (!pFBO) {
-                continue;
-            }
-
+        m_memory->ForEachFBO([&handles](int32_t index, auto&& pFBO) {
             for (auto&& layer : pFBO->GetLayers()) {
                 if (auto&& pVkFrameBuffer = layer->GetFramebuffer()) {
                     handles.insert((void*)pVkFrameBuffer);
                 }
             }
-        }
+        });
 
         return handles;
     }
@@ -337,18 +332,7 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::UseShader(uint32_t shaderProgram) {
         Pipeline::UseShader(shaderProgram);
 
-        if (shaderProgram >= m_memory->m_countShaderPrograms.first) {
-            PipelineError("Vulkan::UseShader() : index out of range!");
-            return;
-        }
-
-        m_currentVkShader = m_memory->m_ShaderPrograms[shaderProgram];
-
-        if (!m_currentVkShader) {
-            SRHalt("Vulkan::UseShader() : shader is nullptr!");
-            return;
-        }
-
+        m_currentVkShader = m_memory->GetShaderProgram(shaderProgram);
         m_currentLayout = m_currentVkShader->GetPipelineLayout();
 
         if (m_currentVkShader == m_lastVkShader) {
@@ -390,13 +374,7 @@ namespace SR_GRAPH_NS {
 
         EvoVulkan::Types::RenderPass renderPass = m_kernel->GetRenderPass();
         if (fbo != 0) {
-            if (auto&& pFBO = m_memory->m_FBOs[fbo - 1]; pFBO) {
-                renderPass = pFBO->GetRenderPass();
-            }
-            else {
-                PipelineError("VulkanPipeline::CompileShader() : invalid FBO! SOMETHING WENT WRONG! MEMORY MAY BE CORRUPTED!");
-                return SR_ID_INVALID;
-            }
+            renderPass = m_memory->GetFBO(fbo - 1)->GetRenderPass();
         }
 
         if (!renderPass.IsReady()) {
@@ -410,7 +388,7 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        auto&& pShaderProgram = m_memory->m_ShaderPrograms[shaderProgram];
+        auto&& pShaderProgram = m_memory->GetShaderProgram(shaderProgram);
 
         std::vector<SourceShader> modules = { };
 
@@ -591,14 +569,8 @@ namespace SR_GRAPH_NS {
         for (auto&& info : updateInfo) {
             switch (info.descriptorType) {
                 case DescriptorType::Uniform: {
-                    auto&& vkDescriptorSet = m_memory->m_descriptorSets[descriptorSet].m_self;
-
-                    if (info.ubo >= m_memory->m_countUBO.first) {
-                        SRHalt("VulkanPipeline::UpdateDescriptorSets() : uniform index out of range! \n\tCount uniforms: {}\n\tIndex: {}", m_memory->m_countUBO.first, info.ubo);
-                        continue;
-                    }
-
-                    auto&& vkUBODescriptor = m_memory->m_UBOs[info.ubo]->GetDescriptorRef();
+                    auto&& vkDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).m_self;
+                    auto&& vkUBODescriptor = m_memory->GetUBO(info.ubo)->GetDescriptorRef();
 
                     writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
                         vkDescriptorSet,
@@ -625,18 +597,7 @@ namespace SR_GRAPH_NS {
 
     void VulkanPipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size) {
         Super::UpdateUBO(UBO, pData, size);
-
-        if (UBO >= m_memory->m_countUBO.first) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("VulkanPipeline::UpdateUBO() : uniform index out of range! \n\tCount uniforms: {}\n\tIndex: {}", m_memory->m_countUBO.first, UBO);
-            return;
-        }
-
-        if (!m_memory->m_UBOs[UBO]) SR_UNLIKELY_ATTRIBUTE {
-            SRHaltOnce0();
-            return;
-        }
-
-        m_memory->m_UBOs[UBO]->CopyToDevice(pData, size);
+        m_memory->GetUBO(UBO)->CopyToDevice(pData, size);
     }
 
     uint8_t VulkanPipeline::GetBuildIterationsCount() const noexcept {
@@ -710,14 +671,11 @@ namespace SR_GRAPH_NS {
                 return;
             }
 
-            auto&& pFrameBuffer = m_memory->m_FBOs[FBO - 1];
-            if (!pFrameBuffer) {
-                PipelineError("VulkanPipeline::BindFrameBuffer() : frame buffer object don't exist!");
-                return;
-            }
-
+            auto&& pFrameBuffer = m_memory->GetFBO(FBO - 1);
             auto&& layers = pFrameBuffer->GetLayers();
+
             uint32_t layerIndex = SR_MIN(m_state.frameBufferLayer, layers.size() - 1);
+
             auto&& vkFrameBuffer = layers.at(layerIndex)->GetFramebuffer();
 
             if (m_fboQueue.Contains(pFBO, layerIndex)) {
@@ -818,15 +776,7 @@ namespace SR_GRAPH_NS {
 
         ++m_state.operations;
 
-        if (textureId == SR_ID_INVALID || textureId >= m_memory->m_countTextures.first) {
-            return SR_MATH_NS::FColor(0.f);
-        }
-
-        auto&& pTexture = m_memory->m_textures[textureId];
-        if (!pTexture) {
-            return SR_MATH_NS::FColor(0.f);
-        }
-
+        auto&& pTexture = m_memory->GetTexture(textureId);
         auto&& pixel = pTexture->GetPixel(x, y, 0);
         return SR_MATH_NS::FColor(
             static_cast<SR_MATH_NS::Unit>(pixel.r),
@@ -1003,8 +953,8 @@ namespace SR_GRAPH_NS {
             return;
         }
         else if (m_state.frameBufferId > 0) {
-            m_renderPassBI.clearValueCount = m_memory->m_FBOs[m_state.frameBufferId - 1]->GetCountClearValues();
-            m_renderPassBI.pClearValues    = m_memory->m_FBOs[m_state.frameBufferId - 1]->GetClearValues();
+            m_renderPassBI.clearValueCount = m_memory->GetFBO(m_state.frameBufferId - 1)->GetCountClearValues();
+            m_renderPassBI.pClearValues = m_memory->GetFBO(m_state.frameBufferId - 1)->GetClearValues();
         }
         else {
             /// в какой ситуации это может случиться?
@@ -1090,7 +1040,7 @@ namespace SR_GRAPH_NS {
         Super::SetCurrentFrameBuffer(pFrameBuffer);
 
         if (pFrameBuffer && pFrameBuffer->GetId() != SR_ID_INVALID) {
-            m_currentVkFrameBuffer = m_memory->m_FBOs[pFrameBuffer->GetId() - 1];
+            m_currentVkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
         }
         else {
             m_currentVkFrameBuffer = nullptr;
@@ -1311,7 +1261,7 @@ namespace SR_GRAPH_NS {
             for (auto&& pFrameBuffer : queue) {
                 if (pFrameBuffer->IsValid()) {
                     auto&& fboId = pFrameBuffer->GetId();
-                    auto&& vkFrameBuffer = m_memory->m_FBOs[fboId - 1];
+                    auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
                     vkFrameBuffer->ClearWaitSemaphores();
                     vkFrameBuffer->ClearSignalSemaphores();
                 }
@@ -1324,7 +1274,7 @@ namespace SR_GRAPH_NS {
             /// Если являемся началом цепочки, то должны дождаться предыдущего кадра
             for (auto&& pFrameBuffer : queues.front()) {
                 if (pFrameBuffer->IsValid()) {
-                    auto&& vkFrameBuffer = m_memory->m_FBOs[pFrameBuffer->GetId() - 1];
+                    auto&& vkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
                     vkFrameBuffer->GetWaitSemaphores().emplace_back(m_kernel->GetPresentCompleteSemaphore());
                 }
             }
@@ -1332,7 +1282,7 @@ namespace SR_GRAPH_NS {
             /// Если являемся концом цепочки, то нужно чтобы нас дождался рендер
             for (auto&& pFrameBuffer : queues.back()) {
                 if (pFrameBuffer->IsValid()) {
-                    auto&& vkFrameBuffer = m_memory->m_FBOs[pFrameBuffer->GetId() - 1];
+                    auto&& vkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
                     m_kernel->GetWaitSemaphores().emplace_back(vkFrameBuffer->GetSemaphore());
                 }
             }
@@ -1348,8 +1298,8 @@ namespace SR_GRAPH_NS {
                         continue;
                     }
 
-                    auto&& vkFrameBuffer = m_memory->m_FBOs[pFrameBuffer->GetId() - 1];
-                    auto&& vkDependency = m_memory->m_FBOs[pDependency->GetId() - 1];
+                    auto&& vkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
+                    auto&& vkDependency = m_memory->GetFBO(pDependency->GetId() - 1);
                     vkFrameBuffer->GetWaitSemaphores().emplace_back(vkDependency->GetSemaphore());
                 }
             }
@@ -1367,7 +1317,7 @@ namespace SR_GRAPH_NS {
                     continue;
                 }
 
-                auto&& vkFrameBuffer = m_memory->m_FBOs[pFrameBuffer->GetId() - 1];
+                auto&& vkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
 
                 submitInfo.commandBuffers.emplace_back(vkFrameBuffer->GetCmd());
 
@@ -1434,13 +1384,7 @@ namespace SR_GRAPH_NS {
 
     void VulkanPipeline::BindDescriptorSet(uint32_t descriptorSet) {
         Super::BindDescriptorSet(descriptorSet);
-
-        if (descriptorSet >= m_memory->m_countDescriptorSets.first) {
-            PipelineError("VulkanPipeline::BindDescriptorSet() : incorrect range! (" + std::to_string(descriptorSet) + ")");
-            return;
-        }
-
-        m_currentDescriptorSets = m_memory->m_descriptorSets[descriptorSet].m_self;
+        m_currentDescriptorSets = m_memory->GetDescriptorSet(descriptorSet).m_self;
     }
 
     void VulkanPipeline::BindAttachment(uint8_t activeTexture, uint32_t textureId) {
@@ -1451,13 +1395,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        auto&& descriptorSet = m_memory->m_countDescriptorSets.first <= m_state.descriptorSetId ? nullptr : m_memory->m_descriptorSets[m_state.descriptorSetId];
-        if (!descriptorSet) {
-            SRHaltOnce("VulkanPipeline::BindAttachment() : incorrect descriptor set!");
-            return;
-        }
-
-        auto&& imageDescriptorRef = m_memory->m_textures[textureId]->GetDescriptorRef();
+        auto&& descriptorSet = m_memory->GetDescriptorSet(m_state.descriptorSetId);
+        auto&& imageDescriptorRef = m_memory->GetTexture(textureId)->GetDescriptorRef();
 
         const auto&& descriptorSetWrite = EvoVulkan::Tools::Initializers::WriteDescriptorSet(
                 descriptorSet.m_self,
@@ -1469,28 +1408,12 @@ namespace SR_GRAPH_NS {
 
     void VulkanPipeline::BindVBO(uint32_t VBO) {
         Super::BindVBO(VBO);
-
-    #ifdef SR_DEBUG
-        if (VBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("VulkanPipeline::BindVBO() : VBO is not exists!");
-            return;
-        }
-    #endif
-
-        vkCmdBindVertexBuffers(m_currentCmd, 0, 1, m_memory->m_VBOs[VBO]->GetCRef(), m_offsets);
+        vkCmdBindVertexBuffers(m_currentCmd, 0, 1, m_memory->GetVBO(VBO)->GetCRef(), m_offsets);
     }
 
     void VulkanPipeline::BindIBO(uint32_t IBO) {
         Super::BindIBO(IBO);
-
-    #ifdef SR_DEBUG
-        if (IBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("VulkanPipeline::BindIBO() : IBO is not exists!");
-            return;
-        }
-    #endif
-
-        vkCmdBindIndexBuffer(m_currentCmd, *m_memory->m_IBOs[IBO], 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(m_currentCmd, *m_memory->GetIBO(IBO), 0, VK_INDEX_TYPE_UINT32);
     }
 
     void VulkanPipeline::BindUBO(uint32_t UBO) {
@@ -1498,11 +1421,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool VulkanPipeline::IsSamplerValid(int32_t id) const {
-        if (id >= m_memory->m_countTextures.first) {
-            return false;
-        }
-
-        return m_memory->m_textures[id];
+        return m_memory->IsTextureValid(id);
     }
 
     void VulkanPipeline::BindTexture(uint8_t activeTexture, uint32_t textureId) {
@@ -1513,13 +1432,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        auto&& descriptorSet = m_memory->m_countDescriptorSets.first <= m_state.descriptorSetId ? nullptr : m_memory->m_descriptorSets[m_state.descriptorSetId];
-        if (!descriptorSet) {
-            SRHaltOnce("VulkanPipeline::BindTexture() : incorrect descriptor set!");
-            return;
-        }
-
-        auto&& pTexture = m_memory->m_textures[textureId];
+        auto&& descriptorSet = m_memory->GetDescriptorSet(m_state.descriptorSetId);
+        auto&& pTexture = m_memory->GetTexture(textureId);
 
         auto&& imageDescriptorRef = pTexture->GetDescriptorRef();
         const auto&& descriptorSetWrite = EvoVulkan::Tools::Initializers::WriteDescriptorSet(
