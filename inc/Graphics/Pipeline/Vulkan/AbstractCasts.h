@@ -255,6 +255,9 @@ namespace SR_GRAPH_NS::VulkanTools {
                 case DescriptorType::CombinedImage:
                     vkDescriptorTypes.emplace_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                     break;
+                case DescriptorType::Storage:
+                    vkDescriptorTypes.emplace_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+                    break;
                 default: {
                     SR_ERROR("VulkanTools::CastAbsDescriptorTypeToVk() : unknown type!");
                     break;

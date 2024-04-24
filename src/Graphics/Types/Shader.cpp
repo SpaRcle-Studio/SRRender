@@ -175,12 +175,12 @@ namespace SR_GRAPH_NS::Types {
 
     int32_t Shader::GetId() noexcept {
         if (m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
-            return false;
+            return SR_ID_INVALID;
         }
 
         if (!m_isCalculated && !Init()) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("Shader::Use() : failed to initialize shader!");
-            return false;
+            return SR_ID_INVALID;
         }
 
         return m_manager.GetProgram(m_shaderProgram);

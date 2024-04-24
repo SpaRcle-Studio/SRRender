@@ -187,13 +187,13 @@ namespace SR_GRAPH_NS::Memory {
 
         if (static_cast<uint64_t>(virtualProgram) >= m_programs.size()) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("ShaderProgramManager::GetProgram() : invalid virtual program range!");
-            return false;
+            return SR_ID_INVALID;
         }
 
         auto&& virtualProgramInfo = m_programs[virtualProgram];
         if (!virtualProgramInfo.Valid()) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("ShaderProgramManager::GetProgram() : invalid virtual program!");
-            return false;
+            return SR_ID_INVALID;
         }
 
         if (auto&& pInfo = virtualProgramInfo.GetProgramInfo(GetCurrentIdentifier())) SR_LIKELY_ATTRIBUTE {

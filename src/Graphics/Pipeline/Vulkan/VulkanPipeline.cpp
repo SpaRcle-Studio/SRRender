@@ -241,7 +241,7 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateUBO(uint32_t uboSize) {
-        if (!m_memory) {
+        if (!m_memory) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("VulkanPipeline::AllocateUBO() : memory manager is nullptr!");
             return SR_ID_INVALID;
         }
@@ -1657,5 +1657,47 @@ namespace SR_GRAPH_NS {
         }
 
         Super::ClearColorBuffer(clearColors);
+    }
+
+    bool VulkanPipeline::FreeSSBO(int32_t* id) {
+        SR_TRACY_ZONE;
+
+        ++m_state.operations;
+        ++m_state.deletions;
+
+        const bool result = m_memory->FreeSSBO(*id);
+
+        *id = SR_ID_INVALID;
+
+        if (!result) {
+            PipelineError("VulkanPipeline::FreeSSBO() : failed to free SSBO! (" + std::to_string(*id) + ")");
+            return false;
+        }
+
+        return true;
+    }
+
+    int32_t VulkanPipeline::AllocateSSBO(uint32_t size, SSBOUsage usage) {
+        if (!m_memory) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("VulkanPipeline::AllocateSSBO() : memory manager is nullptr!");
+            return SR_ID_INVALID;
+        }
+
+        ++m_state.operations;
+        ++m_state.allocations;
+        m_state.allocatedMemory += size;
+
+        SRAssert2(size > 0, "Incorrect SSBO size!");
+
+        if (auto&& id = m_memory->AllocateSSBO(size, usage); id >= 0) SR_LIKELY_ATTRIBUTE {
+            return id;
+        }
+
+        PipelineError("VulkanPipeline::AllocateSSBO() : failed to allocate shader storage buffer object!");
+        return SR_ID_INVALID;
+    }
+
+    void VulkanPipeline::BindSSBO(uint32_t SSBO) {
+        Super::BindSSBO(SSBO);
     }
 }

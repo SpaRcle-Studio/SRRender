@@ -9,6 +9,11 @@
 #include <Utils/Xml.h>
 
 namespace SR_GRAPH_NS {
+    SR_ENUM_NS_CLASS_T(SSBOUsage, uint8_t,
+        Unknown,
+        Read, Write, ReadWrite
+    );
+
     SR_ENUM_NS_CLASS_T(ImageLoadFormat, uint8_t,
         Unknown,
         Grey,

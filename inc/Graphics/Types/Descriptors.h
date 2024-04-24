@@ -9,7 +9,7 @@
 
 namespace SR_GRAPH_NS {
     enum class DescriptorType {
-        Unknown, Uniform, CombinedImage
+        Unknown, Uniform, CombinedImage, Storage
     };
 }
 

@@ -124,6 +124,11 @@ namespace SR_GRAPH_NS::VulkanTools {
         return true;
     }
 
+    bool MemoryManager::FreeSSBO(uint32_t id) {
+        delete m_ssboPool.Remove(static_cast<int32_t>(id));
+        return true;
+    }
+
     bool MemoryManager::FreeVBO(uint32_t id) {
         delete m_vboPool.Remove(static_cast<int32_t>(id));
         return true;
@@ -303,6 +308,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         SRAssert2(m_texturePool.IsEmpty(), "Textures are not empty!");
         SRAssert2(m_descriptorSetPool.IsEmpty(), "Descriptor sets are not empty!");
         SRAssert2(m_shaderProgramPool.IsEmpty(), "Shaders are not empty!");
+        SRAssert2(m_ssboPool.IsEmpty(), "SSBOs are not empty!");
         delete this;
     }
 
@@ -326,5 +332,46 @@ namespace SR_GRAPH_NS::VulkanTools {
 
         m_isInit = true;
         return true;
+    }
+
+    int32_t MemoryManager::AllocateSSBO(uint32_t size, SSBOUsage usage) {
+        SR_TRACY_ZONE;
+
+        VmaMemoryUsage memoryUsage;
+
+        switch (usage) {
+            case SSBOUsage::Read:
+                memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+                break;
+            case SSBOUsage::Write:
+                memoryUsage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+                break;
+            case SSBOUsage::ReadWrite:
+                memoryUsage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+                break;
+            default:
+                SR_ERROR("MemoryManager::AllocateSSBO() : unknown usage!");
+                return SR_ID_INVALID;
+        }
+
+        auto&& pBuffer = EvoVulkan::Types::VmaBuffer::Create(
+            m_kernel->GetAllocator(),
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            memoryUsage,
+            size,
+            /// TODO: я не уверен зачем это нужно
+            VK_SHARING_MODE_EXCLUSIVE,
+            static_cast<VkBufferCreateFlags>(0),
+            /// TODO: я не уверен зачем это нужно
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            nullptr
+        );
+
+        if (!pBuffer) {
+            SR_ERROR("MemoryManager::AllocateSSBO() : failed to create storage buffer object!");
+            return SR_ID_INVALID;
+        }
+
+        return m_ssboPool.Add(pBuffer);
     }
 }

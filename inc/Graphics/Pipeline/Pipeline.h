@@ -169,6 +169,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual int32_t AllocateVBO(void* pVertices, Vertices::VertexType type, size_t count) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateIBO(void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateUBO(uint32_t uboSize) { return SR_ID_INVALID; }
+        SR_NODISCARD virtual int32_t AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocDescriptorSet(const std::vector<DescriptorType>& types) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) { return SR_ID_INVALID; };
         SR_NODISCARD virtual int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) { return SR_ID_INVALID; };
@@ -180,6 +181,7 @@ namespace SR_GRAPH_NS {
         virtual bool FreeIBO(int32_t* id) { return false; }
         virtual bool FreeUBO(int32_t* id) { return false; }
         virtual bool FreeFBO(int32_t* id) { return false; }
+        virtual bool FreeSSBO(int32_t* id) { return false; }
         virtual bool FreeCubeMap(int32_t* id) { return false; }
         virtual bool FreeShader(int32_t* id) { return false; }
         virtual bool FreeTexture(int32_t* id) { return false; }
@@ -209,6 +211,9 @@ namespace SR_GRAPH_NS {
 
         /// Uniform Buffer Object - обеспечивает привязку для передачм данных в шейдеры
         virtual void BindUBO(uint32_t UBO);
+
+        /// Shader Storage Buffer Object - обеспечивает привязку для передачм данных в шейдеры
+        virtual void BindSSBO(uint32_t SSBO);
 
         /// Обеспечивает обновление данных в шейдере
         virtual void UpdateUBO(uint32_t UBO, void* pData, uint64_t size);

@@ -65,12 +65,14 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) override;
         SR_NODISCARD int32_t AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) override;
         SR_NODISCARD int32_t AllocateCubeMap(const SRCubeMapCreateInfo& createInfo) override;
+        SR_NODISCARD int32_t AllocateSSBO(uint32_t size, SSBOUsage usage) override;
 
         bool FreeDescriptorSet(int32_t* id) override;
         bool FreeVBO(int32_t* id) override;
         bool FreeIBO(int32_t* id) override;
         bool FreeUBO(int32_t* id) override;
         bool FreeFBO(int32_t* id) override;
+        bool FreeSSBO(int32_t* id) override;
         bool FreeCubeMap(int32_t* id) override;
         bool FreeShader(int32_t* id) override;
         bool FreeTexture(int32_t* id) override;
@@ -124,6 +126,7 @@ namespace SR_GRAPH_NS {
         void BindTexture(uint8_t activeTexture, uint32_t textureId) override;
         void BindDescriptorSet(uint32_t descriptorSet) override;
         void BindFrameBuffer(FramebufferPtr pFBO) override;
+        void BindSSBO(uint32_t SSBO) override;
 
         void ResetDescriptorSet() override;
         void ResetLastShader() override;

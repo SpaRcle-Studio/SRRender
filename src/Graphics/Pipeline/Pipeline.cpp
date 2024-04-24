@@ -152,6 +152,11 @@ namespace SR_GRAPH_NS {
         m_state.UBOId = static_cast<int32_t>(UBO);
     }
 
+    void Pipeline::BindSSBO(uint32_t SSBO) {
+        ++m_state.operations;
+        m_state.SSBOId = static_cast<int32_t>(SSBO);
+    }
+
     void Pipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size) {
         ++m_state.operations;
         m_state.transferredMemory += size;

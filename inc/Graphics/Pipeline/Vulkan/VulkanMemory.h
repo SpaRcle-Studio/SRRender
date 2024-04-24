@@ -62,6 +62,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         SR_NODISCARD bool FreeUBO(uint32_t id);
         SR_NODISCARD bool FreeIBO(uint32_t id);
         SR_NODISCARD bool FreeFBO(uint32_t id);
+        SR_NODISCARD bool FreeSSBO(uint32_t id);
 
         SR_NODISCARD bool FreeTexture(uint32_t id);
 
@@ -73,6 +74,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         SR_NODISCARD int32_t AllocateVBO(uint32_t buffSize, void* data);
         SR_NODISCARD int32_t AllocateUBO(uint32_t UBOSize);
         SR_NODISCARD int32_t AllocateIBO(uint32_t buffSize, void* data);
+        SR_NODISCARD int32_t AllocateSSBO(uint32_t size, SSBOUsage usage);
 
         SR_NODISCARD bool ReAllocateFBO(const VulkanFrameBufferAllocInfo& info);
 
@@ -101,6 +103,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         SR_NODISCARD const EvoVulkan::Types::VmaBuffer* GetVBO(uint32_t id) const { return m_vboPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD const EvoVulkan::Types::VmaBuffer* GetUBO(uint32_t id) const { return m_uboPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD const EvoVulkan::Types::VmaBuffer* GetIBO(uint32_t id) const { return m_iboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD const EvoVulkan::Types::VmaBuffer* GetSSBO(uint32_t id) const { return m_ssboPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD const EvoVulkan::Complexes::FrameBuffer* GetFBO(uint32_t id) const { return m_fboPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD const EvoVulkan::Complexes::Shader* GetShaderProgram(uint32_t id) const { return m_shaderProgramPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD const EvoVulkan::Types::DescriptorSet& GetDescriptorSet(uint32_t id) const { return m_descriptorSetPool.At(static_cast<int32_t>(id)); }
@@ -109,6 +112,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         SR_NODISCARD EvoVulkan::Types::VmaBuffer* GetVBO(uint32_t id) { return m_vboPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD EvoVulkan::Types::VmaBuffer* GetUBO(uint32_t id) { return m_uboPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD EvoVulkan::Types::VmaBuffer* GetIBO(uint32_t id) { return m_iboPool.At(static_cast<int32_t>(id)); }
+        SR_NODISCARD EvoVulkan::Types::VmaBuffer* GetSSBO(uint32_t id) { return m_ssboPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD EvoVulkan::Complexes::FrameBuffer* GetFBO(uint32_t id) { return m_fboPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD EvoVulkan::Complexes::Shader* GetShaderProgram(uint32_t id) { return m_shaderProgramPool.At(static_cast<int32_t>(id)); }
         SR_NODISCARD EvoVulkan::Types::DescriptorSet& GetDescriptorSet(uint32_t id) { return m_descriptorSetPool.At(static_cast<int32_t>(id)); }
@@ -130,6 +134,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::VmaBuffer*, int32_t> m_vboPool;
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::VmaBuffer*, int32_t> m_uboPool;
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::VmaBuffer*, int32_t> m_iboPool;
+        SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::VmaBuffer*, int32_t> m_ssboPool;
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Complexes::FrameBuffer*, int32_t> m_fboPool;
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::Texture*, int32_t> m_texturePool;
 
