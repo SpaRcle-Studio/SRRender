@@ -68,7 +68,7 @@ namespace SR_GRAPH_NS {
     }
 
     void* X11Window::GetHandle() const {
-        return nullptr;
+        return reinterpret_cast<void*>(GetWindow());
     }
 
     xcb_connection_t* X11Window::GetConnection() const {
