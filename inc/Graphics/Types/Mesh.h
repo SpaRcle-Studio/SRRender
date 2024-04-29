@@ -14,6 +14,7 @@
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Loaders/ShaderProperties.h>
+#include <Graphics/Memory/DescriptorManager.h>
 
 namespace SR_UTILS_NS {
     class IResource;
@@ -116,6 +117,7 @@ namespace SR_GTYPES_NS {
 
     protected:
         Memory::UBOManager& m_uboManager;
+        SR_GRAPH_NS::DescriptorManager& m_descriptorManager;
 
         MeshType m_meshType = MeshType::Unknown;
 
@@ -125,6 +127,7 @@ namespace SR_GTYPES_NS {
         bool m_dirtyMaterial = false;
 
         int32_t m_virtualUBO = SR_ID_INVALID;
+        int32_t m_virtualDescriptor = SR_ID_INVALID;
 
         std::vector<MaterialProperty> m_overrideUniforms;
         std::vector<MaterialProperty> m_overrideConstant;

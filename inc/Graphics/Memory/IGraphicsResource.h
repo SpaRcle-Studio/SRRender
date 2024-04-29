@@ -53,7 +53,7 @@ namespace SR_GRAPH_NS::Memory {
         SR_NODISCARD SR_FORCE_INLINE bool IsGraphicsResourceRegistered() const { return m_pipeline; }
 
     protected:
-        std::atomic<bool> m_isCalculated = false;
+        bool m_isCalculated = false;
 
         PipelinePtr m_pipeline;
         RenderContextPtr m_renderContext = nullptr;

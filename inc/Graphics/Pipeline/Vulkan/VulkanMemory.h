@@ -6,6 +6,7 @@
 #define SR_ENGINE_GRAPHICS_VULKAN_MEMORY_H
 
 #include <Utils/Common/NonCopyable.h>
+#include <Utils/Types/Function.h>
 
 #include <EvoVulkan/Types/VulkanBuffer.h>
 #include <EvoVulkan/Complexes/Framebuffer.h>

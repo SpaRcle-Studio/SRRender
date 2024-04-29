@@ -30,8 +30,6 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_uboManager.SetIdentifier(GetCamera());
-
         bool hasDrawData = false;
 
         hasDrawData |= GroupPass::PreRender();
@@ -58,8 +56,6 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        m_uboManager.SetIdentifier(GetCamera());
-
         GroupPass::Update();
     }
 
@@ -69,8 +65,6 @@ namespace SR_GRAPH_NS {
         if (m_dirty) {
             return false;
         }
-
-        m_uboManager.SetIdentifier(GetCamera());
 
         return GroupPass::Overlay();
     }

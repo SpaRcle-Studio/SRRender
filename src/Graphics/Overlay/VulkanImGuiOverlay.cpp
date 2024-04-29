@@ -590,7 +590,7 @@ namespace SR_GRAPH_NS {
 
         if (auto&& pTexture = pMemoryManager->GetTexture(textureId)) {
             auto&& layout = ((ImGui_ImplVulkan_Data*)ImGui::GetIO().BackendRendererUserData)->DescriptorSetLayout;
-            return reinterpret_cast<void*>(pTexture->GetDescriptorSet(layout).m_self);
+            return reinterpret_cast<void*>(pTexture->GetDescriptorSet(layout).descriptorSet);
         }
 
         return nullptr;

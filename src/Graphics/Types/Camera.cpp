@@ -151,6 +151,25 @@ namespace SR_GTYPES_NS {
 
     void Camera::UpdateView() noexcept {
         m_viewMat = m_rotation.RotateX(SR_DEG(SR_PI)).Inverse().ToMat4x4();
+
+        /*auto&& euler = m_rotation.RotateX(SR_DEG(SR_PI)).Inverse().EulerAngle();
+
+        float yr = SR_RAD(euler.y);
+        float sy = sin(yr);
+        float cy = cos(yr);
+
+        float pr = SR_RAD(euler.x);
+        float sx = sin(pr);
+        float cx = cos(pr);
+
+        float rr = SR_RAD(euler.z);
+        float sz = sin(rr);
+        float cz = cos(rr);
+
+        glm::mat3x3 rotation = glm::mat3x3(cy*cz, -cy*sz, sy, sx*sy*cz+cx*sz, -sx*sy*sz+cx*cz, -sx*cy, -cx*sy*cz+sx*sz, cx*sy*sz+sx*cz, cx*cy);
+        m_viewMat = SR_MATH_NS::Matrix4x4(rotation);*/
+
+
         m_viewTranslateMat = m_viewMat.Translate(m_position.Inverse());
         m_viewDirection = m_rotation * SR_MATH_NS::FVector3(0, 0, 1);
     }

@@ -2,8 +2,8 @@
 // Created by Nikita on 17.11.2020.
 //
 
-#ifndef GAMEENGINE_SHADER_H
-#define GAMEENGINE_SHADER_H
+#ifndef SR_ENGINE_GRAPHICS_SHADER_H
+#define SR_ENGINE_GRAPHICS_SHADER_H
 
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Common/Hashes.h>
@@ -16,6 +16,7 @@
 #include <Graphics/Loaders/SRSL.h>
 #include <Graphics/Memory/ShaderProgramManager.h>
 #include <Graphics/Memory/IGraphicsResource.h>
+#include <Graphics/Memory/UBOManager.h>
 
 namespace SR_GTYPES_NS {
     class Texture;
@@ -49,6 +50,11 @@ namespace SR_GTYPES_NS {
         void FreeVideoMemory() override;
         void StartWatch() override;
 
+        void AttachDescriptorSets();
+
+        bool BeginSharedUBO();
+        void EndSharedUBO();
+
     public:
         SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
         SR_DEPRECATED SR_NODISCARD int32_t GetID();
@@ -62,19 +68,21 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsBlendEnabled() const;
         SR_NODISCARD bool IsAvailable() const;
         SR_NODISCARD bool IsSamplersValid() const;
+        SR_NODISCARD bool HasSharedUBO() const noexcept { return m_uniformSharedBlock.Valid(); }
         SR_NODISCARD SR_SRSL_NS::ShaderType GetType() const noexcept;
 
     public:
         template<bool constant, typename T> void SetValue(uint64_t hashId, const T* v) noexcept {
-            if (!IsLoaded()) {
-                return;
-            }
-
             if constexpr (constant) {
                 m_constBlock.SetField(hashId, v);
             }
             else {
-                m_uniformBlock.SetField(hashId, v);
+                if (m_sharedUBOMode) SR_UNLIKELY_ATTRIBUTE {
+                    m_uniformSharedBlock.SetField(hashId, v);
+                }
+                else {
+                    m_uniformBlock.SetField(hashId, v);
+                }
             }
         }
 
@@ -114,17 +122,22 @@ namespace SR_GTYPES_NS {
         void SetSampler(SR_UTILS_NS::StringAtom name, int32_t sampler) noexcept;
 
     private:
+        Memory::UBOManager& m_uboManager;
         Memory::ShaderProgramManager& m_manager;
 
         ShaderProgram m_shaderProgram = SR_ID_INVALID;
 
         bool m_hasErrors = false;
         bool m_isRegistered = false;
+        bool m_sharedUBOMode = false;
 
         SRShaderCreateInfo m_shaderCreateInfo = { };
 
+        std::pair<int32_t, bool> m_virtualUBO = { SR_ID_INVALID, true };
+
         std::vector<SR_UTILS_NS::StringAtom> m_includes;
         Memory::ShaderUBOBlock m_uniformBlock;
+        Memory::ShaderUBOBlock m_uniformSharedBlock;
         Memory::ShaderUBOBlock m_constBlock;
         ShaderSamplers m_samplers;
         ShaderProperties m_properties;
@@ -134,4 +147,4 @@ namespace SR_GTYPES_NS {
     };
 }
 
-#endif //GAMEENGINE_SHADER_H
+#endif //SR_ENGINE_GRAPHICS_SHADER_H

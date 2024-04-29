@@ -70,9 +70,6 @@ namespace SR_GRAPH_NS {
             return RenderFrameBuffer(pPipeline, GetLayersCount());
         }
 
-        auto&& pIdentifier = m_frameBufferUboManager.GetIdentifier();
-        m_frameBufferUboManager.SetIdentifier(this);
-
         if (IsDirectional()) {
             RenderFrameBufferInner();
         }
@@ -91,16 +88,11 @@ namespace SR_GRAPH_NS {
 
         pPipeline->SetCurrentFrameBuffer(nullptr);
 
-        m_frameBufferUboManager.SetIdentifier(pIdentifier);
-
         return IsDirectional();
     }
 
     bool IFramebufferPass::RenderFrameBuffer(const PipelinePtr& pPipeline, uint8_t layers) {
         auto&& pFrameBuffer = GetFramebuffer();
-        auto&& pIdentifier = m_frameBufferUboManager.GetIdentifier();
-
-        m_frameBufferUboManager.SetIdentifier(this);
 
         pFrameBuffer->BeginCmdBuffer(m_clearColors, m_depth);
         pFrameBuffer->SetViewportScissor();
@@ -115,8 +107,6 @@ namespace SR_GRAPH_NS {
                 pFrameBuffer->EndRender();
             }
         }
-
-        m_frameBufferUboManager.SetIdentifier(pIdentifier);
 
         pFrameBuffer->EndCmdBuffer();
 
@@ -133,16 +123,11 @@ namespace SR_GRAPH_NS {
 
         pPipeline->SetCurrentFrameBuffer(pFrameBuffer);
 
-        auto&& pIdentifier = m_frameBufferUboManager.GetIdentifier();
-        m_frameBufferUboManager.SetIdentifier(this);
-
         for (uint32_t i = 0; i < GetLayersCount(); ++i) {
             m_currentFrameBufferLayer = i;
             pPipeline->SetFrameBufferLayer(i);
             UpdateFrameBufferInner();
         }
-
-        m_frameBufferUboManager.SetIdentifier(pIdentifier);
 
         pPipeline->SetCurrentFrameBuffer(nullptr);
     }

@@ -9,10 +9,12 @@
 #include <Utils/Common/Vertices.h>
 
 #include <Graphics/Types/Skybox.h>
+#include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Vertices.h>
 #include <Graphics/Loaders/ObjLoader.h>
-
-#include <stbi/stb_image.h>
+#include <Graphics/Memory/UBOManager.h>
+#include <Graphics/Memory/DescriptorManager.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 namespace SR_GTYPES_NS {
     Skybox::Skybox()
@@ -148,56 +150,6 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    void Skybox::DrawOpenGL() {
-
-    }
-
-    void Skybox::DrawVulkan() {
-        SR_TRACY_ZONE;
-
-        auto&& uboManager = Memory::UBOManager::Instance();
-
-        if (m_dirtyShader)
-        {
-            m_dirtyShader = false;
-
-            m_virtualUBO = uboManager.ReAllocateUBO(m_virtualUBO, m_shader->GetUBOBlockSize(), m_shader->GetSamplersCount());
-
-            if (m_virtualUBO != SR_ID_INVALID) {
-                uboManager.BindUBO(m_virtualUBO);
-            }
-            else {
-                m_pipeline->ResetDescriptorSet();
-                m_hasErrors = true;
-                return;
-            }
-
-            m_shader->InitUBOBlock();
-            m_shader->Flush();
-
-            m_shader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
-            m_shader->FlushSamplers();
-        }
-
-        m_pipeline->BindVBO(m_VBO);
-        m_pipeline->BindIBO(m_IBO);
-
-        switch (uboManager.BindUBO(m_virtualUBO)) {
-            case Memory::UBOManager::BindResult::Duplicated:
-                m_shader->InitUBOBlock();
-                m_shader->Flush();
-                m_shader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
-                m_shader->FlushSamplers();
-                SR_FALLTHROUGH;
-            case Memory::UBOManager::BindResult::Success:
-                m_pipeline->DrawIndices(36);
-                break;
-            case Memory::UBOManager::BindResult::Failed:
-            default:
-                break;
-        }
-    }
-
     void Skybox::FreeVideoMemory() {
         SR_LOG("Skybox::FreeVideoMemory() : free skybox video memory...");
 
@@ -218,6 +170,11 @@ namespace SR_GTYPES_NS {
             SR_ERROR("Mesh::FreeVideoMemory() : failed to free virtual uniform buffer object!");
         }
 
+        auto&& descriptorManager = SR_GRAPH_NS::DescriptorManager::Instance();
+        if (m_virtualDescriptor != SR_ID_INVALID) {
+            descriptorManager.FreeDescriptorSet(&m_virtualDescriptor);
+        }
+
         SetShader(nullptr);
 
         IGraphicsResource::FreeVideoMemory();
@@ -230,13 +187,31 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        switch (m_pipeline->GetType()) {
-            case PipelineType::Vulkan:
-                DrawVulkan();
-                break;
-            default:
-                SRAssertOnce(false);
-                break;
+        auto&& uboManager = Memory::UBOManager::Instance();
+        auto&& descriptorManager = SR_GRAPH_NS::DescriptorManager::Instance();
+
+        if (m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
+            m_dirtyShader = false;
+
+            m_virtualUBO = uboManager.AllocateUBO(m_virtualUBO);
+            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                m_hasErrors = true;
+                return;
+            }
+
+            m_virtualDescriptor = descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
+        }
+
+        if (m_pipeline->GetCurrentBuildIteration() == 0) {
+            m_shader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
+        }
+
+        m_pipeline->BindVBO(m_VBO);
+        m_pipeline->BindIBO(m_IBO);
+        uboManager.BindUBO(m_virtualUBO);
+
+        if (descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
+            m_pipeline->DrawIndices(36);
         }
     }
 

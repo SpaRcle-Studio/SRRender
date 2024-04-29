@@ -10,7 +10,7 @@
 namespace SR_GRAPH_NS {
     //SR_REGISTER_RENDER_PASS(FlatColorBufferPass)
 
-    void FlatColorBufferPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
+    /*void FlatColorBufferPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
         Super::UseConstants(pShader);
 
         pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 1);
@@ -97,5 +97,5 @@ namespace SR_GRAPH_NS {
         pShader->SetVec3(SHADER_COLOR_BUFFER_VALUE, GetMeshColor());
 
         Super::UseUniforms(pShader, pMesh);
-    }
+    }*/
 }

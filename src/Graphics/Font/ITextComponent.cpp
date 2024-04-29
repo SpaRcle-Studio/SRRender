@@ -42,10 +42,9 @@ namespace SR_GTYPES_NS {
 
             EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
 
-            m_virtualUBO = m_uboManager.ReAllocateUBO(m_virtualUBO, pShader->GetUBOBlockSize(), pShader->GetSamplersCount());
+            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
 
             if (m_virtualUBO == SR_ID_INVALID || m_uboManager.BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Failed) {
-                m_pipeline->ResetDescriptorSet();
                 m_hasErrors = true;
                 return;
             }

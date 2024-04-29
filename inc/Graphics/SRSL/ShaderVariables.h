@@ -13,16 +13,28 @@ namespace SR_SRSL_NS {
             { "COLOR_BUFFER_MODE",              "int"           },
     };
 
-    SR_INLINE_STATIC const std::map<std::string, std::string> SR_SRSL_DEFAULT_UNIFORMS = { /** NOLINT */
-            { "MODEL_MATRIX",                   "mat4"          },
-            { "MODEL_NO_SCALE_MATRIX",          "mat4"          },
+    SR_INLINE_STATIC const std::map<std::string, std::string> SR_SRSL_DEFAULT_SHARED_UNIFORMS = { /** NOLINT */
             { "VIEW_MATRIX",                    "mat4"          },
             { "PROJECTION_MATRIX",              "mat4"          },
             { "ORTHOGONAL_MATRIX",              "mat4"          },
             { "VIEW_NO_TRANSLATE_MATRIX",       "mat4"          },
             { "LIGHT_SPACE_MATRIX",             "mat4"          },
+
+            { "TIME",                           "float"         },
+
+            { "RESOLUTION",                     "vec2"          },
+
             { "CASCADE_LIGHT_SPACE_MATRICES",   "mat4[4]"       },
             { "CASCADE_SPLITS",                 "vec4"          },
+
+            { "DIRECTIONAL_LIGHT_POSITION",     "vec3"          },
+            { "VIEW_POSITION",                  "vec3"          },
+            { "VIEW_DIRECTION",                 "vec3"          },
+    };
+
+    SR_INLINE_STATIC const std::map<std::string, std::string> SR_SRSL_DEFAULT_UNIFORMS = { /** NOLINT */
+            { "MODEL_MATRIX",                   "mat4"          },
+            { "MODEL_NO_SCALE_MATRIX",          "mat4"          },
 
             { "SKELETON_MATRICES_128",          "mat4[128]"     },
             { "SKELETON_MATRIX_OFFSETS_128",    "mat4[128]"     },
@@ -34,14 +46,10 @@ namespace SR_SRSL_NS {
             { "SKELETON_MATRIX_OFFSETS_384",    "mat4[384]"     },
 
             { "HALF_SIZE_NEAR_PLANE",           "vec2"          },
-            { "RESOLUTION",                     "vec2"          },
             { "SLICED_TEXTURE_BORDER",          "vec2"          },
             { "SLICED_WINDOW_BORDER",           "vec2"          },
 
             { "COLOR_BUFFER_VALUE",             "vec3"          },
-            { "DIRECTIONAL_LIGHT_POSITION",     "vec3"          },
-            { "VIEW_POSITION",                  "vec3"          },
-            { "VIEW_DIRECTION",                 "vec3"          },
             { "LINE_START_POINT",               "vec3"          },
             { "LINE_END_POINT",                 "vec3"          },
             { "COLOR_BUFFER_VALUE",             "vec3"          },
@@ -50,7 +58,6 @@ namespace SR_SRSL_NS {
 
             { "LINE_COLOR",                     "vec4"          },
 
-            { "TIME",                           "float"         },
             { "TEXT_RECT_X",                    "float"         },
             { "TEXT_RECT_Y",                    "float"         },
             { "TEXT_RECT_WIDTH",                "float"         },

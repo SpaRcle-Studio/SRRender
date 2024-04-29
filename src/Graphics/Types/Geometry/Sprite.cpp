@@ -55,7 +55,11 @@ namespace SR_GTYPES_NS {
     }
 
     void Sprite::Draw() {
-        if (!IsActive()) {
+        SR_TRACY_ZONE;
+
+        auto&& pShader = GetRenderContext()->GetCurrentShader();
+
+        if (!pShader || !IsActive()) {
             return;
         }
 
@@ -63,43 +67,28 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-		auto&& pShader = GetPipeline()->GetCurrentShader();
-
-        if (m_dirtyMaterial)
-        {
+        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
             m_dirtyMaterial = false;
 
-            m_virtualUBO = m_uboManager.ReAllocateUBO(m_virtualUBO, pShader->GetUBOBlockSize(), pShader->GetSamplersCount());
-
-            if (m_virtualUBO == SR_ID_INVALID || m_uboManager.BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Failed) {
-                m_pipeline->ResetDescriptorSet();
+            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
+            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 m_hasErrors = true;
                 return;
             }
 
-            pShader->InitUBOBlock();
-            pShader->Flush();
-
-            m_material->UseSamplers();
-            pShader->FlushSamplers();
+            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
         }
 
-        switch (m_uboManager.BindUBO(m_virtualUBO)) {
-            case Memory::UBOManager::BindResult::Duplicated:
-                pShader->InitUBOBlock();
-                pShader->Flush();
-                m_material->UseSamplers();
-                pShader->FlushSamplers();
-                SR_FALLTHROUGH;
-            case Memory::UBOManager::BindResult::Success:
-                pShader->FlushConstants();
-                m_pipeline->DrawIndices(m_countIndices);
-                break;
-            case Memory::UBOManager::BindResult::Failed:
-            default: {
-                m_hasErrors = true;
-                return;
-            }
+        if (m_pipeline->GetCurrentBuildIteration() == 0) {
+            m_material->UseSamplers();
+        }
+
+        m_pipeline->BindVBO(m_VBO);
+        m_pipeline->BindIBO(m_IBO);
+        m_uboManager.BindUBO(m_virtualUBO);
+
+        if (m_descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
+            m_pipeline->DrawIndices(m_countIndices);
         }
     }
 

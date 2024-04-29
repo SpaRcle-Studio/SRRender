@@ -126,11 +126,7 @@ namespace SR_GTYPES_NS {
     void Material::UseSamplers() {
         InitContext();
 
-        if (m_shader && m_context->GetCurrentShader() != m_shader) {
-            return;
-        }
-
-        if (m_context->GetPipeline()->GetCurrentDescriptorSet() == SR_ID_INVALID) {
+        if (m_shader && m_context->GetCurrentShader() != m_shader) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
@@ -166,7 +162,7 @@ namespace SR_GTYPES_NS {
     }
 
     void Material::InitContext() {
-        if (!m_context) {
+        if (!m_context) SR_UNLIKELY_ATTRIBUTE {
             if (!(m_context = SR_THIS_THREAD->GetContext()->GetValue<RenderContextPtr>())) {
                 SRHalt("Is not render context!");
                 return;

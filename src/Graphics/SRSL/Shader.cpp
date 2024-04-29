@@ -265,20 +265,25 @@ namespace SR_SRSL_NS {
                     continue;
                 }
 
-                std::string blockName;
-
-                if (pDecorator->args.empty()) {
-                    blockName = "BLOCK";
-                }
-                else {
-                    blockName = pDecorator->args[0]->token;
-                }
-
                 SRSLUniformBlock::Field field;
 
                 field.name = pVariable->pName->ToString(0);
                 field.type = pVariable->pType->ToString(0);
                 field.isPublic = bool(pVariable->pDecorators->Find("public"));
+
+                std::string blockName;
+
+                if (pDecorator->args.empty()) {
+                    if (SR_SRSL_DEFAULT_SHARED_UNIFORMS.count(field.name) == 1) {
+                        blockName = "SHARED";
+                    }
+                    else {
+                        blockName = "BLOCK";
+                    }
+                }
+                else {
+                    blockName = pDecorator->args[0]->token;
+                }
 
                 auto&& usedStages = m_useStack->IsVariableUsedInEntryPointsExt(field.name);
 
@@ -309,6 +314,21 @@ namespace SR_SRSL_NS {
                 field.isPublic = false;
 
                 auto&& uniformBlock = m_uniformBlocks["BLOCK"];
+                uniformBlock.fields.emplace_back(field);
+                uniformBlock.stages.insert(usedStages.begin(), usedStages.end());
+            }
+        }
+
+        for (auto&& [defaultUniform, type] : SR_SRSL_DEFAULT_SHARED_UNIFORMS) {
+            auto&& usedStages = m_useStack->IsVariableUsedInEntryPointsExt(defaultUniform);
+            if (!usedStages.empty()) {
+                SRSLUniformBlock::Field field;
+
+                field.name = defaultUniform;
+                field.type = type;
+                field.isPublic = false;
+
+                auto&& uniformBlock = m_uniformBlocks["SHARED"];
                 uniformBlock.fields.emplace_back(field);
                 uniformBlock.stages.insert(usedStages.begin(), usedStages.end());
             }

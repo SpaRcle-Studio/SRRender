@@ -13,6 +13,7 @@
 namespace SR_GRAPH_NS::Types {
     Mesh::Mesh(MeshType type)
         : m_uboManager(Memory::UBOManager::Instance())
+        , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
         , m_meshType(type)
         , m_material(nullptr)
     { }
@@ -88,6 +89,10 @@ namespace SR_GRAPH_NS::Types {
     void Mesh::FreeVideoMemory() {
         if (m_virtualUBO != SR_ID_INVALID && !m_uboManager.FreeUBO(&m_virtualUBO)) {
             SR_ERROR("Mesh::FreeVideoMemory() : failed to free virtual uniform buffer object!");
+        }
+
+        if (m_virtualDescriptor != SR_ID_INVALID) {
+            m_descriptorManager.FreeDescriptorSet(&m_virtualDescriptor);
         }
 
         IGraphicsResource::FreeVideoMemory();

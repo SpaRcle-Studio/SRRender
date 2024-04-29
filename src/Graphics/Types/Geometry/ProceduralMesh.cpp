@@ -72,13 +72,12 @@ namespace SR_GTYPES_NS {
         {
             m_dirtyMaterial = false;
 
-            m_virtualUBO = uboManager.ReAllocateUBO(m_virtualUBO, pShader->GetUBOBlockSize(), pShader->GetSamplersCount());
+            m_virtualUBO = uboManager.AllocateUBO(m_virtualUBO);
 
             if (m_virtualUBO != SR_ID_INVALID) {
                 uboManager.BindUBO(m_virtualUBO);
             }
             else {
-                m_pipeline->ResetDescriptorSet();
                 m_hasErrors = true;
                 return;
             }

@@ -136,6 +136,7 @@ namespace SR_GRAPH_NS {
 
     void Pipeline::PrepareFrame() {
         ++m_state.operations;
+        m_bindedDescriptors.Fill(false);
         UpdateMultiSampling();
     }
 
@@ -158,6 +159,7 @@ namespace SR_GRAPH_NS {
     }
 
     void Pipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size) {
+        SRAssert(pData != nullptr && size > 0);
         ++m_state.operations;
         m_state.transferredMemory += size;
         ++m_state.transferredCount;
@@ -179,9 +181,19 @@ namespace SR_GRAPH_NS {
         ++m_state.usedTextures;
     }
 
-    void Pipeline::BindDescriptorSet(uint32_t descriptorSet) {
+    bool Pipeline::BindDescriptorSet(uint32_t descriptorSet) {
         ++m_state.operations;
+
+        if (m_bindedDescriptors.Get(descriptorSet, false)) {
+            PipelineError("Pipeline::BindDescriptorSet() : descriptor set already binded!");
+            return false;
+        }
+
+        m_bindedDescriptors.Set(descriptorSet, true);
+
         m_state.descriptorSetId = static_cast<int32_t>(descriptorSet);
+
+        return true;
     }
 
     void Pipeline::UseShader(uint32_t shaderProgram) {
@@ -256,13 +268,13 @@ namespace SR_GRAPH_NS {
     }
 
     void Pipeline::SetBuildIteration(uint8_t iteration) {
-        m_state.buildIteration = iteration;
         ++m_state.operations;
+        m_state.buildIteration = iteration;
+        m_bindedDescriptors.Fill(false);
     }
 
     bool Pipeline::BeginDrawOverlay(OverlayType overlayType) {
         ++m_state.operations;
-        ++m_state.drawCalls;
 
         auto&& pIt = m_overlays.find(overlayType);
         if (pIt == m_overlays.end() || !pIt->second) {
@@ -337,12 +349,6 @@ namespace SR_GRAPH_NS {
     void Pipeline::PipelineError(const std::string& msg) const {
         ++m_errorsCount;
         SR_ERROR(msg);
-    }
-
-    void Pipeline::ResetDescriptorSet() {
-        SR_TRACY_ZONE;
-        ++m_state.operations;
-        m_state.descriptorSetId = SR_ID_INVALID;
     }
 
     void Pipeline::ResetLastShader() {

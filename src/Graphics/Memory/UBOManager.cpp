@@ -15,66 +15,77 @@ namespace SR_GRAPH_NS::Memory {
         m_uboPool.Reserve(4096);
     }
 
-    void UBOManager::SetIdentifier(void* pIdentifier) {
-        m_identifier = pIdentifier;
+    UBOManager::~UBOManager() {
+        m_pipeline.Reset();
     }
 
-    void* UBOManager::GetIdentifier() const noexcept {
-        return m_identifier;
-    }
-
-    UBOManager::VirtualUBO UBOManager::AllocateUBO(uint32_t uboSize, uint32_t samples) {
-        SR_TRACY_ZONE;
-
-        if (!m_identifier) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("UBOManager::AllocateUBO() : identifier is nullptr!");
+    UBOManager::VirtualUBO UBOManager::AllocateUBO(VirtualUBO virtualUbo) {
+        auto&& pShader = m_pipeline->GetCurrentShader();
+        if (!pShader) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("UBOManager::AllocateUBO() : shader is nullptr!");
             return SR_ID_INVALID;
         }
+        return AllocateUBO(virtualUbo, pShader->GetUBOBlockSize(), false);
+    }
 
-        auto&& pShader = m_pipeline->GetCurrentShader();
-        auto&& shaderProgram = pShader ? pShader->GetId() : SR_ID_INVALID;
+    UBOManager::VirtualUBO UBOManager::AllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize) {
+        return AllocateUBO(virtualUbo, uboSize, false);
+    }
 
-        if (shaderProgram == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+    UBOManager::VirtualUBO UBOManager::AllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize, bool shared) {
+        SR_TRACY_ZONE;
+
+        auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
+
+        if (!pShaderHandle) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("UBOManager::AllocateUBO() : shader program do not set!");
             return SR_ID_INVALID;
         }
 
-        Descriptor descriptor = SR_ID_INVALID;
         UBO ubo = SR_ID_INVALID;
 
-        if (!AllocMemory(&ubo, &descriptor, uboSize, samples, shaderProgram)) {
-            SR_ERROR("UBOManager::AllocateUBO() : failed to allocate memory!");
-            return SR_ID_INVALID;
+        if (uboSize > 0) SR_LIKELY_ATTRIBUTE {
+            if (!AllocMemory(&ubo, uboSize)) SR_UNLIKELY_ATTRIBUTE {
+                SR_ERROR("UBOManager::AllocateUBO() : failed to allocate memory!");
+                return SR_ID_INVALID;
+            }
         }
 
-        VirtualUBOInfo::ShaderInfo shaderInfo = { };
-        shaderInfo.pShader = pShader;
-        shaderInfo.shaderProgram = shaderProgram;
-        shaderInfo.samples = samples;
-        shaderInfo.uboSize = uboSize;
-
         VirtualUBOInfo virtualUboInfo;
+        virtualUboInfo.shared = shared;
 
-        virtualUboInfo.m_data.emplace_back(VirtualUBOInfo::Data {
-            m_identifier,
-            descriptor,
-            ubo,
-            shaderInfo
-        });
+        VirtualUBOInfo::Data& data = virtualUboInfo.data.emplace_back();
+        data.ubo = ubo;
+        data.pShaderHandle = pShaderHandle;
+        data.uboSize = uboSize;
 
-        return m_uboPool.Add(std::move(virtualUboInfo));
+        if (virtualUbo == SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
+            return m_uboPool.Add(std::move(virtualUboInfo));
+        }
+
+        auto&& info = m_uboPool.At(virtualUbo);
+        for (auto&& dataToFree : info.data) {
+            if (dataToFree.uboSize <= 0) {
+                continue;
+            }
+            m_pipeline->FreeUBO(&dataToFree.ubo);
+        }
+        info = std::move(virtualUboInfo);
+        return virtualUbo;
     }
 
     bool UBOManager::FreeUBO(UBOManager::VirtualUBO* virtualUbo) {
         SR_TRACY_ZONE;
 
-        if (!SRVerifyFalse(!virtualUbo)) SR_UNLIKELY_ATTRIBUTE {
-            return false;
-        }
+        SRAssert(virtualUbo != nullptr);
 
-        auto&& info = m_uboPool.Remove(*virtualUbo);
-        for (auto&& [pIdentifier, descriptor, ubo, shaderInfo] : info.m_data) {
-            FreeMemory(&ubo, &descriptor);
+        auto&& info = m_uboPool.RemoveByIndex(*virtualUbo);
+        for (auto&& data : info.data) {
+            if (data.uboSize <= 0) {
+                SRAssert(data.ubo == SR_ID_INVALID);
+                continue;
+            }
+            m_pipeline->FreeUBO(&data.ubo);
         }
 
         *virtualUbo = SR_ID_INVALID;
@@ -82,178 +93,85 @@ namespace SR_GRAPH_NS::Memory {
         return true;
     }
 
-    bool UBOManager::AllocMemory(UBO *ubo, Descriptor* descriptor, uint32_t uboSize, uint32_t samples, int32_t shader) {
+    bool UBOManager::AllocMemory(UBO *ubo, uint32_t uboSize) {
         SR_TRACY_ZONE;
 
-        auto&& shaderIdStash = m_pipeline->GetCurrentShaderId();
-
-        m_pipeline->SetCurrentShaderId(shader);
-
-        if (uboSize > 0) {
-            if (*descriptor = m_pipeline->AllocDescriptorSet({ DescriptorType::Uniform }); *descriptor < 0) {
-                SR_ERROR("UBOManager::AllocMemory() : failed to allocate descriptor set! (Uniform)");
-                goto fails;
-            }
-
-            if (*ubo = m_pipeline->AllocateUBO(uboSize); *ubo < 0) {
-                SR_ERROR("UBOManager::AllocMemory() : failed to allocate uniform buffer object!");
-                goto fails;
-            }
-        }
-        else if (samples > 0) {
-            if (*descriptor = m_pipeline->AllocDescriptorSet({ DescriptorType::CombinedImage }); *descriptor < 0) {
-                SR_ERROR("UBOManager::AllocMemory() : failed to allocate descriptor set! (CombinedImage)");
-                goto fails;
-            }
+        if (*ubo = m_pipeline->AllocateUBO(uboSize); *ubo < 0) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("UBOManager::AllocMemory() : failed to allocate uniform buffer object!");
+            return false;
         }
 
-        SRAssert(*ubo != SR_ID_INVALID || *descriptor != SR_ID_INVALID || (uboSize == 0 && samples == 0));
-
-        m_pipeline->SetCurrentShaderId(shaderIdStash);
         return true;
-
-    fails:
-        m_pipeline->SetCurrentShaderId(shaderIdStash);
-        return false;
     }
 
     UBOManager::BindResult UBOManager::BindUBO(VirtualUBO virtualUbo) noexcept {
+        auto&& uboSize = m_pipeline->GetCurrentShader()->GetUBOBlockSize();
+        return BindUBO(virtualUbo, uboSize);
+    }
+
+    UBOManager::BindResult UBOManager::BindUBO(VirtualUBO virtualUbo, uint32_t uboSize) noexcept {
         SR_TRACY_ZONE;
 
-        auto&& pShader = m_pipeline->GetCurrentShader();
-
-	#ifdef SR_DEBUG
-        if (virtualUbo == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("UBOManager::BindUBO() : invalid virtual ubo!");
-            return BindResult::Failed;
-        }
-
-        if (!m_identifier) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("UBOManager::BindUBO() : identifier is nullptr!");
-            return BindResult::Failed;
-        }
-
-        if (!pShader) SR_UNLIKELY_ATTRIBUTE {
+        auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
+        if (!pShaderHandle) SR_UNLIKELY_ATTRIBUTE {
             SRHaltOnce("Current shader is nullptr!");
             return BindResult::Failed;
         }
-	#endif
 
         auto&& info = m_uboPool.At(virtualUbo);
         BindResult result = BindResult::Success;
 
-        Descriptor descriptor = SR_ID_INVALID;
         UBO ubo = SR_ID_INVALID;
         bool isFound = false;
 
-        for (auto&& data : info.m_data) {
-            if (data.pIdentifier == m_identifier && data.shaderInfo.pShader == pShader) SR_LIKELY_ATTRIBUTE {
-                descriptor = data.descriptor;
+        for (auto&& data : info.data) {
+            if (data.pShaderHandle == pShaderHandle || info.shared) SR_LIKELY_ATTRIBUTE {
                 ubo = data.ubo;
                 isFound = true;
                 break;
             }
         }
 
-        /// если не нашли камеру, то дублируем память под новую камеру
-        if (!isFound) SR_UNLIKELY_ATTRIBUTE
-        {
-            VirtualUBOInfo::ShaderInfo shaderInfo = { };
-            shaderInfo.pShader = pShader;
-            shaderInfo.shaderProgram = pShader->GetId();
-            shaderInfo.uboSize = pShader->GetUBOBlockSize();
-            shaderInfo.samples = pShader->GetSamplersCount();
+        if (!isFound) SR_UNLIKELY_ATTRIBUTE {
+            SRAssert2(!info.shared, "Something went wrong! UBO not found in shared mode!");
 
-            if (!AllocMemory(&ubo, &descriptor, shaderInfo.uboSize, shaderInfo.samples, shaderInfo.shaderProgram)) SR_UNLIKELY_ATTRIBUTE {
-                SR_ERROR("UBOManager::BindUBO() : failed to allocate memory!");
-                return BindResult::Failed;
+            if (uboSize > 0) SR_LIKELY_ATTRIBUTE {
+                if (!AllocMemory(&ubo, uboSize)) SR_UNLIKELY_ATTRIBUTE {
+                    SR_ERROR("UBOManager::BindUBO() : failed to allocate memory!");
+                    return BindResult::Failed;
+                }
             }
 
-            info.m_data.emplace_back(VirtualUBOInfo::Data {
-                m_identifier,
-                descriptor,
-                ubo,
-                shaderInfo
-            });
+            VirtualUBOInfo::Data& data = info.data.emplace_back();
+            data.ubo = ubo;
+            data.pShaderHandle = pShaderHandle;
+            data.uboSize = uboSize;
 
             result = BindResult::Duplicated;
         }
 
-        if (ubo != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
-            m_pipeline->BindUBO(ubo);
-        }
-
-        if (descriptor != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
-            m_pipeline->BindDescriptorSet(descriptor);
-        }
+        /// SR_ID_INVALID is allowed
+        m_pipeline->BindUBO(ubo);
 
         return result;
     }
 
-    UBOManager::VirtualUBO UBOManager::ReAllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize, uint32_t samples) {
+    void UBOManager::SetPipeline(UBOManager::PipelinePtr pPipeline) {
+        m_pipeline = std::move(pPipeline);
+    }
+
+    UBOManager::UBO UBOManager::GetUBO(UBOManager::VirtualUBO virtualUbo) const noexcept {
         SR_TRACY_ZONE;
 
-        if (virtualUbo == SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
-            const auto&& virtualUBO = AllocateUBO(uboSize, samples);
-            return virtualUBO;
-        }
-
-        auto&& pShader = m_pipeline->GetCurrentShader();
-        auto&& shaderProgram = pShader ? pShader->GetId() : SR_ID_INVALID;
-
-        if (shaderProgram == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-            SR_ERROR("UBOManager::ReAllocateUBO() : shader program do not set!");
-            return virtualUbo;
-        }
+        auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
 
         auto&& info = m_uboPool.At(virtualUbo);
-        if (!info.Valid()) SR_UNLIKELY_ATTRIBUTE {
-            SR_ERROR("UBOManager::ReAllocateUBO() : ubo is invalid!");
-            return virtualUbo;
+        for (auto&& data : info.data) {
+            if (data.pShaderHandle == pShaderHandle || info.shared) SR_LIKELY_ATTRIBUTE {
+                return data.ubo;
+            }
         }
 
-        /// очищаем ВСЕ старые данные
-        for (auto&& [pIdentifier, descriptor, ubo, shaderInfo] : info.m_data) {
-            FreeMemory(&ubo, &descriptor);
-        }
-        info.m_data.clear();
-
-        /// выделяем ОДНУ новую юниформу с дескриптором
-        Descriptor descriptor = SR_ID_INVALID;
-        UBO ubo = SR_ID_INVALID;
-
-        if (!AllocMemory(&ubo, &descriptor, uboSize, samples, shaderProgram)) {
-            SR_ERROR("UBOManager::ReAllocateUBO() : failed to allocate memory!");
-            return virtualUbo;
-        }
-
-        VirtualUBOInfo::ShaderInfo shaderInfo = { };
-        shaderInfo.pShader = pShader;
-        shaderInfo.shaderProgram = shaderProgram;
-        shaderInfo.samples = samples;
-        shaderInfo.uboSize = uboSize;
-
-        info.m_data.emplace_back(VirtualUBOInfo::Data {
-            m_identifier,
-            descriptor,
-            ubo,
-            shaderInfo
-        });
-
-        return virtualUbo;
-    }
-
-    void UBOManager::FreeMemory(UBOManager::UBO* ubo, UBOManager::Descriptor *descriptor) {
-        if (*ubo != SR_ID_INVALID && !m_pipeline->FreeUBO(ubo)) {
-            SR_ERROR("UBOManager::FreeMemory() : failed to free ubo!");
-        }
-
-        if (*descriptor != SR_ID_INVALID && !m_pipeline->FreeDescriptorSet(descriptor)) {
-            SR_ERROR("UBOManager::FreeMemory() : failed to free descriptor!");
-        }
-    }
-
-    void VirtualUBOInfo::Data::Validate() const {
-        SRAssert(ubo != SR_ID_INVALID || descriptor != SR_ID_INVALID || (shaderInfo.uboSize == 0 && shaderInfo.samples == 0));
+        return SR_ID_INVALID;
     }
 }

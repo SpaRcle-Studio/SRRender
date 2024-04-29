@@ -19,38 +19,35 @@ namespace SR_GTYPES_NS {
     void DebugLine::Draw() {
         SR_TRACY_ZONE;
 
-        if ((!IsCalculated() && !Calculate()) || m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
+        auto&& pShader = GetRenderContext()->GetCurrentShader();
+
+        if (!pShader) {
             return;
         }
 
-        auto&& pShader = m_material->GetShader();
+        if ((!IsCalculated() && !Calculate()) || m_hasErrors) {
+            return;
+        }
 
         if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
             m_dirtyMaterial = false;
 
-            m_virtualUBO = m_uboManager.ReAllocateUBO(m_virtualUBO, pShader->GetUBOBlockSize(), pShader->GetSamplersCount());
-
-            if (m_virtualUBO == SR_ID_INVALID || m_uboManager.BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Failed) {
-                m_pipeline->ResetDescriptorSet();
+            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
+            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 m_hasErrors = true;
                 return;
             }
 
-            pShader->InitUBOBlock();
-            pShader->Flush();
-            m_pipeline->DrawIndices(2);
-
-            return;
+            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
         }
 
-        Memory::UBOManager::BindResult result = m_uboManager.BindUBO(m_virtualUBO);
-
-        if (result == Memory::UBOManager::BindResult::Success) SR_LIKELY_ATTRIBUTE {
-            m_pipeline->DrawIndices(2);
+        if (m_pipeline->GetCurrentBuildIteration() == 0) {
+            m_material->UseSamplers();
         }
-        else if (result == Memory::UBOManager::BindResult::Duplicated) SR_UNLIKELY_ATTRIBUTE {
-            pShader->InitUBOBlock();
-            pShader->Flush();
+
+        m_uboManager.BindUBO(m_virtualUBO);
+
+        if (m_descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
             m_pipeline->DrawIndices(2);
         }
     }

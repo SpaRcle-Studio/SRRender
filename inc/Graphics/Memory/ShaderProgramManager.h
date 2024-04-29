@@ -7,6 +7,7 @@
 
 #include <Utils/Common/Singleton.h>
 #include <Utils/Types/Map.h>
+#include <Utils/Types/ObjectPool.h>
 
 #include <Graphics/Pipeline/IShaderProgram.h>
 
@@ -74,14 +75,24 @@ namespace SR_GRAPH_NS::Memory {
             return nullptr;
         }
 
-        SR_NODISCARD const ShaderProgramInfo* GetProgramInfo(Identifier identifier) const {
-            for (auto&& [id, data] : m_data) {
-                if (id == identifier) SR_LIKELY_ATTRIBUTE {
-                    return &data;
+        SR_NODISCARD const ShaderProgramInfo* GetProgramInfo(Identifier identifier) const noexcept {
+            for (auto&& iter : m_data) {
+                if (iter.first == identifier) SR_LIKELY_ATTRIBUTE {
+                    return &iter.second;
                 }
             }
 
             return nullptr;
+        }
+
+        SR_NODISCARD int32_t GetProgramId(Identifier identifier) const noexcept {
+            for (auto&& iter : m_data) {
+                if (iter.first == identifier) SR_LIKELY_ATTRIBUTE {
+                    return iter.second.id;
+                }
+            }
+
+            return SR_ID_INVALID;
         }
 
         std::vector<std::pair<Identifier, ShaderProgramInfo>> m_data;
@@ -129,8 +140,7 @@ namespace SR_GRAPH_NS::Memory {
         void OnSingletonDestroy() override;
 
     private:
-        std::vector<VirtualProgramInfo> m_programs;
-        std::list<VirtualProgram> m_unusedPrograms;
+        SR_HTYPES_NS::ObjectPool<VirtualProgramInfo, VirtualProgram> m_programPool;
         PipelinePtr m_pipeline;
 
     };

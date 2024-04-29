@@ -20,46 +20,46 @@ namespace SR_GRAPH_NS {
 
 namespace SR_GRAPH_NS::Memory {
     struct SR_DLL_EXPORT VirtualUBOInfo : public SR_UTILS_NS::NonCopyable {
-        using Descriptor = int32_t;
         using UBO = int32_t;
 
-        struct ShaderInfo {
-            SR_GTYPES_NS::Shader* pShader;
-            uint16_t samples;
-            uint16_t uboSize;
-            int32_t shaderProgram;
-        };
-
         struct Data {
-            void* pIdentifier;
-            Descriptor descriptor;
-            UBO ubo;
-            ShaderInfo shaderInfo;
+            UBO ubo = SR_ID_INVALID;
+            void* pShaderHandle = nullptr;
+            uint16_t uboSize = 0;
 
-            void Validate() const;
+            void Validate() const {
+                SRAssert(ubo != SR_ID_INVALID);
+                SRAssert(pShaderHandle);
+                SRAssert(uboSize != 0);
+            }
         };
 
         VirtualUBOInfo() = default;
         ~VirtualUBOInfo() override = default;
 
         VirtualUBOInfo(VirtualUBOInfo&& ref) noexcept {
-            m_data = SR_UTILS_NS::Exchange(ref.m_data, {});
+            data = SR_UTILS_NS::Exchange(ref.data, {});
+            shared = ref.shared;
         }
 
         VirtualUBOInfo& operator=(VirtualUBOInfo&& ref) noexcept {
-            m_data = SR_UTILS_NS::Exchange(ref.m_data, {});
+            data = SR_UTILS_NS::Exchange(ref.data, {});
+            shared = ref.shared;
             return *this;
         }
 
         void Reset() noexcept {
-            m_data.clear();
+            data.clear();
         }
 
         SR_NODISCARD bool Valid() const noexcept {
-            return !m_data.empty();
+            return !data.empty();
         }
 
-        std::vector<Data> m_data;
+        std::vector<Data> data;
+
+        /// UBO используется в нескольких шейдерах. Если выключен, то UBO будет создан для каждого шейдера
+        bool shared = false;
 
     };
 
@@ -70,7 +70,6 @@ namespace SR_GRAPH_NS::Memory {
         SR_REGISTER_SINGLETON(UBOManager)
         using Super = SR_UTILS_NS::Singleton<UBOManager>;
         using VirtualUBO = int32_t;
-        using Descriptor = int32_t;
         using UBO = int32_t;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
     public:
@@ -82,28 +81,28 @@ namespace SR_GRAPH_NS::Memory {
         };
     private:
         UBOManager();
-        ~UBOManager() override = default;
+        ~UBOManager() override;
 
     public:
-        void SetPipeline(PipelinePtr pPipeline) { m_pipeline = std::move(pPipeline); }
-        void SetIdentifier(void* pIdentifier);
-        void* GetIdentifier() const noexcept;
+        void SetPipeline(PipelinePtr pPipeline);
 
     public:
-        SR_NODISCARD VirtualUBO ReAllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize, uint32_t samples);
-        SR_NODISCARD VirtualUBO AllocateUBO(uint32_t uboSize, uint32_t samples);
+        SR_NODISCARD VirtualUBO AllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize, bool shared);
+        SR_NODISCARD VirtualUBO AllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize);
+        SR_NODISCARD VirtualUBO AllocateUBO(VirtualUBO virtualUbo);
+
         bool FreeUBO(VirtualUBO* ubo);
         BindResult BindUBO(VirtualUBO ubo) noexcept;
+        BindResult BindUBO(VirtualUBO ubo, uint32_t uboSize) noexcept;
+
+        SR_NODISCARD UBO GetUBO(VirtualUBO virtualUbo) const noexcept;
 
     private:
-        SR_NODISCARD bool AllocMemory(UBO* ubo, Descriptor* descriptor, uint32_t uboSize, uint32_t samples, int32_t shader);
-        void FreeMemory(UBO* ubo, Descriptor* descriptor);
+        SR_NODISCARD bool AllocMemory(UBO* ubo, uint32_t uboSize);
 
     private:
         PipelinePtr m_pipeline;
         SR_HTYPES_NS::ObjectPool<VirtualUBOInfo, VirtualUBO> m_uboPool;
-
-        void* m_identifier = nullptr;
 
     };
 }

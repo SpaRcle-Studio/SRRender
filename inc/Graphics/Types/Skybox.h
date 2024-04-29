@@ -22,7 +22,7 @@ namespace SR_GTYPES_NS {
         static Skybox* Load(const SR_UTILS_NS::Path& path);
 
     public:
-        SR_NODISCARD Shader* GetShader() const { return m_shader; }
+        SR_NODISCARD Shader* GetShader() const noexcept { return m_shader; }
         SR_NODISCARD int32_t GetVBO();
         SR_NODISCARD int32_t GetIBO();
         SR_NODISCARD int32_t GetVirtualUBO() const;
@@ -42,8 +42,6 @@ namespace SR_GTYPES_NS {
 
     private:
         bool Calculate();
-        void DrawOpenGL();
-        void DrawVulkan();
 
     private:
         Shader* m_shader = nullptr;
@@ -54,12 +52,13 @@ namespace SR_GTYPES_NS {
         int32_t m_cubeMap = SR_ID_INVALID;
 
         int32_t m_virtualUBO = SR_ID_INVALID;
+        int32_t m_virtualDescriptor = SR_ID_INVALID;
 
         uint32_t m_width = 0;
         uint32_t m_height = 0;
 
-        std::atomic<bool> m_hasErrors = false;
-        std::atomic<bool> m_dirtyShader = false;
+        bool m_hasErrors = false;
+        bool m_dirtyShader = false;
 
         std::array<TextureData::Ptr, 6> m_data;
 

@@ -7,6 +7,7 @@
 
 #include <Utils/Math/Vector3.h>
 #include <Utils/Types/SafePointer.h>
+#include <Utils/Types/PoolSet.h>
 
 #include <Graphics/Pipeline/PipelineState.h>
 #include <Graphics/Pipeline/FrameBufferQueue.h>
@@ -110,7 +111,9 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t GetCurrentDescriptorSet() const noexcept { ++m_state.operations; return m_state.descriptorSetId; }
         SR_NODISCARD bool IsDirty() const noexcept { ++m_state.operations; return m_dirty; }
         SR_NODISCARD FrameBufferQueue& GetQueue() noexcept { ++m_state.operations; return m_fboQueue; }
+        SR_NODISCARD uint8_t GetCurrentBuildIteration() const noexcept { ++m_state.operations; return m_state.buildIteration; }
 
+        SR_NODISCARD virtual void* GetCurrentShaderHandle() const { return nullptr; }
         SR_NODISCARD virtual void* GetCurrentFBOHandle() const { return nullptr; }
         SR_NODISCARD virtual std::set<void*> GetFBOHandles() const { return std::set<void*>(); /** NOLINT */ }
         SR_NODISCARD virtual uint8_t GetFrameBufferSampleCount() const { ++m_state.operations; return 0; }
@@ -163,6 +166,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual bool IsVSyncEnabled() const { return false; }
         /// Изменился ли текущий шейдер после UseShader. Даже если был вызван UnUseShader. Низкоуровневая проверка.
         SR_NODISCARD bool IsShaderChanged() const noexcept { return m_isShaderChanged; }
+        SR_NODISCARD bool IsRenderState() const noexcept { return m_isRenderState; }
 
         /// ------------------------------------------ Работа с памятью ------------------------------------------------
 
@@ -229,9 +233,8 @@ namespace SR_GRAPH_NS {
         virtual void BindAttachment(uint8_t activeTexture, uint32_t textureId);
 
         /// Привязка UBO к набору дескрипторов. Поддерживается не всеми API
-        virtual void BindDescriptorSet(uint32_t descriptorSet);
+        virtual bool BindDescriptorSet(uint32_t descriptorSet);
 
-        virtual void ResetDescriptorSet();
         virtual void ResetLastShader();
 
     protected:
@@ -251,6 +254,8 @@ namespace SR_GRAPH_NS {
 
         WindowPtr m_window;
         RenderContextPtr m_renderContext;
+
+        SR_HTYPES_NS::PoolSet<bool> m_bindedDescriptors;
 
         PipelineState m_state;
         PipelineState m_previousState;

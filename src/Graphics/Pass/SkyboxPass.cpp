@@ -47,49 +47,42 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        auto&& shader = m_skybox->GetShader();
-
-        if (!shader) {
+        auto&& pShader = m_skybox->GetShader();
+        if (!pShader) {
             return false;
         }
 
-        if (shader->Use() == ShaderBindResult::Failed) {
+        if (pShader->Use() == ShaderBindResult::Failed) {
             return false;
         }
 
         m_skybox->Draw();
 
-        shader->UnUse();
+        pShader->UnUse();
 
         return true;
     }
 
     void SkyboxPass::Update() {
-        if (!m_skybox) {
+        if (!m_skybox) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
         auto&& pShader = m_skybox->GetShader();
 
-        if (!pShader || !pShader->Ready() || !m_camera) {
+        if (!pShader || !pShader->Ready() || !m_camera) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
-        pShader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, m_camera->GetView());
-        pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
-
-        auto&& virtualUbo = m_skybox->GetVirtualUBO();
-        if (virtualUbo == SR_ID_INVALID) {
+        if (pShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
+            pShader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, m_camera->GetView());
+            pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
+            pShader->EndSharedUBO();
+        }
+        else {
+            SR_ERROR("SkyboxPass::Update() : failed to bind shared UBO!");
             return;
         }
-
-        GetContext()->SetCurrentShader(pShader);
-
-        if (m_uboManager.BindUBO(virtualUbo) == Memory::UBOManager::BindResult::Duplicated) {
-            SR_ERROR("SkyboxPass::Update() : memory has been duplicated!");
-        }
-
-        pShader->Flush();
 
         BasePass::Update();
     }

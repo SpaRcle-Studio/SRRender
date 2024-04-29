@@ -241,6 +241,12 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateUBO(uint32_t uboSize) {
+        if (!m_isRenderState) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::AllocateUBO() : render state isn't active!");
+            SRHaltOnce0();
+            return SR_ID_INVALID;
+        }
+
         if (!m_memory) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("VulkanPipeline::AllocateUBO() : memory manager is nullptr!");
             return SR_ID_INVALID;
@@ -263,8 +269,14 @@ namespace SR_GRAPH_NS {
     int32_t VulkanPipeline::AllocDescriptorSet(const std::vector<DescriptorType>& types) {
         SR_TRACY_ZONE;
 
+        if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::AllocDescriptorSet() : render state isn't active or not in first build iteration!");
+            SRHaltOnce0();
+            return SR_ID_INVALID;
+        }
+
         if (!m_memory) SR_UNLIKELY_ATTRIBUTE {
-            SR_ERROR("VulkanPipeline::AllocDescriptorSet() : memory manager is nullptr!");
+            SRHalt("VulkanPipeline::AllocDescriptorSet() : memory manager is nullptr!");
             return SR_ID_INVALID;
         }
 
@@ -299,7 +311,7 @@ namespace SR_GRAPH_NS {
             auto&& framebuffer = m_memory->GetFBO(FBO - 1);
 
             if (auto&& layers = framebuffer->GetLayers(); !layers.empty()) SR_LIKELY_ATTRIBUTE {
-                return (void*)layers.at(SR_MIN(layers.size() - 1, m_state.frameBufferLayer))->GetFramebuffer();
+                return (void*)layers[SR_MIN(layers.size() - 1, m_state.frameBufferLayer)]->GetFramebuffer();
             }
 
             PipelineError("Vulkan::GetCurrentFBOHandle() : frame buffer have not layers!");
@@ -331,6 +343,8 @@ namespace SR_GRAPH_NS {
 
     void VulkanPipeline::UseShader(uint32_t shaderProgram) {
         Pipeline::UseShader(shaderProgram);
+
+        m_currentDescriptorSet = VK_NULL_HANDLE;
 
         m_currentVkShader = m_memory->GetShaderProgram(shaderProgram);
         m_currentLayout = m_currentVkShader->GetPipelineLayout();
@@ -484,11 +498,6 @@ namespace SR_GRAPH_NS {
         return GetSamplesCount();
     }
 
-    void VulkanPipeline::ResetDescriptorSet() {
-        Pipeline::ResetDescriptorSet();
-        m_currentDescriptorSets = VK_NULL_HANDLE;
-    }
-
     int32_t VulkanPipeline::AllocateTexture(const SRTextureCreateInfo& createInfo) {
         if (!m_memory) {
             SR_ERROR("VulkanPipeline::AllocateTexture() : memory manager is nullptr!");
@@ -564,12 +573,18 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) {
         Super::UpdateDescriptorSets(descriptorSet, updateInfo);
 
+        if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::UpdateDescriptorSets() : render state isn't active or not in first build iteration!");
+            SRHaltOnce0();
+            return;
+        }
+
         std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 
         for (auto&& info : updateInfo) {
             switch (info.descriptorType) {
                 case DescriptorType::Uniform: {
-                    auto&& vkDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).m_self;
+                    auto&& vkDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
                     auto&& vkUBODescriptor = m_memory->GetUBO(info.ubo)->GetDescriptorRef();
 
                     writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
@@ -596,6 +611,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size) {
+        SR_TRACY_ZONE;
+        SRAssert2(UBO != SR_ID_INVALID, "Invalid UBO ID!");
         Super::UpdateUBO(UBO, pData, size);
         m_memory->GetUBO(UBO)->CopyToDevice(pData, size);
     }
@@ -1382,13 +1399,31 @@ namespace SR_GRAPH_NS {
         Super::OnMultiSampleChanged();
     }
 
-    void VulkanPipeline::BindDescriptorSet(uint32_t descriptorSet) {
-        Super::BindDescriptorSet(descriptorSet);
-        m_currentDescriptorSets = m_memory->GetDescriptorSet(descriptorSet).m_self;
+    bool VulkanPipeline::BindDescriptorSet(uint32_t descriptorSet) {
+        if (!Super::BindDescriptorSet(descriptorSet)) {
+            return false;
+        }
+
+        SRAssert2(m_isRenderState, "Render state isn't active!");
+
+        m_currentDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
+
+        return true;
     }
 
     void VulkanPipeline::BindAttachment(uint8_t activeTexture, uint32_t textureId) {
         Super::BindAttachment(activeTexture, textureId);
+
+        if (!m_bindedDescriptors.Get(m_state.descriptorSetId, false)) {
+            PipelineError("Pipeline::BindAttachment() : descriptor set not binded!");
+            return;
+        }
+
+        if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::BindAttachment() : render state isn't active or not in first build iteration!");
+            SRHaltOnce0();
+            return;
+        }
 
         if (!IsSamplerValid(static_cast<int32_t>(textureId))) {
             PipelineError("VulkanPipeline::BindAttachment() : texture is not exists!");
@@ -1399,7 +1434,7 @@ namespace SR_GRAPH_NS {
         auto&& imageDescriptorRef = m_memory->GetTexture(textureId)->GetDescriptorRef();
 
         const auto&& descriptorSetWrite = EvoVulkan::Tools::Initializers::WriteDescriptorSet(
-                descriptorSet.m_self,
+                descriptorSet.descriptorSet,
                 VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, activeTexture,
                 imageDescriptorRef);
 
@@ -1427,6 +1462,17 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::BindTexture(uint8_t activeTexture, uint32_t textureId) {
         Super::BindTexture(activeTexture, textureId);
 
+        if (!m_bindedDescriptors.Get(m_state.descriptorSetId, false)) {
+            PipelineError("VulkanPipeline::BindTexture() : descriptor set not binded!");
+            return;
+        }
+
+        if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::UpdateDescriptorSets() : render state isn't active or not in first build iteration!");
+            SRHaltOnce0();
+            return;
+        }
+
         if (!IsSamplerValid(static_cast<int32_t>(textureId))) {
             PipelineError("VulkanPipeline::BindTexture() : texture is not exists!");
             return;
@@ -1437,7 +1483,7 @@ namespace SR_GRAPH_NS {
 
         auto&& imageDescriptorRef = pTexture->GetDescriptorRef();
         const auto&& descriptorSetWrite = EvoVulkan::Tools::Initializers::WriteDescriptorSet(
-                descriptorSet.m_self,
+                descriptorSet.descriptorSet,
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, activeTexture,
                 imageDescriptorRef);
 
@@ -1445,10 +1491,12 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::Draw(uint32_t count) {
+        SR_TRACY_ZONE;
+
         Super::Draw(count);
 
-        if (m_currentDescriptorSets) {
-            vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSets, 0, NULL);
+        if (m_currentDescriptorSet) {
+            vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
         }
 
         vkCmdDraw(m_currentCmd, count, 1, 0, 0);
@@ -1459,8 +1507,8 @@ namespace SR_GRAPH_NS {
 
         Super::DrawIndices(count);
 
-        if (m_currentDescriptorSets) {
-            vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSets, 0, NULL);
+        if (m_currentDescriptorSet) {
+            vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
         }
 
         vkCmdDrawIndexed(m_currentCmd, count, 1, 0, 0, 0);
@@ -1699,5 +1747,20 @@ namespace SR_GRAPH_NS {
 
     void VulkanPipeline::BindSSBO(uint32_t SSBO) {
         Super::BindSSBO(SSBO);
+    }
+
+    void* VulkanPipeline::GetCurrentShaderHandle() const {
+        ++m_state.operations;
+
+        if (!m_state.pShader) SR_UNLIKELY_ATTRIBUTE {
+            return nullptr;
+        }
+
+        auto&& shaderProgram = m_state.pShader->GetId();
+        if (shaderProgram == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            return nullptr;
+        }
+
+        return (void*)m_memory->GetShaderProgram(shaderProgram)->GetPipeline();
     }
 }

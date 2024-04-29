@@ -8,6 +8,9 @@
 
 #include <Graphics/Window/Window.h>
 #include <Graphics/Memory/ShaderProgramManager.h>
+#include <Graphics/Memory/DescriptorManager.h>
+#include <Graphics/Memory/UBOManager.h>
+#include <Graphics/Memory/SSBOManager.h>
 #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
 #include <Graphics/Pass/FramebufferPass.h>
 
@@ -105,6 +108,9 @@ namespace SR_GRAPH_NS {
         Memory::UBOManager::Instance().SetPipeline(m_pipeline);
         Memory::CameraManager::Instance().SetPipeline(m_pipeline);
         Memory::ShaderProgramManager::Instance().SetPipeline(m_pipeline);
+
+        SR_GRAPH_NS::SSBOManager::Instance().SetPipeline(m_pipeline);
+        SR_GRAPH_NS::DescriptorManager::Instance().SetPipeline(m_pipeline);
 
         /// ----------------------------------------------------------------------------
 

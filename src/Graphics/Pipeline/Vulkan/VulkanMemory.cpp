@@ -116,7 +116,7 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     bool SR_GRAPH_NS::VulkanTools::MemoryManager::FreeDescriptorSet(uint32_t id) {
-        auto&& descriptorSet = m_descriptorSetPool.Remove(static_cast<int32_t>(id));
+        auto&& descriptorSet = m_descriptorSetPool.RemoveByIndex(static_cast<int32_t>(id));
         if (!m_descriptorManager->FreeDescriptorSet(&descriptorSet)){
             SR_ERROR("MemoryManager::FreeDescriptorSet() : failed free descriptor set!");
             return false;
@@ -125,37 +125,37 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     bool MemoryManager::FreeSSBO(uint32_t id) {
-        delete m_ssboPool.Remove(static_cast<int32_t>(id));
+        delete m_ssboPool.RemoveByIndex(static_cast<int32_t>(id));
         return true;
     }
 
     bool MemoryManager::FreeVBO(uint32_t id) {
-        delete m_vboPool.Remove(static_cast<int32_t>(id));
+        delete m_vboPool.RemoveByIndex(static_cast<int32_t>(id));
         return true;
     }
 
     bool MemoryManager::FreeUBO(uint32_t id) {
-        delete m_uboPool.Remove(static_cast<int32_t>(id));
+        delete m_uboPool.RemoveByIndex(static_cast<int32_t>(id));
         return true;
     }
 
     bool MemoryManager::FreeIBO(uint32_t id) {
-        delete m_iboPool.Remove(static_cast<int32_t>(id));
+        delete m_iboPool.RemoveByIndex(static_cast<int32_t>(id));
         return true;
     }
 
     bool MemoryManager::FreeFBO(uint32_t id) {
-        delete m_fboPool.Remove(static_cast<int32_t>(id));
+        delete m_fboPool.RemoveByIndex(static_cast<int32_t>(id));
         return true;
     }
 
     bool MemoryManager::FreeShaderProgram(uint32_t id) {
-        delete m_shaderProgramPool.Remove(static_cast<int32_t>(id));
+        delete m_shaderProgramPool.RemoveByIndex(static_cast<int32_t>(id));
         return true;
     }
 
     bool MemoryManager::FreeTexture(uint32_t id) {
-        delete m_texturePool.Remove(static_cast<int32_t>(id));
+        delete m_texturePool.RemoveByIndex(static_cast<int32_t>(id));
         return true;
     }
 
@@ -181,7 +181,8 @@ namespace SR_GRAPH_NS::VulkanTools {
         SR_TRACY_ZONE;
 
         auto&& pShaderProgram = m_shaderProgramPool.At(static_cast<int32_t>(shaderProgram));
-        auto&& pDescriptorSet = m_descriptorManager->AllocateDescriptorSet(pShaderProgram->GetDescriptorSetLayout(), types);
+        auto&& pLayout = pShaderProgram->GetDescriptorSetLayout();
+        auto&& pDescriptorSet = m_descriptorManager->AllocateDescriptorSet(pLayout, types);
 
         if (!pDescriptorSet) {
             SR_ERROR("MemoryManager::AllocateDescriptorSet() : failed to allocate descriptor set!");

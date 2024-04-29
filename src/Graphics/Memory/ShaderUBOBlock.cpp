@@ -76,7 +76,9 @@ namespace SR_GRAPH_NS::Memory {
         SRAssert2(!m_initialized, "Double initialization!");
         m_size = TopAlign(m_size);
         FreeMemory(m_memory);
-        m_memory = AllocMemory(m_size);
+        if (m_size > 0) SR_LIKELY_ATTRIBUTE {
+            m_memory = AllocMemory(m_size);
+        }
         m_initialized = true;
     }
 
@@ -97,16 +99,17 @@ namespace SR_GRAPH_NS::Memory {
         m_initialized = false;
     }
 
-    void ShaderUBOBlock::SetField(uint64_t hashId, const void *data) noexcept {
-        SRAssert2(m_initialized, "Not initialized!");
-
-        if (!data || !m_memory) {
+    void ShaderUBOBlock::SetField(uint64_t hashId, const void* pData) noexcept {
+        if (!m_memory || !pData) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
-        for (uint32_t i = 0; i < m_dataCount; ++i) {
-            if (m_data[i].hashId == hashId) {
-                memcpy(m_memory + m_data[i].offset, data, m_data[i].size);
+        SRAssert(m_initialized);
+
+        for (uint8_t i = 0; i < m_dataCount; ++i) {
+            SubBlock& pSubBlock = m_data[i];
+            if (pSubBlock.hashId == hashId) SR_UNLIKELY_ATTRIBUTE {
+                memcpy(m_memory + pSubBlock.offset, pData, pSubBlock.size);
                 return;
             }
         }

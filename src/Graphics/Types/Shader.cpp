@@ -8,6 +8,7 @@
 #include <Utils/Types/DataStorage.h>
 #include <Utils/Common/Hashes.h>
 
+#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Types/Shader.h>
@@ -18,6 +19,7 @@ namespace SR_GRAPH_NS::Types {
     Shader::Shader()
         : IResource(SR_COMPILE_TIME_CRC32_TYPE_NAME(Shader))
         , m_manager(Memory::ShaderProgramManager::Instance())
+        , m_uboManager(Memory::UBOManager::Instance())
     { }
 
     Shader::~Shader() {
@@ -103,6 +105,23 @@ namespace SR_GRAPH_NS::Types {
                 break;
         }
 
+        if (m_virtualUBO.second) SR_UNLIKELY_ATTRIBUTE {
+            m_virtualUBO.first = m_uboManager.AllocateUBO(m_virtualUBO.first, m_uniformSharedBlock.m_size);
+            if (m_virtualUBO.first == SR_ID_INVALID) {
+                SR_ERROR("Shader::Use() : failed to allocate UBO!");
+                m_hasErrors = true;
+                return ShaderBindResult::Failed;
+            }
+
+            m_virtualUBO.second = false;
+        }
+
+        if (m_uboManager.BindUBO(m_virtualUBO.first, m_uniformSharedBlock.m_size) == Memory::UBOManager::BindResult::Failed) {
+            SR_ERROR("Shader::Use() : failed to bind UBO!");
+            m_hasErrors = true;
+            return ShaderBindResult::Failed;
+        }
+
         return bindResult;
     }
 
@@ -124,6 +143,13 @@ namespace SR_GRAPH_NS::Types {
             if (!Memory::ShaderProgramManager::Instance().FreeProgram(&m_shaderProgram)) {
                 SR_ERROR("Shader::Free() : failed to free shader program! \n\tPath: " + GetResourcePath().ToString());
             }
+
+            if (m_virtualUBO.first != SR_ID_INVALID) {
+                if (!m_uboManager.FreeUBO(&m_virtualUBO.first)) {
+                    SR_ERROR("Shader::Free() : failed to free virtual UBO! \n\tPath: " + GetResourcePath().ToString());
+                }
+            }
+            m_virtualUBO.second = true;
 
             m_isCalculated = false;
         }
@@ -178,9 +204,11 @@ namespace SR_GRAPH_NS::Types {
             return SR_ID_INVALID;
         }
 
-        if (!m_isCalculated && !Init()) SR_UNLIKELY_ATTRIBUTE {
-            SR_ERROR("Shader::Use() : failed to initialize shader!");
-            return SR_ID_INVALID;
+        if (!m_isCalculated) SR_UNLIKELY_ATTRIBUTE {
+            if (!Init()) {
+                SR_ERROR("Shader::Use() : failed to initialize shader!");
+                return SR_ID_INVALID;
+            }
         }
 
         return m_manager.GetProgram(m_shaderProgram);
@@ -251,14 +279,17 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Shader::InitUBOBlock() {
-        if (m_uniformBlock.m_size > 0 && m_uniformBlock.m_memory) {
+        if (m_uniformBlock.m_memory) SR_LIKELY_ATTRIBUTE {
             memset(m_uniformBlock.m_memory, 1, m_uniformBlock.m_size);
+        }
+        else {
+            return false;
         }
 
         auto&& ubo = GetPipeline()->GetCurrentUBO();
         auto&& descriptorSet = GetPipeline()->GetCurrentDescriptorSet();
 
-        if (ubo != SR_ID_INVALID && descriptorSet != SR_ID_INVALID && m_uniformBlock.Valid()) {
+        if (ubo != SR_ID_INVALID && descriptorSet != SR_ID_INVALID && m_uniformBlock.Valid()) SR_LIKELY_ATTRIBUTE {
             SRDescriptorUpdateInfo updateInfo;
             updateInfo.binding = m_uniformBlock.m_binding;
             updateInfo.ubo = ubo;
@@ -278,6 +309,10 @@ namespace SR_GRAPH_NS::Types {
         }
 
         SR_TRACY_ZONE;
+
+        if (!m_uniformBlock.m_memory) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
 
         auto&& ubo = m_pipeline->GetCurrentUBO();
         if (ubo != SR_ID_INVALID && m_uniformBlock.Valid()) SR_LIKELY_ATTRIBUTE {
@@ -300,6 +335,8 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Shader::OnReloadDone() {
+        m_virtualUBO.second = true;
+
         auto&& pContext = GetRenderContext();
         if (!pContext) {
             return;
@@ -364,6 +401,24 @@ namespace SR_GRAPH_NS::Types {
 
         /// ------------------------------------------------------------------------------------------------------------
 
+        if (auto&& pBlock = pShader->FindUniformBlock("SHARED")) {
+            for (auto&& field : pBlock->fields) {
+                m_uniformSharedBlock.Append(field.name.GetHash(), field.size, field.alignedSize, !field.isPublic);
+
+                const ShaderVarType varType = SR_SRSL_NS::SRSLTypeInfo::Instance().StringToType(field.type);
+
+                if (field.isPublic && varType != ShaderVarType::Unknown) {
+                    m_properties.emplace_back(std::make_pair(field.name, varType));
+                }
+            }
+
+            m_uniformSharedBlock.m_binding = pBlock->binding;
+        }
+
+        m_uniformSharedBlock.Init();
+
+        /// ------------------------------------------------------------------------------------------------------------
+
         for (auto&& field : pShader->GetPushConstants().fields) {
             m_constBlock.Append(field.name.GetHash(), field.size, field.alignedSize, !field.isPublic);
 
@@ -400,6 +455,7 @@ namespace SR_GRAPH_NS::Types {
         m_hasErrors = false;
 
         m_uniformBlock.DeInit();
+        m_uniformSharedBlock.DeInit();
         m_constBlock.DeInit();
 
         m_includes.clear();
@@ -478,5 +534,106 @@ namespace SR_GRAPH_NS::Types {
         }
 
         return true;
+    }
+
+    bool Shader::BeginSharedUBO() {
+        if (m_sharedUBOMode) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("Shared UBO mode is already enabled!");
+            return false;
+        }
+
+        m_sharedUBOMode = true;
+
+        if (m_uniformSharedBlock.m_memory) SR_LIKELY_ATTRIBUTE {
+            memset(m_uniformSharedBlock.m_memory, 1, m_uniformSharedBlock.m_size);
+        }
+
+        m_pipeline->SetCurrentShader(this);
+
+        if (m_virtualUBO.second) SR_UNLIKELY_ATTRIBUTE {
+            m_virtualUBO.first = m_uboManager.AllocateUBO(m_virtualUBO.first, m_uniformSharedBlock.m_size);
+            if (m_virtualUBO.first == SR_ID_INVALID) {
+                SR_ERROR("Shader::BeginSharedUBO() : failed to allocate UBO!");
+                m_hasErrors = true;
+                return false;
+            }
+
+            if (m_uboManager.BindUBO(m_virtualUBO.first, m_uniformSharedBlock.m_size) == Memory::UBOManager::BindResult::Failed) {
+                SR_ERROR("Shader::BeginSharedUBO() : failed to bind UBO!");
+                m_hasErrors = true;
+                return false;
+            }
+
+            m_virtualUBO.second = false;
+        }
+        else {
+            if (m_uboManager.BindUBO(m_virtualUBO.first, m_uniformSharedBlock.m_size) == Memory::UBOManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("Failed to bind UBO!");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    void Shader::EndSharedUBO() {
+        if (!m_sharedUBOMode) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("Shared UBO mode is not enabled!");
+            return;
+        }
+
+        m_sharedUBOMode = false;
+
+        if (m_uniformSharedBlock.Valid()) SR_LIKELY_ATTRIBUTE {
+            m_pipeline->UpdateUBO(m_pipeline->GetCurrentUBO(), m_uniformSharedBlock.m_memory, m_uniformSharedBlock.m_size);
+        }
+    }
+
+    void Shader::AttachDescriptorSets() {
+        SR_TRACY_ZONE;
+
+        for (auto&& [hashName, samplerInfo] : m_samplers) {
+            if (samplerInfo.isAttachment) {
+                m_pipeline->BindAttachment(samplerInfo.binding, samplerInfo.samplerId);
+            }
+            else {
+                m_pipeline->BindTexture(samplerInfo.binding, samplerInfo.samplerId);
+            }
+        }
+
+        auto&& descriptorSet = GetPipeline()->GetCurrentDescriptorSet();
+        if (descriptorSet == SR_ID_INVALID) {
+            return;
+        }
+
+        auto&& ubo = GetPipeline()->GetCurrentUBO();
+
+        if (ubo != SR_ID_INVALID && descriptorSet != SR_ID_INVALID && m_uniformBlock.Valid()) SR_LIKELY_ATTRIBUTE {
+            SRDescriptorUpdateInfo updateInfo;
+            updateInfo.binding = m_uniformBlock.m_binding;
+            updateInfo.ubo = ubo;
+            updateInfo.descriptorType = DescriptorType::Uniform;
+
+            GetPipeline()->UpdateDescriptorSets(descriptorSet, { updateInfo });
+        }
+
+        if (m_uniformSharedBlock.Valid()) {
+            SRDescriptorUpdateInfo updateInfo;
+            updateInfo.binding = m_uniformSharedBlock.m_binding;
+            updateInfo.ubo = m_uboManager.GetUBO(m_virtualUBO.first);
+            updateInfo.descriptorType = DescriptorType::Uniform;
+
+            GetPipeline()->UpdateDescriptorSets(descriptorSet, { updateInfo });
+        }
+
+        /// TODO: Implement storage buffer support
+        /// if (pShader->GetStorageBuffersCount() > 0)
+        ///{
+        ///    SRDescriptorUpdateInfo updateInfo;
+        ///    updateInfo.binding =
+        ///    updateInfo.ubo =
+        ///    updateInfo.descriptorType = DescriptorType::Storage;
+        ///    GetPipeline()->UpdateDescriptorSets(descriptorSet, {updateInfo});
+        ///}
     }
 }

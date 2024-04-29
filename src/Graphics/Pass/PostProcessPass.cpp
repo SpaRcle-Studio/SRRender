@@ -42,13 +42,12 @@ namespace SR_GRAPH_NS {
         {
             m_dirtyShader = false;
 
-            m_virtualUBO = uboManager.ReAllocateUBO(m_virtualUBO, m_shader->GetUBOBlockSize(), m_shader->GetSamplersCount());
+            m_virtualUBO = uboManager.AllocateUBO(m_virtualUBO);
 
             if (m_virtualUBO != SR_ID_INVALID) {
                 uboManager.BindUBO(m_virtualUBO);
             }
             else {
-                GetPassPipeline()->ResetDescriptorSet();
                 return false;
             }
 

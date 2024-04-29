@@ -684,7 +684,10 @@ namespace SR_GRAPH_NS {
 
         GetRenderContext()->SetCurrentShader(pShader);
 
-        m_renderStrategy->GetMeshDrawerPass()->UseSharedUniforms(shaderUseInfo);
+        if (pShader->BeginSharedUBO()) {
+            m_renderStrategy->GetMeshDrawerPass()->UseSharedUniforms(shaderUseInfo);
+            pShader->EndSharedUBO();
+        }
 
         for (auto&& [VBO, pVBOStage] : m_VBOStages) {
             pVBOStage->Update(shaderUseInfo);
