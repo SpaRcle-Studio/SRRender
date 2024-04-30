@@ -36,7 +36,6 @@ namespace SR_GRAPH_NS {
        Techniques,
        Materials,
        Skyboxes,
-       ShadersGC,
        End
     );
 
@@ -111,6 +110,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const RenderScenes& GetScenes() const noexcept { return m_scenes; }
 
         void SetCurrentShader(ShaderPtr pShader);
+        void GarbageCollect() { m_isNeedGarbageCollection = true; }
 
     private:
         bool InitPipeline();
@@ -156,6 +156,7 @@ namespace SR_GRAPH_NS {
         PipelinePtr m_pipeline = nullptr;
 
         bool m_isClosed = false;
+        bool m_isNeedGarbageCollection = false;
 
     };
 

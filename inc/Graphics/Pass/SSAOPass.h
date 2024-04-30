@@ -27,7 +27,7 @@ namespace SR_GRAPH_NS {
 
         bool Load(const SR_XML_NS::Node &passNode) override;
 
-        void UseTextures() override;
+        void UseSamplers() override;
 
         SR_NODISCARD std::vector<SR_GTYPES_NS::Framebuffer*> GetFrameBuffers() const override;
 

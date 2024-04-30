@@ -26,6 +26,8 @@ namespace SR_GTYPES_NS {
     }
 
     void ITextComponent::Draw() {
+        SR_TRACY_ZONE;
+
         auto&& pShader = GetRenderContext()->GetCurrentShader();
 
         if (!pShader || !IsActive()) {
@@ -36,39 +38,26 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        if (m_dirtyMaterial)
-        {
+        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
             m_dirtyMaterial = false;
 
-            EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
-
             m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
-
-            if (m_virtualUBO == SR_ID_INVALID || m_uboManager.BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Failed) {
+            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 m_hasErrors = true;
                 return;
             }
 
-            pShader->InitUBOBlock();
-            pShader->Flush();
-
-            UseSamplers();
-
-            EVK_POP_LOG_LEVEL();
+            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
         }
 
-        switch (m_uboManager.BindUBO(m_virtualUBO)) {
-            case Memory::UBOManager::BindResult::Duplicated:
-                pShader->InitUBOBlock();
-                pShader->Flush();
-                UseSamplers();
-                SR_FALLTHROUGH;
-            case Memory::UBOManager::BindResult::Success:
-                m_pipeline->Draw(6);
-                break;
-            case Memory::UBOManager::BindResult::Failed:
-            default:
-                break;
+        if (m_pipeline->GetCurrentBuildIteration() == 0) {
+            UseSamplers();
+        }
+
+        m_uboManager.BindUBO(m_virtualUBO);
+
+        if (m_descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
+            m_pipeline->Draw(6);
         }
     }
 

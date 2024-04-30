@@ -55,7 +55,11 @@ namespace SR_GRAPH_NS {
     }
 
     bool Pipeline::BeginRender() {
+        SR_TRACY_ZONE;
+
         ++m_state.operations;
+
+        m_bindedDescriptors.Fill(false);
 
         if (!m_isCmdState) {
             SRHalt("Pipeline::BeginRender() : missing call \"BeginCmdBuffer\"!");
@@ -136,7 +140,6 @@ namespace SR_GRAPH_NS {
 
     void Pipeline::PrepareFrame() {
         ++m_state.operations;
-        m_bindedDescriptors.Fill(false);
         UpdateMultiSampling();
     }
 
@@ -270,7 +273,6 @@ namespace SR_GRAPH_NS {
     void Pipeline::SetBuildIteration(uint8_t iteration) {
         ++m_state.operations;
         m_state.buildIteration = iteration;
-        m_bindedDescriptors.Fill(false);
     }
 
     bool Pipeline::BeginDrawOverlay(OverlayType overlayType) {

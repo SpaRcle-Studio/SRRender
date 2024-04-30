@@ -146,4 +146,37 @@ namespace SR_GRAPH_NS {
 
         *pVirtualDescriptorSet = SR_ID_INVALID;
     }
+
+    void DescriptorManager::CollectUnused() {
+        SR_TRACY_ZONE;
+
+        if (m_descriptorPool.IsEmpty()) {
+            return;
+        }
+
+        auto&& handles = m_pipeline->GetShaderHandles();
+
+        uint32_t count = 0;
+
+        m_descriptorPool.ForEach([&](VirtualDescriptorSet , std::vector<DescriptorSetInfo>& descriptorSetInfos) {
+            for (auto pIt = descriptorSetInfos.begin(); pIt != descriptorSetInfos.end(); ) {
+                DescriptorSetInfo& data = *pIt;
+
+                if (handles.count(data.pShaderHandle) == 0) {
+                    if (data.descriptorSet != SR_ID_INVALID) {
+                        m_pipeline->FreeDescriptorSet(&data.descriptorSet);
+                    }
+                    pIt = descriptorSetInfos.erase(pIt);
+                    ++count;
+                }
+                else {
+                    ++pIt;
+                }
+            }
+        });
+
+        if (count > 0) {
+            SR_LOG("DescriptorManager::CollectUnused() : collected {} unused descriptors.", count);
+        }
+    }
 }

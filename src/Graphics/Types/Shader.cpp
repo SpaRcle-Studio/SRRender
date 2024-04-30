@@ -206,7 +206,7 @@ namespace SR_GRAPH_NS::Types {
 
         if (!m_isCalculated) SR_UNLIKELY_ATTRIBUTE {
             if (!Init()) {
-                SR_ERROR("Shader::Use() : failed to initialize shader!");
+                SR_ERROR("Shader::GetId() : failed to initialize shader!");
                 return SR_ID_INVALID;
             }
         }

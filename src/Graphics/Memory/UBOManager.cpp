@@ -174,4 +174,37 @@ namespace SR_GRAPH_NS::Memory {
 
         return SR_ID_INVALID;
     }
+
+    void UBOManager::CollectUnused() {
+        SR_TRACY_ZONE;
+
+        if (m_uboPool.IsEmpty()) {
+            return;
+        }
+
+        auto&& handles = m_pipeline->GetShaderHandles();
+
+        uint32_t count = 0;
+
+        m_uboPool.ForEach([&](VirtualUBO, VirtualUBOInfo& virtualUboInfo) {
+            for (auto pIt = virtualUboInfo.data.begin(); pIt != virtualUboInfo.data.end(); ) {
+                VirtualUBOInfo::Data& data = *pIt;
+
+                if (handles.count(data.pShaderHandle) == 0) {
+                    if (data.uboSize > 0) {
+                        m_pipeline->FreeUBO(&data.ubo);
+                    }
+                    pIt = virtualUboInfo.data.erase(pIt);
+                    ++count;
+                }
+                else {
+                    ++pIt;
+                }
+            }
+        });
+
+        if (count > 0) {
+            SR_LOG("UBOManager::CollectUnused() : collected {} unused UBO.", count);
+        }
+    }
 }

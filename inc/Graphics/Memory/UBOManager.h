@@ -85,8 +85,8 @@ namespace SR_GRAPH_NS::Memory {
 
     public:
         void SetPipeline(PipelinePtr pPipeline);
+        void CollectUnused();
 
-    public:
         SR_NODISCARD VirtualUBO AllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize, bool shared);
         SR_NODISCARD VirtualUBO AllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize);
         SR_NODISCARD VirtualUBO AllocateUBO(VirtualUBO virtualUbo);

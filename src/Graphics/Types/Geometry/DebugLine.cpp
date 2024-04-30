@@ -42,7 +42,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            m_material->UseSamplers();
+            UseSamplers();
         }
 
         m_uboManager.BindUBO(m_virtualUBO);

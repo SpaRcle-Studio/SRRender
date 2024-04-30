@@ -80,7 +80,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            m_material->UseSamplers();
+            UseSamplers();
         }
 
         m_pipeline->BindVBO(m_VBO);

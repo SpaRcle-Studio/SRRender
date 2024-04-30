@@ -19,11 +19,13 @@ namespace SR_GRAPH_NS {
             return SR_MATH_NS::FColor(0.f);
         }
 
-        auto&& textureId = pColorFrameBuffer->GetColorTexture(0);
-
         const auto xPos = static_cast<uint32_t>(static_cast<float_t>(pColorFrameBuffer->GetWidth()) * x);
         const auto yPos = static_cast<uint32_t>(static_cast<float_t>(pColorFrameBuffer->GetHeight()) * y);
+        if (pColorFrameBuffer->GetSize().x <= xPos || pColorFrameBuffer->GetSize().y <= yPos) {
+            return SR_MATH_NS::FColor(0.f);
+        }
 
+        auto&& textureId = pColorFrameBuffer->GetColorTexture(0);
         return pColorFrameBuffer->GetPipeline()->GetPixelColor(textureId, xPos, yPos);
     }
 

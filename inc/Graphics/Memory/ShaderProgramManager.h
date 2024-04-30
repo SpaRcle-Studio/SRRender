@@ -122,7 +122,7 @@ namespace SR_GRAPH_NS::Memory {
         bool FreeProgram(VirtualProgram* program);
         bool FreeProgram(VirtualProgram program);
 
-        void CollectUnusedShaders();
+        void CollectUnused();
 
         ShaderBindResult BindProgram(VirtualProgram virtualProgram) noexcept;
 

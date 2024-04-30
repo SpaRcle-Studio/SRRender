@@ -18,58 +18,32 @@ namespace SR_GRAPH_NS {
     }
 
     bool PostProcessPass::Render() {
-        if (!m_shader) {
+        SR_TRACY_ZONE;
+
+        if (!m_shader || m_shader->Use() == ShaderBindResult::Failed) {
             return false;
         }
 
-        switch (m_shader->Use()) {
-            case ShaderBindResult::Failed:
-                return false;
-            case ShaderBindResult::Success:
-                break;
-            case ShaderBindResult::Duplicated:
-            case ShaderBindResult::ReAllocated:
-                m_dirtyShader = true;
-                break;
-            default:
-                SRHaltOnce0();
-                return false;
-        }
-
-        auto&& uboManager = Memory::UBOManager::Instance();
-
-        if (m_dirtyShader)
-        {
+        if (m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
             m_dirtyShader = false;
 
-            m_virtualUBO = uboManager.AllocateUBO(m_virtualUBO);
-
-            if (m_virtualUBO != SR_ID_INVALID) {
-                uboManager.BindUBO(m_virtualUBO);
-            }
-            else {
+            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
+            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                m_shader->UnUse();
                 return false;
             }
 
-            m_shader->InitUBOBlock();
-            m_shader->Flush();
-            UseTextures();
-            m_shader->FlushSamplers();
+            m_virtualDescriptor = DescriptorManager::Instance().AllocateDescriptorSet(m_virtualDescriptor);
         }
 
-        switch (uboManager.BindUBO(m_virtualUBO)) {
-            case Memory::UBOManager::BindResult::Duplicated:
-                m_shader->InitUBOBlock();
-                m_shader->Flush();
-                UseTextures();
-                m_shader->FlushSamplers();
-                SR_FALLTHROUGH;
-            case Memory::UBOManager::BindResult::Success:
-                GetPassPipeline()->Draw(3);
-                break;
-            case Memory::UBOManager::BindResult::Failed:
-            default:
-                break;
+        if (GetPassPipeline()->GetCurrentBuildIteration() == 0) {
+            UseSamplers();
+        }
+
+        m_uboManager.BindUBO(m_virtualUBO);
+
+        if (DescriptorManager::Instance().Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
+            GetPassPipeline()->Draw(3);
         }
 
         m_shader->UnUse();
@@ -84,17 +58,19 @@ namespace SR_GRAPH_NS {
 
         GetPassPipeline()->SetCurrentShader(m_shader);
 
-        if (m_shader) {
-            m_shader->SetFloat(SHADER_TIME, SR_HTYPES_NS::Time::Instance().FClock());
+        if (m_shader && m_shader->BeginSharedUBO()) {
             m_shader->SetVec2(SHADER_RESOLUTION, GetContext()->GetWindowSize().Cast<float_t>());
-        }
+            m_shader->SetFloat(SHADER_TIME, SR_HTYPES_NS::Time::Instance().FClock());
 
-        if (m_shader && m_camera) {
-            m_shader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
-            m_shader->SetVec3(SHADER_VIEW_DIRECTION, m_camera->GetViewDirection());
-            m_shader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
-            m_shader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());
-            m_shader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, m_camera->GetView());
+            if (m_camera) {
+                m_shader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
+                m_shader->SetVec3(SHADER_VIEW_DIRECTION, m_camera->GetViewDirection());
+                m_shader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
+                m_shader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());
+                m_shader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, m_camera->GetView());
+            }
+
+            m_shader->EndSharedUBO();
         }
 
         if (m_uboManager.BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Duplicated) {
@@ -163,10 +139,13 @@ namespace SR_GRAPH_NS {
         if (m_virtualUBO != SR_ID_INVALID && !uboManager.FreeUBO(&m_virtualUBO)) {
             SR_ERROR("PostProcessPass::DeInit() : failed to free virtual uniform buffer object!");
         }
+        if (m_virtualDescriptor != SR_ID_INVALID) {
+            SR_GRAPH_NS::DescriptorManager::Instance().FreeDescriptorSet(&m_virtualDescriptor);
+        }
         Super::DeInit();
     }
 
-    void PostProcessPass::UseTextures() {
+    void PostProcessPass::UseSamplers() {
         for (auto&& attachment : m_attachments) {
             if (!attachment.pFBO) {
                 auto&& pFrameBufferController = GetTechnique()->GetFrameBufferController(attachment.fboName);

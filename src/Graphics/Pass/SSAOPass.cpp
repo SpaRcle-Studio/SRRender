@@ -59,7 +59,7 @@ namespace SR_GRAPH_NS {
         return kernel;
     }
 
-    SR_GTYPES_NS::Texture *SSAOPass::CreateNoise() const {
+    SR_GTYPES_NS::Texture* SSAOPass::CreateNoise() const {
         std::vector<SR_MATH_NS::Vector3<float_t>> noise;
         noise.resize(16);
 
@@ -119,12 +119,12 @@ namespace SR_GRAPH_NS {
         return false;
     }
 
-    void SSAOPass::UseTextures() {
+    void SSAOPass::UseSamplers() {
         if (m_shader && m_noise) {
             m_shader->SetSampler2D(SHADER_SSAO_NOISE, m_noise);
         }
 
-        PostProcessPass::UseTextures();
+        PostProcessPass::UseSamplers();
     }
 
     bool SSAOPass::Load(const SR_XML_NS::Node& passNode) {

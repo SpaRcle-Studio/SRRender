@@ -251,7 +251,7 @@ namespace SR_GRAPH_NS::Memory {
         return m_programPool.At(virtualProgram).Valid();
     }
 
-    void ShaderProgramManager::CollectUnusedShaders() {
+    void ShaderProgramManager::CollectUnused() {
         SR_TRACY_ZONE;
 
         if (m_programPool.IsEmpty()) {
@@ -278,7 +278,7 @@ namespace SR_GRAPH_NS::Memory {
         });
 
         if (count > 0) {
-            SR_LOG("ShaderProgramManager::CollectUnusedShaders() : collected {} unused shaders.", count);
+            SR_LOG("ShaderProgramManager::CollectUnused() : collected {} unused shaders.", count);
         }
     }
 }

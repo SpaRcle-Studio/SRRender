@@ -124,6 +124,19 @@ namespace SR_GRAPH_NS::VulkanTools {
             m_fboPool.ForEach(func);
         }
 
+        void ForEachShader(const SR_HTYPES_NS::Function<void(int32_t, EvoVulkan::Complexes::Shader*)>& func) const {
+            m_shaderProgramPool.ForEach(func);
+        }
+
+        SR_NODISCARD uint32_t GetDescriptorSetsCount() const { return m_descriptorSetPool.GetAliveCount(); }
+        SR_NODISCARD uint32_t GetShaderProgramsCount() const { return m_shaderProgramPool.GetAliveCount(); }
+        SR_NODISCARD uint32_t GetVBOsCount() const { return m_vboPool.GetAliveCount(); }
+        SR_NODISCARD uint32_t GetUBOsCount() const { return m_uboPool.GetAliveCount(); }
+        SR_NODISCARD uint32_t GetIBOsCount() const { return m_iboPool.GetAliveCount(); }
+        SR_NODISCARD uint32_t GetSSBOsCount() const { return m_ssboPool.GetAliveCount(); }
+        SR_NODISCARD uint32_t GetFBOsCount() const { return m_fboPool.GetAliveCount(); }
+        SR_NODISCARD uint32_t GetTexturesCount() const { return m_texturePool.GetAliveCount(); }
+
     private:
         EvoVulkan::Core::DescriptorManager* m_descriptorManager = nullptr;
         EvoVulkan::Types::Device* m_device = nullptr;

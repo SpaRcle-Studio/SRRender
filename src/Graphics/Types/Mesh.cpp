@@ -183,10 +183,6 @@ namespace SR_GRAPH_NS::Types {
         }
 
         m_material->UseSamplers();
-
-        if (auto&& pShader = m_pipeline->GetCurrentShader()) {
-            pShader->FlushSamplers();
-        }
     }
 
     std::string Mesh::GetMeshIdentifier() const {

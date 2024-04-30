@@ -298,8 +298,13 @@ namespace SR_GTYPES_NS {
 
     void Framebuffer::SetDirty() {
         m_dirty = true;
+
         if (m_pipeline) {
             m_pipeline->SetDirty(true);
+        }
+
+        if (m_renderContext) {
+            m_renderContext->GarbageCollect();
         }
     }
 

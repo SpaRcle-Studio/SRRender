@@ -50,11 +50,12 @@ namespace SR_GRAPH_NS {
 
     protected:
         virtual void SetShader(SR_GTYPES_NS::Shader* pShader);
-        virtual void UseTextures();
+        virtual void UseSamplers();
 
         void DeInit() override;
 
     protected:
+        int32_t m_virtualDescriptor = SR_ID_INVALID;
         int32_t m_virtualUBO = SR_ID_INVALID;
         bool m_dirtyShader = true;
         ShaderPtr m_shader = nullptr;

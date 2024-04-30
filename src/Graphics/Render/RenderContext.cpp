@@ -37,6 +37,13 @@ namespace SR_GRAPH_NS {
 
         bool dirty = false;
 
+        if (m_isNeedGarbageCollection) {
+            SR_GRAPH_NS::Memory::ShaderProgramManager::Instance().CollectUnused();
+            SR_GRAPH_NS::Memory::UBOManager::Instance().CollectUnused();
+            SR_GRAPH_NS::DescriptorManager::Instance().CollectUnused();
+            m_isNeedGarbageCollection = false;
+        }
+
         m_updateState = static_cast<RCUpdateQueueState>(static_cast<uint8_t>(m_updateState) + 1);
 
         switch (m_updateState) {
@@ -46,9 +53,6 @@ namespace SR_GRAPH_NS {
             case RCUpdateQueueState::Techniques: dirty |= Update(m_techniques); break;
             case RCUpdateQueueState::Materials: dirty |= Update(m_materials); break;
             case RCUpdateQueueState::Skyboxes: dirty |= Update(m_skyboxes); break;
-            case RCUpdateQueueState::ShadersGC:
-                SR_GRAPH_NS::Memory::ShaderProgramManager::Instance().CollectUnusedShaders();
-                break;
             case RCUpdateQueueState::End:
                 m_updateState = RCUpdateQueueState::Begin;
                 break;
@@ -345,6 +349,8 @@ namespace SR_GRAPH_NS {
 
     void RenderContext::OnResize(const SR_MATH_NS::UVector2& size) {
         SR_TRACY_ZONE;
+
+        GarbageCollect();
 
         if (m_pipeline) {
             m_pipeline->OnResize(size);

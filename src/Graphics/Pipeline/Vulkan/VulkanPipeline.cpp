@@ -341,6 +341,18 @@ namespace SR_GRAPH_NS {
         return handles;
     }
 
+    std::set<void*> VulkanPipeline::GetShaderHandles() const {
+        SR_TRACY_ZONE;
+
+        std::set<void*> handles;
+
+        m_memory->ForEachShader([&handles](int32_t index, auto&& pShader) {
+            handles.insert((void*)pShader->GetPipeline());
+        });
+
+        return handles;
+    }
+
     void VulkanPipeline::UseShader(uint32_t shaderProgram) {
         Pipeline::UseShader(shaderProgram);
 
