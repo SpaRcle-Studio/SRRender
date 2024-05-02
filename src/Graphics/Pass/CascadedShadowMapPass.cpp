@@ -20,10 +20,6 @@ namespace SR_GRAPH_NS {
 
         pMesh->UseModelMatrix();
 
-        if (CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
-            UpdateCascades();
-        }
-
         info.pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
 
         const auto lightPos = GetRenderScene()->GetLightSystem()->m_position;
@@ -149,5 +145,12 @@ namespace SR_GRAPH_NS {
         m_screenSize = m_camera->GetSize();
 
         return true;
+    }
+
+    void CascadedShadowMapPass::UseSharedUniforms(ShaderUseInfo info) {
+        if (CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
+            UpdateCascades();
+        }
+        Super::UseSharedUniforms(info);
     }
 }

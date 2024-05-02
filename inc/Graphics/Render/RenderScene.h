@@ -58,8 +58,8 @@ namespace SR_GRAPH_NS {
         virtual ~RenderScene();
 
     public:
-        void Render() noexcept;
-        void Submit() noexcept;
+        void Render();
+        void Submit();
 
         void Synchronize();
 
@@ -119,7 +119,8 @@ namespace SR_GRAPH_NS {
         void PrepareRender();
         void Build();
         void BuildQueue();
-        void Update() noexcept;
+        void Update();
+        void PostUpdate();
 
     private:
         SR_HTYPES_NS::SharedPtr<RenderStrategy> m_renderStrategy;
@@ -127,7 +128,6 @@ namespace SR_GRAPH_NS {
         SR_ANIMATIONS_NS::Skeleton* m_currentSkeleton = nullptr;
 
         LightSystem* m_lightSystem = nullptr;
-
         CameraPtr m_mainCamera;
 
         std::vector<CameraPtr> m_editorCameras;

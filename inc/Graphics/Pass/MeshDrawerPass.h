@@ -28,6 +28,8 @@ namespace SR_GRAPH_NS {
         };
         using Samplers = std::vector<Sampler>;
     public:
+        MeshDrawerPass();
+
         bool Load(const SR_XML_NS::Node& passNode) override;
 
         bool Init() override;
@@ -39,6 +41,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD bool HasPreRender() const noexcept override { return false; }
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
+        SR_NODISCARD virtual bool IsNeedUpdate() const noexcept { return false; }
         SR_NODISCARD virtual bool IsNeedUseMaterials() const noexcept { return m_useMaterials; }
 
         virtual void UseUniforms(ShaderUseInfo info, MeshPtr pMesh);
@@ -72,6 +75,8 @@ namespace SR_GRAPH_NS {
         CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;
 
         Samplers m_samplers;
+
+        SR_HTYPES_NS::Time& m_time;
 
         ska::flat_hash_map<ShaderPtr, ShaderUseInfo> m_shaderReplacements;
         ska::flat_hash_map<SR_SRSL_NS::ShaderType, ShaderUseInfo> m_shaderTypeReplacements;

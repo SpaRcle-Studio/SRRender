@@ -24,8 +24,10 @@ namespace SR_GRAPH_NS {
     );
 
     class RenderScene;
+    class MeshRenderStage;
 
     struct MeshRegistrationInfo {
+        MeshRenderStage* pMeshRenderStage = nullptr;
         SR_GTYPES_NS::Mesh* pMesh = nullptr;
         SR_GTYPES_NS::Shader* pShader = nullptr;
         SR_UTILS_NS::StringAtom layer;

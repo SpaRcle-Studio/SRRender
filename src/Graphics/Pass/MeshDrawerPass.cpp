@@ -21,6 +21,11 @@
 namespace SR_GRAPH_NS {
     SR_REGISTER_RENDER_PASS(MeshDrawerPass)
 
+    MeshDrawerPass::MeshDrawerPass()
+        : Super()
+        , m_time(SR_HTYPES_NS::Time::Instance())
+    { }
+
     bool MeshDrawerPass::Load(const SR_XML_NS::Node& passNode) {
         m_samplers.clear();
         m_allowedLayers.clear();
@@ -195,11 +200,11 @@ namespace SR_GRAPH_NS {
     void MeshDrawerPass::UseSharedUniforms(ShaderUseInfo info) {
         SR_TRACY_ZONE;
 
-        auto&& pShader = info.pShader;
+        const auto pShader = info.pShader;
 
-        pShader->SetFloat(SHADER_TIME, SR_HTYPES_NS::Time::Instance().Clock());
+        pShader->SetFloat(SHADER_TIME, static_cast<float_t>(m_time.Clock()));
 
-        if (m_camera) {
+        if (m_camera) SR_LIKELY_ATTRIBUTE {
             pShader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());
             pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
             pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, m_camera->GetOrthogonal());
@@ -207,15 +212,14 @@ namespace SR_GRAPH_NS {
             pShader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
         }
 
-        const SR_MATH_NS::FVector3 lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
-        pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
+        pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition());
 
-        if (m_shadowMapPass) {
-            pShader->SetMat4(SHADER_LIGHT_SPACE_MATRIX, m_shadowMapPass->GetLightSpaceMatrix());
-        }
-        else if (m_cascadedShadowMapPass) {
+        if (m_cascadedShadowMapPass) {
             pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadedShadowMapPass->GetCascadeMatrices().data());
             pShader->SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadedShadowMapPass->GetSplitDepths().data());
+        }
+        else if (m_shadowMapPass) {
+            pShader->SetMat4(SHADER_LIGHT_SPACE_MATRIX, m_shadowMapPass->GetLightSpaceMatrix());
         }
     }
 
@@ -250,25 +254,23 @@ namespace SR_GRAPH_NS {
     }
 
     ShaderUseInfo MeshDrawerPass::ReplaceShader(ShaderPtr pShader) const {
-        SR_TRACY_ZONE;
-
-        if (!pShader) {
+        if (!pShader) SR_UNLIKELY_ATTRIBUTE {
             return ShaderUseInfo(pShader);
         }
 
-        if (m_shaderReplacements.empty() && m_shaderTypeReplacements.empty()) {
-            return ShaderUseInfo(pShader);
-        }
-
-        if (auto&& pIt = m_shaderReplacements.find(pShader); pIt != m_shaderReplacements.end()) {
-            if (pIt->second.ignoreReplace) {
-                return ShaderUseInfo(pShader);
+        if (!m_shaderReplacements.empty()) {
+            if (auto&& pIt = m_shaderReplacements.find(pShader); pIt != m_shaderReplacements.end()) {
+                if (pIt->second.ignoreReplace) {
+                    return ShaderUseInfo(pShader);
+                }
+                return pIt->second;
             }
-            return pIt->second;
         }
 
-        if (auto&& pIt = m_shaderTypeReplacements.find(pShader->GetType()); pIt != m_shaderTypeReplacements.end()) {
-            return pIt->second;
+        if (!m_shaderTypeReplacements.empty()) {
+            if (auto&& pIt = m_shaderTypeReplacements.find(pShader->GetType()); pIt != m_shaderTypeReplacements.end()) {
+                return pIt->second;
+            }
         }
 
         return ShaderUseInfo(pShader);

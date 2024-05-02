@@ -1288,8 +1288,7 @@ namespace SR_GRAPH_NS {
 
         for (auto&& queue : queues) {
             for (auto&& pFrameBuffer : queue) {
-                if (pFrameBuffer->IsValid()) {
-                    auto&& fboId = pFrameBuffer->GetId();
+                if (auto&& fboId = pFrameBuffer->GetId(); fboId != SR_ID_INVALID) {
                     auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
                     vkFrameBuffer->ClearWaitSemaphores();
                     vkFrameBuffer->ClearSignalSemaphores();
@@ -1302,16 +1301,16 @@ namespace SR_GRAPH_NS {
         if (!queues.empty()) {
             /// Если являемся началом цепочки, то должны дождаться предыдущего кадра
             for (auto&& pFrameBuffer : queues.front()) {
-                if (pFrameBuffer->IsValid()) {
-                    auto&& vkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
+                if (auto&& fboId = pFrameBuffer->GetId(); fboId != SR_ID_INVALID) {
+                    auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
                     vkFrameBuffer->GetWaitSemaphores().emplace_back(m_kernel->GetPresentCompleteSemaphore());
                 }
             }
 
             /// Если являемся концом цепочки, то нужно чтобы нас дождался рендер
             for (auto&& pFrameBuffer : queues.back()) {
-                if (pFrameBuffer->IsValid()) {
-                    auto&& vkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
+                if (auto&& fboId = pFrameBuffer->GetId(); fboId != SR_ID_INVALID) {
+                    auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
                     m_kernel->GetWaitSemaphores().emplace_back(vkFrameBuffer->GetSemaphore());
                 }
             }
@@ -1323,12 +1322,15 @@ namespace SR_GRAPH_NS {
         for (uint32_t queueIndex = 1; queueIndex < queues.size(); ++queueIndex) {
             for (auto&& pFrameBuffer : queues[queueIndex]) {
                 for (auto&& pDependency : queues[queueIndex - 1]) {
-                    if (!pFrameBuffer->IsValid() || !pDependency->IsValid()) {
+                    auto&& fboId = pFrameBuffer->GetId();
+                    auto&& fboDependencyId = pDependency->GetId();
+
+                    if (fboId == SR_ID_INVALID || fboDependencyId == SR_ID_INVALID) {
                         continue;
                     }
 
-                    auto&& vkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
-                    auto&& vkDependency = m_memory->GetFBO(pDependency->GetId() - 1);
+                    auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
+                    auto&& vkDependency = m_memory->GetFBO(fboDependencyId - 1);
                     vkFrameBuffer->GetWaitSemaphores().emplace_back(vkDependency->GetSemaphore());
                 }
             }
@@ -1342,11 +1344,12 @@ namespace SR_GRAPH_NS {
             submitInfo.SetWaitDstStageMask(m_kernel->GetSubmitPipelineStages());
 
             for (auto&& pFrameBuffer : queue) {
-                if (!pFrameBuffer->IsValid()) {
+                auto&& fbId = pFrameBuffer->GetId();
+                if (fbId == SR_ID_INVALID) {
                     continue;
                 }
 
-                auto&& vkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
+                auto&& vkFrameBuffer = m_memory->GetFBO(fbId - 1);
 
                 submitInfo.commandBuffers.emplace_back(vkFrameBuffer->GetCmd());
 

@@ -166,10 +166,6 @@ namespace SR_GRAPH_NS {
         OpaqueMeshCluster* m_opaque;
 
     };
-
-    class Spatial2DMeshCluster : public MeshCluster {
-
-    };
 }
 
 #endif //GAMEENGINE_MESHCLUSTER_H

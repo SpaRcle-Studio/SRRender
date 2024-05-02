@@ -70,14 +70,17 @@ namespace SR_GTYPES_NS {
     }
 
     void DebugLine::SetEndPoint(const SR_MATH_NS::FVector3& endPoint) {
+        MarkUniformsDirty();
         m_endPoint = endPoint;
     }
 
     void DebugLine::SetColor(const SR_MATH_NS::FVector4& color) {
+        MarkUniformsDirty();
         m_color = color;
     }
 
     void DebugLine::SetStartPoint(const SR_MATH_NS::FVector3& startPoint) {
+        MarkUniformsDirty();
         m_startPoint = startPoint;
     }
 }

@@ -37,13 +37,6 @@ namespace SR_GRAPH_NS {
 
         bool dirty = false;
 
-        if (m_isNeedGarbageCollection) {
-            SR_GRAPH_NS::Memory::ShaderProgramManager::Instance().CollectUnused();
-            SR_GRAPH_NS::Memory::UBOManager::Instance().CollectUnused();
-            SR_GRAPH_NS::DescriptorManager::Instance().CollectUnused();
-            m_isNeedGarbageCollection = false;
-        }
-
         m_updateState = static_cast<RCUpdateQueueState>(static_cast<uint8_t>(m_updateState) + 1);
 
         switch (m_updateState) {
@@ -96,6 +89,8 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         SR_INFO("RenderContext::Init() : initializing render context...");
+
+        m_isOptimizedUpdateEnabled = SR_UTILS_NS::Features::Instance().Enabled("OptimizedRenderUpdate", true);
 
         if (!InitPipeline()) {
             SR_ERROR("RenderContext::Init() : failed to initialize pipeline!");
@@ -350,7 +345,7 @@ namespace SR_GRAPH_NS {
     void RenderContext::OnResize(const SR_MATH_NS::UVector2& size) {
         SR_TRACY_ZONE;
 
-        GarbageCollect();
+        m_hasChangedFrameBuffers = true;
 
         if (m_pipeline) {
             m_pipeline->OnResize(size);
@@ -407,17 +402,22 @@ namespace SR_GRAPH_NS {
         return m_pipeline->GetCurrentShader();
     }
 
-    void RenderContext::SetCurrentShader(RenderContext::ShaderPtr pShader) {
-        SR_TRACY_ZONE;
+    bool RenderContext::SetCurrentShader(RenderContext::ShaderPtr pShader) {
         m_pipeline->SetCurrentShader(pShader);
-        SRAssert2(!pShader || pShader->IsAvailable(), "The shader was not bound and not available!");
+
+        if (pShader && !pShader->IsAvailable()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("The shader was not bound and not available!");
+            return false;
+        }
+
+        return true;
     }
 
     RenderContext::WindowPtr RenderContext::GetWindow() const {
         return m_window;
     }
 
-    void RenderContext::UpdateFramebuffers() {
+    void RenderContext::PrepareFrame() {
         SR_TRACY_ZONE;
 
         for (auto&& pFrameBuffer : m_framebuffers) {
@@ -426,6 +426,28 @@ namespace SR_GRAPH_NS {
             }
 
             pFrameBuffer->Update();
+
+            m_hasChangedFrameBuffers = true;
+        }
+
+        if (m_hasChangedFrameBuffers) {
+            if (m_isOptimizedUpdateEnabled) {
+                for (auto&& [pScene, pRenderScene] : m_scenes) {
+                    pRenderScene->GetRenderStrategy()->ForEachMesh([](SR_GTYPES_NS::Mesh* pMesh) {
+                        pMesh->MarkUniformsDirty();
+                    });
+                }
+            }
+
+            m_hasChangedFrameBuffers = false;
+            m_isNeedGarbageCollection = true;
+        }
+
+        if (m_isNeedGarbageCollection) {
+            SR_GRAPH_NS::Memory::ShaderProgramManager::Instance().CollectUnused();
+            SR_GRAPH_NS::Memory::UBOManager::Instance().CollectUnused();
+            SR_GRAPH_NS::DescriptorManager::Instance().CollectUnused();
+            m_isNeedGarbageCollection = false;
         }
     }
 

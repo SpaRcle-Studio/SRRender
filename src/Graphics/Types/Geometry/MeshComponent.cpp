@@ -67,6 +67,8 @@ namespace SR_GTYPES_NS {
             m_translation = SR_MATH_NS::FVector3::Zero();
         }
 
+        MarkUniformsDirty();
+
         Component::OnMatrixDirty();
     }
 
@@ -167,5 +169,15 @@ namespace SR_GTYPES_NS {
         }
 
         return m_gameObject->GetLayer();
+    }
+
+    void MeshComponent::OnEnable() {
+        IRenderComponent::OnEnable();
+        MarkUniformsDirty();
+    }
+
+    void MeshComponent::OnDisable() {
+        IRenderComponent::OnDisable();
+        MarkUniformsDirty();
     }
 }

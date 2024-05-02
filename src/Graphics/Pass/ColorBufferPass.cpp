@@ -22,7 +22,7 @@ namespace SR_GRAPH_NS {
         pMesh->UseOverrideUniforms();
 
         IncrementColorIndex();
-        SetMeshIndex(pMesh, GetColorIndex());
+        SetMeshIndex(pMesh);
 
         info.pShader->SetVec3(SHADER_COLOR_BUFFER_VALUE, GetMeshColor());
     }
@@ -34,5 +34,33 @@ namespace SR_GRAPH_NS {
     void ColorBufferPass::UseConstants(ShaderUseInfo info) {
         Super::UseConstants(info);
         info.pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 1);
+    }
+
+    bool ColorBufferPass::Render() {
+        ClearTable();
+        m_needUpdateUniforms = true;
+        return OffScreenMeshDrawerPass::Render();
+    }
+
+    bool ColorBufferPass::IsNeedUpdate() const noexcept {
+        if (m_needUpdateUniforms) {
+            return true;
+        }
+
+        if (auto&& pStrategy = GetPassPipeline()->GetCurrentRenderStrategy()) {
+            return pStrategy->IsUniformsDirty();
+        }
+
+        return true;
+    }
+
+    void ColorBufferPass::PostUpdate() {
+        m_needUpdateUniforms = false;
+        Super::PostUpdate();
+    }
+
+    bool ColorBufferPass::Load(const SR_XML_NS::Node& passNode) {
+        SetColorMultiplier(passNode.TryGetAttribute("ColorMultiplier").ToInt(1));
+        return Super::Load(passNode);
     }
 }

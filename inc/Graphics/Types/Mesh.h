@@ -105,6 +105,7 @@ namespace SR_GTYPES_NS {
         bool UnRegisterMesh();
         void ReRegisterMesh();
 
+        void MarkUniformsDirty();
         void MarkMaterialDirty();
 
         void SetMaterial(Material* material);

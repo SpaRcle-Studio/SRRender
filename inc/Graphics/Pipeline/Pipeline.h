@@ -20,6 +20,7 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    class RenderStrategy;
     class RenderContext;
     class Overlay;
     class Window;
@@ -112,6 +113,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsDirty() const noexcept { ++m_state.operations; return m_dirty; }
         SR_NODISCARD FrameBufferQueue& GetQueue() noexcept { ++m_state.operations; return m_fboQueue; }
         SR_NODISCARD uint8_t GetCurrentBuildIteration() const noexcept { ++m_state.operations; return m_state.buildIteration; }
+        SR_NODISCARD RenderStrategy* GetCurrentRenderStrategy() const noexcept { ++m_state.operations; return m_state.pRenderStrategy; }
 
         SR_NODISCARD virtual void* GetCurrentShaderHandle() const { return nullptr; }
         SR_NODISCARD virtual void* GetCurrentFBOHandle() const { return nullptr; }
@@ -127,6 +129,7 @@ namespace SR_GRAPH_NS {
         virtual void SetCurrentShaderId(int32_t id) { ++m_state.operations; m_state.shaderId = id; }
         virtual void SetFrameBufferLayer(uint32_t layer) { ++m_state.operations; m_state.frameBufferLayer = layer; }
         virtual void SetCurrentFrameBuffer(FramebufferPtr pFrameBuffer);
+        virtual void SetCurrentRenderStrategy(RenderStrategy* pStrategy) { ++m_state.operations; m_state.pRenderStrategy = pStrategy; }
 
         virtual void* GetOverlayTextureDescriptorSet(uint32_t textureId, OverlayType overlayType) const;
 

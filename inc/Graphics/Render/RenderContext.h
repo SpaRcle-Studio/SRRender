@@ -66,7 +66,7 @@ namespace SR_GRAPH_NS {
     public:
         void SwitchWindow(WindowPtr pWindow);
 
-        void UpdateFramebuffers();
+        void PrepareFrame();
 
         bool Update() noexcept;
 
@@ -88,6 +88,7 @@ namespace SR_GRAPH_NS {
         void Register(MaterialPtr pMaterial);
         void Register(SkyboxPtr pSkybox);
 
+        SR_NODISCARD bool IsOptimizedRenderUpdateEnabled() const noexcept { return m_isOptimizedUpdateEnabled; }
         SR_NODISCARD bool IsEmpty() const;
         SR_NODISCARD bool IsDirty() const;
         SR_NODISCARD const RenderContext::PipelinePtr& GetPipeline() const;
@@ -109,7 +110,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::vector<SR_GTYPES_NS::Skybox*>& GetSkyboxes() const noexcept;
         SR_NODISCARD const RenderScenes& GetScenes() const noexcept { return m_scenes; }
 
-        void SetCurrentShader(ShaderPtr pShader);
+        void SetOptimizedRenderUpdateEnabled(bool enabled) noexcept { m_isOptimizedUpdateEnabled = enabled; }
+        bool SetCurrentShader(ShaderPtr pShader);
         void GarbageCollect() { m_isNeedGarbageCollection = true; }
 
     private:
@@ -156,7 +158,10 @@ namespace SR_GRAPH_NS {
         PipelinePtr m_pipeline = nullptr;
 
         bool m_isClosed = false;
+        bool m_hasChangedFrameBuffers = false;
+
         bool m_isNeedGarbageCollection = false;
+        bool m_isOptimizedUpdateEnabled = false;
 
     };
 

@@ -56,12 +56,15 @@ namespace SR_GRAPH_NS::Memory {
         }
 
         SR_NODISCARD bool HasProgram(Identifier identifier) const {
-            for (auto&& [id, data] : m_data) {
-                if (id == identifier) SR_LIKELY_ATTRIBUTE {
+            const auto* pBegin = m_data.data();
+            const auto* pEnd = pBegin + m_data.size();
+
+            while (pBegin != pEnd) {
+                if (pBegin->first == identifier) SR_LIKELY_ATTRIBUTE {
                     return true;
                 }
+                ++pBegin;
             }
-
             return false;
         }
 

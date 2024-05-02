@@ -8,6 +8,7 @@
 
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Render/RenderContext.h>
+#include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Utils/MeshUtils.h>
 
 namespace SR_GRAPH_NS::Types {
@@ -101,7 +102,7 @@ namespace SR_GRAPH_NS::Types {
     bool Mesh::Calculate() {
         m_isCalculated = true;
         /// чтобы в случае перезагрузки обновить все связанные данные
-        m_dirtyMaterial = true;
+        MarkMaterialDirty();
         return true;
     }
 
@@ -120,7 +121,7 @@ namespace SR_GRAPH_NS::Types {
             return;
         }
 
-        m_dirtyMaterial = true;
+        MarkMaterialDirty();
         m_hasErrors = false;
 
         if (m_material) {
@@ -193,14 +194,14 @@ namespace SR_GRAPH_NS::Types {
     bool Mesh::OnResourceReloaded(SR_UTILS_NS::IResource* pResource) {
         if (m_material) {
             if (pResource == m_material) {
-                m_dirtyMaterial = true;
+                MarkMaterialDirty();
                 m_hasErrors = false;
                 ReRegisterMesh();
                 return true;
             }
 
             if (m_material->GetShader() == pResource) {
-                m_dirtyMaterial = true;
+                MarkMaterialDirty();
                 m_hasErrors = false;
                 ReRegisterMesh();
                 return true;
@@ -208,7 +209,7 @@ namespace SR_GRAPH_NS::Types {
 
             auto&& pTexture = dynamic_cast<SR_GTYPES_NS::Texture*>(pResource);
             if (pTexture && m_material->ContainsTexture(pTexture)) {
-                m_dirtyMaterial = true;
+                MarkMaterialDirty();
                 m_hasErrors = false;
                 return true;
             }
@@ -218,6 +219,7 @@ namespace SR_GRAPH_NS::Types {
 
     void Mesh::MarkMaterialDirty() {
         m_dirtyMaterial = true;
+        MarkUniformsDirty();
     }
 
     Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
@@ -299,6 +301,7 @@ namespace SR_GRAPH_NS::Types {
                 return uniform;
             }
         }
+
         m_overrideUniforms.emplace_back();
         m_overrideUniforms.back().SetName(name);
         return m_overrideUniforms.back();
@@ -345,6 +348,12 @@ namespace SR_GRAPH_NS::Types {
 
                 return;
             }
+        }
+    }
+
+    void Mesh::MarkUniformsDirty() {
+        if (m_registrationInfo.has_value()) {
+            m_registrationInfo.value().pMeshRenderStage->MarkUniformsDirty();
         }
     }
 }

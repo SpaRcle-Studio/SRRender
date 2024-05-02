@@ -184,6 +184,7 @@ namespace SR_GTYPES_NS {
         }
 
         m_projection = SR_MATH_NS::Matrix4x4::Perspective(SR_RAD(m_FOV), m_aspect, m_near, m_far);
+        m_projectionNoFOV = SR_MATH_NS::Matrix4x4::Perspective(SR_RAD(45.f), m_aspect, m_near, m_far);
 
         //////////////////////////////////////////////////////////////////////////////////////////////
 

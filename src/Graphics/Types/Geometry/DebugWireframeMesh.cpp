@@ -78,6 +78,7 @@ namespace SR_GTYPES_NS {
 
     void DebugWireframeMesh::SetMatrix(const SR_MATH_NS::Matrix4x4& matrix4X4) {
         m_modelMatrix = matrix4X4;
+        MarkUniformsDirty();
     }
 
     bool DebugWireframeMesh::OnResourceReloaded(SR_UTILS_NS::IResource* pResource) {
@@ -102,6 +103,7 @@ namespace SR_GTYPES_NS {
 
     void DebugWireframeMesh::SetColor(const SR_MATH_NS::FVector4& color) {
         m_color = color;
+        MarkUniformsDirty();
     }
 
     std::string DebugWireframeMesh::GetMeshIdentifier() const {

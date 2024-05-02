@@ -42,17 +42,16 @@ namespace SR_GRAPH_NS {
         using MeshPtr = SR_GTYPES_NS::Mesh*;
 
     public:
-        explicit IRenderStage(RenderStrategy* pRenderStrategy)
-            : Super()
-            , m_renderStrategy(pRenderStrategy)
-        { }
+        IRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent);
 
     public:
         using ShaderPtr = SR_GTYPES_NS::Shader*;
 
     public:
-        virtual bool RegisterMesh(const MeshRegistrationInfo& info) { return false; }
+        virtual bool RegisterMesh(MeshRegistrationInfo& info) { return false; }
         virtual bool UnRegisterMesh(const MeshRegistrationInfo& info) { return false; }
+
+        void PostUpdate() { m_uniformsDirty = false; }
 
         SR_NODISCARD virtual bool IsRendered() const { return m_isRendered; }
         SR_NODISCARD virtual bool IsEmpty() const { return true; }
@@ -64,11 +63,21 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD virtual bool IsValid() const { return true; }
 
+        virtual void MarkUniformsDirty() { m_uniformsDirty = true; }
+
         virtual void ForEachMesh(const SR_HTYPES_NS::Function<void(MeshPtr)>& callback) const { }
 
     protected:
+        SR_NODISCARD bool IsNeedUpdate() const;
+
+    protected:
         bool m_isRendered = false;
+        IRenderStage* m_parent = nullptr;
         RenderStrategy* m_renderStrategy = nullptr;
+        RenderContext* m_renderContext = nullptr;
+
+    private:
+        bool m_uniformsDirty = true;
 
     };
 
@@ -79,7 +88,7 @@ namespace SR_GRAPH_NS {
         using MeshList = std::vector<SR_GTYPES_NS::Mesh*>;
         using ShaderPtr = SR_GTYPES_NS::Shader*;
     public:
-        explicit MeshRenderStage(RenderStrategy* pRenderStrategy);
+        explicit MeshRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent);
 
         ~MeshRenderStage() override {
             SRAssert(m_meshes.empty());
@@ -92,10 +101,12 @@ namespace SR_GRAPH_NS {
 
         void Update(ShaderUseInfo info);
 
-        bool RegisterMesh(const MeshRegistrationInfo& info) override;
+        bool RegisterMesh(MeshRegistrationInfo& info) override;
         bool UnRegisterMesh(const MeshRegistrationInfo& info) override;
 
         SR_NODISCARD bool IsEmpty() const override { return m_meshes.empty(); }
+
+        void MarkUniformsDirty() override;
 
         void ForEachMesh(const SR_HTYPES_NS::Function<void(MeshPtr)>& callback) const override;
 
@@ -111,7 +122,7 @@ namespace SR_GRAPH_NS {
         using Super = MeshRenderStage;
         using ShaderPtr = SR_GTYPES_NS::Shader*;
     public:
-        VBORenderStage(RenderStrategy* pRenderStrategy, int32_t VBO);
+        VBORenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent, int32_t VBO);
 
     public:
         bool Render() override;
@@ -128,14 +139,15 @@ namespace SR_GRAPH_NS {
     class ShaderRenderStage : public IRenderStage {
         using Super = IRenderStage;
     public:
-        explicit ShaderRenderStage(RenderStrategy* pRenderStrategy, SR_GTYPES_NS::Shader* pShader);
+        explicit ShaderRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent, SR_GTYPES_NS::Shader* pShader);
         ~ShaderRenderStage() override;
 
     public:
         bool Render();
         void Update();
+        void PostUpdate();
 
-        bool RegisterMesh(const MeshRegistrationInfo& info) override;
+        bool RegisterMesh(MeshRegistrationInfo& info) override;
         bool UnRegisterMesh(const MeshRegistrationInfo& info) override;
 
         SR_NODISCARD bool IsEmpty() const override { return m_VBOStages.empty() && m_meshStage->IsEmpty(); }
@@ -159,8 +171,8 @@ namespace SR_GRAPH_NS {
     class PriorityRenderStage : public IRenderStage {
         using Super = IRenderStage;
     public:
-        explicit PriorityRenderStage(RenderStrategy* pRenderStrategy, int64_t priority)
-            : Super(pRenderStrategy)
+        explicit PriorityRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent, int64_t priority)
+            : Super(pRenderStrategy, pParent)
             , m_priority(priority)
         { }
 
@@ -171,8 +183,9 @@ namespace SR_GRAPH_NS {
     public:
         bool Render();
         void Update();
+        void PostUpdate();
 
-        bool RegisterMesh(const MeshRegistrationInfo& info) override;
+        bool RegisterMesh(MeshRegistrationInfo& info) override;
         bool UnRegisterMesh(const MeshRegistrationInfo& info) override;
 
         SR_NODISCARD int64_t GetPriority() const noexcept { return m_priority; }
@@ -192,8 +205,8 @@ namespace SR_GRAPH_NS {
     class LayerRenderStage : public IRenderStage {
         using Super = IRenderStage;
     public:
-        explicit LayerRenderStage(RenderStrategy* pRenderStrategy)
-            : Super(pRenderStrategy)
+        explicit LayerRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent)
+            : Super(pRenderStrategy, pParent)
         { }
 
         ~LayerRenderStage() override {
@@ -203,8 +216,9 @@ namespace SR_GRAPH_NS {
     public:
         bool Render();
         void Update();
+        void PostUpdate();
 
-        bool RegisterMesh(const MeshRegistrationInfo& info) override;
+        bool RegisterMesh(MeshRegistrationInfo& info) override;
         bool UnRegisterMesh(const MeshRegistrationInfo& info) override;
 
         SR_NODISCARD int64_t FindPriorityStageIndex(int64_t priority, bool nearest) const;
@@ -241,6 +255,7 @@ namespace SR_GRAPH_NS {
     public:
         bool Render();
         void Update();
+        void PostUpdate();
 
         void BindFilterCallback(FilterCallback callback) { m_layerFilter = std::move(callback); }
         void BindShaderReplaceCallback(ShaderReplaceCallback callback) { m_shaderReplaceCallback = std::move(callback); }
@@ -260,6 +275,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const;
         SR_NODISCARD bool IsNeedCheckMeshActivity() const noexcept { return m_isNeedCheckMeshActivity; }
         SR_NODISCARD bool IsDebugModeEnabled() const noexcept { return m_enableDebugMode; }
+        SR_NODISCARD bool IsUniformsDirty() const noexcept { return m_isUniformsDirty; }
         SR_NODISCARD const std::set<SR_UTILS_NS::StringAtom>& GetErrors() const noexcept { return m_errors; }
         SR_NODISCARD const std::set<SR_GTYPES_NS::Mesh*>& GetProblemMeshes() const noexcept { return m_problemMeshes; }
 
@@ -272,8 +288,10 @@ namespace SR_GRAPH_NS {
 
         void ForEachMesh(const SR_HTYPES_NS::Function<void(MeshPtr)>& callback) const;
 
+        void MarkUniformsDirty() { m_isUniformsDirty = true; }
+
     private:
-        void RegisterMesh(const MeshRegistrationInfo& info);
+        void RegisterMesh(MeshRegistrationInfo info);
         bool UnRegisterMesh(const MeshRegistrationInfo& info);
 
         MeshRegistrationInfo CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh) const;
@@ -287,11 +305,12 @@ namespace SR_GRAPH_NS {
 
         RenderScene* m_renderScene = nullptr;
 
-        bool m_isNeedCheckMeshActivity = true;
-
         std::set<SR_UTILS_NS::StringAtom> m_errors;
         std::set<SR_GTYPES_NS::Mesh*> m_problemMeshes;
+
+        bool m_isNeedCheckMeshActivity = true;
         bool m_enableDebugMode = false;
+        bool m_isUniformsDirty = true;
 
         std::list<MeshRegistrationInfo> m_reRegisterMeshes;
 

@@ -196,4 +196,11 @@ namespace SR_GRAPH_NS {
         }
         BasePass::SetRenderTechnique(pRenderTechnique);
     }
+
+    void GroupPass::PostUpdate() {
+        for (auto&& pPass : m_passes) {
+            pPass->PostUpdate();
+        }
+        BasePass::PostUpdate();
+    }
 }

@@ -146,12 +146,7 @@ namespace SR_GRAPH_NS::Memory {
             return false;
         }
 
-        auto&& virtualProgramInfo = m_programPool.At(virtualProgram);
-        if (!virtualProgramInfo.Valid()) SR_UNLIKELY_ATTRIBUTE {
-            return false;
-        }
-
-        return virtualProgramInfo.HasProgram(GetCurrentIdentifier());
+        return m_programPool.AtUnchecked(virtualProgram).HasProgram(GetCurrentIdentifier());
     }
 
     ShaderProgramManager::ShaderProgram ShaderProgramManager::GetProgram(VirtualProgram virtualProgram) const noexcept {

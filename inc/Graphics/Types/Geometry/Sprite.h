@@ -46,10 +46,12 @@ namespace SR_GTYPES_NS {
 
         void SetTextureBorder(const SR_MATH_NS::FVector2& border) {
             m_textureBorder = border;
+            MarkUniformsDirty();
         }
 
         void SetWindowBorder(const SR_MATH_NS::FVector2& border) {
             m_windowBorder = border;
+            MarkUniformsDirty();
         }
 
     protected:

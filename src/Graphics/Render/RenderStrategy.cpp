@@ -57,6 +57,15 @@ namespace SR_GRAPH_NS {
         return isRendered;
     }
 
+    void RenderStrategy::PostUpdate() {
+        SR_TRACY_ZONE;
+
+        for (auto&& [layer, pStage] : m_layers) {
+            SR_TRACY_ZONE_S(layer.c_str());
+            pStage->PostUpdate();
+        }
+    }
+
     void RenderStrategy::Update() {
         SR_TRACY_ZONE;
 
@@ -83,6 +92,8 @@ namespace SR_GRAPH_NS {
 
             pStage->Update();
         }
+
+        m_isUniformsDirty = false;
     }
 
     void RenderStrategy::RegisterMesh(SR_GTYPES_NS::Mesh* pMesh) {
@@ -123,14 +134,14 @@ namespace SR_GRAPH_NS {
         return m_shaderReplaceCallback ? m_shaderReplaceCallback(pShader) : ShaderUseInfo(pShader);
     }
 
-    void RenderStrategy::RegisterMesh(const MeshRegistrationInfo& info) {
+    void RenderStrategy::RegisterMesh(MeshRegistrationInfo info) {
         if (auto&& pIt = m_layers.find(info.layer); pIt != m_layers.end()) {
             if (!pIt->second->RegisterMesh(info)) {
                 return;
             }
         }
         else {
-            auto&& pLayerStage = new LayerRenderStage(this);
+            auto&& pLayerStage = new LayerRenderStage(this, nullptr);
             if (!pLayerStage->RegisterMesh(info)) {
                 delete pLayerStage;
                 return;
@@ -208,7 +219,7 @@ namespace SR_GRAPH_NS {
     }
 
     MeshRegistrationInfo RenderStrategy::CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh) const {
-        MeshRegistrationInfo info;
+        MeshRegistrationInfo info = { };
 
         info.pMesh = pMesh;
         info.pShader = pMesh->GetShader();
@@ -228,20 +239,24 @@ namespace SR_GRAPH_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    MeshRenderStage::MeshRenderStage(RenderStrategy* pRenderStrategy)
-        : Super(pRenderStrategy)
+    MeshRenderStage::MeshRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent)
+        : Super(pRenderStrategy, pParent)
         , m_uboManager(SR_GRAPH_NS::Memory::UBOManager::Instance())
     {
         m_meshes.reserve(64);
     }
 
-    bool MeshRenderStage::RegisterMesh(const MeshRegistrationInfo& info) {
+    bool MeshRenderStage::RegisterMesh(MeshRegistrationInfo& info) {
         SR_TRACY_ZONE;
+        MarkUniformsDirty();
         m_meshes.emplace_back(info.pMesh);
+        info.pMeshRenderStage = this;
         return true;
     }
 
     bool MeshRenderStage::UnRegisterMesh(const MeshRegistrationInfo& info) {
+        MarkUniformsDirty();
+
         if (auto&& pIt = std::find(m_meshes.begin(), m_meshes.end(), info.pMesh); pIt != m_meshes.end()) {
             m_meshes.erase(pIt);
             return true;
@@ -275,7 +290,12 @@ namespace SR_GRAPH_NS {
     void MeshRenderStage::Update(ShaderUseInfo info) {
         SR_TRACY_ZONE;
 
-        if (!IsRendered()) {
+        auto&& pMeshDrawer = m_renderStrategy->GetMeshDrawerPass();
+        if (!IsNeedUpdate() && !pMeshDrawer->IsNeedUpdate()) SR_LIKELY_ATTRIBUTE {
+            return;
+        }
+
+        if (!IsRendered()) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
@@ -294,7 +314,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            m_renderStrategy->GetMeshDrawerPass()->UseUniforms(info, pMeshUnwrapped);
+            pMeshDrawer->UseUniforms(info, pMeshUnwrapped);
 
             if (m_uboManager.BindUBO(virtualUbo) == Memory::UBOManager::BindResult::Duplicated) {
                 SR_ERROR("VBORenderStage::Update() : memory has been duplicated!");
@@ -316,10 +336,16 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
+    void MeshRenderStage::MarkUniformsDirty() {
+        Super::MarkUniformsDirty();
+        m_parent->MarkUniformsDirty();
+        m_renderStrategy->MarkUniformsDirty();
+    }
+
     /// ----------------------------------------------------------------------------------------------------------------
 
-    VBORenderStage::VBORenderStage(RenderStrategy* pRenderStrategy, int32_t VBO)
-        : Super(pRenderStrategy)
+    VBORenderStage::VBORenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent, int32_t VBO)
+        : Super(pRenderStrategy, pParent)
         , m_VBO(VBO)
     { }
 
@@ -384,14 +410,14 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    bool LayerRenderStage::RegisterMesh(const MeshRegistrationInfo& info) {
+    bool LayerRenderStage::RegisterMesh(MeshRegistrationInfo& info) {
         SR_TRACY_ZONE;
 
         if (info.priority.has_value()) {
             const int64_t index = FindPriorityStageIndex(info.priority.value(), false);
 
             if (index == SR_ID_INVALID) {
-                auto&& pStage = new PriorityRenderStage(m_renderStrategy, info.priority.value());
+                auto&& pStage = new PriorityRenderStage(m_renderStrategy, this, info.priority.value());
                 if (!pStage->RegisterMesh(info)) {
                     delete pStage;
                     return false;
@@ -407,7 +433,7 @@ namespace SR_GRAPH_NS {
             return pIt->second->RegisterMesh(info);
         }
         else {
-            auto&& pStage = new ShaderRenderStage(m_renderStrategy, info.pShader);
+            auto&& pStage = new ShaderRenderStage(m_renderStrategy, this, info.pShader);
             if (!pStage->RegisterMesh(info)) {
                 delete pStage;
                 return false;
@@ -526,6 +552,16 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void LayerRenderStage::PostUpdate() {
+        for (auto&& pStage : m_priorityStages) {
+            pStage->PostUpdate();
+        }
+
+        for (auto&& [pShader, pShaderStage] : m_shaderStages) {
+            pShaderStage->PostUpdate();
+        }
+    }
+
     /// ----------------------------------------------------------------------------------------------------------------
 
     bool PriorityRenderStage::Render() {
@@ -552,14 +588,14 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    bool PriorityRenderStage::RegisterMesh(const MeshRegistrationInfo& info) {
+    bool PriorityRenderStage::RegisterMesh(MeshRegistrationInfo& info) {
         SR_TRACY_ZONE;
 
         if (auto&& pIt = m_shaderStages.find(info.pShader); pIt != m_shaderStages.end()) {
             return pIt->second->RegisterMesh(info);
         }
         else {
-            auto&& pStage = new ShaderRenderStage(m_renderStrategy, info.pShader);
+            auto&& pStage = new ShaderRenderStage(m_renderStrategy, this, info.pShader);
             if (!pStage->RegisterMesh(info)) {
                 delete pStage;
                 return false;
@@ -590,16 +626,22 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void PriorityRenderStage::PostUpdate() {
+        for (auto&& [pShader, pShaderStage] : m_shaderStages) {
+            pShaderStage->PostUpdate();
+        }
+    }
+
     /// ----------------------------------------------------------------------------------------------------------------
 
-    ShaderRenderStage::ShaderRenderStage(RenderStrategy* pRenderStrategy, SR_GTYPES_NS::Shader* pShader)
-        : Super(pRenderStrategy)
+    ShaderRenderStage::ShaderRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent, SR_GTYPES_NS::Shader* pShader)
+        : Super(pRenderStrategy, pParent)
         , m_shader(pShader)
     {
         if (m_shader) {
             m_shader->AddUsePoint();
         }
-        m_meshStage = new MeshRenderStage(pRenderStrategy);
+        m_meshStage = new MeshRenderStage(pRenderStrategy, this);
     }
 
     ShaderRenderStage::~ShaderRenderStage() {
@@ -666,7 +708,7 @@ namespace SR_GRAPH_NS {
     void ShaderRenderStage::Update() {
         SR_TRACY_ZONE;
 
-        if (!IsRendered()) {
+        if (!IsRendered()) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
@@ -676,24 +718,29 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (!pShader || !pShader->Ready() || !pShader->IsAvailable()) {
+        if (!pShader->Ready() || !GetRenderContext()->SetCurrentShader(pShader)) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
-        SR_TRACY_TEXT_N("Shader", pShader->GetResourcePath().ToStringRef());
+        if (SR_TRACY_IS_PROFILER_CONNECTED) {
+            auto&& path = pShader->GetResourcePath().ToStringRef();
+            SR_TRACY_TEXT_N("Shader", path);
+        }
 
-        GetRenderContext()->SetCurrentShader(pShader);
+        auto&& pMeshDrawer = m_renderStrategy->GetMeshDrawerPass();
 
         if (pShader->BeginSharedUBO()) {
-            m_renderStrategy->GetMeshDrawerPass()->UseSharedUniforms(shaderUseInfo);
+            pMeshDrawer->UseSharedUniforms(shaderUseInfo);
             pShader->EndSharedUBO();
         }
 
-        for (auto&& [VBO, pVBOStage] : m_VBOStages) {
-            pVBOStage->Update(shaderUseInfo);
-        }
+        if (IsNeedUpdate() || pMeshDrawer->IsNeedUpdate()) {
+            for (auto&& [VBO, pVBOStage] : m_VBOStages) {
+                pVBOStage->Update(shaderUseInfo);
+            }
 
-        m_meshStage->Update(shaderUseInfo);
+            m_meshStage->Update(shaderUseInfo);
+        }
 
         GetRenderScene()->SetCurrentSkeleton(nullptr);
         GetRenderContext()->SetCurrentShader(nullptr);
@@ -719,7 +766,7 @@ namespace SR_GRAPH_NS {
         return false;
     }
 
-    bool ShaderRenderStage::RegisterMesh(const MeshRegistrationInfo& info) {
+    bool ShaderRenderStage::RegisterMesh(MeshRegistrationInfo& info) {
         SR_TRACY_ZONE;
 
         if (!info.VBO.has_value()) {
@@ -730,7 +777,7 @@ namespace SR_GRAPH_NS {
             return pIt->second->RegisterMesh(info);
         }
         else {
-            auto&& pStage = new VBORenderStage(m_renderStrategy, info.VBO.value());
+            auto&& pStage = new VBORenderStage(m_renderStrategy, this, info.VBO.value());
             if (!pStage->RegisterMesh(info)) {
                 delete pStage;
                 return false;
@@ -769,7 +816,26 @@ namespace SR_GRAPH_NS {
         m_meshStage->ForEachMesh(callback);
     }
 
+    void ShaderRenderStage::PostUpdate() {
+        for (auto&& [VBO, pVBOStage] : m_VBOStages) {
+            pVBOStage->PostUpdate();
+        }
+
+        if (m_meshStage) {
+            m_meshStage->PostUpdate();
+        }
+
+        Super::PostUpdate();
+    }
+
     /// ----------------------------------------------------------------------------------------------------------------
+
+    IRenderStage::IRenderStage(RenderStrategy *pRenderStrategy, IRenderStage *pParent)
+        : Super()
+        , m_parent(pParent)
+        , m_renderStrategy(pRenderStrategy)
+        , m_renderContext(pRenderStrategy->GetRenderContext())
+    { }
 
     RenderContext* IRenderStage::GetRenderContext() const {
         return m_renderStrategy->GetRenderContext();
@@ -790,5 +856,9 @@ namespace SR_GRAPH_NS {
                 m_renderStrategy->AddProblemMesh(pMesh);
             });
         }
+    }
+
+    bool IRenderStage::IsNeedUpdate() const {
+        return m_uniformsDirty || !m_renderContext->IsOptimizedRenderUpdateEnabled();
     }
 }

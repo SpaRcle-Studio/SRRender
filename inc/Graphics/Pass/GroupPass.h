@@ -27,6 +27,7 @@ namespace SR_GRAPH_NS {
         bool PostRender() override;
 
         void Update() override;
+        void PostUpdate() override;
 
         void OnResize(const SR_MATH_NS::UVector2& size) override;
         void OnSamplesChanged() override;

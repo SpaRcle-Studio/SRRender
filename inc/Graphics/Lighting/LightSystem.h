@@ -26,7 +26,7 @@ namespace SR_GRAPH_NS {
         void Register(ILightComponent* pLightComponent);
         void Remove(ILightComponent* pLightComponent);
 
-        SR_NODISCARD SR_MATH_NS::FVector3 GetDirectionalLightPosition() const noexcept { return m_position; }
+        SR_NODISCARD const SR_MATH_NS::FVector3& GetDirectionalLightPosition() const noexcept { return m_position; }
 
     public:
         SR_MATH_NS::FVector3 m_position = SR_MATH_NS::FVector3(20, 60, 5);

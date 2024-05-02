@@ -79,6 +79,7 @@ namespace SR_GRAPH_NS {
 
         /// Вызывается постоянно после построения
         virtual void Update() { }
+        virtual void PostUpdate() { }
 
         virtual void OnResize(const SR_MATH_NS::UVector2& size) { }
         virtual void OnSamplesChanged() { }

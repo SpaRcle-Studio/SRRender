@@ -22,17 +22,20 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_GTYPES_NS::Mesh* GetMesh(SR_MATH_NS::FVector2 pos) const;
         SR_NODISCARD SR_MATH_NS::FColor GetColor(float_t x, float_t y) const;
         SR_NODISCARD uint32_t GetIndex(float_t x, float_t y) const;
-        SR_NODISCARD uint32_t GetColorIndex() const noexcept { return m_colorId; }
+        SR_NODISCARD uint32_t GetColorIndex() const noexcept;
         SR_NODISCARD SR_MATH_NS::FVector3 GetMeshColor() const noexcept;
 
     protected:
-        void SetMeshIndex(SR_GTYPES_NS::Mesh* pMesh, uint32_t colorId);
-        void IncrementColorIndex() noexcept { ++m_colorId; }
+        void ClearTable();
+        void SetMeshIndex(SR_GTYPES_NS::Mesh* pMesh);
+        void IncrementColorIndex() noexcept;
         void ResetColorIndex() noexcept { m_colorId = 0; }
+        void SetColorMultiplier(uint32_t multiplier) { m_multiplier = SR_MAX(1, multiplier); }
 
     private:
         std::vector<SR_GTYPES_NS::Mesh*> m_table;
         uint32_t m_colorId = 0;
+        uint32_t m_multiplier = 1;
 
     };
 }

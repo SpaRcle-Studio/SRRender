@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS {
         SRAssert(IsEmpty());
     }
 
-    void RenderScene::Render() noexcept {
+    void RenderScene::Render() {
         SR_TRACY_ZONE_N("Render scene");
 
         PrepareFrame();
@@ -69,6 +69,7 @@ namespace SR_GRAPH_NS {
         }
 
         Update();
+        PostUpdate();
 
         if (!m_hasDrawData) {
             RenderBlackScreen();
@@ -157,13 +158,23 @@ namespace SR_GRAPH_NS {
         GetPipeline()->SetDirty(false);
     }
 
-    void RenderScene::Update() noexcept {
+    void RenderScene::Update() {
         SR_TRACY_ZONE_N("Update render");
 
         SR_RENDER_TECHNIQUES_CALL(Update)
     }
 
-    void RenderScene::Submit() noexcept {
+    void RenderScene::PostUpdate() {
+        SR_TRACY_ZONE_N("Post update render");
+
+        if (m_renderStrategy) {
+            m_renderStrategy->PostUpdate();
+        }
+
+        SR_RENDER_TECHNIQUES_CALL(PostUpdate)
+    }
+
+    void RenderScene::Submit() {
         SR_TRACY_ZONE_N("Submit frame");
 
         GetPipeline()->DrawFrame();
@@ -218,11 +229,13 @@ namespace SR_GRAPH_NS {
 
         m_currentSkeleton = nullptr;
 
-        m_context->UpdateFramebuffers();
+        m_context->PrepareFrame();
     }
 
     void RenderScene::PrepareRender() {
         SR_TRACY_ZONE;
+
+        GetPipeline()->SetCurrentRenderStrategy(m_renderStrategy.Get());
 
         if (m_debugRender) {
             m_debugRender->Prepare();

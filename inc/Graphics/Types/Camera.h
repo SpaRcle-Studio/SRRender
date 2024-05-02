@@ -54,6 +54,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetOrthogonal() const noexcept { return m_orthogonal; }
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetViewTranslate() const noexcept { return m_viewTranslateMat; }
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetProjection() const noexcept { return m_projection; }
+        SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetProjectionNoFOV() const noexcept { return m_projectionNoFOV; }
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Quaternion& GetRotation() const noexcept { return m_rotation; }
         SR_NODISCARD SR_FORCE_INLINE SR_MATH_NS::UVector2 GetSize() const { return m_viewportSize; }
         SR_NODISCARD SR_FORCE_INLINE SR_MATH_NS::FVector3 GetViewPosition() const;
@@ -111,12 +112,13 @@ namespace SR_GTYPES_NS {
         float_t m_far = 750.f;
         float_t m_near = 0.01f;
         float_t m_aspect = 1.f;
-        float_t m_FOV = 90.f;
+        float_t m_FOV = 70.f;
 
         bool m_hasErrors = false;
         bool m_isRegistered = false;
 
         SR_MATH_NS::Matrix4x4 m_projection;
+        SR_MATH_NS::Matrix4x4 m_projectionNoFOV;
         SR_MATH_NS::Matrix4x4 m_viewTranslateMat;
         SR_MATH_NS::Matrix4x4 m_viewMat;
         SR_MATH_NS::Matrix4x4 m_orthogonal;

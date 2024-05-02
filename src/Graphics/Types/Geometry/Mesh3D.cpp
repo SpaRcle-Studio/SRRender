@@ -110,7 +110,7 @@ namespace SR_GTYPES_NS {
 
         ReRegisterMesh();
 
-        m_dirtyMaterial = true;
+        MarkMaterialDirty();
         m_isCalculated = false;
     }
 

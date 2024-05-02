@@ -200,17 +200,13 @@ namespace SR_GTYPES_NS {
     }
 
     void ITextComponent::OnEnable() {
-        if (auto&& renderScene = TryGetRenderScene()) {
-            renderScene->SetDirty();
-        }
-        Component::OnEnable();
+        IRenderComponent::OnEnable();
+        MarkUniformsDirty();
     }
 
     void ITextComponent::OnDisable() {
-        if (auto&& renderScene = TryGetRenderScene()) {
-            renderScene->SetDirty();
-        }
-        Component::OnDisable();
+        IRenderComponent::OnDisable();
+        MarkUniformsDirty();
     }
 
     void ITextComponent::OnAttached() {

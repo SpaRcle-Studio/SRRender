@@ -16,6 +16,8 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    class RenderStrategy;
+
     struct SRFrameBufferCreateInfo {
         SR_MATH_NS::IVector2 size;
         int32_t* pFBO = nullptr;
@@ -94,6 +96,8 @@ namespace SR_GRAPH_NS {
         int32_t frameBufferId = SR_ID_INVALID;
 
         uint32_t frameBufferLayer = SR_ID_INVALID;
+
+        RenderStrategy* pRenderStrategy = nullptr;
 
         /// Количество вызовов Draw и подобное
         mutable uint32_t drawCalls = 0;

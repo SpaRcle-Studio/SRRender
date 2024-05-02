@@ -124,7 +124,7 @@ namespace SR_GTYPES_NS {
 
     void ProceduralMesh::SetDirtyMesh() {
         m_isCalculated = false;
-        m_dirtyMaterial = true;
+        MarkMaterialDirty();
 
         if (auto&& renderScene = TryGetRenderScene()) {
             renderScene->SetDirty();

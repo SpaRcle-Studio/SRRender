@@ -77,6 +77,7 @@ namespace SR_GRAPH_NS {
         if (pShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
             pShader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, m_camera->GetView());
             pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
+            pShader->SetMat4(SHADER_PROJECTION_NO_FOV_MATRIX, m_camera->GetProjectionNoFOV());
             pShader->EndSharedUBO();
         }
         else {

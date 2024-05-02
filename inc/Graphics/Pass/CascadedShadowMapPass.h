@@ -22,6 +22,7 @@ namespace SR_GRAPH_NS {
     protected:
         void UseConstants(ShaderUseInfo info) override;
         void UseUniforms(ShaderUseInfo info, MeshPtr pMesh) override;
+        void UseSharedUniforms(ShaderUseInfo info) override;
 
         bool CheckCamera();
         void UpdateCascades();

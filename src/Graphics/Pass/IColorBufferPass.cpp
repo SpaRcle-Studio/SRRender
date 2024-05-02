@@ -38,7 +38,7 @@ namespace SR_GRAPH_NS {
             static_cast<int32_t>(color.x),
             static_cast<int32_t>(color.y),
             static_cast<int32_t>(color.z)
-        ));
+        )) / m_multiplier;
 
         if (colorIndex > m_table.size() || colorIndex == 0) {
             return nullptr;
@@ -56,17 +56,13 @@ namespace SR_GRAPH_NS {
             static_cast<int32_t>(color.z)
         ));
 
-        return colorIndex;
+        return colorIndex / m_multiplier;
     }
 
-    void IColorBufferPass::SetMeshIndex(SR_GTYPES_NS::Mesh* pMesh, uint32_t colorId) {
-        /// 0 - черный цвет, отсутствие мешей
-        if (colorId == 0) {
-            SRHalt("IColorBufferPass::SetMeshIndex() : invalid index!");
-            return;
-        }
+    void IColorBufferPass::SetMeshIndex(SR_GTYPES_NS::Mesh* pMesh) {
+        uint64_t colorIndex = m_colorId / m_multiplier;
 
-        if (m_colorId - 1 >= m_table.size()) {
+        if (colorIndex - 1 >= m_table.size()) {
             if (m_table.empty()) {
                 m_table.resize(32);
             }
@@ -75,7 +71,7 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        m_table[m_colorId - 1] = pMesh;
+        m_table[colorIndex - 1] = pMesh;
     }
 
     SR_MATH_NS::FVector3 IColorBufferPass::GetMeshColor() const noexcept {
@@ -84,5 +80,17 @@ namespace SR_GRAPH_NS {
 
     SR_GTYPES_NS::Mesh* IColorBufferPass::GetMesh(SR_MATH_NS::FVector2 pos) const {
         return GetMesh(pos.x, pos.y);
+    }
+
+    void IColorBufferPass::ClearTable() {
+        memset(m_table.data(), 0, m_table.size() * sizeof(SR_GTYPES_NS::Mesh*));
+    }
+
+    void IColorBufferPass::IncrementColorIndex() noexcept {
+        m_colorId += m_multiplier;
+    }
+
+    uint32_t IColorBufferPass::GetColorIndex() const noexcept {
+        return m_colorId;
     }
 }

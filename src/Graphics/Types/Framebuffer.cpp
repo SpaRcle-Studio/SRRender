@@ -81,8 +81,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (!Update()) {
-            SR_ERROR("Framebuffer::Bind() : failed to initialize framebuffer!");
+        if (!IsCalculated() || m_dirty) {
             return false;
         }
 
@@ -223,8 +222,8 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        if ((!IsCalculated() || m_dirty) && !Update()) SR_UNLIKELY_ATTRIBUTE {
-            SR_ERROR("Framebuffer::GetId() : failed to initialize framebuffer!");
+        if (!IsCalculated() || m_dirty) {
+            return SR_ID_INVALID;
         }
 
         return m_frameBuffer;
@@ -237,8 +236,8 @@ namespace SR_GTYPES_NS {
     int32_t Framebuffer::GetColorTexture(uint32_t layer) {
         SR_TRACY_ZONE;
 
-        if ((!IsCalculated() || m_dirty) && !Update()) {
-            SR_ERROR("Framebuffer::GetColorTexture() : failed to initialize framebuffer!");
+        if (!IsCalculated() || m_dirty) {
+            return SR_ID_INVALID;
         }
 
         if (layer >= m_colors.size() || m_hasErrors) {
@@ -275,8 +274,8 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        if ((!IsCalculated() || m_dirty) && !Update()) {
-            SR_ERROR("Framebuffer::GetDepthTexture() : failed to initialize framebuffer!");
+        if (!IsCalculated() || m_dirty) {
+            return SR_ID_INVALID;
         }
 
         if (layer < 0) {
@@ -301,10 +300,6 @@ namespace SR_GTYPES_NS {
 
         if (m_pipeline) {
             m_pipeline->SetDirty(true);
-        }
-
-        if (m_renderContext) {
-            m_renderContext->GarbageCollect();
         }
     }
 

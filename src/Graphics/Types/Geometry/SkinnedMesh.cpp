@@ -96,6 +96,8 @@ namespace SR_GTYPES_NS {
     }
 
     void SkinnedMesh::Update(float dt) {
+        MarkUniformsDirty();
+
         const bool usable = IsSkeletonUsable();
 
         if (m_skeletonIsBroken && !usable) {
@@ -205,7 +207,7 @@ namespace SR_GTYPES_NS {
 
         ReRegisterMesh();
 
-        m_dirtyMaterial = true;
+        MarkMaterialDirty();
         m_isCalculated = false;
     }
 
