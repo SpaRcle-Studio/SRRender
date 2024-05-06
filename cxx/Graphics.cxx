@@ -98,7 +98,7 @@
     #include "../src/Graphics/Pipeline/Vulkan/VulkanKernel.cpp"
 
     #if defined(SR_LINUX)
-        #include "../src/Graphics/Pipeline/Vulkan/X11SurfaceInit.cpp"
+        //#include "../src/Graphics/Pipeline/Vulkan/X11SurfaceInit.cpp"
     #endif
 
     #if defined(SR_USE_IMGUI)
@@ -119,5 +119,6 @@
 #endif
 
 #if defined(SR_LINUX)
-    #include "../src/Graphics/Window/X11Window.cpp"
+    //#include "../src/Graphics/Window/X11Window.cpp"
+    #include "../src/Graphics/Window/GLFWWindow.cpp"
 #endif

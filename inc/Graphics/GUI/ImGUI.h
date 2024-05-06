@@ -30,7 +30,7 @@
     #endif
 
     #ifdef SR_LINUX
-        #include <imgui/examples/imgui_impl_x11.h>
+        #include <backends/imgui_impl_glfw.h>
     #endif
 
     #ifdef SR_USE_VULKAN

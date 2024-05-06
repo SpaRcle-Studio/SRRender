@@ -13,6 +13,12 @@ message("$ENV{VULKAN_SDK}")
 
 find_package(Vulkan REQUIRED)
 
+if (UNIX AND NOT APPLE)
+    add_subdirectory(libs/glfw)
+    include_directories(libs/glfw/include)
+endif()
+
+set(EVO_VULKAN_USE_OWN_GLFW OFF)
 add_subdirectory(libs/EvoVulkan/Core)
 
 if (ANDROID_NDK)
@@ -76,6 +82,11 @@ if (UNIX AND NOT APPLE)
 endif()
 
 target_link_libraries(Graphics CMP_Core freetype)
+
+if (UNIX AND NOT APPLE)
+    target_link_libraries(Graphics glfw)
+    #target_include_directories(Graphics PUBLIC libs/glfw/include)
+endif()
 
 if (EVO_VULKAN_STATIC_LIBRARY)
     target_link_libraries(Graphics EvoVulkan)

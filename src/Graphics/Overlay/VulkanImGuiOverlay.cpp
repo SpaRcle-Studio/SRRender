@@ -202,8 +202,10 @@ namespace SR_GRAPH_NS {
         auto&& pWindow = m_pipeline->GetWindow();
         ImGui_ImplWin32_Init((HWND)pWindow->GetHandle());
     #elif defined(SR_LINUX)
-        auto&& pWindow = m_pipeline->GetWindow();
-        ImGui_ImplX11_Init(pWindow->GetImplementation<X11Window>()->GetWindow());
+        //auto&& pWindow = m_pipeline->GetWindow();
+        //ImGui_ImplX11_Init(pWindow->GetImplementation<X11Window>()->GetWindow());
+
+        //ImGui_ImplGlfw_InitForVulkan()
     #else
         SRHalt("Unsupported platform!");
     #endif
@@ -298,7 +300,7 @@ namespace SR_GRAPH_NS {
             ImGui_ImplWin32_Shutdown();
         #endif
         #ifdef SR_LINUX
-            ImGui_ImplX11_Shutdown();
+            //ImGui_ImplX11_Shutdown();
         #endif
         }
 
@@ -326,7 +328,7 @@ namespace SR_GRAPH_NS {
         #endif
 
         #ifdef SR_LINUX
-            ImGui_ImplX11_NewFrame();
+            //ImGui_ImplX11_NewFrame();
         #endif
 
         ImGui::NewFrame();
@@ -399,7 +401,9 @@ namespace SR_GRAPH_NS {
         platform_io.Platform_CreateVkSurface = CreatePlatformSurface;
 
     #ifdef SR_WIN32
-        ImGui_Platform_CreateWindow = ImGui_ImplWin32_CreateWindow;
+        //ImGui_Platform_CreateWindow = ImGui_ImplWin32_CreateWindow;
+    #elifdef SR_LINUX
+        SRHalt("Not yet implemented!");
     #else
         SRHalt("Unsupported platform!");
     #endif

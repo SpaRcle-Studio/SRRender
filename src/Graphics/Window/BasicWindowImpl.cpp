@@ -10,7 +10,8 @@
 #elif defined(SR_ANDROID)
     #include <Graphics/Window/AndroidWindow.h>
 #elif defined(SR_LINUX)
-    #include <Graphics/Window/X11Window.h>
+    //#include <Graphics/Window/X11Window.h>
+    #include <Graphics/Window/GLFWWindow.h>
 #endif
 
 namespace SR_GRAPH_NS {
@@ -70,13 +71,15 @@ namespace SR_GRAPH_NS {
     #elif defined (SR_LINUX)
         switch (type) {
             case WindowType::Auto:
+            case WindowType::GLFW:
+                return new GLFWWindow();
             case WindowType::X11:
-                return new X11Window();
+                //return new X11Window();
             default:
                 break;
         }
 
-        SR_ERROR("BasicWindowImpl::CreatePlatformWindow() : Linux OS does not yet support \"" +
+        SR_ERROR("BasicWindowImpl::CreatePlatformWindow() : implementation does not yet support \"" +
                  SR_UTILS_NS::EnumReflector::ToStringAtom(type).ToStringRef() + "\" window!"
         );
     #else

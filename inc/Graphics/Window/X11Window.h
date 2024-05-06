@@ -10,7 +10,7 @@
 #include <xcb/xcb.h>
 
 namespace SR_GRAPH_NS {
-    class X11Window : public BasicWindowImpl {
+/*    class X11Window : public BasicWindowImpl {
         using Super = BasicWindowImpl;
     public:
         explicit X11Window()
@@ -28,6 +28,8 @@ namespace SR_GRAPH_NS {
         void PollEvents() override;
 
         xcb_intern_atom_reply_t* ChangeWMProperty(const std::string& atomName);
+        xcb_intern_atom_reply_t* ChangeAtom(const std::string& propertyName, const std::string& atomName);
+        std::vector<xcb_intern_atom_reply_t*> ChangeAtoms(const std::string& propertyName, const std::vector<std::string>& atomNames);
 
         void Close() override;
         //void Maximize() override;
@@ -58,7 +60,7 @@ namespace SR_GRAPH_NS {
 
         xcb_intern_atom_reply_t* m_deleteWindowReply = nullptr;
         xcb_intern_atom_reply_t* m_wmProtocols = nullptr;
-    };
+    };*/
 }
 
 #endif //SR_ENGINE_X11WINDOW_H

@@ -15,7 +15,8 @@
 #endif
 
 #ifdef SR_LINUX
-    #include <Graphics/Pipeline/Vulkan/X11SurfaceInit.h>
+    #include <GLFW/glfw3.h>
+    //#include <Graphics/Pipeline/Vulkan/X11SurfaceInit.h>
 #endif
 
 #include <EvoVulkan/Types/VmaBuffer.h>
@@ -106,6 +107,8 @@ namespace SR_GRAPH_NS {
         m_kernel->SetSwapchainImagesCount(2);
 
         std::vector<const char*>&& validationLayers = { };
+
+#ifndef SR_LINUX
         std::vector<const char*>&& instanceExtensions = {
             VK_KHR_SURFACE_EXTENSION_NAME,
             VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
@@ -113,9 +116,6 @@ namespace SR_GRAPH_NS {
             /// VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME,
         #ifdef SR_WIN32
             VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-        #endif
-        #ifdef SR_LINUX
-            X11SurfaceInit::GetSurfaceExtensionName(),
         #endif
         #ifdef SR_ANDROID
             #ifdef VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
@@ -125,6 +125,20 @@ namespace SR_GRAPH_NS {
             #endif
         #endif
         };
+#else
+        uint32_t count = 0;
+        auto&& glfwInstanceExtensions = glfwGetRequiredInstanceExtensions(&count);
+
+        if (!glfwInstanceExtensions) {
+            PipelineError("VulkanPipeline::PreInit() : failed to get required instance extensions!");
+            return false;
+        }
+
+        std::vector<const char*>&& instanceExtensions = { };
+        for (uint32_t i = 0; i < count; ++i) {
+            instanceExtensions.emplace_back(glfwInstanceExtensions[i]);
+        }
+#endif //SR_LINUX
 
         if (m_enableValidationLayers) {
             instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -196,12 +210,28 @@ namespace SR_GRAPH_NS {
                 return VK_NULL_HANDLE;
             }
         #elif defined(SR_LINUX)
-            if (auto&& surface = X11SurfaceInit::Init(m_window, instance)) {
+/*            if (auto&& surface = X11SurfaceInit::Init(m_window, instance)) {
                 return surface;
             }
 
             PipelineError("VulkanPipeline::Init() : X11 surface initialization failed!");
-            return VK_NULL_HANDLE;
+            return VK_NULL_HANDLE;*/
+
+            if (auto&& pImpl = m_window->GetImplementation<GLFWWindow>()) {
+                VkSurfaceKHR surface;
+                VkResult error = glfwCreateWindowSurface(instance, pImpl->GetWindow(), nullptr, &surface);
+                if (error) {
+                    PipelineError("VulkanPipeline::Init() : GLFW window surface initialization failed!");
+                    return VK_NULL_HANDLE;
+                }
+
+                return surface;
+            }
+            else {
+                PipelineError("VulkanPipeline::Init() : failed to get window implementation!");
+                return VK_NULL_HANDLE;
+            }
+
         #else
             SRHalt("Unsupported platform!");
             return VK_NULL_HANDLE;
