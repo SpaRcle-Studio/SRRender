@@ -483,7 +483,7 @@ namespace SR_GRAPH_NS {
         }
 
         for (auto&& pRenderTechnique : m_techniques) {
-            pRenderTechnique->OnSamplesChanged();
+            pRenderTechnique->OnMultisampleChanged();
         }
     }
 

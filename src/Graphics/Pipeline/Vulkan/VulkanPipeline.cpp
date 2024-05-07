@@ -1519,7 +1519,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (!IsSamplerValid(static_cast<int32_t>(textureId))) {
-            PipelineError("VulkanPipeline::BindTexture() : texture is not exists!");
+            PipelineError("VulkanPipeline::BindTexture() : texture is not exists! Id: " + SR_UTILS_NS::ToString(textureId));
             return;
         }
 

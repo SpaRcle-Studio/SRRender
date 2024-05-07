@@ -37,13 +37,13 @@ namespace SR_GRAPH_NS {
         }
 
         if (GetPassPipeline()->GetCurrentBuildIteration() == 0) {
-            UseSamplers();
+            UseSamplers(ShaderUseInfo(m_shader));
         }
 
         m_uboManager.BindUBO(m_virtualUBO);
 
         if (DescriptorManager::Instance().Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
-            GetPassPipeline()->Draw(3);
+            GetPassPipeline()->Draw(m_vertices);
         }
 
         m_shader->UnUse();
@@ -72,6 +72,9 @@ namespace SR_GRAPH_NS {
 
             m_shader->EndSharedUBO();
         }
+        else {
+            return;
+        }
 
         if (m_uboManager.BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Duplicated) {
             SR_ERROR("PostProcessPass::Update() : memory has been duplicated!");
@@ -84,6 +87,9 @@ namespace SR_GRAPH_NS {
 
     bool PostProcessPass::Load(const SR_XML_NS::Node& passNode) {
         auto&& path = passNode.GetAttribute("Shader").ToString();
+
+        m_vertices = passNode.TryGetAttribute("Vertices").ToUInt(3);
+
         if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path)) {
             SetShader(pShader);
         }
@@ -92,25 +98,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_attachments.clear();
-
-        if (auto&& attachmentsNode = passNode.TryGetNode("Attachments")) {
-            for (auto&& attachmentNode : attachmentsNode.TryGetNodes("Attachment")) {
-                Attachment attachment = Attachment();
-                attachment.fboName = attachmentNode.GetAttribute("FBO").ToString();
-                attachment.id = attachmentNode.GetAttribute("Id").ToString();
-
-                if (auto&& depthAttribute = attachmentNode.TryGetAttribute("Depth")) {
-                    attachment.depth = depthAttribute.ToBool();
-                }
-
-                if (!attachment.depth) {
-                    attachment.index = attachmentNode.GetAttribute("Index").ToUInt64();
-                }
-
-                m_attachments.emplace_back(attachment);
-            }
-        }
+        ISamplersPass::LoadSamplersPass(passNode);
 
         return Super::Load(passNode);
     }
@@ -145,34 +133,6 @@ namespace SR_GRAPH_NS {
         Super::DeInit();
     }
 
-    void PostProcessPass::UseSamplers() {
-        for (auto&& attachment : m_attachments) {
-            if (!attachment.pFBO) {
-                auto&& pFrameBufferController = GetTechnique()->GetFrameBufferController(attachment.fboName);
-                if (pFrameBufferController) {
-                    attachment.pFBO = pFrameBufferController->GetFramebuffer();
-                }
-            }
-
-            uint32_t textureId = SR_ID_INVALID;
-
-            if (attachment.pFBO) {
-                if (attachment.depth) {
-                    textureId = attachment.pFBO->GetDepthTexture();
-                }
-                else {
-                    textureId = attachment.pFBO->GetColorTexture(attachment.index);
-                }
-            }
-
-            if (textureId == SR_ID_INVALID) {
-                textureId = GetContext()->GetDefaultTexture()->GetId();
-            }
-
-            m_shader->SetSampler2D(attachment.id, textureId);
-        }
-    }
-
     void PostProcessPass::OnResourceUpdated(SR_UTILS_NS::ResourceContainer *pContainer, int32_t depth) {
         if (dynamic_cast<SR_GTYPES_NS::Shader*>(pContainer) == m_shader && m_shader) {
             m_dirtyShader = true;
@@ -186,8 +146,18 @@ namespace SR_GRAPH_NS {
         Super::OnResize(size);
     }
 
-    void PostProcessPass::OnSamplesChanged() {
+    void PostProcessPass::OnMultisampleChanged() {
         m_dirtyShader = true;
-        BasePass::OnSamplesChanged();
+        Super::OnMultisampleChanged();
+    }
+
+    void PostProcessPass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
+        ISamplersPass::SetISamplerRenderTechnique(pRenderTechnique);
+        Super::SetRenderTechnique(pRenderTechnique);
+    }
+
+    void PostProcessPass::Prepare() {
+        PrepareSamplers();
+        Super::Prepare();
     }
 }

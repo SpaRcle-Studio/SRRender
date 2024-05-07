@@ -152,12 +152,20 @@ namespace SR_SRSL_NS {
             return;
         }
 
+        if (pExpr->token == ".") {
+            AnalyzeExpression(pUseStack, stack, pExpr->args[0]);
+            return;
+        }
+
         if (pExpr->token == "=") {
             if (pExpr->args[0]->isArray) {
                 AnalyzeArrayExpression(pUseStack, stack, pExpr->args[0]);
             }
             else {
                 SRAssert(!pExpr->args[0]->token.empty());
+                if (pExpr->args[0]->token == ".") {
+                    return AnalyzeExpression(pUseStack, stack, pExpr->args[0]);
+                }
                 pUseStack->variables.insert(pExpr->args[0]->token);
             }
             return AnalyzeExpression(pUseStack, stack, pExpr->args[1]);

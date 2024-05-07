@@ -119,12 +119,12 @@ namespace SR_GRAPH_NS {
         return false;
     }
 
-    void SSAOPass::UseSamplers() {
+    void SSAOPass::UseSamplers(ShaderUseInfo info) {
         if (m_shader && m_noise) {
             m_shader->SetSampler2D(SHADER_SSAO_NOISE, m_noise);
         }
 
-        PostProcessPass::UseSamplers();
+        PostProcessPass::UseSamplers(info);
     }
 
     bool SSAOPass::Load(const SR_XML_NS::Node& passNode) {
@@ -136,7 +136,7 @@ namespace SR_GRAPH_NS {
         PostProcessPass::OnResize(size);
     }
 
-    std::vector<SR_GTYPES_NS::Framebuffer *> SSAOPass::GetFrameBuffers() const {
+    std::vector<SR_GTYPES_NS::Framebuffer*> SSAOPass::GetFrameBuffers() const {
         if (!GetFramebuffer()) {
             return std::vector<SR_GTYPES_NS::Framebuffer*>();
         }

@@ -138,7 +138,7 @@ namespace SR_SRSL_NS {
         if (isOutPositionUsed) {
             postCode += GenerateTab(1) + "gl_Position = OUT_POSITION;\n";
         }
-        else {
+        else if (!vertexInfo.m_names.empty()) {
             postCode += GenerateTab(1) + "gl_Position = vec4(VERTEX, 1.0);\n";
         }
 

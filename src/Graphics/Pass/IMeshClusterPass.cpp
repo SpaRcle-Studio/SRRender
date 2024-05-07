@@ -88,10 +88,10 @@ namespace SR_GRAPH_NS {
         pShader->SetFloat(SHADER_TIME, time);
     }
 
-    void IMeshClusterPass::OnSamplesChanged() {
+    void IMeshClusterPass::OnMultisampleChanged() {
         m_dirtySamplers = true;
         m_needUpdateMeshes = true;
-        Super::OnSamplesChanged();
+        Super::OnMultisampleChanged();
     }
 
     void IMeshClusterPass::PrepareSamplers() {

@@ -27,7 +27,6 @@ namespace SR_GRAPH_NS {
     { }
 
     bool MeshDrawerPass::Load(const SR_XML_NS::Node& passNode) {
-        m_samplers.clear();
         m_allowedLayers.clear();
         m_disallowedLayers.clear();
 
@@ -121,38 +120,7 @@ namespace SR_GRAPH_NS {
 
         m_useMaterials = passNode.TryGetAttribute("UseMaterials").ToBool(true);
 
-        for (auto&& samplerNode : passNode.TryGetNodes("Sampler")) {
-            Sampler sampler = Sampler();
-
-            if (auto&& idNode = samplerNode.TryGetAttribute("Id")) {
-                sampler.id = idNode.ToString();
-            }
-            else {
-                continue;
-            }
-
-            if (auto&& fboNameNode = samplerNode.TryGetAttribute("FBO")) {
-                sampler.fboName = fboNameNode.ToString();
-
-                auto&& pFrameBufferController = GetTechnique()->GetFrameBufferController(sampler.fboName);
-                if (!pFrameBufferController) {
-                    if (!samplerNode.TryGetAttribute("Optional").ToBool(false)) {
-                        SR_ERROR("MeshDrawerPass::Load() : failed to find frame buffer controller!\n\tName: " + sampler.fboName.ToStringRef());
-                    }
-                    continue;
-                }
-
-                if (auto&& depthAttribute = samplerNode.TryGetAttribute("Depth")) {
-                    sampler.depth = depthAttribute.ToBool();
-                }
-
-                if (!sampler.depth) {
-                    sampler.index = samplerNode.TryGetAttribute("Index").ToUInt64(-1);
-                }
-            }
-
-            m_samplers.emplace_back(sampler);
-        }
+        ISamplersPass::LoadSamplersPass(passNode);
 
         return Super::Load(passNode);
     }
@@ -181,6 +149,14 @@ namespace SR_GRAPH_NS {
 
     void MeshDrawerPass::Prepare() {
         PrepareSamplers();
+
+        if (m_needUpdateMeshes && HasSamplers()) {
+            GetRenderStrategy()->ForEachMesh([](auto&& pMesh) {
+                pMesh->MarkMaterialDirty();
+            });
+        }
+        m_needUpdateMeshes = false;
+
         Super::Prepare();
     }
 
@@ -227,16 +203,6 @@ namespace SR_GRAPH_NS {
         info.pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 0);
     }
 
-    void MeshDrawerPass::UseSamplers(ShaderUseInfo info) {
-        for (auto&& sampler : m_samplers) {
-            if (sampler.textureId == SR_ID_INVALID) {
-                continue;
-            }
-
-            info.pShader->SetSampler2D(sampler.id, sampler.textureId);
-        }
-    }
-
     void MeshDrawerPass::Bind() {
         SR_TRACY_ZONE;
 
@@ -277,63 +243,15 @@ namespace SR_GRAPH_NS {
     }
 
     void MeshDrawerPass::OnResize(const SR_MATH_NS::UVector2& size) {
-        m_dirtySamplers = true;
+        MarkSamplersDirty();
         m_needUpdateMeshes = true;
         Super::OnResize(size);
     }
 
-    void MeshDrawerPass::OnSamplesChanged() {
-        m_dirtySamplers = true;
+    void MeshDrawerPass::OnMultisampleChanged() {
+        MarkSamplersDirty();
         m_needUpdateMeshes = true;
-        Super::OnSamplesChanged();
-    }
-
-    void MeshDrawerPass::PrepareSamplers() {
-        if (!m_dirtySamplers) {
-            return;
-        }
-
-        SR_TRACY_ZONE;
-
-        for (auto&& sampler : m_samplers) {
-            int32_t textureId = SR_ID_INVALID;
-
-            sampler.fboId = SR_ID_INVALID;
-
-            if (!sampler.fboName.Empty()) {
-                auto&& pFrameBufferController = GetTechnique()->GetFrameBufferController(sampler.fboName);
-                if (pFrameBufferController) {
-                    auto&& pFBO = pFrameBufferController->GetFramebuffer();
-
-                    sampler.fboId = pFBO->GetId();
-
-                    if (sampler.depth) {
-                        textureId = pFBO->GetDepthTexture();
-                    }
-                    else {
-                        textureId = pFBO->GetColorTexture(sampler.index);
-                    }
-                }
-            }
-
-            if (textureId == SR_ID_INVALID && !sampler.depth) {
-                textureId = GetContext()->GetDefaultTexture()->GetId();
-            }
-
-            if (textureId != sampler.textureId) {
-                m_needUpdateMeshes = true;
-                sampler.textureId = textureId;
-            }
-        }
-
-        if (m_needUpdateMeshes && !m_samplers.empty()) {
-            GetRenderStrategy()->ForEachMesh([](auto&& pMesh) {
-               pMesh->MarkMaterialDirty();
-            });
-            m_needUpdateMeshes = false;
-        }
-
-        m_dirtySamplers = false;
+        Super::OnMultisampleChanged();
     }
 
     void MeshDrawerPass::ClearOverrideShaders() {
@@ -362,5 +280,15 @@ namespace SR_GRAPH_NS {
         m_shadowMapPass = GetTechnique()->FindPass<ShadowMapPass>();
         m_cascadedShadowMapPass = GetTechnique()->FindPass<CascadedShadowMapPass>();
         return Super::Init();
+    }
+
+    void MeshDrawerPass::OnSamplersChanged() {
+        m_needUpdateMeshes = true;
+        ISamplersPass::OnSamplersChanged();
+    }
+
+    void MeshDrawerPass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
+        ISamplersPass::SetISamplerRenderTechnique(pRenderTechnique);
+        Super::SetRenderTechnique(pRenderTechnique);
     }
 }

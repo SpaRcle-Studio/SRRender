@@ -6,6 +6,7 @@
 #define SR_ENGINE_MESH_DRAWER_PASS_H
 
 #include <Graphics/Pass/BasePass.h>
+#include <Graphics/Pass/ISamplersPass.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/SRSL/ShaderType.h>
 
@@ -15,7 +16,7 @@ namespace SR_GRAPH_NS {
     class CascadedShadowMapPass;
     class ShadowMapPass;
 
-    class MeshDrawerPass : public BasePass {
+    class MeshDrawerPass : public BasePass, public ISamplersPass {
         SR_REGISTER_LOGICAL_NODE(MeshDrawerPass, Mesh Drawer Pass, { "Passes" })
         using Super = BasePass;
         struct Sampler {
@@ -47,14 +48,14 @@ namespace SR_GRAPH_NS {
         virtual void UseUniforms(ShaderUseInfo info, MeshPtr pMesh);
         virtual void UseSharedUniforms(ShaderUseInfo info);
         virtual void UseConstants(ShaderUseInfo info);
-        virtual void UseSamplers(ShaderUseInfo info);
 
     protected:
         void OnResize(const SR_MATH_NS::UVector2& size) override;
-        void OnSamplesChanged() override;
+        void OnMultisampleChanged() override;
+        void OnSamplersChanged() override;
+        void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
 
     private:
-        void PrepareSamplers();
         void ClearOverrideShaders();
 
         ShaderUseInfo ReplaceShader(ShaderPtr pShader) const;
@@ -65,16 +66,11 @@ namespace SR_GRAPH_NS {
 
     private:
         bool m_useMaterials = true;
-
         bool m_passWasRendered = false;
-
-        bool m_dirtySamplers = true;
         bool m_needUpdateMeshes = false;
 
         ShadowMapPass* m_shadowMapPass = nullptr;
         CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;
-
-        Samplers m_samplers;
 
         SR_HTYPES_NS::Time& m_time;
 

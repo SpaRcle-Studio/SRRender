@@ -16,6 +16,7 @@ namespace SR_GRAPH_NS {
     BasePass::BasePass()
         : Super()
         , m_uboManager(Memory::UBOManager::Instance())
+        , m_descriptorManager(DescriptorManager::Instance())
     { }
 
     bool BasePass::Load(const SR_XML_NS::Node &passNode) {

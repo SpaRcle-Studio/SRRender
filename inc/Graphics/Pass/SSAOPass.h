@@ -25,9 +25,9 @@ namespace SR_GRAPH_NS {
 
         void OnResize(const SR_MATH_NS::UVector2& size) override;
 
-        bool Load(const SR_XML_NS::Node &passNode) override;
+        bool Load(const SR_XML_NS::Node& passNode) override;
 
-        void UseSamplers() override;
+        void UseSamplers(ShaderUseInfo info) override;
 
         SR_NODISCARD std::vector<SR_GTYPES_NS::Framebuffer*> GetFrameBuffers() const override;
 

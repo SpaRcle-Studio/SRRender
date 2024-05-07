@@ -37,7 +37,7 @@ namespace SR_GRAPH_NS {
         void Update() override;
 
         void OnResize(const SR_MATH_NS::UVector2& size) override;
-        void OnSamplesChanged() override;
+        void OnMultisampleChanged() override;
 
     protected:
         SR_NODISCARD virtual MeshClusterTypeFlag GetClusterType() const noexcept;

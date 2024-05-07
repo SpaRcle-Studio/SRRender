@@ -36,21 +36,25 @@ namespace SR_GRAPH_NS::Types {
 
         auto&& pContext = SR_THIS_THREAD->GetContext()->GetValue<SR_HTYPES_NS::SafePtr<RenderContext>>();
         if (!pContext) {
-            SRHalt("Is not render context!");
+            SRHalt("Render context is nullptr!");
             m_hasErrors = true;
             return false;
         }
 
-        if (!m_isRegistered && pContext.LockIfValid()) {
+        if (pContext.LockIfValid()) {
             for (auto&& [hashName, sampler] : m_samplers) {
                 if (sampler.isAttachment || sampler.isArray) {
                     continue;
                 }
                 sampler.samplerId = pContext->GetDefaultTexture()->GetId();
             }
-            pContext->Register(this);
+
+            if (!m_isRegistered) {
+                pContext->Register(this);
+                m_isRegistered = true;
+            }
+
             pContext.Unlock();
-            m_isRegistered = true;
         }
 
         if (!m_shaderCreateInfo.Validate()) {
@@ -537,12 +541,14 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Shader::BeginSharedUBO() {
+        if (m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
+
         if (m_sharedUBOMode) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("Shared UBO mode is already enabled!");
             return false;
         }
-
-        m_sharedUBOMode = true;
 
         if (m_uniformSharedBlock.m_memory) SR_LIKELY_ATTRIBUTE {
             memset(m_uniformSharedBlock.m_memory, 1, m_uniformSharedBlock.m_size);
@@ -572,6 +578,8 @@ namespace SR_GRAPH_NS::Types {
                 return false;
             }
         }
+
+        m_sharedUBOMode = true;
 
         return true;
     }

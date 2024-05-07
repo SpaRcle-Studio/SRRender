@@ -172,8 +172,8 @@ namespace SR_GRAPH_NS {
         GroupPass::OnResize(size);
     }
 
-    void IRenderTechnique::OnSamplesChanged() {
-        GroupPass::OnSamplesChanged();
+    void IRenderTechnique::OnMultisampleChanged() {
+        GroupPass::OnMultisampleChanged();
     }
 
     IRenderTechnique::FrameBufferControllerPtr IRenderTechnique::GetFrameBufferController(SR_UTILS_NS::StringAtom name) const {

@@ -18,6 +18,7 @@
 #include <Utils/SRLM/Utils.h>
 
 #include <Graphics/Memory/UBOManager.h>
+#include <Graphics/Memory/DescriptorManager.h>
 
 namespace SR_GTYPES_NS {
     class Camera;
@@ -82,7 +83,7 @@ namespace SR_GRAPH_NS {
         virtual void PostUpdate() { }
 
         virtual void OnResize(const SR_MATH_NS::UVector2& size) { }
-        virtual void OnSamplesChanged() { }
+        virtual void OnMultisampleChanged() { }
 
         virtual void SR_FASTCALL OnMeshAdded(SR_GTYPES_NS::Mesh* pMesh, bool transparent) { }
         virtual void SR_FASTCALL OnMeshRemoved(SR_GTYPES_NS::Mesh* pMesh, bool transparent) { }
@@ -105,6 +106,7 @@ namespace SR_GRAPH_NS {
     protected:
         CameraPtr m_camera = nullptr;
         Memory::UBOManager& m_uboManager;
+        DescriptorManager& m_descriptorManager;
 
     private:
         BasePass* m_parent = nullptr;

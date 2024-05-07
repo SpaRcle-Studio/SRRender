@@ -56,7 +56,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsEmpty() const;
 
         void OnResize(const SR_MATH_NS::UVector2& size) override;
-        void OnSamplesChanged() override;
+        void OnMultisampleChanged() override;
 
         SR_NODISCARD FrameBufferControllerPtr GetFrameBufferController(SR_UTILS_NS::StringAtom name) const;
 

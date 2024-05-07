@@ -6,6 +6,7 @@
 #define GAMEENGINE_TEXTURE_H
 
 #include <Utils/Resources/IResource.h>
+#include <Utils/Types/SafePointer.h>
 
 #include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Memory/TextureConfigs.h>
