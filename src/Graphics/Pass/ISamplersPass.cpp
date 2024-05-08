@@ -74,6 +74,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        m_dirtySamplers = false;
+
         bool needUpdate = false;
 
         for (auto&& sampler : m_samplers) {
@@ -88,11 +90,20 @@ namespace SR_GRAPH_NS {
 
                     sampler.fboId = pFBO->GetId();
 
-                    if (sampler.depth) {
-                        textureId = pFBO->GetDepthTexture();
+                    if (sampler.fboId != SR_ID_INVALID) {
+                        if (sampler.depth) {
+                            textureId = pFBO->GetDepthTexture();
+                        }
+                        else {
+                            textureId = pFBO->GetColorTexture(sampler.index);
+                        }
+
+                        if (textureId == SR_ID_INVALID) {
+                            m_dirtySamplers = true;
+                        }
                     }
                     else {
-                        textureId = pFBO->GetColorTexture(sampler.index);
+                        m_dirtySamplers = true;
                     }
                 }
             }
@@ -110,8 +121,6 @@ namespace SR_GRAPH_NS {
         if (needUpdate) {
             OnSamplersChanged();
         }
-
-        m_dirtySamplers = false;
     }
 
     void ISamplersPass::LoadSamplersPass(const SR_XML_NS::Node& passNode) {

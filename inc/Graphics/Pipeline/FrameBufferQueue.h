@@ -26,7 +26,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD bool Contains(FrameBuffer pFrameBuffer);
         SR_NODISCARD bool Contains(FrameBuffer pFrameBuffer, uint32_t layer);
-        SR_NODISCARD const std::vector<std::vector<FrameBuffer>>& GetQueues();
+        SR_NODISCARD const std::vector<std::vector<FrameBuffer>>& GetQueues() const;
 
     private:
         std::map<FrameBuffer, std::set<Layer>> m_used;

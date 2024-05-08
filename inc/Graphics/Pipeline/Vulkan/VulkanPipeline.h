@@ -110,6 +110,8 @@ namespace SR_GRAPH_NS {
         void ClearDepthBuffer(float_t depth) override;
         void ClearColorBuffer(const ClearColors& clearColors) override;
 
+        void ResetSubmitQueue() override;
+
         void UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) override;
         void UpdateUBO(uint32_t UBO, void* pData, uint64_t size) override;
 

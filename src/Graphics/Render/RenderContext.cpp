@@ -421,7 +421,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         for (auto&& pFrameBuffer : m_framebuffers) {
-            if (!pFrameBuffer->IsDirty()) {
+            if (!pFrameBuffer->IsDirty() && pFrameBuffer->IsCalculated()) {
                 continue;
             }
 

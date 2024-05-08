@@ -1323,6 +1323,9 @@ namespace SR_GRAPH_NS {
                     vkFrameBuffer->ClearWaitSemaphores();
                     vkFrameBuffer->ClearSignalSemaphores();
                 }
+                else {
+                    SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer id is invalid!");
+                }
             }
         }
 
@@ -1335,6 +1338,9 @@ namespace SR_GRAPH_NS {
                     auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
                     vkFrameBuffer->GetWaitSemaphores().emplace_back(m_kernel->GetPresentCompleteSemaphore());
                 }
+                else {
+                    SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer id is invalid!");
+                }
             }
 
             /// Если являемся концом цепочки, то нужно чтобы нас дождался рендер
@@ -1342,6 +1348,9 @@ namespace SR_GRAPH_NS {
                 if (auto&& fboId = pFrameBuffer->GetId(); fboId != SR_ID_INVALID) {
                     auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
                     m_kernel->GetWaitSemaphores().emplace_back(vkFrameBuffer->GetSemaphore());
+                }
+                else {
+                    SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer id is invalid!");
                 }
             }
         }
@@ -1356,6 +1365,7 @@ namespace SR_GRAPH_NS {
                     auto&& fboDependencyId = pDependency->GetId();
 
                     if (fboId == SR_ID_INVALID || fboDependencyId == SR_ID_INVALID) {
+                        SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer's or it's dependency's id is invalid!");
                         continue;
                     }
 
@@ -1376,6 +1386,7 @@ namespace SR_GRAPH_NS {
             for (auto&& pFrameBuffer : queue) {
                 auto&& fbId = pFrameBuffer->GetId();
                 if (fbId == SR_ID_INVALID) {
+                    SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer id is invalid!");
                     continue;
                 }
 
@@ -1807,5 +1818,12 @@ namespace SR_GRAPH_NS {
         }
 
         return (void*)m_memory->GetShaderProgram(shaderProgram)->GetPipeline();
+    }
+
+    void VulkanPipeline::ResetSubmitQueue() {
+        m_kernel->ClearSubmitQueue();
+        m_kernel->GetWaitSemaphores().emplace_back(m_kernel->GetPresentCompleteSemaphore());
+
+        Super::ResetSubmitQueue();
     }
 }

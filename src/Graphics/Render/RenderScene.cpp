@@ -64,8 +64,17 @@ namespace SR_GRAPH_NS {
         /// изменить данные отрисовки сцены и сломать уже нарисованную сцену
         Overlay();
 
-        if (IsDirty() || GetPipeline()->IsDirty()) {
+        auto&& pPipeline = GetPipeline();
+
+        if (IsDirty() || pPipeline->IsDirty()) {
             Build();
+            if (pPipeline->IsFBOQueueValid()) {
+                pPipeline->SetDirty(false);
+            }
+            else {
+                pPipeline->ResetSubmitQueue();
+                m_hasDrawData = false;
+            }
         }
 
         Update();
@@ -154,8 +163,6 @@ namespace SR_GRAPH_NS {
         m_dirty.Do([](uint32_t& data) {
             data = data > 1 ? 1 : 0;
         });
-
-        GetPipeline()->SetDirty(false);
     }
 
     void RenderScene::Update() {

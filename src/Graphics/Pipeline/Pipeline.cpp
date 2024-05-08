@@ -432,4 +432,22 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
         m_window = pWindow;
     }
+
+    bool Pipeline::IsFBOQueueValid() const noexcept {
+        auto&& queues = m_fboQueue.GetQueues();
+
+        for (auto&& queue : queues) {
+            for (auto&& pFrameBuffer: queue) {
+                if (auto&& fboId = pFrameBuffer->GetId(); fboId == SR_ID_INVALID) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    void Pipeline::ResetSubmitQueue() {
+        ++m_state.operations;
+    }
 }

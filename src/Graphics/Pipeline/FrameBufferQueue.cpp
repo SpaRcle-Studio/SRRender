@@ -16,7 +16,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    const std::vector<std::vector<FrameBufferQueue::FrameBuffer>>& FrameBufferQueue::GetQueues() {
+    const std::vector<std::vector<FrameBufferQueue::FrameBuffer>>& FrameBufferQueue::GetQueues() const {
         return m_levels;
     }
 

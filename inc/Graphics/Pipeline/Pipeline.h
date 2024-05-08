@@ -62,6 +62,7 @@ namespace SR_GRAPH_NS {
 
         /// Вызывается в начале постоения сцены рендера, чистит очередь рендера.
         virtual void ClearFrameBuffersQueue();
+        virtual void ResetSubmitQueue();
 
         /// Отрисовка кадра на экран
         /// После вызова функции кадр считается законченным и PipelineState очищается
@@ -171,6 +172,7 @@ namespace SR_GRAPH_NS {
         /// Изменился ли текущий шейдер после UseShader. Даже если был вызван UnUseShader. Низкоуровневая проверка.
         SR_NODISCARD bool IsShaderChanged() const noexcept { return m_isShaderChanged; }
         SR_NODISCARD bool IsRenderState() const noexcept { return m_isRenderState; }
+        SR_NODISCARD bool IsFBOQueueValid() const noexcept;
 
         /// ------------------------------------------ Работа с памятью ------------------------------------------------
 
