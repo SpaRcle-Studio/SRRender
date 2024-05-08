@@ -402,7 +402,7 @@ namespace SR_GRAPH_NS {
 
     #ifdef SR_WIN32
         //ImGui_Platform_CreateWindow = ImGui_ImplWin32_CreateWindow;
-    #elifdef SR_LINUX
+    #elif defined(SR_LINUX)
         SRHalt("Not yet implemented!");
     #else
         SRHalt("Unsupported platform!");
