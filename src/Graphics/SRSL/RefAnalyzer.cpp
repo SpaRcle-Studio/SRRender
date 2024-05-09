@@ -164,9 +164,11 @@ namespace SR_SRSL_NS {
             else {
                 SRAssert(!pExpr->args[0]->token.empty());
                 if (pExpr->args[0]->token == ".") {
-                    return AnalyzeExpression(pUseStack, stack, pExpr->args[0]);
+                    AnalyzeExpression(pUseStack, stack, pExpr->args[0]);
                 }
-                pUseStack->variables.insert(pExpr->args[0]->token);
+                else {
+                    pUseStack->variables.insert(pExpr->args[0]->token);
+                }
             }
             return AnalyzeExpression(pUseStack, stack, pExpr->args[1]);
         }
