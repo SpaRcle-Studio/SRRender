@@ -254,7 +254,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        SR_INFO("VulkanPipeline::Init() : create vulkan memory manager...");
+        SR_INFO("VulkanPipeline::Init() : creating vulkan memory manager...");
         m_memory = VulkanTools::MemoryManager::Create(m_kernel);
         if (!m_memory) {
             PipelineError("VulkanPipeline::Init() : failed to create vulkan memory manager!");
@@ -300,7 +300,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
-            PipelineError("VulkanPipeline::AllocDescriptorSet() : render state isn't active or not in first build iteration!");
+            PipelineError("VulkanPipeline::AllocDescriptorSet() : render state isn't active or isn't in first build iteration!");
             SRHaltOnce0();
             return SR_ID_INVALID;
         }
@@ -316,7 +316,7 @@ namespace SR_GRAPH_NS {
         auto&& vkTypes = VulkanTools::ReferenceCastAbsDescriptorTypeToVk(types);
 
         if (m_state.shaderId < 0) SR_UNLIKELY_ATTRIBUTE {
-            PipelineError("VulkanPipeline::AllocDescriptorSet() : shader program do not set!");
+            PipelineError("VulkanPipeline::AllocDescriptorSet() : shader program is not set!");
             SRHaltOnce0();
             return SR_ID_INVALID;
         }
@@ -344,7 +344,7 @@ namespace SR_GRAPH_NS {
                 return (void*)layers[SR_MIN(layers.size() - 1, m_state.frameBufferLayer)]->GetFramebuffer();
             }
 
-            PipelineError("Vulkan::GetCurrentFBOHandle() : frame buffer have not layers!");
+            PipelineError("Vulkan::GetCurrentFBOHandle() : frame buffer has no layers!");
             return nullptr;
         }
 
@@ -414,7 +414,7 @@ namespace SR_GRAPH_NS {
         ++m_state.allocations;
 
         if (fbo < 0) {
-            SRHalt("VulkanPipeline::AllocateShaderProgram() : vulkan required valid FBO for shaders!");
+            SRHalt("VulkanPipeline::AllocateShaderProgram() : vulkan requires valid FBO for shaders!");
             return SR_ID_INVALID;
         }
 
@@ -847,7 +847,7 @@ namespace SR_GRAPH_NS {
 
     bool VulkanPipeline::InitEvoVulkanHooks() {
         SR_TRACY_ZONE;
-        SR_GRAPH("VulkanPipeline::InitEvoVulkanHooks() : initialize evo vulkan hooks...");
+        SR_GRAPH("VulkanPipeline::InitEvoVulkanHooks() : initializing evo vulkan hooks...");
 
         auto&& GetUsedMemoryFn = [pPipeline = GetThis()]() -> uint32_t {
             return pPipeline ? pPipeline->GetUsedMemory() / 1024 / 1024 : 0;

@@ -21,6 +21,14 @@ namespace SR_GRAPH_NS {
                         const SR_MATH_NS::UVector2& size,
                         bool fullScreen, bool resizable) override;
 
+        void PollEvents() override;
+    public:
+        void OnSizeChangedCallback(GLFWwindow* pWindow, SR_MATH_NS::IVector2 size);
+        void OnFramebufferSizeChangedCallback(GLFWwindow* pWindow, SR_MATH_NS::IVector2 size);
+        void OnFocusChangedCallback(GLFWwindow* pWindow, bool isFocused);
+        void OnWindowRefreshCallback(GLFWwindow* pWindow);
+
+
     public:
         SR_NODISCARD WindowType GetType() const override { return WindowType::GLFW; };
         SR_NODISCARD void* GetHandle() const override { return static_cast<void*>(m_window); };
