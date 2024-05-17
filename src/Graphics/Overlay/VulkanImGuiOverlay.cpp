@@ -12,6 +12,10 @@
     extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #endif
 
+#ifdef SR_LINUX
+    #include <imgui/backends/imgui_impl_glfw.h>
+#endif
+
 namespace SR_GRAPH_NS {
 #ifdef SR_WIN32
     static LRESULT ImGui_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -204,10 +208,11 @@ namespace SR_GRAPH_NS {
     #elif defined(SR_LINUX)
         //auto&& pWindow = m_pipeline->GetWindow();
         //ImGui_ImplX11_Init(pWindow->GetImplementation<X11Window>()->GetWindow());
-
+        auto&& pWindow = m_pipeline->GetWindow();
+        // TODO: check what 'instant callbacks' argument does.
+        ImGui_ImplGlfw_InitForVulkan(pWindow->GetImplementation<GLFWWindow>()->GetWindow(), true);
         //ImGui_ImplGlfw_InitForVulkan()
     #else
-        SRHalt("Unsupported platform!");
     #endif
 
         m_pipeline->UpdateMultiSampling();
@@ -325,10 +330,9 @@ namespace SR_GRAPH_NS {
 
         #ifdef SR_WIN32
             ImGui_ImplWin32_NewFrame();
-        #endif
-
-        #ifdef SR_LINUX
+        #elif defined(SR_LINUX)
             //ImGui_ImplX11_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
         #endif
 
         ImGui::NewFrame();

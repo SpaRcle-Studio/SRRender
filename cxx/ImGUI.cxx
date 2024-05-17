@@ -21,7 +21,7 @@
 #endif
 
 #ifdef SR_LINUX
-    #include <imgui/examples/imgui_impl_x11.cpp>
+    #include <imgui/backends/imgui_impl_glfw.cpp>
 #endif
 
 #ifdef SR_USE_GLFW3

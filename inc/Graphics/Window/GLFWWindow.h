@@ -34,6 +34,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD void* GetHandle() const override { return static_cast<void*>(m_window); };
         SR_NODISCARD GLFWwindow* GetWindow() const { return m_window; }
 
+        void SetIcon(const std::string& path) override;
+
     private:
         GLFWwindow* m_window = nullptr;
     };

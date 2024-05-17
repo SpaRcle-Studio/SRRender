@@ -67,7 +67,10 @@ namespace SR_GRAPH_NS {
 
         //glfwSetMouseButtonCallback()
 
+
         m_isValid = true;
+        glfwRequestWindowAttention(m_window);
+
         return true;
     }
 
@@ -154,5 +157,16 @@ namespace SR_GRAPH_NS {
             ImGui::GetIO().DisplaySize.x = m_size.x;
             ImGui::GetIO().DisplaySize.y = m_size.y;
         }
+    }
+
+    void GLFWWindow::SetIcon(const std::string& path) {
+        // TODO: Implement methods in SRCommon to load an image, otherwise we cannot set the icon.
+
+        /*GLFWimage image;
+
+
+        glfwSetWindowIcon(m_window, 1, &image);*/
+
+        BasicWindowImpl::SetIcon(path);
     }
 }
