@@ -22,6 +22,7 @@ namespace SR_GTYPES_NS {
         }
 
         m_properties.ClearContainer();
+        SRAssert2(m_meshes.IsEmpty(), "Material is not unregistered from all meshes!");
     }
 
     void Material::Use() {
@@ -75,8 +76,8 @@ namespace SR_GTYPES_NS {
         return IResource::Destroy();
     }
 
-    void SR_GTYPES_NS::Material::SetShader(Shader *shader) {
-        if (m_shader == shader) {
+    void SR_GTYPES_NS::Material::SetShader(Shader* pShader) {
+        if (m_shader == pShader) {
             return;
         }
 
@@ -87,7 +88,11 @@ namespace SR_GTYPES_NS {
             m_shader = nullptr;
         }
 
-        if (!(m_shader = shader)) {
+        m_meshes.ForEach([](uint32_t, auto&& pMesh) {
+            pMesh->MarkMaterialDirty();
+        });
+
+        if (!(m_shader = pShader)) {
             return;
         }
 
@@ -116,6 +121,10 @@ namespace SR_GTYPES_NS {
 
         /// обновляем всю иерархию вверх (меши)
         UpdateResources(1);
+
+        m_meshes.ForEach([](uint32_t, auto&& pMesh) {
+            pMesh->MarkMaterialDirty();
+        });
 
         /// сработает только если хоть раз была отрендерина текстура материала
         m_context.Do([](RenderContext* ptr) {
@@ -172,8 +181,23 @@ namespace SR_GTYPES_NS {
     }
 
     void Material::OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) {
-        if (dynamic_cast<Shader*>(pContainer) == m_shader && m_shader) {
+        if (pContainer == m_shader && m_shader) {
             m_dirtyShader = true;
+        }
+
+        bool hasChangedTexture = false;
+
+        for (auto&& pTexture : GetTexturesFromMatProperties(m_properties)) {
+            if (pTexture == pContainer) {
+                hasChangedTexture = true;
+                break;
+            }
+        }
+
+        if (hasChangedTexture || m_dirtyShader) {
+            m_meshes.ForEach([](uint32_t, auto&& pMesh) {
+                pMesh->MarkMaterialDirty();
+            });
         }
 
         IResource::OnResourceUpdated(pContainer, depth);
@@ -303,6 +327,25 @@ namespace SR_GTYPES_NS {
                 return false;
             }
             return true;
+        });
+    }
+
+    uint32_t Material::RegisterMesh(Mesh* pMesh) {
+        AddUsePoint();
+        return m_meshes.Add(pMesh);
+    }
+
+    void Material::UnregisterMesh(uint32_t* pId) {
+        RemoveUsePoint();
+        m_meshes.RemoveByIndex(*pId);
+        *pId = SR_ID_INVALID;
+    }
+
+    void Material::OnPropertyChanged() {
+        SR_TRACY_ZONE;
+
+        m_meshes.ForEach([](uint32_t, auto&& pMesh) {
+            pMesh->MarkUniformsDirty();
         });
     }
 }

@@ -12,7 +12,6 @@
 
 namespace SR_GRAPH_NS {
     class IRenderTechnique;
-    class RenderContext;
 
     class ISamplersPass {
     private:

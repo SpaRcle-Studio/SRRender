@@ -99,6 +99,8 @@ namespace SR_GRAPH_NS {
         MaterialProperty& SetMaterial(SR_GTYPES_NS::Material* value) noexcept { m_material = value; return *this; }
         MaterialProperty& SetPushConstant(bool value) noexcept { m_pushConstant = value; return *this; }
 
+        void OnPropertyChanged();
+
         template<typename T> MaterialProperty& SetData(const T& value) noexcept {
             if constexpr (std::is_same_v<T, bool>) {
                 m_data = static_cast<int32_t>(value);
@@ -106,6 +108,8 @@ namespace SR_GRAPH_NS {
             else {
                 m_data = value;
             }
+
+            OnPropertyChanged();
 
             return *this;
         }

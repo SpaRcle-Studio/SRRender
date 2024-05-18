@@ -2,12 +2,13 @@
 // Created by Nikita on 17.11.2020.
 //
 
-#ifndef GAMEENGINE_MATERIAL_H
-#define GAMEENGINE_MATERIAL_H
+#ifndef SR_ENGINE_GRAPHICS_MATERIAL_H
+#define SR_ENGINE_GRAPHICS_MATERIAL_H
 
 #include <Utils/Resources/IResource.h>
 #include <Utils/Math/Vector3.h>
 #include <Utils/Math/Vector4.h>
+#include <Utils/Types/ObjectPool.h>
 
 #include <Graphics/Loaders/ShaderProperties.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
@@ -30,8 +31,6 @@ namespace SR_GTYPES_NS {
     );
 
     class Material : public SR_UTILS_NS::IResource {
-        friend class Mesh;
-        friend class Mesh3D;
         using Super = SR_UTILS_NS::IResource;
         using RenderContextPtr = SR_HTYPES_NS::SafePtr<RenderContext>;
     private:
@@ -56,7 +55,12 @@ namespace SR_GTYPES_NS {
 
         void OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) override;
 
+        SR_NODISCARD uint32_t RegisterMesh(Mesh* mesh);
+        void UnregisterMesh(uint32_t* pId);
+
         void SetShader(Shader* shader);
+
+        void OnPropertyChanged();
 
         void Use();
         void UseSamplers();
@@ -72,6 +76,7 @@ namespace SR_GTYPES_NS {
         bool LoadProperties(const SR_XML_NS::Node& propertiesNode);
 
     private:
+        SR_HTYPES_NS::ObjectPool<Mesh*, uint32_t> m_meshes;
         SR_GTYPES_NS::Shader* m_shader = nullptr;
         std::atomic<bool> m_dirtyShader = false;
         MaterialProperties m_properties;
@@ -80,4 +85,4 @@ namespace SR_GTYPES_NS {
     };
 }
 
-#endif //GAMEENGINE_MATERIAL_H
+#endif //SR_ENGINE_GRAPHICS_MATERIAL_H

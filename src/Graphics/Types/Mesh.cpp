@@ -16,12 +16,13 @@ namespace SR_GRAPH_NS::Types {
         : m_uboManager(Memory::UBOManager::Instance())
         , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
         , m_meshType(type)
-        , m_material(nullptr)
     { }
 
     Mesh::~Mesh() {
         SetMaterial(nullptr);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
+        SRAssert(m_materialRegisterId == SR_ID_INVALID);
+        SRAssert(!m_registrationInfo.has_value());
     }
 
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, uint32_t id) {
@@ -43,7 +44,7 @@ namespace SR_GRAPH_NS::Types {
             exists = id < pRawMesh->GetMeshesCount();
         }
         else {
-            pRawMesh->CheckResourceUsage();
+            SRHalt("Mesh::TryLoad() : raw mesh is nullptr!");
             return nullptr;
         }
 
@@ -125,11 +126,11 @@ namespace SR_GRAPH_NS::Types {
         m_hasErrors = false;
 
         if (m_material) {
-            m_material->RemoveUsePoint();
+            m_material->UnregisterMesh(&m_materialRegisterId);
         }
 
         if ((m_material = pMaterial)) {
-            m_material->AddUsePoint();
+            m_materialRegisterId = m_material->RegisterMesh(this);
         }
 
         ReRegisterMesh();
@@ -192,28 +193,6 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Mesh::OnResourceReloaded(SR_UTILS_NS::IResource* pResource) {
-        if (m_material) {
-            if (pResource == m_material) {
-                MarkMaterialDirty();
-                m_hasErrors = false;
-                ReRegisterMesh();
-                return true;
-            }
-
-            if (m_material->GetShader() == pResource) {
-                MarkMaterialDirty();
-                m_hasErrors = false;
-                ReRegisterMesh();
-                return true;
-            }
-
-            auto&& pTexture = dynamic_cast<SR_GTYPES_NS::Texture*>(pResource);
-            if (pTexture && m_material->ContainsTexture(pTexture)) {
-                MarkMaterialDirty();
-                m_hasErrors = false;
-                return true;
-            }
-        }
         return false;
     }
 

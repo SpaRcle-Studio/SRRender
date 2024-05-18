@@ -123,6 +123,7 @@ namespace SR_GTYPES_NS {
         MeshType m_meshType = MeshType::Unknown;
 
         MaterialPtr m_material = nullptr;
+        uint32_t m_materialRegisterId = SR_ID_INVALID;
 
         bool m_hasErrors = false;
         bool m_dirtyMaterial = false;

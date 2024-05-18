@@ -107,4 +107,10 @@ namespace SR_GRAPH_NS {
     bool MaterialProperty::IsSampler() const noexcept {
         return m_type >= ShaderVarType::Sampler2D && m_type <= ShaderVarType::Sampler2DShadow;
     }
+
+    void MaterialProperty::OnPropertyChanged() {
+        if (m_material) {
+            m_material->OnPropertyChanged();
+        }
+    }
 }

@@ -31,7 +31,7 @@ namespace SR_GTYPES_NS {
         ~Texture() override;
 
     public:
-        static Texture::Ptr Load(const std::string& path, const std::optional<Memory::TextureConfig>& config = std::nullopt);
+        static Texture::Ptr Load(const SR_UTILS_NS::Path& rawPath, const std::optional<Memory::TextureConfig>& config = std::nullopt);
         static Texture::Ptr LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const Memory::TextureConfig& config);
         static Texture::Ptr LoadFromMemory(const std::string& data, const Memory::TextureConfig& config);
         static Texture::Ptr LoadFont(Font* pFont);

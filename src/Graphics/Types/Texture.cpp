@@ -56,20 +56,20 @@ namespace SR_GTYPES_NS {
         return pTexture;
     }
 
-    Texture::Ptr Texture::Load(const std::string& rawPath, const std::optional<Memory::TextureConfig>& config) {
+    Texture::Ptr Texture::Load(const SR_UTILS_NS::Path& rawPath, const std::optional<Memory::TextureConfig>& config) {
         SR_TRACY_ZONE;
 
         auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
-        if (!resourceManager.GetResPath().Concat(rawPath).Exists(SR_UTILS_NS::Path::Type::File)) {
-            SR_ERROR("Texture::Load() : texture \"{}\" does not exist!", rawPath);
+
+        auto&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(resourceManager.GetResPath());
+        if (!resourceManager.GetResPath().Concat(path).Exists(SR_UTILS_NS::Path::Type::File)) {
+            SR_ERROR("Texture::Load() : texture \"{}\" does not exist!", path.ToStringRef());
             return nullptr;
         }
 
         Texture::Ptr pTexture = nullptr;
 
         resourceManager.Execute([&]() {
-            SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(resourceManager.GetResPath());
-
             if ((pTexture = SR_UTILS_NS::ResourceManager::Instance().Find<Texture>(path))) {
                 if (config && pTexture->m_config != config.value()) {
                     SR_WARN("Texture::Load() : copy values do not match load values.");
