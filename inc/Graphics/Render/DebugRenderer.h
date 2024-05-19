@@ -2,14 +2,25 @@
 // Created by Monika on 20.09.2022.
 //
 
-#ifndef SR_ENGINE_DEBUGRENDERER_H
-#define SR_ENGINE_DEBUGRENDERER_H
+#ifndef SR_ENGINE_GRAPHICS_DEBUG_RENDERER_H
+#define SR_ENGINE_GRAPHICS_DEBUG_RENDERER_H
 
 #include <Utils/Common/NonCopyable.h>
+#include <Utils/Math/Vector3.h>
+#include <Utils/Math/Vector4.h>
+
+namespace SR_GTYPES_NS {
+    class Mesh;
+}
+
+namespace SR_HTYPES_NS {
+    class RawMesh;
+}
 
 namespace SR_GRAPH_NS {
     class RenderContext;
     class RenderScene;
+    class FileMaterial;
 
     class DebugRenderer : public SR_UTILS_NS::NonCopyable {
         using Super = SR_UTILS_NS::NonCopyable;
@@ -51,12 +62,12 @@ namespace SR_GRAPH_NS {
             bool registered;
         };
 
-        SR_GTYPES_NS::Material* m_wireFrameMaterial = nullptr;
-        SR_GTYPES_NS::Material* m_lineMaterial = nullptr;
+        FileMaterial* m_wireFrameMaterial = nullptr;
+        FileMaterial* m_lineMaterial = nullptr;
 
         std::vector<DebugTimedObject> m_timedObjects;
         std::list<uint64_t> m_emptyIds;
     };
 }
 
-#endif //SR_ENGINE_DEBUGRENDERER_H
+#endif //SR_ENGINE_GRAPHICS_DEBUG_RENDERER_H

@@ -10,6 +10,7 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Utils/MeshUtils.h>
+#include <Graphics/Material/FileMaterial.h>
 
 namespace SR_GRAPH_NS::Types {
     Mesh::Mesh(MeshType type)
@@ -109,10 +110,14 @@ namespace SR_GRAPH_NS::Types {
 
     void Mesh::SetMaterial(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
-        if (m_material && m_material->GetResourcePath() == path) {
-            return;
+
+        if (auto&& pFileMaterial = dynamic_cast<FileMaterial*>(m_material)) {
+            if (pFileMaterial->GetResourcePath() == path) {
+                return;
+            }
         }
-        SetMaterial(path.empty() ? nullptr : Material::Load(path));
+
+        SetMaterial(path.empty() ? nullptr : FileMaterial::Load(path));
     }
 
     void Mesh::SetMaterial(MaterialPtr pMaterial) {

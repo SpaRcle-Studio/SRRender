@@ -19,10 +19,10 @@ namespace SR_GTYPES_NS {
     class Camera;
     class Texture;
     class Skybox;
-    class Material;
 }
 
 namespace SR_GRAPH_NS {
+    class FileMaterial;
     class Window;
     class RenderScene;
     class IRenderTechnique;
@@ -48,7 +48,7 @@ namespace SR_GRAPH_NS {
         using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::Pipeline>;
         using Super = SR_HTYPES_NS::SafePtr<RenderContext>;
-        using MaterialPtr = SR_GTYPES_NS::Material*;
+        using MaterialPtr = SR_GRAPH_NS::FileMaterial*;
         using TexturePtr = SR_GTYPES_NS::Texture*;
         using SkyboxPtr = SR_GTYPES_NS::Skybox*;
         using FramebufferPtr = SR_GTYPES_NS::Framebuffer*;
@@ -106,7 +106,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::vector<SR_GTYPES_NS::Framebuffer*>& GetFramebuffers() const noexcept;
         SR_NODISCARD const std::vector<SR_GTYPES_NS::Texture*>& GetTextures() const noexcept;
         SR_NODISCARD const std::vector<IRenderTechnique*>& GetRenderTechniques() const noexcept;
-        SR_NODISCARD const std::vector<SR_GTYPES_NS::Material*>& GetMaterials() const noexcept;
+        SR_NODISCARD const std::vector<MaterialPtr>& GetMaterials() const noexcept;
         SR_NODISCARD const std::vector<SR_GTYPES_NS::Skybox*>& GetSkyboxes() const noexcept;
         SR_NODISCARD const RenderScenes& GetScenes() const noexcept { return m_scenes; }
 

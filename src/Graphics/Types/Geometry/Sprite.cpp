@@ -3,7 +3,7 @@
 //
 
 #include <Graphics/Types/Geometry/Sprite.h>
-#include <Graphics/Types/Material.h>
+#include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Uniforms.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Utils/MeshUtils.h>

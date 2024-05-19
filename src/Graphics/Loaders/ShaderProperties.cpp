@@ -3,10 +3,10 @@
 //
 
 #include <Graphics/Loaders/ShaderProperties.h>
-#include <Graphics/Types/Material.h>
+#include <Graphics/Material/BaseMaterial.h>
 
 namespace SR_GRAPH_NS {
-    void LoadMaterialProperties(const SR_GTYPES_NS::Material* pMaterial, const SR_XML_NS::Node& propertiesNode, MaterialProperties* pProperties) {
+    void LoadMaterialProperties(const std::string& materialDebugIdentifier, const SR_XML_NS::Node& propertiesNode, MaterialProperties* pProperties) {
         SR_TRACY_ZONE;
 
         for (auto&& propertyXml : propertiesNode.TryGetNodes()) {
@@ -19,7 +19,7 @@ namespace SR_GRAPH_NS {
             }
 
             if (pMaterialProperty->GetShaderVarType() != type) {
-                SR_ERROR("LoadMaterialProperties() : invalid property!\n\tFile: " + pMaterial->GetResourcePath().ToStringRef() +
+                SR_ERROR("LoadMaterialProperties() : invalid property!\n\tMaterial: " + materialDebugIdentifier +
                      "\n\tProperty: " + id + "\n\tLoaded type: " + SR_UTILS_NS::EnumReflector::ToStringAtom(type).ToStringRef() +
                      "\n\tExpected type: " + SR_UTILS_NS::EnumReflector::ToStringAtom(pMaterialProperty->GetShaderVarType()).ToStringRef()
                 );

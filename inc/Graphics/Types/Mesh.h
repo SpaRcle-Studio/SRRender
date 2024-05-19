@@ -29,16 +29,18 @@ namespace SR_GRAPH_NS {
     class RenderContext;
 }
 
+namespace SR_GRAPH_NS {
+    class BaseMaterial;
+}
+
 namespace SR_GTYPES_NS {
     class Shader;
-    class Material;
 
     class Mesh : public SR_UTILS_NS::NonCopyable, public Memory::IGraphicsResource {
-        friend class Material;
     public:
         using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
         using ShaderPtr = Shader*;
-        using MaterialPtr = Material*;
+        using MaterialPtr = BaseMaterial*;
         using Ptr = Mesh*;
 
     public:
@@ -108,7 +110,7 @@ namespace SR_GTYPES_NS {
         void MarkUniformsDirty();
         void MarkMaterialDirty();
 
-        void SetMaterial(Material* material);
+        void SetMaterial(BaseMaterial* pMaterial);
         void SetMaterial(const SR_UTILS_NS::Path& path);
 
     protected:

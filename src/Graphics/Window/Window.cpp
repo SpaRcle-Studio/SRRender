@@ -10,7 +10,7 @@
 
 #include <Graphics/Window/Window.h>
 #include <Graphics/Types/Camera.h>
-#include <Graphics/Types/Material.h>
+#include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/GUI/Editor/Theme.h>

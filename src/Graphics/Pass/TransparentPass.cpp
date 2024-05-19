@@ -3,7 +3,7 @@
 //
 
 #include <Graphics/Pass/TransparentPass.h>
-#include <Graphics/Types/Material.h>
+#include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Geometry/IndexedMesh.h>
 #include <Graphics/Pipeline/IShaderProgram.h>

@@ -92,7 +92,8 @@ namespace SR_GTYPES_NS {
         materialContainer.AddCustomProperty<SR_UTILS_NS::PathProperty>("Path")
             .AddFileFilter("Material", "mat")
             .SetGetter([this]()-> SR_UTILS_NS::Path {
-                return m_material ? m_material->GetResourcePath() : SR_UTILS_NS::Path();
+                auto&& pFileMaterial = dynamic_cast<FileMaterial*>(m_material);
+                return pFileMaterial ? pFileMaterial->GetResourcePath() : SR_UTILS_NS::Path();
             })
             .SetSetter([this](const SR_UTILS_NS::Path& path) {
                 SetMaterial(path);

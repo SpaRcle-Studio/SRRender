@@ -14,10 +14,11 @@
 namespace SR_GTYPES_NS {
     class Texture;
     class Shader;
-    class Material;
 }
 
 namespace SR_GRAPH_NS {
+    class BaseMaterial;
+
     struct ShaderAttachment {
         SR_GTYPES_NS::Texture* pTexture;
         std::string framebuffer;
@@ -90,13 +91,13 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_UTILS_NS::StringAtom GetDisplayName() const noexcept { return m_displayName; }
         SR_NODISCARD ShaderVarType GetShaderVarType() const noexcept { return m_type; }
         SR_NODISCARD const ShaderPropertyVariant& GetData() const noexcept { return m_data; }
-        SR_NODISCARD SR_GTYPES_NS::Material* GetMaterial() const noexcept { return m_material; }
+        SR_NODISCARD BaseMaterial* GetMaterial() const noexcept { return m_material; }
         SR_NODISCARD bool IsPushConstant() const noexcept { return m_pushConstant; }
         SR_NODISCARD bool IsSampler() const noexcept;
 
         MaterialProperty& SetDisplayName(SR_UTILS_NS::StringAtom value) noexcept { m_displayName = value; return *this; }
         MaterialProperty& SetShaderVarType(ShaderVarType value) noexcept { m_type = value; return *this; }
-        MaterialProperty& SetMaterial(SR_GTYPES_NS::Material* value) noexcept { m_material = value; return *this; }
+        MaterialProperty& SetMaterial(BaseMaterial* value) noexcept { m_material = value; return *this; }
         MaterialProperty& SetPushConstant(bool value) noexcept { m_pushConstant = value; return *this; }
 
         void OnPropertyChanged();
@@ -117,7 +118,7 @@ namespace SR_GRAPH_NS {
         void Use(SR_GTYPES_NS::Shader* pShader) const noexcept;
 
     private:
-        SR_GTYPES_NS::Material* m_material = nullptr;
+        BaseMaterial* m_material = nullptr;
         SR_UTILS_NS::StringAtom m_displayName;
         ShaderPropertyVariant m_data;
         bool m_pushConstant = false;
@@ -159,6 +160,8 @@ namespace SR_GRAPH_NS {
         }
 
     private:
+        /// references to properties. do not delete memory
+
         std::vector<MaterialProperty*> m_materialSamplerProperties;
         std::vector<MaterialProperty*> m_materialUniformsProperties;
 
@@ -174,7 +177,7 @@ namespace SR_GRAPH_NS {
     };
     typedef std::map<SR_UTILS_NS::StringAtom, ShaderSampler> ShaderSamplers;
 
-    void LoadMaterialProperties(const SR_GTYPES_NS::Material* pMaterial, const SR_XML_NS::Node& propertiesNode, MaterialProperties* pProperties);
+    void LoadMaterialProperties(const std::string& materialDebugIdentifier, const SR_XML_NS::Node& propertiesNode, MaterialProperties* pProperties);
     std::list<SR_GTYPES_NS::Texture*> GetTexturesFromMatProperties(const MaterialProperties& properties);
 
     SR_MAYBE_UNUSED static bool IsSamplerType(ShaderVarType type) {

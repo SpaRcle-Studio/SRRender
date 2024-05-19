@@ -25,7 +25,9 @@ namespace SR_GTYPES_NS {
     class Texture : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         friend class ::SR_GRAPH_NS::TextureLoader;
         using RenderContextPtr = SR_HTYPES_NS::SafePtr<RenderContext>;
+    public:
         using Ptr = Texture*;
+
     private:
         Texture();
         ~Texture() override;

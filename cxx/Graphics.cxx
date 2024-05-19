@@ -73,7 +73,6 @@
 #include "../src/Graphics/Types/IRenderComponent.cpp"
 #include "../src/Graphics/Types/EditorGrid.cpp"
 #include "../src/Graphics/Types/Framebuffer.cpp"
-#include "../src/Graphics/Types/Material.cpp"
 #include "../src/Graphics/Types/Mesh.cpp"
 #include "../src/Graphics/Types/Skybox.cpp"
 #include "../src/Graphics/Types/Texture.cpp"
@@ -81,6 +80,9 @@
 #include "../src/Graphics/Types/Camera.cpp"
 #include "../src/Graphics/Types/Shader.cpp"
 #include "../src/Graphics/Types/RenderTexture.cpp"
+
+#include "../src/Graphics/Material/BaseMaterial.cpp"
+#include "../src/Graphics/Material/FileMaterial.cpp"
 
 #include "../src/Graphics/Utils/MeshUtils.cpp"
 #include "../src/Graphics/Utils/AtlasBuilder.cpp"

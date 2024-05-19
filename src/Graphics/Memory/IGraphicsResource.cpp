@@ -6,6 +6,10 @@
 #include <Graphics/Pipeline/Pipeline.h>
 
 namespace SR_GRAPH_NS::Memory {
+    IGraphicsResource::~IGraphicsResource() {
+        SRAssert(m_isCalculated == false);
+    }
+
     void IGraphicsResource::SetRenderContext(const IGraphicsResource::RenderContextPtr& renderContext) {
         m_renderContext = renderContext;
         m_pipeline = m_renderContext->GetPipeline();

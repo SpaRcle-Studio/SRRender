@@ -11,10 +11,11 @@
 
 #include <Graphics/Font/Font.h>
 #include <Graphics/Font/TextBuilder.h>
-#include <Graphics/Types/Material.h>
+#include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Material/FileMaterial.h>
 
 namespace SR_GTYPES_NS {
     ITextComponent::ITextComponent()
@@ -150,7 +151,7 @@ namespace SR_GTYPES_NS {
 
         const auto&& material = marshal.Read<std::string>();
         if (material != "None") {
-            if (auto&& pMaterial = SR_GTYPES_NS::Material::Load(SR_UTILS_NS::Path(material))) {
+            if (auto&& pMaterial = FileMaterial::Load(SR_UTILS_NS::Path(material))) {
                 pText->SetMaterial(pMaterial);
             }
             else {
@@ -231,7 +232,11 @@ namespace SR_GTYPES_NS {
         pMarshal->Write<bool>(m_preprocessor);
         pMarshal->Write<bool>(m_kerning);
         pMarshal->Write<bool>(m_debug);
-        pMarshal->Write<std::string>(m_material ? m_material->GetResourceId() : "None");
+
+        /// TODO: use properties instead of marshal
+        auto&& pFileMaterial = dynamic_cast<FileMaterial*>(m_material);
+        pMarshal->Write<std::string>(pFileMaterial ? pFileMaterial->GetResourceId() : "None");
+
         pMarshal->Write<std::string>(m_font ? m_font->GetResourceId() : "None");
         pMarshal->Write<SR_HTYPES_NS::UnicodeString>(m_text);
 

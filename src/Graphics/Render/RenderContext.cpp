@@ -146,7 +146,7 @@ namespace SR_GRAPH_NS {
 
         /// ----------------------------------------------------------------------------
 
-        if ((m_defaultUIMaterial = SR_GTYPES_NS::Material::Load("Engine/Materials/UI/ui.mat"))) {
+        if ((m_defaultUIMaterial = FileMaterial::Load("Engine/Materials/UI/ui.mat"))) {
             m_defaultUIMaterial->AddUsePoint();
         }
         else {
@@ -155,7 +155,7 @@ namespace SR_GRAPH_NS {
 
         /// ----------------------------------------------------------------------------
 
-        if ((m_defaultMaterial = SR_GTYPES_NS::Material::Load("Engine/Materials/default.mat"))) {
+        if ((m_defaultMaterial = FileMaterial::Load("Engine/Materials/default.mat"))) {
             m_defaultMaterial->AddUsePoint();
         }
         else {
@@ -467,7 +467,7 @@ namespace SR_GRAPH_NS {
         return m_techniques;
     }
 
-    const std::vector<SR_GTYPES_NS::Material*>& RenderContext::GetMaterials() const noexcept {
+    const std::vector<RenderContext::MaterialPtr>& RenderContext::GetMaterials() const noexcept {
         return m_materials;
     }
 

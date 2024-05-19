@@ -20,9 +20,7 @@ namespace SR_GRAPH_NS::Memory {
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
     protected:
         constexpr IGraphicsResource() = default;
-        virtual ~IGraphicsResource() {
-            SRAssert(m_isCalculated == false);
-        }
+        virtual ~IGraphicsResource();
 
     public:
         IGraphicsResource(const IGraphicsResource&) = delete;

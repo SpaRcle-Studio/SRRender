@@ -7,8 +7,10 @@
 #include <Utils/Types/RawMesh.h>
 
 #include <Graphics/Render/DebugRenderer.h>
+#include <Graphics/Render/RenderScene.h>
 #include <Graphics/Types/Geometry/DebugWireframeMesh.h>
 #include <Graphics/Types/Geometry/DebugLine.h>
+#include <Graphics/Material/FileMaterial.h>
 
 namespace SR_GRAPH_NS {
     DebugRenderer::DebugRenderer(RenderScene* pRenderScene)
@@ -34,13 +36,13 @@ namespace SR_GRAPH_NS {
     }
 
     void DebugRenderer::Init() {
-        m_wireFrameMaterial = SR_GTYPES_NS::Material::Load("Engine/Materials/Debug/wireframe.mat");
+        m_wireFrameMaterial = FileMaterial::Load("Engine/Materials/Debug/wireframe.mat");
 
         if (m_wireFrameMaterial) {
             m_wireFrameMaterial->AddUsePoint();
         }
 
-        m_lineMaterial = SR_GTYPES_NS::Material::Load("Engine/Materials/Debug/line.mat");
+        m_lineMaterial = FileMaterial::Load("Engine/Materials/Debug/line.mat");
 
         if (m_lineMaterial) {
             m_lineMaterial->AddUsePoint();
@@ -234,7 +236,7 @@ namespace SR_GRAPH_NS {
             }
 
             SR_GTYPES_NS::DebugWireframeMesh* pMesh = dynamic_cast<SR_GTYPES_NS::DebugWireframeMesh *>(
-                    SR_GTYPES_NS::Mesh::TryLoad(pRawMesh, MeshType::Wireframe, meshId)
+                SR_GTYPES_NS::Mesh::TryLoad(pRawMesh, MeshType::Wireframe, meshId)
             );
 
             if (pMesh) {
