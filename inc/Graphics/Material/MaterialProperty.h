@@ -1,0 +1,131 @@
+//
+// Created by Monika on 27.05.2024.
+//
+
+#ifndef SR_ENGINE_GRAOHICS_MATERIAL_PROPERTY_H
+#define SR_ENGINE_GRAOHICS_MATERIAL_PROPERTY_H
+
+#include <Graphics/Loaders/ShaderProperties.h>
+#include <Utils/Common/SubscriptionHolder.h>
+
+namespace SR_GRAPH_NS {
+    class BaseMaterial;
+
+    class MaterialProperty final : public SR_UTILS_NS::Property {
+        SR_REGISTER_TYPE_TRAITS_PROPERTY(MaterialProperty, 1002)
+        using Super = SR_UTILS_NS::Property;
+    public:
+        MaterialProperty() = default;
+        ~MaterialProperty() override;
+
+        explicit MaterialProperty(ShaderVarType type)
+            : SR_UTILS_NS::Property()
+            , m_type(type)
+        { }
+
+        MaterialProperty(MaterialProperty&& other) noexcept
+            : m_material(SR_EXCHANGE(other.m_material, nullptr))
+            , m_displayName(SR_EXCHANGE(other.m_displayName, { }))
+            , m_data(SR_EXCHANGE(other.m_data, { }))
+            , m_pushConstant(SR_EXCHANGE(other.m_pushConstant, { }))
+            , m_type(SR_EXCHANGE(other.m_type, { }))
+        { }
+
+        MaterialProperty& operator=(MaterialProperty&& other) noexcept {
+            m_material = SR_EXCHANGE(other.m_material, nullptr);
+            m_displayName = SR_EXCHANGE(other.m_displayName, { });
+            m_data = SR_EXCHANGE(other.m_data, { });
+            m_pushConstant = SR_EXCHANGE(other.m_pushConstant, { });
+            m_type = SR_EXCHANGE(other.m_type, { });
+            return *this;
+        }
+
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetDisplayName() const noexcept { return m_displayName; }
+        SR_NODISCARD ShaderVarType GetShaderVarType() const noexcept { return m_type; }
+        SR_NODISCARD const ShaderPropertyVariant& GetData() const noexcept { return m_data; }
+        SR_NODISCARD BaseMaterial* GetMaterial() const noexcept { return m_material; }
+        SR_NODISCARD bool IsPushConstant() const noexcept { return m_pushConstant; }
+        SR_NODISCARD bool IsSampler() const noexcept;
+
+        MaterialProperty& SetDisplayName(SR_UTILS_NS::StringAtom value) noexcept { m_displayName = value; return *this; }
+        MaterialProperty& SetShaderVarType(ShaderVarType value) noexcept { m_type = value; return *this; }
+        MaterialProperty& SetMaterial(BaseMaterial* value) noexcept { m_material = value; return *this; }
+        MaterialProperty& SetPushConstant(bool value) noexcept { m_pushConstant = value; return *this; }
+
+        void OnPropertyChanged();
+
+        void SaveProperty(MarshalRef marshal) const noexcept override;
+        void LoadProperty(MarshalRef marshal) noexcept override;
+
+        template<typename T> MaterialProperty& SetData(const T& value) noexcept {
+            if constexpr (std::is_same_v<T, bool>) {
+                m_data = static_cast<int32_t>(value);
+            }
+            else {
+                m_data = value;
+            }
+
+            OnPropertyChanged();
+
+            return *this;
+        }
+
+        void Use(SR_GTYPES_NS::Shader* pShader) const noexcept;
+
+    private:
+        BaseMaterial* m_material = nullptr;
+        SR_UTILS_NS::StringAtom m_displayName;
+        ShaderPropertyVariant m_data;
+        bool m_pushConstant = false;
+        ShaderVarType m_type = ShaderVarType::Unknown;
+        SR_UTILS_NS::Subscription m_textureOnReloadDoneSubscription;
+
+    };
+
+    class MaterialProperties : public SR_UTILS_NS::PropertyContainer {
+        SR_REGISTER_TYPE_TRAITS_PROPERTY(MaterialProperties, 1001)
+    public:
+        MaterialProperties() = default;
+
+        void ClearContainer() override {
+            m_materialSamplerProperties.clear();
+            m_materialUniformsProperties.clear();
+            SR_UTILS_NS::PropertyContainer::ClearContainer();
+        }
+
+        void OnPropertyAdded(SR_UTILS_NS::Property* pProperty) override {
+            if (auto&& pMaterialProperty = dynamic_cast<MaterialProperty*>(pProperty)) {
+                if (pMaterialProperty->IsSampler()) {
+                    m_materialSamplerProperties.emplace_back(pMaterialProperty);
+                }
+                else {
+                    m_materialUniformsProperties.emplace_back(pMaterialProperty);
+                }
+            }
+        }
+
+        void UseMaterialSamplers(SR_GTYPES_NS::Shader* pShader) {
+            for (auto&& pProperty : m_materialSamplerProperties) {
+                pProperty->Use(pShader);
+            }
+        }
+
+        void UseMaterialUniforms(SR_GTYPES_NS::Shader* pShader) {
+            for (auto&& pProperty : m_materialUniformsProperties) {
+                pProperty->Use(pShader);
+            }
+        }
+
+    private:
+        /// references to properties. do not delete memory
+
+        std::vector<MaterialProperty*> m_materialSamplerProperties;
+        std::vector<MaterialProperty*> m_materialUniformsProperties;
+
+    };
+
+    void LoadMaterialProperties(const std::string& materialDebugIdentifier, const SR_XML_NS::Node& propertiesNode, MaterialProperties* pProperties);
+    std::list<SR_GTYPES_NS::Texture*> GetTexturesFromMatProperties(const MaterialProperties& properties);
+}
+
+#endif //SR_ENGINE_GRAOHICS_MATERIAL_PROPERTY_H

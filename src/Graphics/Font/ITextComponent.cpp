@@ -234,7 +234,7 @@ namespace SR_GTYPES_NS {
         pMarshal->Write<bool>(m_debug);
 
         /// TODO: use properties instead of marshal
-        auto&& pFileMaterial = dynamic_cast<FileMaterial*>(m_material);
+        auto&& pFileMaterial = dynamic_cast<FileMaterial*>(m_materialProperty.GetMaterial());
         pMarshal->Write<std::string>(pFileMaterial ? pFileMaterial->GetResourceId() : "None");
 
         pMarshal->Write<std::string>(m_font ? m_font->GetResourceId() : "None");

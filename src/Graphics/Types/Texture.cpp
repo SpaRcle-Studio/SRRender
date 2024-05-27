@@ -59,6 +59,11 @@ namespace SR_GTYPES_NS {
     Texture::Ptr Texture::Load(const SR_UTILS_NS::Path& rawPath, const std::optional<Memory::TextureConfig>& config) {
         SR_TRACY_ZONE;
 
+        if (rawPath.IsEmpty()) {
+            SR_ERROR("Texture::Load() : path is empty!");
+            return nullptr;
+        }
+
         auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
 
         auto&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(resourceManager.GetResPath());

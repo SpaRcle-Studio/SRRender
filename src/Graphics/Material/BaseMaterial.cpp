@@ -6,6 +6,8 @@
 #include <Graphics/Render/RenderContext.h>
 
 namespace SR_GRAPH_NS {
+    BaseMaterial::BaseMaterial() = default;
+
     BaseMaterial::~BaseMaterial() {
         SRAssert2(m_isFinalized, "Material is not finalized!");
         SRAssert2(m_meshes.IsEmpty(), "Material is not unregistered from all meshes!");
@@ -45,6 +47,7 @@ namespace SR_GRAPH_NS {
     }
 
     uint32_t BaseMaterial::RegisterMesh(MeshPtr pMesh) {
+        SRAssert(pMesh);
         return m_meshes.Add(pMesh);
     }
 
@@ -71,25 +74,34 @@ namespace SR_GRAPH_NS {
         if (m_shader) {
             RemoveMaterialDependency(m_shader);
             m_shader = nullptr;
+            m_shaderReloadDoneSubscription.Reset();
         }
 
         m_meshes.ForEach([](uint32_t, auto&& pMesh) {
-            pMesh->MarkMaterialDirty();
+            pMesh->ReRegisterMesh();
         });
 
-        if (!(m_shader = pShader)) {
+        if (!((m_shader = pShader))) {
             return;
         }
+
+        m_shaderReloadDoneSubscription = m_shader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this]() {
+            m_dirtyShader = true;
+            m_meshes.ForEach([](uint32_t, auto&& pMesh) {
+                pMesh->MarkMaterialDirty();
+            });
+        });
 
         AddMaterialDependency(m_shader);
+        InitMaterialProperties();
     }
 
-    void BaseMaterial::SetTexture(MaterialProperty* property, SR_GTYPES_NS::Texture::Ptr pTexture) {
-        if (!SRVerifyFalse(!property)) {
+    void BaseMaterial::SetTexture(MaterialProperty* pProperty, SR_GTYPES_NS::Texture::Ptr pTexture) {
+        if (!SRVerifyFalse(!pProperty)) {
             return;
         }
 
-        if (auto&& oldTexture = std::get<SR_GTYPES_NS::Texture*>(property->GetData())) {
+        if (auto&& oldTexture = std::get<SR_GTYPES_NS::Texture*>(pProperty->GetData())) {
             if (oldTexture == pTexture) {
                 return;
             }
@@ -102,7 +114,7 @@ namespace SR_GRAPH_NS {
             AddMaterialDependency(pTexture);
         }
 
-        property->SetData(pTexture);
+        pProperty->SetData(pTexture);
 
         m_meshes.ForEach([](uint32_t, auto&& pMesh) {
             pMesh->MarkMaterialDirty();
@@ -132,40 +144,6 @@ namespace SR_GRAPH_NS {
         return GetProperty(id.GetHash());
     }
 
-    bool BaseMaterial::LoadProperties(const SR_XML_NS::Node& propertiesNode) {
-        if (!m_shader) {
-            SR_ERROR("Material::LoadProperties() : shader is nullptr!");
-            return false;
-        }
-
-        m_properties.ClearContainer();
-
-        /// Загружаем базовые значения
-        for (auto&& [id, propertyType] : m_shader->GetProperties()) {
-            m_properties.AddCustomProperty<MaterialProperty>(id.c_str(), propertyType)
-                .SetData(GetVariantFromShaderVarType(propertyType))
-                .SetMaterial(this)
-                .SetDisplayName(id); // TODO: make a pretty name
-        }
-
-        /// Применяем сохраненные в материале значения
-        if (auto&& pFileMaterial = dynamic_cast<FileMaterial*>(this)) {
-            LoadMaterialProperties(pFileMaterial->GetResourcePath().ToStringRef(), propertiesNode, &m_properties);
-        }
-        else {
-            const static std::string identifier = "From memory";
-            LoadMaterialProperties(identifier, propertiesNode, &m_properties);
-        }
-
-        /// Добавляем все текстуры в зависимости
-        for (auto&& pTexture : GetTexturesFromMatProperties(m_properties)) {
-            SRAssert(!(pTexture->GetCountUses() == 0 && pTexture->IsCalculated()));
-            AddMaterialDependency(pTexture);
-        }
-
-        return true;
-    }
-
     void BaseMaterial::InitContext() {
         if (!m_context) SR_UNLIKELY_ATTRIBUTE {
             if (!(m_context = SR_THIS_THREAD->GetContext()->GetValue<RenderContextPtr>())) {
@@ -189,10 +167,23 @@ namespace SR_GRAPH_NS {
 
         SetShader(nullptr);
 
-        for (auto&& pTexture : GetTexturesFromMatProperties(m_properties)) {
-            RemoveMaterialDependency(pTexture);
+        m_properties.ClearContainer();
+    }
+
+    void BaseMaterial::InitMaterialProperties() {
+        if (!m_shader) {
+            SR_ERROR("BaseMaterial::LoadProperties() : shader is nullptr!");
+            return;
         }
 
         m_properties.ClearContainer();
+
+        /// Загружаем базовые значения
+        for (auto&& property : m_shader->GetProperties()) {
+            m_properties.AddCustomProperty<MaterialProperty>(property.id, property.type)
+                .SetData(property.GetData())
+                .SetMaterial(this)
+                .SetDisplayName(property.id); // TODO: make a pretty name
+        }
     }
 }

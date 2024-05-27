@@ -350,6 +350,8 @@ namespace SR_GRAPH_NS::Types {
         pContext->Do([](RenderContext* ptr) {
             ptr->SetDirty();
         });
+
+        IResource::OnReloadDone();
     }
 
     bool Shader::Load() {
@@ -394,7 +396,7 @@ namespace SR_GRAPH_NS::Types {
                 const ShaderVarType varType = SR_SRSL_NS::SRSLTypeInfo::Instance().StringToType(field.type);
 
                 if (field.isPublic && varType != ShaderVarType::Unknown) {
-                    m_properties.emplace_back(std::make_pair(field.name, varType));
+                    m_properties.emplace_back(ShaderProperty(field.name, varType, field.defaultValue));
                 }
             }
 
@@ -412,7 +414,7 @@ namespace SR_GRAPH_NS::Types {
                 const ShaderVarType varType = SR_SRSL_NS::SRSLTypeInfo::Instance().StringToType(field.type);
 
                 if (field.isPublic && varType != ShaderVarType::Unknown) {
-                    m_properties.emplace_back(std::make_pair(field.name, varType));
+                    m_properties.emplace_back(ShaderProperty(field.name, varType, field.defaultValue));
                 }
             }
 
@@ -429,7 +431,7 @@ namespace SR_GRAPH_NS::Types {
             const ShaderVarType varType = SR_SRSL_NS::SRSLTypeInfo::Instance().StringToType(field.type);
 
             if (field.isPublic && varType != ShaderVarType::Unknown) {
-                m_properties.emplace_back(std::make_pair(field.name, varType));
+                m_properties.emplace_back(ShaderProperty(field.name, varType));
             }
         }
 
@@ -445,7 +447,7 @@ namespace SR_GRAPH_NS::Types {
             const ShaderVarType varType = SR_SRSL_NS::SRSLTypeInfo::Instance().StringToType(sampler.type);
 
             if (sampler.isPublic && varType != ShaderVarType::Unknown) {
-                m_properties.emplace_back(std::make_pair(name, varType));
+                m_properties.emplace_back(ShaderProperty(name, varType));
             }
         }
 

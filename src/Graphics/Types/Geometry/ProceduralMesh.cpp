@@ -65,7 +65,7 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        auto&& pShader = m_material->GetShader();
+        auto&& pShader = m_materialProperty.GetMaterial()->GetShader();
         auto&& uboManager = Memory::UBOManager::Instance();
 
         if (m_dirtyMaterial)
@@ -85,7 +85,7 @@ namespace SR_GTYPES_NS {
             pShader->InitUBOBlock();
             pShader->Flush();
 
-            m_material->UseSamplers();
+            m_materialProperty.GetMaterial()->UseSamplers();
             pShader->FlushSamplers();
         }
 
@@ -93,7 +93,7 @@ namespace SR_GTYPES_NS {
             case Memory::UBOManager::BindResult::Duplicated:
                 pShader->InitUBOBlock();
                 pShader->Flush();
-                m_material->UseSamplers();
+                m_materialProperty.GetMaterial()->UseSamplers();
                 pShader->FlushSamplers();
                 SR_FALLTHROUGH;
             case Memory::UBOManager::BindResult::Success:

@@ -22,6 +22,8 @@ namespace SR_GRAPH_NS {
         static FileMaterial::Ptr Load(SR_UTILS_NS::Path rawPath);
 
     public:
+        SR_NODISCARD MaterialType GetMaterialType() const noexcept override { return MaterialType::File; }
+
         SR_NODISCARD uint32_t RegisterMesh(MeshPtr pMesh) override;
         void UnregisterMesh(uint32_t* pId) override;
 
@@ -36,6 +38,8 @@ namespace SR_GRAPH_NS {
         void RemoveMaterialDependency(SR_UTILS_NS::IResource::Ptr pResource) override;
 
         void InitContext() override;
+
+        bool LoadProperties(const SR_XML_NS::Node& propertiesNode);
 
     private:
         void DeleteResource() override;

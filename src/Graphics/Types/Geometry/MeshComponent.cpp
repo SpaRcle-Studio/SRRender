@@ -86,23 +86,7 @@ namespace SR_GTYPES_NS {
 
     bool MeshComponent::InitializeEntity() noexcept {
         m_properties.AddEnumProperty("Mesh type", &m_meshType).SetReadOnly();
-
-        auto&& materialContainer = m_properties.AddContainer("Material");
-
-        materialContainer.AddCustomProperty<SR_UTILS_NS::PathProperty>("Path")
-            .AddFileFilter("Material", "mat")
-            .SetGetter([this]()-> SR_UTILS_NS::Path {
-                auto&& pFileMaterial = dynamic_cast<FileMaterial*>(m_material);
-                return pFileMaterial ? pFileMaterial->GetResourcePath() : SR_UTILS_NS::Path();
-            })
-            .SetSetter([this](const SR_UTILS_NS::Path& path) {
-                SetMaterial(path);
-            });
-
-        materialContainer.AddCustomProperty<SR_UTILS_NS::ExternalProperty>("Material")
-            .SetPropertyGetter([this]() -> SR_UTILS_NS::Property* { return m_material ? &m_material->GetProperties() : nullptr; })
-            .SetActiveCondition([this]() -> bool { return m_material; })
-            .SetDontSave();
+        m_properties.AddExternalProperty(&m_materialProperty);
 
         /// TODO: это какое-то полное очко. Надо писать кодогенерацию для полей классов.
         /*m_properties.AddArrayReferenceProperty("Override uniforms")

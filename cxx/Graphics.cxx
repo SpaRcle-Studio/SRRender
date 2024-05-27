@@ -81,8 +81,11 @@
 #include "../src/Graphics/Types/Shader.cpp"
 #include "../src/Graphics/Types/RenderTexture.cpp"
 
+#include "../src/Graphics/Material/MaterialProperty.cpp"
+#include "../src/Graphics/Material/MeshMaterialProperty.cpp"
 #include "../src/Graphics/Material/BaseMaterial.cpp"
 #include "../src/Graphics/Material/FileMaterial.cpp"
+#include "../src/Graphics/Material/UniqueMaterial.cpp"
 
 #include "../src/Graphics/Utils/MeshUtils.cpp"
 #include "../src/Graphics/Utils/AtlasBuilder.cpp"

@@ -12,17 +12,18 @@
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Material/FileMaterial.h>
 
-namespace SR_GRAPH_NS::Types {
+namespace SR_GTYPES_NS {
     Mesh::Mesh(MeshType type)
         : m_uboManager(Memory::UBOManager::Instance())
         , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
         , m_meshType(type)
-    { }
+    {
+        m_materialProperty.SetMesh(this);
+    }
 
     Mesh::~Mesh() {
         SetMaterial(nullptr);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
-        SRAssert(m_materialRegisterId == SR_ID_INVALID);
         SRAssert(!m_registrationInfo.has_value());
     }
 
@@ -110,39 +111,19 @@ namespace SR_GRAPH_NS::Types {
 
     void Mesh::SetMaterial(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
-
-        if (auto&& pFileMaterial = dynamic_cast<FileMaterial*>(m_material)) {
-            if (pFileMaterial->GetResourcePath() == path) {
-                return;
-            }
-        }
-
-        SetMaterial(path.empty() ? nullptr : FileMaterial::Load(path));
+        m_materialProperty.SetMaterial(path);
     }
 
     void Mesh::SetMaterial(MaterialPtr pMaterial) {
         SR_TRACY_ZONE;
-
-        if (pMaterial == m_material) {
-            return;
-        }
-
-        MarkMaterialDirty();
-        m_hasErrors = false;
-
-        if (m_material) {
-            m_material->UnregisterMesh(&m_materialRegisterId);
-        }
-
-        if ((m_material = pMaterial)) {
-            m_materialRegisterId = m_material->RegisterMesh(this);
-        }
-
-        ReRegisterMesh();
+        m_materialProperty.SetMaterial(pMaterial);
     }
 
     Mesh::ShaderPtr Mesh::GetShader() const {
-        return m_material ? m_material->GetShader() : nullptr;
+        if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
+            return pMaterial->GetShader();
+        }
+        return nullptr;
     }
 
     void Mesh::UseOverrideUniforms() {
@@ -157,8 +138,9 @@ namespace SR_GRAPH_NS::Types {
 
     void Mesh::UseMaterial() {
         SR_TRACY_ZONE;
-
-        m_material->Use();
+        if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
+            pMaterial->Use();
+        }
     }
 
     bool Mesh::BindMesh() {
@@ -185,11 +167,9 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Mesh::UseSamplers() {
-        if (!m_material) {
-            return;
+        if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
+            pMaterial->UseSamplers();
         }
-
-        m_material->UseSamplers();
     }
 
     std::string Mesh::GetMeshIdentifier() const {
@@ -272,7 +252,7 @@ namespace SR_GRAPH_NS::Types {
     void Mesh::ReRegisterMesh() {
         SR_TRACY_ZONE;
         if (m_registrationInfo.has_value()) {
-            auto pRenderScene = m_registrationInfo.value().pScene;
+            const auto pRenderScene = m_registrationInfo.value().pScene;
             pRenderScene->ReRegister(m_registrationInfo.value());
         }
     }

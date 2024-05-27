@@ -270,6 +270,7 @@ namespace SR_SRSL_NS {
                 field.name = pVariable->pName->ToString(0);
                 field.type = pVariable->pType->ToString(0);
                 field.isPublic = bool(pVariable->pDecorators->Find("public"));
+                field.defaultValue = EvalExpressionValue(pVariable->pExpr);
 
                 std::string blockName;
 
@@ -525,6 +526,67 @@ namespace SR_SRSL_NS {
         m_createInfo.vertexDescriptions = vertexInfo.m_descriptions;
 
         return true;
+    }
+
+    float_t SRSLShader::EvalExpressionFloat(SRSLExpr* pExpression) const {
+        if (!pExpression->args.empty()) {
+            SR_ERROR("SRSLShader::EvalExpressionFloat() : invalid expression args count! Count: " + std::to_string(pExpression->args.size()));
+            return 0.0f;
+        }
+        return SR_UTILS_NS::LexicalCast<float_t>(pExpression->token);
+    }
+
+    SR_MATH_NS::FVector3 SRSLShader::EvalExpressionVec3(SRSLExpr* pExpression) const {
+        if (pExpression->args.size() == 3) {
+            const float_t x = EvalExpressionFloat(pExpression->args[0]);
+            const float_t y = EvalExpressionFloat(pExpression->args[1]);
+            const float_t z = EvalExpressionFloat(pExpression->args[2]);
+            return SR_MATH_NS::FVector3(x, y, z);
+        }
+
+        if (pExpression->args.size() == 1) {
+            const float_t x = EvalExpressionFloat(pExpression->args[0]);
+            return SR_MATH_NS::FVector3(x, x, x);
+        }
+
+        SR_ERROR("SRSLShader::EvalExpressionVec3() : invalid expression args count! Count: " + std::to_string(pExpression->args.size()));
+        return SR_MATH_NS::FVector3::Zero();
+    }
+
+    SR_MATH_NS::FVector4 SRSLShader::EvalExpressionVec4(SRSLExpr* pExpression) const {
+        if (pExpression->args.size() == 4) {
+            const float_t x = EvalExpressionFloat(pExpression->args[0]);
+            const float_t y = EvalExpressionFloat(pExpression->args[1]);
+            const float_t z = EvalExpressionFloat(pExpression->args[2]);
+            const float_t w = EvalExpressionFloat(pExpression->args[3]);
+            return SR_MATH_NS::FVector4(x, y, z, w);
+        }
+
+        if (pExpression->args.size() == 1) {
+            const float_t x = EvalExpressionFloat(pExpression->args[0]);
+            return SR_MATH_NS::FVector4(x, x, x, x);
+        }
+
+        SR_ERROR("SRSLShader::EvalExpressionVec4() : invalid expression args count! Count: " + std::to_string(pExpression->args.size()));
+        return SR_MATH_NS::FVector4();
+    }
+
+    std::optional<ShaderPropertyVariant> SRSLShader::EvalExpressionValue(SRSLExpr* pExpression) const {
+        if (!pExpression) {
+            return std::nullopt;
+        }
+
+        if (pExpression->token == "vec3") {
+            return EvalExpressionVec3(pExpression);
+        }
+
+        if (pExpression->token == "vec4") {
+            return EvalExpressionVec4(pExpression);
+        }
+
+        SR_ERROR("SRSLShader::EvalExpressionValue() : unknown expression token! Type: " + pExpression->token);
+
+        return std::nullopt;
     }
 
     ISRSLCodeGenerator::SRSLCodeGenRes SRSLShader::GenerateStages(ShaderLanguage shaderLanguage) const {

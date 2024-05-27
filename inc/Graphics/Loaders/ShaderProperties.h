@@ -35,7 +35,7 @@ namespace SR_GRAPH_NS {
         ShaderAttachment
     > ShaderPropertyVariant;
 
-    SR_ENUM_NS_CLASS(ShaderVarType,
+    SR_ENUM_NS_CLASS_T(ShaderVarType, uint8_t,
           Unknown,
           Bool,
           Int,
@@ -61,113 +61,26 @@ namespace SR_GRAPH_NS {
           Skeleton128
     )
 
-    class MaterialProperty final : public SR_UTILS_NS::Property {
-        SR_REGISTER_TYPE_TRAITS_PROPERTY(MaterialProperty, 1001)
-    public:
-        MaterialProperty() = default;
-
-        explicit MaterialProperty(ShaderVarType type)
-            : SR_UTILS_NS::Property()
-            , m_type(type)
+    struct ShaderProperty {
+        ShaderProperty() = default;
+        ShaderProperty(SR_UTILS_NS::StringAtom id, ShaderVarType type)
+            : id(id)
+            , type(type)
+        { }
+        ShaderProperty(SR_UTILS_NS::StringAtom id, ShaderVarType type, std::optional<ShaderPropertyVariant> defaultData)
+            : id(id)
+            , type(type)
+            , defaultData(defaultData)
         { }
 
-        MaterialProperty(MaterialProperty&& other) noexcept
-            : m_material(SR_EXCHANGE(other.m_material, nullptr))
-            , m_displayName(SR_EXCHANGE(other.m_displayName, { }))
-            , m_data(SR_EXCHANGE(other.m_data, { }))
-            , m_pushConstant(SR_EXCHANGE(other.m_pushConstant, { }))
-            , m_type(SR_EXCHANGE(other.m_type, { }))
-        { }
+        SR_UTILS_NS::StringAtom id;
+        ShaderVarType type;
+        std::optional<ShaderPropertyVariant> defaultData;
 
-        MaterialProperty& operator=(MaterialProperty&& other) noexcept {
-            m_material = SR_EXCHANGE(other.m_material, nullptr);
-            m_displayName = SR_EXCHANGE(other.m_displayName, { });
-            m_data = SR_EXCHANGE(other.m_data, { });
-            m_pushConstant = SR_EXCHANGE(other.m_pushConstant, { });
-            m_type = SR_EXCHANGE(other.m_type, { });
-            return *this;
-        }
-
-        SR_NODISCARD SR_UTILS_NS::StringAtom GetDisplayName() const noexcept { return m_displayName; }
-        SR_NODISCARD ShaderVarType GetShaderVarType() const noexcept { return m_type; }
-        SR_NODISCARD const ShaderPropertyVariant& GetData() const noexcept { return m_data; }
-        SR_NODISCARD BaseMaterial* GetMaterial() const noexcept { return m_material; }
-        SR_NODISCARD bool IsPushConstant() const noexcept { return m_pushConstant; }
-        SR_NODISCARD bool IsSampler() const noexcept;
-
-        MaterialProperty& SetDisplayName(SR_UTILS_NS::StringAtom value) noexcept { m_displayName = value; return *this; }
-        MaterialProperty& SetShaderVarType(ShaderVarType value) noexcept { m_type = value; return *this; }
-        MaterialProperty& SetMaterial(BaseMaterial* value) noexcept { m_material = value; return *this; }
-        MaterialProperty& SetPushConstant(bool value) noexcept { m_pushConstant = value; return *this; }
-
-        void OnPropertyChanged();
-
-        template<typename T> MaterialProperty& SetData(const T& value) noexcept {
-            if constexpr (std::is_same_v<T, bool>) {
-                m_data = static_cast<int32_t>(value);
-            }
-            else {
-                m_data = value;
-            }
-
-            OnPropertyChanged();
-
-            return *this;
-        }
-
-        void Use(SR_GTYPES_NS::Shader* pShader) const noexcept;
-
-    private:
-        BaseMaterial* m_material = nullptr;
-        SR_UTILS_NS::StringAtom m_displayName;
-        ShaderPropertyVariant m_data;
-        bool m_pushConstant = false;
-        ShaderVarType m_type = ShaderVarType::Unknown;
-
+        ShaderPropertyVariant GetData() const;
     };
 
-    class MaterialProperties : public SR_UTILS_NS::PropertyContainer {
-    public:
-        MaterialProperties() = default;
-
-        void ClearContainer() override {
-            m_materialSamplerProperties.clear();
-            m_materialUniformsProperties.clear();
-            SR_UTILS_NS::PropertyContainer::ClearContainer();
-        }
-
-        void OnPropertyAdded(SR_UTILS_NS::Property* pProperty) override {
-            if (auto&& pMaterialProperty = dynamic_cast<MaterialProperty*>(pProperty)) {
-                if (pMaterialProperty->IsSampler()) {
-                    m_materialSamplerProperties.emplace_back(pMaterialProperty);
-                }
-                else {
-                    m_materialUniformsProperties.emplace_back(pMaterialProperty);
-                }
-            }
-        }
-
-        void UseMaterialSamplers(SR_GTYPES_NS::Shader* pShader) {
-            for (auto&& pProperty : m_materialSamplerProperties) {
-                pProperty->Use(pShader);
-            }
-        }
-
-        void UseMaterialUniforms(SR_GTYPES_NS::Shader* pShader) {
-            for (auto&& pProperty : m_materialUniformsProperties) {
-                pProperty->Use(pShader);
-            }
-        }
-
-    private:
-        /// references to properties. do not delete memory
-
-        std::vector<MaterialProperty*> m_materialSamplerProperties;
-        std::vector<MaterialProperty*> m_materialUniformsProperties;
-
-    };
-
-    typedef std::list<std::pair<std::string, ShaderVarType>> ShaderProperties;
+    typedef std::list<ShaderProperty> ShaderProperties;
 
     struct ShaderSampler {
         uint32_t binding = SR_ID_INVALID;
@@ -176,9 +89,6 @@ namespace SR_GRAPH_NS {
         bool isAttachment = false;
     };
     typedef std::map<SR_UTILS_NS::StringAtom, ShaderSampler> ShaderSamplers;
-
-    void LoadMaterialProperties(const std::string& materialDebugIdentifier, const SR_XML_NS::Node& propertiesNode, MaterialProperties* pProperties);
-    std::list<SR_GTYPES_NS::Texture*> GetTexturesFromMatProperties(const MaterialProperties& properties);
 
     SR_MAYBE_UNUSED static bool IsSamplerType(ShaderVarType type) {
         switch (type) {
@@ -308,9 +218,9 @@ template<> struct SR_UTILS_NS::SRHash<SR_GRAPH_NS::ShaderProperties> {
     size_t operator()(SR_GRAPH_NS::ShaderProperties const& value) const {
         std::size_t res = 0;
 
-        for (auto&& [key, val] : value) {
-            res = SR_UTILS_NS::HashCombine(key, res);
-            res = SR_UTILS_NS::HashCombine(val, res);
+        for (auto&& info : value) {
+            res = SR_UTILS_NS::HashCombine(info.id.GetHash(), res);
+            res = SR_UTILS_NS::HashCombine(info.type, res);
         }
 
         return res;

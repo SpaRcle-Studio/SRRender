@@ -13,6 +13,8 @@
 
 #include <Graphics/Loaders/ShaderProperties.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Material/MaterialType.h>
+#include <Graphics/Material/MaterialProperty.h>
 
 namespace SR_GTYPES_NS {
     class Mesh;
@@ -38,7 +40,7 @@ namespace SR_GRAPH_NS {
         using TexturePtr = SR_GTYPES_NS::Texture*;
 
     protected:
-        BaseMaterial() = default;
+        BaseMaterial();
         virtual ~BaseMaterial();
 
     public:
@@ -48,6 +50,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD MaterialProperties& GetProperties() { return m_properties; }
         SR_NODISCARD MaterialProperty* GetProperty(const SR_UTILS_NS::StringAtom& id);
         SR_NODISCARD MaterialProperty* GetProperty(uint64_t hashId);
+
+        SR_NODISCARD virtual MaterialType GetMaterialType() const noexcept = 0;
 
         SR_NODISCARD virtual uint32_t RegisterMesh(MeshPtr pMesh);
         virtual void UnregisterMesh(uint32_t* pId);
@@ -62,12 +66,13 @@ namespace SR_GRAPH_NS {
 
         void FinalizeMaterial();
 
-    protected:
-        virtual void InitContext();
-        bool LoadProperties(const SR_XML_NS::Node& propertiesNode);
-
         virtual void AddMaterialDependency(SR_UTILS_NS::IResource* pResource);
         virtual void RemoveMaterialDependency(SR_UTILS_NS::IResource* pResource);
+
+    protected:
+        void InitMaterialProperties();
+
+        virtual void InitContext();
 
     protected:
         SR_HTYPES_NS::ObjectPool<MeshPtr, uint32_t> m_meshes;
@@ -75,6 +80,7 @@ namespace SR_GRAPH_NS {
         std::atomic<bool> m_dirtyShader = false;
         MaterialProperties m_properties;
         RenderContextPtr m_context;
+        SR_UTILS_NS::Subscription m_shaderReloadDoneSubscription;
 
     private:
         bool m_isFinalized = false;

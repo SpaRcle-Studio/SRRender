@@ -94,6 +94,21 @@ namespace SR_GRAPH_GUI_NS {
         }
     }
 
+    template<typename T> void static EnumCombo(const std::string& label, T value, const SR_HTYPES_NS::Function<void(T)>& callback, void* pIdentifier) {
+        std::string id = SR_FORMAT_C("{}##{}", label.c_str(), pIdentifier);
+        if (ImGui::BeginCombo(id.c_str(), SR_UTILS_NS::EnumReflector::ToStringAtom(value).c_str())) {
+            auto&& selectables = SR_UTILS_NS::EnumReflector::GetNames<T>();
+            for (auto&& selectable : selectables) {
+                if (ImGui::Selectable(selectable.c_str())) {
+                    ImGui::SetItemDefaultFocus();
+                    callback(SR_UTILS_NS::EnumReflector::FromString<T>(selectable));
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+    }
+
     SR_MAYBE_UNUSED static bool Vec4Null(const ImVec4 &v1) { return (v1.x == 0) && (v1.y == 0) && (v1.z == 0) && (v1.w == 0); }
 
     SR_MAYBE_UNUSED static bool DragUnit(const std::string& name, SR_MATH_NS::Unit& value, float_t drag = 0.1f) {
@@ -751,7 +766,7 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::Text(text);
     }
 
-    SR_MAYBE_UNUSED static bool Button(const std::string& label, ImVec4 color = ImVec4(0, 0, 0, 0), ImVec4 hovered = ImVec4(0, 0, 0, 0), uint32_t index = 0) {
+    SR_MAYBE_UNUSED static bool Button(const std::string& label, ImVec4 color = ImVec4(0, 0, 0, 0), ImVec4 hovered = ImVec4(0, 0, 0, 0), void* pIdentifier = nullptr) {
         const auto hasBtnColor = !Vec4Null(color);
         const auto hasHoveredColor = !Vec4Null(hovered);
 
@@ -766,7 +781,7 @@ namespace SR_GRAPH_GUI_NS {
         if (hasHoveredColor || hasBtnColor)
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hovered);
 
-        const auto result = ImGui::Button(SR_FORMAT_C("{}##{}", label.c_str(), index));
+        const auto result = ImGui::Button(SR_FORMAT_C("{}##{}", label.c_str(), pIdentifier));
 
         if (hasBtnColor)
             ImGui::PopStyleColor(2);
@@ -777,8 +792,8 @@ namespace SR_GRAPH_GUI_NS {
         return result;
     }
 
-    SR_MAYBE_UNUSED static bool Button(const std::string& label, uint32_t index = 0) {
-        return Button(label, ImVec4(0, 0, 0, 0), ImVec4(0, 0, 0, 0), index);
+    SR_MAYBE_UNUSED static bool Button(const std::string& label, void* pIdentifier) {
+        return Button(label, ImVec4(0, 0, 0, 0), ImVec4(0, 0, 0, 0), pIdentifier);
     }
 
     bool RadioButton(const char* label, bool active, float_t radius = 1.f);

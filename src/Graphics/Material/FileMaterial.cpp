@@ -63,10 +63,6 @@ namespace SR_GRAPH_NS {
     }
 
     void FileMaterial::OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) {
-        if (pContainer == m_shader && m_shader) {
-            m_dirtyShader = true;
-        }
-
         bool hasChangedTexture = false;
 
         for (auto&& pTexture : GetTexturesFromMatProperties(m_properties)) {
@@ -115,13 +111,16 @@ namespace SR_GRAPH_NS {
         return IResource::Load();
     }
 
+    bool FileMaterial::LoadProperties(const SR_XML_NS::Node& propertiesNode) {
+        InitMaterialProperties();
+        /// Применяем сохраненные в материале значения
+        LoadMaterialProperties(GetResourcePath().ToStringRef(), propertiesNode, &m_properties);
+        return true;
+    }
+
     bool FileMaterial::Unload() {
         SR_TRACY_ZONE;
         SetShader(nullptr);
-
-        for (auto&& pTexture : GetTexturesFromMatProperties(m_properties)) {
-            RemoveDependency(pTexture);
-        }
 
         m_properties.ClearContainer();
 
