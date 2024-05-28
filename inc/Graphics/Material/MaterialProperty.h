@@ -52,25 +52,31 @@ namespace SR_GRAPH_NS {
         MaterialProperty& SetMaterial(BaseMaterial* value) noexcept { m_material = value; return *this; }
         MaterialProperty& SetPushConstant(bool value) noexcept { m_pushConstant = value; return *this; }
 
-        void OnPropertyChanged();
-
         void SaveProperty(MarshalRef marshal) const noexcept override;
         void LoadProperty(MarshalRef marshal) noexcept override;
 
         template<typename T> MaterialProperty& SetData(const T& value) noexcept {
             if constexpr (std::is_same_v<T, bool>) {
                 m_data = static_cast<int32_t>(value);
+                OnPropertyChanged(true);
+            }
+            else if constexpr (std::is_same_v<T, SR_GTYPES_NS::Texture*>) {
+                SetTextureInternal(value);
+                OnPropertyChanged(false);
             }
             else {
                 m_data = value;
+                OnPropertyChanged(true);
             }
-
-            OnPropertyChanged();
 
             return *this;
         }
 
         void Use(SR_GTYPES_NS::Shader* pShader) const noexcept;
+
+    private:
+        void SetTextureInternal(SR_GTYPES_NS::Texture* pTexture);
+        void OnPropertyChanged(bool onlyUniforms);
 
     private:
         BaseMaterial* m_material = nullptr;

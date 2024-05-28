@@ -34,9 +34,6 @@ namespace SR_GRAPH_NS {
         void OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) override;
 
     protected:
-        void AddMaterialDependency(SR_UTILS_NS::IResource::Ptr pResource) override;
-        void RemoveMaterialDependency(SR_UTILS_NS::IResource::Ptr pResource) override;
-
         void InitContext() override;
 
         bool LoadProperties(const SR_XML_NS::Node& propertiesNode);

@@ -46,7 +46,7 @@ namespace SR_GRAPH_NS {
                     break;
                 case ShaderVarType::Sampler2D: {
                     auto&& pTexture = SR_GTYPES_NS::Texture::Load(propertyXml.GetAttribute<std::string>());
-                    pMaterialProperty->GetMaterial()->SetTexture(pMaterialProperty, pTexture);
+                    pMaterialProperty->SetData(pTexture);
                     break;
                 }
                 default:
@@ -103,10 +103,29 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void MaterialProperty::SetTextureInternal(SR_GTYPES_NS::Texture* pTexture) {
+        SRAssert(GetShaderVarType() == ShaderVarType::Sampler2D);
+
+        if (auto&& pOldTexture = std::get<SR_GTYPES_NS::Texture*>(GetData())) {
+            pOldTexture->RemoveUsePoint();
+            m_textureOnReloadDoneSubscription.Reset();
+        }
+
+        m_data = pTexture;
+
+        if (pTexture) {
+            pTexture->AddUsePoint();
+            m_textureOnReloadDoneSubscription = pTexture->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this]() {
+                OnPropertyChanged(false);
+            });
+        }
+    }
+
     MaterialProperty::~MaterialProperty() {
         if (GetShaderVarType() == ShaderVarType::Sampler2D) {
             if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture*>(GetData())) {
-                GetMaterial()->RemoveMaterialDependency(pTexture);
+                pTexture->RemoveUsePoint();
+                m_textureOnReloadDoneSubscription.Reset();
             }
         }
     }
@@ -115,9 +134,9 @@ namespace SR_GRAPH_NS {
         return m_type >= ShaderVarType::Sampler2D && m_type <= ShaderVarType::Sampler2DShadow;
     }
 
-    void MaterialProperty::OnPropertyChanged() {
+    void MaterialProperty::OnPropertyChanged(bool onlyUniforms) {
         if (m_material) {
-            m_material->OnPropertyChanged();
+            m_material->OnPropertyChanged(onlyUniforms);
         }
     }
 
@@ -182,7 +201,7 @@ namespace SR_GRAPH_NS {
                     auto&& path = pBlock->Read<std::string>();
                     if (!path.empty()) {
                         auto&& pTexture = SR_GTYPES_NS::Texture::Load(path);
-                        GetMaterial()->SetTexture(this, pTexture);
+                        SetData(pTexture);
                     }
                     break;
                 }

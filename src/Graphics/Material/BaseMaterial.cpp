@@ -56,12 +56,22 @@ namespace SR_GRAPH_NS {
         *pId = SR_ID_INVALID;
     }
 
-    void BaseMaterial::OnPropertyChanged() {
+    void BaseMaterial::OnPropertyChanged(bool onlyUniforms) {
         SR_TRACY_ZONE;
 
-        m_meshes.ForEach([](uint32_t, auto&& pMesh) {
-            pMesh->MarkUniformsDirty();
-        });
+        if (onlyUniforms) {
+            m_meshes.ForEach([](uint32_t, auto&& pMesh) {
+                pMesh->MarkUniformsDirty();
+            });
+        }
+        else {
+            m_meshes.ForEach([](uint32_t, auto&& pMesh) {
+                pMesh->MarkMaterialDirty();
+            });
+            GetContext().Do([](RenderContext* ptr) {
+                ptr->SetDirty();
+            });
+        }
     }
 
     void BaseMaterial::SetShader(ShaderPtr pShader) {
@@ -72,7 +82,7 @@ namespace SR_GRAPH_NS {
         m_dirtyShader = true;
 
         if (m_shader) {
-            RemoveMaterialDependency(m_shader);
+            m_shader->RemoveUsePoint();
             m_shader = nullptr;
             m_shaderReloadDoneSubscription.Reset();
         }
@@ -87,43 +97,11 @@ namespace SR_GRAPH_NS {
 
         m_shaderReloadDoneSubscription = m_shader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this]() {
             m_dirtyShader = true;
-            m_meshes.ForEach([](uint32_t, auto&& pMesh) {
-                pMesh->MarkMaterialDirty();
-            });
+            OnPropertyChanged(false);
         });
 
-        AddMaterialDependency(m_shader);
+        m_shader->AddUsePoint();
         InitMaterialProperties();
-    }
-
-    void BaseMaterial::SetTexture(MaterialProperty* pProperty, SR_GTYPES_NS::Texture::Ptr pTexture) {
-        if (!SRVerifyFalse(!pProperty)) {
-            return;
-        }
-
-        if (auto&& oldTexture = std::get<SR_GTYPES_NS::Texture*>(pProperty->GetData())) {
-            if (oldTexture == pTexture) {
-                return;
-            }
-
-            RemoveMaterialDependency(oldTexture);
-        }
-
-        if (pTexture) {
-            SRAssert(!(pTexture->GetCountUses() == 0 && pTexture->IsCalculated()));
-            AddMaterialDependency(pTexture);
-        }
-
-        pProperty->SetData(pTexture);
-
-        m_meshes.ForEach([](uint32_t, auto&& pMesh) {
-            pMesh->MarkMaterialDirty();
-        });
-
-        /// сработает только если хоть раз была отрендерина текстура материала
-        m_context.Do([](RenderContext* ptr) {
-            ptr->SetDirty();
-        });
     }
 
     void BaseMaterial::UseSamplers() {
@@ -151,14 +129,6 @@ namespace SR_GRAPH_NS {
                 return;
             }
         }
-    }
-
-    void BaseMaterial::AddMaterialDependency(SR_UTILS_NS::IResource* pResource) {
-        pResource->AddUsePoint();
-    }
-
-    void BaseMaterial::RemoveMaterialDependency(SR_UTILS_NS::IResource* pResource) {
-        pResource->RemoveUsePoint();
     }
 
     void BaseMaterial::FinalizeMaterial() {

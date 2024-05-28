@@ -177,14 +177,6 @@ namespace SR_GRAPH_NS {
         return SR_UTILS_NS::ResourceManager::Instance().GetResPath();
     }
 
-    void FileMaterial::AddMaterialDependency(SR_UTILS_NS::IResource::Ptr pResource) {
-        AddDependency(pResource);
-    }
-
-    void FileMaterial::RemoveMaterialDependency(SR_UTILS_NS::IResource::Ptr pResource) {
-        RemoveDependency(pResource);
-    }
-
     void FileMaterial::InitContext() {
         if (!m_context) {
             BaseMaterial::InitContext();

@@ -50,24 +50,21 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD MaterialProperties& GetProperties() { return m_properties; }
         SR_NODISCARD MaterialProperty* GetProperty(const SR_UTILS_NS::StringAtom& id);
         SR_NODISCARD MaterialProperty* GetProperty(uint64_t hashId);
+        SR_NODISCARD RenderContextPtr GetContext() const { return m_context; }
 
         SR_NODISCARD virtual MaterialType GetMaterialType() const noexcept = 0;
 
         SR_NODISCARD virtual uint32_t RegisterMesh(MeshPtr pMesh);
         virtual void UnregisterMesh(uint32_t* pId);
 
-        void SetTexture(MaterialProperty* property, TexturePtr pTexture);
         virtual void SetShader(ShaderPtr pShader);
 
-        void OnPropertyChanged();
+        void OnPropertyChanged(bool onlyUniforms);
 
         void Use();
         void UseSamplers();
 
         void FinalizeMaterial();
-
-        virtual void AddMaterialDependency(SR_UTILS_NS::IResource* pResource);
-        virtual void RemoveMaterialDependency(SR_UTILS_NS::IResource* pResource);
 
     protected:
         void InitMaterialProperties();
