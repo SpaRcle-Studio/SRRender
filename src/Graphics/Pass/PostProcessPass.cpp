@@ -60,7 +60,7 @@ namespace SR_GRAPH_NS {
 
         if (m_shader && m_shader->BeginSharedUBO()) {
             m_shader->SetVec2(SHADER_RESOLUTION, GetContext()->GetWindowSize().Cast<float_t>());
-            m_shader->SetFloat(SHADER_TIME, SR_HTYPES_NS::Time::Instance().FClock());
+            m_shader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
 
             if (m_camera) {
                 m_shader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
