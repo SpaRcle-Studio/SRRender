@@ -27,6 +27,7 @@ namespace SR_GRAPH_NS {
         void OnFramebufferSizeChangedCallback(GLFWwindow* pWindow, SR_MATH_NS::IVector2 size);
         void OnFocusChangedCallback(GLFWwindow* pWindow, bool isFocused);
         void OnWindowRefreshCallback(GLFWwindow* pWindow);
+        void OnScrollCallback(GLFWwindow* pWindow, double xoffset, double yoffset);
 
 
     public:

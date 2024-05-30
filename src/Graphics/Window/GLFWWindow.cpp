@@ -65,8 +65,15 @@ namespace SR_GRAPH_NS {
             }
         });
 
-        //glfwSetMouseButtonCallback()
+        glfwSetScrollCallback(m_window, [](GLFWwindow* pWindow, double xoffset, double yoffset) {
+            if (void* pHandle = glfwGetWindowUserPointer(pWindow)) {
+                static_cast<GLFWWindow*>(pHandle)->OnScrollCallback(pWindow, xoffset, yoffset);
+            }
+        });
 
+        glfwClipbo
+
+        //glfwSetMouseButtonCallback()
 
         m_isValid = true;
         glfwRequestWindowAttention(m_window);
@@ -111,7 +118,7 @@ namespace SR_GRAPH_NS {
     void GLFWWindow::OnFramebufferSizeChangedCallback(GLFWwindow* pWindow, SpaRcle::Utils::Math::IVector2 size) {
         if (pWindow != m_window) {
             /// This is just for debug. I would just like to know how glfw handles events and if this case is actually possible.
-            SR_WARN("GLFWWindow::OnSizeChangedCallback() : window handle mismatch.");
+            SR_WARN("GLFWWindow::OnFramebufferSizeChangedCallback() : window handle mismatch.");
             return;
         }
 
@@ -139,7 +146,7 @@ namespace SR_GRAPH_NS {
     void GLFWWindow::OnFocusChangedCallback(GLFWwindow* pWindow, bool isFocused) {
         if (pWindow != m_window) {
             /// This is just for debug. I would just like to know how glfw handles events and if this case is actually possible.
-            SR_WARN("GLFWWindow::OnSizeChangedCallback() : window handle mismatch.");
+            SR_WARN("GLFWWindow::OnFocusChangedCallback() : window handle mismatch.");
             return;
         }
 
@@ -156,6 +163,18 @@ namespace SR_GRAPH_NS {
         if (ImGui::GetCurrentContext()) {
             ImGui::GetIO().DisplaySize.x = m_size.x;
             ImGui::GetIO().DisplaySize.y = m_size.y;
+        }
+    }
+
+    void GLFWWindow::OnScrollCallback(GLFWwindow* pWindow, double xoffset, double yoffset) {
+        if (pWindow != m_window) {
+            /// This is just for debug. I would just like to know how glfw handles events and if this case is actually possible.
+            SR_WARN("GLFWWindow::OnScrollCallback() : window handle mismatch.");
+            return;
+        }
+
+        if (m_scrollCallback) {
+            m_scrollCallback(this, xoffset, yoffset);
         }
     }
 
