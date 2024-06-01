@@ -71,10 +71,6 @@ namespace SR_GRAPH_NS {
             }
         });
 
-        glfwClipbo
-
-        //glfwSetMouseButtonCallback()
-
         m_isValid = true;
         glfwRequestWindowAttention(m_window);
 
