@@ -634,6 +634,75 @@ namespace SR_GRAPH_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
+    MaterialRenderStage::MaterialRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent, SR_GRAPH_NS::BaseMaterial* pMaterial)
+        : Super(pRenderStrategy, pParent)
+        , m_material(pMaterial)
+    {
+        m_meshStage = new MeshRenderStage(pRenderStrategy, this);
+    }
+
+    MaterialRenderStage::~MaterialRenderStage() {
+        SRAssert(m_VBOStages.empty());
+        delete m_meshStage;
+    }
+
+    bool MaterialRenderStage::Render() {
+        return false;
+    }
+
+    void MaterialRenderStage::Update() {
+    }
+
+    void MaterialRenderStage::PostUpdate() {
+        for (auto&& [VBO, pVBOStage] : m_VBOStages) {
+            pVBOStage->PostUpdate();
+        }
+
+        if (m_meshStage) {
+            m_meshStage->PostUpdate();
+        }
+
+        Super::PostUpdate();
+    }
+
+    bool MaterialRenderStage::RegisterMesh(MeshRegistrationInfo &info) {
+        return IRenderStage::RegisterMesh(info);
+    }
+
+    bool MaterialRenderStage::UnRegisterMesh(const MeshRegistrationInfo &info) {
+        return IRenderStage::UnRegisterMesh(info);
+    }
+
+    void MaterialRenderStage::ForEachMesh(const SR_HTYPES_NS::Function<void(MeshPtr)> &callback) const {
+        for (auto&& [VBO, pStage] : m_VBOStages) {
+            pStage->ForEachMesh(callback);
+        }
+
+        m_meshStage->ForEachMesh(callback);
+    }
+
+    bool MaterialRenderStage::HasActiveMesh() const {
+        SR_TRACY_ZONE;
+
+        if (!m_renderStrategy->IsNeedCheckMeshActivity()) {
+            return true;
+        }
+
+        if (m_meshStage->HasActiveMesh()) {
+            return true;
+        }
+
+        for (auto&& [VBO, pVBOStage] : m_VBOStages) {
+            if (pVBOStage->HasActiveMesh()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// ----------------------------------------------------------------------------------------------------------------
+
     ShaderRenderStage::ShaderRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent, SR_GTYPES_NS::Shader* pShader)
         : Super(pRenderStrategy, pParent)
         , m_shader(pShader)

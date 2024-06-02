@@ -83,6 +83,8 @@ namespace SR_GRAPH_NS::Types {
     }
 
     ShaderBindResult Shader::Use() noexcept {
+        SR_TRACY_ZONE;
+
         if (m_hasErrors) {
             return ShaderBindResult::Failed;
         }

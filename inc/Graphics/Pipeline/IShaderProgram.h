@@ -22,7 +22,7 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     struct ShaderUseInfo {
         ShaderUseInfo() = default;
-        explicit ShaderUseInfo(SR_GTYPES_NS::Shader* pShader)
+        explicit SR_CONSTEXPR ShaderUseInfo(SR_GTYPES_NS::Shader* pShader)
             : pShader(pShader)
             , ignoreReplace(false)
             , useMaterial(true)

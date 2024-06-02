@@ -25,11 +25,13 @@ namespace SR_GRAPH_NS {
 
     class RenderScene;
     class MeshRenderStage;
+    class BaseMaterial;
 
     struct MeshRegistrationInfo {
         MeshRenderStage* pMeshRenderStage = nullptr;
         SR_GTYPES_NS::Mesh* pMesh = nullptr;
         SR_GTYPES_NS::Shader* pShader = nullptr;
+        BaseMaterial* pMaterial = nullptr;
         SR_UTILS_NS::StringAtom layer;
         std::optional<int32_t> VBO;
         std::optional<int64_t> priority;

@@ -47,6 +47,7 @@
 #include "../src/Graphics/UI/Anchor.cpp"
 #include "../src/Graphics/UI/Gizmo.cpp"
 
+#include "../src/Graphics/Render/MeshRenderQueue.cpp"
 #include "../src/Graphics/Render/ScriptableRenderTechnique.cpp"
 #include "../src/Graphics/Render/IRenderTechnique.cpp"
 #include "../src/Graphics/Render/FlatCluster.cpp"

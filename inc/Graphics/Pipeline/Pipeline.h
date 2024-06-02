@@ -243,6 +243,8 @@ namespace SR_GRAPH_NS {
 
         virtual void ResetLastShader();
 
+        void SetShaderVariant(const SR_UTILS_NS::StringAtom variant) { m_state.shaderVariant = variant; }
+
     protected:
         std::map<OverlayType, SR_HTYPES_NS::SharedPtr<Overlay>> m_overlays;
 

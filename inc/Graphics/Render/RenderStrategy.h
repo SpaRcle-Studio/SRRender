@@ -83,6 +83,29 @@ namespace SR_GRAPH_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
+    /**
+        build queue:
+
+        LayerRenderStage
+            PriorityRenderStage
+                MaterialRenderStage
+                    VBORenderStage
+                        MeshRenderStage
+
+        render queue:
+
+        for add/remove use lower_bound to find shader
+
+        shader 0x0021
+        shader 0x2362
+        shader 0x1132
+
+        struct RenderQueue {
+            std::vector<std::pair<Shader*, > shaders;
+        };
+
+    */
+
     class MeshRenderStage : public IRenderStage {
         using Super = IRenderStage;
         using MeshList = std::vector<SR_GTYPES_NS::Mesh*>;
@@ -160,6 +183,38 @@ namespace SR_GRAPH_NS {
 
     private:
         SR_GTYPES_NS::Shader* m_shader = nullptr;
+
+        MeshRenderStage* m_meshStage = nullptr;
+        std::map<int32_t, VBORenderStage*> m_VBOStages;
+
+    };
+
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    class MaterialRenderStage : public IRenderStage {
+        using Super = IRenderStage;
+    public:
+        explicit MaterialRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent, SR_GRAPH_NS::BaseMaterial* pMaterial);
+        ~MaterialRenderStage() override;
+
+    public:
+        bool Render();
+        void Update();
+        void PostUpdate();
+
+        bool RegisterMesh(MeshRegistrationInfo& info) override;
+        bool UnRegisterMesh(const MeshRegistrationInfo& info) override;
+
+        SR_NODISCARD bool IsEmpty() const override { return m_VBOStages.empty() && m_meshStage->IsEmpty(); }
+        SR_NODISCARD bool IsValid() const override { return m_material; }
+
+        void ForEachMesh(const SR_HTYPES_NS::Function<void(MeshPtr)>& callback) const override;
+
+    private:
+        SR_NODISCARD bool HasActiveMesh() const;
+
+    private:
+        SR_GRAPH_NS::BaseMaterial* m_material = nullptr;
 
         MeshRenderStage* m_meshStage = nullptr;
         std::map<int32_t, VBORenderStage*> m_VBOStages;
