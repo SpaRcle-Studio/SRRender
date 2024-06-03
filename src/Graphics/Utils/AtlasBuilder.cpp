@@ -12,38 +12,43 @@ namespace SR_GRAPH_NS {
     { }
 
     bool AtlasBuilder::Generate() {
-        if (!m_data.location.Exists()) {
-            SR_ERROR("AtlasBuilder::Generate() : The sprite location does not exist: \"" + m_data.location.ToString() + "\"");
+        if (m_data.source.IsAbs() || m_data.destination.IsAbs()) {
+            SR_ERROR("AtlasBuilder::Generate() : paths must be relative.");
             return false;
         }
 
-        if (m_data.saveInCache) {
-            auto&& cacheDir = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().GetFolder();
+        auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
+        auto&& resourcePath = resourceManager.GetResPath();
 
-            if (!m_data.destination.empty()) {
-                m_data.destination = cacheDir.Concat(m_data.destination.GetFolder());
+        m_data.source = m_data.source.RemoveSubPath(resourceManager.GetResPathRef());
+
+        if (m_data.saveInCache) {
+            auto&& cacheDir = resourceManager.GetCachePath();
+
+            if (m_data.destination.empty()) {
+                m_data.destination = cacheDir.Concat("AtlasBuilder").Concat(m_data.source);
             }
             else {
-                m_data.destination = cacheDir.Concat("AtlasBuilder/");
+                m_data.destination = cacheDir.Concat("AtlasBuilder").Concat(m_data.destination);
             }
         }
         else {
             if (m_data.destination.empty()) {
-                m_data.destination = m_data.location;
+                m_data.destination = resourcePath.Concat(m_data.source);
             }
             else {
-                if (!m_data.destination.CreateIfNotExists()) {
-                    m_data.destination = m_data.location;
-                }
+                m_data.destination = resourcePath.Concat(m_data.destination);
             }
         }
 
+        m_data.destination = m_data.destination.Concat("Atlas").ConcatExt(m_data.extension);
+
         std::vector<SR_GRAPH_NS::TextureData::Ptr> spriteList;
 
-        auto&& files = m_data.location.GetFiles();
+        auto&& files = resourcePath.Concat(m_data.source).GetFiles();
 
         if (files.empty()) {
-            SR_ERROR("AtlasBuilder::Generate() : specified path does not contain any files. \nPath: \"" + m_data.location.ToString() + "\"");
+            SR_ERROR("AtlasBuilder::Generate() : specified path does not contain any files. \nPath: \"" + m_data.source.ToString() + "\"");
             return false;
         }
 
@@ -63,27 +68,35 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_sprites.empty()) {
-            SR_ERROR("AtlasBuilder::Generate() : specified path does not contain any sprites. \nPath: \"" + m_data.location.ToString() + "\"");
+            SR_ERROR("AtlasBuilder::Generate() : specified path does not contain any sprites. \nPath: \"" + m_data.source.ToString() + "\"");
             return false;
         }
 
         return Create();
     }
 
-    bool AtlasBuilder::Save(const SR_UTILS_NS::Path& path) const {
+    bool AtlasBuilder::SaveConfig(const SR_UTILS_NS::Path& path) const {
         auto&& document = SR_XML_NS::Document::New();
 
-        auto&& rootNode = document.Root().AppendNode(path.ToString());
+        auto&& rootNode = document.Root().AppendNode("Config");
 
-        rootNode.AppendChild("SpritePath").AppendAttribute("Value", m_data.location.ToString());
-        rootNode.AppendChild("AtlasPath").AppendAttribute("Value", m_data.destination.ToString());
+        std::string atlasPath;
+        if (m_data.saveInCache) {
+            atlasPath = m_data.destination.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetCachePath());
+        }
+        else {
+            atlasPath = m_data.destination.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPathRef());
+        }
+
+        rootNode.AppendChild("SpriteSource").AppendAttribute("Value", m_data.source.ToString());
+        rootNode.AppendChild("AtlasPath").AppendAttribute("Value", atlasPath);
         rootNode.AppendChild("IsSavedInCache").AppendAttribute("Value", m_data.saveInCache);
         rootNode.AppendChild("QuantityOnX").AppendAttribute("Value", m_data.quantityOnAxes.x);
         rootNode.AppendChild("QuantityOnY").AppendAttribute("Value", m_data.quantityOnAxes.y);
         rootNode.AppendChild("WidthStep").AppendAttribute("Value", m_data.step.x);
         rootNode.AppendChild("HeightStep").AppendAttribute("Value", m_data.step.y);
 
-        return document.Save(path);
+        return document.Save(path.ConcatExt("xml"));
     }
 
     bool AtlasBuilder::Create() {
@@ -97,9 +110,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        bool isEvenSpriteCount = m_sprites.size() % 2 == 0;
-
-        if (isEvenSpriteCount) {
+        const bool isSpriteCountEven = m_sprites.size() % 2 == 0;
+        if (isSpriteCountEven) {
             if (isSpritesSameSize) {
                 return CreateRectangleAtlas();
             }
@@ -131,9 +143,8 @@ namespace SR_GRAPH_NS {
             delete[] pData;
         });
 
-        auto&& saveResult = SaveAtlas();
-        if (!saveResult) {
-            SR_ERROR("AtlasCreationStrategy::CreateTightRectangleAtlas() : failed to save data on disk.");
+        if (!Save()) {
+            SR_ERROR("AtlasBuilder::CreateTightRectangleAtlas() : failed to save data.");
             return false;
         }
 
@@ -160,26 +171,30 @@ namespace SR_GRAPH_NS {
             delete[] pData;
         });
 
-        auto&& saveResult = SaveAtlas();
-        if (!saveResult) {
-            SR_ERROR("AtlasCreationStrategy::CreateRectangleAtlas() : failed to save data on disk.");
+        if (!Save()) {
+            SR_ERROR("AtlasBuilder::CreateRectangleAtlas() : failed to save data.");
             return false;
         }
 
         return true;
     }
 
-    bool AtlasBuilder::SaveAtlas() const {
+    bool AtlasBuilder::Save() const {
         if (!m_atlas) {
-            SR_WARN("AtlasBuilder::SaveAtlas() : atlas is not yet created!");
+            SR_ERROR("AtlasBuilder::Save() : atlas is not created!");
             return false;
         }
 
-        /// TODO: Implement ability to save in different formats.
-        std::string filename = "testPiski";
-        auto&& targetPath = m_data.destination.GetFolder().Concat(filename).ConcatExt("png");
+        if (!m_atlas->Save(m_data.destination)) {
+            SR_ERROR("AtlasBuilder::Save() : failed to save atlas to file!");
+            return false;
+        }
 
-        targetPath = "/home/nrv/atlasPIZDI.png";
-        return m_atlas->Save(targetPath);
+        if (!SaveConfig(m_data.destination)) {
+            SR_ERROR("AtlasBuilder::Save() : failed to save config to file!");
+            return false;
+        }
+
+        return true;
     }
 }

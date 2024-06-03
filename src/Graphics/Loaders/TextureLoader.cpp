@@ -75,12 +75,17 @@ namespace SR_GRAPH_NS {
     }
 
     bool TextureData::Save(const SR_UTILS_NS::Path& path) const {
-        auto result = stbi_write_png(path.CStr(), m_width, m_height, m_channels, m_data, m_width * m_channels);
-        if (!result) {
+        if (!path.Create()) {
+            SR_ERROR("TextureData::Save() : failed to create path! \nPath: \"" + path.GetFolder().ToString() + "\".");
             return false;
         }
 
-        return true;
+        if (path.GetExtensionView() == "png") {
+            return stbi_write_png(path.CStr(), m_width, m_height, m_channels, m_data, m_width * m_channels);
+        }
+
+        SR_ERROR("TextureData::Save() : extension is not supported! \nPath: \"" + path.ToString() + "\".");
+        return false;
     }
 
 

@@ -11,8 +11,9 @@
 
 namespace SR_GRAPH_NS {
     struct AtlasBuilderData {
-        SR_UTILS_NS::Path location;
+        SR_UTILS_NS::Path source;
         SR_UTILS_NS::Path destination;
+        std::string extension = "png";
         bool saveInCache = false;
         SR_MATH_NS::UVector2 quantityOnAxes;
         SR_MATH_NS::UVector2 step;
@@ -26,11 +27,11 @@ namespace SR_GRAPH_NS {
     public:
         SR_NODISCARD bool Generate();
 
-        SR_NODISCARD bool SaveAtlas() const;
-        SR_NODISCARD bool Save(const SR_UTILS_NS::Path& path) const;
+        SR_NODISCARD bool Save() const;
+        SR_NODISCARD bool SaveConfig(const SR_UTILS_NS::Path& path) const;
 
     public:
-        SR_NODISCARD SR_UTILS_NS::Path GetLocation() const { return m_data.location; }
+        SR_NODISCARD SR_UTILS_NS::Path GetLocation() const { return m_data.source; }
         SR_NODISCARD bool IsInCache() const { return m_data.saveInCache; }
         SR_NODISCARD SR_MATH_NS::UVector2 GetQuantity() const { return m_data.quantityOnAxes; }
         SR_NODISCARD SR_MATH_NS::UVector2 GetStep() const { return m_data.step; }
