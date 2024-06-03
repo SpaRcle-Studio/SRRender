@@ -31,6 +31,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool Save(const SR_UTILS_NS::Path& path) const;
 
     public:
+        SR_NODISCARD SR_MATH_NS::UVector2 GetSize() const { return { m_width, m_height }; }
         SR_NODISCARD uint32_t GetWidth() const { return m_width; }
         SR_NODISCARD uint32_t GetHeight() const { return m_height; }
         SR_NODISCARD uint8_t GetChannels() const { return m_channels; }

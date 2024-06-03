@@ -1,113 +1,117 @@
 //
 // Created by qulop on 17.03.2024
+// Fixed and refactored by innerviewer on 2024-06-02.
 //
+
 #include <Graphics/Utils/AtlasBuilder.h>
 #include <Utils/Common/Hashes.h>
 
-
 namespace SR_GRAPH_NS {
-    AtlasBuilder::AtlasBuilder(SR_UTILS_NS::Path path, const SR_MATH_NS::USVector2& quantityOnAxes, uint32_t xStep, uint32_t yStep)
-        : m_location(std::move(path))
-        , m_quantityOnAxes(quantityOnAxes)
-        , m_xStep(xStep)
-        , m_yStep(yStep)
+    AtlasBuilder::AtlasBuilder(AtlasBuilderData data)
+        : m_data(std::move(data))
     { }
 
-    AtlasBuilder::AtlasBuilder(const SR_UTILS_NS::Path& folder) {
-        if (!folder.Exists()) {
-            SR_ERROR("AtlasBuilder::AtlasBuilder() : The specified path does not exist: \"" + folder.ToString() + "\"");
-            return;
-        }
-        m_isCached = true;
-
-        std::list<SR_GRAPH_NS::TextureData::Ptr> spritesList;
-        uint32_t totalWidth = 0;
-        uint32_t totalHeight = 0;
-
-        for (auto&& sprite : folder.GetFiles()) {
-            spritesList.emplace_back(SR_GRAPH_NS::TextureData::Load(sprite));
-
-            totalWidth += spritesList.back()->GetWidth();
-            totalHeight += spritesList.back()->GetHeight();
+    bool AtlasBuilder::Generate() {
+        if (!m_data.location.Exists()) {
+            SR_ERROR("AtlasBuilder::Generate() : The sprite location does not exist: \"" + m_data.location.ToString() + "\"");
+            return false;
         }
 
-        AtlasCreationStrategy strategy(spritesList, totalWidth, totalHeight);
-        auto&& atlas = strategy.ChooseAndCreate(folder);
-        if (!atlas.has_value()) return;
+        if (m_data.saveInCache) {
+            auto&& cacheDir = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().GetFolder();
 
-        Copy(atlas.value());
+            if (!m_data.destination.empty()) {
+                m_data.destination = cacheDir.Concat(m_data.destination.GetFolder());
+            }
+            else {
+                m_data.destination = cacheDir.Concat("AtlasBuilder/");
+            }
+        }
+        else {
+            if (m_data.destination.empty()) {
+                m_data.destination = m_data.location;
+            }
+            else {
+                if (!m_data.destination.CreateIfNotExists()) {
+                    m_data.destination = m_data.location;
+                }
+            }
+        }
+
+        std::vector<SR_GRAPH_NS::TextureData::Ptr> spriteList;
+
+        auto&& files = m_data.location.GetFiles();
+
+        if (files.empty()) {
+            SR_ERROR("AtlasBuilder::Generate() : specified path does not contain any files. \nPath: \"" + m_data.location.ToString() + "\"");
+            return false;
+        }
+
+        m_sprites.reserve(files.size());
+
+        for (auto&& filePath : files) {
+            auto&& sprite = SR_GRAPH_NS::TextureData::Load(filePath);
+
+            if (!sprite) {
+                continue;
+            }
+
+            m_totalSize.x += sprite->GetWidth();
+            m_totalSize.y += sprite->GetHeight();
+
+            m_sprites.emplace_back(sprite);
+        }
+
+        if (m_sprites.empty()) {
+            SR_ERROR("AtlasBuilder::Generate() : specified path does not contain any sprites. \nPath: \"" + m_data.location.ToString() + "\"");
+            return false;
+        }
+
+        return Create();
     }
 
-    void AtlasBuilder::Copy(const AtlasBuilder& other) {
-        m_location = other.m_location;
-        m_quantityOnAxes = other.m_quantityOnAxes;
-        m_xStep = other.m_xStep;
-        m_yStep = other.m_yStep;
-    }
-
-    bool AtlasBuilder::Generate(const SR_UTILS_NS::Path& path) const {  // NOLINT
+    bool AtlasBuilder::Save(const SR_UTILS_NS::Path& path) const {
         auto&& document = SR_XML_NS::Document::New();
 
         auto&& rootNode = document.Root().AppendNode(path.ToString());
 
-        rootNode.AppendChild("Path").AppendAttribute("Value", m_location.ToString());
-        rootNode.AppendChild("IsCached").AppendAttribute("Value", m_isCached);
-        rootNode.AppendChild("QuantityOnX").AppendAttribute("Value",m_quantityOnAxes.x);
-        rootNode.AppendChild("QuantityOnY").AppendAttribute("Value",m_quantityOnAxes.y);
-        rootNode.AppendChild("StepInWidth").AppendAttribute("Value",m_xStep);
-        rootNode.AppendChild("StepInHeight").AppendAttribute("Value",m_yStep);
+        rootNode.AppendChild("SpritePath").AppendAttribute("Value", m_data.location.ToString());
+        rootNode.AppendChild("AtlasPath").AppendAttribute("Value", m_data.destination.ToString());
+        rootNode.AppendChild("IsSavedInCache").AppendAttribute("Value", m_data.saveInCache);
+        rootNode.AppendChild("QuantityOnX").AppendAttribute("Value", m_data.quantityOnAxes.x);
+        rootNode.AppendChild("QuantityOnY").AppendAttribute("Value", m_data.quantityOnAxes.y);
+        rootNode.AppendChild("WidthStep").AppendAttribute("Value", m_data.step.x);
+        rootNode.AppendChild("HeightStep").AppendAttribute("Value", m_data.step.y);
 
-        document.Save(path);
-        return true;
+        return document.Save(path);
     }
 
-    AtlasCreationStrategy::AtlasCreationStrategy(const std::list<AtlasCreationStrategy::AtlasPtr>& sprites, uint32_t totalWidth, uint32_t totalHeight)
-        : m_sprites(sprites)
-        , m_totalWidth(totalWidth)
-        , m_totalHeight(totalHeight)
-    { }
-
-    std::optional<AtlasBuilder> AtlasCreationStrategy::ChooseAndCreate(const SR_UTILS_NS::Path& destFolder) const {
-        if (!m_destination.Copy(destFolder))
-            return std::nullopt;
-
+    bool AtlasBuilder::Create() {
         bool isSpritesSameSize = true;
-        for (auto&& pSprite : m_sprites) {
-            auto referenceWidth = m_sprites.front()->GetWidth();
-            auto referenceHeight = m_sprites.front()->GetHeight();
 
-            if (pSprite->GetWidth() != referenceWidth || pSprite->GetHeight() != referenceHeight) {
+        auto&& referenceSize = m_sprites.front()->GetSize();
+        for (auto&& pSprite : m_sprites) {
+            if (pSprite->GetSize() != referenceSize) {
                 isSpritesSameSize = false;
+                break;
             }
         }
-        bool isDividedBy2 = m_sprites.size() % 2 == 0;
 
-        // Choose a creation strategy
-        // if (isSpritesSameSize && isDividedBy2)
-        //    return CreateRectangleAtlas();
-        if (!isSpritesSameSize && isDividedBy2)
+        bool isEvenSpriteCount = m_sprites.size() % 2 == 0;
+
+        if (isEvenSpriteCount) {
+            if (isSpritesSameSize) {
+                return CreateRectangleAtlas();
+            }
+
             return CreateTightRectangleAtlas();
-        // return CreateLineAtlas();
-
-        return std::nullopt;
-    }
-
-    SR_UTILS_NS::Path AtlasCreationStrategy::CreateTargePath(AtlasCreationStrategy::AtlasPtr atlas) const {
-        auto&& fileName = SR_UTILS_NS::sha256<SR_HTYPES_NS::HashT<16>>(atlas->GetData(), atlas->GetNumberOfBytes()).to_string();
-        auto&& targetPath = m_destination.Concat(fileName);
-
-        if (!atlas->Save(targetPath)) {
-            return {};
         }
 
-        return targetPath;
+        SR_WARN("AtlasBuilder::Create() : no suitable strategy found.");
+        return false;
     }
 
-//    AtlasCreationStrategy::AtlasPtr AtlasCreationStrategy::CreateRectangleAtlas() {
-//        return nullptr;
-//    }
-
-    std::optional<AtlasBuilder> AtlasCreationStrategy::CreateTightRectangleAtlas() const {
+    bool AtlasBuilder::CreateTightRectangleAtlas() {
         uint32_t totalBytes = 0;
         for (auto&& pSprite : m_sprites) {
             totalBytes += pSprite->GetNumberOfBytes();
@@ -123,21 +127,59 @@ namespace SR_GRAPH_NS {
             offset += pSprite->GetNumberOfBytes();
         }
 
-        auto&& pTextureData = TextureData::Create(m_totalWidth, m_totalHeight, pGeneralData, [](uint8_t* pData) {
+        m_atlas = TextureData::Create(m_totalSize.x, m_totalSize.y, pGeneralData, [](uint8_t* pData) {
             delete[] pData;
         });
 
-        auto&& targetPath = CreateTargePath(pTextureData);
-        if (targetPath.IsEmpty()) {
-            SR_ERROR("AtlasCreationStrategy::CreateTightSquare() : failed to save data on disk.");
-            return std::nullopt;
+        auto&& saveResult = SaveAtlas();
+        if (!saveResult) {
+            SR_ERROR("AtlasCreationStrategy::CreateTightRectangleAtlas() : failed to save data on disk.");
+            return false;
         }
 
-        return std::make_optional<AtlasBuilder>(targetPath, SR_MATH_NS::USVector2{},  0, 0);
+        return true;
     }
 
+    bool AtlasBuilder::CreateRectangleAtlas() {
+        uint32_t totalBytes = 0;
+        for (auto&& pSprite : m_sprites) {
+            totalBytes += pSprite->GetNumberOfBytes();
+        }
 
-//    AtlasCreationStrategy::AtlasPtr AtlasCreationStrategy::CreateLineAtlas() {
-//        return nullptr;
-//    }
+        auto* pGeneralData = new uint8_t[totalBytes];
+        std::memset(pGeneralData, 0, totalBytes);
+
+        uint32_t offset = 0;
+        for (auto&& pSprite : m_sprites) {
+            std::memcpy(pGeneralData + offset, pSprite->GetData(), pSprite->GetNumberOfBytes());
+
+            offset += pSprite->GetNumberOfBytes();
+        }
+
+        m_atlas = TextureData::Create(m_totalSize.x, m_totalSize.y, pGeneralData, [](uint8_t* pData) {
+            delete[] pData;
+        });
+
+        auto&& saveResult = SaveAtlas();
+        if (!saveResult) {
+            SR_ERROR("AtlasCreationStrategy::CreateRectangleAtlas() : failed to save data on disk.");
+            return false;
+        }
+
+        return true;
+    }
+
+    bool AtlasBuilder::SaveAtlas() const {
+        if (!m_atlas) {
+            SR_WARN("AtlasBuilder::SaveAtlas() : atlas is not yet created!");
+            return false;
+        }
+
+        /// TODO: Implement ability to save in different formats.
+        std::string filename = "testPiski";
+        auto&& targetPath = m_data.destination.GetFolder().Concat(filename).ConcatExt("png");
+
+        targetPath = "/home/nrv/atlasPIZDI.png";
+        return m_atlas->Save(targetPath);
+    }
 }
