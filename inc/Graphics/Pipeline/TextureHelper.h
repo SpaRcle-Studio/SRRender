@@ -6,7 +6,7 @@
 #define GAMEENGINE_TEXTUREHELPER_H
 
 #include <Utils/Common/Enumerations.h>
-#include <Utils/Xml.h>
+#include <Utils/Resources/Xml.h>
 
 namespace SR_GRAPH_NS {
     SR_ENUM_NS_CLASS_T(SSBOUsage, uint8_t,

@@ -59,7 +59,16 @@ namespace SR_GRAPH_NS {
         GetPassPipeline()->SetCurrentShader(m_shader);
 
         if (m_shader && m_shader->BeginSharedUBO()) {
-            m_shader->SetVec2(SHADER_RESOLUTION, GetContext()->GetWindowSize().Cast<float_t>());
+            SR_MATH_NS::FVector2 resolution;
+            if (auto&& pCamera = GetRenderScene()->GetMainCamera()) {
+                resolution = pCamera->GetSize().Cast<float_t>();
+            }
+            else {
+                resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();
+            }
+
+            m_shader->SetVec2(SHADER_RESOLUTION, resolution);
+
             m_shader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
 
             if (m_camera) {

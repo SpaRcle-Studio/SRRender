@@ -8,7 +8,7 @@
 #include <Utils/Common/StringUtils.h>
 #include <Utils/Common/Hashes.h>
 #include <Utils/Common/Enumerations.h>
-#include <Utils/Xml.h>
+#include <Utils/Resources/Xml.h>
 #include <Utils/TypeTraits/Properties.h>
 
 namespace SR_GTYPES_NS {

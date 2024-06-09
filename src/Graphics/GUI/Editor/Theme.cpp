@@ -4,7 +4,7 @@
 
 #include <Graphics/GUI/Editor/Theme.h>
 
-#include <Utils/Xml.h>
+#include <Utils/Resources/Xml.h>
 #include <Utils/Resources/ResourceManager.h>
 
 namespace SR_GRAPH_NS::GUI {

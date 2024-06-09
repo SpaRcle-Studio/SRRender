@@ -98,7 +98,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        m_size = { static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.x) };
+        m_size = { static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y) };
         m_surfaceSize = m_size;
 
         if (m_resizeCallback) {

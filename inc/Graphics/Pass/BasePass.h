@@ -10,7 +10,7 @@
 #include <Utils/Types/Function.h>
 #include <Utils/Types/SafePointer.h>
 #include <Utils/Types/Time.h>
-#include <Utils/Xml.h>
+#include <Utils/Resources/Xml.h>
 #include <Utils/Resources/ResourceContainer.h>
 #include <Utils/SRLM/LogicalNode.h>
 #include <Utils/SRLM/LogicalNodeManager.h>

@@ -3,7 +3,7 @@
 //
 
 #include <Utils/Debug.h>
-#include <Utils/Xml.h>
+#include <Utils/Resources/Xml.h>
 
 #include <Graphics/Memory/TextureConfigs.h>
 

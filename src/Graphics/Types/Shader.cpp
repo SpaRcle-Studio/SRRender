@@ -3,7 +3,7 @@
 //
 
 #include <Utils/Resources/ResourceManager.h>
-#include <Utils/Xml.h>
+#include <Utils/Resources/Xml.h>
 #include <Utils/Types/Thread.h>
 #include <Utils/Types/DataStorage.h>
 #include <Utils/Common/Hashes.h>
