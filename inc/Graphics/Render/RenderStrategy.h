@@ -8,6 +8,7 @@
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Render/RenderPredicates.h>
 
 #include <Utils/ECS/Transform.h>
 
@@ -32,11 +33,12 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class RenderStrategy;
     class RenderScene;
+    class RenderQueue;
     class MeshDrawerPass;
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class IRenderStage : public SR_UTILS_NS::NonCopyable {
+    /*class IRenderStage : public SR_UTILS_NS::NonCopyable {
         using Super = SR_UTILS_NS::NonCopyable;
     public:
         using MeshPtr = SR_GTYPES_NS::Mesh*;
@@ -79,7 +81,7 @@ namespace SR_GRAPH_NS {
     private:
         bool m_uniformsDirty = true;
 
-    };
+    };*/
 
     /// ----------------------------------------------------------------------------------------------------------------
 
@@ -106,7 +108,7 @@ namespace SR_GRAPH_NS {
 
     */
 
-    class MeshRenderStage : public IRenderStage {
+    /*class MeshRenderStage : public IRenderStage {
         using Super = IRenderStage;
         using MeshList = std::vector<SR_GTYPES_NS::Mesh*>;
         using ShaderPtr = SR_GTYPES_NS::Shader*;
@@ -289,7 +291,7 @@ namespace SR_GRAPH_NS {
         std::vector<PriorityRenderStage*> m_priorityStages;
         std::map<ShaderPtr, ShaderRenderStage*> m_shaderStages;
 
-    };
+    };*/
 
     /// ----------------------------------------------------------------------------------------------------------------
 
@@ -297,44 +299,30 @@ namespace SR_GRAPH_NS {
         using Super = SR_UTILS_NS::NonCopyable;
         using ShaderPtr = SR_GTYPES_NS::Shader*;
         using MeshPtr = SR_GTYPES_NS::Mesh*;
-        using VoidCallback = SR_HTYPES_NS::Function<void()>;
-        using FilterCallback = SR_HTYPES_NS::Function<bool(SR_UTILS_NS::StringAtom)>;
-        using PriorityCallback = SR_HTYPES_NS::Function<bool(int64_t)>;
-        using ShaderCallback = SR_HTYPES_NS::Function<void(SR_GTYPES_NS::Shader*)>;
-        using MeshShaderCallback = SR_HTYPES_NS::Function<void(SR_GTYPES_NS::Shader*,SR_GTYPES_NS::Mesh*)>;
-        using ShaderReplaceCallback = SR_HTYPES_NS::Function<SR_GRAPH_NS::ShaderUseInfo(SR_GTYPES_NS::Shader*)>;
+        using RenderQueuePtr = SR_HTYPES_NS::SharedPtr<RenderQueue>;
     public:
         explicit RenderStrategy(RenderScene* pRenderScene);
         ~RenderStrategy() override;
 
     public:
-        bool Render();
-        void Update();
-        void PostUpdate();
-
-        void BindFilterCallback(FilterCallback callback) { m_layerFilter = std::move(callback); }
-        void BindShaderReplaceCallback(ShaderReplaceCallback callback) { m_shaderReplaceCallback = std::move(callback); }
-        void BindPriorityCallback(PriorityCallback callback) { m_priorityCallback = std::move(callback); }
+        void Prepare();
 
         void RegisterMesh(SR_GTYPES_NS::Mesh* pMesh);
         bool UnRegisterMesh(SR_GTYPES_NS::Mesh* pMesh);
         void ReRegisterMesh(const MeshRegistrationInfo& info);
 
-        void SetMeshDrawerPass(MeshDrawerPass* pMeshDrawerPass) { m_meshDrawerPass = pMeshDrawerPass; }
-
         void OnResourceReloaded(SR_UTILS_NS::IResource* pResource) const;
 
         SR_NODISCARD RenderContext* GetRenderContext() const;
         SR_NODISCARD RenderScene* GetRenderScene() const { return m_renderScene; }
-        SR_NODISCARD ShaderUseInfo ReplaceShader(ShaderPtr pShader) const;
-        SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const;
         SR_NODISCARD bool IsNeedCheckMeshActivity() const noexcept { return m_isNeedCheckMeshActivity; }
         SR_NODISCARD bool IsDebugModeEnabled() const noexcept { return m_enableDebugMode; }
         SR_NODISCARD bool IsUniformsDirty() const noexcept { return m_isUniformsDirty; }
         SR_NODISCARD const std::set<SR_UTILS_NS::StringAtom>& GetErrors() const noexcept { return m_errors; }
         SR_NODISCARD const std::set<SR_GTYPES_NS::Mesh*>& GetProblemMeshes() const noexcept { return m_problemMeshes; }
 
-        SR_NODISCARD MeshDrawerPass* GetMeshDrawerPass() const noexcept { return m_meshDrawerPass; }
+        //SR_NODISCARD ShaderUseInfo SR_FASTCALL ReplaceShader(ShaderPtr pShader) const;
+        //SR_NODISCARD bool SR_FASTCALL IsPriorityAllowed(int64_t priority) const;
 
         void ClearErrors();
         void AddError(SR_UTILS_NS::StringAtom error) { m_errors.insert(error); }
@@ -345,18 +333,16 @@ namespace SR_GRAPH_NS {
 
         void MarkUniformsDirty() { m_isUniformsDirty = true; }
 
+        SR_NODISCARD RenderQueuePtr BuildQueue(MeshDrawerPass* pDrawer);
+
     private:
-        void RegisterMesh(MeshRegistrationInfo info);
+        void RegisterMesh(const MeshRegistrationInfo& info);
         bool UnRegisterMesh(const MeshRegistrationInfo& info);
 
-        MeshRegistrationInfo CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh) const;
+        MeshRegistrationInfo CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh);
 
     private:
-        FilterCallback m_layerFilter;
-        ShaderReplaceCallback m_shaderReplaceCallback;
-        PriorityCallback m_priorityCallback;
-
-        MeshDrawerPass* m_meshDrawerPass = nullptr;
+        std::vector<RenderQueuePtr> m_queues;
 
         RenderScene* m_renderScene = nullptr;
 
@@ -369,9 +355,9 @@ namespace SR_GRAPH_NS {
 
         std::list<MeshRegistrationInfo> m_reRegisterMeshes;
 
-        uint32_t m_meshCount = 0;
+        SR_HTYPES_NS::ObjectPool<MeshPtr, uint32_t> m_meshPool;
 
-        std::map<SR_UTILS_NS::StringAtom, LayerRenderStage*> m_layers;
+        //std::map<SR_UTILS_NS::StringAtom, LayerRenderStage*> m_layers;
 
     };
 }

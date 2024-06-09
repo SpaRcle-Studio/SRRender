@@ -28,9 +28,8 @@ namespace SR_GRAPH_NS {
     class BaseMaterial;
 
     struct MeshRegistrationInfo {
-        MeshRenderStage* pMeshRenderStage = nullptr;
+        uint32_t poolId = static_cast<uint32_t>(SR_ID_INVALID);
         SR_GTYPES_NS::Mesh* pMesh = nullptr;
-        SR_GTYPES_NS::Shader* pShader = nullptr;
         BaseMaterial* pMaterial = nullptr;
         SR_UTILS_NS::StringAtom layer;
         std::optional<int32_t> VBO;

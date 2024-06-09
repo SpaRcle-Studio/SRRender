@@ -121,9 +121,6 @@ namespace SR_GRAPH_NS {
         /// Сколько было произведено удалений памяти
         mutable uint32_t deletions = 0;
 
-        /// Текущий вариант шейдера
-        SR_UTILS_NS::StringAtom shaderVariant;
-
     };
 }
 

@@ -13,7 +13,7 @@
 
 #ifdef SR_DEBUG
     #define SR_PIPELINE_RENDER_GUARD(ret)                   \
-        if (!m_isRenderState) {                             \
+        if (!m_isRenderState) SR_UNLIKELY_ATTRIBUTE {       \
             SRHaltOnce("Missing call \"BeginRender()\"!");  \
             return ret;                                     \
         }                                                   \

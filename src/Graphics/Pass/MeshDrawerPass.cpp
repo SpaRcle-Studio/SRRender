@@ -8,6 +8,7 @@
 #include <Graphics/Pass/IFramebufferPass.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Render/FrameBufferController.h>
@@ -63,7 +64,7 @@ namespace SR_GRAPH_NS {
                 else if (auto&& shaderPathAttribute = overrideNode.TryGetAttribute("Path")) {
                     bool found = false;
                     for (auto&& [pShaderKey, pShader] : m_shaderReplacements) {
-                        if (shaderPathAttribute.ToString() == pShaderKey->GetResourcePath()) {
+                        if (shaderPathAttribute.ToString() == pShaderKey->GetResourcePath().ToStringView()) {
                             found = true;
                             break;
                         }
@@ -144,25 +145,28 @@ namespace SR_GRAPH_NS {
     }
 
     bool MeshDrawerPass::Render() {
-        return (m_passWasRendered = GetRenderStrategy()->Render());
+        if (m_renderQueue && m_renderQueue->Render()) {
+            return true;
+        }
+        return false;
     }
 
     void MeshDrawerPass::Prepare() {
         PrepareSamplers();
 
-        if (m_needUpdateMeshes && HasSamplers()) {
-            GetRenderStrategy()->ForEachMesh([](auto&& pMesh) {
-                pMesh->MarkMaterialDirty();
-            });
-        }
+        //if (m_needUpdateMeshes && HasSamplers()) {
+        //    GetRenderStrategy()->ForEachMesh([](auto&& pMesh) {
+        //        pMesh->MarkMaterialDirty();
+        //    });
+        //}
         m_needUpdateMeshes = false;
 
         Super::Prepare();
     }
 
     void MeshDrawerPass::Update() {
-        if (m_passWasRendered) {
-            GetRenderStrategy()->Update();
+        if (m_renderQueue) {
+            m_renderQueue->Update();
         }
     }
 
@@ -201,18 +205,6 @@ namespace SR_GRAPH_NS {
 
     void MeshDrawerPass::UseConstants(ShaderUseInfo info) {
         info.pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 0);
-    }
-
-    void MeshDrawerPass::Bind() {
-        SR_TRACY_ZONE;
-
-        auto&& pStrategy = GetRenderStrategy();
-
-        pStrategy->SetMeshDrawerPass(this);
-        pStrategy->BindFilterCallback([this](auto&& layer) { return IsLayerAllowed(layer); });
-        pStrategy->BindShaderReplaceCallback([this](auto&& pShader) { return ReplaceShader(pShader); });
-
-        Super::Bind();
     }
 
     RenderStrategy* MeshDrawerPass::GetRenderStrategy() const {
@@ -279,6 +271,7 @@ namespace SR_GRAPH_NS {
     bool MeshDrawerPass::Init() {
         m_shadowMapPass = GetTechnique()->FindPass<ShadowMapPass>();
         m_cascadedShadowMapPass = GetTechnique()->FindPass<CascadedShadowMapPass>();
+        m_renderQueue = GetRenderStrategy()->BuildQueue(this);
         return Super::Init();
     }
 

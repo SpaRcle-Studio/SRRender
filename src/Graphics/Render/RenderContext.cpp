@@ -320,6 +320,10 @@ namespace SR_GRAPH_NS {
         return m_pipeline;
     }
 
+    RenderContext::PipelinePtr& RenderContext::GetPipeline() {
+        return m_pipeline;
+    }
+
     PipelineType RenderContext::GetPipelineType() const {
         return m_pipeline->GetType();
     }

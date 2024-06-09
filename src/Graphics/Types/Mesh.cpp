@@ -144,6 +144,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool Mesh::BindMesh() {
+        SR_TRACY_ZONE;
+
         if (auto&& VBO = GetVBO(); VBO != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
             m_pipeline->BindVBO(VBO);
         }
@@ -316,9 +318,9 @@ namespace SR_GTYPES_NS {
     }
 
     void Mesh::MarkUniformsDirty() {
-        if (m_registrationInfo.has_value()) {
-            m_registrationInfo.value().pMeshRenderStage->MarkUniformsDirty();
-        }
+        //if (m_registrationInfo.has_value()) {
+        //    m_registrationInfo.value().pMeshRenderStage->MarkUniformsDirty();
+        //}
     }
 }
 

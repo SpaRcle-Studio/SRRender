@@ -613,6 +613,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) {
+        SR_TRACY_ZONE;
+
         Super::UpdateDescriptorSets(descriptorSet, updateInfo);
 
         if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
@@ -1468,6 +1470,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::BindAttachment(uint8_t activeTexture, uint32_t textureId) {
+        SR_TRACY_ZONE;
+
         Super::BindAttachment(activeTexture, textureId);
 
         if (!m_bindedDescriptors.Get(m_state.descriptorSetId, false)) {
@@ -1516,6 +1520,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::BindTexture(uint8_t activeTexture, uint32_t textureId) {
+        SR_TRACY_ZONE;
+
         Super::BindTexture(activeTexture, textureId);
 
         if (!m_bindedDescriptors.Get(m_state.descriptorSetId, false)) {

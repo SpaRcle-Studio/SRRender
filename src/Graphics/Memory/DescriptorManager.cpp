@@ -44,8 +44,6 @@ namespace SR_GRAPH_NS {
     }
 
     DescriptorManager::BindResult DescriptorManager::Bind(DescriptorManager::VirtualDescriptorSet virtualDescriptorSet) {
-        SR_TRACY_ZONE;
-
         if (virtualDescriptorSet == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("DescriptorManager::Bind() : descriptor set is invalid!");
             return BindResult::Failed;
@@ -84,14 +82,15 @@ namespace SR_GRAPH_NS {
                 SR_ERROR("DescriptorManager::Bind() : failed to bind descriptor set!");
                 return BindResult::Failed;
             }
-
-            if (m_pipeline->GetCurrentBuildIteration() == 0) SR_LIKELY_ATTRIBUTE {
-                pShader->AttachDescriptorSets();
-                pShader->FlushConstants();
-            }
         }
 
         return result;
+    }
+
+    void DescriptorManager::Flush() {
+        auto&& pShader = m_pipeline->GetCurrentShader();
+        pShader->AttachDescriptorSets();
+        pShader->FlushConstants();
     }
 
     DescriptorManager::DescriptorSet DescriptorManager::AllocateMemory(SR_GTYPES_NS::Shader* pShader) const {

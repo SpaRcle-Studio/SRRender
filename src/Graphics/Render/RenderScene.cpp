@@ -174,9 +174,9 @@ namespace SR_GRAPH_NS {
     void RenderScene::PostUpdate() {
         SR_TRACY_ZONE_N("Post update render");
 
-        if (m_renderStrategy) {
-            m_renderStrategy->PostUpdate();
-        }
+        //if (m_renderStrategy) {
+        //    m_renderStrategy->PostUpdate();
+        //}
 
         SR_RENDER_TECHNIQUES_CALL(PostUpdate)
     }

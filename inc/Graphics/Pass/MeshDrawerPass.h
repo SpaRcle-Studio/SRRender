@@ -7,16 +7,17 @@
 
 #include <Graphics/Pass/BasePass.h>
 #include <Graphics/Pass/ISamplersPass.h>
+#include <Graphics/Render/RenderPredicates.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/SRSL/ShaderType.h>
 
 namespace SR_GRAPH_NS {
     class RenderStrategy;
-
+    class RenderQueue;
     class CascadedShadowMapPass;
     class ShadowMapPass;
 
-    class MeshDrawerPass : public BasePass, public ISamplersPass {
+    class MeshDrawerPass : public BasePass, public ISamplersPass, public LayerFilterPredicate, public ShaderReplacePredicate, public PriorityFilterPredicate {
         SR_REGISTER_LOGICAL_NODE(MeshDrawerPass, Mesh Drawer Pass, { "Passes" })
         using Super = BasePass;
         struct Sampler {
@@ -28,6 +29,7 @@ namespace SR_GRAPH_NS {
             bool depth = false;
         };
         using Samplers = std::vector<Sampler>;
+        using RenderQueuePtr = SR_HTYPES_NS::SharedPtr<RenderQueue>;
     public:
         MeshDrawerPass();
 
@@ -36,7 +38,6 @@ namespace SR_GRAPH_NS {
         bool Init() override;
         void DeInit() override;
         void Prepare() override;
-        void Bind() override;
         bool Render() override;
         void Update() override;
 
@@ -49,6 +50,12 @@ namespace SR_GRAPH_NS {
         virtual void UseSharedUniforms(ShaderUseInfo info);
         virtual void UseConstants(ShaderUseInfo info);
 
+        SR_NODISCARD ShaderUseInfo ReplaceShader(ShaderPtr pShader) const override;
+        SR_NODISCARD bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const override;
+        SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const override { return true; }
+
+        SR_NODISCARD RenderQueuePtr GetRenderQueue() const noexcept { return m_renderQueue; }
+
     protected:
         void OnResize(const SR_MATH_NS::UVector2& size) override;
         void OnMultisampleChanged() override;
@@ -58,10 +65,6 @@ namespace SR_GRAPH_NS {
     private:
         void ClearOverrideShaders();
 
-        ShaderUseInfo ReplaceShader(ShaderPtr pShader) const;
-
-        bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const;
-
         SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
 
     private:
@@ -69,11 +72,14 @@ namespace SR_GRAPH_NS {
         bool m_passWasRendered = false;
         bool m_needUpdateMeshes = false;
 
+        RenderQueuePtr m_renderQueue;
+
         ShadowMapPass* m_shadowMapPass = nullptr;
         CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;
 
         SR_HTYPES_NS::Time& m_time;
 
+        std::vector<SR_UTILS_NS::StringAtom> m_materialVariants;
         ska::flat_hash_map<ShaderPtr, ShaderUseInfo> m_shaderReplacements;
         ska::flat_hash_map<SR_SRSL_NS::ShaderType, ShaderUseInfo> m_shaderTypeReplacements;
         std::set<SR_UTILS_NS::StringAtom> m_allowedLayers;

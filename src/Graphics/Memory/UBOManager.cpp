@@ -110,8 +110,6 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     UBOManager::BindResult UBOManager::BindUBO(VirtualUBO virtualUbo, uint32_t uboSize) noexcept {
-        SR_TRACY_ZONE;
-
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
         if (!pShaderHandle) SR_UNLIKELY_ATTRIBUTE {
             SRHaltOnce("Current shader is nullptr!");
