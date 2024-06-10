@@ -102,75 +102,65 @@ namespace SR_GRAPH_NS {
     bool AtlasBuilder::Create() {
         bool isSpritesSameSize = true;
 
-        auto&& referenceSize = m_sprites.front()->GetSize();
+        auto&& maxSize = m_sprites.front()->GetSize();
         for (auto&& pSprite : m_sprites) {
-            if (pSprite->GetSize() != referenceSize) {
+            auto&& spriteSize = pSprite->GetSize();
+            if (spriteSize != maxSize) {
                 isSpritesSameSize = false;
-                break;
+                maxSize.x = std::max(spriteSize.x, maxSize.x);
+                maxSize.y = std::max(spriteSize.y, maxSize.y);
             }
         }
 
         const bool isSpriteCountEven = m_sprites.size() % 2 == 0;
         if (isSpriteCountEven) {
             if (isSpritesSameSize) {
-                return CreateRectangleAtlas();
-            }
+                m_data.quantityOnAxes = {  static_cast<uint32_t>(m_sprites.size()), 1 };
+                m_data.step.x = m_sprites.front()->GetWidth();
 
-            return CreateTightRectangleAtlas();
+                return CreateLinearAtlas();
+            }
         }
 
-        SR_WARN("AtlasBuilder::Create() : no suitable strategy found.");
+        SR_ERROR("AtlasBuilder::Create() : no suitable strategy found.");
         return false;
     }
 
-    bool AtlasBuilder::CreateTightRectangleAtlas() {
-        uint32_t totalBytes = 0;
+    bool AtlasBuilder::CreateLinearAtlas() {
+        // Calculate total width and height of the atlas
+        uint32_t totalWidth = 0;
+        uint32_t totalHeight = 0;
         for (auto&& pSprite : m_sprites) {
-            totalBytes += pSprite->GetNumberOfBytes();
+            totalWidth += pSprite->GetWidth();
+            totalHeight = std::max(totalHeight, pSprite->GetHeight());
         }
 
-        auto* pGeneralData = new uint8_t[totalBytes];
-        std::memset(pGeneralData, 0, totalBytes);
+        // Allocate memory for the atlas
+        const uint64_t size = totalWidth * totalHeight * 4; // Number of channels in PNG format.
+        auto* pGeneralData = new uint8_t[size];
+        std::memset(pGeneralData, 0, size);
 
-        uint32_t offset = 0;
+        // Copy each sprite into the atlas
+        uint32_t currentWidth = 0;
         for (auto&& pSprite : m_sprites) {
-            std::memcpy(pGeneralData + offset, pSprite->GetData(), pSprite->GetNumberOfBytes());
+            const auto&& spriteSize = pSprite->GetSize();
+            const auto&& spriteData = pSprite->GetData();
 
-            offset += pSprite->GetNumberOfBytes();
+            for (uint32_t y = 0; y < spriteSize.y; ++y) {
+                uint32_t offset = y * spriteSize.x * 4;
+                uint32_t atlasOffset = y * totalWidth * 4 + currentWidth * 4;
+                std::memcpy(pGeneralData + atlasOffset, spriteData + offset, spriteSize.x * 4);
+            }
+
+            currentWidth += spriteSize.x;
         }
 
-        m_atlas = TextureData::Create(m_totalSize.x, m_totalSize.y, pGeneralData, [](uint8_t* pData) {
+        // Create the atlas texture
+        m_atlas = TextureData::Create(totalWidth, totalHeight, pGeneralData, [](uint8_t* pData) {
             delete[] pData;
         });
 
-        if (!Save()) {
-            SR_ERROR("AtlasBuilder::CreateTightRectangleAtlas() : failed to save data.");
-            return false;
-        }
-
-        return true;
-    }
-
-    bool AtlasBuilder::CreateRectangleAtlas() {
-        uint32_t totalBytes = 0;
-        for (auto&& pSprite : m_sprites) {
-            totalBytes += pSprite->GetNumberOfBytes();
-        }
-
-        auto* pGeneralData = new uint8_t[totalBytes];
-        std::memset(pGeneralData, 0, totalBytes);
-
-        uint32_t offset = 0;
-        for (auto&& pSprite : m_sprites) {
-            std::memcpy(pGeneralData + offset, pSprite->GetData(), pSprite->GetNumberOfBytes());
-
-            offset += pSprite->GetNumberOfBytes();
-        }
-
-        m_atlas = TextureData::Create(m_totalSize.x, m_totalSize.y, pGeneralData, [](uint8_t* pData) {
-            delete[] pData;
-        });
-
+        // Save the atlas
         if (!Save()) {
             SR_ERROR("AtlasBuilder::CreateRectangleAtlas() : failed to save data.");
             return false;

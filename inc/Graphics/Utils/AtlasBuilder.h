@@ -38,8 +38,7 @@ namespace SR_GRAPH_NS {
 
     private:
         SR_NODISCARD bool Create();
-        SR_NODISCARD bool CreateTightRectangleAtlas();
-        SR_NODISCARD bool CreateRectangleAtlas();
+        SR_NODISCARD bool CreateLinearAtlas();;
 
     private:
         AtlasBuilderData m_data;
