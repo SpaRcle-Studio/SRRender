@@ -34,9 +34,6 @@ namespace SR_GRAPH_NS {
             QUEUE_STATE_ERROR         = 1 << 1,
             QUEUE_STATE_VBO_ERROR     = QUEUE_STATE_ERROR | 1 << 2,
             QUEUE_STATE_SHADER_ERROR  = QUEUE_STATE_ERROR | 1 << 3,
-
-            MESH_STATE_VBO_UPDATED    = 1 << 4,
-            MESH_STATE_SHADER_UPDATED = 1 << 5,
         };
         typedef uint8_t QueueStateFlags;
 
@@ -78,31 +75,16 @@ namespace SR_GRAPH_NS {
             }
         };
 
-        struct ShaderMismatchPredicate {
-            ShaderPtr pShader;
-            explicit ShaderMismatchPredicate(ShaderPtr pShader)
-                : pShader(pShader)
-            { }
-
-            constexpr bool operator()(const MeshInfo& lhs, const MeshInfo& rhs) const noexcept {
-                return lhs.shaderUseInfo.pShader < rhs.shaderUseInfo.pShader;
-                //return lhs.shaderUseInfo.pShader != pShader && lhs.shaderUseInfo.pShader < rhs.shaderUseInfo.pShader;
-                //return lhs.shaderUseInfo.pShader != pShader && lhs.shaderUseInfo.pShader < rhs.shaderUseInfo.pShader;
-                //return lhs.shaderUseInfo.pShader == pShader && lhs.shaderUseInfo.pShader < rhs.shaderUseInfo.pShader;
-                //return lhs.shaderUseInfo.pShader == pShader && (lhs.shaderUseInfo.pShader < rhs.shaderUseInfo.pShader || (lhs.shaderUseInfo.pShader == rhs.shaderUseInfo.pShader));
-            }
+        struct ShaderInfo {
+            ShaderInfo() = default;
+            ShaderInfo(ShaderPtr pShader) : info(pShader) { }
+            ShaderUseInfo info = {};
+            uint32_t count = 0;
         };
 
-        struct ShaderVBOMismatchPredicate {
-            ShaderPtr pShader;
-            VBO vbo;
-            ShaderVBOMismatchPredicate(ShaderPtr pShader, const VBO vbo)
-                : pShader(pShader)
-                , vbo(vbo)
-            { }
-
-            constexpr bool operator()(const MeshInfo& lhs, const MeshInfo& rhs) const noexcept {
-                return lhs.shaderUseInfo.pShader == pShader && lhs.vbo == vbo && lhs.shaderUseInfo.pShader < rhs.shaderUseInfo.pShader;
+        struct ShaderQueueLessPredicate {
+            SR_NODISCARD constexpr bool operator()(const ShaderUseInfo& left, const ShaderUseInfo& right) const noexcept {
+                return left.pShader < right.pShader;
             }
         };
 
@@ -110,6 +92,7 @@ namespace SR_GRAPH_NS {
 
     public:
         RenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer);
+        ~RenderQueue();
 
         void Register(const MeshRegistrationInfo& info);
         void UnRegister(const MeshRegistrationInfo& info);
@@ -117,13 +100,17 @@ namespace SR_GRAPH_NS {
         bool Render();
         void Update();
 
-        const std::vector<std::pair<Layer, Queue>>& GetQueues() const noexcept { return m_queues; }
+        void OnMeshDirty(MeshPtr pMesh, ShaderUseInfo info);
+
+        SR_NODISCARD const std::vector<std::pair<Layer, Queue>>& GetQueues() const noexcept { return m_queues; }
 
     private:
+        void UpdateShaders();
+        void UpdateMeshes();
+
         SR_NODISCARD bool IsSuitable(const MeshRegistrationInfo& info) const;
 
         void Render(const SR_UTILS_NS::StringAtom& layer, Queue& queue);
-        void Update(const SR_UTILS_NS::StringAtom& layer, Queue& queue);
 
         SR_NODISCARD MeshInfo* SR_FASTCALL FindNextShader(Queue& queue, MeshInfo* pElement);
         SR_NODISCARD MeshInfo* SR_FASTCALL FindNextVBO(Queue& queue, MeshInfo* pElement);
@@ -140,7 +127,12 @@ namespace SR_GRAPH_NS {
         uint64_t m_layersStateHash = 0;
 
         Memory::UBOManager& m_uboManager;
+
         std::vector<std::pair<Layer, Queue>> m_queues;
+
+        SR_HTYPES_NS::SortedVector<ShaderUseInfo, ShaderQueueLessPredicate> m_shaders;
+        std::vector<std::pair<MeshPtr, ShaderUseInfo>> m_meshes;
+
         MeshDrawerPass* m_meshDrawerPass = nullptr;
         RenderContext* m_renderContext = nullptr;
         RenderStrategy* m_renderStrategy = nullptr;

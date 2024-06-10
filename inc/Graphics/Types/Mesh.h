@@ -11,11 +11,13 @@
 #include <Utils/Types/Function.h>
 
 #include <Graphics/Utils/MeshUtils.h>
+#include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Material/MaterialProperty.h>
 #include <Graphics/Memory/DescriptorManager.h>
 #include <Graphics/Material/MeshMaterialProperty.h>
+#include <Utils/Types/SortedVector.h>
 
 namespace SR_UTILS_NS {
     class IResource;
@@ -43,6 +45,29 @@ namespace SR_GTYPES_NS {
         using ShaderPtr = Shader*;
         using MaterialPtr = BaseMaterial*;
         using Ptr = Mesh*;
+
+        struct RenderQueueInfo {
+            RenderQueueInfo() = default;
+            RenderQueueInfo(RenderQueue* pRenderQueue, const ShaderUseInfo& shaderUseInfo)
+                : pRenderQueue(pRenderQueue)
+                , shaderUseInfo(shaderUseInfo)
+            { }
+
+            RenderQueue* pRenderQueue;
+            ShaderUseInfo shaderUseInfo;
+            bool operator==(const RenderQueueInfo& other) const {
+                return pRenderQueue == other.pRenderQueue;
+            }
+        };
+
+        struct RenderQueuePredicate {
+            using Element = RenderQueueInfo;
+            SR_NODISCARD bool operator()(const Element& left, const Element& right) const noexcept {
+                return left.pRenderQueue < right.pRenderQueue;
+            }
+        };
+
+        using RenderQueues = SR_HTYPES_NS::SortedVector<RenderQueueInfo, RenderQueuePredicate>;
 
     public:
         ~Mesh() override;
@@ -85,6 +110,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD MeshType GetMeshType() const noexcept { return m_meshType; }
         SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
         SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
+        SR_NODISCARD RenderQueues& GetRenderQueues() noexcept { return m_renderQueues; }
 
         MaterialProperty& OverrideUniform(SR_UTILS_NS::StringAtom name);
         void RemoveUniformOverride(SR_UTILS_NS::StringAtom name);
@@ -105,23 +131,27 @@ namespace SR_GTYPES_NS {
         virtual void UseSamplers();
         virtual void UseOverrideUniforms();
 
-        bool UnRegisterMesh();
-        void ReRegisterMesh();
-
         void MarkUniformsDirty();
         void MarkMaterialDirty();
+        bool DestroyMesh();
+        void ReRegisterMesh();
 
         void SetMaterial(BaseMaterial* pMaterial);
         void SetMaterial(const SR_UTILS_NS::Path& path);
 
         void SetHasErrors(bool hasErrors) { m_hasErrors = hasErrors; }
+        void SetUniformsClean() { m_isUniformsDirty = false; }
 
     protected:
+        void UnRegisterMesh();
+
         void FreeVideoMemory() override;
 
         virtual bool Calculate();
 
     protected:
+        RenderQueues m_renderQueues;
+
         Memory::UBOManager& m_uboManager;
         SR_GRAPH_NS::DescriptorManager& m_descriptorManager;
 
@@ -131,6 +161,7 @@ namespace SR_GTYPES_NS {
 
         bool m_hasErrors = false;
         bool m_dirtyMaterial = false;
+        bool m_isUniformsDirty = false;
 
         int32_t m_virtualUBO = SR_ID_INVALID;
         int32_t m_virtualDescriptor = SR_ID_INVALID;

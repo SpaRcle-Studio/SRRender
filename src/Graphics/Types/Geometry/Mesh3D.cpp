@@ -69,6 +69,7 @@ namespace SR_GTYPES_NS {
         if (m_pipeline->GetCurrentBuildIteration() == 0) {
             if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
                 UseSamplers();
+                MarkUniformsDirty();
                 m_descriptorManager.Flush();
             }
         }

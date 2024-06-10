@@ -58,6 +58,8 @@ namespace SR_GRAPH_NS {
         virtual ~RenderScene();
 
     public:
+        void DeInit();
+
         void Render();
         void Submit();
 

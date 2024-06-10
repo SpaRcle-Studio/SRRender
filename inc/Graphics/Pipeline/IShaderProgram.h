@@ -28,9 +28,9 @@ namespace SR_GRAPH_NS {
             , useMaterial(true)
         { }
 
-        SR_GTYPES_NS::Shader* pShader = nullptr;
-        bool ignoreReplace : 4 = false;
-        bool useMaterial   : 4 = false;
+        SR_GTYPES_NS::Shader* pShader;
+        bool ignoreReplace : 4;
+        bool useMaterial   : 4;
     };
 
     SR_ENUM_NS_CLASS_T(ShaderBindResult, uint8_t,

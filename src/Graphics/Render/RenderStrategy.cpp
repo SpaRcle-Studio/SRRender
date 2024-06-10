@@ -16,6 +16,7 @@ namespace SR_GRAPH_NS {
 
     RenderStrategy::~RenderStrategy() {
         SRAssert(m_meshPool.IsEmpty());
+        SRAssert(m_queues.empty());
     }
 
     RenderContext* RenderStrategy::GetRenderContext() const {
@@ -90,6 +91,16 @@ namespace SR_GRAPH_NS {
         m_queues.emplace_back(pQueue);
 
         return pQueue;
+    }
+
+    void RenderStrategy::RemoveQueue(RenderQueue* pQueue) {
+        for (auto pIt = m_queues.begin(); pIt != m_queues.end(); ++pIt) {
+            if (pIt->Get() == pQueue) {
+                m_queues.erase(pIt);
+                return;
+            }
+        }
+        SRHalt("Queue not found!");
     }
 
     void RenderStrategy::RegisterMesh(const MeshRegistrationInfo& info) {

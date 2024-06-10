@@ -60,6 +60,9 @@ namespace SR_GTYPES_NS {
         bool m_hasErrors = false;
         bool m_dirtyShader = false;
 
+        Memory::UBOManager& m_uboManager;
+        DescriptorManager& m_descriptorManager;
+
         std::array<TextureData::Ptr, 6> m_data;
 
     };

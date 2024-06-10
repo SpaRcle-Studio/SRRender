@@ -8,9 +8,9 @@
 
 namespace SR_GRAPH_NS {
     void DirectionalLight::OnAttached() {
-        GetRenderScene().Do([this](SR_GRAPH_NS::RenderScene *ptr) {
-            ptr->GetLightSystem()->Register(this);
-        });
+        if (auto&& pRenderScene = GetRenderScene()) {
+            pRenderScene->GetLightSystem()->Register(this);
+        }
         Component::OnAttached();
     }
 }

@@ -310,12 +310,6 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Shader::Flush() const {
-        if (!m_isCalculated || m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
-            return false;
-        }
-
-        SR_TRACY_ZONE;
-
         if (!m_uniformBlock.m_memory) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }

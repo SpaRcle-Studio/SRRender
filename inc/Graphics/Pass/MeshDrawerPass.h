@@ -32,6 +32,7 @@ namespace SR_GRAPH_NS {
         using RenderQueuePtr = SR_HTYPES_NS::SharedPtr<RenderQueue>;
     public:
         MeshDrawerPass();
+        ~MeshDrawerPass() override;
 
         bool Load(const SR_XML_NS::Node& passNode) override;
 
@@ -40,7 +41,7 @@ namespace SR_GRAPH_NS {
         void Prepare() override;
         bool Render() override;
         void Update() override;
-
+ 
         SR_NODISCARD bool HasPreRender() const noexcept override { return false; }
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
         SR_NODISCARD virtual bool IsNeedUpdate() const noexcept { return false; }

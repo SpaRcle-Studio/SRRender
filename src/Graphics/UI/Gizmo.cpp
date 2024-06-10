@@ -428,8 +428,6 @@ namespace SR_GRAPH_UI_NS {
             GetTransform()->SetRotation(m_modelMatrix.GetQuat());
         }
 
-        GetTransform()->SetScale(m_zoomFactor);
-
         if (m_zoomFactor > 0.f) {
             auto&& modelMatrix = SR_MATH_NS::Matrix4x4::FromTranslate(GetTransform()->GetTranslation());
             const float_t screenFactor = GetCamera()->CalculateScreenFactor(modelMatrix, m_zoomFactor, IsGizmo2DSpace());

@@ -32,9 +32,13 @@ namespace SR_GRAPH_NS {
     }
 
     RenderScene::~RenderScene() {
-        SR_SAFE_DELETE_PTR(m_lightSystem);
-
+        SRAssert(!m_lightSystem && !m_debugRender && !m_technique);
         m_renderStrategy.AutoFree();
+        SRAssert(IsEmpty());
+    }
+
+    void RenderScene::DeInit() {
+        SR_SAFE_DELETE_PTR(m_lightSystem);
 
         if (m_debugRender) {
             m_debugRender->DeInit();
@@ -48,8 +52,6 @@ namespace SR_GRAPH_NS {
             }
             m_technique = nullptr;
         }
-
-        SRAssert(IsEmpty());
     }
 
     void RenderScene::Render() {

@@ -13,19 +13,11 @@ namespace SR_GTYPES_NS {
     void DebugWireframeMesh::Draw() {
         SR_TRACY_ZONE;
 
-        auto&& pShader = GetRenderContext()->GetCurrentShader();
-
-        if (!pShader) {
-            return;
-        }
-
         if ((!IsCalculated() && !Calculate()) || m_hasErrors) {
             return;
         }
 
         if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-            m_dirtyMaterial = false;
-
             m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
             if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 m_hasErrors = true;
@@ -35,17 +27,25 @@ namespace SR_GTYPES_NS {
             m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
         }
 
-        if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            UseSamplers();
-        }
-
         m_pipeline->BindVBO(m_VBO);
         m_pipeline->BindIBO(m_IBO);
         m_uboManager.BindUBO(m_virtualUBO);
 
-        if (m_descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
+        const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
+
+        if (m_pipeline->GetCurrentBuildIteration() == 0) {
+            if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
+                UseSamplers();
+                MarkUniformsDirty();
+                m_descriptorManager.Flush();
+            }
+        }
+
+        if (result != DescriptorManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
             m_pipeline->DrawIndices(m_countIndices);
         }
+
+        m_dirtyMaterial = false;
     }
 
     bool DebugWireframeMesh::Calculate() {

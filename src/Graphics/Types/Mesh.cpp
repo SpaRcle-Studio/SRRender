@@ -9,6 +9,7 @@
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderStrategy.h>
+#include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Material/FileMaterial.h>
 
@@ -226,19 +227,29 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
-    bool Mesh::UnRegisterMesh() {
-        const bool isRegistered = IsMeshRegistered();
+    void Mesh::UnRegisterMesh() {
+        if (IsMeshRegistered()) {
+            m_registrationInfo.value().pScene->Remove(this);
+        }
+    }
 
+    void Mesh::ReRegisterMesh() {
+        SR_TRACY_ZONE;
+        if (m_registrationInfo.has_value()) {
+            const auto pRenderScene = m_registrationInfo.value().pScene;
+            pRenderScene->ReRegister(m_registrationInfo.value());
+        }
+    }
+
+    bool Mesh::DestroyMesh() {
+        const bool isRegistered = IsMeshRegistered();
         if (isRegistered) {
             m_registrationInfo.value().pScene->Remove(this);
-
-            if (IsCalculated()) {
-                FreeVideoMemory();
-                DeInitGraphicsResource();
-            }
         }
-        else {
-            SRAssert(!IsCalculated());
+
+        if (IsCalculated()) {
+            FreeVideoMemory();
+            DeInitGraphicsResource();
         }
 
         if (auto&& pRenderComponent = dynamic_cast<IRenderComponent*>(this)) {
@@ -249,14 +260,6 @@ namespace SR_GTYPES_NS {
         }
 
         return isRegistered;
-    }
-
-    void Mesh::ReRegisterMesh() {
-        SR_TRACY_ZONE;
-        if (m_registrationInfo.has_value()) {
-            const auto pRenderScene = m_registrationInfo.value().pScene;
-            pRenderScene->ReRegister(m_registrationInfo.value());
-        }
     }
 
     MaterialProperty& Mesh::OverrideUniform(SR_UTILS_NS::StringAtom name) {
@@ -318,9 +321,23 @@ namespace SR_GTYPES_NS {
     }
 
     void Mesh::MarkUniformsDirty() {
-        //if (m_registrationInfo.has_value()) {
-        //    m_registrationInfo.value().pMeshRenderStage->MarkUniformsDirty();
-        //}
+        if (m_isUniformsDirty) SR_LIKELY_ATTRIBUTE {
+            return;
+        }
+
+        SR_TRACY_ZONE;
+
+        if (!IsMeshActive()) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
+        m_isUniformsDirty = !m_renderQueues.empty();
+
+        auto pStart = m_renderQueues.data();
+        auto pEnd = pStart + m_renderQueues.size();
+        for (auto pElement = pStart; pElement != pEnd; ++pElement) {
+            pElement->pRenderQueue->OnMeshDirty(this, pElement->shaderUseInfo);
+        }
     }
 }
 

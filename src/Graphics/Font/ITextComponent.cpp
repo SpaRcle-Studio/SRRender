@@ -197,30 +197,30 @@ namespace SR_GTYPES_NS {
             m_modelMatrix = SR_MATH_NS::Matrix4x4::Identity();
         }
 
+        MarkUniformsDirty();
+
         Component::OnMatrixDirty();
     }
 
     void ITextComponent::OnEnable() {
         IRenderComponent::OnEnable();
-        MarkUniformsDirty();
+        if (auto&& pRenderScene = GetRenderScene()) {
+            pRenderScene->Register(this);
+        }
     }
 
     void ITextComponent::OnDisable() {
         IRenderComponent::OnDisable();
-        MarkUniformsDirty();
+        UnRegisterMesh();
     }
 
     void ITextComponent::OnAttached() {
-        GetRenderScene().Do([this](SR_GRAPH_NS::RenderScene *ptr) {
-            ptr->Register(this);
-        });
-
         Component::OnAttached();
     }
 
     void ITextComponent::OnDestroy() {
         Component::OnDestroy();
-        UnRegisterMesh();
+        DestroyMesh();
     }
 
     SR_NODISCARD SR_HTYPES_NS::Marshal::Ptr ITextComponent::Save(SR_UTILS_NS::SavableContext data) const {

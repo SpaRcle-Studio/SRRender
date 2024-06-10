@@ -8,19 +8,19 @@
 namespace SR_GRAPH_NS {
 
     void ILightComponent::OnAttached() {
-        GetRenderScene().Do([this](SR_GRAPH_NS::RenderScene *ptr) {
-            ptr->GetLightSystem()->Register(this);
-        });
+        if (auto&& pRenderScene = GetRenderScene()) {
+            pRenderScene->GetLightSystem()->Register(this);
+        }
         Component::OnAttached();
     }
 
     void ILightComponent::OnDestroy() {
-        RenderScene::Ptr renderScene = TryGetRenderScene();
+        RenderScene* pRenderScene = TryGetRenderScene();
 
         Component::OnDestroy();
 
-        if (renderScene) {
-            renderScene->GetLightSystem()->Remove(this);
+        if (pRenderScene) {
+            pRenderScene->GetLightSystem()->Remove(this);
         }
     }
 }

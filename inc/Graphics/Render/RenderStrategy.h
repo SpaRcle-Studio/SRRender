@@ -321,9 +321,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::set<SR_UTILS_NS::StringAtom>& GetErrors() const noexcept { return m_errors; }
         SR_NODISCARD const std::set<SR_GTYPES_NS::Mesh*>& GetProblemMeshes() const noexcept { return m_problemMeshes; }
 
-        //SR_NODISCARD ShaderUseInfo SR_FASTCALL ReplaceShader(ShaderPtr pShader) const;
-        //SR_NODISCARD bool SR_FASTCALL IsPriorityAllowed(int64_t priority) const;
-
         void ClearErrors();
         void AddError(SR_UTILS_NS::StringAtom error) { m_errors.insert(error); }
         void AddProblemMesh(SR_GTYPES_NS::Mesh* pMesh) { m_problemMeshes.insert(pMesh); }
@@ -334,6 +331,7 @@ namespace SR_GRAPH_NS {
         void MarkUniformsDirty() { m_isUniformsDirty = true; }
 
         SR_NODISCARD RenderQueuePtr BuildQueue(MeshDrawerPass* pDrawer);
+        void RemoveQueue(RenderQueue* pQueue);
 
     private:
         void RegisterMesh(const MeshRegistrationInfo& info);
@@ -356,8 +354,6 @@ namespace SR_GRAPH_NS {
         std::list<MeshRegistrationInfo> m_reRegisterMeshes;
 
         SR_HTYPES_NS::ObjectPool<MeshPtr, uint32_t> m_meshPool;
-
-        //std::map<SR_UTILS_NS::StringAtom, LayerRenderStage*> m_layers;
 
     };
 }

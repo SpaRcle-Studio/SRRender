@@ -11,14 +11,28 @@
 
 namespace SR_GRAPH_NS {
     RenderQueue::RenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer)
-        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Manually)
         , m_uboManager(Memory::UBOManager::Instance())
         , m_meshDrawerPass(pDrawer)
         , m_renderStrategy(pStrategy)
     {
+        SRAssert(pStrategy && pDrawer);
         m_renderContext = pStrategy->GetRenderContext();
         m_renderScene = pStrategy->GetRenderScene();
         m_pipeline = m_renderContext->GetPipeline().Get();
+        m_meshes.reserve(512);
+    }
+
+    RenderQueue::~RenderQueue() {
+        SR_TRACY_ZONE;
+
+        m_renderStrategy->RemoveQueue(this);
+
+        for (auto&& [layer, queue] : m_queues) {
+            for (auto&& meshInfo : queue) {
+                meshInfo.pMesh->GetRenderQueues().Remove({ this, meshInfo.shaderUseInfo });
+            }
+        }
     }
 
     void RenderQueue::Register(const MeshRegistrationInfo& info) {
@@ -35,6 +49,11 @@ namespace SR_GRAPH_NS {
         meshInfo.shaderUseInfo = GetShaderUseInfo(info);
         meshInfo.vbo = info.pMesh->GetVBO();
         meshInfo.priority = info.priority.value_or(0);
+
+        ShaderInfo shaderInfo;
+        shaderInfo.info = meshInfo.shaderUseInfo;
+
+        info.pMesh->GetRenderQueues().Add({ this, meshInfo.shaderUseInfo });
 
         for (auto&& [layer, queue] : m_queues) {
             if (layer == info.layer) {
@@ -70,6 +89,8 @@ namespace SR_GRAPH_NS {
         meshInfo.vbo = info.pMesh->GetVBO();
         meshInfo.priority = info.priority.value_or(0);
 
+        info.pMesh->GetRenderQueues().Remove({ this, meshInfo.shaderUseInfo });
+
         if (!pQueue->Remove(meshInfo)) {
             SRHalt("RenderQueue::UnRegister() : mesh not found!");
         }
@@ -81,6 +102,8 @@ namespace SR_GRAPH_NS {
         PrepareLayers();
 
         m_rendered = false;
+
+        m_shaders.Clear();
 
         for (auto&& [layer, queue] : m_queues) {
             Render(layer, queue);
@@ -96,9 +119,58 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        for (auto&& [layer, queue] : m_queues) {
-            Update(layer, queue);
+        UpdateShaders();
+        UpdateMeshes();
+    }
+
+    void RenderQueue::OnMeshDirty(MeshPtr pMesh, ShaderUseInfo info) {
+        m_meshes.emplace_back(pMesh, info);
+    }
+
+    void RenderQueue::UpdateShaders() {
+        SR_TRACY_ZONE;
+
+        auto pStart = m_shaders.data();
+        auto pEnd = pStart + m_shaders.size();
+
+        for (auto* pElement = pStart; pElement < pEnd; ++pElement) {
+            if (pElement->pShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
+                m_meshDrawerPass->UseSharedUniforms(*pElement);
+                pElement->pShader->EndSharedUBO();
+            }
         }
+    }
+
+    void RenderQueue::UpdateMeshes() {
+        SR_TRACY_ZONE;
+
+        auto pStart = m_meshes.data();
+        auto pEnd = pStart + m_meshes.size();
+
+        for (auto* pElement = pStart; pElement < pEnd; ++pElement) {
+            const auto pMesh = pElement->first;
+            const auto& info = pElement->second;
+
+            pMesh->SetUniformsClean();
+
+            auto&& virtualUbo = pMesh->GetVirtualUBO();
+            if (virtualUbo == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
+
+            m_pipeline->SetCurrentShader(info.pShader);
+
+            m_meshDrawerPass->UseUniforms(info, pMesh);
+
+            if (m_uboManager.BindUBO(virtualUbo) == Memory::UBOManager::BindResult::Duplicated) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("RenderQueue::UpdateMeshes() : memory has been duplicated!");
+                continue;
+            }
+
+            SR_MAYBE_UNUSED_VAR info.pShader->Flush();
+        }
+
+        m_meshes.clear();
     }
 
     bool RenderQueue::IsSuitable(const MeshRegistrationInfo &info) const {
@@ -146,6 +218,11 @@ namespace SR_GRAPH_NS {
                     pElement = FindNextShader(queue, pElement);
                     continue;
                 }
+
+                const auto pIt = m_shaders.LowerBound(info.shaderUseInfo);
+                if (pIt == m_shaders.end() || pIt->pShader != info.shaderUseInfo.pShader) {
+                    m_shaders.Insert(pIt, info.shaderUseInfo);
+                }
             }
 
             if (info.vbo != currentVBO) SR_UNLIKELY_ATTRIBUTE {
@@ -165,66 +242,6 @@ namespace SR_GRAPH_NS {
         if (pCurrentShader && shaderOk) SR_LIKELY_ATTRIBUTE {
             pCurrentShader->UnUse();
         }
-    }
-
-    void RenderQueue::Update(const SR_UTILS_NS::StringAtom& layer, RenderQueue::Queue& queue) {
-        SR_TRACY_ZONE_S(layer.c_str());
-
-        ShaderPtr pCurrentShader = nullptr;
-
-        MeshInfo* pStart = queue.data();
-        const MeshInfo* pEnd = pStart + queue.size();
-
-        for (MeshInfo* pElement = pStart; pElement < pEnd; ++pElement) {
-            const MeshInfo info = *pElement;
-
-            if (SR_UTILS_NS::Math::IsMaskIncludedSubMask(info.state, QUEUE_STATE_ERROR)) SR_UNLIKELY_ATTRIBUTE {
-                if (SR_UTILS_NS::Math::IsMaskIncludedSubMask(info.state, QUEUE_STATE_SHADER_ERROR)) {
-                    pElement = FindNextShader(queue, pElement);
-                }
-                else if (SR_UTILS_NS::Math::IsMaskIncludedSubMask(info.state, QUEUE_STATE_VBO_ERROR)) {
-                    pElement = FindNextVBO(queue, pElement);
-                }
-                continue;
-            }
-
-            if (info.shaderUseInfo.pShader != pCurrentShader) SR_UNLIKELY_ATTRIBUTE {
-                pCurrentShader = info.shaderUseInfo.pShader;
-                if (pCurrentShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
-                    m_meshDrawerPass->UseSharedUniforms(info.shaderUseInfo);
-                    pElement->state |= MESH_STATE_SHADER_UPDATED;
-                    pCurrentShader->EndSharedUBO();
-                }
-            }
-
-            if (SR_UTILS_NS::Math::IsMaskIncludedSubMask(info.state, MESH_STATE_SHADER_UPDATED)) SR_LIKELY_ATTRIBUTE {
-                pElement = FindNextShader(queue, pElement);
-                continue;
-            }
-
-            if (SR_UTILS_NS::Math::IsMaskIncludedSubMask(info.state, MESH_STATE_VBO_UPDATED)) SR_LIKELY_ATTRIBUTE {
-                pElement = FindNextVBO(queue, pElement);
-                continue;
-            }
-
-            auto&& virtualUbo = info.pMesh->GetVirtualUBO();
-            if (virtualUbo == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-                continue;
-            }
-
-            m_meshDrawerPass->UseUniforms(info.shaderUseInfo, info.pMesh);
-            pElement->state |= MESH_STATE_VBO_UPDATED | MESH_STATE_SHADER_UPDATED;
-
-            if (m_uboManager.BindUBO(virtualUbo) == Memory::UBOManager::BindResult::Duplicated) SR_UNLIKELY_ATTRIBUTE {
-                SR_ERROR("VBORenderStage::Update() : memory has been duplicated!");
-                continue;
-            }
-
-            SR_MAYBE_UNUSED_VAR info.shaderUseInfo.pShader->Flush();
-        }
-
-        m_renderContext->SetCurrentShader(nullptr);
-        m_renderScene->SetCurrentSkeleton(nullptr);
     }
 
     RenderQueue::MeshInfo* RenderQueue::FindNextShader(Queue& queue, MeshInfo* pElement) {
@@ -331,6 +348,11 @@ namespace SR_GRAPH_NS {
     }
 
     SR_GRAPH_NS::ShaderUseInfo RenderQueue::GetShaderUseInfo(const MeshRegistrationInfo& info) const {
-        return SR_GRAPH_NS::ShaderUseInfo(info.pMaterial ? info.pMaterial->GetShader() : nullptr);
+        if (!info.pMaterial) SR_UNLIKELY_ATTRIBUTE {
+            return SR_GRAPH_NS::ShaderUseInfo(nullptr);
+        }
+
+        const ShaderPtr pOrigin = info.pMaterial->GetShader();
+        return m_meshDrawerPass->ReplaceShader(pOrigin);
     }
 }

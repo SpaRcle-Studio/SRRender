@@ -27,6 +27,8 @@ namespace SR_GRAPH_NS {
         , m_time(SR_HTYPES_NS::Time::Instance())
     { }
 
+    MeshDrawerPass::~MeshDrawerPass() = default;
+
     bool MeshDrawerPass::Load(const SR_XML_NS::Node& passNode) {
         m_allowedLayers.clear();
         m_disallowedLayers.clear();
@@ -265,6 +267,7 @@ namespace SR_GRAPH_NS {
 
     void MeshDrawerPass::DeInit() {
         ClearOverrideShaders();
+        m_renderQueue.AutoFree();
         Super::DeInit();
     }
 

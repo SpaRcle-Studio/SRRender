@@ -37,16 +37,12 @@ namespace SR_GTYPES_NS {
     }
 
     void MeshComponent::OnAttached() {
-        GetRenderScene().Do([this](SR_GRAPH_NS::RenderScene* ptr) {
-            ptr->Register(this);
-        });
-
         Component::OnAttached();
     }
 
     void MeshComponent::OnDestroy() {
         Component::OnDestroy();
-        UnRegisterMesh();
+        DestroyMesh();
     }
 
     bool MeshComponent::ExecuteInEditMode() const {
@@ -157,11 +153,13 @@ namespace SR_GTYPES_NS {
 
     void MeshComponent::OnEnable() {
         IRenderComponent::OnEnable();
-        MarkUniformsDirty();
+        if (auto&& pRenderScene = GetRenderScene(); pRenderScene && !IsMeshRegistered()) {
+            pRenderScene->Register(this);
+        }
     }
 
     void MeshComponent::OnDisable() {
         IRenderComponent::OnDisable();
-        MarkUniformsDirty();
+        UnRegisterMesh();
     }
 }

@@ -26,6 +26,7 @@ namespace SR_GRAPH_NS {
     class RenderScene;
     class MeshRenderStage;
     class BaseMaterial;
+    class RenderQueue;
 
     struct MeshRegistrationInfo {
         uint32_t poolId = static_cast<uint32_t>(SR_ID_INVALID);
