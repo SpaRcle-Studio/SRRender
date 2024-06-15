@@ -43,6 +43,7 @@ namespace SR_GRAPH_NS {
                 UseSamplers(ShaderUseInfo(m_shader));
                 m_descriptorManager.Flush();
             }
+            GetPassPipeline()->GetCurrentShader()->FlushConstants();
         }
 
         if (result != DescriptorManager::BindResult::Failed) {

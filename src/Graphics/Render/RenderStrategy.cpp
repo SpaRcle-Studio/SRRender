@@ -81,18 +81,6 @@ namespace SR_GRAPH_NS {
     //    return m_shaderReplace ? m_shaderReplace->ReplaceShader(pShader) : ShaderUseInfo(pShader);
     //}
 
-    RenderStrategy::RenderQueuePtr RenderStrategy::BuildQueue(MeshDrawerPass* pDrawer) {
-        auto&& pQueue = RenderQueuePtr::MakeShared(this, pDrawer);
-
-        m_meshPool.ForEach([pQueue](uint32_t id, const MeshPtr& pMesh) {
-            pQueue->Register(pMesh->GetMeshRegistrationInfo());
-        });
-
-        m_queues.emplace_back(pQueue);
-
-        return pQueue;
-    }
-
     void RenderStrategy::RemoveQueue(RenderQueue* pQueue) {
         for (auto pIt = m_queues.begin(); pIt != m_queues.end(); ++pIt) {
             if (pIt->Get() == pQueue) {
@@ -129,6 +117,14 @@ namespace SR_GRAPH_NS {
 
         info.pMesh->SetMeshRegistrationInfo(std::nullopt);
 
+        return true;
+    }
+
+    bool RenderStrategy::BuildQueueImpl(const RenderQueuePtr& pQueue) {
+        pQueue->Init();
+        m_meshPool.ForEach([pQueue](uint32_t id, const MeshPtr& pMesh) {
+            pQueue->Register(pMesh->GetMeshRegistrationInfo());
+        });
         return true;
     }
 

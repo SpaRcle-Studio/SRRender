@@ -96,8 +96,15 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void RenderQueue::Init() {
+        SRAssert(!m_isInitialized);
+        m_isInitialized = true;
+    }
+
     bool RenderQueue::Render() {
         SR_TRACY_ZONE;
+
+        SRAssert(m_isInitialized);
 
         PrepareLayers();
 
@@ -234,7 +241,13 @@ namespace SR_GRAPH_NS {
                 currentVBO = info.vbo;
             }
 
-            info.pMesh->Draw();
+            if (m_customMeshDraw) SR_UNLIKELY_ATTRIBUTE {
+                CustomDrawMesh(info);
+            }
+            else {
+                info.pMesh->Draw();
+            }
+
             pElement->state = QUEUE_STATE_OK;
             m_rendered = true;
         }

@@ -211,6 +211,7 @@ namespace SR_GTYPES_NS {
                 m_shader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
                 m_descriptorManager.Flush();
             }
+            m_pipeline->GetCurrentShader()->FlushConstants();
         }
 
         m_pipeline->BindVBO(m_VBO);

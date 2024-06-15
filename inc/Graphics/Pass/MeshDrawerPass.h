@@ -29,7 +29,9 @@ namespace SR_GRAPH_NS {
             bool depth = false;
         };
         using Samplers = std::vector<Sampler>;
+    public:
         using RenderQueuePtr = SR_HTYPES_NS::SharedPtr<RenderQueue>;
+
     public:
         MeshDrawerPass();
         ~MeshDrawerPass() override;
@@ -41,7 +43,7 @@ namespace SR_GRAPH_NS {
         void Prepare() override;
         bool Render() override;
         void Update() override;
- 
+
         SR_NODISCARD bool HasPreRender() const noexcept override { return false; }
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
         SR_NODISCARD virtual bool IsNeedUpdate() const noexcept { return false; }
@@ -63,10 +65,11 @@ namespace SR_GRAPH_NS {
         void OnSamplersChanged() override;
         void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
 
+        SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
+        SR_NODISCARD virtual RenderQueuePtr AllocateRenderQueue();
+
     private:
         void ClearOverrideShaders();
-
-        SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
 
     private:
         bool m_useMaterials = true;

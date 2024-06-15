@@ -274,7 +274,7 @@ namespace SR_GRAPH_NS {
     bool MeshDrawerPass::Init() {
         m_shadowMapPass = GetTechnique()->FindPass<ShadowMapPass>();
         m_cascadedShadowMapPass = GetTechnique()->FindPass<CascadedShadowMapPass>();
-        m_renderQueue = GetRenderStrategy()->BuildQueue(this);
+        m_renderQueue = AllocateRenderQueue();
         return Super::Init();
     }
 
@@ -286,5 +286,9 @@ namespace SR_GRAPH_NS {
     void MeshDrawerPass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
         ISamplersPass::SetISamplerRenderTechnique(pRenderTechnique);
         Super::SetRenderTechnique(pRenderTechnique);
+    }
+
+    MeshDrawerPass::RenderQueuePtr MeshDrawerPass::AllocateRenderQueue() {
+        return GetRenderStrategy()->BuildQueue(this);
     }
 }

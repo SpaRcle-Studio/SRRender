@@ -330,12 +330,14 @@ namespace SR_GRAPH_NS {
 
         void MarkUniformsDirty() { m_isUniformsDirty = true; }
 
-        SR_NODISCARD RenderQueuePtr BuildQueue(MeshDrawerPass* pDrawer);
+        template<class QueueType = RenderQueue, class ReturnType=QueueType> SR_NODISCARD SR_HTYPES_NS::SharedPtr<ReturnType> BuildQueue(MeshDrawerPass* pDrawer);
         void RemoveQueue(RenderQueue* pQueue);
 
     private:
         void RegisterMesh(const MeshRegistrationInfo& info);
         bool UnRegisterMesh(const MeshRegistrationInfo& info);
+
+        SR_NODISCARD bool BuildQueueImpl(const RenderQueuePtr& pQueue);
 
         MeshRegistrationInfo CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh);
 
@@ -356,6 +358,22 @@ namespace SR_GRAPH_NS {
         SR_HTYPES_NS::ObjectPool<MeshPtr, uint32_t> m_meshPool;
 
     };
+
+    template<class QueueType, class ReturnType> SR_HTYPES_NS::SharedPtr<ReturnType> RenderStrategy::BuildQueue(MeshDrawerPass* pDrawer) {
+        SR_STATIC_ASSERT2((std::is_base_of_v<RenderQueue, QueueType>), "QueueType must be derived from RenderQueue");
+
+        auto&& pQueue = RenderQueuePtr::MakeShared<QueueType, ReturnType>(this, pDrawer);
+
+        if (!BuildQueueImpl(pQueue)) {
+            SRHalt("Failed to build queue");
+            pQueue.AutoFree();
+            return nullptr;
+        }
+
+        m_queues.emplace_back(pQueue);
+
+        return pQueue;
+    }
 }
 
 #endif //SR_ENGINE_RENDER_STRATEGY_H

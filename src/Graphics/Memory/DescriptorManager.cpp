@@ -90,7 +90,6 @@ namespace SR_GRAPH_NS {
     void DescriptorManager::Flush() {
         auto&& pShader = m_pipeline->GetCurrentShader();
         pShader->AttachDescriptorSets();
-        pShader->FlushConstants();
     }
 
     DescriptorManager::DescriptorSet DescriptorManager::AllocateMemory(SR_GTYPES_NS::Shader* pShader) const {

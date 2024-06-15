@@ -92,10 +92,12 @@ namespace SR_GRAPH_NS {
 
     public:
         RenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer);
-        ~RenderQueue();
+        virtual ~RenderQueue();
 
         void Register(const MeshRegistrationInfo& info);
         void UnRegister(const MeshRegistrationInfo& info);
+
+        void Init();
 
         bool Render();
         void Update();
@@ -103,6 +105,11 @@ namespace SR_GRAPH_NS {
         void OnMeshDirty(MeshPtr pMesh, ShaderUseInfo info);
 
         SR_NODISCARD const std::vector<std::pair<Layer, Queue>>& GetQueues() const noexcept { return m_queues; }
+
+    protected:
+        virtual void CustomDrawMesh(const MeshInfo& info) { }
+
+        SR_NODISCARD MeshDrawerPass* GetMeshDrawerPass() const noexcept { return m_meshDrawerPass; }
 
     private:
         void UpdateShaders();
@@ -121,8 +128,12 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD SR_GRAPH_NS::ShaderUseInfo GetShaderUseInfo(const MeshRegistrationInfo& info) const;
 
+    protected:
+        bool m_customMeshDraw = false;
+
     private:
         bool m_rendered = false;
+        bool m_isInitialized = false;
 
         uint64_t m_layersStateHash = 0;
 

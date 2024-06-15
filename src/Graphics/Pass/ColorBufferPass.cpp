@@ -8,8 +8,21 @@
 namespace SR_GRAPH_NS {
     SR_REGISTER_RENDER_PASS(ColorBufferPass)
 
+    ColorBufferRenderQueue::ColorBufferRenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer)
+        : Super(pStrategy, pDrawer)
+    {
+        m_customMeshDraw = true;
+    }
+
+    void ColorBufferRenderQueue::CustomDrawMesh(const MeshInfo& info) {
+        auto pColorBuffer = static_cast<ColorBufferPass*>(GetMeshDrawerPass());
+        pColorBuffer->IncrementColorIndex();
+        pColorBuffer->SetMeshIndex(info.pMesh);
+        info.shaderUseInfo.pShader->SetConstVec3(SHADER_COLOR_BUFFER_VALUE, pColorBuffer->GetMeshColor());
+        info.pMesh->Draw();
+    }
+
     void ColorBufferPass::Update() {
-        ResetColorIndex();
         Super::Update();
     }
 
@@ -20,11 +33,10 @@ namespace SR_GRAPH_NS {
 
         pMesh->UseModelMatrix();
         pMesh->UseOverrideUniforms();
+    }
 
-        IncrementColorIndex();
-        SetMeshIndex(pMesh);
-
-        info.pShader->SetVec3(SHADER_COLOR_BUFFER_VALUE, GetMeshColor());
+    MeshDrawerPass::RenderQueuePtr ColorBufferPass::AllocateRenderQueue() {
+        return GetRenderStrategy()->BuildQueue<ColorBufferRenderQueue, RenderQueue>(this);
     }
 
     SR_GTYPES_NS::Framebuffer* ColorBufferPass::GetColorFrameBuffer() const noexcept {
@@ -37,26 +49,9 @@ namespace SR_GRAPH_NS {
     }
 
     bool ColorBufferPass::Render() {
+        ResetColorIndex();
         ClearTable();
-        m_needUpdateUniforms = true;
         return OffScreenMeshDrawerPass::Render();
-    }
-
-    bool ColorBufferPass::IsNeedUpdate() const noexcept {
-        if (m_needUpdateUniforms) {
-            return true;
-        }
-
-        if (auto&& pStrategy = GetPassPipeline()->GetCurrentRenderStrategy()) {
-            return pStrategy->IsUniformsDirty();
-        }
-
-        return true;
-    }
-
-    void ColorBufferPass::PostUpdate() {
-        m_needUpdateUniforms = false;
-        Super::PostUpdate();
     }
 
     bool ColorBufferPass::Load(const SR_XML_NS::Node& passNode) {

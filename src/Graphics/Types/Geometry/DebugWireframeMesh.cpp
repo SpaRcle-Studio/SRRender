@@ -39,6 +39,7 @@ namespace SR_GTYPES_NS {
                 MarkUniformsDirty();
                 m_descriptorManager.Flush();
             }
+            m_pipeline->GetCurrentShader()->FlushConstants();
         }
 
         if (result != DescriptorManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
