@@ -2,6 +2,7 @@
 // Created by Monika on 23.11.2023.
 //
 
+#include <Graphics/Material/UniqueMaterial.h>
 #include <Graphics/UI/Gizmo.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Render/RenderTechnique.h>
@@ -58,18 +59,11 @@ namespace SR_GRAPH_UI_NS {
 
         pMeshComponent->SetDontSave(true);
 
-        if (operation & GizmoOperation::Center) {
-            pMeshComponent->SetMaterial("Engine/Materials/Colors/gizmo-center.mat");
-        }
-        else if ((operation & GizmoOperation::X && !(operation & GizmoOperation::Alternative)) || (operation == GizmoOperation::TranslateAltX)) {
-            pMeshComponent->SetMaterial("Engine/Materials/Colors/gizmo-x.mat");
-        }
-        else if ((operation & GizmoOperation::Y && !(operation & GizmoOperation::Alternative)) || (operation == GizmoOperation::TranslateAltY)) {
-            pMeshComponent->SetMaterial("Engine/Materials/Colors/gizmo-y.mat");
-        }
-        else if ((operation & GizmoOperation::Z && !(operation & GizmoOperation::Alternative)) || (operation == GizmoOperation::TranslateAltZ)) {
-            pMeshComponent->SetMaterial("Engine/Materials/Colors/gizmo-z.mat");
-        }
+        auto&& pMaterial = new SR_GRAPH_NS::UniqueMaterial();
+        pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
+        pMaterial->SetVec4("color", GetColorByOperation(operation));
+
+        pMeshComponent->SetMaterial(pMaterial);
 
         if (mode == GizmoMeshLoadMode::Visual) {
             if (SR_MATH_NS::IsMaskIncludedSubMask(operation, GizmoOperation::Rotate)) {
@@ -223,15 +217,11 @@ namespace SR_GRAPH_UI_NS {
 
         for (auto&& [flag, info]: m_meshes) {
             if (info.pVisual) {
-                info.pVisual->OverrideUniform("useOrthogonal")
-                    .SetData(IsGizmo2DSpace())
-                    .SetShaderVarType(ShaderVarType::Bool);
+                info.pVisual->GetMaterial()->SetBool("useOrthogonal", IsGizmo2DSpace());
             }
 
             if (info.pSelection) {
-                info.pSelection->OverrideUniform("useOrthogonal")
-                    .SetData(IsGizmo2DSpace())
-                    .SetShaderVarType(ShaderVarType::Bool);
+                info.pVisual->GetMaterial()->SetBool("useOrthogonal", IsGizmo2DSpace());
             }
         }
 
@@ -243,14 +233,11 @@ namespace SR_GRAPH_UI_NS {
                 }
 
                 if (pMesh == info.pSelection.Get() && info.pSelection.Get()) {
-                    info.pVisual->OverrideUniform("color")
-                        .SetData(SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f))
-                        .SetShaderVarType(ShaderVarType::Vec4);
-
+                    info.pVisual->GetMaterial()->SetVec4("color", SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f));
                     m_hoveredOperation = flag;
                 }
                 else {
-                    info.pVisual->RemoveUniformOverride("color");
+                    info.pVisual->GetMaterial()->SetVec4("color", GetColorByOperation(flag));
                 }
             }
         }
@@ -392,6 +379,27 @@ namespace SR_GRAPH_UI_NS {
         axis |= (m_activeOperation & GizmoOperation::Z) ? SR_MATH_NS::Axis::Z : SR_MATH_NS::Axis::None;
         axis |= (m_activeOperation & GizmoOperation::Center) ? SR_MATH_NS::Axis::XYZ : SR_MATH_NS::Axis::None;
         return axis;
+    }
+
+    SR_MATH_NS::FColor Gizmo::GetColorByOperation(GizmoOperationFlag operation) const {
+        if (operation & GizmoOperation::Center) {
+            return SR_MATH_NS::FVector4(1.f, 1.f, 1.f, 0.75f);
+        }
+
+        if ((operation & GizmoOperation::X && !(operation & GizmoOperation::Alternative)) || (operation == GizmoOperation::TranslateAltX)) {
+            return SR_MATH_NS::FVector4(1.f, 0.f, 0.f, 0.75f);
+        }
+
+        if ((operation & GizmoOperation::Y && !(operation & GizmoOperation::Alternative)) || (operation == GizmoOperation::TranslateAltY)) {
+            return SR_MATH_NS::FVector4(0.f, 1.f, 0.f, 0.75f);
+        }
+
+        if ((operation & GizmoOperation::Z && !(operation & GizmoOperation::Alternative)) || (operation == GizmoOperation::TranslateAltZ)) {
+            return SR_MATH_NS::FVector4(0.f, 0.f, 1.f, 0.75f);
+        }
+
+        SRHalt("Unknown operation!");
+        return SR_MATH_NS::FVector4();
     }
 
     SR_MATH_NS::Matrix4x4 Gizmo::GetGizmoMatrix() const {

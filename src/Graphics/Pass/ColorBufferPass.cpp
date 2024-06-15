@@ -32,7 +32,6 @@ namespace SR_GRAPH_NS {
         }
 
         pMesh->UseModelMatrix();
-        pMesh->UseOverrideUniforms();
     }
 
     MeshDrawerPass::RenderQueuePtr ColorBufferPass::AllocateRenderQueue() {

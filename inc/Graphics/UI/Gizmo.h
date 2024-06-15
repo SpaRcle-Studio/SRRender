@@ -121,6 +121,8 @@ namespace SR_GRAPH_UI_NS {
 
         SR_NODISCARD SR_FORCE_INLINE bool ExecuteInEditMode() const override { return true; }
 
+        SR_NODISCARD SR_MATH_NS::FColor GetColorByOperation(GizmoOperationFlag operation) const;
+
     private:
         struct MeshInfo {
             SR_GTYPES_NS::MeshComponent::Ptr pVisual;

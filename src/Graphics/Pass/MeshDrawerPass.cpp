@@ -175,7 +175,6 @@ namespace SR_GRAPH_NS {
     void MeshDrawerPass::UseUniforms(ShaderUseInfo info, MeshPtr pMesh) {
         if (IsNeedUseMaterials()) {
             pMesh->UseMaterial();
-            pMesh->UseOverrideUniforms();
         }
     }
 

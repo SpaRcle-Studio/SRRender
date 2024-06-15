@@ -102,8 +102,6 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual bool IsSupportVBO() const = 0;
         SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const { return FrustumCullingType::None; }
 
-        SR_NODISCARD std::vector<MaterialProperty>& GetOverrideUniforms() noexcept { return m_overrideUniforms; }
-        SR_NODISCARD std::vector<MaterialProperty>& GetOverrideConstants() noexcept { return m_overrideConstant; }
         SR_NODISCARD ShaderPtr GetShader() const;
         SR_NODISCARD MaterialPtr GetMaterial() const { return m_materialProperty.GetMaterial(); }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
@@ -111,12 +109,6 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
         SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
         SR_NODISCARD RenderQueues& GetRenderQueues() noexcept { return m_renderQueues; }
-
-        MaterialProperty& OverrideUniform(SR_UTILS_NS::StringAtom name);
-        void RemoveUniformOverride(SR_UTILS_NS::StringAtom name);
-
-        MaterialProperty& OverrideConstant(SR_UTILS_NS::StringAtom name);
-        void RemoveConstantOverride(SR_UTILS_NS::StringAtom name);
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
 
@@ -129,7 +121,6 @@ namespace SR_GTYPES_NS {
         virtual void UseMaterial();
         virtual void UseModelMatrix() { }
         virtual void UseSamplers();
-        virtual void UseOverrideUniforms();
 
         void MarkUniformsDirty();
         void MarkMaterialDirty();
@@ -165,9 +156,6 @@ namespace SR_GTYPES_NS {
 
         int32_t m_virtualUBO = SR_ID_INVALID;
         int32_t m_virtualDescriptor = SR_ID_INVALID;
-
-        std::vector<MaterialProperty> m_overrideUniforms;
-        std::vector<MaterialProperty> m_overrideConstant;
 
     private:
         std::optional<MeshRegistrationInfo> m_registrationInfo;
