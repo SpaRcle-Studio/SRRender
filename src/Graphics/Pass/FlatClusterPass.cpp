@@ -12,12 +12,12 @@ namespace SR_GRAPH_NS {
     }
 
     void FlatClusterPass::OnClusterDirty() {
-        for (auto&& pMesh : GetRenderScene()->GetFlatCluster()) {
-            if (!pMesh) {
-                continue;
-            }
-            pMesh->MarkMaterialDirty();
-        }
+        //for (auto&& pMesh : GetRenderScene()->GetFlatCluster()) {
+        //    if (!pMesh) {
+        //        continue;
+        //    }
+        //    pMesh->MarkMaterialDirty();
+        //}
 
         Super::OnClusterDirty();
     }
@@ -29,40 +29,40 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        GetRenderScene()->GetFlatCluster().Sort();
+        //GetRenderScene()->GetFlatCluster().Sort();
 
         ShaderPtr pCurrentShader = nullptr;
 
-        for (auto&& pMesh : GetRenderScene()->GetFlatCluster()) {
-            if (!pMesh || !pMesh->IsMeshActive()) {
-                continue;
-            }
-
-            auto&& virtualUbo = pMesh->GetVirtualUBO();
-            if (virtualUbo == SR_ID_INVALID) {
-                continue;
-            }
-
-            auto&& pShader = pMesh->GetShader();
-            if (!pShader || !pShader->Ready() || !pShader->IsAvailable()) {
-                continue;
-            }
-
-            GetContext()->SetCurrentShader(pShader);
-
-            if (pCurrentShader != pShader) {
-                pCurrentShader = pShader;
-                UseSharedUniforms(pShader);
-            }
-
-            UseUniforms(pShader, pMesh);
-
-            if (m_uboManager.BindUBO(virtualUbo) == Memory::UBOManager::BindResult::Duplicated) {
-                SR_ERROR("FlatClusterPass::UpdateCluster() : memory has been duplicated!");
-            }
-
-            pShader->Flush();
-        }
+        //for (auto&& pMesh : GetRenderScene()->GetFlatCluster()) {
+        //    if (!pMesh || !pMesh->IsMeshActive()) {
+        //        continue;
+        //    }
+//
+        //    auto&& virtualUbo = pMesh->GetVirtualUBO();
+        //    if (virtualUbo == SR_ID_INVALID) {
+        //        continue;
+        //    }
+//
+        //    auto&& pShader = pMesh->GetShader();
+        //    if (!pShader || !pShader->Ready() || !pShader->IsAvailable()) {
+        //        continue;
+        //    }
+//
+        //    GetContext()->SetCurrentShader(pShader);
+//
+        //    if (pCurrentShader != pShader) {
+        //        pCurrentShader = pShader;
+        //        UseSharedUniforms(pShader);
+        //    }
+//
+        //    UseUniforms(pShader, pMesh);
+//
+        //    if (m_uboManager.BindUBO(virtualUbo) == Memory::UBOManager::BindResult::Duplicated) {
+        //        SR_ERROR("FlatClusterPass::UpdateCluster() : memory has been duplicated!");
+        //    }
+//
+        //    pShader->Flush();
+        //}
 
         GetContext()->SetCurrentShader(nullptr);
 
@@ -78,45 +78,45 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        GetRenderScene()->GetFlatCluster().Sort();
-
-        ShaderPtr pCurrentShader = nullptr;
-
-        for (auto&& pMesh : GetRenderScene()->GetFlatCluster()) {
-            if (!pMesh || !pMesh->IsMeshActive()) {
-                continue;
-            }
-
-            auto&& pShader = pMesh->GetShader();
-            if (!pShader) {
-                continue;
-            }
-
-            if (pCurrentShader != pShader) {
-                if (pCurrentShader) {
-                    pCurrentShader->UnUse();
-                    pCurrentShader = nullptr;
-                }
-
-                if (pShader->Use() == ShaderBindResult::Failed) {
-                    continue;
-                }
-
-                pCurrentShader = pShader;
-
-                UseSamplers(pShader);
-                UseConstants(pShader);
-            }
-
-            pMesh->BindMesh();
-            pMesh->Draw();
-
-            m_hasRendered |= true;
-        }
-
-        if (pCurrentShader) {
-            pCurrentShader->UnUse();
-        }
+        //GetRenderScene()->GetFlatCluster().Sort();
+//
+        //ShaderPtr pCurrentShader = nullptr;
+//
+        //for (auto&& pMesh : GetRenderScene()->GetFlatCluster()) {
+        //    if (!pMesh || !pMesh->IsMeshActive()) {
+        //        continue;
+        //    }
+//
+        //    auto&& pShader = pMesh->GetShader();
+        //    if (!pShader) {
+        //        continue;
+        //    }
+//
+        //    if (pCurrentShader != pShader) {
+        //        if (pCurrentShader) {
+        //            pCurrentShader->UnUse();
+        //            pCurrentShader = nullptr;
+        //        }
+//
+        //        if (pShader->Use() == ShaderBindResult::Failed) {
+        //            continue;
+        //        }
+//
+        //        pCurrentShader = pShader;
+//
+        //        UseSamplers(pShader);
+        //        UseConstants(pShader);
+        //    }
+//
+        //    pMesh->BindMesh();
+        //    pMesh->Draw();
+//
+        //    m_hasRendered |= true;
+        //}
+//
+        //if (pCurrentShader) {
+        //    pCurrentShader->UnUse();
+        //}
 
         return m_hasRendered;
     }

@@ -147,29 +147,28 @@ namespace SR_GRAPH_NS {
     }
 
     bool MeshDrawerPass::Render() {
-        if (m_renderQueue && m_renderQueue->Render()) {
-            return true;
+        const uint32_t layer = GetPassPipeline()->GetCurrentFrameBufferLayer();
+        if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("MeshDrawerPass::Render() : out of bounds!");
+            return false;
         }
-        return false;
+
+        return m_renderQueues[layer]->Render();
     }
 
     void MeshDrawerPass::Prepare() {
         PrepareSamplers();
-
-        //if (m_needUpdateMeshes && HasSamplers()) {
-        //    GetRenderStrategy()->ForEachMesh([](auto&& pMesh) {
-        //        pMesh->MarkMaterialDirty();
-        //    });
-        //}
-        m_needUpdateMeshes = false;
-
         Super::Prepare();
     }
 
     void MeshDrawerPass::Update() {
-        if (m_renderQueue) {
-            m_renderQueue->Update();
+        const uint32_t layer = GetPassPipeline()->GetCurrentFrameBufferLayer();
+        if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("MeshDrawerPass::Update() : out of bounds!");
+            return;
         }
+
+        m_renderQueues[layer]->Update();
     }
 
     void MeshDrawerPass::UseUniforms(ShaderUseInfo info, MeshPtr pMesh) {
@@ -237,13 +236,11 @@ namespace SR_GRAPH_NS {
 
     void MeshDrawerPass::OnResize(const SR_MATH_NS::UVector2& size) {
         MarkSamplersDirty();
-        m_needUpdateMeshes = true;
         Super::OnResize(size);
     }
 
     void MeshDrawerPass::OnMultisampleChanged() {
         MarkSamplersDirty();
-        m_needUpdateMeshes = true;
         Super::OnMultisampleChanged();
     }
 
@@ -266,19 +263,34 @@ namespace SR_GRAPH_NS {
 
     void MeshDrawerPass::DeInit() {
         ClearOverrideShaders();
-        m_renderQueue.AutoFree();
+        for (auto&& pRenderQueue : m_renderQueues) {
+            pRenderQueue.AutoFree();
+        }
+        m_renderQueues.clear();
         Super::DeInit();
     }
 
     bool MeshDrawerPass::Init() {
         m_shadowMapPass = GetTechnique()->FindPass<ShadowMapPass>();
         m_cascadedShadowMapPass = GetTechnique()->FindPass<CascadedShadowMapPass>();
-        m_renderQueue = AllocateRenderQueue();
+
+        const uint8_t layers = GetMeshDrawerFBOLayers();
+        if (layers == 0) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("MeshDrawerPass::Init() : layers count is 0!");
+            return false;
+        }
+
+        SRAssert(m_renderQueues.empty());
+
+        m_renderQueues.resize(layers);
+        for (uint8_t i = 0; i < layers; ++i) {
+            m_renderQueues[i] = AllocateRenderQueue();
+        }
+
         return Super::Init();
     }
 
     void MeshDrawerPass::OnSamplersChanged() {
-        m_needUpdateMeshes = true;
         ISamplersPass::OnSamplersChanged();
     }
 

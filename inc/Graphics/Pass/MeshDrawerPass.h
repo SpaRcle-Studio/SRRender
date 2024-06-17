@@ -48,6 +48,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
         SR_NODISCARD virtual bool IsNeedUpdate() const noexcept { return false; }
         SR_NODISCARD virtual bool IsNeedUseMaterials() const noexcept { return m_useMaterials; }
+        SR_NODISCARD virtual uint8_t GetMeshDrawerFBOLayers() const noexcept { return 1; }
 
         virtual void UseUniforms(ShaderUseInfo info, MeshPtr pMesh);
         virtual void UseSharedUniforms(ShaderUseInfo info);
@@ -57,7 +58,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const override;
         SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const override { return true; }
 
-        SR_NODISCARD RenderQueuePtr GetRenderQueue() const noexcept { return m_renderQueue; }
+        SR_NODISCARD const std::vector<RenderQueuePtr>& GetRenderQueues() const noexcept { return m_renderQueues; }
 
     protected:
         void OnResize(const SR_MATH_NS::UVector2& size) override;
@@ -74,9 +75,8 @@ namespace SR_GRAPH_NS {
     private:
         bool m_useMaterials = true;
         bool m_passWasRendered = false;
-        bool m_needUpdateMeshes = false;
 
-        RenderQueuePtr m_renderQueue;
+        std::vector<RenderQueuePtr> m_renderQueues;
 
         ShadowMapPass* m_shadowMapPass = nullptr;
         CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;

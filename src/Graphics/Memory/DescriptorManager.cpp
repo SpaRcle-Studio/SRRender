@@ -50,35 +50,37 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& info = m_descriptorPool.At(virtualDescriptorSet);
-
-        auto&& pShader = m_pipeline->GetCurrentShader();
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
 
-        std::optional<DescriptorSet> descriptorSet;
+        DescriptorSet descriptorSet;
+        bool hasDescriptorSet = false;
 
-        BindResult result = BindResult::Success;
-
-        for (auto&& [shaderHandle, descriptorSetInfo] : info) {
-            if (shaderHandle == pShaderHandle) SR_LIKELY_ATTRIBUTE {
-                descriptorSet = descriptorSetInfo;
+        const DescriptorSetInfo* pElement = info.data();
+        const DescriptorSetInfo* pEnd = pElement + info.size();
+        for (; pElement != pEnd; ++pElement) {
+            if (pElement->pShaderHandle == pShaderHandle) SR_LIKELY_ATTRIBUTE {
+                descriptorSet = pElement->descriptorSet;
+                hasDescriptorSet = true;
                 break;
             }
         }
 
-        if (!descriptorSet.has_value()) SR_UNLIKELY_ATTRIBUTE {
-            descriptorSet = AllocateMemory(pShader);
+        BindResult result = BindResult::Success;
+
+        if (!hasDescriptorSet) SR_UNLIKELY_ATTRIBUTE {
+            descriptorSet = AllocateMemory(m_pipeline->GetCurrentShader());
 
             if (descriptorSet == SR_ID_INVALID && !m_allocationTypesCache.empty()) SR_UNLIKELY_ATTRIBUTE {
                 SRHalt("DescriptorManager::Bind() : failed to allocate descriptor set!");
                 return BindResult::Failed;
             }
 
-            info.emplace_back(pShaderHandle, descriptorSet.value());
+            info.emplace_back(pShaderHandle, descriptorSet);
             result = BindResult::Duplicated;
         }
 
-        if (descriptorSet.value() != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
-            if (!m_pipeline->BindDescriptorSet(descriptorSet.value())) {
+        if (descriptorSet != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
+            if (!m_pipeline->BindDescriptorSet(descriptorSet)) {
                 SR_ERROR("DescriptorManager::Bind() : failed to bind descriptor set!");
                 return BindResult::Failed;
             }

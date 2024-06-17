@@ -385,7 +385,7 @@ namespace SR_GRAPH_NS {
             SRAssert(!m_state.pFrameBuffer->IsDirty());
         }
         else {
-            SetFrameBufferLayer(0);
+            SetCurrentFrameBufferLayer(0);
         }
     }
 

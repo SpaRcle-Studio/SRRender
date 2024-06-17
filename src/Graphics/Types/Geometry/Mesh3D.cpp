@@ -60,8 +60,6 @@ namespace SR_GTYPES_NS {
             m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
         }
 
-        m_pipeline->BindVBO(m_VBO);
-        m_pipeline->BindIBO(m_IBO);
         m_uboManager.BindUBO(m_virtualUBO);
 
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
@@ -69,7 +67,7 @@ namespace SR_GTYPES_NS {
         if (m_pipeline->GetCurrentBuildIteration() == 0) {
             if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
                 UseSamplers();
-                MarkUniformsDirty();
+                MarkUniformsDirty(true);
                 m_descriptorManager.Flush();
             }
             m_pipeline->GetCurrentShader()->FlushConstants();

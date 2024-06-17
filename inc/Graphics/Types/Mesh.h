@@ -122,7 +122,7 @@ namespace SR_GTYPES_NS {
         virtual void UseModelMatrix() { }
         virtual void UseSamplers();
 
-        void MarkUniformsDirty();
+        void MarkUniformsDirty(bool force = false);
         void MarkMaterialDirty();
         bool DestroyMesh();
         void ReRegisterMesh();
@@ -130,7 +130,7 @@ namespace SR_GTYPES_NS {
         void SetMaterial(BaseMaterial* pMaterial);
         void SetMaterial(const SR_UTILS_NS::Path& path);
 
-        void SetHasErrors(bool hasErrors) { m_hasErrors = hasErrors; }
+        void SetErrorsClean() { m_hasErrors = false; }
         void SetUniformsClean() { m_isUniformsDirty = false; }
 
     protected:

@@ -167,14 +167,11 @@ namespace SR_GRAPH_NS {
 
             m_pipeline->SetCurrentShader(info.pShader);
 
-            m_meshDrawerPass->UseUniforms(info, pMesh);
-
-            if (m_uboManager.BindUBO(virtualUbo) == Memory::UBOManager::BindResult::Duplicated) SR_UNLIKELY_ATTRIBUTE {
-                SRHalt("RenderQueue::UpdateMeshes() : memory has been duplicated!");
-                continue;
+            /** Если меш не был отрисован, то бинд не пройдет */
+            if (m_uboManager.BindNoDublicateUBO(virtualUbo) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
+                m_meshDrawerPass->UseUniforms(info, pMesh);
+                SR_MAYBE_UNUSED_VAR info.pShader->Flush();
             }
-
-            SR_MAYBE_UNUSED_VAR info.pShader->Flush();
         }
 
         m_meshes.clear();
@@ -204,22 +201,19 @@ namespace SR_GRAPH_NS {
         const MeshInfo* pEnd = pStart + queue.size();
         bool shaderOk = false;
 
-        for (MeshInfo* pElement = pStart; pElement < pEnd; ++pElement) {
+        for (MeshInfo* pElement = pStart; pElement < pEnd; ) {
             const MeshInfo info = *pElement;
 
             if (!info.shaderUseInfo.pShader || pElement->vbo == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 pElement->state = QUEUE_STATE_ERROR;
-                continue;
-            }
-
-            if (!info.pMesh->IsMeshActive()) SR_UNLIKELY_ATTRIBUTE {
-                pElement->state = QUEUE_STATE_ERROR;
+                ++pElement;
                 continue;
             }
 
             if (info.shaderUseInfo.pShader != pCurrentShader) SR_UNLIKELY_ATTRIBUTE {
                 pCurrentShader = info.shaderUseInfo.pShader;
                 shaderOk = UseShader(info.shaderUseInfo);
+                currentVBO = SR_ID_INVALID;
                 if (!shaderOk) SR_UNLIKELY_ATTRIBUTE {
                     pElement->state = QUEUE_STATE_SHADER_ERROR;
                     pElement = FindNextShader(queue, pElement);
@@ -249,6 +243,7 @@ namespace SR_GRAPH_NS {
             }
 
             pElement->state = QUEUE_STATE_OK;
+            ++pElement;
             m_rendered = true;
         }
 
@@ -263,6 +258,8 @@ namespace SR_GRAPH_NS {
         auto pEnd = queue.data() + queue.size();
         auto pShader = pElement->shaderUseInfo.pShader;
 
+        ++pElement;
+
         while (pElement != pEnd) SR_UNLIKELY_ATTRIBUTE {
             if (pElement->shaderUseInfo.pShader != pShader) SR_UNLIKELY_ATTRIBUTE {
                 return pElement;
@@ -271,9 +268,6 @@ namespace SR_GRAPH_NS {
         }
 
         return pEnd;
-
-        //const ShaderMismatchPredicate predicate(pElement->shaderUseInfo.pShader);
-        //return queue.UpperBound(pElement, queue.data() + queue.size(), *pElement, predicate);
     }
 
     RenderQueue::MeshInfo* RenderQueue::FindNextVBO(Queue& queue, MeshInfo* pElement) {
@@ -306,6 +300,11 @@ namespace SR_GRAPH_NS {
 
         m_renderContext->SetCurrentShader(pShader);
 
+        if (m_pipeline->IsShaderChanged()) {
+            m_meshDrawerPass->UseConstants(info);
+            m_meshDrawerPass->UseSamplers(info);
+        }
+
         if (!pShader->IsSamplersValid()) {
             std::string message = "Shader samplers is not valid!\n\tPath: " + pShader->GetResourcePath().ToStringRef();
             for (auto&& [name, sampler] : pShader->GetSamplers()) {
@@ -318,11 +317,6 @@ namespace SR_GRAPH_NS {
             m_renderStrategy->AddError(message);
             pShader->UnUse();
             return false;
-        }
-
-        if (m_pipeline->IsShaderChanged()) {
-            m_meshDrawerPass->UseConstants(info);
-            m_meshDrawerPass->UseSamplers(info);
         }
 
         return true;

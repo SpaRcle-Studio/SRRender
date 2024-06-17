@@ -77,7 +77,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsValid() const { return m_frameBuffer != SR_ID_INVALID && !m_hasErrors && IsCalculated() && !IsDirty(); }
         SR_NODISCARD const FrameBufferFeatures& GetFeatures() const { return m_features; }
 
-        SR_NODISCARD int32_t GetId();
+        SR_NODISCARD int32_t GetId() const;
         SR_NODISCARD int32_t GetColorTexture(uint32_t layer);
         SR_NODISCARD int32_t GetDepthTexture(int32_t layer = -1);
 

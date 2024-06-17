@@ -83,7 +83,7 @@ namespace SR_GRAPH_NS {
         }
 
         m_pMesh->MarkMaterialDirty();
-        m_pMesh->SetHasErrors(false);
+        m_pMesh->SetErrorsClean();
 
         SRAssert(m_materialRegisterId == SR_ID_INVALID || m_pMaterial);
 

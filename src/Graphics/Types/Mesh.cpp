@@ -176,7 +176,6 @@ namespace SR_GTYPES_NS {
 
     void Mesh::MarkMaterialDirty() {
         m_dirtyMaterial = true;
-        MarkUniformsDirty();
     }
 
     Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
@@ -252,8 +251,8 @@ namespace SR_GTYPES_NS {
         return isRegistered;
     }
 
-    void Mesh::MarkUniformsDirty() {
-        if (m_isUniformsDirty) SR_LIKELY_ATTRIBUTE {
+    void Mesh::MarkUniformsDirty(bool force) {
+        if (m_isUniformsDirty && !force) SR_LIKELY_ATTRIBUTE {
             return;
         }
 

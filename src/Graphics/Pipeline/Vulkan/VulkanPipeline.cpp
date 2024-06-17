@@ -1412,21 +1412,20 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::PushConstants(void* pData, uint64_t size) {
         Super::PushConstants(pData, size);
 
-        if (!m_currentVkShader) {
+        if (!m_currentVkShader) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("Shader is nullptr!");
             return;
         }
 
         auto&& pushConstants = m_currentVkShader->GetPushConstants();
 
-        SRAssert2Once(pushConstants.size() == 1, "Unsupported!");
-
-        if (pushConstants.size() != 1) {
+        if (pushConstants.size() != 1) SR_UNLIKELY_ATTRIBUTE {
+            SRHaltOnce("Unsupported!");
             return;
         }
 
         vkCmdPushConstants(m_currentCmd, m_currentLayout,
-            pushConstants.front().stageFlags,
+            pushConstants.data()->stageFlags,
             0, size, pData
         );
     }

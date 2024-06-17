@@ -98,8 +98,7 @@ namespace SR_GRAPH_NS {
         pFrameBuffer->SetViewportScissor();
 
         for (uint32_t i = 0; i < layers; ++i) {
-            m_currentFrameBufferLayer = i;
-            pPipeline->SetFrameBufferLayer(i);
+            pPipeline->SetCurrentFrameBufferLayer(i);
 
             if (pFrameBuffer->Bind()) {
                 pFrameBuffer->BeginRender();
@@ -124,8 +123,7 @@ namespace SR_GRAPH_NS {
         pPipeline->SetCurrentFrameBuffer(pFrameBuffer);
 
         for (uint32_t i = 0; i < GetLayersCount(); ++i) {
-            m_currentFrameBufferLayer = i;
-            pPipeline->SetFrameBufferLayer(i);
+            pPipeline->SetCurrentFrameBufferLayer(i);
             UpdateFrameBufferInner();
         }
 
