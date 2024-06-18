@@ -24,8 +24,6 @@ namespace SR_GTYPES_NS {
         ~DebugWireframeMesh() override = default;
 
     public:
-        void Draw() override;
-
         void SetMatrix(const SR_MATH_NS::Matrix4x4& matrix4X4);
         void SetColor(const SR_MATH_NS::FVector4& color);
 

@@ -93,16 +93,17 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual SR_FORCE_INLINE bool IsFlatMesh() const noexcept { return false; }
         SR_NODISCARD virtual SR_MATH_NS::FVector3 GetTranslation() const { return SR_MATH_NS::FVector3::Zero(); }
         SR_NODISCARD virtual const SR_MATH_NS::Matrix4x4& GetModelMatrix() const;
-        SR_NODISCARD virtual std::vector<uint32_t> GetIndices() const { return { }; }
         SR_NODISCARD virtual std::string GetGeometryName() const { return std::string(); }
         SR_NODISCARD virtual std::string GetMeshIdentifier() const;
         SR_NODISCARD virtual int64_t GetSortingPriority() const { return 0; }
         SR_NODISCARD virtual bool HasSortingPriority() const { return false; }
         SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetMeshLayer() const { return SR_UTILS_NS::StringAtom(); }
         SR_NODISCARD virtual bool IsSupportVBO() const = 0;
+        SR_NODISCARD virtual uint32_t GetIndicesCount() const = 0;
         SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const { return FrustumCullingType::None; }
 
         SR_NODISCARD ShaderPtr GetShader() const;
+        SR_NODISCARD MeshMaterialProperty& GetMaterialProperty() noexcept { return m_materialProperty; }
         SR_NODISCARD MaterialPtr GetMaterial() const { return m_materialProperty.GetMaterial(); }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
         SR_NODISCARD MeshType GetMeshType() const noexcept { return m_meshType; }
@@ -116,7 +117,7 @@ namespace SR_GTYPES_NS {
         virtual void SetGeometryName(const std::string& name) { }
         virtual bool BindMesh();
 
-        virtual void Draw() = 0;
+        virtual void Draw();
 
         virtual void UseMaterial();
         virtual void UseModelMatrix() { }
@@ -126,6 +127,7 @@ namespace SR_GTYPES_NS {
         void MarkMaterialDirty();
         bool DestroyMesh();
         void ReRegisterMesh();
+        void UnRegisterMesh();
 
         void SetMaterial(BaseMaterial* pMaterial);
         void SetMaterial(const SR_UTILS_NS::Path& path);
@@ -134,8 +136,6 @@ namespace SR_GTYPES_NS {
         void SetUniformsClean() { m_isUniformsDirty = false; }
 
     protected:
-        void UnRegisterMesh();
-
         void FreeVideoMemory() override;
 
         virtual bool Calculate();

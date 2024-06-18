@@ -28,6 +28,7 @@ namespace SR_GTYPES_NS {
 
         void UseMaterial() override;
 
+        SR_NODISCARD uint32_t GetIndicesCount() const override { return 2; }
         SR_NODISCARD bool IsSupportVBO() const override { return false; }
 
         SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override {

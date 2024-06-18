@@ -17,7 +17,6 @@ namespace SR_GTYPES_NS {
         { {  1.000000, -1.000000,  0.000000 }, { 0.000000, 0.000000 } }
     };
 
-    /// TODO: не использовать VBO/IBO
     class Sprite : public SR_GTYPES_NS::MeshComponent {
         SR_REGISTER_NEW_COMPONENT(Sprite, 1001)
         using Super = SR_GTYPES_NS::MeshComponent;
@@ -34,11 +33,15 @@ namespace SR_GTYPES_NS {
         void UseMaterial() override;
         void UseModelMatrix() override;
         void OnPriorityChanged() override;
+
+        bool IsSupportVBO() const override { return false; }
+
+        bool BindMesh() override;
+
         SR_NODISCARD bool InitializeEntity() noexcept override;
 
+        SR_NODISCARD uint32_t GetIndicesCount() const override { return 4; }
         SR_NODISCARD bool IsFlatMesh() const noexcept override { return true; }
-
-        SR_NODISCARD std::vector<uint32_t> GetIndices() const override;
         SR_NODISCARD std::string GetMeshIdentifier() const override;
 
         SR_NODISCARD SR_MATH_NS::FVector2 GetTextureBorder() const { return m_textureBorder; }
@@ -56,7 +59,6 @@ namespace SR_GTYPES_NS {
 
     protected:
         bool Calculate() override;
-        void Draw() override;
 
     protected:
         bool m_sliced = true;

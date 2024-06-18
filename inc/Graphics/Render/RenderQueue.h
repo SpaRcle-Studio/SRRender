@@ -43,6 +43,7 @@ namespace SR_GRAPH_NS {
             MeshPtr pMesh = nullptr;
             int64_t priority = 0;
             QueueStateFlags state = QUEUE_STATE_ERROR;
+            bool hasVBO = false;
 
             bool operator==(const MeshInfo& other) const noexcept {
                 return

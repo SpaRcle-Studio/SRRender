@@ -10,43 +10,6 @@ namespace SR_GTYPES_NS {
         : Super(MeshType::Wireframe)
     { }
 
-    void DebugWireframeMesh::Draw() {
-        SR_TRACY_ZONE;
-
-        if (!Calculate() || m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
-            return;
-        }
-
-        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
-            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-                m_hasErrors = true;
-                return;
-            }
-
-            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
-        }
-
-        m_uboManager.BindUBO(m_virtualUBO);
-
-        const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
-
-        if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-                UseSamplers();
-                MarkUniformsDirty(true);
-                m_descriptorManager.Flush();
-            }
-            m_pipeline->GetCurrentShader()->FlushConstants();
-        }
-
-        if (result != DescriptorManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
-            m_pipeline->DrawIndices(m_countIndices);
-        }
-
-        m_dirtyMaterial = false;
-    }
-
     bool DebugWireframeMesh::Calculate() {
         if (IsCalculated()) {
             return true;

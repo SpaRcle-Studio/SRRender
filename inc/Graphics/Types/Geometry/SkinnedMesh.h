@@ -12,9 +12,9 @@
 #include <Graphics/Animations/Skeleton.h>
 
 namespace SR_GTYPES_NS {
-    class SkinnedMesh final : public MeshComponent, public SR_HTYPES_NS::IRawMeshHolder {
+    class SkinnedMesh final : public IndexedMeshComponent, public SR_HTYPES_NS::IRawMeshHolder {
         SR_REGISTER_NEW_COMPONENT(SkinnedMesh, 1003);
-        using Super = MeshComponent;
+        using Super = IndexedMeshComponent;
         SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SKELETON_REF_PROP_NAME = "Skeleton";
     public:
         SkinnedMesh();

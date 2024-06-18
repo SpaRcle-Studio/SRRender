@@ -183,14 +183,13 @@ namespace SR_SRSL_NS {
                 return Vertices::VertexType::SkinnedMeshVertex;
             case ShaderType::PostProcessing:
                 return Vertices::VertexType::None;
-            case ShaderType::Canvas:
-                return Vertices::VertexType::UIVertex;
             case ShaderType::Skybox:
             case ShaderType::Simple:
             case ShaderType::Line:
                 return Vertices::VertexType::SimpleVertex;
             case ShaderType::Text:
             case ShaderType::TextUI:
+            case ShaderType::Canvas:
                 return Vertices::VertexType::None;
             case ShaderType::Custom:
             case ShaderType::Particles:

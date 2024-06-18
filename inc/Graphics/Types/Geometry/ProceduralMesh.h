@@ -8,8 +8,8 @@
 #include <Graphics/Types/Geometry/MeshComponent.h>
 
 namespace SR_GTYPES_NS {
-    class ProceduralMesh : public MeshComponent {
-        using Super = MeshComponent;
+    class ProceduralMesh : public IndexedMeshComponent {
+        using Super = IndexedMeshComponent;
         SR_REGISTER_NEW_COMPONENT(ProceduralMesh, 1001);
     public:
         ProceduralMesh();

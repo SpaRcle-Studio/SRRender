@@ -51,7 +51,7 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::MeshComponent*>(pMesh);
+        auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::IndexedMeshComponent*>(pMesh);
         if (!pMeshComponent) {
             SRHalt("Failed to cast!");
             return;
@@ -63,7 +63,7 @@ namespace SR_GRAPH_UI_NS {
         pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
         pMaterial->SetVec4("color", GetColorByOperation(operation));
 
-        pMeshComponent->SetMaterial(pMaterial);
+        pMesh->SetMaterial(pMaterial);
 
         if (mode == GizmoMeshLoadMode::Visual) {
             if (SR_MATH_NS::IsMaskIncludedSubMask(operation, GizmoOperation::Rotate)) {

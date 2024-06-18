@@ -125,8 +125,8 @@ namespace SR_GRAPH_UI_NS {
 
     private:
         struct MeshInfo {
-            SR_GTYPES_NS::MeshComponent::Ptr pVisual;
-            SR_GTYPES_NS::MeshComponent::Ptr pSelection;
+            SR_GTYPES_NS::IndexedMeshComponent::Ptr pVisual;
+            SR_GTYPES_NS::IndexedMeshComponent::Ptr pSelection;
             bool isHovered = false;
         };
         std::map<GizmoOperationFlag, MeshInfo> m_meshes;
