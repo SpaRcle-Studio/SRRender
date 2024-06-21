@@ -27,7 +27,6 @@ namespace SR_GRAPH_NS {
         friend class ColorBufferRenderQueue;
     public:
         bool Render() override;
-        void Update() override;
 
         bool Load(const SR_XML_NS::Node& passNode) override;
 

@@ -41,18 +41,12 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    SR_MATH_NS::FVector3 IMeshComponent::GetBarycenter() const {
-        return m_barycenter;
-    }
-
     void IMeshComponent::OnMatrixDirty() {
         if (auto&& pTransform = GetTransform()) {
-            m_modelMatrix = pTransform->GetMatrix();
-            m_translation = pTransform->GetTranslation();
+            m_pInternal->SetMatrix(pTransform->GetMatrix());
         }
         else {
-            m_modelMatrix = SR_MATH_NS::Matrix4x4::Identity();
-            m_translation = SR_MATH_NS::FVector3::Zero();
+            m_pInternal->SetMatrix(SR_MATH_NS::Matrix4x4::Identity());
         }
 
         m_pInternal->MarkUniformsDirty();
@@ -74,7 +68,12 @@ namespace SR_GTYPES_NS {
 
     void IMeshComponent::OnLayerChanged() {
         m_pInternal->ReRegisterMesh();
-        IRenderComponent::OnLayerChanged();
+        Super::OnLayerChanged();
+    }
+
+    void IMeshComponent::OnPriorityChanged() {
+        m_pInternal->ReRegisterMesh();
+        Super::OnPriorityChanged();
     }
 
     void IMeshComponent::OnEnable() {

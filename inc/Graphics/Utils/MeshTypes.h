@@ -15,7 +15,8 @@ namespace SR_GRAPH_NS {
          Skinned,
          Sprite,
          Procedural,
-         Line
+         Line,
+         Text
     )
 }
 

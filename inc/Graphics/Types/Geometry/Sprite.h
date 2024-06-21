@@ -32,7 +32,6 @@ namespace SR_GTYPES_NS {
     public:
         void UseMaterial() override;
         void UseModelMatrix() override;
-        void OnPriorityChanged() override;
 
         bool IsSupportVBO() const override { return false; }
 

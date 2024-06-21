@@ -70,11 +70,6 @@ namespace SR_GTYPES_NS {
         Super::UseModelMatrix();
     }
 
-    void Sprite::OnPriorityChanged() {
-        ReRegisterMesh();
-        Component::OnPriorityChanged();
-    }
-
     bool Sprite::BindMesh() {
         return true;
     }

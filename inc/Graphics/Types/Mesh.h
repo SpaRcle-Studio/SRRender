@@ -91,8 +91,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD virtual SR_FORCE_INLINE bool IsMeshActive() const noexcept { return !m_hasErrors; }
         SR_NODISCARD virtual SR_FORCE_INLINE bool IsFlatMesh() const noexcept { return false; }
-        SR_NODISCARD virtual SR_MATH_NS::FVector3 GetTranslation() const { return SR_MATH_NS::FVector3::Zero(); }
-        SR_NODISCARD virtual const SR_MATH_NS::Matrix4x4& GetModelMatrix() const;
+        SR_NODISCARD const SR_MATH_NS::Matrix4x4& GetModelMatrix() const { return m_modelMatrix; }
         SR_NODISCARD virtual std::string GetGeometryName() const { return std::string(); }
         SR_NODISCARD virtual std::string GetMeshIdentifier() const;
         SR_NODISCARD virtual int64_t GetSortingPriority() const { return 0; }
@@ -112,6 +111,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD RenderQueues& GetRenderQueues() noexcept { return m_renderQueues; }
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
+
+        void SetMatrix(const SR_MATH_NS::Matrix4x4& matrix4X4);
 
         virtual bool OnResourceReloaded(SR_UTILS_NS::IResource* pResource);
         virtual void SetGeometryName(const std::string& name) { }
@@ -142,6 +143,8 @@ namespace SR_GTYPES_NS {
 
     protected:
         RenderQueues m_renderQueues;
+
+        SR_MATH_NS::Matrix4x4 m_modelMatrix = SR_MATH_NS::Matrix4x4::Identity();
 
         Memory::UBOManager& m_uboManager;
         SR_GRAPH_NS::DescriptorManager& m_descriptorManager;

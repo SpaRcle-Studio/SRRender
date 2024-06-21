@@ -39,16 +39,18 @@ namespace SR_GRAPH_NS {
             for (auto&& overrideNode : shaderOverrideNode.TryGetNodes("Override")) {
                 auto&& shaderPath = overrideNode.TryGetAttribute("Shader").ToString(std::string());
                 const bool ignoreReplace = overrideNode.TryGetAttribute("Ignore").ToBool(false);
-                const bool useMaterial = overrideNode.TryGetAttribute("UseMaterial").ToBool(false);
+                const bool useMaterial = overrideNode.TryGetAttribute("UseMaterialUniforms").ToBool(false);
+                const bool useSamplers = overrideNode.TryGetAttribute("UseMaterialSamplers").ToBool(false);
 
                 if (shaderPath.empty() && !ignoreReplace) {
                     SR_ERROR("MeshDrawerPass::Load() : override shader is not set!");
                     continue;
                 }
 
-                ShaderUseInfo shaderReplaceInfo;
+                ShaderUseInfo shaderReplaceInfo = {};
                 shaderReplaceInfo.ignoreReplace = ignoreReplace;
-                shaderReplaceInfo.useMaterial = useMaterial;
+                shaderReplaceInfo.useMaterialSamplers = useSamplers;
+                shaderReplaceInfo.useMaterialUniforms = useMaterial;
 
                 if (auto&& shaderTypeAttribute = overrideNode.TryGetAttribute("Type")) {
                     auto&& shaderType = SR_UTILS_NS::EnumReflector::FromString<SR_SRSL_NS::ShaderType>(shaderTypeAttribute.ToString());

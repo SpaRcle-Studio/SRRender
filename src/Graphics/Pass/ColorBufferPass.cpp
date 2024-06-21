@@ -22,15 +22,10 @@ namespace SR_GRAPH_NS {
         info.pMesh->Draw();
     }
 
-    void ColorBufferPass::Update() {
-        Super::Update();
-    }
-
     void ColorBufferPass::UseUniforms(ShaderUseInfo info, MeshPtr pMesh) {
-        if (info.useMaterial) {
+        if (info.useMaterialUniforms) {
             pMesh->UseMaterial();
         }
-
         pMesh->UseModelMatrix();
     }
 

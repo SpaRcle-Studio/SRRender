@@ -69,6 +69,11 @@ namespace SR_GTYPES_NS {
         return pMesh;
     }
 
+    void Mesh::SetMatrix(const SR_MATH_NS::Matrix4x4& matrix4X4) {
+        m_modelMatrix = matrix4X4;
+        MarkUniformsDirty();
+    }
+
     std::vector<Mesh::Ptr> Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type) {
         std::vector<Mesh::Ptr> meshes;
 
@@ -196,11 +201,6 @@ namespace SR_GTYPES_NS {
         m_dirtyMaterial = false;
     }
 
-    const SR_MATH_NS::Matrix4x4& Mesh::GetModelMatrix() const {
-        static SR_MATH_NS::Matrix4x4 matrix4X4 = SR_MATH_NS::Matrix4x4::Identity();
-        return matrix4X4;
-    }
-
     void Mesh::UseSamplers() {
         if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
             pMaterial->UseSamplers();
@@ -278,10 +278,8 @@ namespace SR_GTYPES_NS {
             m_registrationInfo.value().pScene->Remove(this);
         }
 
-        if (IsCalculated()) {
-            FreeVideoMemory();
-            DeInitGraphicsResource();
-        }
+        FreeVideoMemory();
+        DeInitGraphicsResource();
 
         if (auto&& pRenderComponent = dynamic_cast<IRenderComponent*>(this)) {
             pRenderComponent->AutoFree();

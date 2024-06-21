@@ -12,6 +12,7 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Geometry/DebugLine.h>
 #include <Graphics/Render/RenderTechnique.h>
+#include <Graphics/Material/FileMaterial.h>
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Lighting/LightSystem.h>
 #include <Graphics/Window/Window.h>
@@ -245,6 +246,10 @@ namespace SR_GRAPH_NS {
 
         if (m_dirtyCameras) {
             SortCameras();
+        }
+
+        if (m_renderStrategy) {
+            m_renderStrategy->Prepare();
         }
 
         SR_RENDER_TECHNIQUES_CALL(Prepare)
@@ -522,7 +527,7 @@ namespace SR_GRAPH_NS {
 
     void RenderScene::SetMeshMaterial(RenderScene::MeshPtr pMesh) {
         if (pMesh->IsFlatMesh()) {
-            if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::Text2D*>(pMesh)) {
+            if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::ITextComponent*>(pMesh)) {
                 pText2D->SetMaterial("Engine/Materials/UI/ui_text_white.mat");
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultUIMaterial()) {
@@ -530,7 +535,7 @@ namespace SR_GRAPH_NS {
             }
         }
         else {
-            if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::Text3D*>(pMesh)) {
+            if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::ITextComponent*>(pMesh)) {
                 pText3D->SetMaterial("Engine/Materials/text.mat");
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultMaterial()) {

@@ -221,7 +221,7 @@ namespace SR_GRAPH_UI_NS {
             }
 
             if (info.pSelection) {
-                info.pVisual->GetMaterial()->SetBool("useOrthogonal", IsGizmo2DSpace());
+                info.pSelection->GetMaterial()->SetBool("useOrthogonal", IsGizmo2DSpace());
             }
         }
 

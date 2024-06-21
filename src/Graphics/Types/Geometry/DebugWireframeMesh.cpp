@@ -38,11 +38,6 @@ namespace SR_GTYPES_NS {
         return GetRawMesh()->GetIndices(GetMeshId());
     }
 
-    void DebugWireframeMesh::SetMatrix(const SR_MATH_NS::Matrix4x4& matrix4X4) {
-        m_modelMatrix = matrix4X4;
-        MarkUniformsDirty();
-    }
-
     bool DebugWireframeMesh::OnResourceReloaded(SR_UTILS_NS::IResource* pResource) {
         bool changed = Mesh::OnResourceReloaded(pResource);
         if (GetRawMesh() == pResource) {
@@ -57,10 +52,6 @@ namespace SR_GTYPES_NS {
         static const uint64_t colorHashName = SR_UTILS_NS::StringAtom("color").GetHash();
         GetShader()->SetMat4(SHADER_MODEL_MATRIX, m_modelMatrix);
         GetShader()->SetVec4(colorHashName, m_color.Cast<float_t>().ToGLM());
-    }
-
-    const SR_MATH_NS::Matrix4x4 &DebugWireframeMesh::GetModelMatrix() const {
-        return m_modelMatrix;
     }
 
     void DebugWireframeMesh::SetColor(const SR_MATH_NS::FVector4& color) {

@@ -26,9 +26,11 @@ namespace SR_GRAPH_NS {
     void RenderStrategy::Prepare() {
         SR_TRACY_ZONE;
 
-        if (!m_reRegisterMeshes.empty()) {
-            GetRenderContext()->GetPipeline()->SetDirty(true);
+        if (m_reRegisterMeshes.empty()) {
+            return;
         }
+
+        GetRenderContext()->GetPipeline()->SetDirty(true);
 
         while (!m_reRegisterMeshes.empty()) {
             const auto info = m_reRegisterMeshes.front();

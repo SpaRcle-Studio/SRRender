@@ -35,7 +35,7 @@ namespace SR_GRAPH_NS {
     void BaseMaterial::Use() {
         SR_TRACY_ZONE;
         InitContext();
-        m_properties.UseMaterialUniforms(m_shader);
+        m_properties.UseMaterialUniforms(GetContext()->GetPipeline()->GetCurrentShader());
     }
 
     bool BaseMaterial::IsTransparent() const {

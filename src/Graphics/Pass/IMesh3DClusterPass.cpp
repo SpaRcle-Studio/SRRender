@@ -15,13 +15,13 @@ namespace SR_GRAPH_NS {
     void IMesh3DClusterPass::MarkDirtyCluster(MeshCluster& meshCluster) {
         SR_TRACY_ZONE;
 
-        for (auto&& [pClusterShader, subCluster] : meshCluster) {
+        /*for (auto&& [pClusterShader, subCluster] : meshCluster) {
             for (auto&& [key, meshGroup] : subCluster) {
                 for (auto&& pMesh : meshGroup) {
                     pMesh->MarkMaterialDirty();
                 }
             }
-        }
+        }*/
     }
 
     bool IMesh3DClusterPass::RenderCluster(MeshCluster& meshCluster) {
