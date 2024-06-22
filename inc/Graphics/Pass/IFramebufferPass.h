@@ -36,7 +36,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD ClearColors GetClearColors() const noexcept { return m_clearColors; }
         SR_NODISCARD std::optional<float_t> GetClearDepth() const noexcept { return m_depth; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept;
-        SR_NODISCARD uint8_t GetCurrentFrameBufferLayer() const noexcept { return m_currentFrameBufferLayer; }
 
     protected:
         SR_NODISCARD virtual IRenderTechnique* GetFrameBufferRenderTechnique() const = 0;
@@ -65,8 +64,6 @@ namespace SR_GRAPH_NS {
 
         /// режим рендера без кадрового буффера, напрямую
         bool m_isDirectional = false;
-
-        uint8_t m_currentFrameBufferLayer = 0;
 
         SR_GRAPH_NS::Memory::UBOManager& m_frameBufferUboManager;
 

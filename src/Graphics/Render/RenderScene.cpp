@@ -12,6 +12,7 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Geometry/DebugLine.h>
 #include <Graphics/Render/RenderTechnique.h>
+#include <Graphics/Material/FileMaterial.h>
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Lighting/LightSystem.h>
 #include <Graphics/Window/Window.h>
@@ -23,18 +24,19 @@ namespace SR_GRAPH_NS {
         , m_scene(scene)
         , m_debugRender(new DebugRenderer(this))
         , m_context(pContext)
-        , m_opaque(&m_transparent)
-        , m_transparent(&m_opaque)
-        , m_flat(this)
     {
         m_renderStrategy = new RenderStrategy(this);
         m_debugRender->Init();
     }
 
     RenderScene::~RenderScene() {
-        SR_SAFE_DELETE_PTR(m_lightSystem);
-
+        SRAssert(!m_lightSystem && !m_debugRender && !m_technique);
         m_renderStrategy.AutoFree();
+        SRAssert(IsEmpty());
+    }
+
+    void RenderScene::DeInit() {
+        SR_SAFE_DELETE_PTR(m_lightSystem);
 
         if (m_debugRender) {
             m_debugRender->DeInit();
@@ -48,8 +50,6 @@ namespace SR_GRAPH_NS {
             }
             m_technique = nullptr;
         }
-
-        SRAssert(IsEmpty());
     }
 
     void RenderScene::Render() {
@@ -102,11 +102,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        return
-            m_transparent.Empty() &&
-            m_opaque.Empty() &&
-            m_debug.Empty() &&
-            m_cameras.empty();
+        return m_cameras.empty();
     }
 
     RenderContext* RenderScene::GetContext() const {
@@ -174,9 +170,9 @@ namespace SR_GRAPH_NS {
     void RenderScene::PostUpdate() {
         SR_TRACY_ZONE_N("Post update render");
 
-        if (m_renderStrategy) {
-            m_renderStrategy->PostUpdate();
-        }
+        //if (m_renderStrategy) {
+        //    m_renderStrategy->PostUpdate();
+        //}
 
         SR_RENDER_TECHNIQUES_CALL(PostUpdate)
     }
@@ -252,20 +248,8 @@ namespace SR_GRAPH_NS {
             SortCameras();
         }
 
-        if (m_opaque.Update()) {
-            SetDirty();
-        }
-
-        if (m_transparent.Update()) {
-            SetDirty();
-        }
-
-        if (m_debug.Update()) {
-            SetDirty();
-        }
-
-        if (m_flat.Update()) {
-            SetDirty();
+        if (m_renderStrategy) {
+            m_renderStrategy->Prepare();
         }
 
         SR_RENDER_TECHNIQUES_CALL(Prepare)
@@ -442,7 +426,7 @@ namespace SR_GRAPH_NS {
             pPipeline->SetBuildIteration(i);
 
             pPipeline->BindFrameBuffer(nullptr);
-            pPipeline->ClearBuffers(0.0f, 0.0f, 0.0f, 1.f, 1.f, 1);
+            pPipeline->ClearBuffers(0.5f, 0.5f, 0.5f, 1.f, 1.f, 1);
 
             pPipeline->BeginCmdBuffer();
             {
@@ -461,18 +445,6 @@ namespace SR_GRAPH_NS {
 
     void RenderScene::SetOverlayEnabled(bool enabled) {
         m_bOverlay = enabled;
-    }
-
-    MeshCluster& RenderScene::GetOpaque() {
-        return m_opaque;
-    }
-
-    MeshCluster& RenderScene::GetTransparent() {
-        return m_transparent;
-    }
-
-    MeshCluster& RenderScene::GetDebugCluster() {
-        return m_debug;
     }
 
     RenderScene::CameraPtr RenderScene::GetMainCamera() const {
@@ -501,11 +473,6 @@ namespace SR_GRAPH_NS {
         }
 
         SortCameras();
-
-        m_opaque.Update();
-        m_transparent.Update();
-        m_debug.Update();
-        m_flat.Update();
     }
 
     void RenderScene::OnResize(const SR_MATH_NS::UVector2 &size) {
@@ -530,16 +497,11 @@ namespace SR_GRAPH_NS {
         return m_surfaceSize;
     }
 
-    DebugRenderer *RenderScene::GetDebugRenderer() const {
+    DebugRenderer* RenderScene::GetDebugRenderer() const {
         return m_debugRender;
     }
 
     void RenderScene::OnResourceReloaded(SR_UTILS_NS::IResource::Ptr pResource) {
-        m_debug.OnResourceReloaded(pResource);
-        m_opaque.OnResourceReloaded(pResource);
-        m_transparent.OnResourceReloaded(pResource);
-        m_flat.OnResourceReloaded(pResource);
-
         m_renderStrategy->OnResourceReloaded(pResource);
 
         SetDirty();
@@ -565,7 +527,7 @@ namespace SR_GRAPH_NS {
 
     void RenderScene::SetMeshMaterial(RenderScene::MeshPtr pMesh) {
         if (pMesh->IsFlatMesh()) {
-            if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::Text2D*>(pMesh)) {
+            if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::ITextComponent*>(pMesh)) {
                 pText2D->SetMaterial("Engine/Materials/UI/ui_text_white.mat");
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultUIMaterial()) {
@@ -573,7 +535,7 @@ namespace SR_GRAPH_NS {
             }
         }
         else {
-            if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::Text3D*>(pMesh)) {
+            if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::ITextComponent*>(pMesh)) {
                 pText3D->SetMaterial("Engine/Materials/text.mat");
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultMaterial()) {

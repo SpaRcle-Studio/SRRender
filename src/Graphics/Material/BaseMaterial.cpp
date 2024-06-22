@@ -13,10 +13,29 @@ namespace SR_GRAPH_NS {
         SRAssert2(m_meshes.IsEmpty(), "Material is not unregistered from all meshes!");
     }
 
+    void BaseMaterial::SetVec4(SR_UTILS_NS::StringAtom id, const SR_MATH_NS::FVector4& v) noexcept {
+        for (auto&& pProperty : m_properties.GetMaterialUniformsProperties()) {
+            if (pProperty->GetName() == id && pProperty->GetShaderVarType() == ShaderVarType::Vec4) {
+                pProperty->SetData(v);
+                return;
+            }
+        }
+    }
+
+
+    void BaseMaterial::SetBool(SR_UTILS_NS::StringAtom id, bool v) noexcept {
+        for (auto&& pProperty : m_properties.GetMaterialUniformsProperties()) {
+            if (pProperty->GetName() == id && pProperty->GetShaderVarType() == ShaderVarType::Bool) {
+                pProperty->SetData(v);
+                return;
+            }
+        }
+    }
+
     void BaseMaterial::Use() {
         SR_TRACY_ZONE;
         InitContext();
-        m_properties.UseMaterialUniforms(m_shader);
+        m_properties.UseMaterialUniforms(GetContext()->GetPipeline()->GetCurrentShader());
     }
 
     bool BaseMaterial::IsTransparent() const {
@@ -102,6 +121,15 @@ namespace SR_GRAPH_NS {
 
         m_shader->AddUsePoint();
         InitMaterialProperties();
+    }
+
+    void BaseMaterial::SetShader(const SR_UTILS_NS::Path& path) {
+        auto&& pShader = SR_GTYPES_NS::Shader::Load(path);
+        if (!pShader) {
+            SR_ERROR("BaseMaterial::SetShader() : shader is nullptr!");
+            return;
+        }
+        SetShader(pShader);
     }
 
     void BaseMaterial::UseSamplers() {

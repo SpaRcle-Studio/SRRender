@@ -3,341 +3,85 @@
 //
 
 #include <Graphics/Font/ITextComponent.h>
-
-#include <Utils/ECS/Transform.h>
-#include <Utils/ECS/GameObject.h>
-#include <Utils/ECS/ComponentManager.h>
-#include <Utils/Localization/Encoding.h>
-
 #include <Graphics/Font/Font.h>
 #include <Graphics/Font/TextBuilder.h>
 #include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
-#include <Graphics/Material/FileMaterial.h>
+
+#include <Utils/ECS/GameObject.h>
+#include <Utils/ECS/ComponentManager.h>
+#include <Utils/ECS/Transform.h>
+#include <Utils/ECS/Transform2D.h>
+#include <Utils/Localization/Encoding.h>
 
 namespace SR_GTYPES_NS {
     ITextComponent::ITextComponent()
-        : Mesh(MeshType::Static)
-    { }
-
-    ITextComponent::~ITextComponent() {
-        SetFont(nullptr);
-    }
-
-    void ITextComponent::Draw() {
-        SR_TRACY_ZONE;
-
-        auto&& pShader = GetRenderContext()->GetCurrentShader();
-
-        if (!pShader || !IsActive()) {
-            return;
-        }
-
-        if ((!IsCalculated() && !Calculate()) || m_hasErrors) {
-            return;
-        }
-
-        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-            m_dirtyMaterial = false;
-
-            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
-            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-                m_hasErrors = true;
-                return;
-            }
-
-            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
-        }
-
-        if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            UseSamplers();
-        }
-
-        m_uboManager.BindUBO(m_virtualUBO);
-
-        if (m_descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
-            m_pipeline->Draw(6);
-        }
-    }
-
-    bool ITextComponent::Calculate() {
-        if (IsCalculated()) {
-            return true;
-        }
-
-        if (m_hasErrors || !IsCalculatable()) {
-            return false;
-        }
-
-        if (!BuildAtlas()) {
-            SR_ERROR("Text::Calculate() : failed to build atlas!");
-            return false;
-        }
-
-        return Mesh::Calculate();
-    }
-
-    void ITextComponent::OnLayerChanged() {
-        ReRegisterMesh();
-        IRenderComponent::OnLayerChanged();
-    }
-
-    void ITextComponent::FreeVideoMemory() {
-        if (m_id != SR_ID_INVALID) {
-            SRVerifyFalse(!m_pipeline->FreeTexture(&m_id));
-        }
-
-        Mesh::FreeVideoMemory();
-    }
-
-    bool ITextComponent::BuildAtlas() {
-        if (!m_font) {
-            SR_ERROR("Text::BuildAtlas() : missing font!");
-            return false;
-        }
-
-        if (m_id != SR_ID_INVALID) {
-            SRVerifyFalse(!m_pipeline->FreeTexture(&m_id));
-        }
-
-        TextBuilder textBuilder(m_font);
-        textBuilder.SetKerning(m_kerning);
-        textBuilder.SetDebug(m_debug);
-        textBuilder.SetCharSize(m_fontSize);
-
-        if (!textBuilder.Build(m_text)) {
-            return false;
-        }
-
-        m_width = textBuilder.GetWidth();
-        m_height = textBuilder.GetHeight();
-
-        SR_GRAPH_NS::SRTextureCreateInfo textureCreateInfo;
-
-        textureCreateInfo.pData = textBuilder.GetData();
-        textureCreateInfo.format = textBuilder.GetColorFormat();
-        textureCreateInfo.width = m_width;
-        textureCreateInfo.height = m_height;
-        textureCreateInfo.compression = TextureCompression::None;
-        textureCreateInfo.filter = TextureFilter::NEAREST;
-        textureCreateInfo.mipLevels = 1;
-        textureCreateInfo.cpuUsage = false;
-        textureCreateInfo.alpha = true;
-
-        EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
-
-        m_id = m_pipeline->AllocateTexture(textureCreateInfo);
-
-        EVK_POP_LOG_LEVEL();
-
-        if (m_id == SR_ID_INVALID) {
-            SR_ERROR("Text::BuildAtlas() : failed to build the font atlas!");
-            return false;
-        }
-
-        return true;
-    }
-
-    bool ITextComponent::LoadComponent(SR_GTYPES_NS::ITextComponent* pText, SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* dataStorage) {
-        SR_MAYBE_UNUSED const auto&& type = static_cast<MeshType>(marshal.Read<int32_t>());
-
-        pText->m_fontSize = marshal.Read<SR_MATH_NS::UVector2>();
-        pText->m_localization = marshal.Read<bool>();
-        pText->m_preprocessor = marshal.Read<bool>();
-        pText->m_kerning = marshal.Read<bool>();
-        pText->m_debug = marshal.Read<bool>();
-
-        const auto&& material = marshal.Read<std::string>();
-        if (material != "None") {
-            if (auto&& pMaterial = FileMaterial::Load(SR_UTILS_NS::Path(material))) {
-                pText->SetMaterial(pMaterial);
-            }
-            else {
-                SR_ERROR("Text::LoadComponent() : failed to load material! Name: " + material);
-            }
-        }
-
-        const auto&& font = marshal.Read<std::string>();
-        if (font != "None") {
-            if (auto&& pFont = SR_GTYPES_NS::Font::Load(SR_UTILS_NS::Path(font))) {
-                pText->SetFont(pFont);
-            }
-            else {
-                SR_ERROR("Text::LoadComponent() : failed to load font! Name: " + font);
-            }
-        }
-
-        pText->m_text = marshal.Read<SR_HTYPES_NS::UnicodeString>();
-
-        return true;
-    }
-
-    void ITextComponent::UseMaterial() {
-        Mesh::UseMaterial();
-        UseModelMatrix();
-    }
-
-    void ITextComponent::UseModelMatrix() {
-        GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, m_modelMatrix);
-        GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_X, 0.f);
-        GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_Y, 0.f);
-        GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_WIDTH, m_width / 100.f);
-        GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_HEIGHT, m_height / 100.f);
-
-        Mesh::UseModelMatrix();
-    }
-
-    void ITextComponent::OnMatrixDirty() {
-        if (auto&& pTransform = GetTransform()) {
-            m_modelMatrix = pTransform->GetMatrix();
-        }
-        else {
-            m_modelMatrix = SR_MATH_NS::Matrix4x4::Identity();
-        }
-
-        Component::OnMatrixDirty();
-    }
-
-    void ITextComponent::OnEnable() {
-        IRenderComponent::OnEnable();
-        MarkUniformsDirty();
-    }
-
-    void ITextComponent::OnDisable() {
-        IRenderComponent::OnDisable();
-        MarkUniformsDirty();
-    }
-
-    void ITextComponent::OnAttached() {
-        GetRenderScene().Do([this](SR_GRAPH_NS::RenderScene *ptr) {
-            ptr->Register(this);
-        });
-
-        Component::OnAttached();
-    }
-
-    void ITextComponent::OnDestroy() {
-        Component::OnDestroy();
-        UnRegisterMesh();
-    }
-
-    SR_NODISCARD SR_HTYPES_NS::Marshal::Ptr ITextComponent::Save(SR_UTILS_NS::SavableContext data) const {
-        auto&& pMarshal = Component::Save(data);
-
-        pMarshal->Write<int32_t>(static_cast<int32_t>(GetMeshType()));
-        pMarshal->Write<SR_MATH_NS::UVector2>(m_fontSize);
-        pMarshal->Write<bool>(m_localization);
-        pMarshal->Write<bool>(m_preprocessor);
-        pMarshal->Write<bool>(m_kerning);
-        pMarshal->Write<bool>(m_debug);
-
-        /// TODO: use properties instead of marshal
-        auto&& pFileMaterial = dynamic_cast<FileMaterial*>(m_materialProperty.GetMaterial());
-        pMarshal->Write<std::string>(pFileMaterial ? pFileMaterial->GetResourceId() : "None");
-
-        pMarshal->Write<std::string>(m_font ? m_font->GetResourceId() : "None");
-        pMarshal->Write<SR_HTYPES_NS::UnicodeString>(m_text);
-
-        return pMarshal;
-    }
-
-    void ITextComponent::UseSamplers() {
-        GetRenderContext()->GetCurrentShader()->SetSampler2D(SHADER_TEXT_ATLAS_TEXTURE, m_id);
-        Mesh::UseSamplers();
-    }
-
-    void ITextComponent::SetFont(Font *pFont) {
-        if (pFont == m_font) {
-            return;
-        }
-
-        if (m_font) {
-            m_font->RemoveUsePoint();
-        }
-
-        if ((m_font = pFont)) {
-            m_font->AddUsePoint();
-        }
-
-        m_isCalculated = false;
-
-        if (auto&& renderScene = TryGetRenderScene()) {
-            renderScene->SetDirty();
-        }
-    }
-
-    void ITextComponent::SetFontSize(const SR_MATH_NS::UVector2& size)
+        : IMeshComponent(this)
     {
-        m_fontSize = size;
-        m_isCalculated = false;
-        if (auto&& renderScene = TryGetRenderScene()) {
-            renderScene->SetDirty();
-        }
+        m_entityMessages.AddStandardProperty<SR_MATH_NS::UVector2>("Atlas size", &m_atlasSize)
+            .SetDontSave()
+            .SetReadOnly();
     }
 
-    void ITextComponent::SetText(const std::string& text) {
-        auto&& newText = SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(text);
-        if (m_text == newText) {
-            return;
-        }
-        m_text = std::move(newText);
-        m_isCalculated = false;
-        if (auto&& renderScene = TryGetRenderScene()) {
-            renderScene->SetDirty();
-        }
+    bool ITextComponent::InitializeEntity() noexcept {
+        GetComponentProperties().AddStandardProperty("Is 3D", &m_is3D)
+            .SetSetter([this](void* pValue) { m_is3D = *static_cast<bool*>(pValue); ReRegisterMesh(); });
+
+        GetComponentProperties().AddStandardProperty("Use localization", &m_localization)
+            .SetSetter([this](void* pValue) { SetUseLocalization(*static_cast<bool*>(pValue)); });
+
+        GetComponentProperties().AddStandardProperty("Use preprocessor", &m_preprocessor)
+            .SetSetter([this](void* pValue) { SetUsePreprocessor(*static_cast<bool*>(pValue)); });
+
+        GetComponentProperties().AddStandardProperty("Use kerning", &m_kerning)
+            .SetSetter([this](void* pValue) { SetKerning(*static_cast<bool*>(pValue)); });
+
+        GetComponentProperties().AddStandardProperty("Debug", &m_debug)
+            .SetSetter([this](void* pValue) { SetDebug(*static_cast<bool*>(pValue)); });
+
+        GetComponentProperties().AddStandardProperty("Font size", &m_fontSize)
+            .SetDrag(1)
+            .SetResetValue(512.f)
+            .SetWidth(90.f);
+
+        GetComponentProperties().AddStandardProperty("Text", &m_text)
+            .SetSetter([this](auto&& text) { SetText(*static_cast<SR_HTYPES_NS::UnicodeString*>(text)); })
+            .SetMultiline();
+
+        GetComponentProperties().AddCustomProperty<SR_UTILS_NS::PathProperty>("Font")
+            .AddFileFilter("Mesh", SR_GRAPH_NS::SR_SUPPORTED_FONT_FORMATS)
+            .SetGetter([this]()-> SR_UTILS_NS::Path {
+                return m_font ? m_font->GetResourcePath() : SR_UTILS_NS::Path();
+            })
+            .SetSetter([this](const SR_UTILS_NS::Path& path) {
+                SetFont(path);
+            });
+
+        return IMeshComponent::InitializeEntity();
     }
 
-    void ITextComponent::SetText(const std::u16string& text) {
-        auto&& newText = SR_UTILS_NS::Localization::UtfToUtf<char32_t, char16_t>(text);
-        if (m_text == newText) {
-            return;
-        }
-        m_text = std::move(newText);
-        m_isCalculated = false;
-        if (auto&& renderScene = TryGetRenderScene()) {
-            renderScene->SetDirty();
-        }
+    RenderScene* ITextComponent::GetTextRenderScene() const {
+        return TryGetRenderScene();
     }
 
-    void ITextComponent::SetText(const std::u32string& text) {
-        if (m_text == text) {
-            return;
+    int64_t ITextComponent::GetSortingPriority() const {
+        if (m_gameObject) {
+            if (GetTransform()->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
+                return static_cast<SR_UTILS_NS::Transform2D*>(m_gameObject->GetTransform())->GetPriority();
+            }
         }
-        m_text = text;
-        m_isCalculated = false;
-        if (auto&& renderScene = TryGetRenderScene()) {
-            renderScene->SetDirty();
+
+        return -1;
+    }
+
+    bool ITextComponent::HasSortingPriority() const {
+        if (!m_gameObject) {
+            return false;
         }
-    }
 
-    bool ITextComponent::IsCalculatable() const {
-        return Mesh::IsCalculatable() && !m_text.empty() && m_font;
-    }
-
-    void ITextComponent::OnLoaded() {
-        Component::OnLoaded();
-    }
-
-    void ITextComponent::SetKerning(bool enabled) {
-        m_kerning = enabled;
-        m_isCalculated = false;
-        if (auto&& renderScene = TryGetRenderScene()) {
-            renderScene->SetDirty();
-        }
-    }
-
-    void ITextComponent::SetDebug(bool enabled) {
-        m_debug = enabled;
-        m_isCalculated = false;
-        if (auto&& renderScene = TryGetRenderScene()) {
-            renderScene->SetDirty();
-        }
-    }
-
-    void ITextComponent::SetFont(const SR_UTILS_NS::Path& path) {
-        SetFont(SR_GTYPES_NS::Font::Load(path));
+        return GetTransform()->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
     }
 
     SR_UTILS_NS::StringAtom ITextComponent::GetMeshLayer() const {

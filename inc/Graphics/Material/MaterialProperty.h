@@ -57,14 +57,46 @@ namespace SR_GRAPH_NS {
 
         template<typename T> MaterialProperty& SetData(const T& value) noexcept {
             if constexpr (std::is_same_v<T, bool>) {
+                if (std::get<int32_t>(m_data) == static_cast<int32_t>(value)) {
+                    return *this;
+                }
                 m_data = static_cast<int32_t>(value);
                 OnPropertyChanged(true);
             }
             else if constexpr (std::is_same_v<T, SR_GTYPES_NS::Texture*>) {
+                if (std::get<SR_GTYPES_NS::Texture*>(m_data) == value) {
+                    return *this;
+                }
                 SetTextureInternal(value);
                 OnPropertyChanged(false);
             }
             else {
+                if constexpr (std::is_same_v<T, int32_t>) {
+                    if (std::get<int32_t>(m_data) == value) {
+                        return *this;
+                    }
+                }
+                else if constexpr (std::is_same_v<T, float_t>) {
+                    if (std::get<float_t>(m_data) == value) {
+                        return *this;
+                    }
+                }
+                else if constexpr (std::is_same_v<T, SR_MATH_NS::FVector2>) {
+                    if (std::get<SR_MATH_NS::FVector2>(m_data) == value) {
+                        return *this;
+                    }
+                }
+                else if constexpr (std::is_same_v<T, SR_MATH_NS::FVector3>) {
+                    if (std::get<SR_MATH_NS::FVector3>(m_data) == value) {
+                        return *this;
+                    }
+                }
+                else if constexpr (std::is_same_v<T, SR_MATH_NS::FVector4>) {
+                    if (std::get<SR_MATH_NS::FVector4>(m_data) == value) {
+                        return *this;
+                    }
+                }
+
                 m_data = value;
                 OnPropertyChanged(true);
             }
@@ -92,6 +124,9 @@ namespace SR_GRAPH_NS {
         SR_REGISTER_TYPE_TRAITS_PROPERTY(MaterialProperties, 1001)
     public:
         MaterialProperties() = default;
+
+        const std::vector<MaterialProperty*>& GetMaterialSamplerProperties() const noexcept { return m_materialSamplerProperties; }
+        const std::vector<MaterialProperty*>& GetMaterialUniformsProperties() const noexcept { return m_materialUniformsProperties; }
 
         void ClearContainer() override {
             m_materialSamplerProperties.clear();

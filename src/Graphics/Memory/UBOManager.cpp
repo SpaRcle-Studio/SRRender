@@ -110,8 +110,6 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     UBOManager::BindResult UBOManager::BindUBO(VirtualUBO virtualUbo, uint32_t uboSize) noexcept {
-        SR_TRACY_ZONE;
-
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
         if (!pShaderHandle) SR_UNLIKELY_ATTRIBUTE {
             SRHaltOnce("Current shader is nullptr!");
@@ -154,6 +152,25 @@ namespace SR_GRAPH_NS::Memory {
         m_pipeline->BindUBO(ubo);
 
         return result;
+    }
+
+    UBOManager::BindResult UBOManager::BindNoDublicateUBO(VirtualUBO virtualUbo) noexcept {
+        auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
+        if (!pShaderHandle) SR_UNLIKELY_ATTRIBUTE {
+            return BindResult::Failed;
+        }
+
+        auto&& info = m_uboPool.At(virtualUbo);
+
+        for (auto&& data : info.data) {
+            if (data.pShaderHandle == pShaderHandle || info.shared) SR_LIKELY_ATTRIBUTE {
+                /// SR_ID_INVALID is allowed
+                m_pipeline->BindUBO(data.ubo);
+                return BindResult::Success;
+            }
+        }
+
+        return BindResult::Failed;
     }
 
     void UBOManager::SetPipeline(UBOManager::PipelinePtr pPipeline) {

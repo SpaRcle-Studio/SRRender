@@ -9,8 +9,8 @@
 #include <Graphics/Types/Geometry/MeshComponent.h>
 
 namespace SR_GTYPES_NS {
-    class Mesh3D final : public MeshComponent, public SR_HTYPES_NS::IRawMeshHolder {
-        using Super = MeshComponent;
+    class Mesh3D final : public IndexedMeshComponent, public SR_HTYPES_NS::IRawMeshHolder {
+        using Super = IndexedMeshComponent;
         SR_REGISTER_NEW_COMPONENT(Mesh3D, 1002);
     public:
         Mesh3D();
@@ -34,7 +34,6 @@ namespace SR_GTYPES_NS {
 
     private:
         bool Calculate() override;
-        void Draw() override;
 
     private:
         FrustumCullingType m_frustumCullingType = FrustumCullingType::Sphere;

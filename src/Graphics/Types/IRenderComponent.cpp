@@ -32,7 +32,7 @@ namespace SR_GTYPES_NS {
     }
 
     IRenderComponent::RenderScenePtr IRenderComponent::TryGetRenderScene() const  {
-        if (m_renderScene.Valid()) {
+        if (m_renderScene) {
             return m_renderScene;
         }
 
@@ -41,9 +41,7 @@ namespace SR_GTYPES_NS {
             return m_renderScene;
         }
 
-        m_renderScene = pScene->Do<RenderScenePtr>([](SR_WORLD_NS::Scene* ptr) {
-            return ptr->GetDataStorage().GetValue<RenderScenePtr>();
-        }, RenderScenePtr());
+        m_renderScene = pScene->GetDataStorage().GetPointer<RenderScene>();
 
         return m_renderScene;
     }

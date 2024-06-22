@@ -13,7 +13,7 @@ namespace SR_GTYPES_NS {
     class IRenderComponent : public SR_UTILS_NS::Component {
         using Super = SR_UTILS_NS::Component;
     public:
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = RenderScene*;
         using CameraPtr = SR_HTYPES_NS::SharedPtr<Camera>;
 
     protected:
@@ -28,7 +28,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD RenderScenePtr GetRenderScene() const;
 
     protected:
-        mutable RenderScenePtr m_renderScene;
+        mutable RenderScenePtr m_renderScene = nullptr;
 
     };
 }

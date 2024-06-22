@@ -25,8 +25,6 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
-            m_dirtyShader = false;
-
             m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
             if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 m_shader->UnUse();
@@ -36,17 +34,25 @@ namespace SR_GRAPH_NS {
             m_virtualDescriptor = DescriptorManager::Instance().AllocateDescriptorSet(m_virtualDescriptor);
         }
 
-        if (GetPassPipeline()->GetCurrentBuildIteration() == 0) {
-            UseSamplers(ShaderUseInfo(m_shader));
-        }
-
         m_uboManager.BindUBO(m_virtualUBO);
 
-        if (DescriptorManager::Instance().Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
+        const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
+
+        if (GetPassPipeline()->GetCurrentBuildIteration() == 0) {
+            if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
+                UseSamplers(ShaderUseInfo(m_shader));
+                m_descriptorManager.Flush();
+            }
+            GetPassPipeline()->GetCurrentShader()->FlushConstants();
+        }
+
+        if (result != DescriptorManager::BindResult::Failed) {
             GetPassPipeline()->Draw(m_vertices);
         }
 
         m_shader->UnUse();
+
+        m_dirtyShader = false;
 
         return true;
     }
@@ -89,7 +95,7 @@ namespace SR_GRAPH_NS {
             SR_ERROR("PostProcessPass::Update() : memory has been duplicated!");
         }
 
-        m_shader->Flush();
+        SR_UNUSED_VARIABLE(m_shader->Flush());
 
         Super::Update();
     }

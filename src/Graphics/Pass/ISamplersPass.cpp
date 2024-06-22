@@ -88,6 +88,11 @@ namespace SR_GRAPH_NS {
                 if (pFrameBufferController) {
                     auto&& pFBO = pFrameBufferController->GetFramebuffer();
 
+                    if (!pFBO->Update()) {
+                        SR_ERROR("ISamplersPass::PrepareSamplers() : failed to update frame buffer!\n\tName: " + sampler.fboName.ToStringRef());
+                        continue;
+                    }
+
                     sampler.fboId = pFBO->GetId();
 
                     if (sampler.fboId != SR_ID_INVALID) {

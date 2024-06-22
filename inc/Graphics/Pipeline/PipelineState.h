@@ -95,7 +95,7 @@ namespace SR_GRAPH_NS {
         int32_t shaderId = SR_ID_INVALID;
         int32_t frameBufferId = SR_ID_INVALID;
 
-        uint32_t frameBufferLayer = SR_ID_INVALID;
+        uint32_t frameBufferLayer = 0;
 
         RenderStrategy* pRenderStrategy = nullptr;
 
@@ -120,9 +120,6 @@ namespace SR_GRAPH_NS {
         mutable uint32_t allocations = 0;
         /// Сколько было произведено удалений памяти
         mutable uint32_t deletions = 0;
-
-        /// Текущий вариант шейдера
-        SR_UTILS_NS::StringAtom shaderVariant;
 
     };
 }

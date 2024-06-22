@@ -9,20 +9,17 @@
 #include <Graphics/Types/IRenderComponent.h>
 
 namespace SR_GTYPES_NS {
-    class MeshComponent : public IndexedMesh, public SR_GTYPES_NS::IRenderComponent {
+    class IMeshComponent : public SR_GTYPES_NS::IRenderComponent {
+        using Super = SR_GTYPES_NS::IRenderComponent;
     public:
-        using Ptr = SR_HTYPES_NS::SharedPtr<MeshComponent>;
+        using Ptr = SR_HTYPES_NS::SharedPtr<IMeshComponent>;
 
     protected:
-        explicit MeshComponent(MeshType type);
+        explicit IMeshComponent(Mesh* pMesh);
 
     public:
         SR_NODISCARD bool InitializeEntity() noexcept override;
 
-        SR_MATH_NS::FVector3 GetBarycenter() const override;
-
-        void OnLoaded() override;
-        void OnAttached() override;
         void OnDestroy() override;
         void OnMatrixDirty() override;
 
@@ -30,41 +27,63 @@ namespace SR_GTYPES_NS {
         void OnDisable() override;
 
         void OnLayerChanged() override;
+        void OnPriorityChanged() override;
 
         SR_NODISCARD bool ExecuteInEditMode() const override;
         SR_NODISCARD bool IsUpdatable() const noexcept override { return false; }
-        SR_NODISCARD int64_t GetSortingPriority() const override;
-        SR_NODISCARD bool HasSortingPriority() const override;
-        SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
 
+    protected:
+        /// TODO: remove it
+        std::string m_geometryName;
+
+    private:
+        Mesh* m_pInternal = nullptr;
+
+    };
+
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    class IndexedMeshComponent : public IMeshComponent, public IndexedMesh {
+    public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<IndexedMeshComponent>;
+
+    protected:
+        explicit IndexedMeshComponent(MeshType type);
+
+    public:
         SR_NODISCARD SR_FORCE_INLINE bool IsMeshActive() const noexcept override {
             return SR_UTILS_NS::Component::IsActive() && IndexedMesh::IsMeshActive();
         }
 
-        const SR_MATH_NS::Matrix4x4& GetModelMatrix() const override {
-            return m_modelMatrix;
-        }
+        SR_NODISCARD std::string GetGeometryName() const override { return m_geometryName; }
+        void SetGeometryName(const std::string& name) override { m_geometryName = name; }
 
-        SR_NODISCARD std::string GetGeometryName() const override {
-            return m_geometryName;
-        }
+        SR_NODISCARD int64_t GetSortingPriority() const override;
+        SR_NODISCARD bool HasSortingPriority() const override;
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
 
-        void SetGeometryName(const std::string& name) override {
-            m_geometryName = name;
-        }
+    };
 
-        SR_MATH_NS::FVector3 GetTranslation() const override {
-            return m_translation;
-        }
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    class MeshComponent : public IMeshComponent, public Mesh {
+    public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<MeshComponent>;
 
     protected:
-        /// TODO: remove it 
-        std::string m_geometryName;
+        explicit MeshComponent(MeshType type);
 
-        SR_MATH_NS::Matrix4x4 m_modelMatrix = SR_MATH_NS::Matrix4x4::Identity();
-        SR_MATH_NS::FVector3 m_translation = SR_MATH_NS::FVector3::Zero();
+    public:
+        SR_NODISCARD SR_FORCE_INLINE bool IsMeshActive() const noexcept override {
+            return SR_UTILS_NS::Component::IsActive() && Mesh::IsMeshActive();
+        }
 
-        SR_MATH_NS::FVector3 m_barycenter = SR_MATH_NS::FVector3(SR_MATH_NS::UnitMAX);
+        SR_NODISCARD std::string GetGeometryName() const override { return m_geometryName; }
+        void SetGeometryName(const std::string& name) override { m_geometryName = name; }
+
+        SR_NODISCARD int64_t GetSortingPriority() const override;
+        SR_NODISCARD bool HasSortingPriority() const override;
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
 
     };
 }

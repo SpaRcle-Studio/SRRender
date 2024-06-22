@@ -58,6 +58,8 @@ namespace SR_GRAPH_NS {
         virtual ~RenderScene();
 
     public:
+        void DeInit();
+
         void Render();
         void Submit();
 
@@ -98,10 +100,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const RenderScene::PipelinePtr& GetPipeline() const;
         SR_NODISCARD WindowPtr GetWindow() const;
         SR_NODISCARD const WidgetManagers& GetWidgetManagers() const;
-        SR_NODISCARD MeshCluster& GetOpaque();
-        SR_NODISCARD MeshCluster& GetTransparent();
-        SR_NODISCARD MeshCluster& GetDebugCluster();
-        SR_NODISCARD FlatMeshCluster& GetFlatCluster() { return m_flat; }
         SR_NODISCARD CameraPtr GetMainCamera() const;
         SR_NODISCARD DebugRenderer* GetDebugRenderer() const;
         SR_NODISCARD RenderStrategy* GetRenderStrategy() { return m_renderStrategy.Get(); }
@@ -143,11 +141,6 @@ namespace SR_GRAPH_NS {
         RenderContext* m_context = nullptr;
 
         PassQueues m_queues;
-
-        OpaqueMeshCluster m_opaque;
-        TransparentMeshCluster m_transparent;
-        FlatMeshCluster m_flat;
-        DebugMeshCluster m_debug;
 
         SR_MATH_NS::UVector2 m_surfaceSize;
 

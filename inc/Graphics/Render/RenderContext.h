@@ -92,6 +92,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsEmpty() const;
         SR_NODISCARD bool IsDirty() const;
         SR_NODISCARD const RenderContext::PipelinePtr& GetPipeline() const;
+        SR_NODISCARD RenderContext::PipelinePtr& GetPipeline();
         SR_NODISCARD WindowPtr GetWindow() const;
         SR_NODISCARD PipelineType GetPipelineType() const;
         SR_NODISCARD MaterialPtr GetDefaultMaterial() const;

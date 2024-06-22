@@ -19,6 +19,8 @@
 namespace SR_GTYPES_NS {
     Skybox::Skybox()
         : IResource(SR_COMPILE_TIME_CRC32_TYPE_NAME(Skybox))
+        , m_uboManager(Memory::UBOManager::Instance())
+        , m_descriptorManager(DescriptorManager::Instance())
     { }
 
     Skybox::~Skybox() {
@@ -191,8 +193,6 @@ namespace SR_GTYPES_NS {
         auto&& descriptorManager = SR_GRAPH_NS::DescriptorManager::Instance();
 
         if (m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
-            m_dirtyShader = false;
-
             m_virtualUBO = uboManager.AllocateUBO(m_virtualUBO);
             if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 m_hasErrors = true;
@@ -202,17 +202,26 @@ namespace SR_GTYPES_NS {
             m_virtualDescriptor = descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
         }
 
-        if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            m_shader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
+        m_uboManager.BindUBO(m_virtualUBO);
+
+        const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
+
+        if (GetPipeline()->GetCurrentBuildIteration() == 0) {
+            if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
+                m_shader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
+                m_descriptorManager.Flush();
+            }
+            m_pipeline->GetCurrentShader()->FlushConstants();
         }
 
         m_pipeline->BindVBO(m_VBO);
         m_pipeline->BindIBO(m_IBO);
-        uboManager.BindUBO(m_virtualUBO);
 
-        if (descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
+        if (result != DescriptorManager::BindResult::Failed) {
             m_pipeline->DrawIndices(36);
         }
+
+        m_dirtyShader = false;
     }
 
     void Skybox::OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) {

@@ -20,6 +20,7 @@ namespace SR_GRAPH_NS {
         void Update() override;
 
         SR_NODISCARD std::vector<SR_GTYPES_NS::Framebuffer*> GetFrameBuffers() const override;
+        SR_NODISCARD uint8_t GetMeshDrawerFBOLayers() const noexcept override;
 
         SR_NODISCARD IRenderTechnique* GetFrameBufferRenderTechnique() const override { return GetTechnique(); }
 

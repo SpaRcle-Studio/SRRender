@@ -8,6 +8,7 @@
 #include <Graphics/Pass/IFramebufferPass.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Render/FrameBufferController.h>
@@ -26,6 +27,8 @@ namespace SR_GRAPH_NS {
         , m_time(SR_HTYPES_NS::Time::Instance())
     { }
 
+    MeshDrawerPass::~MeshDrawerPass() = default;
+
     bool MeshDrawerPass::Load(const SR_XML_NS::Node& passNode) {
         m_allowedLayers.clear();
         m_disallowedLayers.clear();
@@ -36,16 +39,18 @@ namespace SR_GRAPH_NS {
             for (auto&& overrideNode : shaderOverrideNode.TryGetNodes("Override")) {
                 auto&& shaderPath = overrideNode.TryGetAttribute("Shader").ToString(std::string());
                 const bool ignoreReplace = overrideNode.TryGetAttribute("Ignore").ToBool(false);
-                const bool useMaterial = overrideNode.TryGetAttribute("UseMaterial").ToBool(false);
+                const bool useMaterial = overrideNode.TryGetAttribute("UseMaterialUniforms").ToBool(false);
+                const bool useSamplers = overrideNode.TryGetAttribute("UseMaterialSamplers").ToBool(false);
 
                 if (shaderPath.empty() && !ignoreReplace) {
                     SR_ERROR("MeshDrawerPass::Load() : override shader is not set!");
                     continue;
                 }
 
-                ShaderUseInfo shaderReplaceInfo;
+                ShaderUseInfo shaderReplaceInfo = {};
                 shaderReplaceInfo.ignoreReplace = ignoreReplace;
-                shaderReplaceInfo.useMaterial = useMaterial;
+                shaderReplaceInfo.useMaterialSamplers = useSamplers;
+                shaderReplaceInfo.useMaterialUniforms = useMaterial;
 
                 if (auto&& shaderTypeAttribute = overrideNode.TryGetAttribute("Type")) {
                     auto&& shaderType = SR_UTILS_NS::EnumReflector::FromString<SR_SRSL_NS::ShaderType>(shaderTypeAttribute.ToString());
@@ -63,7 +68,7 @@ namespace SR_GRAPH_NS {
                 else if (auto&& shaderPathAttribute = overrideNode.TryGetAttribute("Path")) {
                     bool found = false;
                     for (auto&& [pShaderKey, pShader] : m_shaderReplacements) {
-                        if (shaderPathAttribute.ToString() == pShaderKey->GetResourcePath()) {
+                        if (shaderPathAttribute.ToString() == pShaderKey->GetResourcePath().ToStringView()) {
                             found = true;
                             break;
                         }
@@ -144,32 +149,33 @@ namespace SR_GRAPH_NS {
     }
 
     bool MeshDrawerPass::Render() {
-        return (m_passWasRendered = GetRenderStrategy()->Render());
+        const uint32_t layer = GetPassPipeline()->GetCurrentFrameBufferLayer();
+        if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("MeshDrawerPass::Render() : out of bounds!");
+            return false;
+        }
+
+        return m_renderQueues[layer]->Render();
     }
 
     void MeshDrawerPass::Prepare() {
         PrepareSamplers();
-
-        if (m_needUpdateMeshes && HasSamplers()) {
-            GetRenderStrategy()->ForEachMesh([](auto&& pMesh) {
-                pMesh->MarkMaterialDirty();
-            });
-        }
-        m_needUpdateMeshes = false;
-
         Super::Prepare();
     }
 
     void MeshDrawerPass::Update() {
-        if (m_passWasRendered) {
-            GetRenderStrategy()->Update();
+        const uint32_t layer = GetPassPipeline()->GetCurrentFrameBufferLayer();
+        if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("MeshDrawerPass::Update() : out of bounds!");
+            return;
         }
+
+        m_renderQueues[layer]->Update();
     }
 
     void MeshDrawerPass::UseUniforms(ShaderUseInfo info, MeshPtr pMesh) {
         if (IsNeedUseMaterials()) {
             pMesh->UseMaterial();
-            pMesh->UseOverrideUniforms();
         }
     }
 
@@ -203,18 +209,6 @@ namespace SR_GRAPH_NS {
         info.pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 0);
     }
 
-    void MeshDrawerPass::Bind() {
-        SR_TRACY_ZONE;
-
-        auto&& pStrategy = GetRenderStrategy();
-
-        pStrategy->SetMeshDrawerPass(this);
-        pStrategy->BindFilterCallback([this](auto&& layer) { return IsLayerAllowed(layer); });
-        pStrategy->BindShaderReplaceCallback([this](auto&& pShader) { return ReplaceShader(pShader); });
-
-        Super::Bind();
-    }
-
     RenderStrategy* MeshDrawerPass::GetRenderStrategy() const {
         return GetRenderScene()->GetRenderStrategy();
     }
@@ -244,13 +238,11 @@ namespace SR_GRAPH_NS {
 
     void MeshDrawerPass::OnResize(const SR_MATH_NS::UVector2& size) {
         MarkSamplersDirty();
-        m_needUpdateMeshes = true;
         Super::OnResize(size);
     }
 
     void MeshDrawerPass::OnMultisampleChanged() {
         MarkSamplersDirty();
-        m_needUpdateMeshes = true;
         Super::OnMultisampleChanged();
     }
 
@@ -273,22 +265,43 @@ namespace SR_GRAPH_NS {
 
     void MeshDrawerPass::DeInit() {
         ClearOverrideShaders();
+        for (auto&& pRenderQueue : m_renderQueues) {
+            pRenderQueue.AutoFree();
+        }
+        m_renderQueues.clear();
         Super::DeInit();
     }
 
     bool MeshDrawerPass::Init() {
         m_shadowMapPass = GetTechnique()->FindPass<ShadowMapPass>();
         m_cascadedShadowMapPass = GetTechnique()->FindPass<CascadedShadowMapPass>();
+
+        const uint8_t layers = GetMeshDrawerFBOLayers();
+        if (layers == 0) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("MeshDrawerPass::Init() : layers count is 0!");
+            return false;
+        }
+
+        SRAssert(m_renderQueues.empty());
+
+        m_renderQueues.resize(layers);
+        for (uint8_t i = 0; i < layers; ++i) {
+            m_renderQueues[i] = AllocateRenderQueue();
+        }
+
         return Super::Init();
     }
 
     void MeshDrawerPass::OnSamplersChanged() {
-        m_needUpdateMeshes = true;
         ISamplersPass::OnSamplersChanged();
     }
 
     void MeshDrawerPass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
         ISamplersPass::SetISamplerRenderTechnique(pRenderTechnique);
         Super::SetRenderTechnique(pRenderTechnique);
+    }
+
+    MeshDrawerPass::RenderQueuePtr MeshDrawerPass::AllocateRenderQueue() {
+        return GetRenderStrategy()->BuildQueue(this);
     }
 }

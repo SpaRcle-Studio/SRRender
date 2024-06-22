@@ -16,42 +16,6 @@ namespace SR_GTYPES_NS {
         , m_color(color)
     { }
 
-    void DebugLine::Draw() {
-        SR_TRACY_ZONE;
-
-        auto&& pShader = GetRenderContext()->GetCurrentShader();
-
-        if (!pShader) {
-            return;
-        }
-
-        if ((!IsCalculated() && !Calculate()) || m_hasErrors) {
-            return;
-        }
-
-        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-            m_dirtyMaterial = false;
-
-            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
-            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-                m_hasErrors = true;
-                return;
-            }
-
-            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
-        }
-
-        if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            UseSamplers();
-        }
-
-        m_uboManager.BindUBO(m_virtualUBO);
-
-        if (m_descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
-            m_pipeline->DrawIndices(2);
-        }
-    }
-
     void DebugLine::UseMaterial() {
         SR_TRACY_ZONE;
 
@@ -70,16 +34,25 @@ namespace SR_GTYPES_NS {
     }
 
     void DebugLine::SetEndPoint(const SR_MATH_NS::FVector3& endPoint) {
+        if (m_endPoint == endPoint) {
+            return;
+        }
         MarkUniformsDirty();
         m_endPoint = endPoint;
     }
 
     void DebugLine::SetColor(const SR_MATH_NS::FVector4& color) {
+        if (m_color == color) {
+            return;
+        }
         MarkUniformsDirty();
         m_color = color;
     }
 
     void DebugLine::SetStartPoint(const SR_MATH_NS::FVector3& startPoint) {
+        if (m_startPoint == startPoint) {
+            return;
+        }
         MarkUniformsDirty();
         m_startPoint = startPoint;
     }

@@ -613,6 +613,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) {
+        SR_TRACY_ZONE;
+
         Super::UpdateDescriptorSets(descriptorSet, updateInfo);
 
         if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
@@ -1410,21 +1412,20 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::PushConstants(void* pData, uint64_t size) {
         Super::PushConstants(pData, size);
 
-        if (!m_currentVkShader) {
+        if (!m_currentVkShader) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("Shader is nullptr!");
             return;
         }
 
         auto&& pushConstants = m_currentVkShader->GetPushConstants();
 
-        SRAssert2Once(pushConstants.size() == 1, "Unsupported!");
-
-        if (pushConstants.size() != 1) {
+        if (pushConstants.size() != 1) SR_UNLIKELY_ATTRIBUTE {
+            SRHaltOnce("Unsupported!");
             return;
         }
 
         vkCmdPushConstants(m_currentCmd, m_currentLayout,
-            pushConstants.front().stageFlags,
+            pushConstants.data()->stageFlags,
             0, size, pData
         );
     }
@@ -1468,6 +1469,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::BindAttachment(uint8_t activeTexture, uint32_t textureId) {
+        SR_TRACY_ZONE;
+
         Super::BindAttachment(activeTexture, textureId);
 
         if (!m_bindedDescriptors.Get(m_state.descriptorSetId, false)) {
@@ -1516,6 +1519,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::BindTexture(uint8_t activeTexture, uint32_t textureId) {
+        SR_TRACY_ZONE;
+
         Super::BindTexture(activeTexture, textureId);
 
         if (!m_bindedDescriptors.Get(m_state.descriptorSetId, false)) {

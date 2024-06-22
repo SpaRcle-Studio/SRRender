@@ -10,7 +10,7 @@
 namespace SR_GTYPES_NS {
     class Mesh;
     class Shader;
-    class MeshComponent;
+    class IMeshComponent;
 }
 
 namespace SR_GRAPH_NS {
@@ -26,11 +26,11 @@ namespace SR_GRAPH_NS {
     class RenderScene;
     class MeshRenderStage;
     class BaseMaterial;
+    class RenderQueue;
 
     struct MeshRegistrationInfo {
-        MeshRenderStage* pMeshRenderStage = nullptr;
+        uint32_t poolId = static_cast<uint32_t>(SR_ID_INVALID);
         SR_GTYPES_NS::Mesh* pMesh = nullptr;
-        SR_GTYPES_NS::Shader* pShader = nullptr;
         BaseMaterial* pMaterial = nullptr;
         SR_UTILS_NS::StringAtom layer;
         std::optional<int32_t> VBO;
@@ -39,9 +39,10 @@ namespace SR_GRAPH_NS {
     };
 
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_MESH_FORMATS = "obj,pmx,fbx,blend,stl,dae,3ds";
+    SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_FONT_FORMATS = "ttf";
 
     SR_GTYPES_NS::Mesh* CreateMeshByType(MeshType type);
-    SR_GTYPES_NS::MeshComponent* CreateMeshComponentByType(MeshType type);
+    SR_GTYPES_NS::IMeshComponent* CreateMeshComponentByType(MeshType type);
     uint16_t RoundBonesCount(uint16_t count);
 }
 

@@ -15,13 +15,13 @@ namespace SR_GRAPH_NS {
     void IMesh3DClusterPass::MarkDirtyCluster(MeshCluster& meshCluster) {
         SR_TRACY_ZONE;
 
-        for (auto&& [pClusterShader, subCluster] : meshCluster) {
+        /*for (auto&& [pClusterShader, subCluster] : meshCluster) {
             for (auto&& [key, meshGroup] : subCluster) {
                 for (auto&& pMesh : meshGroup) {
                     pMesh->MarkMaterialDirty();
                 }
             }
-        }
+        }*/
     }
 
     bool IMesh3DClusterPass::RenderCluster(MeshCluster& meshCluster) {
@@ -127,15 +127,15 @@ namespace SR_GRAPH_NS {
         bool rendered = false;
 
         if (GetClusterType() & MeshClusterType::Opaque) {
-            rendered |= RenderCluster(GetRenderScene()->GetOpaque());
+            //rendered |= RenderCluster(GetRenderScene()->GetOpaque());
         }
 
         if (GetClusterType() & MeshClusterType::Transparent) {
-            rendered |= RenderCluster(GetRenderScene()->GetTransparent());
+           //rendered |= RenderCluster(GetRenderScene()->GetTransparent());
         }
 
         if (GetClusterType() & MeshClusterType::Debug) {
-            rendered |= RenderCluster(GetRenderScene()->GetDebugCluster());
+           //rendered |= RenderCluster(GetRenderScene()->GetDebugCluster());
         }
 
         return rendered;
@@ -145,15 +145,15 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         if (GetClusterType() & MeshClusterType::Opaque) {
-            UpdateCluster(GetRenderScene()->GetOpaque());
+          // UpdateCluster(GetRenderScene()->GetOpaque());
         }
 
         if (GetClusterType() & MeshClusterType::Transparent) {
-            UpdateCluster(GetRenderScene()->GetTransparent());
+          //  UpdateCluster(GetRenderScene()->GetTransparent());
         }
 
         if (GetClusterType() & MeshClusterType::Debug) {
-            UpdateCluster(GetRenderScene()->GetDebugCluster());
+           // UpdateCluster(GetRenderScene()->GetDebugCluster());
         }
 
         Super::Update();
@@ -161,15 +161,15 @@ namespace SR_GRAPH_NS {
 
     void IMesh3DClusterPass::OnClusterDirty() {
         if (GetClusterType() & MeshClusterType::Opaque) {
-            MarkDirtyCluster(GetRenderScene()->GetOpaque());
+          //  MarkDirtyCluster(GetRenderScene()->GetOpaque());
         }
 
         if (GetClusterType() & MeshClusterType::Transparent) {
-            MarkDirtyCluster(GetRenderScene()->GetTransparent());
+          //  MarkDirtyCluster(GetRenderScene()->GetTransparent());
         }
 
         if (GetClusterType() &MeshClusterType::Debug) {
-            MarkDirtyCluster(GetRenderScene()->GetDebugCluster());
+           // MarkDirtyCluster(GetRenderScene()->GetDebugCluster());
         }
 
         Super::OnClusterDirty();

@@ -47,53 +47,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (!CalculateVBO<Vertices::VertexType::UIVertex, Vertices::UIVertex>([]() { return SR_SPRITE_VERTICES; })) {
-            return false;
-        }
-
-        return IndexedMesh::Calculate();
-    }
-
-    void Sprite::Draw() {
-        SR_TRACY_ZONE;
-
-        auto&& pShader = GetRenderContext()->GetCurrentShader();
-
-        if (!pShader || !IsActive()) {
-            return;
-        }
-
-        if ((!IsCalculated() && !Calculate()) || m_hasErrors) {
-            return;
-        }
-
-        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-            m_dirtyMaterial = false;
-
-            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
-            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-                m_hasErrors = true;
-                return;
-            }
-
-            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
-        }
-
-        if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            UseSamplers();
-        }
-
-        m_pipeline->BindVBO(m_VBO);
-        m_pipeline->BindIBO(m_IBO);
-        m_uboManager.BindUBO(m_virtualUBO);
-
-        if (m_descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
-            m_pipeline->DrawIndices(m_countIndices);
-        }
-    }
-
-    std::vector<uint32_t> Sprite::GetIndices() const {
-        return SR_SPRITE_INDICES;
+        return Super::Calculate();
     }
 
     void Sprite::UseMaterial() {
@@ -116,8 +70,7 @@ namespace SR_GTYPES_NS {
         Super::UseModelMatrix();
     }
 
-    void Sprite::OnPriorityChanged() {
-        ReRegisterMesh();
-        Component::OnPriorityChanged();
+    bool Sprite::BindMesh() {
+        return true;
     }
 }

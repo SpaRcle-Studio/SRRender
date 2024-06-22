@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/Render/RenderStrategy.h>
+#include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Pass/MeshDrawerPass.h>
 
 #include <Utils/ECS/LayerManager.h>
@@ -14,86 +15,36 @@ namespace SR_GRAPH_NS {
     { }
 
     RenderStrategy::~RenderStrategy() {
-        SRAssert(m_layers.empty());
-        SRAssert(m_meshCount == 0);
+        SRAssert(m_meshPool.IsEmpty());
+        SRAssert(m_queues.empty());
     }
 
     RenderContext* RenderStrategy::GetRenderContext() const {
         return m_renderScene->GetContext();
     }
 
-    bool RenderStrategy::Render() {
+    void RenderStrategy::Prepare() {
         SR_TRACY_ZONE;
+
+        if (m_reRegisterMeshes.empty()) {
+            return;
+        }
+
+        GetRenderContext()->GetPipeline()->SetDirty(true);
 
         while (!m_reRegisterMeshes.empty()) {
             const auto info = m_reRegisterMeshes.front();
             m_reRegisterMeshes.pop_front();
-            if (UnRegisterMesh(info)) {
-                RegisterMesh(CreateMeshRegistrationInfo(info.pMesh));
+
+            for (auto&& pQueue : m_queues) {
+                SRAssert(pQueue);
+                pQueue->UnRegister(info);
             }
+
+            m_meshPool.RemoveByIndex(info.poolId);
+
+            RegisterMesh(CreateMeshRegistrationInfo(info.pMesh));
         }
-
-        bool isRendered = false;
-
-        SR_MAYBE_UNUSED auto&& guard = SR_UTILS_NS::LayerManager::Instance().ScopeLockSingleton();
-
-        auto&& layerManager = SR_UTILS_NS::LayerManager::Instance();
-        auto&& layers = layerManager.GetLayers();
-
-        for (auto&& layer : layers) {
-            SR_TRACY_ZONE_S(layer.c_str());
-
-            if (m_layerFilter && !m_layerFilter(layer)) {
-                continue;
-            }
-
-            if (auto&& pIt = m_layers.find(layer); pIt != m_layers.end()) {
-                isRendered |= pIt->second->Render();
-            }
-        }
-
-        GetRenderContext()->GetPipeline()->ResetLastShader();
-
-        return isRendered;
-    }
-
-    void RenderStrategy::PostUpdate() {
-        SR_TRACY_ZONE;
-
-        for (auto&& [layer, pStage] : m_layers) {
-            SR_TRACY_ZONE_S(layer.c_str());
-            pStage->PostUpdate();
-        }
-    }
-
-    void RenderStrategy::Update() {
-        SR_TRACY_ZONE;
-
-        SR_MAYBE_UNUSED auto&& guard = SR_UTILS_NS::LayerManager::Instance().ScopeLockSingleton();
-
-        for (auto&& [layer, pStage] : m_layers) {
-            SR_TRACY_ZONE_S(layer.c_str());
-
-            if (!SR_UTILS_NS::LayerManager::Instance().HasLayer(layer)) {
-                AddError(SR_FORMAT("Layer \"{}\" is not registered!", layer.c_str()));
-                if (IsDebugModeEnabled()) {
-                    pStage->ForEachMesh([this](auto&& pMesh) {
-                        if (!pMesh->IsMeshActive()) {
-                            return;
-                        }
-                        AddProblemMesh(pMesh);
-                    });
-                }
-            }
-
-            if (m_layerFilter && !m_layerFilter(layer)) {
-                continue;
-            }
-
-            pStage->Update();
-        }
-
-        m_isUniformsDirty = false;
     }
 
     void RenderStrategy::RegisterMesh(SR_GTYPES_NS::Mesh* pMesh) {
@@ -124,38 +75,34 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    bool RenderStrategy::IsPriorityAllowed(int64_t priority) const {
-        SR_TRACY_ZONE;
-        return !m_priorityCallback || m_priorityCallback(priority);
-    }
+    //bool RenderStrategy::IsPriorityAllowed(int64_t priority) const {
+    //    return !m_priorityFilter || m_priorityFilter->IsPriorityAllowed(priority);
+    //}
 
-    ShaderUseInfo RenderStrategy::ReplaceShader(RenderStrategy::ShaderPtr pShader) const {
-        SR_TRACY_ZONE;
-        return m_shaderReplaceCallback ? m_shaderReplaceCallback(pShader) : ShaderUseInfo(pShader);
-    }
+    //ShaderUseInfo RenderStrategy::ReplaceShader(RenderStrategy::ShaderPtr pShader) const {
+    //    return m_shaderReplace ? m_shaderReplace->ReplaceShader(pShader) : ShaderUseInfo(pShader);
+    //}
 
-    void RenderStrategy::RegisterMesh(MeshRegistrationInfo info) {
-        if (auto&& pIt = m_layers.find(info.layer); pIt != m_layers.end()) {
-            if (!pIt->second->RegisterMesh(info)) {
+    void RenderStrategy::RemoveQueue(RenderQueue* pQueue) {
+        for (auto pIt = m_queues.begin(); pIt != m_queues.end(); ++pIt) {
+            if (pIt->Get() == pQueue) {
+                m_queues.erase(pIt);
                 return;
             }
         }
-        else {
-            auto&& pLayerStage = new LayerRenderStage(this, nullptr);
-            if (!pLayerStage->RegisterMesh(info)) {
-                delete pLayerStage;
-                return;
-            }
-            m_layers[info.layer] = pLayerStage;
+        SRHalt("Queue not found!");
+    }
+
+    void RenderStrategy::RegisterMesh(const MeshRegistrationInfo& info) {
+        for (auto&& pQueue : m_queues) {
+            SRAssert(pQueue);
+            pQueue->Register(info);
         }
 
         info.pMesh->SetMeshRegistrationInfo(info);
-        ++m_meshCount;
     }
 
     bool RenderStrategy::UnRegisterMesh(const MeshRegistrationInfo& info) {
-        bool unregistered = false;
-
         for (auto pIt = m_reRegisterMeshes.begin(); pIt != m_reRegisterMeshes.end(); ++pIt) {
             if (pIt->pMesh == info.pMesh) {
                 m_reRegisterMeshes.erase(pIt);
@@ -163,32 +110,32 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        if (auto&& pLayerIt = m_layers.find(info.layer); pLayerIt != m_layers.end()) {
-            unregistered = pLayerIt->second->UnRegisterMesh(info);
-            if (pLayerIt->second->IsEmpty()) {
-                delete pLayerIt->second;
-                m_layers.erase(pLayerIt);
-            }
+        for (auto&& pQueue : m_queues) {
+            SRAssert(pQueue);
+            pQueue->UnRegister(info);
         }
-        else {
-            SRHalt("Layer \"{}\" not found!", info.layer.c_str());
-            return false;
-        }
+
+        m_meshPool.RemoveByIndex(info.poolId);
 
         info.pMesh->SetMeshRegistrationInfo(std::nullopt);
 
-        SRAssert(m_meshCount != 0);
-        --m_meshCount;
+        return true;
+    }
 
-        return unregistered;
+    bool RenderStrategy::BuildQueueImpl(const RenderQueuePtr& pQueue) {
+        pQueue->Init();
+        m_meshPool.ForEach([pQueue](uint32_t id, const MeshPtr& pMesh) {
+            pQueue->Register(pMesh->GetMeshRegistrationInfo());
+        });
+        return true;
     }
 
     void RenderStrategy::ForEachMesh(const SR_HTYPES_NS::Function<void(MeshPtr)>& callback) const {
         SR_TRACY_ZONE;
 
-        for (auto&& [layer, pStage] : m_layers) {
-            pStage->ForEachMesh(callback);
-        }
+        //for (auto&& [layer, pStage] : m_layers) {
+        //    pStage->ForEachMesh(callback);
+        //}
     }
 
     void RenderStrategy::OnResourceReloaded(SR_UTILS_NS::IResource* pResource) const {
@@ -218,13 +165,14 @@ namespace SR_GRAPH_NS {
         m_reRegisterMeshes.emplace_back(info);
     }
 
-    MeshRegistrationInfo RenderStrategy::CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh) const {
+    MeshRegistrationInfo RenderStrategy::CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh) {
         MeshRegistrationInfo info = { };
 
         info.pMesh = pMesh;
-        info.pShader = pMesh->GetShader();
+        info.pMaterial = pMesh->GetMaterial();
         info.layer = pMesh->GetMeshLayer();
         info.pScene = GetRenderScene();
+        info.poolId = m_meshPool.Add(pMesh);
 
         if (pMesh->IsSupportVBO()) {
             info.VBO = pMesh->GetVBO();
@@ -239,7 +187,7 @@ namespace SR_GRAPH_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    MeshRenderStage::MeshRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent)
+    /*MeshRenderStage::MeshRenderStage(RenderStrategy* pRenderStrategy, IRenderStage* pParent)
         : Super(pRenderStrategy, pParent)
         , m_uboManager(SR_GRAPH_NS::Memory::UBOManager::Instance())
     {
@@ -929,5 +877,5 @@ namespace SR_GRAPH_NS {
 
     bool IRenderStage::IsNeedUpdate() const {
         return m_uniformsDirty || !m_renderContext->IsOptimizedRenderUpdateEnabled();
-    }
+    }*/
 }

@@ -11,11 +11,13 @@
 #include <Utils/Types/Function.h>
 
 #include <Graphics/Utils/MeshUtils.h>
+#include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Material/MaterialProperty.h>
 #include <Graphics/Memory/DescriptorManager.h>
 #include <Graphics/Material/MeshMaterialProperty.h>
+#include <Utils/Types/SortedVector.h>
 
 namespace SR_UTILS_NS {
     class IResource;
@@ -44,6 +46,29 @@ namespace SR_GTYPES_NS {
         using MaterialPtr = BaseMaterial*;
         using Ptr = Mesh*;
 
+        struct RenderQueueInfo {
+            RenderQueueInfo() = default;
+            RenderQueueInfo(RenderQueue* pRenderQueue, const ShaderUseInfo& shaderUseInfo)
+                : pRenderQueue(pRenderQueue)
+                , shaderUseInfo(shaderUseInfo)
+            { }
+
+            RenderQueue* pRenderQueue;
+            ShaderUseInfo shaderUseInfo;
+            bool operator==(const RenderQueueInfo& other) const {
+                return pRenderQueue == other.pRenderQueue;
+            }
+        };
+
+        struct RenderQueuePredicate {
+            using Element = RenderQueueInfo;
+            SR_NODISCARD bool operator()(const Element& left, const Element& right) const noexcept {
+                return left.pRenderQueue < right.pRenderQueue;
+            }
+        };
+
+        using RenderQueues = SR_HTYPES_NS::SortedVector<RenderQueueInfo, RenderQueuePredicate>;
+
     public:
         ~Mesh() override;
 
@@ -66,55 +91,50 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD virtual SR_FORCE_INLINE bool IsMeshActive() const noexcept { return !m_hasErrors; }
         SR_NODISCARD virtual SR_FORCE_INLINE bool IsFlatMesh() const noexcept { return false; }
-        SR_NODISCARD virtual SR_MATH_NS::FVector3 GetTranslation() const { return SR_MATH_NS::FVector3::Zero(); }
-        SR_NODISCARD virtual const SR_MATH_NS::Matrix4x4& GetModelMatrix() const;
-        SR_NODISCARD virtual std::vector<uint32_t> GetIndices() const { return { }; }
+        SR_NODISCARD const SR_MATH_NS::Matrix4x4& GetModelMatrix() const { return m_modelMatrix; }
         SR_NODISCARD virtual std::string GetGeometryName() const { return std::string(); }
         SR_NODISCARD virtual std::string GetMeshIdentifier() const;
         SR_NODISCARD virtual int64_t GetSortingPriority() const { return 0; }
         SR_NODISCARD virtual bool HasSortingPriority() const { return false; }
         SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetMeshLayer() const { return SR_UTILS_NS::StringAtom(); }
         SR_NODISCARD virtual bool IsSupportVBO() const = 0;
+        SR_NODISCARD virtual uint32_t GetIndicesCount() const = 0;
         SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const { return FrustumCullingType::None; }
 
-        SR_NODISCARD std::vector<MaterialProperty>& GetOverrideUniforms() noexcept { return m_overrideUniforms; }
-        SR_NODISCARD std::vector<MaterialProperty>& GetOverrideConstants() noexcept { return m_overrideConstant; }
         SR_NODISCARD ShaderPtr GetShader() const;
+        SR_NODISCARD MeshMaterialProperty& GetMaterialProperty() noexcept { return m_materialProperty; }
         SR_NODISCARD MaterialPtr GetMaterial() const { return m_materialProperty.GetMaterial(); }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
         SR_NODISCARD MeshType GetMeshType() const noexcept { return m_meshType; }
         SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
         SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
-
-        MaterialProperty& OverrideUniform(SR_UTILS_NS::StringAtom name);
-        void RemoveUniformOverride(SR_UTILS_NS::StringAtom name);
-
-        MaterialProperty& OverrideConstant(SR_UTILS_NS::StringAtom name);
-        void RemoveConstantOverride(SR_UTILS_NS::StringAtom name);
+        SR_NODISCARD RenderQueues& GetRenderQueues() noexcept { return m_renderQueues; }
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
+
+        void SetMatrix(const SR_MATH_NS::Matrix4x4& matrix4X4);
 
         virtual bool OnResourceReloaded(SR_UTILS_NS::IResource* pResource);
         virtual void SetGeometryName(const std::string& name) { }
         virtual bool BindMesh();
 
-        virtual void Draw() = 0;
+        virtual void Draw();
 
         virtual void UseMaterial();
         virtual void UseModelMatrix() { }
         virtual void UseSamplers();
-        virtual void UseOverrideUniforms();
 
-        bool UnRegisterMesh();
-        void ReRegisterMesh();
-
-        void MarkUniformsDirty();
+        void MarkUniformsDirty(bool force = false);
         void MarkMaterialDirty();
+        bool DestroyMesh();
+        void ReRegisterMesh();
+        void UnRegisterMesh();
 
         void SetMaterial(BaseMaterial* pMaterial);
         void SetMaterial(const SR_UTILS_NS::Path& path);
 
-        void SetHasErrors(bool hasErrors) { m_hasErrors = hasErrors; }
+        void SetErrorsClean() { m_hasErrors = false; }
+        void SetUniformsClean() { m_isUniformsDirty = false; }
 
     protected:
         void FreeVideoMemory() override;
@@ -122,6 +142,10 @@ namespace SR_GTYPES_NS {
         virtual bool Calculate();
 
     protected:
+        RenderQueues m_renderQueues;
+
+        SR_MATH_NS::Matrix4x4 m_modelMatrix = SR_MATH_NS::Matrix4x4::Identity();
+
         Memory::UBOManager& m_uboManager;
         SR_GRAPH_NS::DescriptorManager& m_descriptorManager;
 
@@ -131,12 +155,10 @@ namespace SR_GTYPES_NS {
 
         bool m_hasErrors = false;
         bool m_dirtyMaterial = false;
+        bool m_isUniformsDirty = false;
 
         int32_t m_virtualUBO = SR_ID_INVALID;
         int32_t m_virtualDescriptor = SR_ID_INVALID;
-
-        std::vector<MaterialProperty> m_overrideUniforms;
-        std::vector<MaterialProperty> m_overrideConstant;
 
     private:
         std::optional<MeshRegistrationInfo> m_registrationInfo;

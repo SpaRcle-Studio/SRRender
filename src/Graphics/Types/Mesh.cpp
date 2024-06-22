@@ -9,6 +9,7 @@
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderStrategy.h>
+#include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Material/FileMaterial.h>
 
@@ -66,6 +67,11 @@ namespace SR_GTYPES_NS {
         }
 
         return pMesh;
+    }
+
+    void Mesh::SetMatrix(const SR_MATH_NS::Matrix4x4& matrix4X4) {
+        m_modelMatrix = matrix4X4;
+        MarkUniformsDirty();
     }
 
     std::vector<Mesh::Ptr> Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type) {
@@ -126,16 +132,6 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
-    void Mesh::UseOverrideUniforms() {
-        SR_TRACY_ZONE;
-
-        for (auto&& property : m_overrideUniforms) {
-            if (!property.IsSampler()) {
-                property.Use(GetRenderContext()->GetCurrentShader());
-            }
-        }
-    }
-
     void Mesh::UseMaterial() {
         SR_TRACY_ZONE;
         if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
@@ -144,6 +140,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool Mesh::BindMesh() {
+        SR_TRACY_ZONE;
+
         if (auto&& VBO = GetVBO(); VBO != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
             m_pipeline->BindVBO(VBO);
         }
@@ -161,9 +159,46 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    const SR_MATH_NS::Matrix4x4& Mesh::GetModelMatrix() const {
-        static SR_MATH_NS::Matrix4x4 matrix4X4 = SR_MATH_NS::Matrix4x4::Identity();
-        return matrix4X4;
+    void Mesh::Draw() {
+        SR_TRACY_ZONE;
+
+        if (!Calculate() || m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
+        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
+            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
+            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                m_hasErrors = true;
+                return;
+            }
+
+            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
+        }
+
+        m_uboManager.BindUBO(m_virtualUBO);
+
+        const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
+
+        if (m_pipeline->GetCurrentBuildIteration() == 0) {
+            if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
+                UseSamplers();
+                MarkUniformsDirty(true);
+                m_descriptorManager.Flush();
+            }
+            m_pipeline->GetCurrentShader()->FlushConstants();
+        }
+
+        if (result != DescriptorManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
+            if (IsSupportVBO()) {
+                m_pipeline->DrawIndices(GetIndicesCount());
+            }
+            else {
+                m_pipeline->Draw(GetIndicesCount());
+            }
+        }
+
+        m_dirtyMaterial = false;
     }
 
     void Mesh::UseSamplers() {
@@ -183,7 +218,6 @@ namespace SR_GTYPES_NS {
 
     void Mesh::MarkMaterialDirty() {
         m_dirtyMaterial = true;
-        MarkUniformsDirty();
     }
 
     Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
@@ -224,20 +258,28 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
-    bool Mesh::UnRegisterMesh() {
-        const bool isRegistered = IsMeshRegistered();
+    void Mesh::UnRegisterMesh() {
+        if (IsMeshRegistered()) {
+            m_registrationInfo.value().pScene->Remove(this);
+        }
+    }
 
+    void Mesh::ReRegisterMesh() {
+        SR_TRACY_ZONE;
+        if (m_registrationInfo.has_value()) {
+            const auto pRenderScene = m_registrationInfo.value().pScene;
+            pRenderScene->ReRegister(m_registrationInfo.value());
+        }
+    }
+
+    bool Mesh::DestroyMesh() {
+        const bool isRegistered = IsMeshRegistered();
         if (isRegistered) {
             m_registrationInfo.value().pScene->Remove(this);
+        }
 
-            if (IsCalculated()) {
-                FreeVideoMemory();
-                DeInitGraphicsResource();
-            }
-        }
-        else {
-            SRAssert(!IsCalculated());
-        }
+        FreeVideoMemory();
+        DeInitGraphicsResource();
 
         if (auto&& pRenderComponent = dynamic_cast<IRenderComponent*>(this)) {
             pRenderComponent->AutoFree();
@@ -249,75 +291,23 @@ namespace SR_GTYPES_NS {
         return isRegistered;
     }
 
-    void Mesh::ReRegisterMesh() {
-        SR_TRACY_ZONE;
-        if (m_registrationInfo.has_value()) {
-            const auto pRenderScene = m_registrationInfo.value().pScene;
-            pRenderScene->ReRegister(m_registrationInfo.value());
+    void Mesh::MarkUniformsDirty(bool force) {
+        if (m_isUniformsDirty && !force) SR_LIKELY_ATTRIBUTE {
+            return;
         }
-    }
 
-    MaterialProperty& Mesh::OverrideUniform(SR_UTILS_NS::StringAtom name) {
         SR_TRACY_ZONE;
 
-        for (auto&& uniform : m_overrideUniforms) {
-            if (uniform.GetName() == name) {
-                return uniform;
-            }
+        if (!IsMeshActive()) SR_UNLIKELY_ATTRIBUTE {
+            return;
         }
 
-        m_overrideUniforms.emplace_back();
-        m_overrideUniforms.back().SetName(name);
-        return m_overrideUniforms.back();
-    }
+        m_isUniformsDirty = !m_renderQueues.empty();
 
-    void Mesh::RemoveUniformOverride(SR_UTILS_NS::StringAtom name) {
-        SR_TRACY_ZONE;
-
-        for (auto pIt = m_overrideUniforms.begin(); pIt != m_overrideUniforms.end(); ++pIt) {
-            if (name == pIt->GetName()) {
-                m_overrideUniforms.erase(pIt);
-                return;
-            }
-        }
-    }
-
-    MaterialProperty& Mesh::OverrideConstant(SR_UTILS_NS::StringAtom name) {
-        SR_TRACY_ZONE;
-
-        if (auto&& pPipeline = GetPipeline()) {
-            pPipeline->SetDirty(true);
-        }
-
-        for (auto&& constant : m_overrideConstant) {
-            if (constant.GetName() == name) {
-                return constant;
-            }
-        }
-        m_overrideConstant.emplace_back();
-        m_overrideConstant.back().SetName(name);
-        return m_overrideConstant.back();
-    }
-
-    void Mesh::RemoveConstantOverride(SR_UTILS_NS::StringAtom name) {
-        SR_TRACY_ZONE;
-
-        for (auto pIt = m_overrideConstant.begin(); pIt != m_overrideConstant.end(); ++pIt) {
-            if (name == pIt->GetName()) {
-                m_overrideConstant.erase(pIt);
-
-                if (auto&& pPipeline = GetPipeline()) {
-                    pPipeline->SetDirty(true);
-                }
-
-                return;
-            }
-        }
-    }
-
-    void Mesh::MarkUniformsDirty() {
-        if (m_registrationInfo.has_value()) {
-            m_registrationInfo.value().pMeshRenderStage->MarkUniformsDirty();
+        auto pStart = m_renderQueues.data();
+        auto pEnd = pStart + m_renderQueues.size();
+        for (auto pElement = pStart; pElement != pEnd; ++pElement) {
+            pElement->pRenderQueue->OnMeshDirty(this, pElement->shaderUseInfo);
         }
     }
 }

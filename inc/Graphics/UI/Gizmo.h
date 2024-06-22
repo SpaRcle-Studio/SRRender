@@ -121,10 +121,12 @@ namespace SR_GRAPH_UI_NS {
 
         SR_NODISCARD SR_FORCE_INLINE bool ExecuteInEditMode() const override { return true; }
 
+        SR_NODISCARD SR_MATH_NS::FColor GetColorByOperation(GizmoOperationFlag operation) const;
+
     private:
         struct MeshInfo {
-            SR_GTYPES_NS::MeshComponent::Ptr pVisual;
-            SR_GTYPES_NS::MeshComponent::Ptr pSelection;
+            SR_GTYPES_NS::IndexedMeshComponent::Ptr pVisual;
+            SR_GTYPES_NS::IndexedMeshComponent::Ptr pSelection;
             bool isHovered = false;
         };
         std::map<GizmoOperationFlag, MeshInfo> m_meshes;

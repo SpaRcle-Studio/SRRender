@@ -217,7 +217,7 @@ namespace SR_GTYPES_NS {
         m_pipeline->EndCmdBuffer();
     }
 
-    int32_t Framebuffer::GetId() {
+    int32_t Framebuffer::GetId() const {
         if (m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
             return SR_ID_INVALID;
         }

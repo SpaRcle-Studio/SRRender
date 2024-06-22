@@ -76,6 +76,10 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
+            pRenderScene->DeInit();
+
+            Update(m_techniques);
+
             /// Как только уничтожается основная сцена, уничтожаем сцену рендера
             SR_LOG("RenderContext::Update() : destroy render scene...");
             pRenderScene.AutoFree();
@@ -317,6 +321,10 @@ namespace SR_GRAPH_NS {
     }
 
     const RenderContext::PipelinePtr& RenderContext::GetPipeline() const {
+        return m_pipeline;
+    }
+
+    RenderContext::PipelinePtr& RenderContext::GetPipeline() {
         return m_pipeline;
     }
 

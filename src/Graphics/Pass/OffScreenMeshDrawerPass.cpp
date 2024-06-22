@@ -18,6 +18,10 @@ namespace SR_GRAPH_NS {
         return { GetFramebuffer() };
     }
 
+    uint8_t OffScreenMeshDrawerPass::GetMeshDrawerFBOLayers() const noexcept {
+        return GetLayersCount();
+    }
+
     bool OffScreenMeshDrawerPass::Init() {
         return MeshDrawerPass::Init();
     }

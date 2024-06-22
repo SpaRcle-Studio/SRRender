@@ -83,7 +83,7 @@ namespace SR_GRAPH_NS {
             }
 
             if (timed.endPoint <= timePoint) {
-                if (!timed.pMesh->UnRegisterMesh()) {
+                if (!timed.pMesh->DestroyMesh()) {
                     SRHalt("Failed to unregister mesh!");
                 }
                 timed.pMesh = nullptr;
@@ -209,7 +209,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            if (!timed.pMesh->UnRegisterMesh() && timed.registered) {
+            if (!timed.pMesh->DestroyMesh() && timed.registered) {
                 SRHalt("Failed to unregister mesh!");
             }
 

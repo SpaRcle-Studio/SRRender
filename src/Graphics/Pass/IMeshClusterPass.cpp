@@ -23,7 +23,6 @@ namespace SR_GRAPH_NS {
 
     void IMeshClusterPass::UseUniforms(ShaderPtr pShader, MeshPtr pMesh) {
         pMesh->UseMaterial();
-        pMesh->UseOverrideUniforms();
     }
 
     void IMeshClusterPass::UseSamplers(ShaderPtr pShader) {

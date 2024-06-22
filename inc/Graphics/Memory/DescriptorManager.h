@@ -38,6 +38,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD VirtualDescriptorSet AllocateDescriptorSet(VirtualDescriptorSet reallocation = SR_ID_INVALID);
         BindResult Bind(VirtualDescriptorSet virtualDescriptorSet);
+        void Flush();
 
         void FreeDescriptorSet(VirtualDescriptorSet* pVirtualDescriptorSet);
 

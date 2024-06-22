@@ -44,6 +44,9 @@ namespace SR_GRAPH_NS {
         virtual ~BaseMaterial();
 
     public:
+        void SR_FASTCALL SetVec4(SR_UTILS_NS::StringAtom id, const SR_MATH_NS::FVector4& v) noexcept;
+        void SR_FASTCALL SetBool(SR_UTILS_NS::StringAtom id, bool v) noexcept;
+
         SR_NODISCARD bool ContainsTexture(SR_GTYPES_NS::Texture* pTexture) const;
         SR_NODISCARD bool IsTransparent() const;
         SR_NODISCARD ShaderPtr GetShader() const { return m_shader; }
@@ -58,6 +61,7 @@ namespace SR_GRAPH_NS {
         virtual void UnregisterMesh(uint32_t* pId);
 
         virtual void SetShader(ShaderPtr pShader);
+        void SetShader(const SR_UTILS_NS::Path& path);
 
         void OnPropertyChanged(bool onlyUniforms);
 

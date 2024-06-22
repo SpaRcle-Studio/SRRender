@@ -18,11 +18,11 @@ namespace SR_GTYPES_NS {
     { }
 
     bool Mesh3D::Calculate()  {
-        SR_TRACY_ZONE;
-
         if (IsCalculated()) {
             return true;
         }
+
+        SR_TRACY_ZONE;
 
         FreeVideoMemory();
 
@@ -41,44 +41,6 @@ namespace SR_GTYPES_NS {
         }
 
         return IndexedMesh::Calculate();
-    }
-
-    void Mesh3D::Draw() {
-        SR_TRACY_ZONE;
-
-        auto&& pShader = GetRenderContext()->GetCurrentShader();
-
-        if (!pShader || !IsActive()) {
-            return;
-        }
-
-        if ((!IsCalculated() && !Calculate()) || m_hasErrors) {
-            return;
-        }
-
-        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-            m_dirtyMaterial = false;
-
-            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
-            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-                m_hasErrors = true;
-                return;
-            }
-
-            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
-        }
-
-        if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            UseSamplers();
-        }
-
-        m_pipeline->BindVBO(m_VBO);
-        m_pipeline->BindIBO(m_IBO);
-        m_uboManager.BindUBO(m_virtualUBO);
-
-        if (m_descriptorManager.Bind(m_virtualDescriptor) != DescriptorManager::BindResult::Failed) {
-            m_pipeline->DrawIndices(m_countIndices);
-        }
     }
 
     std::vector<uint32_t> Mesh3D::GetIndices() const {

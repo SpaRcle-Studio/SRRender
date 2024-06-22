@@ -35,13 +35,13 @@ namespace SR_GRAPH_NS {
         return nullptr;
     }
 
-    SR_GTYPES_NS::MeshComponent* CreateMeshComponentByType(MeshType type) {
+    SR_GTYPES_NS::IMeshComponent* CreateMeshComponentByType(MeshType type) {
         switch (type) {
             case MeshType::Static:
             case MeshType::Sprite:
             case MeshType::Skinned:
             case MeshType::Procedural: {
-                if (auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::MeshComponent*>(CreateMeshByType(type))) {
+                if (auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::IMeshComponent*>(CreateMeshByType(type))) {
                     return pMeshComponent;
                 }
                 SRHalt("Mesh is not a component! Memory leak...");

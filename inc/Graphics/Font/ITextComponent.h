@@ -5,103 +5,33 @@
 #ifndef SR_ENGINE_I_TEXT_COMPONENT_H
 #define SR_ENGINE_I_TEXT_COMPONENT_H
 
-#include <Graphics/Types/Vertices.h>
-#include <Graphics/Types/Mesh.h>
+#include <Graphics/Font/IText.h>
 #include <Graphics/Types/IRenderComponent.h>
-#include <Utils/Types/UnicodeString.h>
+#include <Graphics/Types/Geometry/MeshComponent.h>
+#include <Utils/ECS/ComponentManager.h>
 
 namespace SR_GTYPES_NS {
-    class Font;
-
-    class ITextComponent : public Mesh, public IRenderComponent {
-    public:
-        typedef Vertices::SimpleVertex VertexType;
-
+    class ITextComponent : public IMeshComponent, public IText {
     public:
         ITextComponent();
-        ~ITextComponent() override;
 
     public:
-        static bool LoadComponent(SR_GTYPES_NS::ITextComponent* pText, SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* dataStorage);
+        bool InitializeEntity() noexcept override;
 
-        SR_NODISCARD SR_HTYPES_NS::Marshal::Ptr Save(SR_UTILS_NS::SavableContext data) const override;
-
-        void UseMaterial() override;
-        void UseModelMatrix() override;
-
-        void UseSamplers() override;
-
-        void OnLoaded() override;
-        void OnAttached() override;
-        void OnDestroy() override;
-        void OnMatrixDirty() override;
-        void OnEnable() override;
-        void OnDisable() override;
-
-        void OnLayerChanged() override;
-
-        SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
-
-        SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
-        SR_NODISCARD bool IsCalculatable() const override;
-        SR_NODISCARD bool IsUpdatable() const noexcept override { return false; }
-        SR_NODISCARD SR_FORCE_INLINE bool GetKerning() const noexcept { return m_kerning; }
-        SR_NODISCARD SR_FORCE_INLINE bool IsDebugEnabled() const noexcept { return m_debug; }
-        SR_NODISCARD SR_FORCE_INLINE bool IsPreprocessorEnabled() const noexcept { return m_preprocessor; }
-        SR_NODISCARD SR_FORCE_INLINE bool IsLocalizationEnabled() const noexcept { return m_localization; }
-        SR_NODISCARD SR_FORCE_INLINE Font* GetFont() const noexcept { return m_font; }
-        SR_NODISCARD SR_FORCE_INLINE SR_MATH_NS::UVector2 GetFontSize() const noexcept { return m_fontSize; }
+        SR_NODISCARD RenderScene* GetTextRenderScene() const override;
 
         SR_NODISCARD SR_FORCE_INLINE bool IsMeshActive() const noexcept override {
-            return SR_UTILS_NS::Component::IsActive() && Mesh::IsMeshActive();
+            return IMeshComponent::IsActive() && IText::IsMeshActive();
         }
 
-        const SR_MATH_NS::Matrix4x4& GetModelMatrix() const override {
-            return m_modelMatrix;
-        }
+        SR_NODISCARD int64_t GetSortingPriority() const override;
+        SR_NODISCARD bool HasSortingPriority() const override;
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
 
-        SR_NODISCARD bool IsSupportVBO() const override { return false; }
+    };
 
-        SR_NODISCARD uint32_t GetAtlasWidth() const noexcept { return m_width; }
-        SR_NODISCARD uint32_t GetAtlasHeight() const noexcept { return m_height; }
-
-        const SR_HTYPES_NS::UnicodeString& GetText() const { return m_text; }
-
-        void SetText(const std::string& text);
-        void SetText(const std::u16string& text);
-        void SetText(const std::u32string& text);
-        void SetKerning(bool enabled);
-        void SetDebug(bool enabled);
-        void SetFont(Font* pFont);
-        void SetFont(const SR_UTILS_NS::Path& path);
-        void SetFontSize(const SR_MATH_NS::UVector2& size);
-
-        void Draw() override;
-
-        bool Calculate() override;
-        void FreeVideoMemory() override;
-
-    protected:
-        SR_NODISCARD bool BuildAtlas();
-
-    protected:
-        Font* m_font = nullptr;
-
-        SR_MATH_NS::Matrix4x4 m_modelMatrix = SR_MATH_NS::Matrix4x4::Identity();
-
-        int32_t m_id = SR_ID_INVALID;
-        uint32_t m_width = 0;
-        uint32_t m_height = 0;
-
-        SR_MATH_NS::UVector2 m_fontSize = SR_MATH_NS::UVector2(512, 512);
-
-        bool m_kerning = true;
-        bool m_debug = false;
-        bool m_preprocessor = false;
-        bool m_localization = false;
-
-        SR_HTYPES_NS::UnicodeString m_text;
-
+    class Text final : public ITextComponent {
+        SR_REGISTER_NEW_COMPONENT(Text, 1000)
     };
 }
 
