@@ -46,7 +46,6 @@ namespace SR_GTYPES_NS {
         bool OnResourceReloaded(SR_UTILS_NS::IResource* pResource) override;
         void OnRawMeshChanged() override;
         bool Calculate() override;
-        void Draw() override;
 
         SR_NODISCARD std::vector<uint32_t> GetIndices() const override;
 

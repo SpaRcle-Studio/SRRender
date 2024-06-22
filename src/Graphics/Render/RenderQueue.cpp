@@ -47,7 +47,7 @@ namespace SR_GRAPH_NS {
         MeshInfo meshInfo;
         meshInfo.pMesh = info.pMesh;
         meshInfo.shaderUseInfo = GetShaderUseInfo(info);
-        meshInfo.vbo = info.pMesh->GetVBO();
+        meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
 
         ShaderInfo shaderInfo;
@@ -86,7 +86,7 @@ namespace SR_GRAPH_NS {
         MeshInfo meshInfo;
         meshInfo.pMesh = info.pMesh;
         meshInfo.shaderUseInfo = GetShaderUseInfo(info);
-        meshInfo.vbo = info.pMesh->GetVBO();
+        meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
 
         info.pMesh->GetRenderQueues().Remove({ this, meshInfo.shaderUseInfo });
