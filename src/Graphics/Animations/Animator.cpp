@@ -7,26 +7,32 @@
 #include <Utils/ECS/ComponentManager.h>
 
 namespace SR_ANIMATIONS_NS {
-    SR_REGISTER_COMPONENT(Animator);
-
     Animator::~Animator() {
         SR_SAFE_DELETE_PTR(m_graph);
         SR_SAFE_DELETE_PTR(m_workingPose);
         SR_SAFE_DELETE_PTR(m_staticPose);
     }
 
-    SR_UTILS_NS::Component* Animator::LoadComponent(SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* dataStorage) {
-        auto&& pController = new Animator();
-        return pController;
-    }
+    bool Animator::InitializeEntity() noexcept {
+        GetComponentProperties().AddCustomProperty<SR_UTILS_NS::PathProperty>("Font")
+            .AddFileFilter("Animation clip", {{ "fbx" }})
+            .SetGetter([this]()-> SR_UTILS_NS::Path {
+                return m_clipPath;
+            })
+            .SetSetter([this](const SR_UTILS_NS::Path& path) {
+                SetClipPath(path);
+            });
 
-    SR_UTILS_NS::Component* Animator::CopyComponent() const {
-        auto&& pController = new Animator();
-        return pController;
-    }
+        GetComponentProperties().AddStandardProperty("Clip index", &m_clipIndex)
+            .SetSetter([this](void* pData) {
+                SetClipIndex(*static_cast<uint32_t*>(pData));
+            });
 
-    SR_HTYPES_NS::Marshal::Ptr Animator::Save(SR_UTILS_NS::SavableContext data) const {
-        return Super::Save(data);
+        GetComponentProperties().AddStandardProperty("Sync", &m_sync);
+        GetComponentProperties().AddStandardProperty("Allow override", &m_allowOverride);
+        GetComponentProperties().AddStandardProperty("Weight", &m_weight);
+
+        return Super::InitializeEntity();
     }
 
     void Animator::OnDestroy() {
@@ -59,7 +65,7 @@ namespace SR_ANIMATIONS_NS {
     void Animator::UpdateInternal(float_t dt) {
         SR_TRACY_ZONE;
 
-        if (!GetGameObject() || !m_skeleton) {
+        if (!m_skeleton) {
             return;
         }
 
@@ -91,10 +97,20 @@ namespace SR_ANIMATIONS_NS {
         m_workingPose->Apply(m_skeleton);
     }
 
-    void Animator::OnAttached() {
-        m_graph = new AnimationGraph(nullptr);
+    void Animator::ReloadClip() {
+        SR_SAFE_DELETE_PTR(m_graph);
 
-        auto&& pAnimationClip = AnimationClip::Load("Samples/Tsumugi/Tsumugi.fbx", 3);
+        if (m_clipPath.IsEmpty()) {
+            return;
+        }
+
+        auto&& pAnimationClip = AnimationClip::Load(m_clipPath, m_clipIndex);
+        if (!pAnimationClip) {
+            SR_ERROR("Animator::ReloadClip() : failed to load animation clip: {}", m_clipPath.ToStringView());
+            return;
+        }
+
+        m_graph = new AnimationGraph(nullptr);
 
         auto&& pStateMachineNode = m_graph->AddNode<AnimationGraphNodeStateMachine>();
         auto&& pStateMachine = pStateMachineNode->GetMachine();
@@ -111,11 +127,25 @@ namespace SR_ANIMATIONS_NS {
         pStateMachine->GetEntryPoint()->AddTransition(pClipState);
 
         m_graph->GetFinal()->AddInput(pStateMachineNode, 0, 0);
+    }
+
+    void Animator::OnAttached() {
+
 
         Super::OnAttached();
     }
 
     void Animator::Start() {
         Super::Start();
+    }
+
+    void Animator::SetClipPath(const SR_UTILS_NS::Path& path) {
+        m_clipPath = path;
+        ReloadClip();
+    }
+
+    void Animator::SetClipIndex(uint32_t index) {
+        m_clipIndex = index;
+        ReloadClip();
     }
 }

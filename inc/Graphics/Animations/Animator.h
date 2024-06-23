@@ -6,6 +6,8 @@
 #define SR_ENGINE_ANIMATOR_H
 
 #include <Utils/ECS/Component.h>
+#include <Utils/ECS/ComponentManager.h>
+
 #include <Graphics/Animations/AnimationKey.h>
 #include <Graphics/Animations/Skeleton.h>
 #include <Graphics/Animations/AnimationGraph.h>
@@ -16,18 +18,13 @@ namespace SR_ANIMATIONS_NS {
     class AnimationChannel;
 
     class Animator : public SR_UTILS_NS::Component {
-        SR_ENTITY_SET_VERSION(1000);
-        SR_INITIALIZE_COMPONENT(Animator);
+        SR_REGISTER_NEW_COMPONENT(Animator, 1001);
         using Super = SR_UTILS_NS::Component;
     protected:
         ~Animator() override;
 
     public:
-        static Component* LoadComponent(SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* dataStorage);
-
-    public:
-        SR_NODISCARD Component* CopyComponent() const override;
-        SR_NODISCARD SR_HTYPES_NS::Marshal::Ptr Save(SR_UTILS_NS::SavableContext data) const override;
+        bool InitializeEntity() noexcept override;
 
         void FixedUpdate() override;
         void Update(float_t dt) override;
@@ -37,13 +34,20 @@ namespace SR_ANIMATIONS_NS {
 
         void Start() override;
 
+        void SetClipPath(const SR_UTILS_NS::Path& path);
+        void SetClipIndex(uint32_t index);
+
     private:
         void UpdateInternal(float_t dt);
 
-    public:
-        float_t m_weight = 1.f;
+        void ReloadClip();
 
     private:
+        float_t m_weight = 1.f;
+
+        SR_UTILS_NS::Path m_clipPath;
+        uint32_t m_clipIndex = 0;
+
         bool m_sync = false;
         bool m_allowOverride = true;
 

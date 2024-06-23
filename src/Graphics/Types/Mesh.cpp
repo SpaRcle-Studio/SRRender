@@ -26,6 +26,7 @@ namespace SR_GTYPES_NS {
         SetMaterial(nullptr);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
         SRAssert(!m_registrationInfo.has_value());
+        SRAssert2(!m_isUniformsDirty, "Application will crash if you delete mesh with dirty uniforms!");
     }
 
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, uint32_t id) {
@@ -234,7 +235,7 @@ namespace SR_GTYPES_NS {
             return nullptr;
         }
 
-        if (!exists || !(pMesh = CreateMeshByType(type))) {
+        if (!exists || !((pMesh = CreateMeshByType(type)))) {
             pRawMesh->CheckResourceUsage();
             return nullptr;
         }

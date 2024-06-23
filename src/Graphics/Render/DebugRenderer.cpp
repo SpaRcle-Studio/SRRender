@@ -82,7 +82,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            if (timed.endPoint <= timePoint) {
+            if (timed.endPoint <= timePoint && !timed.pMesh->IsUniformsDirty()) {
                 if (!timed.pMesh->DestroyMesh()) {
                     SRHalt("Failed to unregister mesh!");
                 }
