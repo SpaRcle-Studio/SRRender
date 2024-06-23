@@ -356,11 +356,10 @@ namespace SR_GRAPH_NS {
     }
 
     SR_GRAPH_NS::ShaderUseInfo RenderQueue::GetShaderUseInfo(const MeshRegistrationInfo& info) const {
-        if (!info.pMaterial) SR_UNLIKELY_ATTRIBUTE {
+        if (!info.pShader) SR_UNLIKELY_ATTRIBUTE {
             return SR_GRAPH_NS::ShaderUseInfo(nullptr);
         }
 
-        const ShaderPtr pOrigin = info.pMaterial->GetShader();
-        return m_meshDrawerPass->ReplaceShader(pOrigin);
+        return m_meshDrawerPass->ReplaceShader(info.pShader);
     }
 }

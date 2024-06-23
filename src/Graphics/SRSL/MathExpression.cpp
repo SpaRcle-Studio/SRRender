@@ -148,6 +148,11 @@ namespace SR_SRSL_NS {
         retrySubExpr:
             if (auto&& pLexem = GetCurrentLexem(); pLexem && pLexem->kind == LexemKind::OpeningSquareBracket) {
                 ++m_currentLexem;
+                if (auto&& pNextLexem = GetCurrentLexem(); pNextLexem && pNextLexem->kind == LexemKind::ClosingSquareBracket) {
+                    ++m_currentLexem;
+                    pBasicExpr = new SRSLExpr("[", pBasicExpr, nullptr);
+                    goto retrySubExpr;
+                }
                 auto&& pExpr = ParseBinaryExpression(30 /** = */);
                 pBasicExpr = new SRSLExpr("[", pBasicExpr, pExpr);
                 goto retrySubExpr;

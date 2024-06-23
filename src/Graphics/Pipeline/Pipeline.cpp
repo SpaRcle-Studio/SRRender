@@ -168,6 +168,13 @@ namespace SR_GRAPH_NS {
         ++m_state.transferredCount;
     }
 
+    void Pipeline::UpdateSSBO(uint32_t SSBO, void *pData, uint64_t size) {
+        SRAssert(pData != nullptr && size > 0);
+        ++m_state.operations;
+        m_state.transferredMemory += size;
+        ++m_state.transferredCount;
+    }
+
     void Pipeline::PushConstants(void* pData, uint64_t size) {
         ++m_state.operations;
         m_state.transferredMemory += size;

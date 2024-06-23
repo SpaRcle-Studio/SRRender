@@ -22,7 +22,12 @@ namespace SR_SRSL_NS {
         std::vector<uint64_t> dimension;
 
         if (pExpr->isArray) {
-            dimension.emplace_back(static_cast<uint64_t>(SRSLEvaluator::Instance().Evaluate(pExpr->args[1])));
+            if (pExpr->args.size() == 2) {
+                dimension.emplace_back(static_cast<uint64_t>(SRSLEvaluator::Instance().Evaluate(pExpr->args[1])));
+            }
+            else {
+                dimension.emplace_back(0);
+            }
 
             if (pExpr->args[0]->isArray) {
                 auto&& subDimension = GetDimension(pExpr->args[0], pAnalyzedTree);
@@ -58,13 +63,18 @@ namespace SR_SRSL_NS {
         }
 
         uint64_t multiplier = 1;
-        uint64_t typeSize = 1;
-
-        std::string type = GetTypeName(pExpr);
 
         if (pExpr->isArray) {
-            multiplier = static_cast<uint64_t>(SRSLEvaluator::Instance().Evaluate(pExpr->args[1]));
+            if (pExpr->args.size() == 2) {
+                multiplier = static_cast<uint64_t>(SRSLEvaluator::Instance().Evaluate(pExpr->args[1]));
+            }
+            else {
+                return 0;
+            }
         }
+
+        std::string type = GetTypeName(pExpr);
+        uint64_t typeSize = 1;
 
         if (SR_SRSL_TYPE_SIZE_TABLE.count(type) == 1) {
             typeSize = SR_SRSL_TYPE_SIZE_TABLE.at(type);
@@ -88,13 +98,18 @@ namespace SR_SRSL_NS {
         }
 
         uint64_t multiplier = 1;
-        uint64_t typeSize = 1;
-
-        std::string type = GetTypeName(pExpr);
 
         if (pExpr->isArray) {
-            multiplier = static_cast<uint64_t>(SRSLEvaluator::Instance().Evaluate(pExpr->args[1]));
+            if (pExpr->args.size() == 2) {
+                multiplier = static_cast<uint64_t>(SRSLEvaluator::Instance().Evaluate(pExpr->args[1]));
+            }
+            else {
+                return 0;
+            }
         }
+
+        std::string type = GetTypeName(pExpr);
+        uint64_t typeSize = 1;
 
         if (SR_SRSL_TYPE_SIZE_TABLE.count(type) == 1) {
             typeSize = SR_SRSL_TYPE_SIZE_TABLE.at(type);

@@ -47,7 +47,7 @@ namespace SR_SRSL_NS {
         explicit SRSLExpr(std::string&& token, SRSLExpr* pAExpr, SRSLExpr* pBExpr)
             : token(SR_UTILS_NS::Exchange(token, { }))
         {
-            SRAssert(pAExpr && pBExpr);
+            SRAssert(pAExpr);
             SRAssert(this->token != ")" && this->token != "(");
             SRAssert(this->token != "]");
 
@@ -56,7 +56,15 @@ namespace SR_SRSL_NS {
             }
 
             args.emplace_back(pAExpr);
-            args.emplace_back(pBExpr);
+
+            if (pBExpr) {
+                args.emplace_back(pBExpr);
+            }
+            else {
+                SRAssert(isArray);
+                /// массив без явного размера (динамический массив вида float[] arr;)
+                SR_NOOP;
+            }
         }
 
         explicit SRSLExpr(SRSLExpr* pAExpr, SRSLExpr* pBExpr) {

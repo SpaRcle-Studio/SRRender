@@ -170,6 +170,7 @@ namespace SR_GRAPH_NS {
 
         info.pMesh = pMesh;
         info.pMaterial = pMesh->GetMaterial();
+        info.pShader = pMesh->GetShader();
         info.layer = pMesh->GetMeshLayer();
         info.pScene = GetRenderScene();
         info.poolId = m_meshPool.Add(pMesh);

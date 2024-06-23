@@ -109,6 +109,8 @@ namespace SR_GTYPES_NS {
         void SR_FASTCALL SetSampler2D(SR_UTILS_NS::StringAtom name, int32_t sampler) noexcept;
         void SR_FASTCALL SetSamplerCube(SR_UTILS_NS::StringAtom name, int32_t sampler) noexcept;
 
+        void BindSSBO(SR_UTILS_NS::StringAtom name, uint32_t ssbo) noexcept;
+
     protected:
         bool IsAllowedToRevive() const override;
         void ReviveResource() override;
@@ -141,6 +143,7 @@ namespace SR_GTYPES_NS {
         Memory::ShaderUBOBlock m_constBlock;
         ShaderSamplers m_samplers;
         ShaderProperties m_properties;
+        SSBOBindings m_ssboBindings;
 
         SR_SRSL_NS::ShaderType m_type = SR_SRSL_NS::ShaderType::Unknown;
 

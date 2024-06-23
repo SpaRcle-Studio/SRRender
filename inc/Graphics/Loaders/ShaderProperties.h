@@ -90,6 +90,13 @@ namespace SR_GRAPH_NS {
     };
     typedef std::map<SR_UTILS_NS::StringAtom, ShaderSampler> ShaderSamplers;
 
+    struct SSBOBinding {
+        SR_UTILS_NS::StringAtom name;
+        uint32_t binding = SR_ID_INVALID;
+        uint32_t ssbo = SR_ID_INVALID;
+    };
+    typedef std::vector<SSBOBinding> SSBOBindings;
+
     SR_MAYBE_UNUSED static bool IsSamplerType(ShaderVarType type) {
         switch (type) {
             case ShaderVarType::Sampler1D:

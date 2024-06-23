@@ -7,6 +7,7 @@
 
 #include <Utils/Debug.h>
 #include <EvoVulkan/Memory/Allocator.h>
+#include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Types/Descriptors.h>
 
 namespace SR_GRAPH_NS::VulkanTools {
@@ -86,6 +87,7 @@ namespace SR_GRAPH_NS::VulkanTools {
                 case LayoutBinding::Sampler2D: type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; break;
                 case LayoutBinding::Uniform: type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; break;
                 case LayoutBinding::Attachhment: type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT; break;
+                case LayoutBinding::SSBO: type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; break;
                 default:
                     SRHalt("VulknaTools::UniformsToDescriptorLayoutBindings() : unknown binding type!");
                     return std::nullopt;

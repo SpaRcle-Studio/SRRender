@@ -229,6 +229,9 @@ namespace SR_GRAPH_NS {
         /// Обеспечивает обновление данных в шейдере
         virtual void UpdateUBO(uint32_t UBO, void* pData, uint64_t size);
 
+        /// Обеспечивает обновление данных в шейдере
+        virtual void UpdateSSBO(uint32_t SSBO, void* pData, uint64_t size);
+
         /// Привязываем к дескриптору юниформы. Работает не во всех API
         virtual void UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo);
 

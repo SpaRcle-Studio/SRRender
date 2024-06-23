@@ -547,6 +547,37 @@ namespace SR_SRSL_NS {
             }
         }
 
+        for (auto&& [name, uniformBlock] : m_shader->GetSSBOBlocks()) {
+            std::string blockCode = SR_SPRINTF("layout (set = 0, binding = %d) buffer StorageBuffer_%s {\n", uniformBlock.binding, name.c_str());
+            bool hasUsage = false;
+
+            for (auto&& field : uniformBlock.fields) {
+                hasUsage |= pFunction->IsVariableUsed(field.name);
+
+                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));
+                auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
+
+                std::string strDimension;
+
+                for (auto&& dim : dimension) {
+                    if (dim == 0) {
+                        strDimension += "[]";
+                    }
+                    else {
+                        strDimension += "[" +  std::to_string(dim) + "]";
+                    }
+                }
+
+                blockCode += SR_FORMAT("\t{} {}{};\n", typeName.c_str(), field.name.c_str(), strDimension.c_str());
+            }
+
+            blockCode += "};\n";
+
+            if (hasUsage) {
+                uniformsCode += blockCode;
+            }
+        }
+
         /// ------------------------------------------------------------------------------------------------------------
 
         std::string samplersCode;

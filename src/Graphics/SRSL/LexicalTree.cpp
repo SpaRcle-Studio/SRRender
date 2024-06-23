@@ -11,7 +11,12 @@ namespace SR_SRSL_NS {
         }
 
         if (isArray) {
-            return args[0]->ToString(deep + 1) + "[" + args[1]->ToString(deep + 1) + "]";
+            if (args.size() == 2) {
+                return args[0]->ToString(deep + 1) + "[" + args[1]->ToString(deep + 1) + "]";
+            }
+            else {
+                return args[0]->ToString(deep + 1) + "[]";
+            }
         }
         else if (args.empty()) {
             return token;

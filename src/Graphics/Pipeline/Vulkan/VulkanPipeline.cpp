@@ -623,12 +623,25 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        auto&& vkDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
+
         std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 
         for (auto&& info : updateInfo) {
             switch (info.descriptorType) {
+                case DescriptorType::Storage: {
+                    auto&& vkStorageBuffer = m_memory->GetSSBO(info.ubo)->GetDescriptorRef();
+
+                    writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
+                        vkDescriptorSet,
+                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                        info.binding,
+                        vkStorageBuffer
+                    ));
+
+                    break;
+                }
                 case DescriptorType::Uniform: {
-                    auto&& vkDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
                     auto&& vkUBODescriptor = m_memory->GetUBO(info.ubo)->GetDescriptorRef();
 
                     writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
@@ -641,7 +654,7 @@ namespace SR_GRAPH_NS {
                     break;
                 }
                 default:
-                    PipelineError("VulkanPipeline::UpdateDescriptorSets() : unknown type!");
+                    SRHalt("VulkanPipeline::UpdateDescriptorSets() : unknown type!");
                     return;
             }
         }
@@ -659,6 +672,13 @@ namespace SR_GRAPH_NS {
         SRAssert2(UBO != SR_ID_INVALID, "Invalid UBO ID!");
         Super::UpdateUBO(UBO, pData, size);
         m_memory->GetUBO(UBO)->CopyToDevice(pData, size);
+    }
+
+    void VulkanPipeline::UpdateSSBO(uint32_t SSBO, void *pData, uint64_t size) {
+        SR_TRACY_ZONE;
+        SRAssert2(SSBO != SR_ID_INVALID, "Invalid SSBO ID!");
+        Super::UpdateSSBO(SSBO, pData, size);
+        m_memory->GetSSBO(SSBO)->CopyToDevice(pData, size);
     }
 
     uint8_t VulkanPipeline::GetBuildIterationsCount() const noexcept {

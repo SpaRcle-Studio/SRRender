@@ -253,17 +253,33 @@ namespace SR_SRSL_NS {
                 continue;
             }
 
-            if (auto&& pDecorator = pVariable->pDecorators->Find("shared")) {
-                m_shared[pVariable->pName->ToString(0)] = pVariable;
+            /// не добавляем в блок переменные, которые объявили и не используем
+            if (!m_useStack->IsVariableUsedInEntryPoints(pVariable->GetName())) {
                 continue;
             }
 
-            if (auto&& pDecorator = pVariable->pDecorators->Find("uniform")) {
-                /// не добавляем в блок переменные, которые объявили и не используем
-                if (!m_useStack->IsVariableUsedInEntryPoints(pVariable->GetName())) {
+            if (auto&& pDecorator = pVariable->pDecorators->Find("ssbo")) {
+                SRSLUniformBlock::Field field;
+
+                field.name = pVariable->pName->ToString(0);
+                field.type = pVariable->pType->ToString(0);
+
+                if (pDecorator->args.empty()) {
+                    SR_ERROR("SRSLShader::PrepareUniformBlocks() : ssbo block name is not set!");
                     continue;
                 }
+                std::string blockName = pDecorator->args[0]->token;
 
+                auto&& usedStages = m_useStack->IsVariableUsedInEntryPointsExt(field.name);
+
+                auto&& uniformBlock = m_ssboBlocks[blockName];
+                uniformBlock.fields.emplace_back(field);
+                uniformBlock.stages.insert(usedStages.begin(), usedStages.end());
+            }
+            else if ((pDecorator = pVariable->pDecorators->Find("shared"))) {
+                m_shared[pVariable->pName->ToString(0)] = pVariable;
+            }
+            else if ((pDecorator = pVariable->pDecorators->Find("uniform"))) {
                 SRSLUniformBlock::Field field;
 
                 field.name = pVariable->pName->ToString(0);
@@ -351,6 +367,10 @@ namespace SR_SRSL_NS {
         /// ------------------------------------------------------------------
 
         for (auto&& [name, block] : m_uniformBlocks) {
+            block.Align(m_analyzedTree);
+        }
+
+        for (auto&& [name, block] : m_ssboBlocks) {
             block.Align(m_analyzedTree);
         }
 
@@ -452,12 +472,17 @@ namespace SR_SRSL_NS {
         {
             uint64_t binding = 0;
 
-            for (auto&&[name, block] : m_uniformBlocks) {
+            for (auto&& [name, block] : m_uniformBlocks) {
                 block.binding = binding;
                 ++binding;
             }
 
-            for (auto&&[samplerName, sampler] : m_samplers) {
+            for (auto&& [name, block] : m_ssboBlocks) {
+                block.binding = binding;
+                ++binding;
+            }
+
+            for (auto&& [samplerName, sampler] : m_samplers) {
                 sampler.binding = binding;
                 ++binding;
             }
@@ -483,6 +508,20 @@ namespace SR_SRSL_NS {
                 uniform.size = block.size;
                 uniform.stage = stage;
                 uniform.type = LayoutBinding::Uniform;
+
+                m_createInfo.uniforms.emplace_back(uniform);
+            }
+
+            for (auto&& [name, block] : m_ssboBlocks) {
+                if (block.stages.count(stage) == 0) {
+                    continue;
+                }
+
+                Uniform uniform = { };
+                uniform.binding = block.binding;
+                uniform.size = block.size;
+                uniform.stage = stage;
+                uniform.type = LayoutBinding::SSBO;
 
                 m_createInfo.uniforms.emplace_back(uniform);
             }

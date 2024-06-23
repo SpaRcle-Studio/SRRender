@@ -251,7 +251,9 @@ namespace SR_SRSL_NS {
 
     void SRSLRefAnalyzer::AnalyzeArrayExpression(SRSLUseStack::Ptr& pUseStack, std::list<std::string> &stack, SRSLExpr* pExpr) {
         AnalyzeExpression(pUseStack, stack, pExpr->args[0]);
-        AnalyzeExpression(pUseStack, stack, pExpr->args[1]);
+        if (pExpr->args.size() == 2) {
+            AnalyzeExpression(pUseStack, stack, pExpr->args[1]);
+        }
     }
 
     void SRSLRefAnalyzer::AnalyzeEntryPoint(SRSLUseStack::Ptr &pUseStack, std::list<std::string> &stack, SRSLFunction *pFunction) {

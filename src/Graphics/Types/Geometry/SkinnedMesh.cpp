@@ -42,7 +42,23 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
+        const uint32_t sizeBones = GetRawMesh()->GetOptimizedBones().size() * sizeof(SR_MATH_NS::Matrix4x4);
+        const uint32_t sizeOffsets = GetRawMesh()->GetBoneOffsets().size() * sizeof(SR_MATH_NS::Matrix4x4);
+
+        m_ssboBones = GetPipeline()->AllocateSSBO(sizeBones, SSBOUsage::Write);
+        m_ssboOffsets = GetPipeline()->AllocateSSBO(sizeOffsets, SSBOUsage::Write);
+
         return IndexedMesh::Calculate();
+    }
+
+    void SkinnedMesh::FreeSSBO() {
+        if (m_ssboBones != SR_ID_INVALID) {
+            GetPipeline()->FreeSSBO(&m_ssboBones);
+        }
+
+        if (m_ssboOffsets != SR_ID_INVALID) {
+            GetPipeline()->FreeSSBO(&m_ssboOffsets);
+        }
     }
 
     std::vector<uint32_t> SkinnedMesh::GetIndices() const {
@@ -105,25 +121,29 @@ namespace SR_GTYPES_NS {
 
         pRenderScene->SetCurrentSkeleton(pSkeleton.Get());
 
-        switch (GetMaxBones()) {
-            case 128:
-                pShader->SetValue<false>(SHADER_SKELETON_MATRICES_128, pSkeleton->GetMatrices().data());
-                pShader->SetValue<false>(SHADER_SKELETON_MATRIX_OFFSETS_128, pSkeleton->GetOffsets().data());
-                break;
-            case 256:
-                pShader->SetValue<false>(SHADER_SKELETON_MATRICES_256, pSkeleton->GetMatrices().data());
-                pShader->SetValue<false>(SHADER_SKELETON_MATRIX_OFFSETS_256, pSkeleton->GetOffsets().data());
-                break;
-            case 384:
-                pShader->SetValue<false>(SHADER_SKELETON_MATRICES_384, pSkeleton->GetMatrices().data());
-                pShader->SetValue<false>(SHADER_SKELETON_MATRIX_OFFSETS_384, pSkeleton->GetOffsets().data());
-                break;
-            case 0:
-                break;
-            default:
-                SRHaltOnce0();
-                return;
-        }
+        GetPipeline()->UpdateSSBO(m_ssboBones, (void*)pSkeleton->GetMatrices().data(), pSkeleton->GetMatrices().size() * sizeof(SR_MATH_NS::Matrix4x4));
+        GetPipeline()->UpdateSSBO(m_ssboOffsets, (void*)pSkeleton->GetOffsets().data(), pSkeleton->GetOffsets().size() * sizeof(SR_MATH_NS::Matrix4x4));
+
+        //GetRawMesh()->GetOptimizedBones().size();
+        //switch (GetMaxBones()) {
+        //    case 128:
+        //        pShader->SetValue<false>(SHADER_SKELETON_MATRICES_128, pSkeleton->GetMatrices().data());
+        //        pShader->SetValue<false>(SHADER_SKELETON_MATRIX_OFFSETS_128, pSkeleton->GetOffsets().data());
+        //        break;
+        //    case 256:
+        //        pShader->SetValue<false>(SHADER_SKELETON_MATRICES_256, pSkeleton->GetMatrices().data());
+        //        pShader->SetValue<false>(SHADER_SKELETON_MATRIX_OFFSETS_256, pSkeleton->GetOffsets().data());
+        //        break;
+        //    case 384:
+        //        pShader->SetValue<false>(SHADER_SKELETON_MATRICES_384, pSkeleton->GetMatrices().data());
+        //        pShader->SetValue<false>(SHADER_SKELETON_MATRIX_OFFSETS_384, pSkeleton->GetOffsets().data());
+        //        break;
+        //    case 0:
+        //        break;
+        //    default:
+        //        SRHaltOnce0();
+        //        return;
+        //}
     }
 
     bool SkinnedMesh::OnResourceReloaded(SR_UTILS_NS::IResource* pResource) {
@@ -136,6 +156,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool SkinnedMesh::PopulateSkeletonMatrices() {
+        SR_TRACY_ZONE;
+
         auto&& bones = GetRawMesh()->GetOptimizedBones();
 
         if (bones.empty()) {
@@ -181,14 +203,6 @@ namespace SR_GTYPES_NS {
         return Super::GetMeshIdentifier();
     }
 
-    uint32_t SkinnedMesh::GetMaxBones() const {
-        if (!GetRawMesh()) {
-            return 0;
-        }
-
-        return SR_GRAPH_NS::RoundBonesCount(GetRawMesh()->GetOptimizedBones().size());
-    }
-
     bool SkinnedMesh::InitializeEntity() noexcept {
         m_properties.AddCustomProperty<SR_UTILS_NS::PathProperty>("Mesh")
             .AddFileFilter("Mesh", SR_GRAPH_NS::SR_SUPPORTED_MESH_FORMATS)
@@ -222,5 +236,16 @@ namespace SR_GTYPES_NS {
         SRHaltOnce0();
         static SR_UTILS_NS::EntityRef defaultEntityRef;
         return defaultEntityRef;
+    }
+
+    void SkinnedMesh::FreeVideoMemory() {
+        FreeSSBO();
+        Super::FreeVideoMemory();
+    }
+
+    void SkinnedMesh::UseSSBO() {
+        GetPipeline()->GetCurrentShader()->BindSSBO("bones", m_ssboBones);
+        GetPipeline()->GetCurrentShader()->BindSSBO("offsets", m_ssboOffsets);
+        Super::UseSSBO();
     }
 }

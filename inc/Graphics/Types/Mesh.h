@@ -123,6 +123,7 @@ namespace SR_GTYPES_NS {
         virtual void UseMaterial();
         virtual void UseModelMatrix() { }
         virtual void UseSamplers();
+        virtual void UseSSBO() { }
 
         void MarkUniformsDirty(bool force = false);
         void MarkMaterialDirty();

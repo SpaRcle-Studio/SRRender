@@ -72,6 +72,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SRSLAnalyzedTree::Ptr GetAnalyzedTree() const;
         SR_NODISCARD const SRSLUseStack::Ptr GetUseStack() const;
         SR_NODISCARD const UniformBlocks& GetUniformBlocks() const { return m_uniformBlocks; }
+        SR_NODISCARD const UniformBlocks& GetSSBOBlocks() const { return m_ssboBlocks; }
         SR_NODISCARD const SRSLUniformBlock& GetPushConstants() const { return m_pushConstants; }
         SR_NODISCARD const SRSLSamplers& GetSamplers() const { return m_samplers; }
         SR_NODISCARD const SRShaderCreateInfo& GetCreateInfo() const { return m_createInfo; }
@@ -106,6 +107,7 @@ namespace SR_SRSL_NS {
         SRShaderCreateInfo m_createInfo;
         SRSLAnalyzedTree::Ptr m_analyzedTree;
         SRSLUseStack::Ptr m_useStack;
+        UniformBlocks m_ssboBlocks;
         UniformBlocks m_uniformBlocks;
         SRSLUniformBlock m_pushConstants;
         SRSLSamplers m_samplers;

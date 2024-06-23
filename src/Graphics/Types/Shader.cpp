@@ -259,6 +259,15 @@ namespace SR_GRAPH_NS::Types {
         SetSampler(name, sampler);
     }
 
+    void Shader::BindSSBO(SR_UTILS_NS::StringAtom name, uint32_t ssbo) noexcept {
+        for (auto&& ssboBinding : m_ssboBindings) {
+            if (ssboBinding.name == name) {
+                ssboBinding.ssbo = ssbo;
+                return;
+            }
+        }
+    }
+
     void Shader::SetSampler2D(SR_UTILS_NS::StringAtom name, SR_GTYPES_NS::Texture* pSampler) noexcept {
         if (!IsLoaded() || m_samplers.count(name) == 0) {
             return;
@@ -435,6 +444,16 @@ namespace SR_GRAPH_NS::Types {
 
         /// ------------------------------------------------------------------------------------------------------------
 
+        for (auto&& [name, ssbo] : pShader->GetSSBOBlocks()) {
+            SSBOBinding ssboBinding;
+            ssboBinding.name = name;
+            ssboBinding.binding = ssbo.binding;
+            ssboBinding.ssbo = SR_ID_INVALID;
+            m_ssboBindings.emplace_back(ssboBinding);
+        }
+
+        /// ------------------------------------------------------------------------------------------------------------
+
         for (auto&& [name, sampler] : pShader->GetSamplers()) {
             m_samplers[name].binding = sampler.binding;
             m_samplers[name].isAttachment = sampler.attachment >= 0;
@@ -460,6 +479,7 @@ namespace SR_GRAPH_NS::Types {
         m_uniformSharedBlock.DeInit();
         m_constBlock.DeInit();
 
+        m_ssboBindings.clear();
         m_includes.clear();
         m_properties.clear();
         m_samplers.clear();
@@ -632,14 +652,19 @@ namespace SR_GRAPH_NS::Types {
             GetPipeline()->UpdateDescriptorSets(descriptorSet, { updateInfo });
         }
 
-        /// TODO: Implement storage buffer support
-        /// if (pShader->GetStorageBuffersCount() > 0)
-        ///{
-        ///    SRDescriptorUpdateInfo updateInfo;
-        ///    updateInfo.binding =
-        ///    updateInfo.ubo =
-        ///    updateInfo.descriptorType = DescriptorType::Storage;
-        ///    GetPipeline()->UpdateDescriptorSets(descriptorSet, {updateInfo});
-        ///}
+        for (auto&& ssbo : m_ssboBindings) {
+            if (ssbo.ssbo == SR_ID_INVALID) {
+                SR_ERROR("Shader::AttachDescriptorSets() : invalid \"{}\" SSBO!", ssbo.name.ToStringView());
+                continue;
+            }
+            SRDescriptorUpdateInfo updateInfo;
+            updateInfo.binding = ssbo.binding;
+            updateInfo.ubo = ssbo.ssbo;
+            updateInfo.descriptorType = DescriptorType::Storage;
+
+            GetPipeline()->UpdateDescriptorSets(descriptorSet, { updateInfo });
+
+            ssbo.ssbo = SR_ID_INVALID;
+        }
     }
 }

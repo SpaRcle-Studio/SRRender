@@ -158,7 +158,7 @@ namespace SR_GRAPH_NS::Memory {
             return id;
         }
 
-        SRHalt("ShaderProgramManager::GetProgram() : framebuffer not found!");
+        ///SRHalt("ShaderProgramManager::GetProgram() : framebuffer not found!");
         return SR_ID_INVALID;
     }
 

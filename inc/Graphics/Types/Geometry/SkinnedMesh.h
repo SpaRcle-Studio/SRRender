@@ -38,7 +38,10 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsUpdatable() const noexcept override { return true; }
         SR_NODISCARD std::string GetMeshIdentifier() const override;
         SR_NODISCARD SR_UTILS_NS::EntityRef& GetSkeleton() const;
-        SR_NODISCARD uint32_t GetMaxBones() const;
+
+        void FreeVideoMemory() override;
+
+        void UseSSBO() override;
 
     private:
         bool PopulateSkeletonMatrices();
@@ -47,10 +50,14 @@ namespace SR_GTYPES_NS {
         void OnRawMeshChanged() override;
         bool Calculate() override;
 
+        void FreeSSBO();
+
         SR_NODISCARD std::vector<uint32_t> GetIndices() const override;
 
     private:
         bool m_skeletonIsBroken = false;
+        int32_t m_ssboBones = SR_ID_INVALID;
+        int32_t m_ssboOffsets = SR_ID_INVALID;
 
     };
 }
