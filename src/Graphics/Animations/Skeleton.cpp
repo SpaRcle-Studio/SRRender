@@ -322,7 +322,7 @@ namespace SR_ANIMATIONS_NS {
             return m_matrices;
         }
 
-        m_matrices.resize(SR_GRAPH_NS::RoundBonesCount(m_optimizedBones.size()));
+        m_matrices.resize(m_optimizedBones.size());
 
         for (auto&& [hashName, index] : m_optimizedBones) {
             auto&& pBone = GetBone(hashName);
@@ -351,7 +351,7 @@ namespace SR_ANIMATIONS_NS {
     void Skeleton::SetBonesOffsets(const std::vector<SR_MATH_NS::Matrix4x4>& offsets) {
         if (m_skeletonOffsets.empty()) {
             m_skeletonOffsets = offsets;
-            m_skeletonOffsets.resize(SR_GRAPH_NS::RoundBonesCount(m_skeletonOffsets.size()));
+            m_skeletonOffsets.resize(m_skeletonOffsets.size());
         }
     }
 

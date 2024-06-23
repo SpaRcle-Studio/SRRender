@@ -23,7 +23,7 @@ namespace SR_GRAPH_NS {
             pShader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
         }
 
-        SR_MATH_NS::FVector3 lightPos = GetRenderScene()->GetLightSystem()->m_position;
+        SR_MATH_NS::FVector3 lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
         pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
 
         if (m_shadowMapPass) {

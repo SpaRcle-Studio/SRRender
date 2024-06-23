@@ -29,7 +29,7 @@ namespace SR_GRAPH_NS {
             pShader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());
             pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
 
-            SR_MATH_NS::FVector3 lightPos = GetRenderScene()->GetLightSystem()->m_position;
+            SR_MATH_NS::FVector3 lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
 
             float zNear = 1.0f;
             float zFar = 96.0f;

@@ -74,8 +74,6 @@ namespace SR_GTYPES_NS {
     }
 
     void SkinnedMesh::Update(float dt) {
-        MarkUniformsDirty();
-
         const bool usable = IsSkeletonUsable();
 
         if (m_skeletonIsBroken && !usable) {
@@ -83,6 +81,15 @@ namespace SR_GTYPES_NS {
         }
 
         if (!m_skeletonIsBroken && usable) {
+            if (m_ssboBones == SR_ID_INVALID || m_ssboOffsets == SR_ID_INVALID) {
+                return Super::Update(dt);
+            }
+            auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>();
+            if (!pSkeleton || pSkeleton->GetOptimizedBones().empty()) {
+                return Super::Update(dt);
+            }
+            GetPipeline()->UpdateSSBO(m_ssboBones, (void*)pSkeleton->GetMatrices().data(), pSkeleton->GetMatrices().size() * sizeof(SR_MATH_NS::Matrix4x4));
+            GetPipeline()->UpdateSSBO(m_ssboOffsets, (void*)pSkeleton->GetOffsets().data(), pSkeleton->GetOffsets().size() * sizeof(SR_MATH_NS::Matrix4x4));
             return Super::Update(dt);
         }
 
@@ -121,8 +128,6 @@ namespace SR_GTYPES_NS {
 
         pRenderScene->SetCurrentSkeleton(pSkeleton.Get());
 
-        GetPipeline()->UpdateSSBO(m_ssboBones, (void*)pSkeleton->GetMatrices().data(), pSkeleton->GetMatrices().size() * sizeof(SR_MATH_NS::Matrix4x4));
-        GetPipeline()->UpdateSSBO(m_ssboOffsets, (void*)pSkeleton->GetOffsets().data(), pSkeleton->GetOffsets().size() * sizeof(SR_MATH_NS::Matrix4x4));
 
         //GetRawMesh()->GetOptimizedBones().size();
         //switch (GetMaxBones()) {

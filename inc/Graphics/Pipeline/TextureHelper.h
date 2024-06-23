@@ -12,7 +12,7 @@ namespace SR_GRAPH_NS {
     SR_ENUM_NS_CLASS_T(SSBOUsage, uint8_t,
         Unknown,
         Read, Write, ReadWrite
-    )   ;
+    );
 
     SR_ENUM_NS_CLASS_T(ImageLoadFormat, uint8_t,
         Unknown,
@@ -22,12 +22,12 @@ namespace SR_GRAPH_NS {
         RGBA
     );
 
-    SR_ENUM_NS_CLASS_T(Dimension, uint8_t,
+    /*SR_ENUM_NS_CLASS_T(Dimension, uint8_t,
         Unknown,
         DIMENSION_2D,
         DIMENSION_3D,
         DIMENSION_CUBE
-    );
+    );*/
 
     SR_ENUM_NS_CLASS_T(Antialiasing, uint8_t,
         None,

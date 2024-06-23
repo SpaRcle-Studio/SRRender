@@ -22,12 +22,12 @@ namespace SR_GRAPH_NS {
 
         info.pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
 
-        const auto lightPos = GetRenderScene()->GetLightSystem()->m_position;
+        const auto lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
         info.pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
     }
 
     void CascadedShadowMapPass::UpdateCascades() {
-        const auto lightPos = GetRenderScene()->GetLightSystem()->m_position;
+        const auto lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
 
         std::vector<float_t> cascadeSplits;
         cascadeSplits.resize(GetLayersCount());
@@ -123,6 +123,10 @@ namespace SR_GRAPH_NS {
     bool CascadedShadowMapPass::CheckCamera() {
         if (!m_camera) SR_UNLIKELY_ATTRIBUTE {
             return false;
+        }
+
+        if (m_directionalLightPosition != GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition()) SR_UNLIKELY_ATTRIBUTE {
+            goto dirty;
         }
 
         if (m_cameraPosition.Distance(m_camera->GetPosition()) > 1.0) SR_UNLIKELY_ATTRIBUTE {

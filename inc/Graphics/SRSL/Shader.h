@@ -76,7 +76,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SRSLUniformBlock& GetPushConstants() const { return m_pushConstants; }
         SR_NODISCARD const SRSLSamplers& GetSamplers() const { return m_samplers; }
         SR_NODISCARD const SRShaderCreateInfo& GetCreateInfo() const { return m_createInfo; }
-        SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, SRSLVariable*>& GetShared() const { return m_shared; }
+        SR_NODISCARD const std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetShared() const { return m_shared; }
         SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, SRSLVariable*>& GetConstants() const { return m_constants; }
         SR_NODISCARD const std::vector<SR_UTILS_NS::StringAtom>& GetIncludes() const { return m_includes; }
 
@@ -101,7 +101,7 @@ namespace SR_SRSL_NS {
         SR_UTILS_NS::Path m_path;
 
         std::vector<SR_UTILS_NS::StringAtom> m_includes;
-        std::map<SR_UTILS_NS::StringAtom, SRSLVariable*> m_shared;
+        std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_shared;
         std::map<SR_UTILS_NS::StringAtom, SRSLVariable*> m_constants;
         ShaderType m_type = ShaderType::Unknown;
         SRShaderCreateInfo m_createInfo;

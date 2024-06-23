@@ -277,7 +277,16 @@ namespace SR_SRSL_NS {
                 uniformBlock.stages.insert(usedStages.begin(), usedStages.end());
             }
             else if ((pDecorator = pVariable->pDecorators->Find("shared"))) {
-                m_shared[pVariable->pName->ToString(0)] = pVariable;
+                SR_UTILS_NS::StringAtom vaeName = pVariable->pName->ToString(0);
+
+                if (std::find_if(m_shared.begin(), m_shared.end(), [vaeName](const auto& pair) -> bool {
+                    return pair.first == vaeName;
+                }) != m_shared.end()) {
+                    SR_ERROR("SRSLShader::PrepareUniformBlocks() : shared variable already exists! Name: " + vaeName.ToString());
+                    continue;
+                }
+
+                m_shared.emplace_back(vaeName, pVariable);
             }
             else if ((pDecorator = pVariable->pDecorators->Find("uniform"))) {
                 SRSLUniformBlock::Field field;
@@ -317,6 +326,12 @@ namespace SR_SRSL_NS {
                 m_constants[pVariable->pName->ToString(0)] = pVariable;
             }
         }
+
+        /// sort by type size from less to more
+        std::sort(m_shared.begin(), m_shared.end(), [this](const auto& a, const auto& b) -> bool {
+            return SRSLTypeInfo::Instance().GetTypeSize(a.second->pType->ToString(0), m_analyzedTree) <
+                   SRSLTypeInfo::Instance().GetTypeSize(b.second->pType->ToString(0), m_analyzedTree);
+        });
 
         /// ------------------------------------------------------------------
 

@@ -4,6 +4,7 @@
 
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Lighting/LightSystem.h>
+#include <Graphics/Types/Mesh.h>
 
 namespace SR_GRAPH_NS {
     LightSystem::LightSystem(RenderScenePtr pRenderScene)
@@ -71,5 +72,12 @@ namespace SR_GRAPH_NS {
                 SRHalt0();
                 break;
         }
+    }
+
+    void LightSystem::SetDirectionalLightPosition(const SR_MATH_NS::FVector3& position) noexcept {
+        m_position = position;
+        m_renderScene->GetRenderStrategy()->ForEachMesh([](SR_GTYPES_NS::Mesh* pMesh) {
+            pMesh->MarkUniformsDirty();
+        });
     }
 }

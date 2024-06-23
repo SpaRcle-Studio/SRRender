@@ -49,6 +49,8 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD Bone* GetBone(uint64_t hashName);
         SR_NODISCARD uint64_t GetBoneIndex(uint64_t hashName);
         SR_NODISCARD bool IsDebugEnabled() const noexcept { return m_debugEnabled; }
+        SR_NODISCARD bool IsDirtyMatrices() const noexcept { return m_dirtyMatrices; }
+        SR_NODISCARD const ska::flat_hash_map<uint64_t, uint16_t>& GetOptimizedBones() const noexcept { return m_optimizedBones; }
         void SetDebugEnabled(bool enabled) { m_debugEnabled = enabled; }
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }

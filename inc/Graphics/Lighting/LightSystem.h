@@ -27,15 +27,19 @@ namespace SR_GRAPH_NS {
         void Remove(ILightComponent* pLightComponent);
 
         SR_NODISCARD const SR_MATH_NS::FVector3& GetDirectionalLightPosition() const noexcept { return m_position; }
+        void SetDirectionalLightPosition(const SR_MATH_NS::FVector3& position) noexcept;
 
     public:
-        SR_MATH_NS::FVector3 m_position = SR_MATH_NS::FVector3(20, 60, 5);
         RenderScenePtr m_renderScene;
         std::set<DirectionalLight*> m_directionalLights;
         std::set<PointLight*> m_pointLights;
         std::set<AreaLight*> m_areaLights;
         std::set<SpotLight*> m_spotLights;
         std::set<ProbeLight*> m_probeLights;
+
+    private:
+        SR_MATH_NS::FVector3 m_position = SR_MATH_NS::FVector3(20, 60, 5);
+
     };
 }
 

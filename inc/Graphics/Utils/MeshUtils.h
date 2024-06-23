@@ -44,7 +44,6 @@ namespace SR_GRAPH_NS {
 
     SR_GTYPES_NS::Mesh* CreateMeshByType(MeshType type);
     SR_GTYPES_NS::IMeshComponent* CreateMeshComponentByType(MeshType type);
-    uint16_t RoundBonesCount(uint16_t count);
 }
 
 #endif //SR_ENGINE_MESH_UTILS_H
