@@ -17,6 +17,7 @@ namespace SR_GRAPH_NS {
     RenderStrategy::~RenderStrategy() {
         SRAssert(m_meshPool.IsEmpty());
         SRAssert(m_queues.empty());
+        SRAssert(m_reRegisterMeshes.empty());
     }
 
     RenderContext* RenderStrategy::GetRenderContext() const {
@@ -32,10 +33,9 @@ namespace SR_GRAPH_NS {
 
         GetRenderContext()->GetPipeline()->SetDirty(true);
 
-        while (!m_reRegisterMeshes.empty()) {
-            const auto info = m_reRegisterMeshes.front();
-            m_reRegisterMeshes.pop_front();
+        m_prepareState = true;
 
+        for (auto&& info : m_reRegisterMeshes) {
             for (auto&& pQueue : m_queues) {
                 SRAssert(pQueue);
                 pQueue->UnRegister(info);
@@ -44,7 +44,11 @@ namespace SR_GRAPH_NS {
             m_meshPool.RemoveByIndex(info.poolId);
 
             RegisterMesh(CreateMeshRegistrationInfo(info.pMesh));
+            info.pMesh->OnReRegistered();
         }
+        m_reRegisterMeshes.clear();
+
+        m_prepareState = false;
     }
 
     void RenderStrategy::RegisterMesh(SR_GTYPES_NS::Mesh* pMesh) {
@@ -103,11 +107,19 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderStrategy::UnRegisterMesh(const MeshRegistrationInfo& info) {
-        for (auto pIt = m_reRegisterMeshes.begin(); pIt != m_reRegisterMeshes.end(); ++pIt) {
-            if (pIt->pMesh == info.pMesh) {
-                m_reRegisterMeshes.erase(pIt);
-                break;
+        SRAssert2(!m_prepareState, "UnRegisterMesh() is not allowed during Prepare()!");
+
+        if (info.pMesh->IsWaitReRegister()) {
+            SR_MAYBE_UNUSED bool isFound = false;
+            for (auto pIt = m_reRegisterMeshes.begin(); pIt != m_reRegisterMeshes.end(); ++pIt) {
+                if (pIt->pMesh == info.pMesh) {
+                    m_reRegisterMeshes.erase(pIt);
+                    isFound = true;
+                    info.pMesh->OnReRegistered();
+                    break;
+                }
             }
+            SRAssert2(isFound, "Mesh is not found in re-register list, but it is waiting for re-register!");
         }
 
         for (auto&& pQueue : m_queues) {
@@ -162,6 +174,8 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderStrategy::ReRegisterMesh(const MeshRegistrationInfo& info) {
+        SR_TRACY_ZONE;
+        SRAssert2(!m_prepareState, "ReRegisterMesh() is not allowed during Prepare()!");
         m_reRegisterMeshes.emplace_back(info);
     }
 

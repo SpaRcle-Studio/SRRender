@@ -89,10 +89,15 @@ namespace SR_GRAPH_NS {
         meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
 
-        info.pMesh->GetRenderQueues().Remove({ this, meshInfo.shaderUseInfo });
+        auto&& queues = info.pMesh->GetRenderQueues();
+        queues.Remove({ this, meshInfo.shaderUseInfo });
 
         if (!pQueue->Remove(meshInfo)) {
             SRHalt("RenderQueue::UnRegister() : mesh not found!");
+        }
+
+        if (queues.empty()) {
+            meshInfo.pMesh->SetUniformsClean();
         }
     }
 

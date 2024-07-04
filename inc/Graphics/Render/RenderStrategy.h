@@ -353,7 +353,8 @@ namespace SR_GRAPH_NS {
         bool m_enableDebugMode = false;
         bool m_isUniformsDirty = true;
 
-        std::list<MeshRegistrationInfo> m_reRegisterMeshes;
+        std::vector<MeshRegistrationInfo> m_reRegisterMeshes;
+        bool m_prepareState = false;
 
         SR_HTYPES_NS::ObjectPool<MeshPtr, uint32_t> m_meshPool;
 

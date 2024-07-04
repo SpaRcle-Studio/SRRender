@@ -27,6 +27,7 @@ namespace SR_GTYPES_NS {
         SRAssert(m_virtualUBO == SR_ID_INVALID);
         SRAssert(!m_registrationInfo.has_value());
         SRAssert2(!m_isUniformsDirty, "Application will crash if you delete mesh with dirty uniforms!");
+        SRAssert2(!m_isWaitReRegister, "Application may will crash if you delete mesh with waiting re-register!");
     }
 
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, uint32_t id) {
@@ -268,8 +269,9 @@ namespace SR_GTYPES_NS {
 
     void Mesh::ReRegisterMesh() {
         SR_TRACY_ZONE;
-        if (m_registrationInfo.has_value()) {
+        if (m_registrationInfo.has_value() && !m_isWaitReRegister) {
             const auto pRenderScene = m_registrationInfo.value().pScene;
+            m_isWaitReRegister = true;
             pRenderScene->ReRegister(m_registrationInfo.value());
         }
     }
@@ -291,6 +293,10 @@ namespace SR_GTYPES_NS {
         }
 
         return isRegistered;
+    }
+
+    void Mesh::OnReRegistered() {
+        m_isWaitReRegister = false;
     }
 
     void Mesh::MarkUniformsDirty(bool force) {
