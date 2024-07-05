@@ -67,16 +67,16 @@ namespace SR_ANIMATIONS_NS {
         auto&& gameObjectsData = pPose->GetGameObjects();
         for (uint32_t i = 0; i < gameObjectsData.size(); ++i) {
             AnimationGameObjectData& data = gameObjectsData[i];
-            AnimationGameObjectData& test = m_testGameObjectsData[i];
-            AnimationGameObjectData& source = m_sourceGameObjectsData[i];
+            if (!data.dirty) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
+
+            data.dirty = false;
 
             m_gameObjects[i]->GetTransform()->SetMatrix(
-                //test.translation.has_value() ? test.translation.value() + source.translation.value() : test.translation,
-                //data.translation ? data.translation.value() + source.translation.value() : data.translation,
                 data.translation,
-                //data.rotation ? data.rotation.value() * source.rotation.value() : data.rotation,
                 data.rotation,
-                data.scale
+                data.scaling
             );
         }
     }
@@ -107,7 +107,7 @@ namespace SR_ANIMATIONS_NS {
             AnimationGameObjectData& data = m_sourceGameObjectsData.emplace_back();
             data.translation = pTransform->GetTranslation();
             data.rotation = pTransform->GetQuaternion();
-            data.scale = pTransform->GetScale();
+            data.scaling = pTransform->GetScale();
         }
 
         m_testGameObjectsData.resize(m_sourceGameObjectsData.size());

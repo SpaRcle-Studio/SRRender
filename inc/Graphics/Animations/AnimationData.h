@@ -15,13 +15,15 @@ namespace SR_ANIMATIONS_NS {
         void Reset() noexcept {
             translation.reset();
             rotation.reset();
-            scale.reset();
+            scaling.reset();
         }
 
     public:
+        bool dirty = false;
+
         std::optional<SR_MATH_NS::FVector3> translation;
         std::optional<SR_MATH_NS::Quaternion> rotation;
-        std::optional<SR_MATH_NS::FVector3> scale;
+        std::optional<SR_MATH_NS::FVector3> scaling;
 
         std::optional<bool> enable;
         std::optional<SR_UTILS_NS::StringAtom> layer;

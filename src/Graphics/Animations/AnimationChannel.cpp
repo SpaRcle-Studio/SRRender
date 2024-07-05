@@ -6,48 +6,46 @@
 
 namespace SR_ANIMATIONS_NS {
     AnimationChannel::~AnimationChannel() {
-        for (auto&& [time, pKey] : m_keys) {
-            delete pKey;
-        }
+        m_keys.clear();
     }
 
     uint32_t AnimationChannel::UpdateChannel(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const {
-        channelContext.pGraph = context.pGraph;
-        channelContext.pPose = context.pPose;
-
-    skipKey:
-        if (keyIndex == m_keys.size()) {
+        if (!channelContext.gameObjectIndex) SR_UNLIKELY_ATTRIBUTE {
             return keyIndex;
         }
 
-        auto&& [keyTime, pKey] = m_keys[keyIndex];
+        AnimationGameObjectData& data = context.pPose->GetGameObjectData(channelContext.gameObjectIndex.value());
 
-        if (time > keyTime) {
-            if (context.fpsCompensation) {
-                if (keyIndex == 0) {
-                    pKey->Update(0.f, nullptr, channelContext);
-                }
-                else {
-                    pKey->Update(1.f, m_keys[keyIndex - 1].second, channelContext);
-                }
+        const auto keysCount = static_cast<uint32_t>(m_keys.size());
+
+    skipKey:
+        if (keyIndex >= keysCount) SR_UNLIKELY_ATTRIBUTE {
+            return keyIndex;
+        }
+
+        auto&& key = m_keys[keyIndex];
+
+        if (time > key.time) SR_UNLIKELY_ATTRIBUTE {
+            if (context.fpsCompensation) SR_UNLIKELY_ATTRIBUTE {
+                key.Set(data);
             }
 
-            ++keyIndex;
+            keyIndex += context.frameRate;
 
             goto skipKey;
         }
 
-        if (keyIndex == 0) {
-            pKey->Update(0.f, nullptr, channelContext);
+        if (keyIndex == 0) SR_UNLIKELY_ATTRIBUTE {
+            key.Set(data);
         }
         else {
-            auto&& [prevTime, prevKey] = m_keys[keyIndex - 1];
+            auto&& prevKey = m_keys[keyIndex - 1];
 
-            const float_t currentTime = time - prevTime;
-            const float_t keyCurrTime = keyTime - prevTime;
+            const float_t currentTime = time - prevKey.time;
+            const float_t keyCurrTime = key.time - prevKey.time;
             const float_t progress = currentTime / keyCurrTime;
 
-            pKey->Update(progress, prevKey, channelContext);
+            key.Update(progress, prevKey, data);
         }
 
         return keyIndex;
@@ -65,31 +63,17 @@ namespace SR_ANIMATIONS_NS {
         if (pChannel->mNumPositionKeys > 0) {
             static constexpr float_t mul = 0.01;
 
-            //auto&& offset = pRawMesh->GetBoneOffset(boneName);
-            //auto&& translationOffset = offset.GetTranslate();
-
-            //auto&& poseMatrix = pRawMesh->GetBoneTransform(boneIndex);
-
             auto&& pTranslationChannel = new AnimationChannel();
-            auto&& first = AiV3ToFV3(pChannel->mPositionKeys[0].mValue, mul);
 
             pTranslationChannel->SetName(pChannel->mNodeName.C_Str());
             pTranslationChannel->SetBoneIndex(boneIndex);
 
-            for (uint16_t positionKeyIndex = 0; positionKeyIndex < pChannel->mNumPositionKeys; ++positionKeyIndex) {
+            for (uint32_t positionKeyIndex = 0; positionKeyIndex < pChannel->mNumPositionKeys; ++positionKeyIndex) {
                 auto&& pPositionKey = pChannel->mPositionKeys[positionKeyIndex];
 
                 auto&& translation = AiV3ToFV3(pPositionKey.mValue, mul);
 
-                pTranslationChannel->AddKey(pPositionKey.mTime / ticksPerSecond,
-                    new TranslationKey(
-                        pTranslationChannel,
-                        SR_MATH_NS::FVector3(),
-                        //translation// - poseMatrix.GetTranslate()
-                        translation
-                        //first - translation
-                    )
-                );
+                pTranslationChannel->AddKey(pPositionKey.mTime / ticksPerSecond, TranslationKey(translation));
             }
 
             channels.emplace_back(pTranslationChannel);
@@ -99,20 +83,16 @@ namespace SR_ANIMATIONS_NS {
 
         if (pChannel->mNumRotationKeys > 0) {
             auto&& pRotationChannel = new AnimationChannel();
-            //auto&& first = AiQToQ(pChannel->mRotationKeys[0].mValue).Inverse();
 
             pRotationChannel->SetName(pChannel->mNodeName.C_Str());
             pRotationChannel->SetBoneIndex(boneIndex);
 
-            for (uint16_t rotationKeyIndex = 0; rotationKeyIndex < pChannel->mNumRotationKeys; ++rotationKeyIndex) {
+            for (uint32_t rotationKeyIndex = 0; rotationKeyIndex < pChannel->mNumRotationKeys; ++rotationKeyIndex) {
                 auto&& pRotationKey = pChannel->mRotationKeys[rotationKeyIndex];
 
                 auto&& q = AiQToQ(pRotationKey.mValue);
-                //auto&& delta = q * first;
 
-                pRotationChannel->AddKey(pRotationKey.mTime / ticksPerSecond,
-                     new RotationKey(pRotationChannel, SR_MATH_NS::Quaternion(), q)
-                );
+                pRotationChannel->AddKey(pRotationKey.mTime / ticksPerSecond, RotationKey(q));
             }
 
             channels.emplace_back(pRotationChannel);
@@ -122,23 +102,16 @@ namespace SR_ANIMATIONS_NS {
 
         if (pChannel->mNumScalingKeys > 0) {
             auto&& pScalingChannel = new AnimationChannel();
-            auto&& first = AiV3ToFV3(pChannel->mScalingKeys[0].mValue, 1.f);
 
             pScalingChannel->SetName(pChannel->mNodeName.C_Str());
             pScalingChannel->SetBoneIndex(boneIndex);
 
-            for (uint16_t scalingKeyIndex = 0; scalingKeyIndex < pChannel->mNumScalingKeys; ++scalingKeyIndex) {
+            for (uint32_t scalingKeyIndex = 0; scalingKeyIndex < pChannel->mNumScalingKeys; ++scalingKeyIndex) {
                 auto&& pScalingKey = pChannel->mScalingKeys[scalingKeyIndex];
 
                 auto&& scale = AiV3ToFV3(pScalingKey.mValue, 1.f);
 
-                pScalingChannel->AddKey(pScalingKey.mTime / ticksPerSecond,
-                    new ScalingKey(
-                        pScalingChannel,
-                        scale,
-                        scale / first
-                    )
-                );
+                pScalingChannel->AddKey(pScalingKey.mTime / ticksPerSecond, ScalingKey(scale));
             }
 
             channels.emplace_back(pScalingChannel);
@@ -148,9 +121,5 @@ namespace SR_ANIMATIONS_NS {
     void AnimationChannel::SetName(SR_UTILS_NS::StringAtom name) {
         m_name = name;
         SRAssert(!m_name.empty());
-    }
-
-    void AnimationChannel::AddKey(float_t timePoint, AnimationKey* pKey) {
-        m_keys.emplace_back(std::make_pair(timePoint, pKey));
     }
 }

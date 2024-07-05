@@ -21,7 +21,7 @@ namespace SR_ANIMATIONS_NS {
     class AnimationPose;
 
     class AnimationChannel final : public SR_UTILS_NS::NonCopyable {
-        using Keys = std::vector<std::pair<float_t, AnimationKey*>>;
+        using Keys = std::vector<UnionAnimationKey>;
     public:
         ~AnimationChannel() override;
 
@@ -31,8 +31,8 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationChannel* Copy() const noexcept {
             auto&& pChannel = new AnimationChannel();
 
-            for (auto&& [time, pKey] : GetKeys()) {
-                pChannel->AddKey(time, pKey->Copy(pChannel));
+            for (auto&& key : m_keys) {
+                pChannel->m_keys.emplace_back(key);
             }
 
             pChannel->m_name = m_name;
@@ -44,7 +44,11 @@ namespace SR_ANIMATIONS_NS {
         void SetName(SR_UTILS_NS::StringAtom name);
         void SetBoneIndex(uint16_t index) { m_boneIndex = index; }
 
-        void AddKey(float_t timePoint, AnimationKey* pKey);
+        template<class T> void AddKey(double_t timePoint, T key) {
+            auto&& newKey = m_keys.emplace_back();
+            newKey.time = static_cast<float_t>(timePoint);
+            newKey.SetData(key);
+        }
 
         SR_NODISCARD uint32_t UpdateChannel(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const;
 

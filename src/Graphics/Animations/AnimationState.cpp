@@ -24,15 +24,14 @@ namespace SR_ANIMATIONS_NS {
         uint32_t currentKeyFrame = 0;
 
         auto&& channels = m_clip->GetChannels();
+        const auto channelsCount = static_cast<uint32_t>(channels.size());
 
-        for (uint32_t i = 0; i < channels.size(); ++i) {
-            ChannelUpdateContext& channelContext = m_channelContexts[i];
-
+        for (uint32_t i = 0; i < channelsCount; ++i) {
             const uint32_t keyFrame = channels[i]->UpdateChannel(
                 m_channelPlayState[i],
                 m_time,
                 context,
-                channelContext
+                m_channelContexts[i]
             );
 
             currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
@@ -40,7 +39,7 @@ namespace SR_ANIMATIONS_NS {
 
         m_time += context.dt;
 
-        if (currentKeyFrame == m_maxKeyFrame) {
+        if (currentKeyFrame >= m_maxKeyFrame) {
             m_time = 0.f;
             memset(m_channelPlayState.data(), 0, m_channelPlayState.size() * sizeof(uint32_t));
         }

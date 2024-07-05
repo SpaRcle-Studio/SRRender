@@ -26,6 +26,8 @@ namespace SR_ANIMATIONS_NS {
                 SetClipIndex(*static_cast<uint32_t*>(pData));
             });
 
+        GetComponentProperties().AddStandardProperty("Frame rate", &m_frameRate);
+
         GetComponentProperties().AddStandardProperty("Sync", &m_sync);
 
         return Super::InitializeEntity();
@@ -68,6 +70,7 @@ namespace SR_ANIMATIONS_NS {
         if (m_graph) {
             UpdateContext context;
 
+            context.frameRate = SR_MAX(1, m_frameRate);
             context.now = SR_HTYPES_NS::Time::Instance().Now();
             context.weight = 1.f;
             context.dt = dt;

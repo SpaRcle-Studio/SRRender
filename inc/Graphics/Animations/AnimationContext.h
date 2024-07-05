@@ -34,6 +34,7 @@ namespace SR_ANIMATIONS_NS {
         float_t weight = 1.f;
         SR_UTILS_NS::TimePointType now;
         bool fpsCompensation = false;
+        uint16_t frameRate = 1;
         AnimationPose* pPose = nullptr;
         AnimationGraph* pGraph = nullptr;
 
