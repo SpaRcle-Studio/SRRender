@@ -8,11 +8,13 @@
 #include <Graphics/Animations/AnimationGraphNode.h>
 
 namespace SR_ANIMATIONS_NS {
+    class Animator;
+
     class AnimationGraph : public IAnimationDataSet, public SR_UTILS_NS::NonCopyable {
         using Hash = uint64_t;
         using Super = IAnimationDataSet;
     public:
-        explicit AnimationGraph(IAnimationDataSet* pParent);
+        explicit AnimationGraph(Animator* pAnimator);
         ~AnimationGraph() override;
 
     public:
@@ -20,7 +22,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD uint64_t GetNodeIndex(const AnimationGraphNode* pNode) const;
         SR_NODISCARD AnimationGraphNode* GetFinal() const;
 
-        void Update(const UpdateContext& context);
+        void Update(UpdateContext& context);
 
         template<class T, typename... Args> T* AddNode(Args&& ...args) {
             auto&& pNode = new T(this, std::forward<Args>(args)...);
@@ -30,9 +32,23 @@ namespace SR_ANIMATIONS_NS {
         }
 
     private:
+        void Apply(AnimationPose* pPose);
+        void Compile();
+
+    //private:
+    public:
+        bool m_isCompiled = false;
+
+        Animator* m_pAnimator = nullptr;
+
+        std::vector<SR_UTILS_NS::GameObject::Ptr> m_gameObjects;
+
         /// первая нода всегда является Final
         std::vector<AnimationGraphNode*> m_nodes;
         ska::flat_hash_map<AnimationGraphNode*, uint32_t> m_indices;
+
+        std::vector<AnimationGameObjectData> m_sourceGameObjectsData;
+        std::vector<AnimationGameObjectData> m_testGameObjectsData;
 
     };
 }

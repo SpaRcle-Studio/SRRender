@@ -3,11 +3,17 @@
 //
 
 #include <Graphics/Animations/AnimationGraph.h>
+#include <Graphics/Animations/Animator.h>
+
+#include <Utils/ECS/Transform.h>
+#include <Utils/ECS/GameObject.h>
 
 namespace SR_ANIMATIONS_NS {
-    AnimationGraph::AnimationGraph(IAnimationDataSet* pParent)
-        : Super(pParent)
+    AnimationGraph::AnimationGraph(Animator* pAnimator)
+        : Super()
+        , m_pAnimator(pAnimator)
     {
+        SRAssert2(m_pAnimator, "Invalid animator!");
         AddNode<AnimationGraphNodeFinal>();
     }
 
@@ -31,9 +37,84 @@ namespace SR_ANIMATIONS_NS {
         return m_nodes.front();
     }
 
-    void AnimationGraph::Update(const UpdateContext& context) {
+    void AnimationGraph::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
-        GetFinal()->Update(context, AnimationLink(SR_ID_INVALID, SR_ID_INVALID));
+
+        Compile();
+
+        if (!m_isCompiled) {
+            SR_WARN("AnimationGraph::Update() : graph is not compiled!");
+            return;
+        }
+
+        if (m_nodes.empty()) {
+            return;
+        }
+
+        context.pGraph = this;
+
+        auto&& pAnimationPose = GetFinal()->Update(context, AnimationLink(SR_ID_INVALID, SR_ID_INVALID));
+        if (!pAnimationPose) {
+            return;
+        }
+
+        Apply(pAnimationPose);
+    }
+
+    void AnimationGraph::Apply(AnimationPose* pPose) {
+        SR_TRACY_ZONE;
+
+        auto&& gameObjectsData = pPose->GetGameObjects();
+        for (uint32_t i = 0; i < gameObjectsData.size(); ++i) {
+            AnimationGameObjectData& data = gameObjectsData[i];
+            AnimationGameObjectData& test = m_testGameObjectsData[i];
+            AnimationGameObjectData& source = m_sourceGameObjectsData[i];
+
+            m_gameObjects[i]->GetTransform()->SetMatrix(
+                //test.translation.has_value() ? test.translation.value() + source.translation.value() : test.translation,
+                //data.translation ? data.translation.value() + source.translation.value() : data.translation,
+                data.translation,
+                //data.rotation ? data.rotation.value() * source.rotation.value() : data.rotation,
+                data.rotation,
+                data.scale
+            );
+        }
+    }
+
+    void AnimationGraph::Compile() {
+        SR_TRACY_ZONE;
+
+        if (m_isCompiled || !m_pAnimator) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
+        m_gameObjects.clear();
+
+        auto&& compileContext = CompileContext(m_gameObjects);
+
+        compileContext.pSkeleton = m_pAnimator->GetSkeleton().Get();
+
+        for (auto&& pNode : m_nodes) {
+            pNode->Compile(compileContext);
+        }
+
+        for (auto&& pGameObject : m_gameObjects) {
+            auto&& pTransform = pGameObject->GetTransform();
+            if (!pTransform) {
+                continue;
+            }
+
+            AnimationGameObjectData& data = m_sourceGameObjectsData.emplace_back();
+            data.translation = pTransform->GetTranslation();
+            data.rotation = pTransform->GetQuaternion();
+            data.scale = pTransform->GetScale();
+        }
+
+        m_testGameObjectsData.resize(m_sourceGameObjectsData.size());
+
+        SR_DEBUG_LOG(SR_FORMAT("AnimationGraph::Compile() : game objects count = {}", m_gameObjects.size()));
+
+        m_isCompiled = true;
     }
 
     AnimationGraphNode* AnimationGraph::GetNode(uint64_t index) const {

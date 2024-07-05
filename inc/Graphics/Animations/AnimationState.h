@@ -34,7 +34,8 @@ namespace SR_ANIMATIONS_NS {
 
         virtual void OnTransitionBegin(const UpdateContext& context) { }
         virtual void OnTransitionEnd(const UpdateContext& context) { }
-        virtual void Update(const UpdateContext& context) { }
+        virtual void Update(UpdateContext& context) { }
+        virtual bool Compile(CompileContext& context) { return true; }
 
         template<class T = AnimationStateTransition, typename ...Args> T* AddTransition(Args&& ...args) {
             auto&& pTransition = new T(this, std::forward<Args>(args)...);
@@ -63,8 +64,10 @@ namespace SR_ANIMATIONS_NS {
 
     public:
         void SetClip(AnimationClip* pClip);
+        bool Compile(CompileContext& context) override;
 
     protected:
+        std::vector<ChannelUpdateContext> m_channelContexts;
         AnimationClip* m_clip = nullptr;
         uint32_t m_maxKeyFrame = 0;
 
@@ -80,10 +83,11 @@ namespace SR_ANIMATIONS_NS {
         { }
 
     public:
-        void Update(const UpdateContext& context) override;
+        void Update(UpdateContext& context) override;
+        bool Compile(CompileContext& context) override;
 
     protected:
-        std::map<AnimationChannel*, uint32_t> m_playState;
+        std::vector<uint32_t> m_channelPlayState;
         float_t m_time = 0.f;
 
     };

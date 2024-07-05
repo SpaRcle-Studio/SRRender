@@ -10,24 +10,21 @@
 namespace SR_ANIMATIONS_NS {
     /// Ключи меняют данные в рамках одного объекта, смешивая значения
     /// После чего, в конце кадра данные применяются на объект
-    class AnimationData : public SR_UTILS_NS::NonCopyable {
+    struct AnimationGameObjectData {
     public:
         void Reset() noexcept {
-            if (translation.has_value()) {
-                translation = std::nullopt;
-            }
-            if (rotation.has_value()) {
-                rotation = std::nullopt;
-            }
-            if (scale.has_value()) {
-                scale = std::nullopt;
-            }
+            translation.reset();
+            rotation.reset();
+            scale.reset();
         }
 
     public:
         std::optional<SR_MATH_NS::FVector3> translation;
         std::optional<SR_MATH_NS::Quaternion> rotation;
         std::optional<SR_MATH_NS::FVector3> scale;
+
+        std::optional<bool> enable;
+        std::optional<SR_UTILS_NS::StringAtom> layer;
 
     };
 }

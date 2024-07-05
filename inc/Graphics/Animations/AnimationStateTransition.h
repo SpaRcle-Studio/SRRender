@@ -7,8 +7,6 @@
 
 #include <Graphics/Animations/AnimationStateCondition.h>
 
-#include <utility>
-
 namespace SR_ANIMATIONS_NS {
     class AnimationState;
     class AnimationStateMachine;

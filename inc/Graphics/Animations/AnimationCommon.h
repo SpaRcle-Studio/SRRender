@@ -75,16 +75,6 @@ namespace SR_ANIMATIONS_NS {
     class AnimationStateMachine;
     class AnimationPose;
 
-    struct UpdateContext {
-        AnimationPose* pWorkingPose = nullptr;
-        AnimationPose* pStaticPose = nullptr;
-        float_t dt = 0.f;
-        float_t weight = 1.f;
-        SR_UTILS_NS::TimePointType now;
-        bool fpsCompensation = false;
-
-    };
-
     struct StateConditionContext {
         AnimationStateMachine* pMachine = nullptr;
         AnimationState* pState = nullptr;
@@ -92,6 +82,8 @@ namespace SR_ANIMATIONS_NS {
 
     class IAnimationDataSet {
     protected:
+        IAnimationDataSet() = default;
+
         explicit IAnimationDataSet(IAnimationDataSet* pParent)
             : m_parent(pParent)
         { }
@@ -102,10 +94,10 @@ namespace SR_ANIMATIONS_NS {
         using Hash = uint64_t;
 
     protected:
-        ska::flat_hash_map<Hash, std::string> m_stringTable;
-        ska::flat_hash_map<Hash, uint64_t> m_intTable;
-        ska::flat_hash_map<Hash, float_t> m_floatTable;
-        ska::flat_hash_map<Hash, bool> m_boolTable;
+        /// ska::flat_hash_map<Hash, std::string> m_stringTable;
+        /// ska::flat_hash_map<Hash, uint64_t> m_intTable;
+        /// ska::flat_hash_map<Hash, float_t> m_floatTable;
+        /// ska::flat_hash_map<Hash, bool> m_boolTable;
 
         IAnimationDataSet* m_parent = nullptr;
 

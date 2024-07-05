@@ -11,21 +11,30 @@
 
 namespace SR_ANIMATIONS_NS {
     class Skeleton;
-    class AnimationData;
+    class AnimationGameObjectData;
     class AnimationClip;
 
     class AnimationPose : public SR_UTILS_NS::NonCopyable {
-        using BoneHashName = uint64_t;
         using Index = uint32_t;
     public:
         ~AnimationPose() override;
 
     public:
-        SR_NODISCARD AnimationData* GetData(BoneHashName boneHashName) const noexcept;
+        void SetGameObjectsCount(uint32_t count);
+
+        SR_NODISCARD AnimationGameObjectData& GetGameObjectData(Index index) noexcept;
+
+        SR_NODISCARD std::vector<AnimationGameObjectData>& GetGameObjects() noexcept { return m_gameObjects; }
+
+    private:
+        std::vector<AnimationGameObjectData> m_gameObjects;
+
+    public:
+        /*SR_NODISCARD AnimationData* GetData(SR_UTILS_NS::StringAtom boneName) const noexcept;
         SR_NODISCARD AnimationData* GetDataByIndex(uint16_t index) const noexcept;
 
         void Reset();
-        void Initialize(Skeleton* pSkeleton);
+        void Initialize(const Skeleton* pSkeleton);
         void Apply(Skeleton* pSkeleton);
         void Update(Skeleton* pSkeleton, AnimationPose* pWorkingPose);
         void SetPose(AnimationClip* pClip);
@@ -37,8 +46,8 @@ namespace SR_ANIMATIONS_NS {
     private:
         bool m_isInitialized = false;
 
-        ska::flat_hash_map<BoneHashName, AnimationData*> m_indices;
-        std::vector<std::pair<BoneHashName, AnimationData*>> m_data;
+        ska::flat_hash_map<SR_UTILS_NS::StringAtom, AnimationData*> m_indices;
+        std::vector<std::pair<SR_UTILS_NS::StringAtom, AnimationData*>> m_data;*/
 
     };
 }

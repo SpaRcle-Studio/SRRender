@@ -34,7 +34,7 @@ namespace SR_ANIMATIONS_NS {
 
         void ResetSkeleton();
 
-        void SetOptimizedBones(const ska::flat_hash_map<uint64_t, uint16_t>& bones);
+        void SetOptimizedBones(const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& bones);
         void SetBonesOffsets(const std::vector<SR_MATH_NS::Matrix4x4>& offsets);
 
         Bone* AddBone(Bone* pParent, const std::string& name, bool recalculate);
@@ -45,12 +45,13 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const std::vector<SR_MATH_NS::Matrix4x4>& GetOffsets() noexcept { return m_skeletonOffsets; }
         SR_UTILS_NS::Transform* GetTransformByIndex(uint16_t index) noexcept;
         SR_NODISCARD const std::vector<Bone*>& GetBones() const noexcept { return m_bonesByIndex; };
-        SR_NODISCARD Bone* TryGetBone(uint64_t hashName);
-        SR_NODISCARD Bone* GetBone(uint64_t hashName);
-        SR_NODISCARD uint64_t GetBoneIndex(uint64_t hashName);
+        SR_NODISCARD Bone* TryGetBone(SR_UTILS_NS::StringAtom name);
+        SR_NODISCARD Bone* GetBone(SR_UTILS_NS::StringAtom name);
+        SR_NODISCARD Bone* GetBoneByIndex(uint16_t index) const;
+        SR_NODISCARD uint64_t GetBoneIndex(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD bool IsDebugEnabled() const noexcept { return m_debugEnabled; }
         SR_NODISCARD bool IsDirtyMatrices() const noexcept { return m_dirtyMatrices; }
-        SR_NODISCARD const ska::flat_hash_map<uint64_t, uint16_t>& GetOptimizedBones() const noexcept { return m_optimizedBones; }
+        SR_NODISCARD const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& GetOptimizedBones() const noexcept { return m_optimizedBones; }
         void SetDebugEnabled(bool enabled) { m_debugEnabled = enabled; }
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
@@ -63,11 +64,11 @@ namespace SR_ANIMATIONS_NS {
         bool m_debugEnabled = false;
 
         ska::flat_hash_map<Bone*, uint64_t> m_debugLines;
-        ska::flat_hash_map<uint64_t, Bone*> m_bonesByName;
+        ska::flat_hash_map<SR_UTILS_NS::StringAtom, Bone*> m_bonesByName;
 
         std::vector<Bone*> m_bonesByIndex;
 
-        ska::flat_hash_map<uint64_t, uint16_t> m_optimizedBones;
+        ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t> m_optimizedBones;
 
         std::vector<SR_MATH_NS::Matrix4x4> m_matrices;
         std::vector<SR_MATH_NS::Matrix4x4> m_skeletonOffsets;

@@ -9,12 +9,10 @@
 namespace SR_ANIMATIONS_NS {
     Animator::~Animator() {
         SR_SAFE_DELETE_PTR(m_graph);
-        SR_SAFE_DELETE_PTR(m_workingPose);
-        SR_SAFE_DELETE_PTR(m_staticPose);
     }
 
     bool Animator::InitializeEntity() noexcept {
-        GetComponentProperties().AddCustomProperty<SR_UTILS_NS::PathProperty>("Font")
+        GetComponentProperties().AddCustomProperty<SR_UTILS_NS::PathProperty>("Clip")
             .AddFileFilter("Animation clip", {{ "fbx" }})
             .SetGetter([this]()-> SR_UTILS_NS::Path {
                 return m_clipPath;
@@ -29,8 +27,6 @@ namespace SR_ANIMATIONS_NS {
             });
 
         GetComponentProperties().AddStandardProperty("Sync", &m_sync);
-        GetComponentProperties().AddStandardProperty("Allow override", &m_allowOverride);
-        GetComponentProperties().AddStandardProperty("Weight", &m_weight);
 
         return Super::InitializeEntity();
     }
@@ -69,32 +65,15 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
-        if (!m_workingPose) {
-            m_workingPose = new AnimationPose();
-            m_workingPose->Initialize(m_skeleton);
-        }
-
-        if (!m_staticPose) {
-            m_staticPose = new AnimationPose();
-            m_staticPose->Initialize(m_skeleton);
-        }
-        else if (m_allowOverride) {
-            m_staticPose->Update(m_skeleton, m_workingPose);
-        }
-
         if (m_graph) {
             UpdateContext context;
 
-            context.pStaticPose = m_staticPose;
-            context.pWorkingPose = m_workingPose;
             context.now = SR_HTYPES_NS::Time::Instance().Now();
             context.weight = 1.f;
             context.dt = dt;
 
             m_graph->Update(context);
         }
-
-        m_workingPose->Apply(m_skeleton);
     }
 
     void Animator::ReloadClip() {
@@ -110,19 +89,12 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
-        m_graph = new AnimationGraph(nullptr);
+        m_graph = new AnimationGraph(this);
 
         auto&& pStateMachineNode = m_graph->AddNode<AnimationGraphNodeStateMachine>();
         auto&& pStateMachine = pStateMachineNode->GetMachine();
 
-        auto&& pSetPoseState = pStateMachine->AddState<AnimationSetPoseState>(pAnimationClip);
-        //pSetPoseState->SetClip(pAnimationClip);
-
         auto&& pClipState = pStateMachine->AddState<AnimationClipState>(pAnimationClip);
-        //pClipState->SetClip(pAnimationClip);
-
-        pStateMachine->GetEntryPoint()->AddTransition(pSetPoseState);
-        pSetPoseState->AddTransition(pClipState);
 
         pStateMachine->GetEntryPoint()->AddTransition(pClipState);
 
@@ -130,8 +102,6 @@ namespace SR_ANIMATIONS_NS {
     }
 
     void Animator::OnAttached() {
-
-
         Super::OnAttached();
     }
 

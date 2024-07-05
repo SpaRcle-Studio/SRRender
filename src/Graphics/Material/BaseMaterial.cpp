@@ -32,6 +32,15 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void BaseMaterial::SetTexture(SR_UTILS_NS::StringAtom id, SR_GTYPES_NS::Texture* pTexture) noexcept {
+        for (auto&& pProperty : m_properties.GetMaterialSamplerProperties()) {
+            if (pProperty->GetName() == id && pProperty->GetShaderVarType() == ShaderVarType::Sampler2D) {
+                pProperty->SetData(pTexture);
+                return;
+            }
+        }
+    }
+
     void BaseMaterial::Use() {
         SR_TRACY_ZONE;
         InitContext();

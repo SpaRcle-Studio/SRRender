@@ -15,12 +15,12 @@ namespace SR_ANIMATIONS_NS {
             return false;
         }
 
-        std::vector<uint64_t> names = { hashName };
+        std::vector<SR_UTILS_NS::StringAtom> names = { name };
 
         Bone* pParentBone = pParent;
         /// рутовую ноду в расчет не берем
         while (pParentBone && pParentBone->pParent) {
-            names.emplace_back(pParentBone->hashName);
+            names.emplace_back(pParentBone->name);
             pParentBone = pParentBone->pParent;
         }
 
@@ -28,14 +28,14 @@ namespace SR_ANIMATIONS_NS {
             gameObject = pRoot->gameObject;
         }
 
-        for (int32_t i = names.size() - 1; i >= 0; i--) {
+        for (int32_t i = static_cast<int32_t>(names.size()) - 1; i >= 0; --i) {
             if (gameObject) {
-                if (!(gameObject = gameObject->Find(names[i]))) {
+                if (!((gameObject = gameObject->Find(names[i])))) {
                     break;
                 }
             }
             else {
-                if (!(gameObject = pRoot->pScene->Find(names[i]))) {
+                if (!((gameObject = pRoot->pScene->Find(names[i])))) {
                     break;
                 }
             }

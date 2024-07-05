@@ -18,7 +18,7 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    void AnimationStateMachine::Update(const UpdateContext& context) {
+    void AnimationStateMachine::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 
         for (auto pIt = m_activeStates.begin(); pIt != m_activeStates.end(); ) {
@@ -60,6 +60,12 @@ namespace SR_ANIMATIONS_NS {
             if (!changed) {
                 ++pIt;
             }
+        }
+    }
+
+    void AnimationStateMachine::Compile(CompileContext& context) {
+        for (auto&& pState : m_states) {
+            pState->Compile(context);
         }
     }
 

@@ -37,26 +37,22 @@ namespace SR_ANIMATIONS_NS {
         void SetClipPath(const SR_UTILS_NS::Path& path);
         void SetClipIndex(uint32_t index);
 
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<Skeleton>& GetSkeleton() noexcept { return m_skeleton; }
+
     private:
         void UpdateInternal(float_t dt);
 
         void ReloadClip();
 
     private:
-        float_t m_weight = 1.f;
-
         SR_UTILS_NS::Path m_clipPath;
         uint32_t m_clipIndex = 0;
 
         bool m_sync = false;
-        bool m_allowOverride = true;
-
-        AnimationPose* m_workingPose = nullptr;
-        AnimationPose* m_staticPose = nullptr;
 
         AnimationGraph* m_graph = nullptr;
 
-        Skeleton* m_skeleton = nullptr;
+        SR_HTYPES_NS::SharedPtr<Skeleton> m_skeleton;
 
     };
 }

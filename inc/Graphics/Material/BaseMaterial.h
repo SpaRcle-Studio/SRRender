@@ -46,6 +46,7 @@ namespace SR_GRAPH_NS {
     public:
         void SR_FASTCALL SetVec4(SR_UTILS_NS::StringAtom id, const SR_MATH_NS::FVector4& v) noexcept;
         void SR_FASTCALL SetBool(SR_UTILS_NS::StringAtom id, bool v) noexcept;
+        void SR_FASTCALL SetTexture(SR_UTILS_NS::StringAtom id, SR_GTYPES_NS::Texture* pTexture) noexcept;
 
         SR_NODISCARD bool ContainsTexture(SR_GTYPES_NS::Texture* pTexture) const;
         SR_NODISCARD bool IsTransparent() const;

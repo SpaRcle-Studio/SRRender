@@ -3,13 +3,19 @@
 //
 
 #include <Graphics/Animations/AnimationGraphNode.h>
+#include <Graphics/Animations/AnimationPose.h>
 
 namespace SR_ANIMATIONS_NS {
     AnimationGraphNode::AnimationGraphNode(AnimationGraph* pGraph, uint16_t input, uint16_t output)
         : m_graph(pGraph)
+        , m_pose(new AnimationPose())
     {
         m_inputPins.resize(input);
         m_outputPins.resize(output);
+    }
+
+    AnimationGraphNode::~AnimationGraphNode() {
+        SR_SAFE_DELETE_PTR(m_pose);
     }
 
     void AnimationGraphNode::AddInput(AnimationGraphNode* pNode, uint16_t sourcePinIndex, uint16_t targetPinIndex) {
@@ -36,23 +42,43 @@ namespace SR_ANIMATIONS_NS {
         return m_graph->GetNodeIndex(this);
     }
 
-    void AnimationGraphNodeFinal::Update(const UpdateContext& context, const AnimationLink& from) {
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    AnimationPose* AnimationGraphNodeFinal::Update(UpdateContext& context, const AnimationLink& from) {
         SR_TRACY_ZONE;
 
         if (m_inputPins.front().has_value()) {
-            auto&& pNode = m_graph->GetNode(m_inputPins.front().value().m_targetNodeIndex);
-            if (pNode) {
-                pNode->Update(context, AnimationLink(0, 0));
+            if (auto&& pNode = m_graph->GetNode(m_inputPins.front().value().m_targetNodeIndex)) {
+                return pNode->Update(context, AnimationLink(0, 0));
             }
         }
+
+        return nullptr;
     }
 
-    void AnimationGraphNodeStateMachine::Update(const UpdateContext& context, const AnimationLink& from) {
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    AnimationPose* AnimationGraphNodeStateMachine::Update(UpdateContext& context, const AnimationLink& from) {
         SR_TRACY_ZONE;
 
         if (m_stateMachine) {
+            context.pPose = m_pose;
             m_stateMachine->Update(context);
         }
+
+        return m_pose;
+    }
+
+    void AnimationGraphNodeStateMachine::Compile(CompileContext& context) {
+        SR_TRACY_ZONE;
+
+        if (m_stateMachine) {
+            m_stateMachine->Compile(context);
+        }
+
+        m_pose->SetGameObjectsCount(context.gameObjects.size());
+
+        Super::Compile(context);
     }
 
     AnimationGraphNodeStateMachine::AnimationGraphNodeStateMachine(AnimationGraph *pGraph)

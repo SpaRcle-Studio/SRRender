@@ -25,6 +25,8 @@ namespace SR_GRAPH_NS::Vertices {
         INT_R32G32B32A32   = 1 << 3,
         INT_R32G32B32      = 1 << 4,
         INT_R32G32         = 1 << 5,
+        UINT_R32           = 1 << 6,
+        INT_R32            = 1 << 7,
     };
 
     static std::string ToString(const glm::vec3& vec3) {
@@ -50,14 +52,23 @@ namespace SR_GRAPH_NS::Vertices {
             return { "VERTEX", "UV", "NORMAL", "TANGENT", "BITANGENT" };
         }
 
-        static SR_FORCE_INLINE std::vector<std::pair<Attribute, size_t>> GetAttributes() {
+        static SR_FORCE_INLINE std::vector<std::pair<Attribute, size_t>> GetAttributes(bool asTypes) {
             auto descriptions = std::vector<std::pair<Attribute, size_t>>();
 
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(StaticMeshVertex, pos)));
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32,    offsetof(StaticMeshVertex, uv)));
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(StaticMeshVertex, norm)));
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(StaticMeshVertex, tang)));
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(StaticMeshVertex, bitang)));
+            if (asTypes) {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32,    1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+            }
+            else {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(StaticMeshVertex, pos)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32,    offsetof(StaticMeshVertex, uv)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(StaticMeshVertex, norm)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(StaticMeshVertex, tang)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(StaticMeshVertex, bitang)));
+            }
 
             return descriptions;
         }
@@ -89,32 +100,49 @@ namespace SR_GRAPH_NS::Vertices {
         glm::vec3 tang;
         glm::vec3 bitang;
 
+        uint32_t weightsCount = 0;
+
         /// x - bone id, y - weight
         glm::vec2 weights[SR_MAX_BONES_ON_VERTEX];
 
         static SR_FORCE_INLINE std::vector<std::string> GetNames() {
-            return {
-                    "VERTEX", "UV", "NORMAL", "TANGENT", "BITANGENT",
-                    "WEIGHT0", "WEIGHT1" , "WEIGHT2", "WEIGHT3",
-                    "WEIGHT4", "WEIGHT5", "WEIGHT6", "WEIGHT7",
+            std::vector<std::string> names = {
+                    "VERTEX", "UV", "NORMAL", "TANGENT", "BITANGENT", "WEIGHTS_COUNT", "WEIGHTS"
             };
+
+            //for (uint8_t i = 0; i < SR_MAX_BONES_ON_VERTEX; ++i) {
+            //    names.emplace_back("WEIGHT" + std::to_string(i));
+            //}
+            return names;
         }
 
         static constexpr SR_FORCE_INLINE SR_VERTEX_DESCRIPTION GetDescription() {
             return sizeof(SkinnedMeshVertex);
         }
 
-        static SR_FORCE_INLINE std::vector<std::pair<Attribute, size_t>> GetAttributes() {
+        static SR_FORCE_INLINE std::vector<std::pair<Attribute, size_t>> GetAttributes(bool asTypes) {
             auto descriptions = std::vector<std::pair<Attribute, size_t>>();
 
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, SR_OFFSETOF(SkinnedMeshVertex, pos)));
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32,    SR_OFFSETOF(SkinnedMeshVertex, uv)));
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, SR_OFFSETOF(SkinnedMeshVertex, norm)));
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, SR_OFFSETOF(SkinnedMeshVertex, tang)));
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, SR_OFFSETOF(SkinnedMeshVertex, bitang)));
+            if (asTypes) {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32,    1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::UINT_R32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32, SR_MAX_BONES_ON_VERTEX));
+            }
+            else {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, SR_OFFSETOF(SkinnedMeshVertex, pos)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32,    SR_OFFSETOF(SkinnedMeshVertex, uv)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, SR_OFFSETOF(SkinnedMeshVertex, norm)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, SR_OFFSETOF(SkinnedMeshVertex, tang)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, SR_OFFSETOF(SkinnedMeshVertex, bitang)));
+                descriptions.emplace_back(std::pair(Attribute::UINT_R32, SR_OFFSETOF(SkinnedMeshVertex, weightsCount)));
 
-            for (uint8_t i = 0; i < SR_MAX_BONES_ON_VERTEX; ++i) {
-                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32, SR_OFFSETOF(SkinnedMeshVertex, weights[i])));
+                for (uint8_t i = 0; i < SR_MAX_BONES_ON_VERTEX; ++i) {
+                    descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32, SR_OFFSETOF(SkinnedMeshVertex, weights[i])));
+                }
             }
 
             return descriptions;
@@ -125,7 +153,9 @@ namespace SR_GRAPH_NS::Vertices {
                    && uv     == other.uv
                    && norm   == other.norm
                    && bitang == other.bitang
-                   && tang   == other.tang;
+                   && tang   == other.tang
+                   && weightsCount  == other.weightsCount
+            ;
             //TODO:А что если 2 вершины в одном месте, а весы различны?
         }
 
@@ -153,11 +183,17 @@ namespace SR_GRAPH_NS::Vertices {
             return { "VERTEX", "UV" };
         }
 
-        static SR_FORCE_INLINE std::vector<std::pair<Attribute, size_t>> GetAttributes() {
+        static SR_FORCE_INLINE std::vector<std::pair<Attribute, size_t>> GetAttributes(bool asTypes) {
             auto descriptions = std::vector<std::pair<Attribute, size_t>>();
 
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(UIVertex, pos)));
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32,    offsetof(UIVertex, uv)));
+            if (asTypes) {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32,    1));
+            }
+            else {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(UIVertex, pos)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32,    offsetof(UIVertex, uv)));
+            }
 
             return descriptions;
         }
@@ -206,10 +242,15 @@ namespace SR_GRAPH_NS::Vertices {
             return pos == other.pos;
         }
 
-        static SR_FORCE_INLINE std::vector<std::pair<Attribute, size_t>> GetAttributes() {
+        static SR_FORCE_INLINE std::vector<std::pair<Attribute, size_t>> GetAttributes(bool asTypes) {
             auto descriptions = std::vector<std::pair<Attribute, size_t>>();
 
-            descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(SimpleVertex, pos)));
+            if (asTypes) {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+            }
+            else {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(SimpleVertex, pos)));
+            }
 
             return descriptions;
         }
@@ -251,7 +292,8 @@ namespace SR_GRAPH_NS::Vertices {
 
     struct VertexInfo {
         std::vector<SR_VERTEX_DESCRIPTION> m_descriptions;
-        std::vector<std::pair<Vertices::Attribute, size_t>> m_attributes;
+        std::vector<std::pair<Vertices::Attribute, size_t /**offset*/>> m_attributes;
+        std::vector<std::pair<Vertices::Attribute, size_t /**array size*/>> m_types;
         std::vector<std::string> m_names;
     };
 
@@ -259,22 +301,26 @@ namespace SR_GRAPH_NS::Vertices {
         VertexInfo info = {};
         switch (type) {
             case VertexType::SkinnedMeshVertex:
-                info.m_attributes = SkinnedMeshVertex::GetAttributes();
+                info.m_attributes = SkinnedMeshVertex::GetAttributes(false);
+                info.m_types = SkinnedMeshVertex::GetAttributes(true);
                 info.m_descriptions = { SkinnedMeshVertex::GetDescription() };
                 info.m_names = SkinnedMeshVertex::GetNames();
                 break;
             case VertexType::StaticMeshVertex:
-                info.m_attributes = StaticMeshVertex::GetAttributes();
+                info.m_attributes = StaticMeshVertex::GetAttributes(false);
+                info.m_types = StaticMeshVertex::GetAttributes(true);
                 info.m_descriptions = { StaticMeshVertex::GetDescription() };
                 info.m_names = StaticMeshVertex::GetNames();
                 break;
             case VertexType::SimpleVertex:
-                info.m_attributes = SimpleVertex::GetAttributes();
+                info.m_attributes = SimpleVertex::GetAttributes(false);
+                info.m_types = SimpleVertex::GetAttributes(true);
                 info.m_descriptions = { SimpleVertex::GetDescription() };
                 info.m_names = SimpleVertex::GetNames();
                 break;
             case VertexType::UIVertex:
-                info.m_attributes = UIVertex::GetAttributes();
+                info.m_attributes = UIVertex::GetAttributes(false);
+                info.m_types = UIVertex::GetAttributes(true);
                 info.m_descriptions = { UIVertex::GetDescription() };
                 info.m_names = UIVertex::GetNames();
                 break;
@@ -333,6 +379,7 @@ namespace SR_GRAPH_NS::Vertices {
                 vertex.norm   = *reinterpret_cast<glm::vec3*>((void*)&rawVertex.normal);
                 vertex.tang   = *reinterpret_cast<glm::vec3*>((void*)&rawVertex.tangent);
                 vertex.bitang = *reinterpret_cast<glm::vec3*>((void*)&rawVertex.bitangent);
+                vertex.weightsCount = *reinterpret_cast<uint32_t*>((void*)&rawVertex.weightsNum);
                 for (uint32_t i = 0; i < SR_MAX_BONES_ON_VERTEX; i++) {
                     vertex.weights[i].x = static_cast<float>(rawVertex.weights[i].boneId);
                     vertex.weights[i].y = rawVertex.weights[i].weight;

@@ -79,7 +79,7 @@ namespace SR_SRSL_NS {
                         return;
                     }
 
-                    m_includes.emplace_back(std::move(m_include));
+                    m_includes.emplace_back(SR_EXCHANGE(m_include, {}));
 
                     auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(includePath, m_include.size());
                     if (lexems.empty()) {

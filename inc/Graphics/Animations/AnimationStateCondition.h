@@ -6,7 +6,7 @@
 #define SR_ENGINE_ANIMATIONSTATECONDITION_H
 
 #include <Utils/Types/Time.h>
-#include <Graphics/Animations/AnimationCommon.h>
+#include <Graphics/Animations/AnimationContext.h>
 
 namespace SR_ANIMATIONS_NS {
     class AnimationStateCondition : public SR_UTILS_NS::NonCopyable {

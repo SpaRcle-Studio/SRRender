@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/Animations/AnimationState.h>
+#include <Graphics/Animations/Skeleton.h>
+#include <Graphics/Animations/Bone.h>
 
 namespace SR_ANIMATIONS_NS {
     AnimationState::~AnimationState() {
@@ -11,7 +13,7 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    void AnimationClipState::Update(const UpdateContext& context) {
+    void AnimationClipState::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 
         if (!m_clip) {
@@ -21,12 +23,18 @@ namespace SR_ANIMATIONS_NS {
 
         uint32_t currentKeyFrame = 0;
 
-        for (auto&& pChannel : m_clip->GetChannels()) {
-            const uint32_t keyFrame = pChannel->UpdateChannel(
-                m_playState[pChannel],
+        auto&& channels = m_clip->GetChannels();
+
+        for (uint32_t i = 0; i < channels.size(); ++i) {
+            ChannelUpdateContext& channelContext = m_channelContexts[i];
+
+            const uint32_t keyFrame = channels[i]->UpdateChannel(
+                m_channelPlayState[i],
                 m_time,
-                context
+                context,
+                channelContext
             );
+
             currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
         }
 
@@ -34,17 +42,28 @@ namespace SR_ANIMATIONS_NS {
 
         if (currentKeyFrame == m_maxKeyFrame) {
             m_time = 0.f;
-            m_playState.clear();
+            memset(m_channelPlayState.data(), 0, m_channelPlayState.size() * sizeof(uint32_t));
         }
 
         Super::Update(context);
+    }
+
+    bool AnimationClipState::Compile(CompileContext& context) {
+        if (!m_clip) {
+            SR_ERROR("AnimationClipState::Compile() : clip is nullptr!");
+            return false;
+        }
+
+        m_channelPlayState.resize(m_clip->GetChannels().size());
+
+        return Super::Compile(context);
     }
 
     IAnimationClipState::~IAnimationClipState() {
         SetClip(nullptr);
     }
 
-    IAnimationClipState::IAnimationClipState(AnimationStateMachine *pMachine, AnimationClip* pClip)
+    IAnimationClipState::IAnimationClipState(AnimationStateMachine* pMachine, AnimationClip* pClip)
         : Super(pMachine)
     {
         SetClip(pClip);
@@ -72,10 +91,47 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    void AnimationSetPoseState::OnTransitionBegin(const UpdateContext& context) {
-        if (m_clip && context.pStaticPose) {
-            context.pStaticPose->SetPose(m_clip);
+    bool IAnimationClipState::Compile(CompileContext& context) {
+        if (!m_clip) {
+            SR_ERROR("IAnimationClipState::Compile() : clip is nullptr!");
+            return false;
         }
+
+        m_channelContexts.clear();
+
+        for (auto&& pChannel : m_clip->GetChannels()) {
+            auto&& channelContext = m_channelContexts.emplace_back();
+
+            if (pChannel->HasBoneIndex()) {
+                if (!context.pSkeleton) {
+                    SR_WARN("IAnimationClipState::Compile() : skeleton is nullptr!");
+                    continue;
+                }
+
+                auto&& pBone = context.pSkeleton->GetBone(pChannel->GetGameObjectName());
+                if (!pBone) {
+                    SR_WARN("IAnimationClipState::Compile() : bone is nullptr!");
+                    continue;
+                }
+
+                if (!pBone->gameObject) {
+                    SR_WARN("IAnimationClipState::Compile() : game object is nullptr!");
+                    continue;
+                }
+
+                channelContext.gameObjectIndex = static_cast<uint16_t>(context.gameObjects.size());
+                context.gameObjects.emplace_back(pBone->gameObject);
+            }
+            else {
+                /// auto&& name = pChannel->GetGameObjectName();
+                SRHalt("Not implemented!");
+            }
+        }
+
+        return Super::Compile(context);
+    }
+
+    void AnimationSetPoseState::OnTransitionBegin(const UpdateContext& context) {
         Super::OnTransitionBegin(context);
     }
 }

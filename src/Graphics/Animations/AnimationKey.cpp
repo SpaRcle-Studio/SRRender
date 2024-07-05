@@ -4,6 +4,7 @@
 
 #include <Graphics/Animations/AnimationKey.h>
 #include <Graphics/Animations/AnimationData.h>
+#include <Graphics/Animations/AnimationGraph.h>
 
 #include <Utils/ECS/GameObject.h>
 #include <Utils/ECS/Transform.h>
@@ -11,15 +12,39 @@
 namespace SR_ANIMATIONS_NS {
     AnimationKey::AnimationKey(AnimationChannel* pChannel)
         : m_channel(pChannel)
-        , m_translation(dynamic_cast<TranslationKey*>(this))
-        , m_rotation(dynamic_cast<RotationKey*>(this))
-        , m_scaling(dynamic_cast<ScalingKey*>(this))
     { }
+
+    void TranslationKey::Update(double_t progress, AnimationKey* pPreviousKey, ChannelUpdateContext& context) noexcept {
+        if (!context.gameObjectIndex.has_value()) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
+        AnimationGameObjectData& data = context.pPose->GetGameObjectData(context.gameObjectIndex.value());
+
+        //AnimationGameObjectData* pData = nullptr;
+        //for (int i = 0; i < context.pGraph->m_gameObjects.size(); ++i) {
+        //    if (context.pGraph->m_gameObjects[i]->GetName() == m_channel->GetGameObjectName()) {
+        //        pData = &context.pGraph->m_testGameObjectsData[i];
+        //        break;
+        //    }
+        //}
+        //if (!pData) {
+        //    return;
+        //}
+        //AnimationGameObjectData& data = *pData;
+
+        if (!pPreviousKey || SR_EQUALS(progress, 1.0)) SR_UNLIKELY_ATTRIBUTE {
+            data.translation = m_delta;
+        }
+        else {
+            data.translation = static_cast<TranslationKey*>(pPreviousKey)->m_delta.Lerp(m_delta, progress);
+        }
+    }
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    void TranslationKey::Update(double_t progress, float_t weight, AnimationKey* pPreviousKey, AnimationData* pData, AnimationData* pStaticData) noexcept {
-        if (!pStaticData->translation.has_value()) {
+     /*void TranslationKey::Update(double_t progress, float_t weight, AnimationKey* pPreviousKey, AnimationData* pData, AnimationData* pStaticData) noexcept {
+       if (!pStaticData->translation.has_value()) {
             return;
         }
 
@@ -34,69 +59,63 @@ namespace SR_ANIMATIONS_NS {
         else {
             pData->translation = pData->translation.value().Lerp(pStaticData->translation.value() + m_delta, weight);
         }
-    }
+    }*/
 
-    void TranslationKey::Set(float_t weight, AnimationData *pData) noexcept {
+    /*void TranslationKey::Set(float_t weight, AnimationData *pData) noexcept {
         if (!pData->translation.has_value()) {
             pData->translation = SR_MATH_NS::FVector3::Zero();
         }
 
         pData->translation = pData->translation.value().Lerp(m_translation, weight);
-    }
+    }*/
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    void RotationKey::Update(double_t progress, float_t weight, AnimationKey* pPreviousKey, AnimationData* pData, AnimationData* pStaticData) noexcept {
-        if (!pStaticData->rotation.has_value()) {
+    void RotationKey::Update(double_t progress, AnimationKey* pPreviousKey, ChannelUpdateContext& context) noexcept {
+        if (!context.gameObjectIndex.has_value()) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
-        if (!pData->rotation.has_value()) {
-            pData->rotation = SR_MATH_NS::Quaternion::Identity();
-        }
+        AnimationGameObjectData& data = context.pPose->GetGameObjectData(context.gameObjectIndex.value());
 
-        if (auto&& pKey = pPreviousKey ? pPreviousKey->GetRotation() : nullptr) {
-            auto&& newValue = (pKey->m_delta * pStaticData->rotation.value()).Slerp(m_delta * pStaticData->rotation.value(), progress);
-            pData->rotation = pData->rotation->Slerp(newValue, weight);
+        if (!pPreviousKey || SR_EQUALS(progress, 1.0)) SR_UNLIKELY_ATTRIBUTE {
+            data.rotation = m_delta;
         }
         else {
-            pData->rotation = pData->rotation.value().Slerp(pStaticData->rotation.value() * m_delta, weight);
+            data.rotation = static_cast<RotationKey*>(pPreviousKey)->m_delta.Slerp(m_delta, progress);
         }
     }
 
-    void RotationKey::Set(float_t weight, AnimationData *pData) noexcept {
-        if (!pData->rotation.has_value()) {
+    /*ivoid RotationKey::Set(float_t weight, AnimationData *pData) noexcept {
+        f (!pData->rotation.has_value()) {
             pData->rotation = SR_MATH_NS::Quaternion::Identity();
         }
 
         pData->rotation = pData->rotation.value().Slerp(m_rotation, weight);
-    }
+    }*/
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    void ScalingKey::Update(double_t progress, float_t weight, AnimationKey* pPreviousKey, AnimationData* pData, AnimationData* pStaticData) noexcept {
-        if (!pStaticData->scale.has_value()) {
+    void ScalingKey::Update(double_t progress, AnimationKey* pPreviousKey, ChannelUpdateContext& context) noexcept {
+        if (!context.gameObjectIndex.has_value()) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
-        if (!pData->scale.has_value()) {
-            pData->scale = SR_MATH_NS::FVector3::One();
-        }
+        AnimationGameObjectData& data = context.pPose->GetGameObjectData(context.gameObjectIndex.value());
 
-        if (auto&& pKey = pPreviousKey ? pPreviousKey->GetScaling() : nullptr) {
-            auto&& newValue = (pKey->m_delta * pStaticData->scale.value()).Lerp(pStaticData->scale.value() * m_delta, progress);
-            pData->scale = pData->scale->Lerp(newValue, weight);
+        if (!pPreviousKey || SR_EQUALS(progress, 1.0)) SR_UNLIKELY_ATTRIBUTE {
+            data.scale = m_delta;
         }
         else {
-            pData->scale = pData->scale.value().Lerp(pStaticData->scale.value() * m_delta, weight);
+            data.scale = static_cast<ScalingKey*>(pPreviousKey)->m_delta.Lerp(m_delta, progress);
         }
     }
 
-    void ScalingKey::Set(float_t weight, AnimationData* pData) noexcept {
+    /*void ScalingKey::Set(float_t weight, AnimationData* pData) noexcept {
         if (!pData->scale.has_value()) {
             pData->scale = SR_MATH_NS::FVector3::One();
         }
 
         pData->scale = pData->scale->Lerp(m_scaling, weight);
-    }
+    }*/
 }

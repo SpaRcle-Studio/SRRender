@@ -15,7 +15,8 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationStateMachine() override;
 
     public:
-        virtual void Update(const UpdateContext& context);
+        virtual void Update(UpdateContext& context);
+        virtual void Compile(CompileContext& context);
 
         SR_NODISCARD AnimationEntryPointState* GetEntryPoint() const;
 

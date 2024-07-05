@@ -6,6 +6,7 @@
 #define SR_ENGINE_ANIMATIONGRAPHNODE_H
 
 #include <Graphics/Animations/AnimationCommon.h>
+#include <Graphics/Animations/AnimationContext.h>
 
 namespace SR_ANIMATIONS_NS {
     class AnimationStateMachine;
@@ -16,11 +17,17 @@ namespace SR_ANIMATIONS_NS {
 
     class AnimationGraphNode : public SR_UTILS_NS::NonCopyable {
     public:
+        /**
+         * @param input - сколько данная нода имеет входных пинов
+         * @param output - сколько данная нода имеет выходных пинов
+         */
         explicit AnimationGraphNode(AnimationGraph* pGraph, uint16_t input, uint16_t output);
+        ~AnimationGraphNode() override;
 
     public:
         SR_NODISCARD virtual AnimationGraphNodeType GetType() const noexcept = 0;
-        virtual void Update(const UpdateContext& context, const AnimationLink& from) = 0;
+        virtual SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) = 0;
+        virtual void Compile(CompileContext& context) { }
 
         SR_NODISCARD uint64_t GetIndex() const;
 
@@ -32,6 +39,7 @@ namespace SR_ANIMATIONS_NS {
 
     protected:
         AnimationGraph* m_graph = nullptr;
+        AnimationPose* m_pose = nullptr;
 
         std::vector<std::optional<AnimationLink>> m_inputPins;
         std::vector<std::optional<AnimationLink>> m_outputPins;
@@ -48,7 +56,7 @@ namespace SR_ANIMATIONS_NS {
         { }
 
     public:
-        void Update(const UpdateContext& context, const AnimationLink& from) override;
+        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
 
         SR_NODISCARD AnimationGraphNodeType GetType() const noexcept override { return AnimationGraphNodeType::Final; }
 
@@ -63,7 +71,8 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationGraphNodeStateMachine() override;
 
     public:
-        void Update(const UpdateContext& context, const AnimationLink& from) override;
+        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
+        void Compile(CompileContext& context) override;
 
         SR_NODISCARD AnimationStateMachine* GetMachine() const noexcept { return m_stateMachine; }
         SR_NODISCARD AnimationGraphNodeType GetType() const noexcept override { return AnimationGraphNodeType::StateMachine; }

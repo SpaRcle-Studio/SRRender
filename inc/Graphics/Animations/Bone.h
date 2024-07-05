@@ -24,7 +24,6 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD Bone* CloneRoot() const noexcept {
             Bone* pRootBone = new Bone();
 
-            pRootBone->hashName = hashName;
             pRootBone->name = name;
             pRootBone->gameObject = gameObject;
             pRootBone->pRoot = pRootBone;
@@ -46,7 +45,6 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD Bone* Clone(Bone* pParentBone) const noexcept {
             Bone* pBone = new Bone();
 
-            pBone->hashName = hashName;
             pBone->name = name;
             pBone->gameObject = gameObject;
             pBone->pParent = pParentBone;
@@ -63,8 +61,7 @@ namespace SR_ANIMATIONS_NS {
         }
 
     public:
-        uint64_t hashName = 0;
-        std::string name;
+        SR_UTILS_NS::StringAtom name;
         SR_WORLD_NS::Scene* pScene = nullptr;
         SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::GameObject> gameObject;
         std::vector<Bone*> bones;
