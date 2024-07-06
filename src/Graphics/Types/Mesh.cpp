@@ -71,8 +71,7 @@ namespace SR_GTYPES_NS {
         return pMesh;
     }
 
-    void Mesh::SetMatrix(const SR_MATH_NS::Matrix4x4& matrix4X4) {
-        m_modelMatrix = matrix4X4;
+    void Mesh::SetMatrix(const SR_MATH_NS::Matrix4x4& /* matrix */) {
         MarkUniformsDirty();
     }
 

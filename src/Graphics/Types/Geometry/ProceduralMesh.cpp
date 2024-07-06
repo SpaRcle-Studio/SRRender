@@ -138,7 +138,7 @@ namespace SR_GTYPES_NS {
 
     void ProceduralMesh::UseModelMatrix() {
         Mesh::UseModelMatrix();
-        GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, m_modelMatrix);
+        GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
     }
 
     SR_UTILS_NS::Component* ProceduralMesh::CopyComponent() const {

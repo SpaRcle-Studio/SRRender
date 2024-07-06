@@ -74,6 +74,8 @@ namespace SR_GTYPES_NS {
     }
 
     void SkinnedMesh::Update(float dt) {
+        SR_TRACY_ZONE;
+
         const bool usable = IsSkeletonUsable();
 
         if (m_skeletonIsBroken && !usable) {
@@ -115,7 +117,7 @@ namespace SR_GTYPES_NS {
         auto&& pShader = GetRenderContext()->GetCurrentShader();
         SRAssert(pShader);
 
-        pShader->SetMat4(SHADER_MODEL_MATRIX, m_modelMatrix);
+        pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
 
         auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>();
         auto&& pRenderScene = GetRenderScene();

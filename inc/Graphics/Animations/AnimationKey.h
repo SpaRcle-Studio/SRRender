@@ -89,6 +89,9 @@ namespace SR_ANIMATIONS_NS {
         void SR_FASTCALL Update(float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation) const noexcept;
         void SR_FASTCALL Set(AnimationGameObjectData& animation) const noexcept;
 
+        void SR_FASTCALL Update(float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t toreance) const noexcept;
+        void SR_FASTCALL Set(AnimationGameObjectData& animation, float_t toreance) const noexcept;
+
         template<class T> void SetData(T data) {
             if constexpr (std::is_same_v<T, TranslationKey>) {
                 this->data.translation = data;

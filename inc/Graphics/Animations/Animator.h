@@ -48,6 +48,7 @@ namespace SR_ANIMATIONS_NS {
         SR_UTILS_NS::Path m_clipPath;
         uint32_t m_clipIndex = 0;
         uint32_t m_frameRate = 1;
+        float_t m_tolerance = 0.001f;
 
         bool m_sync = false;
 

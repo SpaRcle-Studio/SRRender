@@ -27,6 +27,7 @@ namespace SR_ANIMATIONS_NS {
             });
 
         GetComponentProperties().AddStandardProperty("Frame rate", &m_frameRate);
+        GetComponentProperties().AddStandardProperty("Tolerance", &m_tolerance);
 
         GetComponentProperties().AddStandardProperty("Sync", &m_sync);
 
@@ -70,6 +71,7 @@ namespace SR_ANIMATIONS_NS {
         if (m_graph) {
             UpdateContext context;
 
+            context.tolerance = m_tolerance;
             context.frameRate = SR_MAX(1, m_frameRate);
             context.now = SR_HTYPES_NS::Time::Instance().Now();
             context.weight = 1.f;

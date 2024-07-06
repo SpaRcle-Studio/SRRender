@@ -335,6 +335,8 @@ namespace SR_ANIMATIONS_NS {
             return m_matrices;
         }
 
+        SR_TRACY_ZONE;
+
         m_matrices.resize(m_optimizedBones.size());
 
         for (auto&& [hashName, index] : m_optimizedBones) {

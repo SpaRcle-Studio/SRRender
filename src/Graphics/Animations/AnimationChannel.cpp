@@ -27,7 +27,7 @@ namespace SR_ANIMATIONS_NS {
 
         if (time > key.time) SR_UNLIKELY_ATTRIBUTE {
             if (context.fpsCompensation) SR_UNLIKELY_ATTRIBUTE {
-                key.Set(data);
+                key.Set(data, context.tolerance);
             }
 
             keyIndex += context.frameRate;
@@ -36,7 +36,7 @@ namespace SR_ANIMATIONS_NS {
         }
 
         if (keyIndex == 0) SR_UNLIKELY_ATTRIBUTE {
-            key.Set(data);
+            key.Set(data, context.tolerance);
         }
         else {
             auto&& prevKey = m_keys[keyIndex - 1];
@@ -45,7 +45,7 @@ namespace SR_ANIMATIONS_NS {
             const float_t keyCurrTime = key.time - prevKey.time;
             const float_t progress = currentTime / keyCurrTime;
 
-            key.Update(progress, prevKey, data);
+            key.Update(progress, prevKey, data, context.tolerance);
         }
 
         return keyIndex;

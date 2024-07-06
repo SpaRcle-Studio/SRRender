@@ -37,6 +37,7 @@ namespace SR_ANIMATIONS_NS {
         uint16_t frameRate = 1;
         AnimationPose* pPose = nullptr;
         AnimationGraph* pGraph = nullptr;
+        float_t tolerance = 0.001f;
 
     };
 
