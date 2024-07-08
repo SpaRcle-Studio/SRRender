@@ -6,9 +6,8 @@
 #include <Graphics/Animations/AnimationPose.h>
 
 namespace SR_ANIMATIONS_NS {
-    AnimationGraphNode::AnimationGraphNode(AnimationGraph* pGraph, uint16_t input, uint16_t output)
-        : m_graph(pGraph)
-        , m_pose(new AnimationPose())
+    AnimationGraphNode::AnimationGraphNode(uint16_t input, uint16_t output)
+        : m_pose(new AnimationPose())
     {
         m_inputPins.resize(input);
         m_outputPins.resize(output);
@@ -18,28 +17,41 @@ namespace SR_ANIMATIONS_NS {
         SR_SAFE_DELETE_PTR(m_pose);
     }
 
-    void AnimationGraphNode::AddInput(AnimationGraphNode* pNode, uint16_t sourcePinIndex, uint16_t targetPinIndex) {
+    AnimationGraphNode* AnimationGraphNode::Load(const SR_XML_NS::Node& nodeXml) {
+        SR_TRACY_ZONE;
+
+        auto&& type = nodeXml.GetAttribute("Type").ToString();
+        if (type == "StateMachine") {
+            return AnimationGraphNodeStateMachine::Load(nodeXml);
+        }
+
+        SR_ERROR("AnimationGraphNode::Load() : unknown type \"{}\"!", type);
+
+        return nullptr;
+    }
+
+    uint64_t AnimationGraphNode::GetIndex() const {
+        return m_graph->GetNodeIndex(this);
+    }
+
+    void AnimationGraphNode::ConnectTo(AnimationGraphNode* pNode, uint16_t fromPinIndex, uint16_t toPinIndex) {
         if (!pNode) {
             SRHalt("Invalid node!");
             return;
         }
 
-        if (sourcePinIndex >= m_inputPins.size()) {
+        if (fromPinIndex >= m_outputPins.size()) {
             SRHalt("Out of range!");
             return;
         }
 
-        if (targetPinIndex >= pNode->m_outputPins.size()) {
+        if (toPinIndex >= pNode->m_inputPins.size()) {
             SRHalt("Out of range!");
             return;
         }
 
-        m_inputPins[sourcePinIndex] = AnimationLink(pNode->GetIndex(), targetPinIndex);
-        pNode->m_outputPins[targetPinIndex] = AnimationLink(GetIndex(), sourcePinIndex);
-    }
-
-    uint64_t AnimationGraphNode::GetIndex() const {
-        return m_graph->GetNodeIndex(this);
+        m_outputPins[fromPinIndex] = AnimationLink(pNode->GetIndex(), toPinIndex);
+        pNode->m_inputPins[toPinIndex] = AnimationLink(GetIndex(), fromPinIndex);
     }
 
     /// ----------------------------------------------------------------------------------------------------------------
@@ -81,12 +93,27 @@ namespace SR_ANIMATIONS_NS {
         Super::Compile(context);
     }
 
-    AnimationGraphNodeStateMachine::AnimationGraphNodeStateMachine(AnimationGraph *pGraph)
-        : Super(pGraph, 0, 1)
-        , m_stateMachine(new AnimationStateMachine(dynamic_cast<IAnimationDataSet*>(pGraph)))
-    { }
-
     AnimationGraphNodeStateMachine::~AnimationGraphNodeStateMachine() {
         SR_SAFE_DELETE_PTR(m_stateMachine);
+    }
+
+    AnimationGraphNodeStateMachine* AnimationGraphNodeStateMachine::Load(const SR_XML_NS::Node& nodeXml) {
+        auto&& pStateMachine = AnimationStateMachine::Load(nodeXml);
+        if (!pStateMachine) {
+            SR_ERROR("AnimationGraphNodeStateMachine::Load() : failed to load state machine!");
+            return nullptr;
+        }
+
+        auto&& pNode = new AnimationGraphNodeStateMachine();
+        pNode->SetStateMachine(pStateMachine);
+        return pNode;
+    }
+
+    void AnimationGraphNodeStateMachine::SetStateMachine(AnimationStateMachine* pMachine) {
+        SR_SAFE_DELETE_PTR(m_stateMachine);
+        m_stateMachine = pMachine;
+        if (m_stateMachine) {
+            m_stateMachine->SetNode(this);
+        }
     }
 }

@@ -13,24 +13,27 @@ namespace SR_ANIMATIONS_NS {
     class AnimationStateMachine;
 
     class AnimationState : public SR_UTILS_NS::NonCopyable {
-    public:
         using Super = SR_UTILS_NS::NonCopyable;
         using Transitions = std::vector<AnimationStateTransition*>;
     public:
-        explicit AnimationState(AnimationStateMachine* pMachine)
+        explicit AnimationState()
             : Super()
-            , m_machine(pMachine)
         { }
 
         ~AnimationState() override;
 
     public:
+        SR_NODISCARD static AnimationState* Load(const SR_XML_NS::Node& nodeXml);
+
         SR_NODISCARD AnimationStateMachine* GetMachine() const noexcept { return m_machine; }
 
-        SR_NODISCARD SR_UTILS_NS::TimePointType GetStart() const noexcept { return m_startPoint; }
-        SR_NODISCARD SR_UTILS_NS::TimePointType GetEnd() const noexcept { return m_endPoint; }
+        SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetName() const noexcept = 0;
+        SR_NODISCARD virtual float_t GetProgress() const noexcept { return 1.f; }
+
         SR_NODISCARD Transitions& GetTransitions() noexcept { return m_transitions; }
         SR_NODISCARD const Transitions& GetTransitions() const noexcept { return m_transitions; }
+
+        void SetMachine(AnimationStateMachine* pMachine) { m_machine = pMachine; }
 
         virtual void OnTransitionBegin(const UpdateContext& context) { }
         virtual void OnTransitionEnd(const UpdateContext& context) { }
@@ -38,84 +41,51 @@ namespace SR_ANIMATIONS_NS {
         virtual bool Compile(CompileContext& context) { return true; }
 
         template<class T = AnimationStateTransition, typename ...Args> T* AddTransition(Args&& ...args) {
-            auto&& pTransition = new T(this, std::forward<Args>(args)...);
+            return AddTransition(new T(this, std::forward<Args>(args)...));
+        }
+
+        template<class T> T* AddTransition(T* pTransition) {
             m_transitions.emplace_back(dynamic_cast<AnimationStateTransition*>(pTransition));
             return pTransition;
         }
 
     protected:
         Transitions m_transitions;
-
-        SR_UTILS_NS::TimePointType m_startPoint;
-        SR_UTILS_NS::TimePointType m_endPoint;
-
         AnimationStateMachine* m_machine = nullptr;
 
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class IAnimationClipState : public AnimationState {
+    class AnimationClipState : public AnimationState {
         using Super = AnimationState;
     public:
-        explicit IAnimationClipState(AnimationStateMachine* pMachine, AnimationClip* pClip);
+        ~AnimationClipState() override;
 
-        ~IAnimationClipState() override;
+        SR_NODISCARD static AnimationClipState* Load(const SR_XML_NS::Node& nodeXml);
 
-    public:
-        void SetClip(AnimationClip* pClip);
+        void Update(UpdateContext& context) override;
         bool Compile(CompileContext& context) override;
+        void SetClip(AnimationClip* pClip);
+
+        SR_NODISCARD float_t GetProgress() const noexcept override;
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const noexcept override;
 
     protected:
         std::vector<ChannelUpdateContext> m_channelContexts;
         AnimationClip* m_clip = nullptr;
         uint32_t m_maxKeyFrame = 0;
-
-    };
-
-    /// ----------------------------------------------------------------------------------------------------------------
-
-    class AnimationClipState : public IAnimationClipState {
-        using Super = IAnimationClipState;
-    public:
-        explicit AnimationClipState(AnimationStateMachine* pMachine, AnimationClip* pClip)
-            : Super(pMachine, pClip)
-        { }
-
-    public:
-        void Update(UpdateContext& context) override;
-        bool Compile(CompileContext& context) override;
-
-    protected:
-        std::vector<uint32_t> m_channelPlayState;
+        float_t m_duration = 0.f;
         float_t m_time = 0.f;
-
-    };
-
-    /// ----------------------------------------------------------------------------------------------------------------
-
-    class AnimationSetPoseState : public IAnimationClipState {
-        using Super = IAnimationClipState;
-    public:
-        explicit AnimationSetPoseState(AnimationStateMachine* pMachine, AnimationClip* pClip)
-            : Super(pMachine, pClip)
-        { }
-
-    public:
-        void OnTransitionBegin(const UpdateContext& context) override;
-
+        std::vector<uint32_t> m_channelPlayState;
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
     class AnimationEntryPointState : public AnimationState {
-    public:
         using Super = AnimationState;
-        using Ptr = std::shared_ptr<AnimationEntryPointState>;
     public:
-        explicit AnimationEntryPointState(AnimationStateMachine* pMachine)
-            : Super(pMachine)
-        { }
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const noexcept override { return "SR_ENGINE_ENTRY_POINT"; }
 
     };
 }

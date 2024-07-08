@@ -16,6 +16,8 @@ namespace SR_ANIMATIONS_NS {
         using Super = SR_UTILS_NS::NonCopyable;
 
     public:
+        SR_NODISCARD static AnimationStateTransition* Load(AnimationState* pSource, AnimationState* pDestination, const SR_XML_NS::Node& nodeXml);
+
         AnimationStateTransition(AnimationState* pSource, AnimationState* pDestination, AnimationStateCondition* pCondition);
         AnimationStateTransition(AnimationState* pSource, AnimationState* pDestination);
 
@@ -28,10 +30,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationState* GetDestination() const noexcept { return m_destinationState; }
 
     protected:
-        AnimationStateMachine* m_machine = nullptr;
-
         AnimationStateCondition* m_condition = nullptr;
-
         AnimationState* m_sourceState = nullptr;
         AnimationState* m_destinationState = nullptr;
 

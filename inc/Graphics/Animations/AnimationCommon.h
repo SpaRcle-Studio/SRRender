@@ -90,6 +90,10 @@ namespace SR_ANIMATIONS_NS {
 
         virtual ~IAnimationDataSet() = default;
 
+        void SetAnimationDataSetParent(IAnimationDataSet* pParent) {
+            m_parent = pParent;
+        }
+
     protected:
         using Hash = uint64_t;
 

@@ -22,7 +22,7 @@ namespace SR_ANIMATIONS_NS {
         m_channels.clear();
     }
 
-    AnimationClip* AnimationClip::Load(const SR_UTILS_NS::Path &rawPath, uint32_t index) {
+    AnimationClip* AnimationClip::Load(const SR_UTILS_NS::Path &rawPath, SR_UTILS_NS::StringAtom name) {
         SR_GLOBAL_LOCK
 
         auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
@@ -36,7 +36,8 @@ namespace SR_ANIMATIONS_NS {
         AnimationClip* pAnimationClip = nullptr;
 
         resourceManager.Execute([&]() {
-            auto&& resourceId = path.GetExtensionView() == "animation" ? path.ToString() : std::to_string(index) + "|" + path.ToString();
+            auto&& resourceId = path.GetExtensionView() == "animation" ? path.ToString() :
+                name.ToStringRef() + SR_UTILS_NS::RESOURCE_ID_SEPARATOR.ToStringRef() + path.ToString();
 
             if (auto&& pResource = SR_UTILS_NS::ResourceManager::Instance().Find<AnimationClip>(path)) {
                 pAnimationClip = pResource;
@@ -48,8 +49,7 @@ namespace SR_ANIMATIONS_NS {
 
             if (!pAnimationClip->Reload()) {
                 SR_ERROR("AnimationClip::Load() : failed to load animation clip! \n\tPath: " + path.ToString());
-                pAnimationClip->StopWatch();
-                delete pAnimationClip;
+                pAnimationClip->DeleteResource();
                 pAnimationClip = nullptr;
                 return;
             }
@@ -72,8 +72,9 @@ namespace SR_ANIMATIONS_NS {
             return animations;
         }
 
-        for (uint32_t i = 0; i < pRawMesh->GetAnimationsCount(); ++i) {
-            auto&& pAnimationClip = Load(rawPath, i);
+        auto&& animationNames = pRawMesh->GetAnimationNames();
+        for (auto&& name : animationNames) {
+            auto&& pAnimationClip = Load(rawPath, name);
             animations.emplace_back(pAnimationClip);
         }
 
@@ -84,17 +85,30 @@ namespace SR_ANIMATIONS_NS {
         return animations;
     }
 
-    void AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index) {
-        auto&& pAnimation = pRawMesh->GetAssimpScene()->mAnimations[index];
+    bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, const std::string& name) {
+        const aiAnimation* pAnimation = nullptr;
 
-        for (uint16_t channelIndex = 0; channelIndex < pAnimation->mNumChannels; ++channelIndex) {
+        for (uint32_t i = 0; i < pRawMesh->GetAssimpScene()->mNumAnimations; ++i) {
+            if (pRawMesh->GetAssimpScene()->mAnimations[i]->mName.C_Str() == name) {
+                pAnimation = pRawMesh->GetAssimpScene()->mAnimations[i];
+                break;
+            }
+        }
+
+        if (!pAnimation) {
+            return false;
+        }
+
+        for (uint32_t channelIndex = 0; channelIndex < pAnimation->mNumChannels; ++channelIndex) {
             AnimationChannel::Load(
                 pRawMesh,
                 pAnimation->mChannels[channelIndex],
-                pAnimation->mTicksPerSecond,
+                static_cast<float_t>(pAnimation->mTicksPerSecond),
                 m_channels
             );
         }
+
+        return true;
     }
 
     bool AnimationClip::Unload() {
@@ -103,18 +117,25 @@ namespace SR_ANIMATIONS_NS {
         }
         m_channels.clear();
 
+        m_maxKeyFrame = 0;
+        m_duration = 0.f;
+
         return Super::Unload();
     }
 
     bool AnimationClip::Load() {
+        SR_TRACY_ZONE;
+
         auto&& resourceId = GetResourceId();
 
         if (SR_UTILS_NS::StringUtils::GetExtensionFromFilePath(resourceId) == "animation") {
             SRHalt("TODO!");
         }
         else {
-            auto&& [strIndex, rawPath] = SR_UTILS_NS::StringUtils::SplitTwo(resourceId, "|");
-            uint32_t index = SR_UTILS_NS::LexicalCast<uint32_t>(strIndex);
+            auto&& [animationName, rawPath] = SR_UTILS_NS::StringUtils::SplitTwo(
+                resourceId,
+                SR_UTILS_NS::RESOURCE_ID_SEPARATOR.ToStringRef()
+            );
 
             SR_HTYPES_NS::RawMeshParams params;
             params.animation = true;
@@ -124,18 +145,48 @@ namespace SR_ANIMATIONS_NS {
                 return false;
             }
 
-            if (index >= pRawMesh->GetAssimpScene()->mNumAnimations) {
-                SR_ERROR("AnimationClip::Load() : wrong animation index!\n\tTotal animations: {}", pRawMesh->GetAssimpScene()->mNumAnimations);
+            if (!LoadChannels(pRawMesh, animationName)) {
+                std::string animations;
+                for (uint32_t i = 0; i < pRawMesh->GetAssimpScene()->mNumAnimations; ++i) {
+                    animations += pRawMesh->GetAssimpScene()->mAnimations[i]->mName.C_Str();
+                    if (i < pRawMesh->GetAssimpScene()->mNumAnimations - 1) {
+                        animations += ", ";
+                    }
+                }
+                SR_ERROR("AnimationClip::Load() : wrong animation name \"{}\"!\n\tTotal animations: {}", animationName, animations);
                 return false;
             }
+        }
 
-            LoadChannels(pRawMesh, index);
+        for (auto&& pChannel : GetChannels()) {
+            m_maxKeyFrame = SR_MAX(m_maxKeyFrame, pChannel->GetKeys().size());
+            for (auto&& key : pChannel->GetKeys()) {
+                m_duration = SR_MAX(m_duration, key.time);
+            }
         }
 
         return Super::Load();
     }
 
     SR_UTILS_NS::Path AnimationClip::InitializeResourcePath() const {
-        return SR_UTILS_NS::Path(std::move(SR_UTILS_NS::StringUtils::SubstringView(GetResourceId(), '|', 1)));
+        return SR_UTILS_NS::Path(SR_UTILS_NS::StringUtils::SubstringView(
+            GetResourceId(),
+            SR_UTILS_NS::RESOURCE_ID_SEPARATOR,
+            SR_UTILS_NS::RESOURCE_ID_SEPARATOR.size()
+        ));
+    }
+
+    SR_UTILS_NS::StringAtom AnimationClip::GetClipName() const noexcept {
+        auto&& resourceId = GetResourceId();
+        if (resourceId.empty()) {
+            SR_ERROR("AnimationClip::GetClipName() : resource id is empty!");
+            return SR_UTILS_NS::StringAtom();
+        }
+
+        auto&& [animationName, rawPath] = SR_UTILS_NS::StringUtils::SplitTwo(
+            resourceId,
+            SR_UTILS_NS::RESOURCE_ID_SEPARATOR.ToStringRef()
+        );
+        return animationName;
     }
 }

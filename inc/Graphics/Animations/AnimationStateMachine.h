@@ -8,25 +8,39 @@
 #include <Graphics/Animations/AnimationState.h>
 
 namespace SR_ANIMATIONS_NS {
+    class AnimationGraph;
+
     class AnimationStateMachine : public IAnimationDataSet, public SR_UTILS_NS::NonCopyable {
         using Super = IAnimationDataSet;
     public:
-        explicit AnimationStateMachine(IAnimationDataSet* pParent);
+        AnimationStateMachine();
         ~AnimationStateMachine() override;
 
     public:
+        SR_NODISCARD static AnimationStateMachine* Load(const SR_XML_NS::Node& nodeXml);
+
         virtual void Update(UpdateContext& context);
         virtual void Compile(CompileContext& context);
 
         SR_NODISCARD AnimationEntryPointState* GetEntryPoint() const;
+        SR_NODISCARD AnimationState* FindState(SR_UTILS_NS::StringAtom name) const;
 
-        template<class T, typename... Args> T* AddState(Args&& ...args) {
-            auto&& pState = new T(this, std::forward<Args>(args)...);
+        template<class T, typename... Args> T* CreateState(Args&& ...args) {
+            return AddState(new T(std::forward<Args>(args)...));
+        }
+
+        template<class T> T* AddState(T* pState) {
+            SR_STATIC_ASSERT2((std::is_base_of_v<AnimationState, T>), "T must be derived from AnimationState");
             m_states.emplace_back(dynamic_cast<AnimationState*>(pState));
+            pState->SetMachine(this);
             return pState;
         }
 
+        void SetNode(AnimationGraphNode* pNode) { m_node = pNode; }
+
     private:
+        AnimationGraphNode* m_node = nullptr;
+
         /// первый стейт это всегда EntryPoint
         std::vector<AnimationState*> m_states;
 

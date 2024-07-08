@@ -34,19 +34,14 @@ namespace SR_ANIMATIONS_NS {
 
         void Start() override;
 
-        void SetClipPath(const SR_UTILS_NS::Path& path);
-        void SetClipIndex(uint32_t index);
+        void SetGraph(const SR_UTILS_NS::Path& path);
 
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<Skeleton>& GetSkeleton() noexcept { return m_skeleton; }
 
     private:
         void UpdateInternal(float_t dt);
 
-        void ReloadClip();
-
     private:
-        SR_UTILS_NS::Path m_clipPath;
-        uint32_t m_clipIndex = 0;
         uint32_t m_frameRate = 1;
         float_t m_tolerance = 0.001f;
 

@@ -14,13 +14,85 @@ namespace SR_ANIMATIONS_NS {
         , m_pAnimator(pAnimator)
     {
         SRAssert2(m_pAnimator, "Invalid animator!");
-        AddNode<AnimationGraphNodeFinal>();
+        CreateNode<AnimationGraphNodeFinal>();
     }
 
     AnimationGraph::~AnimationGraph() {
         for (auto&& pNode : m_nodes) {
             delete pNode;
         }
+    }
+
+    AnimationGraph* AnimationGraph::Load(Animator* pAnimator, const SR_UTILS_NS::Path& path) {
+        SR_TRACY_ZONE;
+
+        if (!path.Exists(SR_UTILS_NS::Path::Type::File)) {
+            SR_ERROR("AnimationGraph::Load() : animation graph \"{}\" isn't exists!", path.ToStringRef());
+            return nullptr;
+        }
+
+        auto&& xmlDocument = SR_XML_NS::Document::Load(path);
+        if (!xmlDocument) {
+            SR_ERROR("AnimationGraph::Load() : failed to open xml document \"{}\"!", path.ToStringRef());
+            return nullptr;
+        }
+
+        auto&& rootXml = xmlDocument.Root().GetNode("Animator");
+        if (!rootXml) {
+            SR_ERROR("AnimationGraph::Load() : failed to find root node \"Animator\" in xml document \"{}\"!", path.ToStringRef());
+            return nullptr;
+        }
+
+        auto&& pAnimationGraph = new AnimationGraph(pAnimator);
+        pAnimationGraph->m_path = path;
+
+        std::vector<uint32_t> errorNodes;
+
+        for (auto&& nodeXml : rootXml.GetNodes("Node")) {
+            if (auto&& pNode = AnimationGraphNode::Load(nodeXml)) {
+                pAnimationGraph->AddNode(pNode);
+            }
+            else {
+                errorNodes.emplace_back(pAnimationGraph->GetNodesCount());
+                SR_ERROR("AnimationGraph::Load() : failed to load node \"{}\"!", nodeXml.GetAttribute("Type").ToString());
+            }
+        }
+
+        auto&& fixNodeIndex = [&errorNodes](uint32_t index) {
+            for (auto&& errorIndex : errorNodes) {
+                if (errorIndex > index) {
+                    --index;
+                }
+            }
+            return index;
+        };
+
+        for (auto&& transitionXml : rootXml.GetNodes("Connection")) {
+            auto&& fromNodeIndex = fixNodeIndex(transitionXml.GetAttribute("FromNode").ToUInt());
+            auto&& toNodeIndex = fixNodeIndex(transitionXml.GetAttribute("ToNode").ToUInt());
+            auto&& pFromNode = pAnimationGraph->GetNode(fromNodeIndex);
+            auto&& pToNode = pAnimationGraph->GetNode(toNodeIndex);
+
+            if (!pFromNode || !pToNode) {
+                SR_ERROR("AnimationGraph::Load() : failed to find node! From: {}, to: {}",
+                    pFromNode ? "ok" : "fail", pToNode ? "ok" : "fail");
+                continue;
+            }
+
+            auto&& fromPinIndex = transitionXml.GetAttribute("FromPin").ToUInt();
+            auto&& toPinIndex = transitionXml.GetAttribute("ToPin").ToUInt();
+
+            if (fromPinIndex >= pFromNode->GetOutputCount() || toPinIndex >= pToNode->GetInputCount()) {
+                SR_ERROR("AnimationGraph::Load() : pins out of range! From: {}, to: {}",
+                    fromPinIndex >= pFromNode->GetOutputCount() ? "ok" : "fail",
+                    toPinIndex >= pToNode->GetInputCount() ? "ok" : "fail");
+                continue;
+            }
+
+            pFromNode->ConnectTo(pToNode, fromPinIndex, toPinIndex);
+        }
+
+        return pAnimationGraph;
     }
 
     uint64_t AnimationGraph::GetNodeIndex(const AnimationGraphNode* pNode) const {
@@ -97,20 +169,6 @@ namespace SR_ANIMATIONS_NS {
         for (auto&& pNode : m_nodes) {
             pNode->Compile(compileContext);
         }
-
-        for (auto&& pGameObject : m_gameObjects) {
-            auto&& pTransform = pGameObject->GetTransform();
-            if (!pTransform) {
-                continue;
-            }
-
-            AnimationGameObjectData& data = m_sourceGameObjectsData.emplace_back();
-            data.translation = pTransform->GetTranslation();
-            data.rotation = pTransform->GetQuaternion();
-            data.scaling = pTransform->GetScale();
-        }
-
-        m_testGameObjectsData.resize(m_sourceGameObjectsData.size());
 
         SR_DEBUG_LOG(SR_FORMAT("AnimationGraph::Compile() : game objects count = {}", m_gameObjects.size()));
 

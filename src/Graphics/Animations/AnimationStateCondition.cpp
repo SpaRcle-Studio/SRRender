@@ -22,6 +22,56 @@ namespace SR_ANIMATIONS_NS {
         Super::Reset();
     }
 
+    AnimationStateCondition* AnimationStateCondition::Load(const SR_XML_NS::Node& nodeXml) {
+        SR_TRACY_ZONE;
+
+        auto&& type = nodeXml.GetAttribute("Type").ToString();
+        if (type == "True") {
+            return new AnimationStateConditionTrue();
+        }
+
+        /*if (type == "And") {
+            auto&& pCondition = new AnimationStateConditionAnd();
+            for (auto&& node : nodeXml.GetChildren()) {
+                if (auto&& pChild = Load(node)) {
+                    pCondition->m_conditions.push_back(pChild);
+                }
+            }
+
+            return pCondition;
+        }
+
+        if (type == "Or") {
+            auto&& pCondition = new AnimationStateConditionOr();
+            for (auto&& node : nodeXml.GetChildren()) {
+                if (auto&& pChild = Load(node)) {
+                    pCondition->m_conditions.push_back(pChild);
+                }
+            }
+
+            return pCondition;
+        }
+
+        if (type == "Not") {
+            auto&& pCondition = new AnimationStateConditionNot();
+            for (auto&& node : nodeXml.GetChildren()) {
+                if (auto&& pChild = Load(node)) {
+                    pCondition->m_condition = pChild;
+                }
+            }
+
+            return pCondition;
+        }*/
+
+        if (type == "ExitTime") {
+            return AnimationStateConditionExitTime::Load(nodeXml);
+        }
+
+        SR_ERROR("AnimationStateCondition::Load() : unknown type \"{}\"!", type);
+
+        return nullptr;
+    }
+
     AnimationStateConditionAnd::~AnimationStateConditionAnd() {
         for (auto&& pCondition : m_conditions) {
             delete pCondition;
@@ -105,9 +155,25 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
+    AnimationStateConditionExitTime* AnimationStateConditionExitTime::Load(const SR_XML_NS::Node& nodeXml) {
+        SR_TRACY_ZONE;
+
+        auto&& pCondition = new AnimationStateConditionExitTime();
+
+        pCondition->m_exitTime = nodeXml.GetAttribute("ExitTime").ToFloat();
+        pCondition->m_hasExitTime = nodeXml.GetAttribute("HasExitTime").ToBool();
+        pCondition->m_duration = nodeXml.GetAttribute("Duration").ToFloat();
+
+        return pCondition;
+    }
+
     bool AnimationStateConditionExitTime::IsSuitable(const StateConditionContext& context) const noexcept {
         if (!context.pState) {
             return false;
+        }
+
+        if (m_hasExitTime) {
+            return context.pState->GetProgress() >= m_exitTime;
         }
 
         return false;
@@ -118,6 +184,6 @@ namespace SR_ANIMATIONS_NS {
             return false;
         }
 
-        return false;
+        return context.pState->GetProgress() >= m_exitTime + m_duration;
     }
 }
