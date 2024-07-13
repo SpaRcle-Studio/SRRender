@@ -86,6 +86,9 @@ namespace SR_ANIMATIONS_NS {
             return *this;
         }
 
+        void SR_FASTCALL UpdateWithWeight(float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t weight) const noexcept;
+        void SR_FASTCALL SetWithWeight(AnimationGameObjectData& animation, float_t weight) const noexcept;
+
         void SR_FASTCALL Update(float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation) const noexcept;
         void SR_FASTCALL Set(AnimationGameObjectData& animation) const noexcept;
 

@@ -24,36 +24,33 @@ namespace SR_ANIMATIONS_NS {
         auto&& pStateMachine = new AnimationStateMachine();
 
         for (auto&& stateXml : nodeXml.GetNodes("State")) {
-            auto&& type = nodeXml.GetAttribute("Type").ToString();
+            auto&& type = stateXml.GetAttribute("Type").ToString();
 
             if (auto&& pState = AnimationState::Load(stateXml)) {
                 pStateMachine->AddState(pState);
             }
             else {
                 SR_ERROR("AnimationStateMachine::Load() : failed to load state \"{}\"!", type);
+                pStateMachine->AddState(new AnimationNoneState());
             }
         }
 
         for (auto&& transitionXml : nodeXml.GetNodes("Transition")) {
-            auto&& from = transitionXml.GetAttribute("From").ToString();
-            auto&& to = transitionXml.GetAttribute("To").ToString();
-            if (from.empty() || to.empty()) {
-                SR_ERROR("AnimationStateMachine::Load() : invalid transition!");
-                continue;
-            }
+            auto&& from = transitionXml.GetAttribute("From").ToUInt();
+            auto&& to = transitionXml.GetAttribute("To").ToUInt();
 
             if (from == to) {
                 SR_ERROR("AnimationStateMachine::Load() : cycle transition detected! \"{}\"", from);
                 continue;
             }
 
-            auto&& pFromState = pStateMachine->FindState(from);
+            auto&& pFromState = pStateMachine->GetState(from);
             if (!pFromState) {
                 SR_ERROR("AnimationStateMachine::Load() : state \"{}\" not found!", from);
                 continue;
             }
 
-            auto&& pToState = pStateMachine->FindState(to);
+            auto&& pToState = pStateMachine->GetState(to);
             if (!pToState) {
                 SR_ERROR("AnimationStateMachine::Load() : state \"{}\" not found!", to);
                 continue;
@@ -77,15 +74,17 @@ namespace SR_ANIMATIONS_NS {
         for (auto pIt = m_activeStates.begin(); pIt != m_activeStates.end(); ) {
             AnimationState* pState = *pIt;
 
-            pState->Update(context);
-
             StateConditionContext stateConditionContext;
             stateConditionContext.pState = pState;
             stateConditionContext.pMachine = this;
+            stateConditionContext.dt = context.dt;
 
             bool changed = false;
+            bool hasActiveTransitions = false;
 
             for (auto&& pTransition : pState->GetTransitions()) {
+                pTransition->Update(stateConditionContext);
+
                 if (!pTransition->IsSuitable(stateConditionContext)) {
                     continue;
                 }
@@ -95,10 +94,26 @@ namespace SR_ANIMATIONS_NS {
                     continue;
                 }
 
-                pDestinationState->OnTransitionBegin(context);
+                if (!pTransition->IsActive()) {
+                    pTransition->OnTransitionBegin(stateConditionContext);
+                }
+
+                hasActiveTransitions = true;
+
+                const float_t progress = pTransition->GetProgress();
+
+                UpdateContext transitionFromContext = context;
+                transitionFromContext.weight = 1.f - SR_CLAMP(progress, 0.f, 1.f);
+                pState->Update(transitionFromContext);
+
+                UpdateContext transitionToContext = context;
+                transitionToContext.weight = SR_CLAMP(progress, 0.f, 1.f);
+                pDestinationState->Update(transitionToContext);
 
                 if (pTransition->IsFinished(stateConditionContext)) {
-                    pDestinationState->OnTransitionEnd(context);
+                    SR_DEBUG_LOG("Transition from \"{}\" to \"{}\" finished!", pState->GetName().c_str(), pDestinationState->GetName().c_str());
+
+                    pState->OnTransitionDone();
 
                     if (m_activeStates.count(pState) == 1) {
                         pIt = m_activeStates.erase(pIt);
@@ -108,6 +123,10 @@ namespace SR_ANIMATIONS_NS {
 
                     changed = true;
                 }
+            }
+
+            if (!hasActiveTransitions) {
+                pState->Update(context);
             }
 
             if (!changed) {
@@ -145,5 +164,14 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return nullptr;
+    }
+
+    AnimationState* AnimationStateMachine::GetState(uint32_t index) const {
+        if (index >= m_states.size()) {
+            SRHalt("Index out of range!");
+            return nullptr;
+        }
+
+        return m_states[index];
     }
 }

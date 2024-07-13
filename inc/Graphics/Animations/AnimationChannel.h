@@ -51,6 +51,7 @@ namespace SR_ANIMATIONS_NS {
         }
 
         SR_NODISCARD uint32_t UpdateChannel(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const;
+        SR_NODISCARD uint32_t UpdateChannelWithWeight(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const;
 
     public:
         SR_NODISCARD const Keys& GetKeys() const { return m_keys; }

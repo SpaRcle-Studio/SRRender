@@ -27,9 +27,20 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD virtual bool IsSuitable(const StateConditionContext& context) const noexcept;
         SR_NODISCARD virtual bool IsFinished(const StateConditionContext& context) const noexcept;
 
+        void OnTransitionBegin(const StateConditionContext& context);
+
         SR_NODISCARD AnimationState* GetDestination() const noexcept { return m_destinationState; }
+        SR_NODISCARD AnimationState* GetSource() const noexcept { return m_sourceState; }
+
+        SR_NODISCARD bool IsActive() const noexcept { return m_isActive; }
+
+        SR_NODISCARD float_t GetProgress() const noexcept { return m_condition ? m_condition->GetProgress() : 1.f; }
+
+        virtual void Reset();
+        virtual void Update(const StateConditionContext& context);
 
     protected:
+        bool m_isActive = false;
         AnimationStateCondition* m_condition = nullptr;
         AnimationState* m_sourceState = nullptr;
         AnimationState* m_destinationState = nullptr;

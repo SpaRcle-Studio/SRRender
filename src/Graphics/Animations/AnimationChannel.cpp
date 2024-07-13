@@ -9,6 +9,48 @@ namespace SR_ANIMATIONS_NS {
         m_keys.clear();
     }
 
+    uint32_t AnimationChannel::UpdateChannelWithWeight(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const {
+        if (!channelContext.gameObjectIndex) SR_UNLIKELY_ATTRIBUTE {
+            return keyIndex;
+        }
+
+        AnimationGameObjectData& data = context.pPose->GetGameObjectData(channelContext.gameObjectIndex.value());
+
+        const auto keysCount = static_cast<uint32_t>(m_keys.size());
+
+    skipKey:
+        if (keyIndex >= keysCount) SR_UNLIKELY_ATTRIBUTE {
+            return keyIndex;
+        }
+
+        auto&& key = m_keys[keyIndex];
+
+        if (time > key.time) SR_UNLIKELY_ATTRIBUTE {
+            if (context.fpsCompensation) SR_UNLIKELY_ATTRIBUTE {
+                //key.SetWithWeight(data, context.tolerance);
+            }
+
+            keyIndex += context.frameRate;
+
+            goto skipKey;
+        }
+
+        if (keyIndex == 0) SR_UNLIKELY_ATTRIBUTE {
+            //key.SetWithWeight(data, context.weight);
+        }
+        else {
+            auto&& prevKey = m_keys[keyIndex - 1];
+
+            const float_t currentTime = time - prevKey.time;
+            const float_t keyCurrTime = key.time - prevKey.time;
+            const float_t progress = currentTime / keyCurrTime;
+
+            key.UpdateWithWeight(progress, prevKey, data, context.weight);
+        }
+
+        return keyIndex;
+    }
+
     uint32_t AnimationChannel::UpdateChannel(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const {
         if (!channelContext.gameObjectIndex) SR_UNLIKELY_ATTRIBUTE {
             return keyIndex;

@@ -29,14 +29,21 @@ namespace SR_ANIMATIONS_NS {
 
         SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetName() const noexcept = 0;
         SR_NODISCARD virtual float_t GetProgress() const noexcept { return 1.f; }
+        SR_NODISCARD virtual float_t GetDuration() const noexcept { return 0.f; }
+        SR_NODISCARD virtual float_t GetTime() const noexcept { return 0.f; }
 
         SR_NODISCARD Transitions& GetTransitions() noexcept { return m_transitions; }
         SR_NODISCARD const Transitions& GetTransitions() const noexcept { return m_transitions; }
+        SR_NODISCARD bool IsResetOnPlay() const noexcept { return m_resetOnPlay; }
+
+        void OnTransitionBegin();
+        void OnTransitionDone();
 
         void SetMachine(AnimationStateMachine* pMachine) { m_machine = pMachine; }
+        void SetResetOnPlay(bool reset) { m_resetOnPlay = reset; }
 
-        virtual void OnTransitionBegin(const UpdateContext& context) { }
-        virtual void OnTransitionEnd(const UpdateContext& context) { }
+        virtual void Reset() { }
+
         virtual void Update(UpdateContext& context) { }
         virtual bool Compile(CompileContext& context) { return true; }
 
@@ -50,8 +57,18 @@ namespace SR_ANIMATIONS_NS {
         }
 
     protected:
+        bool m_resetOnPlay = false;
         Transitions m_transitions;
         AnimationStateMachine* m_machine = nullptr;
+
+    };
+
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    class AnimationNoneState : public AnimationState {
+        using Super = AnimationState;
+    public:
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const noexcept override { return "None"; }
 
     };
 
@@ -66,9 +83,12 @@ namespace SR_ANIMATIONS_NS {
 
         void Update(UpdateContext& context) override;
         bool Compile(CompileContext& context) override;
+        void Reset() override;
         void SetClip(AnimationClip* pClip);
 
         SR_NODISCARD float_t GetProgress() const noexcept override;
+        SR_NODISCARD float_t GetDuration() const noexcept override { return m_duration; }
+        SR_NODISCARD float_t GetTime() const noexcept override { return m_time; }
         SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const noexcept override;
 
     protected:

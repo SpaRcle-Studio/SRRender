@@ -24,6 +24,7 @@ namespace SR_ANIMATIONS_NS {
 
         SR_NODISCARD AnimationEntryPointState* GetEntryPoint() const;
         SR_NODISCARD AnimationState* FindState(SR_UTILS_NS::StringAtom name) const;
+        SR_NODISCARD AnimationState* GetState(uint32_t index) const;
 
         template<class T, typename... Args> T* CreateState(Args&& ...args) {
             return AddState(new T(std::forward<Args>(args)...));

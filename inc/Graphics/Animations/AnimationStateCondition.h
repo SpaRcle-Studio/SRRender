@@ -23,7 +23,10 @@ namespace SR_ANIMATIONS_NS {
             return IsSuitable(context);
         }
 
+        SR_NODISCARD virtual float_t GetProgress() const noexcept { return 1.f; }
+
         virtual void Reset() { }
+        virtual void Update(const StateConditionContext& context) { }
 
         void SetTransitionState(AnimationStateTransition* pTransition) { m_transitionState = pTransition; }
 
@@ -105,7 +108,16 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
 
+        SR_NODISCARD float_t GetProgress() const noexcept override;
+
+        void Reset() override;
+        void Update(const StateConditionContext& context) override;
+
     protected:
+        float_t m_dtCapacity = 0.f;
+        float_t m_dtDuration = 0.f;
+        float_t m_dtExitTime = 0.f;
+
         /**
             Измеряется в отношении времени относительно состоянияни из которого переходим.
             Если exitTime = 0.75, то переход начнется через 75% времени состояния.

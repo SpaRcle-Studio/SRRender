@@ -173,10 +173,10 @@ namespace SR_ANIMATIONS_NS {
         }
 
         if (m_hasExitTime) {
-            return context.pState->GetProgress() >= m_exitTime;
+            return m_dtCapacity >= m_dtExitTime;
         }
 
-        return false;
+        return true;
     }
 
     bool AnimationStateConditionExitTime::IsFinished(const StateConditionContext& context) const noexcept {
@@ -184,6 +184,34 @@ namespace SR_ANIMATIONS_NS {
             return false;
         }
 
-        return context.pState->GetProgress() >= m_exitTime + m_duration;
+        return (m_dtCapacity - m_dtExitTime) >= m_dtDuration;
+    }
+
+    float_t AnimationStateConditionExitTime::GetProgress() const noexcept {
+        if (m_dtDuration <= 0.f) {
+            return 1.f;
+        }
+
+        return (m_dtCapacity - m_dtExitTime) / m_dtDuration;
+    }
+
+    void AnimationStateConditionExitTime::Reset() {
+        m_dtDuration = 0.f;
+        m_dtCapacity = 0.f;
+        Super::Reset();
+    }
+
+    void AnimationStateConditionExitTime::Update(const StateConditionContext& context) {
+        if (m_hasExitTime && m_dtExitTime <= 0.f) SR_UNLIKELY_ATTRIBUTE {
+            m_dtExitTime = context.pState->GetDuration() * m_exitTime;
+        }
+
+        if (m_dtDuration <= 0.f) SR_UNLIKELY_ATTRIBUTE {
+            m_dtDuration = context.pState->GetDuration() * m_duration;
+        }
+
+        m_dtCapacity += context.dt;
+
+        Super::Update(context);
     }
 }

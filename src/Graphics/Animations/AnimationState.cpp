@@ -16,14 +16,33 @@ namespace SR_ANIMATIONS_NS {
     AnimationState* AnimationState::Load(const SR_XML_NS::Node& nodeXml) {
         SR_TRACY_ZONE;
 
+        AnimationState* pState = nullptr;
+
         auto&& type = nodeXml.GetAttribute("Type").ToString();
         if (type == "Clip") {
-            return AnimationClipState::Load(nodeXml);
+            pState = AnimationClipState::Load(nodeXml);
+        }
+
+        if (pState) {
+            pState->SetResetOnPlay(nodeXml.GetAttribute("ResetOnPlay").ToBool(true));
+            return pState;
         }
 
         SR_ERROR("AnimationState::Load() : unknown type \"{}\"!", type);
 
         return nullptr;
+    }
+
+    void AnimationState::OnTransitionBegin() {
+        if (m_resetOnPlay) {
+            Reset();
+        }
+    }
+
+    void AnimationState::OnTransitionDone() {
+        for (auto&& pTransition : m_transitions) {
+            pTransition->Reset();
+        }
     }
 
     void AnimationClipState::Update(UpdateContext& context) {
@@ -34,20 +53,39 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
+        if (context.weight <= 0.f) {
+            Super::Update(context);
+            return;
+        }
+
         uint32_t currentKeyFrame = 0;
 
         auto&& channels = m_clip->GetChannels();
         const auto channelsCount = static_cast<uint32_t>(channels.size());
 
-        for (uint32_t i = 0; i < channelsCount; ++i) {
-            const uint32_t keyFrame = channels[i]->UpdateChannel(
-                m_channelPlayState[i],
-                m_time,
-                context,
-                m_channelContexts[i]
-            );
+        if (context.weight > 0.f && context.weight < 1.f) {
+            for (uint32_t i = 0; i < channelsCount; ++i) {
+                uint32_t keyFrame = channels[i]->UpdateChannelWithWeight(
+                    m_channelPlayState[i],
+                    m_time,
+                    context,
+                    m_channelContexts[i]
+                );
 
-            currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
+                currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
+            }
+        }
+        else {
+            for (uint32_t i = 0; i < channelsCount; ++i) {
+                uint32_t keyFrame = channels[i]->UpdateChannel(
+                    m_channelPlayState[i],
+                    m_time,
+                    context,
+                    m_channelContexts[i]
+                );
+
+                currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
+            }
         }
 
         m_time += context.dt;
@@ -146,6 +184,12 @@ namespace SR_ANIMATIONS_NS {
                     continue;
                 }
 
+                auto&& pIt = std::find(context.gameObjects.begin(), context.gameObjects.end(), pBone->gameObject);
+                if (pIt != context.gameObjects.end()) {
+                    channelContext.gameObjectIndex = static_cast<uint16_t>(std::distance(context.gameObjects.begin(), pIt));
+                    continue;
+                }
+
                 channelContext.gameObjectIndex = static_cast<uint16_t>(context.gameObjects.size());
                 context.gameObjects.emplace_back(pBone->gameObject);
             }
@@ -158,5 +202,13 @@ namespace SR_ANIMATIONS_NS {
         m_channelPlayState.resize(m_clip->GetChannels().size());
 
         return Super::Compile(context);
+    }
+
+    void AnimationClipState::Reset() {
+        m_time = 0.f;
+        if (!m_channelPlayState.empty()) {
+            memset(m_channelPlayState.data(), 0, m_channelPlayState.size() * sizeof(uint32_t));
+        }
+        Super::Reset();
     }
 }
