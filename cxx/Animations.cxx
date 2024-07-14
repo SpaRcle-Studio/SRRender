@@ -18,3 +18,4 @@
 #include "../src/Graphics/Animations/AnimationStateMachine.cpp"
 #include "../src/Graphics/Animations/AnimationState.cpp"
 #include "../src/Graphics/Animations/BoneComponent.cpp"
+#include "../src/Graphics/Animations/AnimationCommon.cpp"

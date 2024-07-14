@@ -34,7 +34,7 @@ namespace SR_ANIMATIONS_NS {
 
         SR_NODISCARD bool IsActive() const noexcept { return m_isActive; }
 
-        SR_NODISCARD float_t GetProgress() const noexcept { return m_condition ? m_condition->GetProgress() : 1.f; }
+        SR_NODISCARD float_t GetProgress() const noexcept { return m_condition ? m_condition->GetProgress().value_or(1.f) : 1.f; }
 
         virtual void Reset();
         virtual void Update(const StateConditionContext& context);

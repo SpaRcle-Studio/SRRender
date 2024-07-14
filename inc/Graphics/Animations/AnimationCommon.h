@@ -15,7 +15,7 @@
 
 namespace SR_ANIMATIONS_NS {
     /// Это тип свойства которое изменяет AnimationKey
-    SR_ENUM_NS_CLASS_T(AnimationPropertyType, uint8_t,
+    /*SR_ENUM_NS_CLASS_T(AnimationPropertyType, uint8_t,
         Translation,
         Rotation,
         Scale,
@@ -34,7 +34,7 @@ namespace SR_ANIMATIONS_NS {
         GameObjectEnable,
         GameObjectName,
         GameObjectTag
-    );
+    );*/
 
     static SR_MATH_NS::FVector3 AiV3ToFV3(const aiVector3D& v, float_t multiplier) {
         return SR_MATH_NS::FVector3(v.x, v.y, v.z) * multiplier;
@@ -82,6 +82,29 @@ namespace SR_ANIMATIONS_NS {
     };
 
     class IAnimationDataSet {
+    public:
+        void SetBool(const SR_UTILS_NS::StringAtom& name, const bool value) {
+            m_boolTable[name] = value;
+        }
+        void SetInt(const SR_UTILS_NS::StringAtom& name, const int32_t value) {
+            m_intTable[name] = value;
+        }
+        void SetFloat(const SR_UTILS_NS::StringAtom& name, const float_t value) {
+            m_floatTable[name] = value;
+        }
+        void SetString(const SR_UTILS_NS::StringAtom& name, const std::string& value) {
+            m_stringTable[name] = value;
+        }
+
+        SR_NODISCARD std::optional<bool> GetBool(const SR_UTILS_NS::StringAtom& name) const;
+        SR_NODISCARD std::optional<int32_t> GetInt(const SR_UTILS_NS::StringAtom& name) const;
+        SR_NODISCARD std::optional<float_t> GetFloat(const SR_UTILS_NS::StringAtom& name) const;
+        SR_NODISCARD std::optional<std::string> GetString(const SR_UTILS_NS::StringAtom& name) const;
+
+        void SetAnimationDataSetParent(IAnimationDataSet* pParent) {
+            m_parent = pParent;
+        }
+
     protected:
         IAnimationDataSet() = default;
 
@@ -91,18 +114,11 @@ namespace SR_ANIMATIONS_NS {
 
         virtual ~IAnimationDataSet() = default;
 
-        void SetAnimationDataSetParent(IAnimationDataSet* pParent) {
-            m_parent = pParent;
-        }
-
     protected:
-        using Hash = uint64_t;
-
-    protected:
-        /// ska::flat_hash_map<Hash, std::string> m_stringTable;
-        /// ska::flat_hash_map<Hash, uint64_t> m_intTable;
-        /// ska::flat_hash_map<Hash, float_t> m_floatTable;
-        /// ska::flat_hash_map<Hash, bool> m_boolTable;
+        std::map<SR_UTILS_NS::StringAtom, bool> m_boolTable;
+        std::map<SR_UTILS_NS::StringAtom, int32_t> m_intTable;
+        std::map<SR_UTILS_NS::StringAtom, float_t> m_floatTable;
+        std::map<SR_UTILS_NS::StringAtom, std::string> m_stringTable;
 
         IAnimationDataSet* m_parent = nullptr;
 

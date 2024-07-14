@@ -71,13 +71,14 @@ namespace SR_ANIMATIONS_NS {
     void AnimationStateMachine::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 
+        StateConditionContext stateConditionContext;
+        stateConditionContext.pMachine = this;
+        stateConditionContext.dt = context.dt;
+
         for (auto pIt = m_activeStates.begin(); pIt != m_activeStates.end(); ) {
             AnimationState* pState = *pIt;
 
-            StateConditionContext stateConditionContext;
             stateConditionContext.pState = pState;
-            stateConditionContext.pMachine = this;
-            stateConditionContext.dt = context.dt;
 
             bool changed = false;
             bool hasActiveTransitions = false;
@@ -102,17 +103,26 @@ namespace SR_ANIMATIONS_NS {
 
                 const float_t progress = pTransition->GetProgress();
 
-                UpdateContext transitionFromContext = context;
-                transitionFromContext.weight = 1.f - SR_CLAMP(progress, 0.f, 1.f);
-                pState->Update(transitionFromContext);
+                if (progress < 0.f || progress > 1.f) {
+                    SRHaltOnce("AnimationStateMachine::Update() : invalid progress \"{}\"!", progress);
+                    continue;
+                }
 
-                UpdateContext transitionToContext = context;
-                transitionToContext.weight = SR_CLAMP(progress, 0.f, 1.f);
-                pDestinationState->Update(transitionToContext);
+                //SR_DEBUG_LOG("Transition \"{}\" -> \"{}\" : progress \"{}\"", pState->GetName().c_str(), pDestinationState->GetName().c_str(), progress);
+
+                UpdateContext transitionFromContext = context;
+                if (1.f - progress > 0.f) {
+                    transitionFromContext.weight = 1.f - progress;
+                    pState->Update(transitionFromContext);
+                }
+
+                if (progress > 0.f) {
+                    UpdateContext transitionToContext = context;
+                    transitionToContext.weight = progress;
+                    pDestinationState->Update(transitionToContext);
+                }
 
                 if (pTransition->IsFinished(stateConditionContext)) {
-                    SR_DEBUG_LOG("Transition from \"{}\" to \"{}\" finished!", pState->GetName().c_str(), pDestinationState->GetName().c_str());
-
                     pState->OnTransitionDone();
 
                     if (m_activeStates.count(pState) == 1) {

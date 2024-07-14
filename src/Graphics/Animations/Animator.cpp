@@ -25,6 +25,7 @@ namespace SR_ANIMATIONS_NS {
         GetComponentProperties().AddStandardProperty("Tolerance", &m_tolerance);
 
         GetComponentProperties().AddStandardProperty("Sync", &m_sync);
+        GetComponentProperties().AddStandardProperty("FPS compensation", &m_fpsCompensation);
 
         return Super::InitializeEntity();
     }
@@ -70,6 +71,7 @@ namespace SR_ANIMATIONS_NS {
             context.frameRate = SR_MAX(1, m_frameRate);
             context.now = SR_HTYPES_NS::Time::Instance().Now();
             context.weight = 1.f;
+            context.fpsCompensation = m_fpsCompensation;
             context.dt = dt;
 
             m_graph->Update(context);

@@ -12,9 +12,7 @@ namespace SR_ANIMATIONS_NS {
     class AnimationStateTransition;
 
     class AnimationStateCondition : public SR_UTILS_NS::NonCopyable {
-    public:
-        using Super = SR_UTILS_NS::NonCopyable;
-        using Hash = uint64_t;
+    using Super = SR_UTILS_NS::NonCopyable;
     public:
         SR_NODISCARD static AnimationStateCondition* Load(const SR_XML_NS::Node& nodeXml);
 
@@ -23,15 +21,12 @@ namespace SR_ANIMATIONS_NS {
             return IsSuitable(context);
         }
 
-        SR_NODISCARD virtual float_t GetProgress() const noexcept { return 1.f; }
+        SR_NODISCARD virtual bool IsNeedBreakUpdate() const noexcept { return false; }
+
+        SR_NODISCARD virtual std::optional<float_t> GetProgress() const noexcept { return std::nullopt; }
 
         virtual void Reset() { }
         virtual void Update(const StateConditionContext& context) { }
-
-        void SetTransitionState(AnimationStateTransition* pTransition) { m_transitionState = pTransition; }
-
-    protected:
-        AnimationStateTransition* m_transitionState = nullptr;
 
     };
 
@@ -52,10 +47,15 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationStateConditionAnd() override;
 
     public:
+        SR_NODISCARD static AnimationStateConditionAnd* Load(const SR_XML_NS::Node& nodeXml);
+
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override;
+        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
 
         void Reset() override;
+        void Update(const StateConditionContext& context) override;
 
     protected:
         std::vector<AnimationStateCondition*> m_conditions;
@@ -72,6 +72,8 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override;
+        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
 
         void Reset() override;
 
@@ -88,9 +90,14 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationStateConditionNot() override;
 
     public:
+        SR_NODISCARD static AnimationStateConditionNot* Load(const SR_XML_NS::Node& nodeXml);
+
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override;
+        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
 
+        void Update(const StateConditionContext& context) override;
         void Reset() override;
 
     protected:
@@ -108,7 +115,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
 
-        SR_NODISCARD float_t GetProgress() const noexcept override;
+        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
 
         void Reset() override;
         void Update(const StateConditionContext& context) override;
@@ -140,14 +147,23 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    //class AnimationStateConditionBool : public AnimationStateConditionOperationBase {
-    //private:
-    //    struct BoolVariable {
-    //        bool m_useConst = true;
-    //        bool m_const = false;
-    //        Hash m_variable = 0;
-    //    } m_data;
-    //};
+    class AnimationStateConditionBool : public AnimationStateCondition {
+        using Super = AnimationStateCondition;
+    public:
+        SR_NODISCARD static AnimationStateConditionBool* Load(const SR_XML_NS::Node& nodeXml);
+
+        SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD void Update(const StateConditionContext& context) override;
+        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override { return !m_checked; }
+
+        void Reset() override;
+
+    private:
+        SR_UTILS_NS::StringAtom m_variableName;
+        bool m_value = false;
+        bool m_checked = false;
+
+    };
 }
 
 #endif //SR_ENGINE_ANIMATIONSTATECONDITION_H

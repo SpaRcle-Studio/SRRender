@@ -92,6 +92,24 @@ namespace SR_ANIMATIONS_NS {
             pFromNode->ConnectTo(pToNode, fromPinIndex, toPinIndex);
         }
 
+        for (auto&& variableXml : rootXml.GetNodes("Variable")) {
+            auto&& name = variableXml.GetAttribute("Name").ToString();
+            auto&& value = variableXml.GetAttribute("Value");
+            auto&& type = variableXml.GetAttribute("Type").ToString();
+
+            if (type == "Bool") {
+                pAnimationGraph->SetBool(name, value.ToBool());
+            } else if (type == "Int") {
+                pAnimationGraph->SetInt(name, value.ToInt());
+            } else if (type == "Float") {
+                pAnimationGraph->SetFloat(name, value.ToFloat());
+            } else if (type == "String") {
+                pAnimationGraph->SetString(name, value.ToString());
+            } else {
+                SR_ERROR("AnimationGraph::Load() : unknown variable type \"{}\"!", type);
+            }
+        }
+
         return pAnimationGraph;
     }
 

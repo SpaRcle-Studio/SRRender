@@ -85,6 +85,7 @@ namespace SR_ANIMATIONS_NS {
         SR_TRACY_ZONE;
 
         if (m_stateMachine) {
+            m_stateMachine->SetAnimationDataSetParent(m_graph);
             m_stateMachine->Compile(context);
         }
 

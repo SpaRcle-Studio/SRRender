@@ -20,7 +20,7 @@ namespace SR_ANIMATIONS_NS {
     class Animator : public SR_UTILS_NS::Component {
         SR_REGISTER_NEW_COMPONENT(Animator, 1001);
         using Super = SR_UTILS_NS::Component;
-    protected:
+    public:
         ~Animator() override;
 
     public:
@@ -36,6 +36,7 @@ namespace SR_ANIMATIONS_NS {
 
         void SetGraph(const SR_UTILS_NS::Path& path);
 
+        SR_NODISCARD AnimationGraph* GetGraph() const noexcept { return m_graph; }
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<Skeleton>& GetSkeleton() noexcept { return m_skeleton; }
 
     private:
@@ -46,6 +47,7 @@ namespace SR_ANIMATIONS_NS {
         float_t m_tolerance = 0.001f;
 
         bool m_sync = false;
+        bool m_fpsCompensation = false;
 
         AnimationGraph* m_graph = nullptr;
 
