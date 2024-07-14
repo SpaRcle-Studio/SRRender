@@ -27,6 +27,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD int64_t GetSortingPriority() const override;
         SR_NODISCARD bool HasSortingPriority() const override;
         SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
+        const SR_MATH_NS::Matrix4x4& GetMatrix() const override;
 
     };
 

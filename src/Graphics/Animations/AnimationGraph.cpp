@@ -127,6 +127,18 @@ namespace SR_ANIMATIONS_NS {
         return m_nodes.front();
     }
 
+    bool AnimationGraph::IsStateActive(SR_UTILS_NS::StringAtom name) const {
+        SR_TRACY_ZONE;
+
+        for (auto&& pNode : m_nodes) {
+            if (pNode->IsStateActive(name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void AnimationGraph::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 

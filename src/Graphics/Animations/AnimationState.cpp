@@ -33,13 +33,17 @@ namespace SR_ANIMATIONS_NS {
         return nullptr;
     }
 
-    void AnimationState::OnTransitionBegin() {
+    void AnimationState::OnTransitionBegin(AnimationStateTransition* pTransition) {
+        m_activeTransition = pTransition;
+
         if (m_resetOnPlay) {
             Reset();
         }
     }
 
     void AnimationState::OnTransitionDone() {
+        m_activeTransition = nullptr;
+
         for (auto&& pTransition : m_transitions) {
             pTransition->Reset();
         }
@@ -63,7 +67,7 @@ namespace SR_ANIMATIONS_NS {
         auto&& channels = m_clip->GetChannels();
         const auto channelsCount = static_cast<uint32_t>(channels.size());
 
-        if (context.weight > 0.f && context.weight < 1.f) {
+        if (context.weight > 0.f && context.weight < 1.f) SR_UNLIKELY_ATTRIBUTE {
             for (uint32_t i = 0; i < channelsCount; ++i) {
                 uint32_t keyFrame = channels[i]->UpdateChannelWithWeight(
                     m_channelPlayState[i],

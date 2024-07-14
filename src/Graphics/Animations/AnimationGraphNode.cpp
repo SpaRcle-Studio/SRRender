@@ -30,6 +30,10 @@ namespace SR_ANIMATIONS_NS {
         return nullptr;
     }
 
+    bool AnimationGraphNode::IsStateActive(SR_UTILS_NS::StringAtom name) const {
+        return false;
+    }
+
     uint64_t AnimationGraphNode::GetIndex() const {
         return m_graph->GetNodeIndex(this);
     }
@@ -92,6 +96,16 @@ namespace SR_ANIMATIONS_NS {
         m_pose->SetGameObjectsCount(context.gameObjects.size());
 
         Super::Compile(context);
+    }
+
+    bool AnimationGraphNodeStateMachine::IsStateActive(SR_UTILS_NS::StringAtom name) const {
+        SR_TRACY_ZONE;
+
+        if (m_stateMachine) {
+            return m_stateMachine->IsStateActive(name);
+        }
+
+        return false;
     }
 
     AnimationGraphNodeStateMachine::~AnimationGraphNodeStateMachine() {

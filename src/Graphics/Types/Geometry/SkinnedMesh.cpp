@@ -73,32 +73,32 @@ namespace SR_GTYPES_NS {
         return GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>();
     }
 
-    void SkinnedMesh::Update(float dt) {
+    void SkinnedMesh::LateUpdate() {
         SR_TRACY_ZONE;
 
         const bool usable = IsSkeletonUsable();
 
         if (m_skeletonIsBroken && !usable) {
-            return Super::Update(dt);
+            return Super::LateUpdate();
         }
 
         if (!m_skeletonIsBroken && usable) {
             if (m_ssboBones == SR_ID_INVALID || m_ssboOffsets == SR_ID_INVALID) {
-                return Super::Update(dt);
+                return Super::LateUpdate();
             }
             auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>();
             if (!pSkeleton || pSkeleton->GetOptimizedBones().empty()) {
-                return Super::Update(dt);
+                return Super::LateUpdate();
             }
             GetPipeline()->UpdateSSBO(m_ssboBones, (void*)pSkeleton->GetMatrices().data(), pSkeleton->GetMatrices().size() * sizeof(SR_MATH_NS::Matrix4x4));
             GetPipeline()->UpdateSSBO(m_ssboOffsets, (void*)pSkeleton->GetOffsets().data(), pSkeleton->GetOffsets().size() * sizeof(SR_MATH_NS::Matrix4x4));
-            return Super::Update(dt);
+            return Super::LateUpdate();
         }
 
         m_skeletonIsBroken = !usable;
         m_renderScene->SetDirty();
 
-        Super::Update(dt);
+        return Super::LateUpdate();
     };
 
     void SkinnedMesh::UseMaterial() {

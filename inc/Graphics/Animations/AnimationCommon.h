@@ -77,7 +77,7 @@ namespace SR_ANIMATIONS_NS {
 
     struct StateConditionContext {
         float_t dt = 0.f;
-        AnimationStateMachine* pMachine = nullptr;
+        const AnimationStateMachine* pMachine = nullptr;
         AnimationState* pState = nullptr;
     };
 

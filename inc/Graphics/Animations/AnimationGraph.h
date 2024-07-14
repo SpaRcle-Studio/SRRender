@@ -23,9 +23,10 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationGraphNode* GetNode(uint64_t index) const;
         SR_NODISCARD uint64_t GetNodeIndex(const AnimationGraphNode* pNode) const;
         SR_NODISCARD AnimationGraphNode* GetFinal() const;
-        SR_NODISCARD const SR_UTILS_NS::Path& GetPath() const noexcept { return m_path; }
+        SR_NODISCARD bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD uint32_t GetNodesCount() const noexcept { return static_cast<uint32_t>(m_nodes.size()); }
         SR_NODISCARD const std::vector<AnimationGraphNode*>& GetNodes() const noexcept { return m_nodes; }
+        SR_NODISCARD const SR_UTILS_NS::Path& GetPath() const noexcept { return m_path; }
 
         void Update(UpdateContext& context);
 

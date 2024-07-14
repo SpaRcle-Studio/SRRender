@@ -30,9 +30,9 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD uint32_t GetInputCount() const noexcept { return static_cast<uint32_t>(m_inputPins.size()); }
         SR_NODISCARD uint32_t GetOutputCount() const noexcept { return static_cast<uint32_t>(m_outputPins.size()); }
         SR_NODISCARD virtual AnimationGraphNodeType GetType() const noexcept = 0;
-        virtual SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) = 0;
-        virtual void Compile(CompileContext& context) { }
-
+        SR_NODISCARD virtual AnimationPose* Update(UpdateContext& context, const AnimationLink& from) = 0;
+        SR_NODISCARD virtual bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
+		virtual void Compile(CompileContext& context) { }
         void SetGraph(AnimationGraph* pGraph) { m_graph = pGraph; }
 
         SR_NODISCARD uint64_t GetIndex() const;
@@ -79,9 +79,10 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD static AnimationGraphNodeStateMachine* Load(const SR_XML_NS::Node& nodeXml);
 
         void SetStateMachine(AnimationStateMachine* pMachine);
-
-        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
         void Compile(CompileContext& context) override;
+
+        SR_NODISCARD bool IsStateActive(SR_UTILS_NS::StringAtom name) const override;
+        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
 
         SR_NODISCARD AnimationStateMachine* GetMachine() const noexcept { return m_stateMachine; }
         SR_NODISCARD AnimationGraphNodeType GetType() const noexcept override { return AnimationGraphNodeType::StateMachine; }

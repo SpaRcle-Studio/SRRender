@@ -91,4 +91,12 @@ namespace SR_GTYPES_NS {
 
         return m_gameObject->GetLayer();
     }
+
+    const SR_MATH_NS::Matrix4x4& ITextComponent::GetMatrix() const {
+        if (m_gameObject) {
+            return GetTransform()->GetMatrix();
+        }
+
+        return Mesh::GetMatrix();
+    }
 }

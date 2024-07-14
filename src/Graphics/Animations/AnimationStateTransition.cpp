@@ -57,7 +57,7 @@ namespace SR_ANIMATIONS_NS {
     void AnimationStateTransition::OnTransitionBegin(const StateConditionContext& context) {
         m_isActive = true;
         if (m_destinationState) {
-            m_destinationState->OnTransitionBegin();
+            m_destinationState->OnTransitionBegin(this);
         }
     }
 

@@ -19,13 +19,14 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD static AnimationStateMachine* Load(const SR_XML_NS::Node& nodeXml);
 
-        virtual void Update(UpdateContext& context);
-        virtual void Compile(CompileContext& context);
-
+        SR_NODISCARD bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD AnimationEntryPointState* GetEntryPoint() const;
         SR_NODISCARD AnimationState* FindState(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD AnimationState* GetState(uint32_t index) const;
         SR_NODISCARD const std::vector<AnimationState*>& GetStates() const noexcept { return m_states; }
+
+        void Compile(CompileContext& context);
+        void Update(UpdateContext& context);
 
         template<class T, typename... Args> T* CreateState(Args&& ...args) {
             return AddState(new T(std::forward<Args>(args)...));
@@ -39,6 +40,9 @@ namespace SR_ANIMATIONS_NS {
         }
 
         void SetNode(AnimationGraphNode* pNode) { m_node = pNode; }
+
+    private:
+        bool UpdateTransition(UpdateContext& context, AnimationStateTransition* pTransition, bool& hasActiveTransitions);
 
     private:
         AnimationGraphNode* m_node = nullptr;

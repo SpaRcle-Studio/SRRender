@@ -9,30 +9,27 @@ namespace SR_ANIMATIONS_NS {
         m_keys.clear();
     }
 
-    uint32_t AnimationChannel::UpdateChannelWithWeight(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const {
-        if (!channelContext.gameObjectIndex) SR_UNLIKELY_ATTRIBUTE {
-            return keyIndex;
-        }
-
+    uint32_t AnimationChannel::UpdateChannelWithWeight(uint32_t keyIndex, float_t time,  UpdateContext& context, ChannelUpdateContext& channelContext) const {
         AnimationGameObjectData& data = context.pPose->GetGameObjectData(channelContext.gameObjectIndex.value());
         const auto keysCount = static_cast<uint32_t>(m_keys.size());
+        const UnionAnimationKey* pData = m_keys.data();
 
-        while (keyIndex < keysCount && time > m_keys[keyIndex].time) SR_UNLIKELY_ATTRIBUTE {
+        while (keyIndex < keysCount && time > pData[keyIndex].time) SR_UNLIKELY_ATTRIBUTE {
             if (context.fpsCompensation) SR_UNLIKELY_ATTRIBUTE {
-                m_keys[keyIndex].SetWithWeight(data, context.tolerance);
+                pData[keyIndex].SetWithWeight(data, context.weight);
             }
 
             keyIndex += context.frameRate;
         }
 
         const uint32_t workingKeyIndex = SR_MIN(keyIndex, keysCount - 1);
-        auto&& key = m_keys[workingKeyIndex];
+        auto&& key = pData[workingKeyIndex];
 
         if (workingKeyIndex == 0) SR_UNLIKELY_ATTRIBUTE {
             key.SetWithWeight(data, context.weight);
         }
         else {
-            auto&& prevKey = m_keys[workingKeyIndex - 1];
+            auto&& prevKey = pData[workingKeyIndex - 1];
 
             const float_t currentTime = time - prevKey.time;
             const float_t keyCurrTime = key.time - prevKey.time;
@@ -51,23 +48,24 @@ namespace SR_ANIMATIONS_NS {
 
         AnimationGameObjectData& data = context.pPose->GetGameObjectData(channelContext.gameObjectIndex.value());
         const auto keysCount = static_cast<uint32_t>(m_keys.size());
+        const UnionAnimationKey* pData = m_keys.data();
 
-        while (keyIndex < keysCount && time > m_keys[keyIndex].time) SR_UNLIKELY_ATTRIBUTE {
+        while (keyIndex < keysCount && time > pData[keyIndex].time) {
             if (context.fpsCompensation) SR_UNLIKELY_ATTRIBUTE {
-                m_keys[keyIndex].Set(data, context.tolerance);
+                pData[keyIndex].Set(data, context.tolerance);
             }
 
             keyIndex += context.frameRate;
         }
 
         const uint32_t workingKeyIndex = SR_MIN(keyIndex, keysCount - 1);
-        auto&& key = m_keys[workingKeyIndex];
+        auto&& key = pData[workingKeyIndex];
 
         if (workingKeyIndex == 0) SR_UNLIKELY_ATTRIBUTE {
             key.Set(data, context.tolerance);
         }
         else {
-            auto&& prevKey = m_keys[workingKeyIndex - 1];
+            auto&& prevKey = pData[workingKeyIndex - 1];
 
             const float_t currentTime = time - prevKey.time;
             const float_t keyCurrTime = key.time - prevKey.time;

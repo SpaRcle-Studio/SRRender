@@ -71,66 +71,23 @@ namespace SR_ANIMATIONS_NS {
     void AnimationStateMachine::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 
-        StateConditionContext stateConditionContext;
-        stateConditionContext.pMachine = this;
-        stateConditionContext.dt = context.dt;
-
         for (auto pIt = m_activeStates.begin(); pIt != m_activeStates.end(); ) {
             AnimationState* pState = *pIt;
-
-            stateConditionContext.pState = pState;
 
             bool changed = false;
             bool hasActiveTransitions = false;
 
             for (auto&& pTransition : pState->GetTransitions()) {
-                pTransition->Update(stateConditionContext);
-
-                if (!pTransition->IsSuitable(stateConditionContext)) {
+                auto&& pActiveTransition = pState->GetActiveTransition();
+                if (pActiveTransition && pActiveTransition != pTransition) {
                     continue;
                 }
 
-                auto&& pDestinationState = pTransition->GetDestination();
-                if (!pDestinationState) {
-                    continue;
-                }
-
-                if (!pTransition->IsActive()) {
-                    pTransition->OnTransitionBegin(stateConditionContext);
-                }
-
-                hasActiveTransitions = true;
-
-                const float_t progress = pTransition->GetProgress();
-
-                if (progress < 0.f || progress > 1.f) {
-                    SRHaltOnce("AnimationStateMachine::Update() : invalid progress \"{}\"!", progress);
-                    continue;
-                }
-
-                //SR_DEBUG_LOG("Transition \"{}\" -> \"{}\" : progress \"{}\"", pState->GetName().c_str(), pDestinationState->GetName().c_str(), progress);
-
-                UpdateContext transitionFromContext = context;
-                if (1.f - progress > 0.f) {
-                    transitionFromContext.weight = 1.f - progress;
-                    pState->Update(transitionFromContext);
-                }
-
-                if (progress > 0.f) {
-                    UpdateContext transitionToContext = context;
-                    transitionToContext.weight = progress;
-                    pDestinationState->Update(transitionToContext);
-                }
-
-                if (pTransition->IsFinished(stateConditionContext)) {
-                    pState->OnTransitionDone();
-
-                    if (m_activeStates.count(pState) == 1) {
+                if (UpdateTransition(context, pTransition, hasActiveTransitions)) {
+                    if (m_activeStates.count(pTransition->GetSource()) == 1) {
                         pIt = m_activeStates.erase(pIt);
                     }
-
-                    pIt = m_activeStates.insert(pIt, pDestinationState);
-
+                    pIt = m_activeStates.insert(pIt, pTransition->GetDestination());
                     changed = true;
                 }
             }
@@ -149,6 +106,37 @@ namespace SR_ANIMATIONS_NS {
         for (auto&& pState : m_states) {
             pState->Compile(context);
         }
+    }
+
+    bool AnimationStateMachine::IsStateActive(SR_UTILS_NS::StringAtom name) const {
+        SR_TRACY_ZONE;
+
+        for (auto&& pState : m_activeStates) {
+            if (pState->GetName() == name) {
+                return true;
+            }
+
+            for (auto&& pTransition : pState->GetTransitions()) {
+                auto&& pActiveTransition = pState->GetActiveTransition();
+                if (pActiveTransition && pActiveTransition != pTransition) {
+                    continue;
+                }
+
+                StateConditionContext stateConditionContext;
+                stateConditionContext.pMachine = this;
+                stateConditionContext.pState = pTransition->GetSource();
+
+                if (!pTransition->IsSuitable(stateConditionContext)) {
+                    return false;
+                }
+
+                if (pTransition->GetDestination() && pTransition->GetDestination()->GetName() == name) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     AnimationEntryPointState* AnimationStateMachine::GetEntryPoint() const {
@@ -183,5 +171,55 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return m_states[index];
+    }
+
+    bool AnimationStateMachine::UpdateTransition(UpdateContext& context, AnimationStateTransition* pTransition, bool&  hasActiveTransitions) {
+        StateConditionContext stateConditionContext;
+        stateConditionContext.pMachine = this;
+        stateConditionContext.dt = context.dt;
+        stateConditionContext.pState = pTransition->GetSource();
+
+        pTransition->Update(stateConditionContext);
+
+        if (!pTransition->IsSuitable(stateConditionContext)) {
+            return false;
+        }
+
+        auto&& pDestinationState = pTransition->GetDestination();
+        if (!pDestinationState) {
+            return false;
+        }
+
+        if (!pTransition->IsActive()) {
+            pTransition->OnTransitionBegin(stateConditionContext);
+        }
+
+        hasActiveTransitions = true;
+
+        const float_t progress = pTransition->GetProgress();
+
+        if (progress < 0.f || progress > 1.f) {
+            SRHaltOnce("AnimationStateMachine::Update() : invalid progress \"{}\"!", progress);
+            return false;
+        }
+
+        UpdateContext transitionFromContext = context;
+        if (1.f - progress > 0.f) {
+            transitionFromContext.weight = 1.f - progress;
+            pTransition->GetSource()->Update(transitionFromContext);
+        }
+
+        if (progress > 0.f) {
+            UpdateContext transitionToContext = context;
+            transitionToContext.weight = progress;
+            pDestinationState->Update(transitionToContext);
+        }
+
+        if (pTransition->IsFinished(stateConditionContext)) {
+            pTransition->GetDestination()->OnTransitionDone();
+            return true;
+        }
+
+        return false;
     }
 }

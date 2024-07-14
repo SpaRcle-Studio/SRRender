@@ -28,7 +28,7 @@ namespace SR_GTYPES_NS {
     public:
         SR_NODISCARD bool InitializeEntity() noexcept override;
 
-        void Update(float dt) override;
+        void LateUpdate() override;
         void UseMaterial() override;
         void UseModelMatrix() override;
 
