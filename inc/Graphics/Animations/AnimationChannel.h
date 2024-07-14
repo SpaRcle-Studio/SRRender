@@ -8,6 +8,7 @@
 #include <Utils/ECS/EntityRef.h>
 
 #include <Graphics/Animations/AnimationKey.h>
+#include <Graphics/Animations/AnimationContext.h>
 
 struct aiNodeAnim;
 
@@ -20,7 +21,7 @@ namespace SR_ANIMATIONS_NS {
     class AnimationPose;
 
     class AnimationChannel final : public SR_UTILS_NS::NonCopyable {
-        using Keys = std::vector<std::pair<float_t, AnimationKey*>>;
+        using Keys = std::vector<UnionAnimationKey>;
     public:
         ~AnimationChannel() override;
 
@@ -30,32 +31,38 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationChannel* Copy() const noexcept {
             auto&& pChannel = new AnimationChannel();
 
-            for (auto&& [time, pKey] : GetKeys()) {
-                pChannel->AddKey(time, pKey->Copy(pChannel));
+            for (auto&& key : m_keys) {
+                pChannel->m_keys.emplace_back(key);
             }
 
-            pChannel->m_hashName = m_hashName;
+            pChannel->m_name = m_name;
             pChannel->m_boneIndex = m_boneIndex;
 
             return pChannel;
         }
 
-        void SetName(const std::string_view& name);
+        void SetName(SR_UTILS_NS::StringAtom name);
         void SetBoneIndex(uint16_t index) { m_boneIndex = index; }
 
-        void AddKey(float_t timePoint, AnimationKey* pKey);
+        template<class T> void AddKey(double_t timePoint, T key) {
+            auto&& newKey = m_keys.emplace_back();
+            newKey.time = static_cast<float_t>(timePoint);
+            newKey.SetData(key);
+        }
 
-        uint32_t UpdateChannel(uint32_t keyIndex, float_t time, const UpdateContext& context) const;
+        SR_NODISCARD uint32_t UpdateChannel(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const;
+        SR_NODISCARD uint32_t UpdateChannelWithWeight(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const;
 
     public:
         SR_NODISCARD const Keys& GetKeys() const { return m_keys; }
 
-        SR_NODISCARD SR_FORCE_INLINE uint64_t GetGameObjectHashName() const noexcept { return m_hashName; }
-        SR_NODISCARD SR_FORCE_INLINE uint16_t GetBoneIndex() const noexcept { return m_boneIndex; }
+        SR_NODISCARD SR_FORCE_INLINE SR_UTILS_NS::StringAtom GetGameObjectName() const noexcept { return m_name; }
+        SR_NODISCARD SR_FORCE_INLINE uint16_t GetBoneIndex() const noexcept { return m_boneIndex.value_or(SR_UINT16_MAX); }
+        SR_NODISCARD SR_FORCE_INLINE bool HasBoneIndex() const noexcept { return m_boneIndex.has_value(); }
 
     private:
-        uint16_t m_boneIndex = SR_UINT16_MAX;
-        uint64_t m_hashName = 0;
+        std::optional<uint16_t> m_boneIndex;
+        SR_UTILS_NS::StringAtom m_name;
         Keys m_keys;
 
     };

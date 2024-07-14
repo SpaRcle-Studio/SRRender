@@ -94,7 +94,6 @@ namespace SR_ANIMATIONS_NS {
         pBone->pRoot = m_rootBone ? m_rootBone : pBone;
         pBone->pParent = pParent;
         pBone->name = name;
-        pBone->hashName = SR_HASH_STR(name);
 
         if (m_rootBone) {
             pParent->bones.emplace_back(pBone);
@@ -128,13 +127,13 @@ namespace SR_ANIMATIONS_NS {
 
         const SR_HTYPES_NS::Function<void(SR_ANIMATIONS_NS::Bone*)> processBone = [&](SR_ANIMATIONS_NS::Bone* pBone) {
         #ifdef SR_DEBUG
-            if (m_bonesByName.count(pBone->hashName) == 1) {
-                SR_WARN("Skeleton::ReCalculateSkeleton() : bone with name \"" + pBone->name + "\" already exists in hash table!");
+            if (m_bonesByName.count(pBone->name) == 1) {
+                SR_WARN("Skeleton::ReCalculateSkeleton() : bone with name \"" + pBone->name.ToStringRef() + "\" already exists in hash table!");
             }
         #endif
 
             m_bonesByIndex.emplace_back(pBone);
-            m_bonesByName.insert(std::make_pair(pBone->hashName, pBone));
+            m_bonesByName.insert(std::make_pair(pBone->name, pBone));
 
             for (auto&& pSubBone : pBone->bones) {
                 processBone(pSubBone);
@@ -146,8 +145,8 @@ namespace SR_ANIMATIONS_NS {
         return true;
     }
 
-    Bone* Skeleton::GetBone(uint64_t hashName) {
-        auto&& pBoneIt = m_bonesByName.find(hashName);
+    Bone* Skeleton::GetBone(SR_UTILS_NS::StringAtom name) {
+        auto&& pBoneIt = m_bonesByName.find(name);
         if (pBoneIt == m_bonesByName.end()) {
             return nullptr;
         }
@@ -159,8 +158,22 @@ namespace SR_ANIMATIONS_NS {
         return pBoneIt->second;
     }
 
-    Bone* Skeleton::TryGetBone(uint64_t hashName) {
-        auto&& pBoneIt = m_bonesByName.find(hashName);
+    Bone* Skeleton::GetBoneByIndex(uint16_t index) const {
+        if (index >= m_bonesByIndex.size()) SR_UNLIKELY_ATTRIBUTE {
+            return nullptr;
+        }
+
+        if (!m_bonesByIndex[index]->gameObject && !m_bonesByIndex[index]->hasError) SR_UNLIKELY_ATTRIBUTE {
+            if (!m_bonesByIndex[index]->Initialize()) {
+                return nullptr;
+            }
+        }
+
+        return m_bonesByIndex[index];
+    }
+
+    Bone* Skeleton::TryGetBone(SR_UTILS_NS::StringAtom name) {
+        auto&& pBoneIt = m_bonesByName.find(name);
         if (pBoneIt == m_bonesByName.end()) {
             return nullptr;
         }
@@ -233,8 +246,8 @@ namespace SR_ANIMATIONS_NS {
 
             auto&& debugId = m_debugLines[pBone];
 
-            auto&& fromGameObject = GetBone(pBone->hashName);
-            auto&& toGameObject = GetBone(pBone->pParent->hashName);
+            auto&& fromGameObject = GetBone(pBone->name);
+            auto&& toGameObject = GetBone(pBone->pParent->name);
 
             if (!fromGameObject->gameObject || !toGameObject->gameObject) {
                 continue;
@@ -272,9 +285,9 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    uint64_t Skeleton::GetBoneIndex(uint64_t hashName) {
+    uint64_t Skeleton::GetBoneIndex(SR_UTILS_NS::StringAtom name) {
         for (uint64_t i = 0; i < m_bonesByIndex.size(); ++i) {
-            if (m_bonesByIndex[i]->hashName == hashName) {
+            if (m_bonesByIndex[i]->name == name) {
                 return i;
             }
         }
@@ -322,6 +335,8 @@ namespace SR_ANIMATIONS_NS {
             return m_matrices;
         }
 
+        SR_TRACY_ZONE;
+
         m_matrices.resize(m_optimizedBones.size());
 
         for (auto&& [hashName, index] : m_optimizedBones) {
@@ -342,7 +357,7 @@ namespace SR_ANIMATIONS_NS {
         return m_matrices;
     }
 
-    void Skeleton::SetOptimizedBones(const ska::flat_hash_map<uint64_t, uint16_t>& bones) {
+    void Skeleton::SetOptimizedBones(const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& bones) {
         if (m_optimizedBones.empty()) {
             m_optimizedBones = bones;
         }

@@ -29,6 +29,8 @@ namespace SR_GRAPH_NS::Types {
     bool Shader::Init() {
         SR_TRACY_ZONE;
 
+        SR_SHADER("Shader::Init() : initialize \"" + GetResourceId().ToStringRef() + "\" shader...");
+
         if (m_isCalculated) {
             SRHalt("Double shader initialization!");
             return true;

@@ -6,32 +6,27 @@
 #define SR_ENGINE_ANIMATIONSTATECONDITION_H
 
 #include <Utils/Types/Time.h>
-#include <Graphics/Animations/AnimationCommon.h>
+#include <Graphics/Animations/AnimationContext.h>
 
 namespace SR_ANIMATIONS_NS {
-    class AnimationStateCondition : public SR_UTILS_NS::NonCopyable {
-    public:
-        using Super = SR_UTILS_NS::NonCopyable;
-        using Hash = uint64_t;
-    public:
-        explicit AnimationStateCondition(AnimationStateMachine* pMachine)
-            : Super()
-            , m_machine(pMachine)
-        { }
+    class AnimationStateTransition;
 
+    class AnimationStateCondition : public SR_UTILS_NS::NonCopyable {
+    using Super = SR_UTILS_NS::NonCopyable;
     public:
-        SR_NODISCARD AnimationStateMachine* GetMachine() const noexcept { return m_machine; }
+        SR_NODISCARD static AnimationStateCondition* Load(const SR_XML_NS::Node& nodeXml);
 
         SR_NODISCARD virtual bool IsSuitable(const StateConditionContext& context) const noexcept = 0;
-
         SR_NODISCARD virtual bool IsFinished(const StateConditionContext& context) const noexcept {
             return IsSuitable(context);
         }
 
-        virtual void Reset() { }
+        SR_NODISCARD virtual bool IsNeedBreakUpdate() const noexcept { return false; }
 
-    protected:
-        AnimationStateMachine* m_machine = nullptr;
+        SR_NODISCARD virtual std::optional<float_t> GetProgress() const noexcept { return std::nullopt; }
+
+        virtual void Reset() { }
+        virtual void Update(const StateConditionContext& context) { }
 
     };
 
@@ -39,11 +34,6 @@ namespace SR_ANIMATIONS_NS {
 
     class AnimationStateConditionTrue : public AnimationStateCondition {
         using Super = AnimationStateCondition;
-    public:
-        explicit AnimationStateConditionTrue(AnimationStateMachine* pMachine)
-            : Super(pMachine)
-        { }
-
     public:
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override { return true; }
 
@@ -54,17 +44,18 @@ namespace SR_ANIMATIONS_NS {
     class AnimationStateConditionAnd : public AnimationStateCondition {
         using Super = AnimationStateCondition;
     public:
-        explicit AnimationStateConditionAnd(AnimationStateMachine* pMachine)
-            : Super(pMachine)
-        { }
-
         ~AnimationStateConditionAnd() override;
 
     public:
+        SR_NODISCARD static AnimationStateConditionAnd* Load(const SR_XML_NS::Node& nodeXml);
+
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override;
+        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
 
         void Reset() override;
+        void Update(const StateConditionContext& context) override;
 
     protected:
         std::vector<AnimationStateCondition*> m_conditions;
@@ -76,15 +67,13 @@ namespace SR_ANIMATIONS_NS {
     class AnimationStateConditionOr : public AnimationStateCondition {
         using Super = AnimationStateCondition;
     public:
-        explicit AnimationStateConditionOr(AnimationStateMachine* pMachine)
-            : Super(pMachine)
-        { }
-
         ~AnimationStateConditionOr() override;
 
     public:
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override;
+        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
 
         void Reset() override;
 
@@ -98,16 +87,17 @@ namespace SR_ANIMATIONS_NS {
     class AnimationStateConditionNot : public AnimationStateCondition {
         using Super = AnimationStateCondition;
     public:
-        explicit AnimationStateConditionNot(AnimationStateMachine* pMachine)
-            : Super(pMachine)
-        { }
-
         ~AnimationStateConditionNot() override;
 
     public:
+        SR_NODISCARD static AnimationStateConditionNot* Load(const SR_XML_NS::Node& nodeXml);
+
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override;
+        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
 
+        void Update(const StateConditionContext& context) override;
         void Reset() override;
 
     protected:
@@ -120,18 +110,31 @@ namespace SR_ANIMATIONS_NS {
     class AnimationStateConditionExitTime : public AnimationStateCondition {
         using Super = AnimationStateCondition;
     public:
-        explicit AnimationStateConditionExitTime(AnimationStateMachine* pMachine)
-            : Super(pMachine)
-        { }
+        SR_NODISCARD static AnimationStateConditionExitTime* Load(const SR_XML_NS::Node& nodeXml);
 
-    public:
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
 
+        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
+
+        void Reset() override;
+        void Update(const StateConditionContext& context) override;
+
     protected:
-        float_t duration = 0.25f;
-        float_t exitTime = 0.75f;
-        bool hasExitTime = true;
+        float_t m_dtCapacity = 0.f;
+        float_t m_dtDuration = 0.f;
+        float_t m_dtExitTime = 0.f;
+
+        /**
+            Измеряется в отношении времени относительно состоянияни из которого переходим.
+            Если exitTime = 0.75, то переход начнется через 75% времени состояния.
+            А если hasExitTime = false, то переход начнется сразу.
+            duration - время за которое происходит переход.
+            Если duration больше чем 1 - exitTime, то стейт начнется сначала.
+        */
+        float_t m_duration = 0.25f;
+        float_t m_exitTime = 0.75f;
+        bool m_hasExitTime = true;
 
     };
 
@@ -144,14 +147,23 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    //class AnimationStateConditionBool : public AnimationStateConditionOperationBase {
-    //private:
-    //    struct BoolVariable {
-    //        bool m_useConst = true;
-    //        bool m_const = false;
-    //        Hash m_variable = 0;
-    //    } m_data;
-    //};
+    class AnimationStateConditionBool : public AnimationStateCondition {
+        using Super = AnimationStateCondition;
+    public:
+        SR_NODISCARD static AnimationStateConditionBool* Load(const SR_XML_NS::Node& nodeXml);
+
+        SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD void Update(const StateConditionContext& context) override;
+        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override { return !m_checked; }
+
+        void Reset() override;
+
+    private:
+        SR_UTILS_NS::StringAtom m_variableName;
+        bool m_value = false;
+        bool m_checked = false;
+
+    };
 }
 
 #endif //SR_ENGINE_ANIMATIONSTATECONDITION_H

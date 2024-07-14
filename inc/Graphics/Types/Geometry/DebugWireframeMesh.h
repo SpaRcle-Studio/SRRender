@@ -38,12 +38,16 @@ namespace SR_GTYPES_NS {
             return debugLayer;
         }
 
+        void SetMatrix(const SR_MATH_NS::Matrix4x4& matrix) override;
+        SR_NODISCARD const SR_MATH_NS::Matrix4x4& GetMatrix() const override { return m_modelMatrix; }
+
         bool Calculate() override;
 
         void UseMaterial() override;
 
     private:
         SR_MATH_NS::FVector4 m_color;
+        SR_MATH_NS::Matrix4x4 m_modelMatrix;
 
     };
 }

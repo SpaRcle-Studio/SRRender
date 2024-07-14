@@ -7,6 +7,7 @@
 
 #include <Graphics/Animations/Interpolation.h>
 #include <Graphics/Animations/AnimationPose.h>
+#include <Graphics/Animations/AnimationContext.h>
 
 namespace SR_UTILS_NS {
     class GameObject;
@@ -15,107 +16,117 @@ namespace SR_UTILS_NS {
 namespace SR_ANIMATIONS_NS {
     class AnimationChannel;
 
-    class TranslationKey;
-    class RotationKey;
-    class ScalingKey;
+    SR_ENUM_NS_CLASS_T(AnimationKeyType, uint8_t,
+        None,
+        Translation,
+        Rotation,
+        Scaling
+    );
 
     /// Задача ключа обеспечить необходимый переход из предыдущего ключа в этот в зависимости от интервала времени.
     /// Интервал времени задается от 0.f до 1.f в зависимости от положения перехода в момент времени.
     /// Переход должен работать и в обратную сторону (от 1.f до 0.f)
-    class AnimationKey : public SR_UTILS_NS::NonCopyable {
+
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    struct TranslationKey {
     public:
-        explicit AnimationKey(AnimationChannel* pChannel);
+        TranslationKey() = default;
+        explicit TranslationKey(const SR_MATH_NS::FVector3& translation)
+            : translation(translation)
+        { }
 
     public:
-        virtual void SR_FASTCALL Update(double_t progress, float_t weight, AnimationKey* pPreviousKey, AnimationData* pData, AnimationData* pStaticData) noexcept = 0;
-        virtual void SR_FASTCALL Set(float_t weight, AnimationData* pData) noexcept = 0;
-        virtual AnimationKey* Copy(AnimationChannel* pChannel) const noexcept = 0;
-
-        SR_NODISCARD SR_FORCE_INLINE TranslationKey* SR_FASTCALL GetTranslation() const noexcept { return m_translation; }
-        SR_NODISCARD SR_FORCE_INLINE RotationKey* SR_FASTCALL GetRotation() const noexcept { return m_rotation; }
-        SR_NODISCARD SR_FORCE_INLINE ScalingKey* SR_FASTCALL GetScaling() const noexcept { return m_scaling; }
-
-    protected:
-        AnimationChannel* m_channel = nullptr;
-
-        TranslationKey* m_translation = nullptr;
-        RotationKey* m_rotation = nullptr;
-        ScalingKey* m_scaling = nullptr;
+        SR_MATH_NS::FVector3 translation;
 
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class TranslationKey : public AnimationKey {
-        using Super = AnimationKey;
+    struct RotationKey {
     public:
-        TranslationKey(AnimationChannel* pChannel, const SR_MATH_NS::FVector3& translation, const SR_MATH_NS::FVector3& delta)
-            : Super(pChannel)
-            , m_translation(translation)
-            , m_delta(delta)
+        RotationKey() = default;
+        explicit RotationKey(const SR_MATH_NS::Quaternion& rotation)
+            : rotation(rotation)
         { }
 
     public:
-        void SR_FASTCALL Update(double_t progress, float_t weight, AnimationKey* pPreviousKey, AnimationData* pData, AnimationData* pStaticData) noexcept override;
-        void SR_FASTCALL Set(float_t weight, AnimationData* pData) noexcept override;
-
-        SR_NODISCARD AnimationKey* Copy(AnimationChannel* pChannel) const noexcept override {
-            return new TranslationKey(pChannel, m_translation, m_delta);
-        }
-
-    private:
-        SR_MATH_NS::FVector3 m_translation;
-        SR_MATH_NS::FVector3 m_delta;
+        SR_MATH_NS::Quaternion rotation;
 
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class RotationKey : public AnimationKey {
-        using Super = AnimationKey;
+    struct ScalingKey {
     public:
-        RotationKey(AnimationChannel* pChannel, const SR_MATH_NS::Quaternion& rotation, const SR_MATH_NS::Quaternion& delta)
-            : Super(pChannel)
-            , m_rotation(rotation)
-            , m_delta(delta)
+        ScalingKey() = default;
+        explicit ScalingKey(const SR_MATH_NS::FVector3& scaling)
+            : scaling(scaling)
         { }
 
     public:
-        void SR_FASTCALL Update(double_t progress, float_t weight, AnimationKey* pPreviousKey, AnimationData* pData, AnimationData* pStaticData) noexcept override;
-        void SR_FASTCALL Set(float_t weight, AnimationData* pData) noexcept override;
-
-        SR_NODISCARD AnimationKey* Copy(AnimationChannel* pChannel) const noexcept override {
-            return new RotationKey(pChannel, m_rotation, m_delta);
-        }
-
-    private:
-        SR_MATH_NS::Quaternion m_rotation;
-        SR_MATH_NS::Quaternion m_delta;
+        SR_MATH_NS::FVector3 scaling;
 
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class ScalingKey : public AnimationKey {
-        using Super = AnimationKey;
-    public:
-        ScalingKey(AnimationChannel* pChannel, const SR_MATH_NS::FVector3& scaling, const SR_MATH_NS::FVector3& delta)
-            : Super(pChannel)
-            , m_scaling(scaling)
-            , m_delta(delta)
-        { }
+    struct UnionAnimationKey {
+        UnionAnimationKey() = default;
+        ~UnionAnimationKey() = default;
 
-    public:
-        void SR_FASTCALL Update(double_t progress, float_t weight, AnimationKey* pPreviousKey, AnimationData* pData, AnimationData* pStaticData) noexcept override;
-        void SR_FASTCALL Set(float_t weight, AnimationData* pData) noexcept override;
-
-        SR_NODISCARD AnimationKey* Copy(AnimationChannel* pChannel) const noexcept override {
-            return new ScalingKey(pChannel, m_scaling, m_delta);
+        UnionAnimationKey(const UnionAnimationKey& other) {
+            CopyFrom(other);
         }
 
-    private:
-        SR_MATH_NS::FVector3 m_scaling;
-        SR_MATH_NS::FVector3 m_delta;
+        UnionAnimationKey& operator=(const UnionAnimationKey& other) {
+            if (this != &other) {
+                CopyFrom(other);
+            }
+            return *this;
+        }
+
+        void SR_FASTCALL UpdateWithWeight(float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t weight) const noexcept;
+        void SR_FASTCALL SetWithWeight(AnimationGameObjectData& animation, float_t weight) const noexcept;
+
+        void SR_FASTCALL Update(float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation) const noexcept;
+        void SR_FASTCALL Set(AnimationGameObjectData& animation) const noexcept;
+
+        void SR_FASTCALL Update(float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t toreance) const noexcept;
+        void SR_FASTCALL Set(AnimationGameObjectData& animation, float_t toreance) const noexcept;
+
+        template<class T> void SetData(T data) {
+            if constexpr (std::is_same_v<T, TranslationKey>) {
+                this->data.translation = data;
+                type = AnimationKeyType::Translation;
+            }
+            else if constexpr (std::is_same_v<T, RotationKey>) {
+                this->data.rotation = data;
+                type = AnimationKeyType::Rotation;
+            }
+            else if constexpr (std::is_same_v<T, ScalingKey>) {
+                this->data.scaling = data;
+                type = AnimationKeyType::Scaling;
+            }
+            else {
+                SRHalt("Unknown key type!");
+            }
+        }
+
+        void CopyFrom(const UnionAnimationKey& other);
+
+    public:
+        union Data {
+            TranslationKey translation;
+            RotationKey rotation;
+            ScalingKey scaling;
+
+            Data() { }
+            ~Data() { }
+        } data;
+
+        AnimationKeyType type = AnimationKeyType::None;
+        float_t time = 0.f;
 
     };
 }

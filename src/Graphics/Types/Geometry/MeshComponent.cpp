@@ -42,15 +42,7 @@ namespace SR_GTYPES_NS {
     }
 
     void IMeshComponent::OnMatrixDirty() {
-        if (auto&& pTransform = GetTransform()) {
-            m_pInternal->SetMatrix(pTransform->GetMatrix());
-        }
-        else {
-            m_pInternal->SetMatrix(SR_MATH_NS::Matrix4x4::Identity());
-        }
-
         m_pInternal->MarkUniformsDirty();
-
         Super::OnMatrixDirty();
     }
 
@@ -96,6 +88,14 @@ namespace SR_GTYPES_NS {
         : IMeshComponent(this)
         , Mesh(type)
     { }
+
+    const SR_MATH_NS::Matrix4x4& MeshComponent::GetMatrix() const {
+        if (m_gameObject) {
+            return m_gameObject->GetTransform()->GetMatrix();
+        }
+
+        return Mesh::GetMatrix();
+    }
 
     int64_t MeshComponent::GetSortingPriority() const {
         if (m_gameObject) {
@@ -154,5 +154,13 @@ namespace SR_GTYPES_NS {
         }
 
         return m_gameObject->GetLayer();
+    }
+
+    const SR_MATH_NS::Matrix4x4& IndexedMeshComponent::GetMatrix() const {
+        if (m_gameObject) {
+            return m_gameObject->GetTransform()->GetMatrix();
+        }
+
+        return IndexedMesh::GetMatrix();
     }
 }

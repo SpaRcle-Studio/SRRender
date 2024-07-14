@@ -14,15 +14,28 @@
 
 namespace SR_ANIMATIONS_NS {
     AnimationPose::~AnimationPose() {
-        for (auto&& [boneHashName, pData] : m_data) {
-            delete pData;
-        }
-        m_indices.clear();
-        m_data.clear();
+        //for (auto&& [boneHashName, pData] : m_data) {
+        //    delete pData;
+        //}
+        //m_indices.clear();
+        //m_data.clear();
     }
 
-    AnimationData* AnimationPose::GetData(AnimationPose::BoneHashName boneHashName) const noexcept {
-        if (auto&& pIt = m_indices.find(boneHashName); pIt != m_indices.end()) {
+    void AnimationPose::SetGameObjectsCount(uint32_t count) {
+        m_gameObjects.resize(count);
+    }
+
+    AnimationGameObjectData& AnimationPose::GetGameObjectData(Index index) noexcept {
+        if (index < m_gameObjects.size()) SR_LIKELY_ATTRIBUTE {
+            return m_gameObjects[index];
+        }
+        static AnimationGameObjectData empty;
+        SRHalt("Invalid index!");
+        return empty;
+    }
+
+    /*AnimationData* AnimationPose::GetData(SR_UTILS_NS::StringAtom boneName) const noexcept {
+        if (auto&& pIt = m_indices.find(boneName); pIt != m_indices.end()) {
             return pIt->second;
         }
 
@@ -43,7 +56,7 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    void AnimationPose::Initialize(Skeleton *pSkeleton) {
+    void AnimationPose::Initialize(const Skeleton* pSkeleton) {
         SR_TRACY_ZONE;
 
         SRAssert(!m_isInitialized);
@@ -55,7 +68,7 @@ namespace SR_ANIMATIONS_NS {
 
         for (auto&& pBone : bones) {
             auto&& pair = std::make_pair(
-                pBone->hashName,
+                pBone->name,
                 new AnimationData()
             );
 
@@ -66,7 +79,7 @@ namespace SR_ANIMATIONS_NS {
         m_isInitialized = true;
     }
 
-    void AnimationPose::Apply(Skeleton *pSkeleton) {
+    void AnimationPose::Apply(Skeleton* pSkeleton) {
         SR_TRACY_ZONE;
 
         if (!m_isInitialized) {
@@ -167,7 +180,7 @@ namespace SR_ANIMATIONS_NS {
                     continue;
                 }
 
-                auto&& pData = GetData(pChannel->GetGameObjectHashName());
+                auto&& pData = GetData(pChannel->GetGameObjectName());
                 if (!pData) {
                     continue;
                 }
@@ -175,5 +188,5 @@ namespace SR_ANIMATIONS_NS {
                 pKey->Set(1.f, pData);
             }
         }
-    }
+    }*/
 }

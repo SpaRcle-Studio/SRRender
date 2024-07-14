@@ -7,8 +7,6 @@
 
 #include <Graphics/Animations/AnimationStateCondition.h>
 
-#include <utility>
-
 namespace SR_ANIMATIONS_NS {
     class AnimationState;
     class AnimationStateMachine;
@@ -18,6 +16,8 @@ namespace SR_ANIMATIONS_NS {
         using Super = SR_UTILS_NS::NonCopyable;
 
     public:
+        SR_NODISCARD static AnimationStateTransition* Load(AnimationState* pSource, AnimationState* pDestination, const SR_XML_NS::Node& nodeXml);
+
         AnimationStateTransition(AnimationState* pSource, AnimationState* pDestination, AnimationStateCondition* pCondition);
         AnimationStateTransition(AnimationState* pSource, AnimationState* pDestination);
 
@@ -27,13 +27,21 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD virtual bool IsSuitable(const StateConditionContext& context) const noexcept;
         SR_NODISCARD virtual bool IsFinished(const StateConditionContext& context) const noexcept;
 
+        void OnTransitionBegin(const StateConditionContext& context);
+
         SR_NODISCARD AnimationState* GetDestination() const noexcept { return m_destinationState; }
+        SR_NODISCARD AnimationState* GetSource() const noexcept { return m_sourceState; }
+
+        SR_NODISCARD bool IsActive() const noexcept { return m_isActive; }
+
+        SR_NODISCARD float_t GetProgress() const noexcept { return m_condition ? m_condition->GetProgress().value_or(1.f) : 1.f; }
+
+        virtual void Reset();
+        virtual void Update(const StateConditionContext& context);
 
     protected:
-        AnimationStateMachine* m_machine = nullptr;
-
+        bool m_isActive = false;
         AnimationStateCondition* m_condition = nullptr;
-
         AnimationState* m_sourceState = nullptr;
         AnimationState* m_destinationState = nullptr;
 

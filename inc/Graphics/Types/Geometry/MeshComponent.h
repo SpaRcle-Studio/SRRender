@@ -62,6 +62,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool HasSortingPriority() const override;
         SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
 
+        SR_NODISCARD const SR_MATH_NS::Matrix4x4& GetMatrix() const override;
+
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
@@ -80,6 +82,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD std::string GetGeometryName() const override { return m_geometryName; }
         void SetGeometryName(const std::string& name) override { m_geometryName = name; }
+        const SR_MATH_NS::Matrix4x4& GetMatrix() const override;
 
         SR_NODISCARD int64_t GetSortingPriority() const override;
         SR_NODISCARD bool HasSortingPriority() const override;

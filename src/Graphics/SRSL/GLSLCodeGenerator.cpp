@@ -222,18 +222,19 @@ namespace SR_SRSL_NS {
 
         uint32_t location = 0;
         for (auto&& vertexAttribute : vertexInfo.m_names) {
-            const bool isUsed = pFunction->IsVariableUsed(vertexAttribute.c_str());
-            std::string type = VertexAttributeToString(vertexInfo.m_attributes[location].first);
+            const bool isUsed = pFunction->IsVariableUsed(vertexAttribute);
+            std::string type = VertexAttributeToString(vertexInfo.m_types[location].first);
+            std::string arraySize = vertexInfo.m_types[location].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[location].second) : std::string();
 
             if (isUsed && stage != ShaderStage::Vertex) {
-                code += SR_FORMAT("layout (location = {}) in {} {};\n", location, type.c_str(), vertexAttribute.c_str());
+                code += SR_FORMAT("layout (location = {}) in {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
             }
 
             if (stage == ShaderStage::Vertex) {
-                code += SR_FORMAT("layout (location = {}) in {} {}_INPUT;\n", location, type.c_str(), vertexAttribute.c_str());
+                code += SR_FORMAT("layout (location = {}) in {} {}_INPUT{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
             }
 
-            ++location;
+            location += vertexInfo.m_types[location].second;
         }
 
         if (stage != ShaderStage::Vertex) {
@@ -272,10 +273,12 @@ namespace SR_SRSL_NS {
         uint32_t location = 0;
 
         if (stage == ShaderStage::Vertex) {
-            for (auto &&vertexAttribute : vertexInfo.m_names) {
-                std::string type = VertexAttributeToString(vertexInfo.m_attributes[location].first);
-                code += SR_FORMAT("layout (location = {}) out {} {};\n", location, type.c_str(), vertexAttribute.c_str());
-                ++location;
+            for (auto&& vertexAttribute : vertexInfo.m_names) {
+                std::string type = VertexAttributeToString(vertexInfo.m_types[location].first);
+                std::string arraySize = vertexInfo.m_types[location].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[location].second) : std::string();
+
+                code += SR_FORMAT("layout (location = {}) out {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                location += vertexInfo.m_types[location].second;
             }
 
             //if (std::find(vertexInfo.m_names.begin(), vertexInfo.m_names.end(), "VERTEX") == vertexInfo.m_names.end()) {
@@ -661,6 +664,8 @@ namespace SR_SRSL_NS {
             case Vertices::Attribute::INT_R32G32B32A32: return "ivec4";
             case Vertices::Attribute::INT_R32G32B32: return "ivec3";
             case Vertices::Attribute::INT_R32G32: return "ivec2";
+            case Vertices::Attribute::UINT_R32: return "uint";
+            case Vertices::Attribute::INT_R32: return "uint";
             case Vertices::Attribute::Unknown:
             default:
                 SRHalt0();

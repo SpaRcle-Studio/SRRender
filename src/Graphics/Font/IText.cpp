@@ -110,7 +110,7 @@ namespace SR_GTYPES_NS {
     }
 
     void IText::UseModelMatrix() {
-        GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, m_modelMatrix);
+        GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
         GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_X, 0.f);
         GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_Y, 0.f);
         GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_WIDTH, static_cast<float_t>(m_atlasSize.x) / 100.f);

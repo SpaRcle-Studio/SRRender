@@ -7,7 +7,6 @@
 namespace SR_ANIMATIONS_NS {
     AnimationStateTransition::AnimationStateTransition(AnimationState* pSource, AnimationState* pDestination, AnimationStateCondition* pCondition)
         : Super()
-        , m_machine(pSource->GetMachine())
         , m_condition(pCondition)
         , m_sourceState(pSource)
         , m_destinationState(pDestination)
@@ -17,7 +16,6 @@ namespace SR_ANIMATIONS_NS {
 
     AnimationStateTransition::AnimationStateTransition(AnimationState* pSource, AnimationState* pDestination)
         : Super()
-        , m_machine(pSource->GetMachine())
         , m_sourceState(pSource)
         , m_destinationState(pDestination)
     { 
@@ -26,9 +24,18 @@ namespace SR_ANIMATIONS_NS {
 
     AnimationStateTransition::~AnimationStateTransition() {
         SR_SAFE_DELETE_PTR(m_condition);
-        m_machine = nullptr;
         m_sourceState = nullptr;
         m_destinationState = nullptr;
+    }
+
+    AnimationStateTransition* AnimationStateTransition::Load(AnimationState* pSource, AnimationState* pDestination, const SR_XML_NS::Node& nodeXml) {
+        if (auto&& xmlCondition = nodeXml.GetNode("Condition")) {
+            if (auto&& pCondition = AnimationStateCondition::Load(xmlCondition)) {
+                return new AnimationStateTransition(pSource, pDestination, pCondition);
+            }
+        }
+
+        return new AnimationStateTransition(pSource, pDestination);
     }
 
     bool AnimationStateTransition::IsSuitable(const StateConditionContext& context) const noexcept {
@@ -45,5 +52,25 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return true;
+    }
+
+    void AnimationStateTransition::OnTransitionBegin(const StateConditionContext& context) {
+        m_isActive = true;
+        if (m_destinationState) {
+            m_destinationState->OnTransitionBegin();
+        }
+    }
+
+    void AnimationStateTransition::Reset() {
+        m_isActive = false;
+        if (m_condition) {
+            m_condition->Reset();
+        }
+    }
+
+    void AnimationStateTransition::Update(const StateConditionContext& context) {
+        if (m_condition) {
+            m_condition->Update(context);
+        }
     }
 }

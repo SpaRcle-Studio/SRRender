@@ -8,29 +8,24 @@
 
 namespace SR_ANIMATIONS_NS {
     Animator::~Animator() {
-        SR_SAFE_DELETE_PTR(m_graph);
-        SR_SAFE_DELETE_PTR(m_workingPose);
-        SR_SAFE_DELETE_PTR(m_staticPose);
+        SetGraph(SR_UTILS_NS::Path());
     }
 
     bool Animator::InitializeEntity() noexcept {
-        GetComponentProperties().AddCustomProperty<SR_UTILS_NS::PathProperty>("Font")
-            .AddFileFilter("Animation clip", {{ "fbx" }})
+        GetComponentProperties().AddCustomProperty<SR_UTILS_NS::PathProperty>("Graph")
+            .AddFileFilter("Animation graph", {{ "xml" }})
             .SetGetter([this]()-> SR_UTILS_NS::Path {
-                return m_clipPath;
+                return m_graph ? m_graph->GetPath() : SR_UTILS_NS::Path();
             })
             .SetSetter([this](const SR_UTILS_NS::Path& path) {
-                SetClipPath(path);
+                SetGraph(path);
             });
 
-        GetComponentProperties().AddStandardProperty("Clip index", &m_clipIndex)
-            .SetSetter([this](void* pData) {
-                SetClipIndex(*static_cast<uint32_t*>(pData));
-            });
+        GetComponentProperties().AddStandardProperty("Frame rate", &m_frameRate);
+        GetComponentProperties().AddStandardProperty("Tolerance", &m_tolerance);
 
         GetComponentProperties().AddStandardProperty("Sync", &m_sync);
-        GetComponentProperties().AddStandardProperty("Allow override", &m_allowOverride);
-        GetComponentProperties().AddStandardProperty("Weight", &m_weight);
+        GetComponentProperties().AddStandardProperty("FPS compensation", &m_fpsCompensation);
 
         return Super::InitializeEntity();
     }
@@ -69,69 +64,46 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
-        if (!m_workingPose) {
-            m_workingPose = new AnimationPose();
-            m_workingPose->Initialize(m_skeleton);
-        }
-
-        if (!m_staticPose) {
-            m_staticPose = new AnimationPose();
-            m_staticPose->Initialize(m_skeleton);
-        }
-        else if (m_allowOverride) {
-            m_staticPose->Update(m_skeleton, m_workingPose);
-        }
-
         if (m_graph) {
             UpdateContext context;
 
-            context.pStaticPose = m_staticPose;
-            context.pWorkingPose = m_workingPose;
+            context.tolerance = m_tolerance;
+            context.frameRate = SR_MAX(1, m_frameRate);
             context.now = SR_HTYPES_NS::Time::Instance().Now();
             context.weight = 1.f;
+            context.fpsCompensation = m_fpsCompensation;
             context.dt = dt;
 
             m_graph->Update(context);
         }
-
-        m_workingPose->Apply(m_skeleton);
     }
 
-    void Animator::ReloadClip() {
+    /*void Animator::ReloadClip() {
         SR_SAFE_DELETE_PTR(m_graph);
 
-        if (m_clipPath.IsEmpty()) {
+        if (m_clipPath.empty() || m_clipName.empty()) {
             return;
         }
 
-        auto&& pAnimationClip = AnimationClip::Load(m_clipPath, m_clipIndex);
+        auto&& pAnimationClip = AnimationClip::Load(m_clipPath, m_clipName);
         if (!pAnimationClip) {
             SR_ERROR("Animator::ReloadClip() : failed to load animation clip: {}", m_clipPath.ToStringView());
             return;
         }
 
-        m_graph = new AnimationGraph(nullptr);
+        m_graph = new AnimationGraph(this);
 
         auto&& pStateMachineNode = m_graph->AddNode<AnimationGraphNodeStateMachine>();
         auto&& pStateMachine = pStateMachineNode->GetMachine();
 
-        auto&& pSetPoseState = pStateMachine->AddState<AnimationSetPoseState>(pAnimationClip);
-        //pSetPoseState->SetClip(pAnimationClip);
-
         auto&& pClipState = pStateMachine->AddState<AnimationClipState>(pAnimationClip);
-        //pClipState->SetClip(pAnimationClip);
-
-        pStateMachine->GetEntryPoint()->AddTransition(pSetPoseState);
-        pSetPoseState->AddTransition(pClipState);
 
         pStateMachine->GetEntryPoint()->AddTransition(pClipState);
 
         m_graph->GetFinal()->AddInput(pStateMachineNode, 0, 0);
-    }
+    }*/
 
     void Animator::OnAttached() {
-
-
         Super::OnAttached();
     }
 
@@ -139,13 +111,20 @@ namespace SR_ANIMATIONS_NS {
         Super::Start();
     }
 
-    void Animator::SetClipPath(const SR_UTILS_NS::Path& path) {
-        m_clipPath = path;
-        ReloadClip();
+    void Animator::SetGraph(const SR_UTILS_NS::Path& path) {
+        SR_SAFE_DELETE_PTR(m_graph);
+        if (!path.IsEmpty()) {
+            m_graph = AnimationGraph::Load(this, path);
+        }
     }
 
-    void Animator::SetClipIndex(uint32_t index) {
-        m_clipIndex = index;
-        ReloadClip();
-    }
+    //void Animator::SetClipPath(const SR_UTILS_NS::Path& path) {
+    //    m_clipPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+    //    ReloadClip();
+    //}
+
+    //void Animator::SetClipName(const std::string& name) {
+    //    m_clipName = name;
+    //    ReloadClip();
+    //}
 }

@@ -57,7 +57,7 @@ namespace SR_GTYPES_NS {
 
     void Sprite::UseModelMatrix() {
         if (auto&& pShader = GetRenderContext()->GetCurrentShader()) {
-            pShader->SetMat4(SHADER_MODEL_MATRIX, m_modelMatrix);
+            pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
 
             if (m_sliced) {
                 pShader->SetVec2(SHADER_SLICED_TEXTURE_BORDER, m_textureBorder);

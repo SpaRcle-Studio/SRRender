@@ -24,7 +24,7 @@ namespace SR_ANIMATIONS_NS {
 
     public:
         static std::vector<AnimationClip*> Load(const SR_UTILS_NS::Path& path);
-        static AnimationClip* Load(const SR_UTILS_NS::Path& path, uint32_t id);
+        static AnimationClip* Load(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom name);
 
     public:
         SR_NODISCARD const std::vector<AnimationChannel*>& GetChannels() const { return m_channels; }
@@ -32,15 +32,23 @@ namespace SR_ANIMATIONS_NS {
 
         SR_NODISCARD SR_UTILS_NS::Path InitializeResourcePath() const override;
 
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetClipName() const noexcept;
+
+        SR_NODISCARD float_t GetDuration() const noexcept { return m_duration; }
+        SR_NODISCARD uint32_t GetMaxKeyFrame() const noexcept { return m_maxKeyFrame; }
+
     protected:
         bool Unload() override;
         bool Load() override;
 
     private:
-        void LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index);
+        SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, const std::string& name);
 
     private:
         std::vector<AnimationChannel*> m_channels;
+
+        float_t m_duration = 0.f;
+        uint32_t m_maxKeyFrame = 0;
 
     };
 }
