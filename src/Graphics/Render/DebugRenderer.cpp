@@ -16,26 +16,41 @@ namespace SR_GRAPH_NS {
     DebugRenderer::DebugRenderer(RenderScene* pRenderScene)
         : Super()
         , m_renderScene(pRenderScene)
-    {
-        using namespace std::placeholders;
-
-        SR_UTILS_NS::DebugDraw::Callbacks callbacks;
-        callbacks.removeCallback = std::bind(&DebugRenderer::Remove, this, _1);
-        callbacks.drawLineCallback = std::bind(&DebugRenderer::DrawLine, this, _1, _2, _3, _4, _5);
-        callbacks.drawCubeCallback = std::bind(&DebugRenderer::DrawGeometry, this, "Engine/Models/cubeWireframe.obj", _1, _2, _3, _4, _5, _6);
-        callbacks.drawPlaneCallback = std::bind(&DebugRenderer::DrawGeometry, this, "Engine/Models/planeWireframe.obj", _1, _2, _3, _4, _5, _6);
-        callbacks.drawSphereCallback = std::bind(&DebugRenderer::DrawGeometry, this, "Engine/Models/sphere_circle.obj", _1, _2, _3, _4, _5, _6);
-        callbacks.drawCapsuleCallback = std::bind(&DebugRenderer::DrawGeometry, this, "Engine/Models/capsule_circle.obj", _1, _2, _3, _4, _5, _6);
-        callbacks.drawMeshCallback = std::bind(&DebugRenderer::DrawMesh, this, _1, _2, _3, _4, _5, _6, _7, _8);
-
-        SR_UTILS_NS::DebugDraw::Instance().SetCallbacks(this, std::move(callbacks));
-    }
+    { }
 
     DebugRenderer::~DebugRenderer() {
         SRAssert(m_timedObjects.size() == m_emptyIds.size());
     }
 
     void DebugRenderer::Init() {
+        SR_INFO("DebugRenderer::Init() : initializing debug renderer...");
+
+        m_meshes[0] = SR_HTYPES_NS::RawMesh::Load("Engine/Models/cubeWireframe.obj");
+        m_meshes[1] = SR_HTYPES_NS::RawMesh::Load("Engine/Models/planeWireframe.obj");
+        m_meshes[2] = SR_HTYPES_NS::RawMesh::Load("Engine/Models/sphere_circle.obj");
+        m_meshes[3] = SR_HTYPES_NS::RawMesh::Load("Engine/Models/capsule_circle.obj");
+
+        for (auto&& pMesh : m_meshes) {
+            if (!pMesh) {
+                SR_ERROR("Failed to load debug mesh!");
+                continue;
+            }
+            pMesh->AddUsePoint();
+        }
+
+        using namespace std::placeholders;
+
+        SR_UTILS_NS::DebugDraw::Callbacks callbacks;
+        callbacks.removeCallback = std::bind(&DebugRenderer::Remove, this, _1);
+        callbacks.drawLineCallback = std::bind(&DebugRenderer::DrawLine, this, _1, _2, _3, _4, _5);
+        callbacks.drawCubeCallback = std::bind(&DebugRenderer::DrawMesh, this, m_meshes[0], 0, _1, _2, _3, _4, _5, _6);
+        callbacks.drawPlaneCallback = std::bind(&DebugRenderer::DrawMesh, this, m_meshes[1], 0, _1, _2, _3, _4, _5, _6);
+        callbacks.drawSphereCallback = std::bind(&DebugRenderer::DrawMesh, this, m_meshes[2], 0, _1, _2, _3, _4, _5, _6);
+        callbacks.drawCapsuleCallback = std::bind(&DebugRenderer::DrawMesh, this, m_meshes[3], 0, _1, _2, _3, _4, _5, _6);
+        callbacks.drawMeshCallback = std::bind(&DebugRenderer::DrawMesh, this, _1, _2, _3, _4, _5, _6, _7, _8);
+
+        SR_UTILS_NS::DebugDraw::Instance().SetCallbacks(this, std::move(callbacks));
+
         m_wireFrameMaterial = FileMaterial::Load("Engine/Materials/Debug/wireframe.mat");
 
         if (m_wireFrameMaterial) {
@@ -52,6 +67,13 @@ namespace SR_GRAPH_NS {
     void DebugRenderer::DeInit() {
         SR_LOCK_GUARD;
         SR_UTILS_NS::DebugDraw::Instance().RemoveCallbacks(this);
+
+        for (auto&& pMesh : m_meshes) {
+            if (pMesh) {
+                pMesh->RemoveUsePoint();
+                pMesh = nullptr;
+            }
+        }
 
         if (m_wireFrameMaterial) {
             m_wireFrameMaterial->RemoveUsePoint();
@@ -227,6 +249,7 @@ namespace SR_GRAPH_NS {
         const SR_MATH_NS::Quaternion& rot, const SR_MATH_NS::FVector3& scale,
         const SR_MATH_NS::FColor& color, float_t time
     ) {
+        SR_TRACY_ZONE;
         SR_LOCK_GUARD;
 
         if (id == SR_ID_INVALID) {

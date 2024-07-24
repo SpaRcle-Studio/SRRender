@@ -62,6 +62,8 @@ namespace SR_GRAPH_NS {
             bool registered;
         };
 
+        std::array<SR_HTYPES_NS::RawMesh*, 4> m_meshes;
+
         FileMaterial* m_wireFrameMaterial = nullptr;
         FileMaterial* m_lineMaterial = nullptr;
 

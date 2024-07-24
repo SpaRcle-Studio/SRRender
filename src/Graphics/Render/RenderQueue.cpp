@@ -31,6 +31,9 @@ namespace SR_GRAPH_NS {
         for (auto&& [layer, queue] : m_queues) {
             for (auto&& meshInfo : queue) {
                 meshInfo.pMesh->GetRenderQueues().Remove({ this, meshInfo.shaderUseInfo });
+                if (meshInfo.pMesh->GetRenderQueues().empty()) {
+                    meshInfo.pMesh->SetUniformsClean();
+                }
             }
         }
     }
