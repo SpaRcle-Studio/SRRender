@@ -9,11 +9,19 @@ set(BUILD_SHARED_LIBS OFF)
 set(FT_CONFIG_OPTION_USE_ZLIdB OFF)
 set(FT_DISABLE_HARFBUZZ ON)
 
+option(SR_RENDER_GLFW "" OFF)
+
 message("$ENV{VULKAN_SDK}")
 
 find_package(Vulkan REQUIRED)
 
 if (UNIX AND NOT APPLE)
+    set(SR_RENDER_GLFW ON)
+endif()
+
+if (SR_RENDER_GLFW)
+    set(SR_RENDER_GLFW ON)
+
     add_subdirectory(libs/glfw)
     include_directories(libs/glfw/include)
 endif()
@@ -27,6 +35,10 @@ if (ANDROID_NDK)
 endif()
 
 include(freetype.cmake)
+
+if (SR_RENDER_GLFW)
+    add_compile_definitions(SR_RENDER_GLFW)
+endif()
 
 add_subdirectory(libs/cmp_core)
 
