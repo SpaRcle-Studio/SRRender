@@ -113,7 +113,14 @@ namespace SR_ANIMATIONS_NS {
 
     void Animator::SetGraph(const SR_UTILS_NS::Path& path) {
         SR_SAFE_DELETE_PTR(m_graph);
-        if (!path.IsEmpty()) {
+        if (path.IsEmpty()) {
+            return;
+        }
+
+        if (path.IsAbs()) {
+            m_graph = AnimationGraph::Load(this, path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath()));
+        }
+        else {
             m_graph = AnimationGraph::Load(this, path);
         }
     }

@@ -26,25 +26,33 @@ namespace SR_ANIMATIONS_NS {
     AnimationGraph* AnimationGraph::Load(Animator* pAnimator, const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
 
-        if (!path.Exists(SR_UTILS_NS::Path::Type::File)) {
-            SR_ERROR("AnimationGraph::Load() : animation graph \"{}\" isn't exists!", path.ToStringRef());
+        auto&& graphPath = SR_UTILS_NS::Path();
+        if (!path.IsAbs()) {
+            graphPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
+        }
+        else {
+            SR_ERROR("AnimationGraph::Load() : path is absolute! \"{}\"", path.ToStringRef());
+        }
+
+        if (!graphPath.Exists(SR_UTILS_NS::Path::Type::File)) {
+            SR_ERROR("AnimationGraph::Load() : animation graph \"{}\" doesn't exist!", graphPath.ToStringRef());
             return nullptr;
         }
 
-        auto&& xmlDocument = SR_XML_NS::Document::Load(path);
+        auto&& xmlDocument = SR_XML_NS::Document::Load(graphPath);
         if (!xmlDocument) {
-            SR_ERROR("AnimationGraph::Load() : failed to open xml document \"{}\"!", path.ToStringRef());
+            SR_ERROR("AnimationGraph::Load() : failed to open xml document \"{}\"!", graphPath.ToStringRef());
             return nullptr;
         }
 
         auto&& rootXml = xmlDocument.Root().GetNode("Animator");
         if (!rootXml) {
-            SR_ERROR("AnimationGraph::Load() : failed to find root node \"Animator\" in xml document \"{}\"!", path.ToStringRef());
+            SR_ERROR("AnimationGraph::Load() : failed to find root node \"Animator\" in xml document \"{}\"!", graphPath.ToStringRef());
             return nullptr;
         }
 
         auto&& pAnimationGraph = new AnimationGraph(pAnimator);
-        pAnimationGraph->m_path = path;
+        pAnimationGraph->m_path = graphPath;
 
         std::vector<uint32_t> errorNodes;
 
