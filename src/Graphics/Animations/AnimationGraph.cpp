@@ -32,6 +32,7 @@ namespace SR_ANIMATIONS_NS {
         }
         else {
             SR_ERROR("AnimationGraph::Load() : path is absolute! \"{}\"", path.ToStringRef());
+            graphPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path.RemoveSubPath("Resources"));
         }
 
         if (!graphPath.Exists(SR_UTILS_NS::Path::Type::File)) {
