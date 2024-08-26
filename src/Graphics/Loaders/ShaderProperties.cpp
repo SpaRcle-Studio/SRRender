@@ -12,4 +12,12 @@ namespace SR_GRAPH_NS {
         }
         return GetVariantFromShaderVarType(type);
     }
+
+    ShaderPropertyVariant ShaderProperty::GetDefaultData() const {
+        if (defaultData) {
+            return *defaultData;
+        }
+        SRHalt("Default data is not set!");
+        return {};
+    }
 }

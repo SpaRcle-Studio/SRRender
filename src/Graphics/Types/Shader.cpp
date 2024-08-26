@@ -295,7 +295,7 @@ namespace SR_GRAPH_NS::Types {
         return m_uniformBlock.m_size;
     }
 
-    bool Shader::InitUBOBlock() {
+    /*bool Shader::InitUBOBlock() {
         if (m_uniformBlock.m_memory) SR_LIKELY_ATTRIBUTE {
             memset(m_uniformBlock.m_memory, 1, m_uniformBlock.m_size);
         }
@@ -318,7 +318,7 @@ namespace SR_GRAPH_NS::Types {
         }
 
         return false;
-    }
+    }*/
 
     bool Shader::Flush() const {
         if (!m_uniformBlock.m_memory) SR_UNLIKELY_ATTRIBUTE {
@@ -468,6 +468,23 @@ namespace SR_GRAPH_NS::Types {
             }
         }
 
+        /// ------------------------------------------------------------------------------------------------------------
+
+        for (auto&& property : m_properties) {
+            if (!property.HasDefaultData()) {
+                continue;
+            }
+            if (m_uniformSharedBlock.HasField(property.id)) {
+                m_uniformSharedBlock.SetDefault(property.id, property.GetDefaultData());
+            }
+            if (m_uniformBlock.HasField(property.id)) {
+                m_uniformBlock.SetDefault(property.id, property.GetDefaultData());
+            }
+            if (m_constBlock.HasField(property.id)) {
+                m_constBlock.SetDefault(property.id, property.GetDefaultData());
+            }
+        }
+
         return IResource::Load();
     }
 
@@ -571,7 +588,7 @@ namespace SR_GRAPH_NS::Types {
         }
 
         if (m_uniformSharedBlock.m_memory) SR_LIKELY_ATTRIBUTE {
-            memset(m_uniformSharedBlock.m_memory, 1, m_uniformSharedBlock.m_size);
+            m_uniformSharedBlock.ResetDefaultValues();
         }
 
         m_pipeline->SetCurrentShader(this);

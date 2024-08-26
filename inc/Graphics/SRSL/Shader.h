@@ -82,6 +82,7 @@ namespace SR_SRSL_NS {
 
     private:
         SR_NODISCARD float_t EvalExpressionFloat(SRSLExpr* pExpression) const;
+        SR_NODISCARD SR_MATH_NS::FVector2 EvalExpressionVec2(SRSLExpr* pExpression) const;
         SR_NODISCARD SR_MATH_NS::FVector3 EvalExpressionVec3(SRSLExpr* pExpression) const;
         SR_NODISCARD SR_MATH_NS::FVector4 EvalExpressionVec4(SRSLExpr* pExpression) const;
         SR_NODISCARD std::optional<ShaderPropertyVariant> EvalExpressionValue(SRSLExpr* pExpression) const;

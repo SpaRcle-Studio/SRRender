@@ -589,6 +589,22 @@ namespace SR_SRSL_NS {
         return SR_UTILS_NS::LexicalCast<float_t>(pExpression->token);
     }
 
+    SR_MATH_NS::FVector2 SRSLShader::EvalExpressionVec2(SRSLExpr* pExpression) const {
+        if (pExpression->args.size() == 2) {
+            const float_t x = EvalExpressionFloat(pExpression->args[0]);
+            const float_t y = EvalExpressionFloat(pExpression->args[1]);
+            return SR_MATH_NS::FVector2(x, y);
+        }
+
+        if (pExpression->args.size() == 1) {
+            const float_t x = EvalExpressionFloat(pExpression->args[0]);
+            return SR_MATH_NS::FVector2(x, x);
+        }
+
+        SR_ERROR("SRSLShader::EvalExpressionVec2() : invalid expression args count! Count: " + std::to_string(pExpression->args.size()));
+        return SR_MATH_NS::FVector2::Zero();
+    }
+
     SR_MATH_NS::FVector3 SRSLShader::EvalExpressionVec3(SRSLExpr* pExpression) const {
         if (pExpression->args.size() == 3) {
             const float_t x = EvalExpressionFloat(pExpression->args[0]);
@@ -627,6 +643,10 @@ namespace SR_SRSL_NS {
     std::optional<ShaderPropertyVariant> SRSLShader::EvalExpressionValue(SRSLExpr* pExpression) const {
         if (!pExpression) {
             return std::nullopt;
+        }
+
+        if (pExpression->token == "vec2") {
+            return EvalExpressionVec2(pExpression);
         }
 
         if (pExpression->token == "vec3") {

@@ -77,7 +77,9 @@ namespace SR_GRAPH_NS {
         ShaderVarType type;
         std::optional<ShaderPropertyVariant> defaultData;
 
-        ShaderPropertyVariant GetData() const;
+        SR_NODISCARD bool HasDefaultData() const { return defaultData.has_value(); }
+        SR_NODISCARD ShaderPropertyVariant GetData() const;
+        SR_NODISCARD ShaderPropertyVariant GetDefaultData() const;
     };
 
     typedef std::list<ShaderProperty> ShaderProperties;

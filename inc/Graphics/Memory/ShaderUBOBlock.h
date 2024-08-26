@@ -5,6 +5,7 @@
 #ifndef SR_ENGINE_SHADERUBOBLOCK_H
 #define SR_ENGINE_SHADERUBOBLOCK_H
 
+#include <Graphics/Loaders/ShaderProperties.h>
 #include <Utils/Types/Map.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 
@@ -31,10 +32,17 @@ namespace SR_GRAPH_NS::Memory {
 
         void Init();
         void DeInit();
+
         void SR_FASTCALL SetField(uint64_t hashId, const void* data) noexcept;
+        void SR_FASTCALL SetField(uint64_t hashId, const ShaderPropertyVariant& property) noexcept;
+
+        SR_NODISCARD bool HasField(uint64_t hashId) const noexcept;
 
         SR_NODISCARD uint32_t GetBinding() const { return m_binding; }
         SR_NODISCARD bool Valid() const noexcept { return m_binding != SR_ID_INVALID; }
+
+        void SetDefault(const SR_UTILS_NS::StringAtom& name, const ShaderPropertyVariant& value);
+        void ResetDefaultValues();
 
     private:
         SR_NODISCARD uint64_t Align(uint64_t size) const;
@@ -56,6 +64,14 @@ namespace SR_GRAPH_NS::Memory {
         char* m_memory = nullptr;
 
         bool m_initialized = false;
+
+        struct DefaultValue {
+            SR_UTILS_NS::StringAtom name;
+            uint16_t size = 0;
+            uint16_t offset = 0;
+            ShaderPropertyVariant value;
+        };
+        std::vector<DefaultValue> m_defaultValues;
 
     };
 }

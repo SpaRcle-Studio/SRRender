@@ -116,12 +116,14 @@ namespace SR_GRAPH_NS {
         void GarbageCollect() { m_isNeedGarbageCollection = true; }
 
     private:
+        bool LoadDefaultResources();
         bool InitPipeline();
 
         template<typename T> bool RegisterResource(T* pResource) {
             SRAssert2(!m_isClosed, "RenderContext is closed");
             if (auto&& pGraphicsResource = dynamic_cast<Memory::IGraphicsResource*>(pResource)) {
                 if (pGraphicsResource->GetRenderContext()) {
+                    SRHalt("Resource already registered in some context!");
                     return false;
                 }
 

@@ -6,6 +6,7 @@
 
 const std::unordered_map<std::string, SR_GRAPH_NS::ShaderVarType> SR_GRAPH_NS::SRSL::SRSLLoader::STANDARD_VARIABLES = {
         { "HALF_SIZE_NEAR_PLANE", ShaderVarType::Vec2 },
+        { "ASPECT", ShaderVarType::Vec2 },
         { "MODEL_MATRIX", ShaderVarType::Mat4 },
         { "VIEW_MATRIX", ShaderVarType::Mat4 },
         { "PROJECTION_MATRIX", ShaderVarType::Mat4 },

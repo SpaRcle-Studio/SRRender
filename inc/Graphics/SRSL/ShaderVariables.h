@@ -25,6 +25,7 @@ namespace SR_SRSL_NS {
             { "TIME",                           "float"         },
 
             { "RESOLUTION",                     "vec2"          },
+            { "ASPECT",                         "vec2"          },
 
             { "CASCADE_LIGHT_SPACE_MATRICES",   "mat4[4]"       },
             { "CASCADE_SPLITS",                 "vec4"          },

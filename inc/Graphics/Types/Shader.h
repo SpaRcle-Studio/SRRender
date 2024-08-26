@@ -32,6 +32,9 @@ namespace SR_GTYPES_NS {
 
     class Shader : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         using ShaderProgram = int32_t;
+    public:
+        using Ptr = Shader*;
+
     private:
         Shader();
         ~Shader() override;
@@ -43,7 +46,7 @@ namespace SR_GTYPES_NS {
 
         bool Init();
         void UnUse() noexcept;
-        bool InitUBOBlock();
+        //bool InitUBOBlock();
         bool Flush() const;
         void FlushSamplers();
         void FlushConstants();

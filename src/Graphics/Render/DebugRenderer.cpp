@@ -50,18 +50,6 @@ namespace SR_GRAPH_NS {
         callbacks.drawMeshCallback = std::bind(&DebugRenderer::DrawMesh, this, _1, _2, _3, _4, _5, _6, _7, _8);
 
         SR_UTILS_NS::DebugDraw::Instance().SetCallbacks(this, std::move(callbacks));
-
-        m_wireFrameMaterial = FileMaterial::Load("Engine/Materials/Debug/wireframe.mat");
-
-        if (m_wireFrameMaterial) {
-            m_wireFrameMaterial->AddUsePoint();
-        }
-
-        m_lineMaterial = FileMaterial::Load("Engine/Materials/Debug/line.mat");
-
-        if (m_lineMaterial) {
-            m_lineMaterial->AddUsePoint();
-        }
     }
 
     void DebugRenderer::DeInit() {
@@ -123,6 +111,30 @@ namespace SR_GRAPH_NS {
         else if (m_timedObjects[id].pMesh) {
             UpdateTimedObject(id, 0.f);
         }
+    }
+
+    FileMaterial* DebugRenderer::GetWireframeMaterial() const {
+        if (m_wireFrameMaterial) {
+            return m_wireFrameMaterial;
+        }
+        m_wireFrameMaterial = FileMaterial::Load("Engine/Materials/Debug/wireframe.mat");
+
+        if (m_wireFrameMaterial) {
+            m_wireFrameMaterial->AddUsePoint();
+        }
+        return m_wireFrameMaterial;
+    }
+
+    FileMaterial* DebugRenderer::GetLineMaterial() const {
+        if (m_lineMaterial) {
+            return m_lineMaterial;
+        }
+        m_lineMaterial = FileMaterial::Load("Engine/Materials/Debug/line.mat");
+
+        if (m_lineMaterial) {
+            m_lineMaterial->AddUsePoint();
+        }
+        return m_lineMaterial;
     }
 
     uint64_t DebugRenderer::DrawLine(uint64_t id, const SR_MATH_NS::FVector3 &start, const SR_MATH_NS::FVector3 &end, const SR_MATH_NS::FColor &color, float_t time) {

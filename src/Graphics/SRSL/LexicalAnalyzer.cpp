@@ -250,7 +250,11 @@ namespace SR_SRSL_NS {
             }
             case LexemKind::OpeningCurlyBracket: {
                 m_lexicalTree.emplace_back(new SRSLLexicalTree());
-                SRAssert2(m_lexicalTree.size() <= 64 * 64 * 64, "Too deep nesting");
+                if (m_lexicalTree.size() > 64 * 64 * 64) {
+                    SR_ERROR("SRSLLexicalAnalyzer::ProcessBracket() : too deep nesting!");
+                    ++m_currentLexem;
+                    return;
+                }
 
                 if (!m_states.empty() && m_states.back() == LXAState::ForStatementExpression) {
                     m_states.back() = LXAState::ForStatementBody;

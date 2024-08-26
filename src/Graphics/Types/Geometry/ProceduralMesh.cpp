@@ -82,7 +82,7 @@ namespace SR_GTYPES_NS {
                 return;
             }
 
-            pShader->InitUBOBlock();
+            //pShader->InitUBOBlock();
             pShader->Flush();
 
             m_materialProperty.GetMaterial()->UseSamplers();
@@ -91,7 +91,7 @@ namespace SR_GTYPES_NS {
 
         switch (uboManager.BindUBO(m_virtualUBO)) {
             case Memory::UBOManager::BindResult::Duplicated:
-                pShader->InitUBOBlock();
+                //pShader->InitUBOBlock();
                 pShader->Flush();
                 m_materialProperty.GetMaterial()->UseSamplers();
                 pShader->FlushSamplers();

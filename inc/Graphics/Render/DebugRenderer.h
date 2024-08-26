@@ -41,6 +41,9 @@ namespace SR_GRAPH_NS {
     private:
         void Remove(uint64_t id);
 
+        SR_NODISCARD FileMaterial* GetWireframeMaterial() const;
+        SR_NODISCARD FileMaterial* GetLineMaterial() const;
+
         uint64_t DrawLine(uint64_t id, const SR_MATH_NS::FVector3& start, const SR_MATH_NS::FVector3& end, const SR_MATH_NS::FColor& color, float_t time);
         uint64_t DrawGeometry(const std::string_view& path, uint64_t id, const SR_MATH_NS::FVector3& pos, const SR_MATH_NS::Quaternion& rot, const SR_MATH_NS::FVector3& scale, const SR_MATH_NS::FColor& color, float_t time);
         uint64_t DrawMesh(SR_HTYPES_NS::RawMesh* pRawMesh, int32_t meshId, uint64_t id, const SR_MATH_NS::FVector3& pos, const SR_MATH_NS::Quaternion& rot, const SR_MATH_NS::FVector3& scale, const SR_MATH_NS::FColor& color, float_t time);
@@ -64,8 +67,8 @@ namespace SR_GRAPH_NS {
 
         std::array<SR_HTYPES_NS::RawMesh*, 4> m_meshes;
 
-        FileMaterial* m_wireFrameMaterial = nullptr;
-        FileMaterial* m_lineMaterial = nullptr;
+        mutable FileMaterial* m_wireFrameMaterial = nullptr;
+        mutable FileMaterial* m_lineMaterial = nullptr;
 
         std::vector<DebugTimedObject> m_timedObjects;
         std::list<uint64_t> m_emptyIds;

@@ -258,7 +258,12 @@ namespace SR_SRSL_NS {
 
     void SRSLRefAnalyzer::AnalyzeEntryPoint(SRSLUseStack::Ptr &pUseStack, std::list<std::string> &stack, SRSLFunction *pFunction) {
         stack.emplace_back(pFunction->GetName());
-        pUseStack->functions[pFunction->GetName()] = AnalyzeTree(stack, pFunction->pLexicalTree);
+        if (pFunction->pLexicalTree) {
+            pUseStack->functions[pFunction->GetName()] = AnalyzeTree(stack, pFunction->pLexicalTree);
+        }
+        else {
+            SRHalt("EntryPoint function must have a body!");
+        }
         stack.pop_back();
     }
 
