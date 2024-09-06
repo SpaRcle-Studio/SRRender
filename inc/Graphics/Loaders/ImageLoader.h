@@ -2,8 +2,8 @@
 // Created by Nikita on 17.11.2020.
 //
 
-#ifndef GAMEENGINE_IMAGELOADER_H
-#define GAMEENGINE_IMAGELOADER_H
+#ifndef SR_ENGINE_IMAGELOADER_H
+#define SR_ENGINE_IMAGELOADER_H
 
 namespace SR_GRAPH_NS {
     class ImageLoader {
@@ -11,4 +11,4 @@ namespace SR_GRAPH_NS {
     };
 }
 
-#endif //GAMEENGINE_IMAGELOADER_H
+#endif //SR_ENGINE_IMAGELOADER_H

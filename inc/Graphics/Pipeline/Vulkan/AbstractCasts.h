@@ -2,8 +2,8 @@
 // Created by Nikita on 10.06.2021.
 //
 
-#ifndef GAMEENGINE_ABSTRACTCASTS_H
-#define GAMEENGINE_ABSTRACTCASTS_H
+#ifndef SR_ENGINE_ABSTRACTCASTS_H
+#define SR_ENGINE_ABSTRACTCASTS_H
 
 #include <Utils/Debug.h>
 #include <EvoVulkan/Memory/Allocator.h>
@@ -428,4 +428,4 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 }
 
-#endif //GAMEENGINE_ABSTRACTCASTS_H
+#endif //SR_ENGINE_ABSTRACTCASTS_H

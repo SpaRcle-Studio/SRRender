@@ -2,8 +2,8 @@
 // Created by Nikita on 12.12.2020.
 //
 
-#ifndef GAMEENGINE_TEXTUREHELPER_H
-#define GAMEENGINE_TEXTUREHELPER_H
+#ifndef SR_ENGINE_TEXTUREHELPER_H
+#define SR_ENGINE_TEXTUREHELPER_H
 
 #include <Utils/Common/Enumerations.h>
 #include <Utils/Resources/Xml.h>
@@ -163,4 +163,4 @@ namespace SR_GRAPH_NS {
     uint8_t* Compress(uint32_t w, uint32_t h, uint8_t* pixels, SR_GRAPH_NS::TextureCompression method);
 }
 
-#endif //GAMEENGINE_TEXTUREHELPER_H
+#endif //SR_ENGINE_TEXTUREHELPER_H

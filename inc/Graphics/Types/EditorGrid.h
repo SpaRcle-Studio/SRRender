@@ -2,8 +2,8 @@
 // Created by Nikita on 28.01.2021.
 //
 
-#ifndef GAMEENGINE_EDITORGRID_H
-#define GAMEENGINE_EDITORGRID_H
+#ifndef SR_ENGINE_EDITORGRID_H
+#define SR_ENGINE_EDITORGRID_H
 
 /*
 #include <Environment/Environment.h>
@@ -41,4 +41,4 @@ namespace Framework::Graphics {
     };
 }*/
 
-#endif //GAMEENGINE_EDITORGRID_H
+#endif //SR_ENGINE_EDITORGRID_H

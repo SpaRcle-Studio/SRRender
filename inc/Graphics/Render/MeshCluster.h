@@ -2,8 +2,8 @@
 // Created by Monika on 31.10.2021.
 //
 
-#ifndef GAMEENGINE_MESHCLUSTER_H
-#define GAMEENGINE_MESHCLUSTER_H
+#ifndef SR_ENGINE_MESHCLUSTER_H
+#define SR_ENGINE_MESHCLUSTER_H
 
 #include <Utils/Debug.h>
 #include <Utils/Common/NonCopyable.h>
@@ -168,4 +168,4 @@ namespace SR_GRAPH_NS {
     };
 }
 
-#endif //GAMEENGINE_MESHCLUSTER_H
+#endif //SR_ENGINE_MESHCLUSTER_H

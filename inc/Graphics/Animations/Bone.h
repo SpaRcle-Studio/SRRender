@@ -2,8 +2,8 @@
 // Created by Monika on 19.08.2021.
 //
 
-#ifndef GAMEENGINE_BONE_H
-#define GAMEENGINE_BONE_H
+#ifndef SR_ENGINE_BONE_H
+#define SR_ENGINE_BONE_H
 
 #include <Utils/ECS/Component.h>
 #include <Utils/ECS/GameObject.h>
@@ -72,4 +72,4 @@ namespace SR_ANIMATIONS_NS {
     };
 }
 
-#endif //GAMEENGINE_BONE_H
+#endif //SR_ENGINE_BONE_H

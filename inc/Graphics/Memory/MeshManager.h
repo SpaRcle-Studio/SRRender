@@ -2,8 +2,8 @@
 // Created by Monika on 05.10.2021.
 //
 
-#ifndef GAMEENGINE_MESHMANAGER_H
-#define GAMEENGINE_MESHMANAGER_H
+#ifndef SR_ENGINE_MESHMANAGER_H
+#define SR_ENGINE_MESHMANAGER_H
 
 #include <Utils/Common/Singleton.h>
 #include <Utils/Types/Thread.h>
@@ -165,4 +165,4 @@ namespace SR_GRAPH_NS {
 }
 
 
-#endif //GAMEENGINE_MESHMANAGER_H
+#endif //SR_ENGINE_MESHMANAGER_H

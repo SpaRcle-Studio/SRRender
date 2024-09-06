@@ -2,8 +2,8 @@
 // Created by Nikita on 30.05.2021.
 //
 
-#ifndef GAMEENGINE_UNIFORMS_H
-#define GAMEENGINE_UNIFORMS_H
+#ifndef SR_ENGINE_UNIFORMS_H
+#define SR_ENGINE_UNIFORMS_H
 
 #include <Utils/Common/Enumerations.h>
 
@@ -51,4 +51,4 @@ namespace SR_GRAPH_NS {
     }
 }
 
-#endif //GAMEENGINE_UNIFORMS_H
+#endif //SR_ENGINE_UNIFORMS_H

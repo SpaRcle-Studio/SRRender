@@ -2,8 +2,8 @@
 // Created by Nikita on 30.05.2021.
 //
 
-#ifndef GAMEENGINE_VERTICES_H
-#define GAMEENGINE_VERTICES_H
+#ifndef SR_ENGINE_VERTICES_H
+#define SR_ENGINE_VERTICES_H
 
 #include <Utils/Math/Vector2.h>
 #include <Utils/Math/Vector3.h>
@@ -443,4 +443,4 @@ namespace std {
     };
 }
 
-#endif //GAMEENGINE_VERTICES_H
+#endif //SR_ENGINE_VERTICES_H
