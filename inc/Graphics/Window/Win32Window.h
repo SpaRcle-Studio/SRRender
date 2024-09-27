@@ -2,8 +2,8 @@
 // Created by Nikita on 26.03.2021.
 //
 
-#ifndef GAMEENGINE_WIN32WINDOW_H
-#define GAMEENGINE_WIN32WINDOW_H
+#ifndef SR_ENGINE_WIN32WINDOW_H
+#define SR_ENGINE_WIN32WINDOW_H
 
 #include <Graphics/Window/BasicWindowImpl.h>
 
@@ -77,4 +77,4 @@ namespace SR_GRAPH_NS {
     };
 }
 
-#endif //GAMEENGINE_WIN32WINDOW_H
+#endif //SR_ENGINE_WIN32WINDOW_H

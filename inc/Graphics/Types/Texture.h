@@ -2,8 +2,8 @@
 // Created by Nikita on 17.11.2020.
 //
 
-#ifndef GAMEENGINE_TEXTURE_H
-#define GAMEENGINE_TEXTURE_H
+#ifndef SR_ENGINE_TEXTURE_H
+#define SR_ENGINE_TEXTURE_H
 
 #include <Utils/Resources/IResource.h>
 #include <Utils/Types/SafePointer.h>
@@ -74,4 +74,4 @@ namespace SR_GTYPES_NS {
     };
 }
 
-#endif //GAMEENGINE_TEXTURE_H
+#endif //SR_ENGINE_TEXTURE_H

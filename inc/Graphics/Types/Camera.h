@@ -2,8 +2,8 @@
 // Created by Nikita on 18.11.2020.
 //
 
-#ifndef GAMEENGINE_CAMERA_H
-#define GAMEENGINE_CAMERA_H
+#ifndef SR_ENGINE_CAMERA_H
+#define SR_ENGINE_CAMERA_H
 
 #include <Utils/ECS/Component.h>
 #include <Utils/Math/Vector3.h>
@@ -134,4 +134,4 @@ namespace SR_GTYPES_NS {
     };
 }
 
-#endif //GAMEENGINE_CAMERA_H
+#endif //SR_ENGINE_CAMERA_H

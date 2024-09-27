@@ -2,8 +2,8 @@
 // Created by Nikita on 17.11.2020.
 //
 
-#ifndef GAMEENGINE_OBJLOADER_H
-#define GAMEENGINE_OBJLOADER_H
+#ifndef SR_ENGINE_OBJLOADER_H
+#define SR_ENGINE_OBJLOADER_H
 
 /*
 #include <string>
@@ -182,4 +182,4 @@ namespace Framework::Graphics {
     };
 }*/
 
-#endif //GAMEENGINE_OBJLOADER_H
+#endif //SR_ENGINE_OBJLOADER_H

@@ -2,8 +2,8 @@
 // Created by Monika on 06.06.2021.
 //
 
-#ifndef GAMEENGINE_DESCRIPTORS_H
-#define GAMEENGINE_DESCRIPTORS_H
+#ifndef SR_ENGINE_DESCRIPTORS_H
+#define SR_ENGINE_DESCRIPTORS_H
 
 #include <Utils/macros.h>
 
@@ -13,4 +13,4 @@ namespace SR_GRAPH_NS {
     };
 }
 
-#endif //GAMEENGINE_DESCRIPTORS_H
+#endif //SR_ENGINE_DESCRIPTORS_H

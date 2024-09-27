@@ -2,8 +2,8 @@
 // Created by Monika on 15.11.2021.
 //
 
-#ifndef GAMEENGINE_MESHALLOCATOR_H
-#define GAMEENGINE_MESHALLOCATOR_H
+#ifndef SR_ENGINE_MESHALLOCATOR_H
+#define SR_ENGINE_MESHALLOCATOR_H
 
 //#include <Types/Geometry/Mesh3D.h>
 //#include <Types/Geometry/DebugWireframeMesh.h>
@@ -33,4 +33,4 @@
 //    };
 //}
 
-#endif //GAMEENGINE_MESHALLOCATOR_H
+#endif //SR_ENGINE_MESHALLOCATOR_H

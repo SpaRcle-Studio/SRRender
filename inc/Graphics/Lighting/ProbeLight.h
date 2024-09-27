@@ -2,8 +2,8 @@
 // Created by Nikita on 13.12.2020.
 //
 
-#ifndef GAMEENGINE_PROBELIGHT_H
-#define GAMEENGINE_PROBELIGHT_H
+#ifndef SR_ENGINE_PROBELIGHT_H
+#define SR_ENGINE_PROBELIGHT_H
 
 #include <Graphics/Lighting/ILightComponent.h>
 
@@ -16,4 +16,4 @@ namespace SR_GRAPH_NS {
     };
 }
 
-#endif //GAMEENGINE_PROBELIGHT_H
+#endif //SR_ENGINE_PROBELIGHT_H

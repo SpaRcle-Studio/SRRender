@@ -2,8 +2,8 @@
 // Created by Nikita on 01.04.2021.
 //
 
-#ifndef GAMEENGINE_PIPELINE_TYPE_H
-#define GAMEENGINE_PIPELINE_TYPE_H
+#ifndef SR_ENGINE_PIPELINE_TYPE_H
+#define SR_ENGINE_PIPELINE_TYPE_H
 
 #include <Utils/Common/Enumerations.h>
 #include <Utils/Debug.h>
@@ -15,4 +15,4 @@ namespace SR_GRAPH_NS {
     );
 }
 
-#endif //GAMEENGINE_PIPELINE_TYPE_H
+#endif //SR_ENGINE_PIPELINE_TYPE_H

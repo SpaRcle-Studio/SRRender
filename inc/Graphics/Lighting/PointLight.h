@@ -2,8 +2,8 @@
 // Created by Nikita on 13.12.2020.
 //
 
-#ifndef GAMEENGINE_POINTLIGHT_H
-#define GAMEENGINE_POINTLIGHT_H
+#ifndef SR_ENGINE_POINTLIGHT_H
+#define SR_ENGINE_POINTLIGHT_H
 
 #include <Graphics/Lighting/ILightComponent.h>
 
@@ -17,4 +17,4 @@ namespace SR_GRAPH_NS {
     };
 }
 
-#endif //GAMEENGINE_POINTLIGHT_H
+#endif //SR_ENGINE_POINTLIGHT_H
