@@ -2,7 +2,6 @@
 // Created by Monika on 14.08.2024.
 //
 
-#include <ranges>
 #include <Graphics/Render/HTMLRenderer.h>
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Memory/DescriptorManager.h>
@@ -64,6 +63,11 @@ namespace SR_GRAPH_NS {
     }
 
     void HTMLDrawableElement::Update(HTMLRendererUpdateContext& context) {
+        if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("HTMLDrawableElement::Update() : virtual UBO is invalid!");
+            return;
+        }
+
         m_pipeline->SetCurrentShader(m_pShader);
 
         auto&& pNode = m_pPage->GetNodeById(m_nodeId);
@@ -131,6 +135,11 @@ namespace SR_GRAPH_NS {
     void HTMLRenderer::Draw() {
         SR_TRACY_ZONE;
 
+        if (!m_pPage) {
+            SRHalt("HTMLRenderer::Draw() : page is nullptr!");
+            return;
+        }
+
         m_pipeline->SetCurrentShader(nullptr);
 
         DrawNode(m_pPage->GetBody());
@@ -142,6 +151,11 @@ namespace SR_GRAPH_NS {
 
     void HTMLRenderer::Update() {
         SR_TRACY_ZONE;
+
+        if (!m_pPage) {
+            SRHalt("HTMLRenderer::Update() : page is nullptr!");
+            return;
+        }
 
         for (auto&& pShader : m_shaders | std::views::values) {
             m_pipeline->SetCurrentShader(pShader);
