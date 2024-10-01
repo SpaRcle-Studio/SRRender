@@ -11,7 +11,7 @@
 namespace SR_GTYPES_NS {
     class SR_DLL_EXPORT Font : public SR_UTILS_NS::IResource {
         using Super = SR_UTILS_NS::IResource;
-        using FontLibraty = FT_Library;
+        using FontLibrary = FT_Library;
         using FontFace = FT_Face;
         using StringType = std::u32string;
     private:
@@ -57,7 +57,7 @@ namespace SR_GTYPES_NS {
 
         FT_Render_Mode m_renderMode = FT_RENDER_MODE_NORMAL;
 
-        FontLibraty m_library = nullptr;
+        FontLibrary m_library = nullptr;
         FontFace m_face = nullptr;
         uint32_t m_fontSize = 0;
 

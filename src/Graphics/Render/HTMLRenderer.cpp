@@ -5,12 +5,14 @@
 #include <Graphics/Render/HTMLRenderer.h>
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Memory/DescriptorManager.h>
+#include <Graphics/Types/Shader.h>
 
 #include <Utils/Profile/TracyContext.h>
 
 namespace SR_GRAPH_NS {
     HTMLDrawableElement::~HTMLDrawableElement() {
         SetShader(nullptr);
+        SetTexture(nullptr);
 
         auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
         auto&& descriptorManager = SR_GRAPH_NS::DescriptorManager::Instance();
@@ -27,6 +29,19 @@ namespace SR_GRAPH_NS {
     void HTMLDrawableElement::SetShader(SR_GTYPES_NS::Shader::Ptr pShader) {
         m_dirtyMaterial |= m_pShader != pShader;
         m_pShader = pShader;
+    }
+
+    void HTMLDrawableElement::SetTexture(SR_GTYPES_NS::Texture::Ptr pTexture) {
+        if (m_pTexture == pTexture) {
+            return;
+        }
+        if (m_pTexture) {
+            m_pTexture->RemoveUsePoint();
+        }
+        if ((m_pTexture = pTexture)) {
+            pTexture->AddUsePoint();
+        }
+        m_dirtyMaterial = true;
     }
 
     void HTMLDrawableElement::Draw() {
@@ -50,6 +65,10 @@ namespace SR_GRAPH_NS {
 
         if (m_pipeline->GetCurrentBuildIteration() == 0) {
             if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
+                if (m_pTexture) {
+                    m_pShader->SetSampler2D("image"_atom, m_pTexture);
+                    m_pShader->FlushSamplers();
+                }
                 descriptorManager.Flush();
             }
             m_pipeline->GetCurrentShader()->FlushConstants();
@@ -73,13 +92,39 @@ namespace SR_GRAPH_NS {
         auto&& pNode = m_pPage->GetNodeById(m_nodeId);
         auto&& style = pNode->GetStyle();
 
+        const SR_MATH_NS::FVector2 parentSize = context.size;
+
+        context.size = SR_MATH_NS::FVector2(
+            style.width.IsDefault() ? context.size.x : style.width.CalculateValue(context.size.x),
+            style.height.IsDefault() ? context.size.y : style.height.CalculateValue(context.size.y)
+        );
+
         auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
         if (uboManager.BindNoDublicateUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
-            const auto size = SR_MATH_NS::FVector2(
-                style.width.CalculateValue(context.size.x) / context.resolution.x,
-                style.height.CalculateValue(context.size.y) / context.resolution.y
-            );
-            m_pShader->SetVec2("size"_atom_hash, size);
+            m_pShader->SetVec2("size"_atom_hash_cexpr, context.size / context.resolution);
+
+            SR_MATH_NS::FVector2 position;
+
+            if (style.position == SR_UTILS_NS::Web::CSSPosition::Relative) {
+                //position.x = (position.x - 0.5f) * 2.f;
+                //position.y = (position.y - 0.5f) * 2.f;
+            }
+            else if (style.position == SR_UTILS_NS::Web::CSSPosition::Absolute) {
+                //position += context.size / 2.f;
+                //position = (position / context.size) * 2.f - SR_MATH_NS::FVector2(1.f);
+
+                /// установить начало координат в левом верхнем углу. на данный момент начало координат в центре
+                position = SR_MATH_NS::FVector2(-1, 1);
+
+                position.x += context.size.x / context.resolution.x;
+                position.y -= context.size.y / context.resolution.y;
+            }
+
+            position.x += style.marginLeft.CalculateValue(parentSize.x) / context.size.x;
+            position.y -= style.marginTop.CalculateValue(parentSize.x) / context.size.y;
+
+            /// convert to shader screen space [-1, 1]
+            m_pShader->SetVec2("position"_atom_hash_cexpr, position);
 
             SR_MAYBE_UNUSED_VAR m_pShader->Flush();
         }
@@ -107,6 +152,14 @@ namespace SR_GRAPH_NS {
         if (auto&& pShader = SR_GTYPES_NS::Shader::Load("Engine/Shaders/Web/html.srsl")) {
             pShader->AddUsePoint();
             m_shaders["common"] = pShader;
+        }
+        else {
+            return false;
+        }
+
+        if (auto&& pShader = SR_GTYPES_NS::Shader::Load("Engine/Shaders/Web/html-image.srsl")) {
+            pShader->AddUsePoint();
+            m_shaders["image"] = pShader;
         }
         else {
             return false;
@@ -161,7 +214,7 @@ namespace SR_GRAPH_NS {
             m_pipeline->SetCurrentShader(pShader);
 
             if (!pShader || !pShader->Ready() || !m_pCamera) SR_UNLIKELY_ATTRIBUTE {
-                return;
+                continue;
             }
 
             if (pShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
@@ -175,8 +228,8 @@ namespace SR_GRAPH_NS {
                 pShader->EndSharedUBO();
             }
             else {
-                SR_ERROR("HTMLDrawerPass::Update() : failed to bind shared UBO!");
-                return;
+                SR_ERROR("HTMLDrawerPass::Update() : failed to bind shared UBO for shader {}!", pShader->GetResourcePath().ToStringView());
+                continue;
             }
         }
 
@@ -200,7 +253,22 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& pDrawableElement = m_drawableElements.emplace_back(new HTMLDrawableElement());
-        pDrawableElement->SetShader(m_shaders["common"]);
+
+        if (pNode->GetTag() == SR_UTILS_NS::Web::HTMLTag::Img) {
+            std::string_view src = pNode->GetAttributeByName("src")->GetValue();
+            if (auto&& pTexture = SR_GTYPES_NS::Texture::Load(src)) {
+                pDrawableElement->SetTexture(pTexture);
+                pDrawableElement->SetShader(m_shaders["image"]);
+            }
+            else {
+                SR_ERROR("HTMLRenderer::PrepareNode() : failed to load texture {}!", src);
+                pDrawableElement->SetShader(m_shaders["common"]);
+            }
+        }
+        else {
+            pDrawableElement->SetShader(m_shaders["common"]);
+        }
+
         pDrawableElement->SetNodeId(pNode->GetId());
         pDrawableElement->SetPipeline(m_pipeline);
         pDrawableElement->SetPage(m_pPage.Get());
@@ -256,8 +324,9 @@ namespace SR_GRAPH_NS {
         }
 
         for (const auto& childId : pNode->GetChildren()) {
+            HTMLRendererUpdateContext parentContext = context;
             auto&& pChild = m_pPage->GetNodeById(childId);
-            UpdateNode(pChild, context);
+            UpdateNode(pChild, parentContext);
         }
     }
 }

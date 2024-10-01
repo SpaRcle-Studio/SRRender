@@ -6,8 +6,10 @@
 #define SR_ENGINE_GRAPHICS_HTML_RENDERER_H
 
 #include <Utils/Web/HTML/HTML.h>
+
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Camera.h>
+#include <Graphics/Types/Texture.h>
 
 namespace SR_GRAPH_NS {
     struct HTMLRendererUpdateContext {
@@ -25,6 +27,7 @@ namespace SR_GRAPH_NS {
         void SetPage(SR_UTILS_NS::Web::HTMLPage* pPage) { m_pPage = pPage; }
         void SetNodeId(uint64_t id) { m_nodeId = id; }
         void SetPipeline(Pipeline* pPipeline) { m_pipeline = pPipeline; }
+        void SetTexture(SR_GTYPES_NS::Texture::Ptr pTexture);
 
         SR_NODISCARD SR_GTYPES_NS::Shader::Ptr GetShader() const { return m_pShader; }
 
@@ -32,6 +35,7 @@ namespace SR_GRAPH_NS {
         void Update(HTMLRendererUpdateContext& context);
 
     private:
+        SR_GTYPES_NS::Texture::Ptr m_pTexture = nullptr;
         SR_GTYPES_NS::Shader::Ptr m_pShader = nullptr;
 
         uint64_t m_nodeId = SR_ID_INVALID;
