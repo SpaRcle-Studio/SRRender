@@ -81,7 +81,7 @@ namespace SR_GRAPH_NS {
         m_dirtyMaterial = false;
     }
 
-    void HTMLDrawableElement::Update(HTMLRendererUpdateContext& context) {
+    void HTMLDrawableElement::Update(const HTMLRendererUpdateContext& parentContext) {
         if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("HTMLDrawableElement::Update() : virtual UBO is invalid!");
             return;
@@ -89,45 +89,58 @@ namespace SR_GRAPH_NS {
 
         m_pipeline->SetCurrentShader(m_pShader);
 
+        auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
+        if (uboManager.BindNoDublicateUBO(m_virtualUBO) != Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
         auto&& pNode = m_pPage->GetNodeById(m_nodeId);
         auto&& style = pNode->GetStyle();
 
-        const SR_MATH_NS::FVector2 parentSize = context.size;
+        SR_MATH_NS::FVector2 position;
 
-        context.size = SR_MATH_NS::FVector2(
-            style.width.IsDefault() ? context.size.x : style.width.CalculateValue(context.size.x),
-            style.height.IsDefault() ? context.size.y : style.height.CalculateValue(context.size.y)
+        SR_MATH_NS::FVector2 size = SR_MATH_NS::FVector2(
+            style.width.IsDefault() ? 0.f : style.width.CalculateValue(parentContext.size.x),
+            style.height.IsDefault() ? 0.f : style.height.CalculateValue(parentContext.size.y)
         );
 
-        auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
-        if (uboManager.BindNoDublicateUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
-            m_pShader->SetVec2("size"_atom_hash_cexpr, context.size / context.resolution);
+        size.x += style.paddingLeft.CalculateValue(parentContext.size.x) + style.paddingRight.CalculateValue(parentContext.size.x);
+        size.y += style.paddingTop.CalculateValue(parentContext.size.y) + style.paddingBottom.CalculateValue(parentContext.size.y);
 
-            SR_MATH_NS::FVector2 position;
+        if (style.position == SR_UTILS_NS::Web::CSSPosition::Static) {
+            position = SR_MATH_NS::FVector2(-1, 1);
 
-            if (style.position == SR_UTILS_NS::Web::CSSPosition::Relative) {
-                //position.x = (position.x - 0.5f) * 2.f;
-                //position.y = (position.y - 0.5f) * 2.f;
-            }
-            else if (style.position == SR_UTILS_NS::Web::CSSPosition::Absolute) {
-                //position += context.size / 2.f;
-                //position = (position / context.size) * 2.f - SR_MATH_NS::FVector2(1.f);
-
-                /// установить начало координат в левом верхнем углу. на данный момент начало координат в центре
-                position = SR_MATH_NS::FVector2(-1, 1);
-
-                position.x += context.size.x / context.resolution.x;
-                position.y -= context.size.y / context.resolution.y;
-            }
-
-            position.x += style.marginLeft.CalculateValue(parentSize.x) / context.size.x;
-            position.y -= style.marginTop.CalculateValue(parentSize.x) / context.size.y;
-
-            /// convert to shader screen space [-1, 1]
-            m_pShader->SetVec2("position"_atom_hash_cexpr, position);
-
-            SR_MAYBE_UNUSED_VAR m_pShader->Flush();
+            position.x += size.x / parentContext.resolution.x;
+            position.y -= size.y / parentContext.resolution.y;
         }
+        else if (style.position == SR_UTILS_NS::Web::CSSPosition::Relative) {
+            //position.x = (position.x - 0.5f) * 2.f;
+            //position.y = (position.y - 0.5f) * 2.f;
+        }
+        else if (style.position == SR_UTILS_NS::Web::CSSPosition::Absolute) {
+            /// установить начало координат в левом верхнем углу. на данный момент начало координат в центре
+            position = SR_MATH_NS::FVector2(-1, 1);
+
+            position.x += size.x / parentContext.resolution.x;
+            position.y -= size.y / parentContext.resolution.y;
+        }
+
+        position.x += style.marginLeft.CalculateValue(parentContext.size.x) / size.x;
+        position.y -= style.marginTop.CalculateValue(parentContext.size.x) / size.y;
+
+        //position.x += style.paddingLeft.CalculateValue(parentContext.size.x) / size.x;
+        //position.y -= style.paddingTop.CalculateValue(parentContext.size.x) / size.y;
+
+        /// convert to shader screen space [-1, 1]
+        m_pShader->SetVec2("position"_atom_hash_cexpr, position);
+        m_pShader->SetVec2("size"_atom_hash_cexpr, size / parentContext.resolution);
+
+        if (style.backgroundColor.colorType == SR_UTILS_NS::Web::CSSColor::ColorType::RGBA) {
+            m_pShader->SetVec4("backgroundColor"_atom_hash_cexpr, style.backgroundColor.color.ToFColor());
+            //m_pShader->SetVec4("backgroundColor"_atom_hash_cexpr, SR_MATH_NS::FColor::Cyan());
+        }
+
+        SR_MAYBE_UNUSED_VAR m_pShader->Flush();
     }
 
     /// ----------------------------------------------------------------------------------------------------------------
@@ -235,7 +248,7 @@ namespace SR_GRAPH_NS {
 
         HTMLRendererUpdateContext context;
         context.size = m_pPage->GetSize().Cast<float_t>();
-        context.resolution = m_pPage->GetSize().Cast<float_t>();
+        context.resolution = context.size;
         UpdateNode(m_pPage->GetBody(), context);
     }
 
@@ -311,7 +324,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void HTMLRenderer::UpdateNode(const SR_UTILS_NS::Web::HTMLNode* pNode, HTMLRendererUpdateContext& context) {
+    void HTMLRenderer::UpdateNode(const SR_UTILS_NS::Web::HTMLNode* pNode, const HTMLRendererUpdateContext& parentContext) {
         SR_TRACY_ZONE;
 
         if (!SRVerify(pNode)) {
@@ -320,13 +333,16 @@ namespace SR_GRAPH_NS {
 
         auto&& pDrawableElement = static_cast<HTMLDrawableElement*>(pNode->GetUserData());
         if (SRVerify(pDrawableElement)) {
-            pDrawableElement->Update(context);
+            pDrawableElement->Update(parentContext);
         }
 
+        HTMLRendererUpdateContext context;
+        context.resolution = parentContext.resolution;
+        context.size = parentContext.size;
+
         for (const auto& childId : pNode->GetChildren()) {
-            HTMLRendererUpdateContext parentContext = context;
             auto&& pChild = m_pPage->GetNodeById(childId);
-            UpdateNode(pChild, parentContext);
+            UpdateNode(pChild, context);
         }
     }
 }
