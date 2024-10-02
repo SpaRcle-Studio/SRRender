@@ -44,6 +44,75 @@ namespace SR_GRAPH_NS {
         m_dirtyMaterial = true;
     }
 
+    void HTMLDrawableElement::Update(HTMLRendererUpdateContext& context) {
+        if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("HTMLDrawableElement::Update() : virtual UBO is invalid!");
+            return;
+        }
+
+        m_pipeline->SetCurrentShader(m_pShader);
+
+        auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
+        if (uboManager.BindNoDublicateUBO(m_virtualUBO) != Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
+        auto&& pNode = m_pPage->GetNodeById(m_nodeId);
+        auto&& style = pNode->GetStyle();
+
+        /// установить начало координат в левом верхнем углу. на данный момент начало координат в центре
+        SR_MATH_NS::FVector2 position;
+        position.y -= context.offset.y;
+
+        SR_MATH_NS::FVector2 size = SR_MATH_NS::FVector2(
+            style.width.IsDefault() ? 0.f : style.width.CalculateValue(context.size.x),
+            style.height.IsDefault() ? 0.f : style.height.CalculateValue(context.size.y)
+        );
+
+        size.x += style.paddingLeft.CalculateValue(context.size.x) + style.paddingRight.CalculateValue(context.size.x);
+        size.y += style.paddingTop.CalculateValue(context.size.y) + style.paddingBottom.CalculateValue(context.size.y);
+
+        if (style.position == SR_UTILS_NS::Web::CSSPosition::Static) {
+            position.x += size.x;
+            position.y -= size.y;
+        }
+        else if (style.position == SR_UTILS_NS::Web::CSSPosition::Relative) {
+            //position.x = (position.x - 0.5f) * 2.f;
+            //position.y = (position.y - 0.5f) * 2.f;
+        }
+        else if (style.position == SR_UTILS_NS::Web::CSSPosition::Absolute) {
+            position.x += size.x;
+            position.y -= size.y;
+        }
+
+        position.x += (style.marginLeft.CalculateValue(context.size.x) - style.marginRight.CalculateValue(context.size.x)) * 2.f;
+        position.y -= (style.marginTop.CalculateValue(context.size.x) + style.marginBottom.CalculateValue(context.size.x)) * 2.f;
+
+        context.offset.y += (style.marginTop.CalculateValue(context.size.x) + style.marginBottom.CalculateValue(context.size.x)) * 2.f;
+        context.offset.y += (size.y * 2.f);
+
+        //position.x += style.paddingLeft.CalculateValue(context.size.x);
+        //position.y -= style.paddingTop.CalculateValue(context.size.x);
+
+        //position.x += style.paddingLeft.CalculateValue(context.size.x) / size.x;
+        //position.y -= style.paddingTop.CalculateValue(context.size.x) / size.y;
+
+        /// convert to shader screen space [-1, 1]
+        m_pShader->SetVec2("position"_atom_hash_cexpr, SR_MATH_NS::FVector2(-1, 1) + (position / context.resolution));
+        m_pShader->SetVec2("size"_atom_hash_cexpr, size / context.resolution);
+
+        if (style.backgroundColor.colorType == SR_UTILS_NS::Web::CSSColor::ColorType::RGBA) {
+            m_pShader->SetVec4("backgroundColor"_atom_hash_cexpr, style.backgroundColor.color.ToFColor());
+            //m_pShader->SetVec4("backgroundColor"_atom_hash_cexpr, SR_MATH_NS::FColor::Cyan());
+        }
+
+        SR_MAYBE_UNUSED_VAR m_pShader->Flush();
+    }
+
+    const SR_UTILS_NS::Web::CSSStyle& HTMLDrawableElement::GetStyle() const {
+        return m_pPage->GetNodeById(m_nodeId)->GetStyle();
+    }
+
     void HTMLDrawableElement::Draw() {
         SR_TRACY_ZONE;
 
@@ -79,68 +148,6 @@ namespace SR_GRAPH_NS {
         }
 
         m_dirtyMaterial = false;
-    }
-
-    void HTMLDrawableElement::Update(const HTMLRendererUpdateContext& parentContext) {
-        if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("HTMLDrawableElement::Update() : virtual UBO is invalid!");
-            return;
-        }
-
-        m_pipeline->SetCurrentShader(m_pShader);
-
-        auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
-        if (uboManager.BindNoDublicateUBO(m_virtualUBO) != Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
-            return;
-        }
-
-        auto&& pNode = m_pPage->GetNodeById(m_nodeId);
-        auto&& style = pNode->GetStyle();
-
-        SR_MATH_NS::FVector2 position;
-
-        SR_MATH_NS::FVector2 size = SR_MATH_NS::FVector2(
-            style.width.IsDefault() ? 0.f : style.width.CalculateValue(parentContext.size.x),
-            style.height.IsDefault() ? 0.f : style.height.CalculateValue(parentContext.size.y)
-        );
-
-        size.x += style.paddingLeft.CalculateValue(parentContext.size.x) + style.paddingRight.CalculateValue(parentContext.size.x);
-        size.y += style.paddingTop.CalculateValue(parentContext.size.y) + style.paddingBottom.CalculateValue(parentContext.size.y);
-
-        if (style.position == SR_UTILS_NS::Web::CSSPosition::Static) {
-            position = SR_MATH_NS::FVector2(-1, 1);
-
-            position.x += size.x / parentContext.resolution.x;
-            position.y -= size.y / parentContext.resolution.y;
-        }
-        else if (style.position == SR_UTILS_NS::Web::CSSPosition::Relative) {
-            //position.x = (position.x - 0.5f) * 2.f;
-            //position.y = (position.y - 0.5f) * 2.f;
-        }
-        else if (style.position == SR_UTILS_NS::Web::CSSPosition::Absolute) {
-            /// установить начало координат в левом верхнем углу. на данный момент начало координат в центре
-            position = SR_MATH_NS::FVector2(-1, 1);
-
-            position.x += size.x / parentContext.resolution.x;
-            position.y -= size.y / parentContext.resolution.y;
-        }
-
-        position.x += style.marginLeft.CalculateValue(parentContext.size.x) / size.x;
-        position.y -= style.marginTop.CalculateValue(parentContext.size.x) / size.y;
-
-        //position.x += style.paddingLeft.CalculateValue(parentContext.size.x) / size.x;
-        //position.y -= style.paddingTop.CalculateValue(parentContext.size.x) / size.y;
-
-        /// convert to shader screen space [-1, 1]
-        m_pShader->SetVec2("position"_atom_hash_cexpr, position);
-        m_pShader->SetVec2("size"_atom_hash_cexpr, size / parentContext.resolution);
-
-        if (style.backgroundColor.colorType == SR_UTILS_NS::Web::CSSColor::ColorType::RGBA) {
-            m_pShader->SetVec4("backgroundColor"_atom_hash_cexpr, style.backgroundColor.color.ToFColor());
-            //m_pShader->SetVec4("backgroundColor"_atom_hash_cexpr, SR_MATH_NS::FColor::Cyan());
-        }
-
-        SR_MAYBE_UNUSED_VAR m_pShader->Flush();
     }
 
     /// ----------------------------------------------------------------------------------------------------------------
@@ -324,7 +331,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void HTMLRenderer::UpdateNode(const SR_UTILS_NS::Web::HTMLNode* pNode, const HTMLRendererUpdateContext& parentContext) {
+    void HTMLRenderer::UpdateNode(const SR_UTILS_NS::Web::HTMLNode* pNode, HTMLRendererUpdateContext& context) {
         SR_TRACY_ZONE;
 
         if (!SRVerify(pNode)) {
@@ -333,12 +340,12 @@ namespace SR_GRAPH_NS {
 
         auto&& pDrawableElement = static_cast<HTMLDrawableElement*>(pNode->GetUserData());
         if (SRVerify(pDrawableElement)) {
-            pDrawableElement->Update(parentContext);
+            pDrawableElement->Update(context);
         }
 
-        HTMLRendererUpdateContext context;
-        context.resolution = parentContext.resolution;
-        context.size = parentContext.size;
+        if (pDrawableElement->GetStyle().display == SR_UTILS_NS::Web::CSSDisplay::Block) {
+            context.offset.y = 0;
+        }
 
         for (const auto& childId : pNode->GetChildren()) {
             auto&& pChild = m_pPage->GetNodeById(childId);

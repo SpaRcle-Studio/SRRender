@@ -30,9 +30,10 @@ namespace SR_GRAPH_NS {
         void SetTexture(SR_GTYPES_NS::Texture::Ptr pTexture);
 
         SR_NODISCARD SR_GTYPES_NS::Shader::Ptr GetShader() const { return m_pShader; }
+        SR_NODISCARD const SR_UTILS_NS::Web::CSSStyle& GetStyle() const;
 
         void Draw();
-        void Update(const HTMLRendererUpdateContext& parentContext);
+        void Update(HTMLRendererUpdateContext& parentContext);
 
     private:
         SR_GTYPES_NS::Texture::Ptr m_pTexture = nullptr;
@@ -66,7 +67,7 @@ namespace SR_GRAPH_NS {
     private:
         void PrepareNode(SR_UTILS_NS::Web::HTMLNode* pNode);
         void DrawNode(const SR_UTILS_NS::Web::HTMLNode* pNode);
-        void UpdateNode(const SR_UTILS_NS::Web::HTMLNode* pNode, const HTMLRendererUpdateContext& parentContext);
+        void UpdateNode(const SR_UTILS_NS::Web::HTMLNode* pNode, HTMLRendererUpdateContext& parentContext);
 
     private:
         SR_UTILS_NS::Web::HTMLPage::Ptr m_pPage;
