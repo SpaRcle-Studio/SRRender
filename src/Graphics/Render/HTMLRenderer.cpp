@@ -6,224 +6,222 @@
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Memory/DescriptorManager.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Window/Window.h>
 
 #include <Utils/Profile/TracyContext.h>
 
 namespace SR_GRAPH_NS {
-    HTMLRenderer::HTMLRenderer(Pipeline* pPipeline, SR_UTILS_NS::Web::HTMLPage::Ptr pPage)
-        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
-        , m_pPage(std::move(pPage))
-        , m_pipeline(pPipeline)
+    SR_UTILS_NS::StringAtom SR_SOLID_FILL_SHADER = "solid-fill"_atom;
+
+    HTMLRendererBase::HTMLRendererBase()
+        : Super()
+        , m_uboManager(SR_GRAPH_NS::Memory::UBOManager::Instance())
+        , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
     { }
 
-    HTMLRenderer::~HTMLRenderer() {
-        SRAssert2(m_drawableElements.empty(), "HTMLRenderer::~HTMLRenderer() : not all elements were deleted!");
-        SRAssert2(m_shaders.empty(), "HTMLRenderer::~HTMLRenderer() : not all shaders were deleted!");
-    }
-
-    bool HTMLRenderer::Init() {
-        if (!m_shaders.empty()) {
-            SR_ERROR("HTMLRenderer::Init() : shaders are already initialized!");
-            return false;
-        }
-
-        if (auto&& pShader = SR_GTYPES_NS::Shader::Load("Engine/Shaders/Web/html.srsl")) {
+    bool HTMLRendererBase::Init() {
+        if (auto&& pShader = SR_GTYPES_NS::Shader::Load("Engine/Shaders/Web/" + SR_SOLID_FILL_SHADER.ToString() + ".srsl")) {
             pShader->AddUsePoint();
-            m_shaders["common"] = pShader;
+            ShaderInfo shaderInfo;
+            shaderInfo.pShader = pShader;
+            m_shaders[SR_SOLID_FILL_SHADER] = shaderInfo;
         }
         else {
+            SR_ERROR("HTMLRendererBase::Init() : failed to load shader \"{}\"!", SR_SOLID_FILL_SHADER.c_str());
             return false;
         }
-
-        if (auto&& pShader = SR_GTYPES_NS::Shader::Load("Engine/Shaders/Web/html-image.srsl")) {
-            pShader->AddUsePoint();
-            m_shaders["image"] = pShader;
-        }
-        else {
-            return false;
-        }
-
-        SRAssert2(m_drawableElements.empty(), "HTMLRenderer::Init() : drawable elements are not empty!");
-
-        m_pPage->RemoveUserDataRecursively();
-        PrepareNode(m_pPage->GetBody());
 
         return true;
     }
 
-    void HTMLRenderer::DeInit() {
-        for (auto&& pElement : m_drawableElements) {
-            delete pElement;
-        }
-        m_drawableElements.clear();
+    void HTMLRendererBase::DeInit() {
+        for (auto&& [id, shaderInfo] : m_shaders) {
+            shaderInfo.pShader->RemoveUsePoint();
 
-        for (auto&& pShader: m_shaders | std::views::values) {
-            pShader->RemoveUsePoint();
+            for (auto&& memInfo : shaderInfo.UBOs) {
+                if (memInfo.virtualUBO != SR_ID_INVALID && !m_uboManager.FreeUBO(&memInfo.virtualUBO)) {
+                    SR_ERROR("HTMLRendererBase::DeInit() : failed to free uniform buffer object!");
+                }
+
+                if (memInfo.virtualDescriptor != SR_ID_INVALID && !m_descriptorManager.FreeDescriptorSet(&memInfo.virtualDescriptor)) {
+                    SR_ERROR("HTMLRendererBase::DeInit() : failed to free descriptor set!");
+                }
+            }
         }
+
         m_shaders.clear();
     }
 
-    void HTMLRenderer::Draw() {
+    void HTMLRendererBase::Draw() {
         SR_TRACY_ZONE;
 
-        if (!m_pPage) {
-            SRHalt("HTMLRenderer::Draw() : page is nullptr!");
-            return;
-        }
-
-        m_pipeline->SetCurrentShader(nullptr);
-
-        DrawNode(m_pPage->GetBody());
-
-        if (auto&& pShader = m_pipeline->GetCurrentShader()) {
-            pShader->UnUse();
-        }
-    }
-
-    void HTMLRenderer::Update() {
-        SR_TRACY_ZONE;
-
-        if (!m_pPage) {
-            SRHalt("HTMLRenderer::Update() : page is nullptr!");
-            return;
-        }
-
-        for (auto&& pShader : m_shaders | std::views::values) {
-            m_pipeline->SetCurrentShader(pShader);
-
-            if (!pShader || !pShader->Ready() || !m_pCamera) SR_UNLIKELY_ATTRIBUTE {
-                if (pShader && pShader->HasErrors()) {
-                    SR_ERROR("HTMLDrawerPass::Update() : shader has errors! Shader: {}", pShader->GetResourcePath().ToStringView());
-                    return;
-                }
-                continue;
-            }
-
-            if (pShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
-                pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, m_pCamera->GetOrthogonal());
-                pShader->SetVec2(SHADER_RESOLUTION, m_pPage->GetSize().Cast<float_t>());
-
-                const float_t aspect = m_pPage->GetSize().Aspect();
-                const SR_MATH_NS::FVector2 aspectVec = aspect > 1.f ? SR_MATH_NS::FVector2(1.f / aspect, 1.f) : SR_MATH_NS::FVector2(1.f, aspect);
-                pShader->SetVec2(SHADER_ASPECT, aspectVec);
-
-                pShader->EndSharedUBO();
-            }
-            else {
-                SR_ERROR("HTMLDrawerPass::Update() : failed to bind shared UBO for shader {}!", pShader->GetResourcePath().ToStringView());
+        for (auto&& [id, shaderInfo] : m_shaders) {
+            if (shaderInfo.pShader->HasErrors()) {
+                SR_ERROR("HTMLRendererBase::Draw() : shader \"{}\" has errors!", id.c_str());
                 return;
             }
+            shaderInfo.index = 0;
         }
 
-        HTMLRendererUpdateContext context;
-        context.size = m_pPage->GetSize().Cast<float_t>();
-        context.resolution = context.size;
-        UpdateNode(m_pPage->GetBody(), context);
-    }
-
-    void HTMLRenderer::SetScreenSize(const SR_MATH_NS::UVector2& size) {
-        if (m_pPage) {
-            m_pPage->SetSize(size);
+        if (SRVerify2(GetPage(), "HTMLRendererBase::Draw() : page is not set!")) {
+            litehtml::position clip;
+            get_client_rect(clip);
+            m_viewSize = SR_MATH_NS::FVector2(clip.width, clip.height);
+            GetPage()->GetDocument()->draw(reinterpret_cast<litehtml::uint_ptr>(this), 0, 0, &clip);
         }
     }
 
-    void HTMLRenderer::PrepareNode(SR_UTILS_NS::Web::HTMLNode* pNode) {
+    void HTMLRendererBase::Update() {
         SR_TRACY_ZONE;
 
-        if (!SRVerify(pNode)) {
-            return;
+        for (auto&& [id, shaderInfo] : m_shaders) {
+            if (shaderInfo.pShader->BeginSharedUBO()) {
+                if (m_pCamera) {
+                    shaderInfo.pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, m_pCamera->GetOrthogonal());
+                }
+                else {
+                    SR_ERROR("HTMLRendererBase::Update() : no camera!");
+                }
+
+                shaderInfo.pShader->SetVec2(SHADER_RESOLUTION, m_viewSize);
+                shaderInfo.pShader->EndSharedUBO();
+            }
         }
+    }
 
-        auto&& pDrawableElement = m_drawableElements.emplace_back(new HTMLDrawableElement());
+    void HTMLRendererBase::get_media_features(litehtml::media_features& media) const {
+        SR_TRACY_ZONE;
 
-        if (pNode->GetTag() == SR_UTILS_NS::Web::HTMLTag::Img) {
-            std::string_view src = pNode->GetAttributeByName("src")->GetValue();
-            if (auto&& pTexture = SR_GTYPES_NS::Texture::Load(src)) {
-                pDrawableElement->SetTexture(pTexture);
-                pDrawableElement->SetShader(m_shaders["image"]);
-            }
-            else {
-                SR_ERROR("HTMLRenderer::PrepareNode() : failed to load texture {}!", src);
-                pDrawableElement->SetShader(m_shaders["common"]);
-            }
+        auto&& resolution = SR_PLATFORM_NS::GetScreenResolution().Cast<int32_t>();
+
+        litehtml::position client;
+        get_client_rect(client);
+        media.type			= litehtml::media_type_screen;
+        media.width			= client.width;
+        media.height		= client.height;
+        media.device_width	= resolution.x;
+        media.device_height	= resolution.y;
+        media.color			= 8;
+        media.monochrome	= 0;
+        media.color_index	= 256;
+        media.resolution	= 96;
+    }
+
+    void HTMLRendererBase::get_client_rect(litehtml::position& client) const {
+        SR_TRACY_ZONE;
+
+        client.x = 0;
+        client.y = 0;
+
+        if (m_pCamera) {
+            client.width = m_pCamera->GetSize().Cast<int32_t>().x;
+            client.height = m_pCamera->GetSize().Cast<int32_t>().y;
+        }
+        else if (m_pipeline) {
+            client.width = m_pipeline->GetWindow()->GetSize().Cast<int32_t>().x;
+            client.height = m_pipeline->GetWindow()->GetSize().Cast<int32_t>().y;
         }
         else {
-            pDrawableElement->SetShader(m_shaders["common"]);
-        }
-
-        pDrawableElement->SetNodeId(pNode->GetId());
-        pDrawableElement->SetPipeline(m_pipeline);
-        pDrawableElement->SetPage(m_pPage.Get());
-
-        pNode->SetUserData(pDrawableElement);
-
-        for (const auto& childId : pNode->GetChildren()) {
-            auto&& pChild = m_pPage->GetNodeById(childId);
-            PrepareNode(pChild);
+            SRHalt("HTMLRendererBase::get_client_rect() : no camera or pipeline!");
         }
     }
 
-    void HTMLRenderer::DrawNode(const SR_UTILS_NS::Web::HTMLNode* pNode) {
+    litehtml::uint_ptr HTMLRendererBase::create_font(const char* faceName, int size, int weight, litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm) {
+        return 0;
+    }
+
+    void HTMLRendererBase::delete_font(litehtml::uint_ptr hFont) {
+
+    }
+
+    void HTMLRendererBase::draw_solid_fill(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::web_color& color) {
         SR_TRACY_ZONE;
 
-        if (!SRVerify(pNode)) {
+        if (color == litehtml::web_color::transparent) {
             return;
         }
 
-        auto&& pDrawableElement = static_cast<HTMLDrawableElement*>(pNode->GetUserData());
-        if (!pDrawableElement) {
+        auto&& pIt = m_shaders.find(SR_SOLID_FILL_SHADER);
+        if (pIt == m_shaders.end()) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("HTMLRendererBase::DrawElement() : shader \"{}\" not found!", SR_SOLID_FILL_SHADER.c_str());
+            return;
+        }
+        ShaderInfo& shaderInfo = pIt->second;
+
+        if (!BeginElement(shaderInfo)) {
             return;
         }
 
-        auto&& pShader = pDrawableElement->GetShader();
-        if (pShader != m_pipeline->GetCurrentShader()) {
-            if (m_pipeline->GetCurrentShader()) {
-                m_pipeline->GetCurrentShader()->UnUse();
+        DrawElement(shaderInfo);
+
+        auto&& pShader = m_pipeline->GetCurrentShader();
+        const auto& box = layer.clip_box;
+
+        SR_MATH_NS::FVector2 position = SR_MATH_NS::FVector2(box.x, box.y) * 2.f;
+        position.x = position.x + box.width;
+        position.y = -position.y - box.height;
+
+        pShader->SetVec2("position"_atom_hash_cexpr, SR_MATH_NS::FVector2(-1, 1) + position / m_viewSize);
+        pShader->SetVec2("size"_atom_hash_cexpr, SR_MATH_NS::FVector2(box.width, box.height) / m_viewSize);
+        pShader->SetVec4("color"_atom_hash_cexpr, SR_MATH_NS::FColor(color.red, color.green, color.blue, color.alpha) / 255.f);
+
+        UpdateElement(shaderInfo);
+        EndElement(shaderInfo);
+    }
+
+    bool HTMLRendererBase::BeginElement(ShaderInfo& shaderInfo) {
+        if (m_pipeline->GetCurrentShader() != shaderInfo.pShader) {
+            const auto result = shaderInfo.pShader->Use();
+            if (result == ShaderBindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
+                SR_ERROR("HTMLRendererBase::BeginElement() : failed to use shader \"{}\"!", shaderInfo.pShader->GetResourceId().c_str());
+                return false;
             }
-            if (pShader->Use() == ShaderBindResult::Failed) {
+        }
+
+        return true;
+    }
+
+    void HTMLRendererBase::UpdateElement(ShaderInfo& shaderInfo) {
+        auto&& pShader = m_pipeline->GetCurrentShader();
+        if (!pShader->Flush()) {
+            SR_ERROR("HTMLRendererBase::UpdateElement() : failed to flush shader \"{}\"!", pShader->GetResourceId().c_str());
+        }
+    }
+
+    void HTMLRendererBase::EndElement(ShaderInfo& shaderInfo) {
+        ++shaderInfo.index;
+    }
+
+    void HTMLRendererBase::DrawElement(ShaderInfo &shaderInfo) {
+        if (shaderInfo.index >= shaderInfo.UBOs.size()) SR_UNLIKELY_ATTRIBUTE {
+            ShaderInfo::MemInfo memInfo;
+
+            memInfo.virtualUBO = m_uboManager.AllocateUBO(SR_ID_INVALID);
+            if (memInfo.virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                SR_ERROR("HTMLRendererBase::DrawElement() : failed to allocate uniform buffer object!");
                 return;
             }
+
+            memInfo.virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(SR_ID_INVALID);
+            if (memInfo.virtualDescriptor == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                SR_ERROR("HTMLRendererBase::DrawElement() : failed to allocate descriptor set!");
+                return;
+            }
+            shaderInfo.UBOs.emplace_back(memInfo);
         }
 
-        pDrawableElement->Draw();
+        m_uboManager.BindUBO(shaderInfo.UBOs[shaderInfo.index].virtualUBO);
 
-        for (const auto& childId : pNode->GetChildren()) {
-            auto&& pChild = m_pPage->GetNodeById(childId);
-            DrawNode(pChild);
-        }
-    }
+        const auto result = m_descriptorManager.Bind(shaderInfo.UBOs[shaderInfo.index].virtualDescriptor);
 
-    HTMLRendererUpdateResult HTMLRenderer::UpdateNode(const SR_UTILS_NS::Web::HTMLNode* pNode, const HTMLRendererUpdateContext& parentContext) {
-        SR_TRACY_ZONE;
-
-        HTMLRendererUpdateResult result;
-        if (!SRVerify(pNode)) {
-            return result;
+        if (m_pipeline->GetCurrentBuildIteration() == 0) {
+            shaderInfo.pShader->FlushSamplers();
+            m_descriptorManager.Flush();
+            m_pipeline->GetCurrentShader()->FlushConstants();
         }
 
-        auto&& pDrawableElement = static_cast<HTMLDrawableElement*>(pNode->GetUserData());
-        if (!pDrawableElement) {
-            return result;
+        if (result != DescriptorManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
+            m_pipeline->Draw(4);
         }
-
-        HTMLRendererUpdateContext context = parentContext;
-
-        auto&& style = pDrawableElement->GetStyle();
-
-        context.size.x = style.width.CalculateValue(parentContext.size.x);
-        context.size.y = style.height.CalculateValue(parentContext.size.y);
-
-        result = pDrawableElement->Update(context);
-
-        if (pNode->GetChildren().empty()) {
-            return result;
-        }
-
-        for (const auto& childId : pNode->GetChildren()) {
-            auto&& pChild = m_pPage->GetNodeById(childId);
-            UpdateNode(pChild, context);
-        }
-
-        return result;
     }
 }

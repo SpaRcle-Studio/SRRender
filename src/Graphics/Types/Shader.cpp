@@ -104,7 +104,9 @@ namespace SR_GRAPH_NS::Types {
             return ShaderBindResult::Failed;
         }
 
-        SRAssert(GetRenderContext());
+        if (!SRVerify2(GetRenderContext(), "Render context is nullptr!")) {
+            return ShaderBindResult::Failed;
+        }
 
         auto&& bindResult = Memory::ShaderProgramManager::Instance().BindProgram(m_shaderProgram);
         switch (bindResult) {
@@ -330,6 +332,9 @@ namespace SR_GRAPH_NS::Types {
 
     bool Shader::Flush() const {
         if (!m_uniformBlock.m_memory) SR_UNLIKELY_ATTRIBUTE {
+            if (!m_uniformBlock.m_size) {
+                return true; /// no need to flush
+            }
             return false;
         }
 

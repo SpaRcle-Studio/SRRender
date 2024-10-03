@@ -5,7 +5,7 @@
 #include <Graphics/Render/HTML/HTMLDrawableElement.h>
 
 namespace SR_GRAPH_NS {
-    HTMLDrawableElement::~HTMLDrawableElement() {
+    /*HTMLDrawableElement::~HTMLDrawableElement() {
         SetShader(nullptr);
         SetTexture(nullptr);
 
@@ -57,45 +57,6 @@ namespace SR_GRAPH_NS {
         auto&& pNode = m_pPage->GetNodeById(m_nodeId);
         auto&& style = pNode->GetStyle();
 
-        /// установить начало координат в левом верхнем углу. на данный момент начало координат в центре
-        //SR_MATH_NS::FVector2 position;
-        //position += context.offset;
-
-        /*if (style.position == SR_UTILS_NS::Web::CSSPosition::Static) {
-            position.x += context.viewSize.x;
-            position.y -= context.viewSize.y;
-        }
-        else if (style.position == SR_UTILS_NS::Web::CSSPosition::Relative) {
-            //position.x = (position.x - 0.5f) * 2.f;
-            //position.y = (position.y - 0.5f) * 2.f;
-        }
-        else if (style.position == SR_UTILS_NS::Web::CSSPosition::Absolute) {
-            position.x += context.viewSize.x;
-            position.y -= context.viewSize.y;
-        }
-
-        if (style.display != SR_UTILS_NS::Web::CSSDisplay::Block) {
-            position.x += style.marginLeft.CalculateValue(context.viewSize.x) + style.marginRight.CalculateValue(context.viewSize.x);
-            position.y -= style.marginTop.CalculateValue(context.viewSize.y) + style.marginBottom.CalculateValue(context.viewSize.y);
-        }*/
-
-        /*result.offset.x += style.marginLeft.CalculateValue(context.size.x) + style.marginRight.CalculateValue(context.size.x);
-        result.offset.x += style.paddingLeft.CalculateValue(context.size.x) + style.paddingRight.CalculateValue(context.size.x);
-
-        result.offset.y -= style.marginTop.CalculateValue(context.size.y) + style.marginBottom.CalculateValue(context.size.y);
-        result.offset.y -= style.paddingTop.CalculateValue(context.size.y) + style.paddingBottom.CalculateValue(context.size.y);*/
-
-        //result.size.x += (style.marginLeft.CalculateValue(context.size.x) + style.marginRight.CalculateValue(context.size.x)) * 2.f;
-        //result.size.y += (style.marginTop.CalculateValue(context.size.x) + style.marginBottom.CalculateValue(context.size.x)) * 2.f;
-        //result.size.y += (size.y * 2.f);
-
-        //position.x += style.paddingLeft.CalculateValue(context.size.x);
-        //position.y -= style.paddingTop.CalculateValue(context.size.x);
-
-        //position.x += style.paddingLeft.CalculateValue(context.size.x) / size.x;
-        //position.y -= style.paddingTop.CalculateValue(context.size.x) / size.y;
-
-        /// Convert to shader screen space [-1, 1]
         SR_MATH_NS::FVector2 position = context.offset;
         position.x = position.x + context.size.x;
         position.y = -position.y - context.size.y;
@@ -153,5 +114,5 @@ namespace SR_GRAPH_NS {
         }
 
         m_dirtyMaterial = false;
-    }
+    }*/
 }

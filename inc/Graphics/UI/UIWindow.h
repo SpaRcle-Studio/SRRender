@@ -19,7 +19,7 @@ namespace SR_GRAPH_UI_NS {
     );
 
     class UIWindow : public SR_UTILS_NS::Component {
-        SR_REGISTER_NEW_COMPONENT(UIWindow, 1000);
+        //SR_REGISTER_NEW_COMPONENT(UIWindow, 1000);
         using Super = SR_UTILS_NS::Component;
     public:
         bool InitializeEntity() noexcept override;

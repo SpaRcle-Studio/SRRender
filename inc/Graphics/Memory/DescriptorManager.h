@@ -25,8 +25,8 @@ namespace SR_GRAPH_NS {
             void* pShaderHandle = nullptr;
             DescriptorSet descriptorSet = SR_ID_INVALID;
         };
-        using VirtualDescriptorSet = int32_t;
     public:
+        using VirtualDescriptorSet = int32_t;
         enum class BindResult : uint8_t {
             None,
             Success,
@@ -40,7 +40,7 @@ namespace SR_GRAPH_NS {
         BindResult Bind(VirtualDescriptorSet virtualDescriptorSet);
         void Flush();
 
-        void FreeDescriptorSet(VirtualDescriptorSet* pVirtualDescriptorSet);
+        bool FreeDescriptorSet(VirtualDescriptorSet* pVirtualDescriptorSet);
 
         void SetPipeline(SR_HTYPES_NS::SharedPtr<Pipeline> pipeline) noexcept { m_pipeline = std::move(pipeline); }
 

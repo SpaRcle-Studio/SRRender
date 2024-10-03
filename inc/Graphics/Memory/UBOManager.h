@@ -69,10 +69,11 @@ namespace SR_GRAPH_NS::Memory {
     class SR_DLL_EXPORT UBOManager : public SR_UTILS_NS::Singleton<UBOManager> {
         SR_REGISTER_SINGLETON(UBOManager)
         using Super = SR_UTILS_NS::Singleton<UBOManager>;
-        using VirtualUBO = int32_t;
-        using UBO = int32_t;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
     public:
+        using VirtualUBO = int32_t;
+        using UBO = int32_t;
+        
         enum class BindResult : uint8_t {
             None,
             Success,

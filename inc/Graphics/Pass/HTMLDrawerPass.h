@@ -28,6 +28,7 @@ namespace SR_GRAPH_NS {
 
     private:
         bool LoadPage(const SR_UTILS_NS::Path& path);
+        void UnloadPage();
         bool ReloadPage();
         void AddWatcher(const SR_UTILS_NS::Path& path);
         void InitRenderer();
@@ -35,7 +36,6 @@ namespace SR_GRAPH_NS {
     private:
         SR_UTILS_NS::Path m_pagePath;
         std::vector<SR_UTILS_NS::FileWatcher::Ptr> m_fileWatchers;
-        HTMLRenderer::Ptr m_pRenderer = nullptr;
         SR_UTILS_NS::Web::HTMLPage::Ptr m_pPage = nullptr;
         std::atomic<uint16_t> m_needReloadPage = false;
 

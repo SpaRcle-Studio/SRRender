@@ -14,6 +14,7 @@ namespace SR_GRAPH_NS {
 
     HTMLDrawerPass::~HTMLDrawerPass() {
         SRAssert2(m_fileWatchers.empty(), "Watchers are not empty!");
+        SRAssert2(!m_pPage, "Page is not empty!");
     }
 
     bool HTMLDrawerPass::Load(const SR_XML_NS::Node& passNode) {
@@ -34,31 +35,38 @@ namespace SR_GRAPH_NS {
     }
 
     bool HTMLDrawerPass::Render() {
-        if (m_pRenderer) {
-            m_pRenderer->SetCamera(m_camera);
-            m_pRenderer->Draw();
+        if (!m_pPage) {
+            return false;
         }
-        return true;
+
+        if (const auto pRenderer = m_pPage->GetContainer().PolymorphicCast<HTMLRendererBase>()) {
+            pRenderer->SetCamera(m_camera);
+            pRenderer->Draw();
+            return true;
+        }
+        return false;
     }
 
     void HTMLDrawerPass::Update() {
-        if (m_pRenderer) {
-            m_pRenderer->SetCamera(m_camera);
-            m_pRenderer->Update();
+        if (!m_pPage) {
+            return;
         }
-        BasePass::Update();
+
+        if (const auto pRenderer = m_pPage->GetContainer().PolymorphicCast<HTMLRendererBase>()) {
+            pRenderer->SetCamera(m_camera);
+            pRenderer->Update();
+        }
+        Super::Update();
     }
 
     bool HTMLDrawerPass::Init() {
-        const bool result = BasePass::Init();
+        const bool result = Super::Init();
         InitRenderer();
         return result;
     }
 
     void HTMLDrawerPass::DeInit() {
-        if (m_pRenderer) {
-            m_pRenderer->DeInit();
-        }
+        UnloadPage();
 
         for (auto&& pWatcher : m_fileWatchers) {
             pWatcher->Stop();
@@ -69,9 +77,13 @@ namespace SR_GRAPH_NS {
     }
 
     void HTMLDrawerPass::OnResize(const SR_MATH_NS::UVector2& size) {
-        if (m_pRenderer) {
-            m_pRenderer->SetScreenSize(size);
+        if (!m_pPage) {
+            return;
         }
+
+        m_pPage->GetDocument()->media_changed();
+        m_pPage->GetDocument()->render(static_cast<int32_t>(size.x));
+
         Super::OnResize(size);
     }
 
@@ -81,10 +93,16 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        UnloadPage();
+
         m_pagePath = pagePath;
 
-        m_pPage.AutoFree();
-        m_pPage = SR_UTILS_NS::Web::HTMLParser::Instance().Parse(m_pagePath);
+        HTMLRendererBase::Ptr pContainer = new HTMLRendererBase();
+        pContainer->SetCamera(m_camera);
+        pContainer->SetPipeline(GetPassPipeline().Get());
+
+        m_pPage = SR_UTILS_NS::Web::HTMLPage::Load(m_pagePath,
+            pContainer.PolymorphicCast<SR_UTILS_NS::Web::HTMLContainerInterface>());
 
         if (!m_pPage) {
             SR_ERROR("HTMLDrawerPass::LoadPage() : failed to parse page: {}", m_pagePath.c_str());
@@ -100,10 +118,20 @@ namespace SR_GRAPH_NS {
             }
         }
         else if (m_fileWatchers.empty()) {
-            AddWatcher(m_pagePath);
+            AddWatcher(SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(m_pagePath));
         }
 
         return m_pPage;
+    }
+
+    void HTMLDrawerPass::UnloadPage() {
+        if (m_pPage) {
+            if (auto&& pContainer = m_pPage->GetContainer().PolymorphicCast<HTMLRendererBase>()) {
+                pContainer->DeInit();
+            }
+            m_pPage.AutoFree();
+            m_pPage = nullptr;
+        }
     }
 
     bool HTMLDrawerPass::ReloadPage() {
@@ -115,13 +143,12 @@ namespace SR_GRAPH_NS {
     }
 
     void HTMLDrawerPass::AddWatcher(const SR_UTILS_NS::Path& path) {
-        const SR_UTILS_NS::Path fullPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
         for (auto&& pWatcher : m_fileWatchers) {
-            if (pWatcher->GetPath() == fullPath) {
+            if (pWatcher->GetPath() == path) {
                 return;
             }
         }
-        if (auto&& pWatcher = SR_UTILS_NS::ResourceManager::Instance().StartWatch(fullPath)) {
+        if (auto&& pWatcher = SR_UTILS_NS::ResourceManager::Instance().StartWatch(path)) {
             pWatcher->SetCallBack([this](SR_UTILS_NS::FileWatcher*) {
                 ++m_needReloadPage;
             });
@@ -130,17 +157,15 @@ namespace SR_GRAPH_NS {
     }
 
     void HTMLDrawerPass::InitRenderer() {
-        if (m_pRenderer) {
-            m_pRenderer->DeInit();
-            m_pRenderer.AutoFree();
+        if (!m_pPage) {
+            return;
         }
 
-        if (m_pPage) {
-            const SR_MATH_NS::UVector2 size = m_camera ? m_camera->GetSize() : GetContext()->GetWindowSize();
-
-            m_pRenderer = HTMLRenderer::MakeShared(GetPassPipeline().Get(), m_pPage);
-            m_pRenderer->SetScreenSize(size);
-            m_pRenderer->Init();
+        if (const auto pRenderer = m_pPage->GetContainer().PolymorphicCast<HTMLRendererBase>()) {
+            pRenderer->Init();
         }
+
+        const SR_MATH_NS::UVector2 size = m_camera ? m_camera->GetSize() : GetContext()->GetWindowSize();
+        m_pPage->GetDocument()->render(static_cast<int32_t>(size.x));
     }
 }
