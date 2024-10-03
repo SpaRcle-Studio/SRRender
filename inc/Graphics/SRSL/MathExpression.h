@@ -22,6 +22,7 @@ namespace SR_SRSL_NS {
 
         SR_NODISCARD SRSLExpr* ParseBinaryExpression(int32_t minPriority);
         SR_NODISCARD SRSLExpr* ParseSimpleExpression();
+        SR_NODISCARD SRSLExpr* TryParseString();
 
         SR_NODISCARD std::string ParseToken();
 

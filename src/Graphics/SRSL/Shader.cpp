@@ -419,6 +419,15 @@ namespace SR_SRSL_NS {
                 sampler.isPublic = bool(pVariable->pDecorators->Find("public"));
                 sampler.stages = std::move(stages);
 
+                if (pVariable->pExpr) {
+                    if (pVariable->pExpr->isString) {
+                        sampler.defaultValue = SR_UTILS_NS::StringAtom(pVariable->pExpr->token);
+                    }
+                    else {
+                        SR_WARN("SRSLShader::PrepareSamplers() : invalid default value!");
+                    }
+                }
+
                 if (auto&& pAttachment = pVariable->pDecorators->Find("attachment"); pAttachment && pAttachment->args.size() == 1) {
                     sampler.attachment = SR_UTILS_NS::LexicalCast<int32_t>(pAttachment->args.front()->token);
                 }
