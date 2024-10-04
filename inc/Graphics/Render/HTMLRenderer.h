@@ -34,6 +34,7 @@ namespace SR_GRAPH_NS {
 
     public:
         HTMLRenderContainer();
+        ~HTMLRenderContainer() override;
 
         virtual bool Init();
         virtual void DeInit();

@@ -24,6 +24,12 @@ namespace SR_GRAPH_NS {
         , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
     { }
 
+    HTMLRenderContainer::~HTMLRenderContainer() {
+        SRAssert2(m_textAtlases.empty(), "Text atlases are not empty!");
+        SRAssert2(m_textBuilders.empty(), "Text builders are not empty!");
+        SRAssert2(m_shaders.empty(), "Shaders are not empty!");
+    }
+
     bool HTMLRenderContainer::Init() {
         for (auto&& shaderId : SR_HTML_SHADERS) {
             if (auto&& pShader = SR_GTYPES_NS::Shader::Load("Engine/Shaders/Web/" + shaderId.ToString() + ".srsl")) {
@@ -59,10 +65,11 @@ namespace SR_GRAPH_NS {
         }
         m_shaders.clear();
 
-        for (auto& textBuilderInfo : m_textBuilders) {
-            delete textBuilderInfo.pTextBuilder;
-        }
-        m_textBuilders.clear();
+        /// INFO: чистит сам документ через delete_font
+        /// for (auto& textBuilderInfo : m_textBuilders) {
+        ///     delete textBuilderInfo.pTextBuilder;
+        /// }
+        /// m_textBuilders.clear();
     }
 
     void HTMLRenderContainer::Draw() {
