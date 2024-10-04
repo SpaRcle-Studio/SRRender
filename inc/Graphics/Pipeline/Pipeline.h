@@ -104,6 +104,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual std::string GetRenderer() const { return "None"; }
         SR_NODISCARD virtual std::string GetVersion() const { return "None"; }
 
+        SR_NODISCARD RenderContextPtr GetRenderContext() const noexcept { return m_renderContext; }
         SR_NODISCARD WindowPtr GetWindow() const { return m_window; }
         SR_NODISCARD ShaderPtr GetCurrentShader() const { ++m_state.operations; return m_state.pShader; }
         SR_NODISCARD FramebufferPtr GetCurrentFrameBuffer() const noexcept { ++m_state.operations; return m_state.pFrameBuffer; }

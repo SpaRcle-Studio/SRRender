@@ -28,16 +28,16 @@ namespace SR_GRAPH_NS {
         Clear();
 
         if (!m_font) {
+            SR_ERROR("TextBuilder::Build() : font is nullptr!");
             return false;
         }
 
-        m_font->SetCharSize(0, 16 * 64, m_charSize.x, m_charSize.y);
+        InitFontSize();
 
         /// препроцессор текста
         for (uint32_t i = 0; i < static_cast<uint32_t>(text.size()); ++i) {
             if (auto&& iterator = PreProcess(text, i); iterator != SR_ID_INVALID) {
                 text.erase(text.begin() + i, text.begin() + iterator);
-                continue;
             }
         }
 
@@ -47,6 +47,7 @@ namespace SR_GRAPH_NS {
 
         auto&& size = GetSize();
         if (size == 0) {
+            SR_ERROR("TextBuilder::Build() : failed to calculate size!");
             return false;
         }
 
@@ -87,15 +88,6 @@ namespace SR_GRAPH_NS {
         }
 
         return true;
-    }
-
-    void TextBuilder::SetCharSize(const SR_MATH_NS::UVector2& size)
-    {
-        m_charSize = size;
-    }
-
-    void TextBuilder::SetFontSize(uint32_t size) {
-        m_fontSize = size;
     }
 
     uint32_t TextBuilder::PreProcess(const TextBuilder::StringType& text, uint32_t iterator) {
@@ -219,7 +211,40 @@ namespace SR_GRAPH_NS {
         return ImageFormat::RGBA8_UNORM;
     }
 
+    int32_t TextBuilder::CalculateTextWidth(const char* str) {
+        Clear();
+
+        if (!m_font) {
+            return 0;
+        }
+
+        InitFontSize();
+
+        /// препроцессор текста
+        StringType text = SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(str);
+        for (uint32_t i = 0; i < static_cast<uint32_t>(text.size()); ++i) {
+            if (auto&& iterator = PreProcess(text, i); iterator != SR_ID_INVALID) {
+                text.erase(text.begin() + i, text.begin() + iterator);
+            }
+        }
+
+        if (!ParseGlyphs(text)) {
+            return false;
+        }
+
+        return GetWidth();
+    }
+
+    bool TextBuilder::Build(const char* text) {
+        return Build(SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(text));
+    }
+
     void TextBuilder::SetDebug(bool enabled) {
         m_debug = enabled;
+    }
+
+    void TextBuilder::InitFontSize() {
+        const double_t dpi = SR_PLATFORM_NS::GetScreenDPI();
+        m_font->SetCharSize(0, m_fontSize * 64, dpi, dpi);
     }
 }

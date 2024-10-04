@@ -39,8 +39,12 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        if (const auto pRenderer = m_pPage->GetContainer().PolymorphicCast<HTMLRendererBase>()) {
+        if (const auto pRenderer = m_pPage->GetContainer().PolymorphicCast<HTMLRenderContainer>()) {
             pRenderer->SetCamera(m_camera);
+
+            const SR_MATH_NS::UVector2 size = m_camera ? m_camera->GetSize() : GetContext()->GetWindowSize();
+            m_pPage->GetDocument()->render(static_cast<int32_t>(size.x));
+
             pRenderer->Draw();
             return true;
         }
@@ -52,7 +56,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (const auto pRenderer = m_pPage->GetContainer().PolymorphicCast<HTMLRendererBase>()) {
+        if (const auto pRenderer = m_pPage->GetContainer().PolymorphicCast<HTMLRenderContainer>()) {
             pRenderer->SetCamera(m_camera);
             pRenderer->Update();
         }
@@ -97,7 +101,7 @@ namespace SR_GRAPH_NS {
 
         m_pagePath = pagePath;
 
-        HTMLRendererBase::Ptr pContainer = new HTMLRendererBase();
+        HTMLRenderContainer::Ptr pContainer = new HTMLRenderContainer();
         pContainer->SetCamera(m_camera);
         pContainer->SetPipeline(GetPassPipeline().Get());
 
@@ -126,7 +130,7 @@ namespace SR_GRAPH_NS {
 
     void HTMLDrawerPass::UnloadPage() {
         if (m_pPage) {
-            if (auto&& pContainer = m_pPage->GetContainer().PolymorphicCast<HTMLRendererBase>()) {
+            if (auto&& pContainer = m_pPage->GetContainer().PolymorphicCast<HTMLRenderContainer>()) {
                 pContainer->DeInit();
             }
             m_pPage.AutoFree();
@@ -161,11 +165,12 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (const auto pRenderer = m_pPage->GetContainer().PolymorphicCast<HTMLRendererBase>()) {
+        if (const auto pRenderer = m_pPage->GetContainer().PolymorphicCast<HTMLRenderContainer>()) {
             pRenderer->Init();
         }
 
         const SR_MATH_NS::UVector2 size = m_camera ? m_camera->GetSize() : GetContext()->GetWindowSize();
+
         m_pPage->GetDocument()->render(static_cast<int32_t>(size.x));
     }
 }

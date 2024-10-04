@@ -18,27 +18,6 @@ namespace SR_GTYPES_NS {
         FreeTextureData();
     }
 
-    Texture::Ptr Texture::LoadFont(Font* pFont) {
-        auto&& pTexture = new Texture();
-
-        pTexture->m_isFromMemory = true;
-
-        pTexture->m_textureData = TextureData::Create(pFont->GetWidth(), pFont->GetHeight(), pFont->CopyData(), [](const uint8_t* pData) {
-            delete[] pData;
-        });
-
-        pTexture->m_config.m_alpha = SR_UTILS_NS::BoolExt::True;
-        pTexture->m_config.m_format = ImageFormat::RGBA8_UNORM;
-        pTexture->m_config.m_filter = TextureFilter::NEAREST;
-        pTexture->m_config.m_compression = TextureCompression::None;
-        pTexture->m_config.m_mipLevels = 1;
-        pTexture->m_config.m_cpuUsage = false;
-
-        pTexture->SetId("FontTexture");
-
-        return pTexture;
-    }
-
     Texture::Ptr Texture::LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const Memory::TextureConfig& config) {
         auto&& pTexture = new Texture();
 

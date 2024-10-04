@@ -28,15 +28,19 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetHeight() const noexcept { return m_imageHeight; }
         SR_NODISCARD uint8_t* GetData() const noexcept { return m_textureData; }
         SR_NODISCARD ImageFormat GetColorFormat() const noexcept;
+        SR_NODISCARD uint32_t GetFontSize() const noexcept { return m_fontSize; }
 
+        SR_NODISCARD int32_t CalculateTextWidth(const char* text);
+
+        bool Build(const char* text);
         bool Build(StringType text);
 
-        void SetCharSize(const SR_MATH_NS::UVector2& size);
-        void SetFontSize(uint32_t size);
+        void SetFontSize(uint32_t size) { m_fontSize = size; }
         void SetKerning(bool enabled);
         void SetDebug(bool enabled);
 
     private:
+        void InitFontSize();
         void Clear();
 
         bool ParseGlyphs(const StringType& text);
@@ -54,9 +58,8 @@ namespace SR_GRAPH_NS {
         bool m_kerning = false;
         bool m_debug = false;
 
-        SR_MATH_NS::UVector2 m_charSize = SR_MATH_NS::UVector2(512, 512);
+        uint32_t m_fontSize = 12;
 
-        uint32_t m_fontSize = 32;
         uint32_t m_align = 0;
         uint32_t m_valign = 110;
         uint32_t m_space = 24;
