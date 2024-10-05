@@ -30,12 +30,12 @@ namespace SR_ANIMATIONS_NS {
 
         for (int32_t i = static_cast<int32_t>(names.size()) - 1; i >= 0; --i) {
             if (gameObject) {
-                if (!((gameObject = gameObject->Find(names[i])))) {
+                if (!((gameObject = gameObject->Find(names[i]).DynamicCast<SR_UTILS_NS::GameObject>()))) {
                     break;
                 }
             }
             else {
-                if (!((gameObject = pRoot->pScene->Find(names[i])))) {
+                if (!((gameObject = pRoot->pScene->Find(names[i]).DynamicCast<SR_UTILS_NS::GameObject>()))) {
                     break;
                 }
             }

@@ -90,17 +90,17 @@ namespace SR_GTYPES_NS {
     { }
 
     const SR_MATH_NS::Matrix4x4& MeshComponent::GetMatrix() const {
-        if (m_gameObject) {
-            return m_gameObject->GetTransform()->GetMatrix();
+        if (auto&& pTransform = GetTransform()) {
+            return pTransform->GetMatrix();
         }
 
         return Mesh::GetMatrix();
     }
 
     int64_t MeshComponent::GetSortingPriority() const {
-        if (m_gameObject) {
-            if (GetTransform()->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
-                return static_cast<SR_UTILS_NS::Transform2D*>(m_gameObject->GetTransform())->GetPriority();
+        if (auto&& pTransform = GetTransform()) {
+            if (pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
+                return static_cast<SR_UTILS_NS::Transform2D*>(pTransform)->GetPriority();
             }
         }
 
@@ -108,19 +108,18 @@ namespace SR_GTYPES_NS {
     }
 
     bool MeshComponent::HasSortingPriority() const {
-        if (!m_gameObject) {
-            return false;
+        if (auto&& pTransform = GetTransform()) {
+            return pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
         }
-
-        return GetTransform()->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
+        return false;
     }
 
     SR_UTILS_NS::StringAtom MeshComponent::GetMeshLayer() const {
-        if (!m_gameObject) {
+        if (!m_sceneObject) {
             return SR_UTILS_NS::StringAtom();
         }
 
-        return m_gameObject->GetLayer();
+        return m_sceneObject->GetLayer();
     }
 
     /// ----------------------------------------------------------------------------------------------------------------
@@ -131,9 +130,9 @@ namespace SR_GTYPES_NS {
     { }
 
     int64_t IndexedMeshComponent::GetSortingPriority() const {
-        if (m_gameObject) {
-            if (GetTransform()->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
-                return static_cast<SR_UTILS_NS::Transform2D*>(m_gameObject->GetTransform())->GetPriority();
+        if (auto&& pTransform = GetTransform()) {
+            if (pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
+                return static_cast<SR_UTILS_NS::Transform2D*>(pTransform)->GetPriority();
             }
         }
 
@@ -141,24 +140,23 @@ namespace SR_GTYPES_NS {
     }
 
     bool IndexedMeshComponent::HasSortingPriority() const {
-        if (!m_gameObject) {
-            return false;
+        if (auto&& pTransform = GetTransform()) {
+            return pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
         }
-
-        return GetTransform()->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
+        return false;
     }
 
     SR_UTILS_NS::StringAtom IndexedMeshComponent::GetMeshLayer() const {
-        if (!m_gameObject) {
+        if (!m_sceneObject) {
             return SR_UTILS_NS::StringAtom();
         }
 
-        return m_gameObject->GetLayer();
+        return m_sceneObject->GetLayer();
     }
 
     const SR_MATH_NS::Matrix4x4& IndexedMeshComponent::GetMatrix() const {
-        if (m_gameObject) {
-            return m_gameObject->GetTransform()->GetMatrix();
+        if (auto&& pTransform = GetTransform()) {
+            return pTransform->GetMatrix();
         }
 
         return IndexedMesh::GetMatrix();

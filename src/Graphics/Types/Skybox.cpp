@@ -99,6 +99,25 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
+        if (!GetRenderContext()) {
+            auto&& pContext = SR_THIS_THREAD->GetContext()->GetValue<SR_HTYPES_NS::SafePtr<RenderContext>>();
+            if (!pContext) {
+                SRHalt("Render context is nullptr!");
+                m_hasErrors = true;
+                return false;
+            }
+
+            if (pContext->LockIfValid()) {
+                pContext->Register(this);
+                pContext.Unlock();
+            }
+            else {
+                SR_ERROR("Skybox::Calculate() : failed to lock render context!");
+                m_hasErrors = true;
+                return false;
+            }
+        }
+
         SRCubeMapCreateInfo createInfo;
         createInfo.cpuUsage = SR_UTILS_NS::Features::Instance().Enabled("SkyboxCPUUsage", false);
         createInfo.width = m_width;

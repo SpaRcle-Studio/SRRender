@@ -83,7 +83,7 @@ namespace SR_GRAPH_UI_NS {
                 gameObject->SetLayer("GizmoSelection");
             }
             else {
-                GetGameObject()->GetOrAddChild("Selection")->AddComponent(pMeshComponent);
+                GetGameObject()->GetOrCreateChild("Selection")->AddComponent(pMeshComponent);
             }
             m_meshes[operation].pSelection = pMeshComponent;
         }
@@ -107,8 +107,8 @@ namespace SR_GRAPH_UI_NS {
         SRAssert(m_meshes.empty());
 
         GetGameObject()->SetLayer("Gizmo");
-        GetGameObject()->GetOrAddChild("Selection")->SetLayer("GizmoSelection");
-        SR_MAYBE_UNUSED auto&& debugObject = GetGameObject()->GetOrAddChild("Debug");
+        GetGameObject()->GetOrCreateChild("Selection")->SetLayer("GizmoSelection");
+        SR_MAYBE_UNUSED auto&& debugObject = GetGameObject()->GetOrCreateChild("Debug");
 
         static const SR_UTILS_NS::StringAtom gizmoFile = "Engine/Models/gizmo-translation.fbx";
 
@@ -488,19 +488,19 @@ namespace SR_GRAPH_UI_NS {
     }
 
     Utils::Component::GameObjectPtr Gizmo::GetGameObjectByOperation(GizmoMeshLoadMode mode, GizmoOperationFlag operation) const {
-        auto&& root = mode == GizmoMeshLoadMode::Visual ? GetGameObject() : GetGameObject()->GetOrAddChild("Selection");
+        auto&& root = mode == GizmoMeshLoadMode::Visual ? GetGameObject() : GetGameObject()->GetOrCreateChild("Selection");
 
         if (operation & GizmoOperation::Center) {
-            return root->GetOrAddChild("RotateCenter");
+            return root->GetOrCreateChild("RotateCenter");
         }
         else if (operation & GizmoOperation::X) {
-            return root->GetOrAddChild("RotateX");
+            return root->GetOrCreateChild("RotateX");
         }
         else if (operation & GizmoOperation::Y) {
-            return root->GetOrAddChild("RotateY");
+            return root->GetOrCreateChild("RotateY");
         }
         else if (operation & GizmoOperation::Z) {
-            return root->GetOrAddChild("RotateZ");
+            return root->GetOrCreateChild("RotateZ");
         }
 
         SR_ERROR("Gizmo::GetGameObjectByOperation() : unknown operation!");
