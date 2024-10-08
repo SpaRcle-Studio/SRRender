@@ -145,8 +145,6 @@ namespace SR_GRAPH_NS::GUI {
     void WidgetManager::SetScene(const WidgetManager::ScenePtr &scene) {
         SR_LOCK_GUARD;
 
-        SR_HTYPES_NS::SafePtrLockGuard<SR_WORLD_NS::Scene::Ptr> lockGuard(scene);
-
         for (auto&& [id, pWidget] : m_widgets) {
             pWidget->SetScene(scene);
         }

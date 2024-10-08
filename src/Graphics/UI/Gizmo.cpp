@@ -57,7 +57,7 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        pMeshComponent->SetDontSave(true);
+        pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
 
         auto&& pMaterial = new SR_GRAPH_NS::UniqueMaterial();
         pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");

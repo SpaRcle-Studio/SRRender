@@ -49,8 +49,8 @@ namespace SR_ANIMATIONS_NS {
         return pComponent;
     }
 
-    SR_HTYPES_NS::Marshal::Ptr Skeleton::Save(SR_UTILS_NS::SavableContext data) const {
-        auto&& pMarshal = Super::Save(data);
+    SR_HTYPES_NS::Marshal::Ptr Skeleton::SaveLegacy(SR_UTILS_NS::SavableContext data) const {
+        auto&& pMarshal = Super::SaveLegacy(data);
 
         const SR_HTYPES_NS::Function<void(SR_ANIMATIONS_NS::Bone*)> processBone = [&](SR_ANIMATIONS_NS::Bone* pBone) {
             pMarshal->Write<std::string>(pBone->name);
@@ -189,11 +189,9 @@ namespace SR_ANIMATIONS_NS {
         ReCalculateSkeleton();
 
         if (auto&& pScene = TryGetScene()) {
-            auto&& renderScene = pScene->Do<RenderScenePtr>([](SR_WORLD_NS::Scene *ptr) {
-                return ptr->GetDataStorage().GetValue<RenderScenePtr>();
-            }, RenderScenePtr());
-            if (renderScene) {
-                renderScene->SetDirty();
+            auto&& pRenderScene = pScene->GetDataStorage().GetValue<RenderScenePtr>();
+            if (pRenderScene) {
+                pRenderScene->SetDirty();
             }
         }
 

@@ -18,11 +18,13 @@ namespace SR_GRAPH_NS::UI {
     { }
 
     void Canvas::OnAttached() {
-        m_renderScene = GetScene()->Do<RenderScenePtr>([](SR_WORLD_NS::Scene* pScene) {
-            return pScene->GetDataStorage().GetValue<RenderScenePtr>();
-        }, RenderScenePtr());
+        if (auto&& pScene = GetScene()) {
+            m_renderScene = pScene->GetDataStorage().GetValue<RenderScenePtr>();
+        }
 
-        m_context = m_renderScene->GetContext();
+        if (m_renderScene) {
+            m_context = m_renderScene->GetContext();
+        }
 
         Super::OnAttached();
     }

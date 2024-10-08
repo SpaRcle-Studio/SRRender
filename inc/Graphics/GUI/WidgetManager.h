@@ -31,7 +31,7 @@ namespace SR_GRAPH_NS::GUI {
     class WidgetManager : public SR_UTILS_NS::NonCopyable, public SR_UTILS_NS::InputHandler {
         using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
         using ContextPtr = RenderContext*;
-        using ScenePtr = SR_HTYPES_NS::SafePtr<SR_WORLD_NS::Scene>;
+        using ScenePtr = SR_HTYPES_NS::SharedPtr<SR_WORLD_NS::Scene>;
     public:
         WidgetManager();
         ~WidgetManager() override;

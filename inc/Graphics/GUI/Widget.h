@@ -41,7 +41,7 @@ namespace SR_GRAPH_GUI_NS {
     public:
         using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
         using ContextPtr = RenderContext*;
-        using ScenePtr = SR_HTYPES_NS::SafePtr<SR_WORLD_NS::Scene>;
+        using ScenePtr = SR_HTYPES_NS::SharedPtr<SR_WORLD_NS::Scene>;
 
     public:
         Widget() = default;

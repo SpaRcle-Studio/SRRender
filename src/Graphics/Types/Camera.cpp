@@ -59,8 +59,8 @@ namespace SR_GTYPES_NS {
         });
     }
 
-    SR_HTYPES_NS::Marshal::Ptr Camera::Save(SR_UTILS_NS::SavableContext data) const {
-        auto&& pMarshal = Component::Save(data);
+    SR_HTYPES_NS::Marshal::Ptr Camera::SaveLegacy(SR_UTILS_NS::SavableContext data) const {
+        auto&& pMarshal = Component::SaveLegacy(data);
 
         pMarshal->Write<std::string>(m_renderTechnique.path.ToStringRef());
         pMarshal->Write<float_t>(m_far);
