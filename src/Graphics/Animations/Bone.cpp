@@ -2,6 +2,8 @@
 // Created by Monika on 19.08.2021.
 //
 
+#include <Utils/World/Scene.h>
+
 #include <Graphics/Animations/Bone.h>
 #include <Graphics/Animations/BoneComponent.h>
 
