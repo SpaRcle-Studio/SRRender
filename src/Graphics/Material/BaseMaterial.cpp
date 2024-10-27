@@ -123,10 +123,12 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        m_shaderReloadDoneSubscription = m_shader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this]() {
-            m_dirtyShader = true;
-            OnPropertyChanged(false);
-        });
+        m_shaderReloadDoneSubscription = m_shader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT,
+            [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                m_dirtyShader = true;
+                OnPropertyChanged(false);
+            }
+        );
 
         m_shader->AddUsePoint();
         InitMaterialProperties();

@@ -115,9 +115,11 @@ namespace SR_GRAPH_NS {
 
         if (pTexture) {
             pTexture->AddUsePoint();
-            m_textureOnReloadDoneSubscription = pTexture->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this]() {
-                OnPropertyChanged(false);
-            });
+            m_textureOnReloadDoneSubscription = pTexture->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT,
+                [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                    OnPropertyChanged(false);
+                }
+            );
         }
     }
 
