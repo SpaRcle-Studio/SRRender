@@ -107,6 +107,7 @@ namespace SR_SRSL_NS {
             case '9': return Lexem(m_offset++, 1, LexemKind::Integer, "9", m_fileIndex);
 
             case '#': return Lexem(m_offset++, 1, LexemKind::Macro, "#", m_fileIndex);
+            case '"': return Lexem(m_offset++, 1, LexemKind::String, "\"", m_fileIndex);
 
             default:
                 break;

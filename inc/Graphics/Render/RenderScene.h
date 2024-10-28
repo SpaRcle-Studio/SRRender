@@ -42,7 +42,7 @@ namespace SR_GRAPH_NS {
     public:
         using WidgetManagerPtr = GUI::WidgetManager*;
         using WidgetManagers = std::vector<WidgetManagerPtr>;
-        using ScenePtr = SR_HTYPES_NS::SafePtr<SR_WORLD_NS::Scene>;
+        using ScenePtr = SR_HTYPES_NS::SharedPtr<SR_WORLD_NS::Scene>;
         using WindowPtr = SR_HTYPES_NS::SharedPtr<Window>;
         using CameraPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Camera>;
         using MeshPtr = SR_GTYPES_NS::Mesh*;

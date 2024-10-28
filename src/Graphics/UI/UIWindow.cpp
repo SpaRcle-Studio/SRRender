@@ -62,8 +62,8 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        m_content = GetGameObject()->Find("[Content]");
-        m_titleBar = GetGameObject()->Find("[TitleBar]");
+        //m_content = GetGameObject()->Find("[Content]");
+        //m_titleBar = GetGameObject()->Find("[TitleBar]");
 
         if (!m_content || !m_titleBar) {
             return;

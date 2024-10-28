@@ -126,14 +126,14 @@ namespace SR_GRAPH_NS {
         return descriptorSet;
     }
 
-    void DescriptorManager::FreeDescriptorSet(DescriptorManager::VirtualDescriptorSet* pVirtualDescriptorSet) {
+    bool DescriptorManager::FreeDescriptorSet(DescriptorManager::VirtualDescriptorSet* pVirtualDescriptorSet) {
         SR_TRACY_ZONE;
 
         SRAssert(pVirtualDescriptorSet);
 
         if (*pVirtualDescriptorSet == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("DescriptorManager::FreeDescriptorSet() : descriptor set is invalid!");
-            return;
+            return false;
         }
 
         auto&& info = m_descriptorPool.RemoveByIndex(*pVirtualDescriptorSet);
@@ -145,6 +145,7 @@ namespace SR_GRAPH_NS {
         }
 
         *pVirtualDescriptorSet = SR_ID_INVALID;
+        return true;
     }
 
     void DescriptorManager::CollectUnused() {

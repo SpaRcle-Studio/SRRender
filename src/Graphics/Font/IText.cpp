@@ -69,7 +69,7 @@ namespace SR_GTYPES_NS {
         TextBuilder textBuilder(m_font);
         textBuilder.SetKerning(m_kerning);
         textBuilder.SetDebug(m_debug);
-        textBuilder.SetCharSize(m_fontSize);
+        //textBuilder.SetCharSize(m_fontSize);
 
         if (!textBuilder.Build(m_text)) {
             return false;

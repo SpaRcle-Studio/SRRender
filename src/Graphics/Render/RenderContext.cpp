@@ -207,32 +207,32 @@ namespace SR_GRAPH_NS {
         SR_LOG("RenderContext::Close() : render context successfully closed!");
     }
 
-    RenderContext::RenderScenePtr RenderContext::CreateScene(const SR_WORLD_NS::Scene::Ptr &scene) {
+    RenderContext::RenderScenePtr RenderContext::CreateScene(const SR_WORLD_NS::Scene::Ptr &pScene) {
         SR_TRACY_ZONE;
 
         SRAssert2(!m_isClosed, "Render context is closed!");
 
         RenderScenePtr pRenderScene;
 
-        if (scene.RecursiveLockIfValid()) {
-            auto&& dataStorage = scene->GetDataStorage();
+        if (pScene.RecursiveLockIfValid()) {
+            auto&& dataStorage = pScene->GetDataStorage();
 
             /// У каждой сцены может быть только одна сцена рендера
             if (dataStorage.GetValueDef<RenderScenePtr>(RenderScenePtr())) {
                 SR_ERROR("RenderContext::CreateScene() : render scene is already exists!");
-                scene.Unlock();
+                pScene.Unlock();
                 return pRenderScene;
             }
 
-            pRenderScene = new RenderScene(scene, this);
+            pRenderScene = new RenderScene(pScene, this);
 
             m_scenes.emplace_back(std::make_pair(
-                scene,
+                pScene,
                 pRenderScene
             ));
 
             dataStorage.SetValue<RenderScenePtr>(pRenderScene);
-            scene.Unlock();
+            pScene.Unlock();
         }
         else {
             SR_ERROR("RenderContext::CreateScene() : scene is invalid!");

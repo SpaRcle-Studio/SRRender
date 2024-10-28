@@ -9,6 +9,7 @@
 
 namespace SR_GRAPH_NS {
     class TextBuilder;
+  
 #ifdef SR_COMMON_LITEHTML
     class HTMLRenderContainer : public SR_UTILS_NS::Web::HTMLContainerInterface {
         using Super = SR_UTILS_NS::Web::HTMLContainerInterface;

@@ -300,11 +300,11 @@ namespace SR_GRAPH_GUI_NS {
 
                 if (auto&& pStruct = dynamic_cast<SR_SRLM_NS::DataTypeStruct*>(pData)) {
                     if (SR_SRLM_NS::DataTypeManager::Instance().IsStructExists(pStruct->GetHashName())) {
-                        ImGui::Text("%s", SR_HASH_TO_STR(pStruct->GetHashName()).c_str());
+                        ImGui::Text("%s", SR_HASH_TO_STR(pStruct->GetHashName()).data());
 
                         for (auto&& [hashName, pVar] : pStruct->GetVariables()) {
                             ImGui::BeginDisabled(true);
-                            ImGui::Button(SR_HASH_TO_STR(hashName).c_str(), ImVec2(width * 0.25f, 20));
+                            ImGui::Button(SR_HASH_TO_STR(hashName).data(), ImVec2(width * 0.25f, 20));
                             ImGui::EndDisabled();
 
                             ImGui::SameLine();

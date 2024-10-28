@@ -24,6 +24,7 @@ namespace SR_GRAPH_NS::Types {
 
     Shader::~Shader() {
         m_samplers.clear();
+        SRAssert(m_defaultSamplers.empty());
     }
 
     bool Shader::Init() {
@@ -48,7 +49,14 @@ namespace SR_GRAPH_NS::Types {
                 if (sampler.isAttachment || sampler.isArray) {
                     continue;
                 }
-                sampler.samplerId = pContext->GetDefaultTexture()->GetId();
+                auto&& pIt = m_defaultSamplers.find(sampler.defaultValue);
+                if (pIt != m_defaultSamplers.end()) {
+                    LoadDefaultSampler(sampler.defaultValue);
+                    sampler.samplerId = pIt->second->GetId();
+                }
+                else {
+                    sampler.samplerId = pContext->GetDefaultTexture()->GetId();
+                }
             }
 
             if (!m_isRegistered) {
@@ -96,7 +104,9 @@ namespace SR_GRAPH_NS::Types {
             return ShaderBindResult::Failed;
         }
 
-        SRAssert(GetRenderContext());
+        if (!SRVerify2(GetRenderContext(), "Render context is nullptr!")) {
+            return ShaderBindResult::Failed;
+        }
 
         auto&& bindResult = Memory::ShaderProgramManager::Instance().BindProgram(m_shaderProgram);
         switch (bindResult) {
@@ -322,6 +332,9 @@ namespace SR_GRAPH_NS::Types {
 
     bool Shader::Flush() const {
         if (!m_uniformBlock.m_memory) SR_UNLIKELY_ATTRIBUTE {
+            if (!m_uniformBlock.m_size) {
+                return true; /// no need to flush
+            }
             return false;
         }
 
@@ -359,6 +372,32 @@ namespace SR_GRAPH_NS::Types {
         });
 
         IResource::OnReloadDone();
+    }
+
+    void Shader::LoadDefaultSampler(SR_UTILS_NS::StringAtom name) {
+        if (m_defaultSamplers.count(name) == 1) {
+            if (auto&& pTexture = SR_GTYPES_NS::Texture::Load(name)) {
+                AddDependency(pTexture);
+                m_defaultSamplers[name] = pTexture;
+            }
+            else {
+                SR_ERROR("Shader::AddDefaultSampler() : failed to load default sampler! Use none texture. \n\tPath: " + name.ToString());
+                m_defaultSamplers[name] = GetRenderContext()->GetNoneTexture();
+            }
+        }
+        else {
+            SR_ERROR("Shader::AddDefaultSampler() : default sampler isn't registered! \n\tPath: " + name.ToString());
+        }
+    }
+
+    void Shader::UnloadDefaultSamplers() {
+        for (auto&& [name, pTexture] : m_defaultSamplers) {
+            if (!pTexture) {
+                continue;
+            }
+            RemoveDependency(pTexture);
+        }
+        m_defaultSamplers.clear();
     }
 
     bool Shader::Load() {
@@ -460,6 +499,11 @@ namespace SR_GRAPH_NS::Types {
             m_samplers[name].binding = sampler.binding;
             m_samplers[name].isAttachment = sampler.attachment >= 0;
             m_samplers[name].isArray = sampler.type.Contains("Array");
+            m_samplers[name].defaultValue = sampler.defaultValue;
+
+            if (!sampler.defaultValue.empty()) {
+                m_defaultSamplers.insert(std::make_pair(sampler.defaultValue, nullptr));
+            }
 
             const ShaderVarType varType = SR_SRSL_NS::SRSLTypeInfo::Instance().StringToType(sampler.type);
 
@@ -502,6 +546,8 @@ namespace SR_GRAPH_NS::Types {
         m_includes.clear();
         m_properties.clear();
         m_samplers.clear();
+
+        UnloadDefaultSamplers();
 
         return !hasErrors;
     }

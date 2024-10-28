@@ -2,6 +2,8 @@
 // Created by Monika on 19.08.2021.
 //
 
+#include <Utils/World/Scene.h>
+
 #include <Graphics/Animations/Bone.h>
 #include <Graphics/Animations/BoneComponent.h>
 
@@ -30,12 +32,12 @@ namespace SR_ANIMATIONS_NS {
 
         for (int32_t i = static_cast<int32_t>(names.size()) - 1; i >= 0; --i) {
             if (gameObject) {
-                if (!((gameObject = gameObject->Find(names[i])))) {
+                if (!((gameObject = gameObject->Find(names[i]).DynamicCast<SR_UTILS_NS::GameObject>()))) {
                     break;
                 }
             }
             else {
-                if (!((gameObject = pRoot->pScene->Find(names[i])))) {
+                if (!((gameObject = pRoot->pScene->Find(names[i]).DynamicCast<SR_UTILS_NS::GameObject>()))) {
                     break;
                 }
             }

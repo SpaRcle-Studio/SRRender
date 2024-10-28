@@ -14,6 +14,7 @@ namespace SR_GRAPH_NS {
     SR_UTILS_NS::StringAtom SR_SOLID_FILL_SHADER = "solid-fill"_atom;
     SR_UTILS_NS::StringAtom SR_TEXT_SHADER = "text"_atom;
 
+
     std::vector<SR_UTILS_NS::StringAtom> SR_HTML_SHADERS = {
         SR_SOLID_FILL_SHADER, SR_TEXT_SHADER
     };
@@ -123,6 +124,7 @@ namespace SR_GRAPH_NS {
             m_pipeline->SetDirty(true);
         }
 
+
         if (SR_UTILS_NS::Input::Instance().GetKey(SR_UTILS_NS::KeyCode::RightArrow)) {
             m_scroll.x -= 10;
             m_pipeline->SetDirty(true);
@@ -132,6 +134,7 @@ namespace SR_GRAPH_NS {
             if (!shaderInfo.pShader->Ready()) {
                 continue;
             }
+
 
             if (shaderInfo.pShader->BeginSharedUBO()) {
                 if (m_pCamera) {
@@ -168,8 +171,10 @@ namespace SR_GRAPH_NS {
     void HTMLRenderContainer::get_client_rect(litehtml::position& client) const {
         SR_TRACY_ZONE;
 
+
         client.x = 0;
         client.y = 0;
+
 
         if (m_pCamera) {
             client.width = m_pCamera->GetSize().Cast<int32_t>().x;
@@ -286,9 +291,11 @@ namespace SR_GRAPH_NS {
         position.x = position.x + box.width;
         position.y = -position.y - box.height;
 
+
         pShader->SetVec2("position"_atom_hash, SR_MATH_NS::FVector2(-1, 1) + position / m_viewSize);
         pShader->SetVec2("size"_atom_hash, SR_MATH_NS::FVector2(box.width, box.height) / m_viewSize);
         pShader->SetVec4("color"_atom_hash, SR_MATH_NS::FColor(color.red, color.green, color.blue, color.alpha) / 255.f);
+
         DrawElement(shaderInfo);
         UpdateElement(shaderInfo);
         EndElement(shaderInfo);
@@ -312,12 +319,25 @@ namespace SR_GRAPH_NS {
         if (!pTextAtlas) {
             return;
         }
+        ShaderInfo& shaderInfo = pIt->second;
+
+        auto&& pTextAtlas = GetTextAtlas(text, reinterpret_cast<TextBuilder*>(hFont));
+        if (!pTextAtlas) {
+            return;
+        }
 
         if (!BeginElement(shaderInfo)) {
             return;
         }
 
         auto&& pShader = m_pipeline->GetCurrentShader();
+
+        if (!BeginElement(shaderInfo)) {
+            return;
+        }
+
+        auto&& pShader = m_pipeline->GetCurrentShader();
+
 
         litehtml::position box = pos;
         box.height += pTextAtlas->pTextBuilderRef->GetHeight();
@@ -326,9 +346,11 @@ namespace SR_GRAPH_NS {
         position.x = position.x + box.width;
         position.y = -position.y - box.height;
 
+
         pShader->SetVec2("position"_atom_hash, SR_MATH_NS::FVector2(-1, 1) + position / m_viewSize);
         pShader->SetVec2("size"_atom_hash, SR_MATH_NS::FVector2(box.width, box.height) / m_viewSize);
         pShader->SetVec4("color"_atom_hash, SR_MATH_NS::FColor(color.red, color.green, color.blue, color.alpha) / 255.f);
+
         pShader->SetSampler2D("textAtlas", pTextAtlas->id);
 
         DrawElement(shaderInfo);

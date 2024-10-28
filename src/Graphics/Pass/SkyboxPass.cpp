@@ -39,7 +39,7 @@ namespace SR_GRAPH_NS {
             m_skybox->SetShader(SR_GTYPES_NS::Shader::Load(passNode.GetAttribute("Shader").ToString()));
         }
 
-        return BasePass::Load(passNode);
+        return Super::Load(passNode);
     }
 
     bool SkyboxPass::Render() {
@@ -89,12 +89,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool SkyboxPass::Init() {
-        bool result = BasePass::Init();
-
-        if (m_skybox) {
-            GetContext()->Register(m_skybox);
-        }
-
+        bool result = Super::Init();
         return result;
     }
 }

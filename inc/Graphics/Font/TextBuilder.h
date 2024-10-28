@@ -14,6 +14,13 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    SR_ENUM_NS_CLASS_T(FontStyle, uint32_t,
+        Regular = 0,   /// Этот стиль шрифта не имеет никаких дополнительных свойств
+        Bold = 1,      /// Этот стиль шрифта имеет жирное начертание
+        Italic = 2,    /// Этот стиль шрифта имеет курсивное начертание
+        BoldItalic = 3 /// Этот стиль шрифта имеет жирное и курсивное начертание
+    );
+
     class TextBuilder : SR_UTILS_NS::NonCopyable {
         using Super = SR_UTILS_NS::NonCopyable;
         using FontPtr = SR_GTYPES_NS::Font*;
@@ -28,15 +35,21 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetHeight() const noexcept { return m_imageHeight; }
         SR_NODISCARD uint8_t* GetData() const noexcept { return m_textureData; }
         SR_NODISCARD ImageFormat GetColorFormat() const noexcept;
+        SR_NODISCARD uint32_t GetFontSize() const noexcept { return m_fontSize; }
+        SR_NODISCARD FontStyle GetFontStyle() const noexcept { return m_fontStyle; }
 
+        SR_NODISCARD int32_t CalculateTextWidth(const char* text);
+
+        bool Build(const char* text);
         bool Build(StringType text);
 
-        void SetCharSize(const SR_MATH_NS::UVector2& size);
-        void SetFontSize(uint32_t size);
+        void SetFontStyle(FontStyle style) { m_fontStyle = style; }
+        void SetFontSize(uint32_t size) { m_fontSize = size; }
         void SetKerning(bool enabled);
         void SetDebug(bool enabled);
 
     private:
+        void InitFontSize();
         void Clear();
 
         bool ParseGlyphs(const StringType& text);
@@ -45,6 +58,7 @@ namespace SR_GRAPH_NS {
         void PreProcessImpl(const StringType& text, uint32_t begin, uint32_t end);
 
     private:
+        FontStyle m_fontStyle = FontStyle::Regular;
         FT_Render_Mode m_renderMode = FT_RENDER_MODE_NORMAL;
 
         FontPtr m_font = nullptr;
@@ -54,9 +68,8 @@ namespace SR_GRAPH_NS {
         bool m_kerning = false;
         bool m_debug = false;
 
-        SR_MATH_NS::UVector2 m_charSize = SR_MATH_NS::UVector2(512, 512);
+        uint32_t m_fontSize = 12;
 
-        uint32_t m_fontSize = 32;
         uint32_t m_align = 0;
         uint32_t m_valign = 110;
         uint32_t m_space = 24;

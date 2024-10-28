@@ -114,6 +114,8 @@ namespace SR_GTYPES_NS {
 
         void BindSSBO(SR_UTILS_NS::StringAtom name, uint32_t ssbo) noexcept;
 
+        SR_NODISCARD bool HasErrors() const noexcept { return m_hasErrors; }
+
     protected:
         bool IsAllowedToRevive() const override;
         void ReviveResource() override;
@@ -122,6 +124,9 @@ namespace SR_GTYPES_NS {
         bool Unload() override;
 
         void OnReloadDone() override;
+
+        void LoadDefaultSampler(SR_UTILS_NS::StringAtom name);
+        void UnloadDefaultSamplers();
 
     private:
         void SetSampler(SR_UTILS_NS::StringAtom name, int32_t sampler) noexcept;
@@ -147,6 +152,7 @@ namespace SR_GTYPES_NS {
         ShaderSamplers m_samplers;
         ShaderProperties m_properties;
         SSBOBindings m_ssboBindings;
+        std::map<SR_UTILS_NS::StringAtom, Texture*> m_defaultSamplers;
 
         SR_SRSL_NS::ShaderType m_type = SR_SRSL_NS::ShaderType::Unknown;
 

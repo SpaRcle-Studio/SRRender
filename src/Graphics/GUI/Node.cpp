@@ -36,11 +36,11 @@ namespace SR_GRAPH_GUI_NS {
         }
 
         for (auto&& pin : pNode->GetInputs()) {
-            AddInput(new Pin(SR_HASH_TO_STR(pin.hashName), pin.pData));
+            AddInput(new Pin(SR_HASH_TO_STR(pin.hashName).data(), pin.pData));
         }
 
         for (auto&& pin : pNode->GetOutputs()) {
-            AddOutput(new Pin(SR_HASH_TO_STR(pin.hashName), pin.pData));
+            AddOutput(new Pin(SR_HASH_TO_STR(pin.hashName).data(), pin.pData));
         }
     }
 

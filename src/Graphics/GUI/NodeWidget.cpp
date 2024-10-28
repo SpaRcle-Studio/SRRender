@@ -249,7 +249,7 @@ namespace SR_GRAPH_GUI_NS {
         auto&& menu = m_creationPopup->AddMenu("Structs");
 
         for (auto&& [hashName, pStruct] : SR_SRLM_NS::DataTypeManager::Instance().GetStructs()) {
-            auto&& structMenu = menu.AddMenu(SR_HASH_TO_STR(hashName));
+            auto&& structMenu = menu.AddMenu(std::string(SR_HASH_TO_STR(hashName)));
 
             structMenu.AddMenu("Create").SetAction([typeHashName = hashName](const SR_GRAPH_GUI_NS::DrawPopupContext& context) {
                 auto&& pNode = new SR_SRLM_NS::CreateStructNode();
@@ -274,7 +274,7 @@ namespace SR_GRAPH_GUI_NS {
             }
 
             auto&& menu = m_creationPopup->AddMenu(nodeInfo.category);
-            menu.AddMenu(SR_HASH_TO_STR(hashName)).SetAction([constructor = nodeInfo.constructor](const SR_GRAPH_GUI_NS::DrawPopupContext& context) {
+            menu.AddMenu(std::string(SR_HASH_TO_STR(hashName))).SetAction([constructor = nodeInfo.constructor](const SR_GRAPH_GUI_NS::DrawPopupContext& context) {
                 SR_SRLM_NS::LogicalNode* pLogicalNode = constructor();
                 pLogicalNode->InitNode();
                 pLogicalNode->InitValues();

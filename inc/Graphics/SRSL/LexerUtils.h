@@ -113,15 +113,51 @@ namespace SR_SRSL_NS {
 
         Macro,                /// #
 
+        String,               /// "
+
         Identifier            /// _az_AZ_19_
     );
+
+    static std::string LexemKindToString(LexemKind lexem) {
+        static std::map<LexemKind, std::string> lexemToString = {
+                { LexemKind::OpeningSquareBracket, "[" },
+                { LexemKind::ClosingSquareBracket, "]" },
+                { LexemKind::OpeningAngleBracket, "<" },
+                { LexemKind::ClosingAngleBracket, ">" },
+                { LexemKind::OpeningCurlyBracket, "{" },
+                { LexemKind::ClosingCurlyBracket, "}" },
+                { LexemKind::OpeningBracket, "(" },
+                { LexemKind::ClosingBracket, ")" },
+                { LexemKind::Plus, "+" },
+                { LexemKind::Minus, "-" },
+                { LexemKind::Multiply, "*" },
+                { LexemKind::Divide, "/" },
+                { LexemKind::Percent, "%" },
+                { LexemKind::Assign, "=" },
+                { LexemKind::Semicolon, ";" },
+                { LexemKind::Dot, "." },
+                { LexemKind::Comma, "," },
+                { LexemKind::Negation, "!" },
+                { LexemKind::And, "&" },
+                { LexemKind::Or, "|" },
+                { LexemKind::Question, "?" },
+                { LexemKind::Colon, ":" },
+                { LexemKind::Tilda, "~" },
+                { LexemKind::Exponentiation, "^" },
+                { LexemKind::Macro, "#" },
+        };
+        if (lexemToString.find(lexem) != lexemToString.end()) {
+            return lexemToString[lexem];
+        }
+        return std::string();
+    }
 
     SR_ENUM_NS_CLASS_T(SRSLReturnCode, uint16_t,
         Unknown, Success, OutOfBounds, InvalidLexicalTree,
         UnknownLexem, UnexceptedLexem, UnexceptedDot, InvalidExpression, InvalidComplexExpression, InvalidDecorator,
         IncompleteExpression, EmptyExpression, InvalidScope, InvalidCall, InvalidIfStatement, UnknownShaderLanguage,
         InvalidAngleBracket, InvalidAssign, InvalidMathToken, InvalidNumericToken, EmptyToken, InvalidIncrementOrDecrement, InvalidListEnd,
-        WrongMacroName, IncludeNotExists, UnexceptedError, IncludeError, InvalidFunction
+        WrongMacroName, IncludeNotExists, UnexceptedError, IncludeError, InvalidFunction, InvalidString
     );
 
     struct LocationEntity {

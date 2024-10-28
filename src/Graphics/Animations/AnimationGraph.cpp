@@ -53,7 +53,8 @@ namespace SR_ANIMATIONS_NS {
         }
 
         auto&& pAnimationGraph = new AnimationGraph(pAnimator);
-        pAnimationGraph->m_path = graphPath;
+        pAnimationGraph->m_path = path;
+        SRAssert2(!path.IsFile(), "Path is absolute!");
 
         std::vector<uint32_t> errorNodes;
 

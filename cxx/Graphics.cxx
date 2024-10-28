@@ -62,6 +62,7 @@
 #include "../src/Graphics/Render/RenderStrategy.cpp"
 #include "../src/Graphics/Render/FrameBufferController.cpp"
 #include "../src/Graphics/Render/FrustumCulling.cpp"
+#include "../src/Graphics/Render/HTML/HTMLDrawableElement.cpp"
 
 #include "../src/Graphics/Types/Geometry/DebugWireframeMesh.cpp"
 #include "../src/Graphics/Types/Geometry/DebugLine.cpp"

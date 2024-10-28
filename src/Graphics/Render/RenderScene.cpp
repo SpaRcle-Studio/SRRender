@@ -276,7 +276,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (!pMesh->GetMaterial()) {
-            SR_ERROR("RenderScene::Register() : mesh material and default material are nullptr!");
+            SR_ERROR("RenderScene::Register() : mesh material and default material are nullptr! Mesh: " + pMesh->GetGeometryName());
             return;
         }
 

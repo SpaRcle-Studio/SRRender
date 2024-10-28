@@ -25,7 +25,7 @@ namespace SR_GRAPH_NS {
                 case MaterialType::None:
                     break; /// nothing to save
                 case MaterialType::File: {
-                    auto&& pFileMaterial = SR_UTILS_NS::PolymorphicCast<FileMaterial>(m_pMaterial);
+                    auto&& pFileMaterial = SR_UTILS_NS::PolymorphicCast<FileMaterial*>(m_pMaterial);
                     pBlock->Write<std::string>(pFileMaterial->GetResourcePath().ToStringRef());
                     break;
                 }
@@ -100,8 +100,8 @@ namespace SR_GRAPH_NS {
 
     void MeshMaterialProperty::SetMaterial(const SR_UTILS_NS::Path& path) noexcept {
         if (m_pMaterial && m_pMaterial->GetMaterialType() == MaterialType::File) {
-            auto&& pFileMaterial = SR_UTILS_NS::PolymorphicCast<FileMaterial>(m_pMaterial);
-            if (pFileMaterial->GetResourcePath() == path) {
+            auto&& pFileMaterial = SR_UTILS_NS::PolymorphicCast<FileMaterial*>(m_pMaterial);
+            if (pFileMaterial->GetResourcePath().ToStringView() == path.View()) {
                 return;
             }
         }

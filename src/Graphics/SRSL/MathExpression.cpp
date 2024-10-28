@@ -99,6 +99,10 @@ namespace SR_SRSL_NS {
     }
 
     SRSLExpr* SRSLMathExpression::ParseSimpleExpression() {
+        if (auto&& pExpr = TryParseString()) {
+            return pExpr;
+        }
+
         std::string token = ParseToken();
 
         if (IsHasErrors()) {
@@ -234,6 +238,52 @@ namespace SR_SRSL_NS {
         }
 
         return new SRSLExpr(std::move(token), pArgExpr);
+    }
+
+    SRSLExpr* SRSLMathExpression::TryParseString() {
+        bool isStringStarted = false;
+        std::string token;
+
+    retry:
+        if (!InBounds()) {
+            return nullptr;
+        }
+
+        switch (GetCurrentLexem()->kind) {
+            case LexemKind::String: {
+                ++m_currentLexem;
+                if (isStringStarted) {
+                    return SRSLExpr::CreateStringExpression(std::move(token));
+                }
+                isStringStarted = true;
+                goto retry;
+            }
+            default: {
+                if (!isStringStarted) {
+                    return nullptr;
+                }
+
+                if (GetCurrentLexem()->value.empty()) {
+                    if (std::string str = LexemKindToString(GetCurrentLexem()->kind); str.empty()) {
+                        SRHalt("Unknown lexem kind and empty value!");
+                    }
+                    else {
+                        token += str;
+                    }
+                }
+                else {
+                    if (GetCurrentLexem()->value == "\"" && GetLexem(1) && GetLexem(1)->kind == LexemKind::String) {
+                        ++m_currentLexem;
+                        token += "\"";
+                    }
+                    else {
+                        token += GetCurrentLexem()->value;
+                    }
+                }
+                ++m_currentLexem;
+                goto retry;
+            }
+        }
     }
 
     int32_t SRSLMathExpression::GetPriority(const std::string& operation, bool prefix) const {

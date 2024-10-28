@@ -17,6 +17,11 @@ namespace SR_GRAPH_NS {
         SRAssert2(!m_pPage, "Page is not empty!");
     }
 
+    HTMLDrawerPass::~HTMLDrawerPass() {
+        SRAssert2(m_fileWatchers.empty(), "Watchers are not empty!");
+        SRAssert2(!m_pPage, "Page is not empty!");
+    }
+
     bool HTMLDrawerPass::Load(const SR_XML_NS::Node& passNode) {
         SR_TRACY_ZONE;
         LoadPage(passNode.GetAttribute("Path").ToString());

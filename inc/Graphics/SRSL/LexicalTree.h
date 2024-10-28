@@ -23,6 +23,12 @@ namespace SR_SRSL_NS {
     public:
         SRSLExpr() = default;
 
+        static SRSLExpr* CreateStringExpression(std::string&& token) {
+            auto&& pExpr = new SRSLExpr(std::move(token));
+            pExpr->isString = true;
+            return pExpr;
+        }
+
         explicit SRSLExpr(std::string&& token)
             : token(SR_UTILS_NS::Exchange(token, { }))
         {
@@ -94,14 +100,8 @@ namespace SR_SRSL_NS {
         bool isCall = false;       /// function(arg1, arg2, arg3)
         bool isArray = false;      /// variable[expression]
         bool isList = false;       /// { expr1, expr2, expr3 }
+        bool isString = false;     /// "some string" but without quotes
 
-    };
-
-    /// ----------------------------------------------------------------------------------------------------------------
-
-    class SRSLInclude : public SRSLLexicalUnit {
-    public:
-        std::string path;
     };
 
     /// ----------------------------------------------------------------------------------------------------------------

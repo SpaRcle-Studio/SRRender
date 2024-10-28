@@ -89,6 +89,7 @@ namespace SR_GRAPH_NS {
         uint32_t samplerId = SR_ID_INVALID;
         bool isArray = false;
         bool isAttachment = false;
+        SR_UTILS_NS::StringAtom defaultValue;
     };
     typedef std::map<SR_UTILS_NS::StringAtom, ShaderSampler> ShaderSamplers;
 
