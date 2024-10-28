@@ -62,12 +62,12 @@ namespace SR_GRAPH_NS {
         position.y = -position.y - context.size.y;
         position = SR_MATH_NS::FVector2(-1, 1) + (position / context.resolution);
 
-        m_pShader->SetVec2("position"_atom_hash_cexpr, position);
-        m_pShader->SetVec2("size"_atom_hash_cexpr, context.size / context.resolution);
+        m_pShader->SetVec2("position"_atom_hash, position);
+        m_pShader->SetVec2("size"_atom_hash, context.size / context.resolution);
 
         if (style.backgroundColor.colorType == SR_UTILS_NS::Web::CSSColor::ColorType::RGBA) {
-            m_pShader->SetVec4("backgroundColor"_atom_hash_cexpr, style.backgroundColor.color.ToFColor());
-            //m_pShader->SetVec4("backgroundColor"_atom_hash_cexpr, SR_MATH_NS::FColor::Cyan());
+            m_pShader->SetVec4("backgroundColor"_atom_hash, style.backgroundColor.color.ToFColor());
+            //m_pShader->SetVec4("backgroundColor"_atom_hash, SR_MATH_NS::FColor::Cyan());
         }
 
         SR_MAYBE_UNUSED_VAR m_pShader->Flush();

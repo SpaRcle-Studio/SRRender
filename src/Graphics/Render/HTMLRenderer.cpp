@@ -18,6 +18,7 @@ namespace SR_GRAPH_NS {
         SR_SOLID_FILL_SHADER, SR_TEXT_SHADER
     };
 
+#ifdef SR_COMMON_LITEHTML
     HTMLRenderContainer::HTMLRenderContainer()
         : Super()
         , m_uboManager(SR_GRAPH_NS::Memory::UBOManager::Instance())
@@ -285,9 +286,9 @@ namespace SR_GRAPH_NS {
         position.x = position.x + box.width;
         position.y = -position.y - box.height;
 
-        pShader->SetVec2("position"_atom_hash_cexpr, SR_MATH_NS::FVector2(-1, 1) + position / m_viewSize);
-        pShader->SetVec2("size"_atom_hash_cexpr, SR_MATH_NS::FVector2(box.width, box.height) / m_viewSize);
-        pShader->SetVec4("color"_atom_hash_cexpr, SR_MATH_NS::FColor(color.red, color.green, color.blue, color.alpha) / 255.f);
+        pShader->SetVec2("position"_atom_hash, SR_MATH_NS::FVector2(-1, 1) + position / m_viewSize);
+        pShader->SetVec2("size"_atom_hash, SR_MATH_NS::FVector2(box.width, box.height) / m_viewSize);
+        pShader->SetVec4("color"_atom_hash, SR_MATH_NS::FColor(color.red, color.green, color.blue, color.alpha) / 255.f);
         DrawElement(shaderInfo);
         UpdateElement(shaderInfo);
         EndElement(shaderInfo);
@@ -325,9 +326,9 @@ namespace SR_GRAPH_NS {
         position.x = position.x + box.width;
         position.y = -position.y - box.height;
 
-        pShader->SetVec2("position"_atom_hash_cexpr, SR_MATH_NS::FVector2(-1, 1) + position / m_viewSize);
-        pShader->SetVec2("size"_atom_hash_cexpr, SR_MATH_NS::FVector2(box.width, box.height) / m_viewSize);
-        pShader->SetVec4("color"_atom_hash_cexpr, SR_MATH_NS::FColor(color.red, color.green, color.blue, color.alpha) / 255.f);
+        pShader->SetVec2("position"_atom_hash, SR_MATH_NS::FVector2(-1, 1) + position / m_viewSize);
+        pShader->SetVec2("size"_atom_hash, SR_MATH_NS::FVector2(box.width, box.height) / m_viewSize);
+        pShader->SetVec4("color"_atom_hash, SR_MATH_NS::FColor(color.red, color.green, color.blue, color.alpha) / 255.f);
         pShader->SetSampler2D("textAtlas", pTextAtlas->id);
 
         DrawElement(shaderInfo);
@@ -451,4 +452,5 @@ namespace SR_GRAPH_NS {
             m_pipeline->Draw(4);
         }
     }
+#endif // SR_COMMON_LITEHTML
 }

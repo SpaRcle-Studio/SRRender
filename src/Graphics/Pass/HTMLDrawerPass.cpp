@@ -10,6 +10,7 @@
 #include <Utils/Web/HTML/HTMLParser.h>
 
 namespace SR_GRAPH_NS {
+#ifdef SR_COMMON_LITEHTML
     SR_REGISTER_RENDER_PASS(HTMLDrawerPass)
 
     HTMLDrawerPass::~HTMLDrawerPass() {
@@ -173,4 +174,5 @@ namespace SR_GRAPH_NS {
 
         m_pPage->GetDocument()->render(static_cast<int32_t>(size.x));
     }
+#endif //SR_COMMON_LITEHTML
 }
