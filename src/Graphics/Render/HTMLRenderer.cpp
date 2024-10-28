@@ -2,248 +2,455 @@
 // Created by Monika on 14.08.2024.
 //
 
-#include <ranges>
 #include <Graphics/Render/HTMLRenderer.h>
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Memory/DescriptorManager.h>
+#include <Graphics/Types/Shader.h>
+#include <Graphics/Window/Window.h>
 
 #include <Utils/Profile/TracyContext.h>
 
 namespace SR_GRAPH_NS {
-    HTMLDrawableElement::~HTMLDrawableElement() {
-        SetShader(nullptr);
+    SR_UTILS_NS::StringAtom SR_SOLID_FILL_SHADER = "solid-fill"_atom;
+    SR_UTILS_NS::StringAtom SR_TEXT_SHADER = "text"_atom;
 
-        auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
-        auto&& descriptorManager = SR_GRAPH_NS::DescriptorManager::Instance();
+    std::vector<SR_UTILS_NS::StringAtom> SR_HTML_SHADERS = {
+        SR_SOLID_FILL_SHADER, SR_TEXT_SHADER
+    };
 
-        if (m_virtualUBO != SR_ID_INVALID && !uboManager.FreeUBO(&m_virtualUBO)) {
-            SR_ERROR("HTMLDrawableElement::~HTMLDrawableElement() : failed to free virtual uniform buffer object!");
-        }
+#ifdef SR_COMMON_LITEHTML
+    HTMLRenderContainer::HTMLRenderContainer()
+        : Super()
+        , m_uboManager(SR_GRAPH_NS::Memory::UBOManager::Instance())
+        , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
+    { }
 
-        if (m_virtualDescriptor != SR_ID_INVALID) {
-            descriptorManager.FreeDescriptorSet(&m_virtualDescriptor);
-        }
+    HTMLRenderContainer::~HTMLRenderContainer() {
+        SRAssert2(m_textAtlases.empty(), "Text atlases are not empty!");
+        SRAssert2(m_textBuilders.empty(), "Text builders are not empty!");
+        SRAssert2(m_shaders.empty(), "Shaders are not empty!");
     }
 
-    void HTMLDrawableElement::SetShader(SR_GTYPES_NS::Shader::Ptr pShader) {
-        m_dirtyMaterial |= m_pShader != pShader;
-        m_pShader = pShader;
+    bool HTMLRenderContainer::Init() {
+        for (auto&& shaderId : SR_HTML_SHADERS) {
+            if (auto&& pShader = SR_GTYPES_NS::Shader::Load("Engine/Shaders/Web/" + shaderId.ToString() + ".srsl")) {
+                pShader->AddUsePoint();
+                ShaderInfo shaderInfo;
+                shaderInfo.pShader = pShader;
+                m_shaders[shaderId] = shaderInfo;
+            }
+            else {
+                SR_ERROR("HTMLRenderContainer::Init() : failed to load shader \"{}\"!", shaderId.c_str());
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    void HTMLDrawableElement::Draw() {
+    void HTMLRenderContainer::DeInit() {
+        ClearTextAtlases();
+
+        for (auto& shaderInfo : m_shaders | std::views::values) {
+            shaderInfo.pShader->RemoveUsePoint();
+
+            for (auto&& memInfo : shaderInfo.UBOs) {
+                if (memInfo.virtualUBO != SR_ID_INVALID && !m_uboManager.FreeUBO(&memInfo.virtualUBO)) {
+                    SR_ERROR("HTMLRenderContainer::DeInit() : failed to free uniform buffer object!");
+                }
+
+                if (memInfo.virtualDescriptor != SR_ID_INVALID && !m_descriptorManager.FreeDescriptorSet(&memInfo.virtualDescriptor)) {
+                    SR_ERROR("HTMLRenderContainer::DeInit() : failed to free descriptor set!");
+                }
+            }
+        }
+        m_shaders.clear();
+
+        /// INFO: чистит сам документ через delete_font
+        /// for (auto& textBuilderInfo : m_textBuilders) {
+        ///     delete textBuilderInfo.pTextBuilder;
+        /// }
+        /// m_textBuilders.clear();
+    }
+
+    void HTMLRenderContainer::Draw() {
         SR_TRACY_ZONE;
 
-        auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
-        auto&& descriptorManager = SR_GRAPH_NS::DescriptorManager::Instance();
+        m_isRendered = true;
 
-        if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-            m_virtualUBO = uboManager.AllocateUBO(m_virtualUBO);
-            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+        ClearTextAtlases();
+
+        for (auto&& [id, shaderInfo] : m_shaders) {
+            if (shaderInfo.pShader->HasErrors()) {
+                SR_ERROR("HTMLRenderContainer::Draw() : shader \"{}\" has errors!", id.c_str());
+                return;
+            }
+            shaderInfo.index = 0;
+        }
+
+        if (SRVerify2(GetPage(), "HTMLRenderContainer::Draw() : page is not set!")) {
+            litehtml::position clip;
+            get_client_rect(clip);
+            m_viewSize = SR_MATH_NS::FVector2(clip.width, clip.height);
+            GetPage()->GetDocument()->draw(reinterpret_cast<litehtml::uint_ptr>(this), m_scroll.x, m_scroll.y, &clip);
+        }
+    }
+
+    void HTMLRenderContainer::Update() {
+        SR_TRACY_ZONE;
+
+        if (!m_isRendered) {
+            return;
+        }
+
+        if (SR_UTILS_NS::Input::Instance().GetKeyDown(SR_UTILS_NS::KeyCode::Tilde)) {
+            m_scroll = SR_MATH_NS::IVector2(0, 0);
+            m_pipeline->SetDirty(true);
+        }
+
+        if (SR_UTILS_NS::Input::Instance().GetKey(SR_UTILS_NS::KeyCode::DownArrow)) {
+            m_scroll.y -= 10;
+            m_pipeline->SetDirty(true);
+        }
+
+        if (SR_UTILS_NS::Input::Instance().GetKey(SR_UTILS_NS::KeyCode::UpArrow)) {
+            m_scroll.y += 10;
+            m_pipeline->SetDirty(true);
+        }
+
+        if (SR_UTILS_NS::Input::Instance().GetKey(SR_UTILS_NS::KeyCode::LeftArrow)) {
+            m_scroll.x += 10;
+            m_pipeline->SetDirty(true);
+        }
+
+        if (SR_UTILS_NS::Input::Instance().GetKey(SR_UTILS_NS::KeyCode::RightArrow)) {
+            m_scroll.x -= 10;
+            m_pipeline->SetDirty(true);
+        }
+
+        for (auto&& [id, shaderInfo] : m_shaders) {
+            if (!shaderInfo.pShader->Ready()) {
+                continue;
+            }
+
+            if (shaderInfo.pShader->BeginSharedUBO()) {
+                if (m_pCamera) {
+                    shaderInfo.pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, m_pCamera->GetOrthogonal());
+                }
+                else {
+                    SR_ERROR("HTMLRenderContainer::Update() : no camera!");
+                }
+
+                shaderInfo.pShader->SetVec2(SHADER_RESOLUTION, m_viewSize);
+                shaderInfo.pShader->EndSharedUBO();
+            }
+        }
+    }
+
+    void HTMLRenderContainer::get_media_features(litehtml::media_features& media) const {
+        SR_TRACY_ZONE;
+
+        auto&& resolution = SR_PLATFORM_NS::GetScreenResolution().Cast<int32_t>();
+
+        litehtml::position client;
+        get_client_rect(client);
+        media.type			= litehtml::media_type_screen;
+        media.width			= client.width;
+        media.height		= client.height;
+        media.device_width	= resolution.x;
+        media.device_height	= resolution.y;
+        media.color			= 8;
+        media.monochrome	= 0;
+        media.color_index	= 256;
+        media.resolution	= 96;
+    }
+
+    void HTMLRenderContainer::get_client_rect(litehtml::position& client) const {
+        SR_TRACY_ZONE;
+
+        client.x = 0;
+        client.y = 0;
+
+        if (m_pCamera) {
+            client.width = m_pCamera->GetSize().Cast<int32_t>().x;
+            client.height = m_pCamera->GetSize().Cast<int32_t>().y;
+        }
+        else if (m_pipeline) {
+            client.width = m_pipeline->GetWindow()->GetSize().Cast<int32_t>().x;
+            client.height = m_pipeline->GetWindow()->GetSize().Cast<int32_t>().y;
+        }
+        else {
+            SRHalt("HTMLRenderContainer::get_client_rect() : no camera or pipeline!");
+        }
+    }
+
+    litehtml::uint_ptr HTMLRenderContainer::create_font(const char* faceName, int size, int weight, litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm) {
+        auto&& pIt = std::find_if(m_textBuilders.begin(), m_textBuilders.end(), [faceName, size](const TextBuilderInfo& info) {
+            return info.fontName == faceName && info.pTextBuilder->GetFontSize() == size;
+        });
+        if (pIt != m_textBuilders.end()) {
+            return reinterpret_cast<litehtml::uint_ptr>(pIt->pTextBuilder);
+        }
+
+        std::vector<std::string_view> fonts = SR_UTILS_NS::StringUtils::SplitView(faceName, ",");
+
+        std::vector<SR_UTILS_NS::Path> candidates;
+
+        for (auto&& font : fonts) {
+            candidates.emplace_back(SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(font).ConcatExt(".ttf"));
+            candidates.emplace_back(SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts").Concat(font).ConcatExt(".ttf"));
+            candidates.emplace_back(SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(font).ConcatExt(".ttf"));
+        }
+
+        SR_UTILS_NS::Path fullPath;
+        for (auto&& candidate : candidates) {
+            if (candidate.IsFile()) {
+                fullPath = candidate;
+                break;
+            }
+        }
+
+        if (!fullPath.IsFile()) {
+            SR_ERROR("HTMLRenderContainer::create_font() : font \"{}\" not found!", faceName);
+            return 0;
+        }
+
+        auto&& pFont = SR_GTYPES_NS::Font::Load(fullPath);
+        if (!pFont) {
+            SR_ERROR("HTMLRenderContainer::create_font() : failed to load font \"{}\"!", fullPath.c_str());
+            return 0;
+        }
+
+        auto&& pTextBuilder = new TextBuilder(pFont);
+
+        pTextBuilder->SetFontSize(size);
+        pTextBuilder->SetKerning(true);
+
+        TextBuilderInfo textBuilderInfo;
+        textBuilderInfo.pTextBuilder = pTextBuilder;
+        textBuilderInfo.fontName = SR_UTILS_NS::StringAtom(faceName);
+
+        m_textBuilders.emplace_back(textBuilderInfo);
+
+        return reinterpret_cast<litehtml::uint_ptr>(pTextBuilder);
+    }
+
+    void HTMLRenderContainer::delete_font(litehtml::uint_ptr hFont) {
+        auto&& pTextBuilder = reinterpret_cast<TextBuilder*>(hFont);
+        if (!pTextBuilder) {
+            return;
+        }
+
+        for (auto&& pIt = m_textBuilders.begin(); pIt != m_textBuilders.end(); ++pIt) {
+            if (pIt->pTextBuilder == pTextBuilder) {
+                delete pTextBuilder;
+                m_textBuilders.erase(pIt);
+                return;
+            }
+        }
+
+        SR_ERROR("HTMLRenderContainer::delete_font() : font not found!");
+    }
+
+    int32_t HTMLRenderContainer::text_width(const char* text, litehtml::uint_ptr hFont) {
+        TextBuilder* pTextBuilder = reinterpret_cast<TextBuilder*>(hFont);
+        if (!pTextBuilder) {
+            return 0;
+        }
+
+        return pTextBuilder->CalculateTextWidth(text);
+    }
+
+    void HTMLRenderContainer::draw_solid_fill(litehtml::uint_ptr, const litehtml::background_layer& layer, const litehtml::web_color& color) {
+        SR_TRACY_ZONE;
+
+        if (color == litehtml::web_color::transparent) {
+            return;
+        }
+
+        auto&& pIt = m_shaders.find(SR_SOLID_FILL_SHADER);
+        if (pIt == m_shaders.end()) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("HTMLRenderContainer::DrawElement() : shader \"{}\" not found!", SR_SOLID_FILL_SHADER.c_str());
+            return;
+        }
+        ShaderInfo& shaderInfo = pIt->second;
+
+        if (!BeginElement(shaderInfo)) {
+            return;
+        }
+
+        auto&& pShader = m_pipeline->GetCurrentShader();
+        const auto& box = layer.clip_box;
+
+        SR_MATH_NS::FVector2 position = SR_MATH_NS::FVector2(box.x, box.y) * 2.f;
+        position.x = position.x + box.width;
+        position.y = -position.y - box.height;
+
+        pShader->SetVec2("position"_atom_hash, SR_MATH_NS::FVector2(-1, 1) + position / m_viewSize);
+        pShader->SetVec2("size"_atom_hash, SR_MATH_NS::FVector2(box.width, box.height) / m_viewSize);
+        pShader->SetVec4("color"_atom_hash, SR_MATH_NS::FColor(color.red, color.green, color.blue, color.alpha) / 255.f);
+        DrawElement(shaderInfo);
+        UpdateElement(shaderInfo);
+        EndElement(shaderInfo);
+    }
+
+    void HTMLRenderContainer::draw_text(litehtml::uint_ptr, const char* text, litehtml::uint_ptr hFont, litehtml::web_color color, const litehtml::position& pos) {
+        SR_TRACY_ZONE;
+
+        if (color == litehtml::web_color::transparent) {
+            return;
+        }
+
+        auto&& pIt = m_shaders.find(SR_TEXT_SHADER);
+        if (pIt == m_shaders.end()) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("HTMLRenderContainer::DrawElement() : shader \"{}\" not found!", SR_TEXT_SHADER.c_str());
+            return;
+        }
+        ShaderInfo& shaderInfo = pIt->second;
+
+        auto&& pTextAtlas = GetTextAtlas(text, reinterpret_cast<TextBuilder*>(hFont));
+        if (!pTextAtlas) {
+            return;
+        }
+
+        if (!BeginElement(shaderInfo)) {
+            return;
+        }
+
+        auto&& pShader = m_pipeline->GetCurrentShader();
+
+        litehtml::position box = pos;
+        box.height += pTextAtlas->pTextBuilderRef->GetHeight();
+
+        SR_MATH_NS::FVector2 position = SR_MATH_NS::FVector2(box.x, box.y) * 2.f;
+        position.x = position.x + box.width;
+        position.y = -position.y - box.height;
+
+        pShader->SetVec2("position"_atom_hash, SR_MATH_NS::FVector2(-1, 1) + position / m_viewSize);
+        pShader->SetVec2("size"_atom_hash, SR_MATH_NS::FVector2(box.width, box.height) / m_viewSize);
+        pShader->SetVec4("color"_atom_hash, SR_MATH_NS::FColor(color.red, color.green, color.blue, color.alpha) / 255.f);
+        pShader->SetSampler2D("textAtlas", pTextAtlas->id);
+
+        DrawElement(shaderInfo);
+        UpdateElement(shaderInfo);
+        EndElement(shaderInfo);
+    }
+
+    litehtml::element::ptr HTMLRenderContainer::create_element(const char* tag_name, const litehtml::string_map& attributes, const std::shared_ptr<litehtml::document>& doc) {
+        SR_TRACY_ZONE;
+        return nullptr;
+    }
+
+    bool HTMLRenderContainer::BeginElement(ShaderInfo& shaderInfo) {
+        if (m_pipeline->GetCurrentShader() != shaderInfo.pShader) {
+            const auto result = shaderInfo.pShader->Use();
+            if (result == ShaderBindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
+                SR_ERROR("HTMLRenderContainer::BeginElement() : failed to use shader \"{}\"!", shaderInfo.pShader->GetResourceId().c_str());
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    void HTMLRenderContainer::UpdateElement(ShaderInfo& shaderInfo) {
+        auto&& pShader = m_pipeline->GetCurrentShader();
+        if (!pShader->Flush()) {
+            SR_ERROR("HTMLRenderContainer::UpdateElement() : failed to flush shader \"{}\"!", pShader->GetResourceId().c_str());
+        }
+    }
+
+    void HTMLRenderContainer::EndElement(ShaderInfo& shaderInfo) {
+        ++shaderInfo.index;
+    }
+
+    HTMLRenderContainer::TextAtlas* HTMLRenderContainer::GetTextAtlas(const char* text, TextBuilder* pTextBuilder) {
+        SR_TRACY_ZONE;
+
+        for (auto&& textAtlas : m_textAtlases) {
+            if (textAtlas.text == text && textAtlas.pTextBuilderRef == pTextBuilder) {
+                return &textAtlas;
+            }
+        }
+
+        if (!pTextBuilder->Build(text)) {
+            //SR_ERROR("HTMLRenderContainer::GetTextAtlas() : failed to build text!");
+            return nullptr;
+        }
+
+        SR_GRAPH_NS::SRTextureCreateInfo textureCreateInfo;
+
+        textureCreateInfo.pData = pTextBuilder->GetData();
+        textureCreateInfo.format = pTextBuilder->GetColorFormat();
+        textureCreateInfo.width = pTextBuilder->GetWidth();
+        textureCreateInfo.height = pTextBuilder->GetHeight();
+        textureCreateInfo.compression = TextureCompression::None;
+        textureCreateInfo.filter = TextureFilter::NEAREST;
+        textureCreateInfo.mipLevels = 1;
+        textureCreateInfo.cpuUsage = false;
+        textureCreateInfo.alpha = true;
+
+        EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
+
+        const int32_t id = m_pipeline->AllocateTexture(textureCreateInfo);
+
+        EVK_POP_LOG_LEVEL();
+
+        if (id == SR_ID_INVALID) {
+            SR_ERROR("HTMLRenderContainer::GetTextAtlas() : failed to allocate texture!");
+            return nullptr;
+        }
+
+        TextAtlas textAtlas;
+        textAtlas.id = id;
+        textAtlas.text = text;
+        textAtlas.pTextBuilderRef = pTextBuilder;
+        m_textAtlases.emplace_back(textAtlas);
+        return &m_textAtlases.back();
+    }
+
+    void HTMLRenderContainer::ClearTextAtlases() {
+        SR_TRACY_ZONE;
+
+        for (auto&& textAtlas : m_textAtlases) {
+            if (!m_pipeline->FreeTexture(&textAtlas.id)) {
+                SR_ERROR("HTMLRenderContainer::ClearTextAtlases() : failed to free texture!");
+            }
+        }
+        m_textAtlases.clear();
+    }
+
+    void HTMLRenderContainer::DrawElement(ShaderInfo &shaderInfo) {
+        if (shaderInfo.index >= shaderInfo.UBOs.size()) SR_UNLIKELY_ATTRIBUTE {
+            ShaderInfo::MemInfo memInfo;
+
+            memInfo.virtualUBO = m_uboManager.AllocateUBO(SR_ID_INVALID);
+            if (memInfo.virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                SR_ERROR("HTMLRenderContainer::DrawElement() : failed to allocate uniform buffer object!");
                 return;
             }
 
-            m_virtualDescriptor = descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
+            memInfo.virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(SR_ID_INVALID);
+            if (memInfo.virtualDescriptor == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                SR_ERROR("HTMLRenderContainer::DrawElement() : failed to allocate descriptor set!");
+                return;
+            }
+            shaderInfo.UBOs.emplace_back(memInfo);
         }
 
-        uboManager.BindUBO(m_virtualUBO);
+        m_uboManager.BindUBO(shaderInfo.UBOs[shaderInfo.index].virtualUBO);
 
-        const auto result = descriptorManager.Bind(m_virtualDescriptor);
+        const auto result = m_descriptorManager.Bind(shaderInfo.UBOs[shaderInfo.index].virtualDescriptor);
 
         if (m_pipeline->GetCurrentBuildIteration() == 0) {
-            if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-                descriptorManager.Flush();
-            }
+            shaderInfo.pShader->FlushSamplers();
+            m_descriptorManager.Flush();
             m_pipeline->GetCurrentShader()->FlushConstants();
         }
 
         if (result != DescriptorManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
             m_pipeline->Draw(4);
         }
-
-        m_dirtyMaterial = false;
     }
-
-    void HTMLDrawableElement::Update(HTMLRendererUpdateContext& context) {
-        m_pipeline->SetCurrentShader(m_pShader);
-
-        auto&& pNode = m_pPage->GetNodeById(m_nodeId);
-        auto&& style = pNode->GetStyle();
-
-        auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
-        if (uboManager.BindNoDublicateUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
-            const auto size = SR_MATH_NS::FVector2(
-                style.width.CalculateValue(context.size.x) / context.resolution.x,
-                style.height.CalculateValue(context.size.y) / context.resolution.y
-            );
-            m_pShader->SetVec2("size"_atom_hash, size);
-
-            SR_MAYBE_UNUSED_VAR m_pShader->Flush();
-        }
-    }
-
-    /// ----------------------------------------------------------------------------------------------------------------
-
-    HTMLRenderer::HTMLRenderer(Pipeline* pPipeline, SR_UTILS_NS::Web::HTMLPage::Ptr pPage)
-        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
-        , m_pPage(std::move(pPage))
-        , m_pipeline(pPipeline)
-    { }
-
-    HTMLRenderer::~HTMLRenderer() {
-        SRAssert2(m_drawableElements.empty(), "HTMLRenderer::~HTMLRenderer() : not all elements were deleted!");
-        SRAssert2(m_shaders.empty(), "HTMLRenderer::~HTMLRenderer() : not all shaders were deleted!");
-    }
-
-    bool HTMLRenderer::Init() {
-        if (!m_shaders.empty()) {
-            SR_ERROR("HTMLRenderer::Init() : shaders are already initialized!");
-            return false;
-        }
-
-        if (auto&& pShader = SR_GTYPES_NS::Shader::Load("Engine/Shaders/Web/html.srsl")) {
-            pShader->AddUsePoint();
-            m_shaders["common"] = pShader;
-        }
-        else {
-            return false;
-        }
-
-        SRAssert2(m_drawableElements.empty(), "HTMLRenderer::Init() : drawable elements are not empty!");
-
-        m_pPage->RemoveUserDataRecursively();
-        PrepareNode(m_pPage->GetBody());
-
-        return true;
-    }
-
-    void HTMLRenderer::DeInit() {
-        for (auto&& pElement : m_drawableElements) {
-            delete pElement;
-        }
-        m_drawableElements.clear();
-
-        for (auto&& pShader: m_shaders | std::views::values) {
-            pShader->RemoveUsePoint();
-        }
-        m_shaders.clear();
-    }
-
-    void HTMLRenderer::Draw() {
-        SR_TRACY_ZONE;
-
-        m_pipeline->SetCurrentShader(nullptr);
-
-        DrawNode(m_pPage->GetBody());
-
-        if (auto&& pShader = m_pipeline->GetCurrentShader()) {
-            pShader->UnUse();
-        }
-    }
-
-    void HTMLRenderer::Update() {
-        SR_TRACY_ZONE;
-
-        for (auto&& pShader : m_shaders | std::views::values) {
-            m_pipeline->SetCurrentShader(pShader);
-
-            if (!pShader || !pShader->Ready() || !m_pCamera) SR_UNLIKELY_ATTRIBUTE {
-                return;
-            }
-
-            if (pShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
-                pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, m_pCamera->GetOrthogonal());
-                pShader->SetVec2(SHADER_RESOLUTION, m_pPage->GetSize().Cast<float_t>());
-
-                const float_t aspect = m_pPage->GetSize().Aspect();
-                const SR_MATH_NS::FVector2 aspectVec = aspect > 1.f ? SR_MATH_NS::FVector2(1.f / aspect, 1.f) : SR_MATH_NS::FVector2(1.f, aspect);
-                pShader->SetVec2(SHADER_ASPECT, aspectVec);
-
-                pShader->EndSharedUBO();
-            }
-            else {
-                SR_ERROR("HTMLDrawerPass::Update() : failed to bind shared UBO!");
-                return;
-            }
-        }
-
-        HTMLRendererUpdateContext context;
-        context.size = m_pPage->GetSize().Cast<float_t>();
-        context.resolution = m_pPage->GetSize().Cast<float_t>();
-        UpdateNode(m_pPage->GetBody(), context);
-    }
-
-    void HTMLRenderer::SetScreenSize(const SR_MATH_NS::UVector2& size) {
-        if (m_pPage) {
-            m_pPage->SetSize(size);
-        }
-    }
-
-    void HTMLRenderer::PrepareNode(SR_UTILS_NS::Web::HTMLNode* pNode) {
-        SR_TRACY_ZONE;
-
-        if (!SRVerify(pNode)) {
-            return;
-        }
-
-        auto&& pDrawableElement = m_drawableElements.emplace_back(new HTMLDrawableElement());
-        pDrawableElement->SetShader(m_shaders["common"]);
-        pDrawableElement->SetNodeId(pNode->GetId());
-        pDrawableElement->SetPipeline(m_pipeline);
-        pDrawableElement->SetPage(m_pPage.Get());
-
-        pNode->SetUserData(pDrawableElement);
-
-        for (const auto& childId : pNode->GetChildren()) {
-            auto&& pChild = m_pPage->GetNodeById(childId);
-            PrepareNode(pChild);
-        }
-    }
-
-    void HTMLRenderer::DrawNode(const SR_UTILS_NS::Web::HTMLNode* pNode) {
-        SR_TRACY_ZONE;
-
-        if (!SRVerify(pNode)) {
-            return;
-        }
-
-        auto&& pDrawableElement = static_cast<HTMLDrawableElement*>(pNode->GetUserData());
-        if (!SRVerify(pDrawableElement)) {
-            return;
-        }
-
-        auto&& pShader = pDrawableElement->GetShader();
-        if (pShader != m_pipeline->GetCurrentShader()) {
-            if (m_pipeline->GetCurrentShader()) {
-                m_pipeline->GetCurrentShader()->UnUse();
-            }
-            if (pShader->Use() == ShaderBindResult::Failed) {
-                return;
-            }
-        }
-
-        pDrawableElement->Draw();
-
-        for (const auto& childId : pNode->GetChildren()) {
-            auto&& pChild = m_pPage->GetNodeById(childId);
-            DrawNode(pChild);
-        }
-    }
-
-    void HTMLRenderer::UpdateNode(const SR_UTILS_NS::Web::HTMLNode* pNode, HTMLRendererUpdateContext& context) {
-        SR_TRACY_ZONE;
-
-        if (!SRVerify(pNode)) {
-            return;
-        }
-
-        auto&& pDrawableElement = static_cast<HTMLDrawableElement*>(pNode->GetUserData());
-        if (SRVerify(pDrawableElement)) {
-            pDrawableElement->Update(context);
-        }
-
-        for (const auto& childId : pNode->GetChildren()) {
-            auto&& pChild = m_pPage->GetNodeById(childId);
-            UpdateNode(pChild, context);
-        }
-    }
+#endif //SR_COMMON_LITEHTML
 }

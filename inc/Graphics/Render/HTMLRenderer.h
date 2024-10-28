@@ -5,74 +5,93 @@
 #ifndef SR_ENGINE_GRAPHICS_HTML_RENDERER_H
 #define SR_ENGINE_GRAPHICS_HTML_RENDERER_H
 
-#include <Utils/Web/HTML/HTML.h>
-#include <Graphics/Types/Shader.h>
-#include <Graphics/Types/Camera.h>
+#include <Graphics/Render/HTML/HTMLDrawableElement.h>
 
 namespace SR_GRAPH_NS {
-    struct HTMLRendererUpdateContext {
-        SR_MATH_NS::FVector2 resolution;
-        SR_MATH_NS::FVector2 size;
-        SR_MATH_NS::FVector2 offset;
-    };
+    class TextBuilder;
+#ifdef SR_COMMON_LITEHTML
+    class HTMLRenderContainer : public SR_UTILS_NS::Web::HTMLContainerInterface {
+        using Super = SR_UTILS_NS::Web::HTMLContainerInterface;
+        struct ShaderInfo {
+            SR_GTYPES_NS::Shader::Ptr pShader;
 
-    class HTMLDrawableElement : public SR_UTILS_NS::NonCopyable {
+            uint32_t index = 0;
+
+            struct MemInfo {
+                Memory::UBOManager::VirtualUBO virtualUBO;
+                DescriptorManager::VirtualDescriptorSet virtualDescriptor;
+            };
+
+            std::vector<MemInfo> UBOs;
+        };
+        struct TextAtlas {
+            int32_t id;
+            std::string text;
+            SR_GRAPH_NS::TextBuilder* pTextBuilderRef;
+        };
     public:
-        ~HTMLDrawableElement() override;
+        using Ptr = SR_HTYPES_NS::SharedPtr<HTMLRenderContainer>;
 
-        void SetShader(SR_GTYPES_NS::Shader::Ptr pShader);
-
-        void SetPage(SR_UTILS_NS::Web::HTMLPage* pPage) { m_pPage = pPage; }
-        void SetNodeId(uint64_t id) { m_nodeId = id; }
-        void SetPipeline(Pipeline* pPipeline) { m_pipeline = pPipeline; }
-
-        SR_NODISCARD SR_GTYPES_NS::Shader::Ptr GetShader() const { return m_pShader; }
-
-        void Draw();
-        void Update(HTMLRendererUpdateContext& context);
-
-    private:
-        SR_GTYPES_NS::Shader::Ptr m_pShader = nullptr;
-
-        uint64_t m_nodeId = SR_ID_INVALID;
-        SR_UTILS_NS::Web::HTMLPage* m_pPage = nullptr;
-
-        bool m_dirtyMaterial = true;
-        int32_t m_virtualUBO = SR_ID_INVALID;
-        int32_t m_virtualDescriptor = SR_ID_INVALID;
-        Pipeline* m_pipeline = nullptr;
-
-    };
-
-    class HTMLRenderer : public SR_HTYPES_NS::SharedPtr<HTMLRenderer> {
-        using Super = SR_HTYPES_NS::SharedPtr<HTMLRenderer>;
     public:
-        HTMLRenderer(Pipeline* pPipeline, SR_UTILS_NS::Web::HTMLPage::Ptr pPage);
-        ~HTMLRenderer();
+        HTMLRenderContainer();
+        ~HTMLRenderContainer() override;
 
-        bool Init();
-        void DeInit();
+        virtual bool Init();
+        virtual void DeInit();
 
-        void Draw();
-        void Update();
+        virtual void Draw();
+        virtual void Update();
 
-        void SetScreenSize(const SR_MATH_NS::UVector2& size);
         void SetCamera(const SR_GTYPES_NS::Camera::Ptr& pCamera) { m_pCamera = pCamera; }
+        void SetPipeline(Pipeline* pipeline) { m_pipeline = pipeline; }
 
     private:
-        void PrepareNode(SR_UTILS_NS::Web::HTMLNode* pNode);
-        void DrawNode(const SR_UTILS_NS::Web::HTMLNode* pNode);
-        void UpdateNode(const SR_UTILS_NS::Web::HTMLNode* pNode, HTMLRendererUpdateContext& context);
+        void get_media_features(litehtml::media_features& media) const override;
+        void get_client_rect(litehtml::position& client) const override;
+
+        litehtml::uint_ptr create_font(const char* faceName, int size, int weight, litehtml::font_style italic, unsigned int decoration, litehtml::font_metrics* fm) override;
+        void delete_font(litehtml::uint_ptr hFont) override;
+
+        SR_NODISCARD int32_t text_width(const char* text, litehtml::uint_ptr hFont) override;
+
+        void draw_solid_fill(litehtml::uint_ptr hdc, const litehtml::background_layer& layer, const litehtml::web_color& color) override;
+        void draw_text(litehtml::uint_ptr hdc, const char* text, litehtml::uint_ptr hFont, litehtml::web_color color, const litehtml::position& pos) override;
+
+        litehtml::element::ptr create_element(const char* tag_name, const litehtml::string_map& attributes, const std::shared_ptr<litehtml::document>& doc) override;
 
     private:
-        SR_UTILS_NS::Web::HTMLPage::Ptr m_pPage;
+        bool BeginElement(ShaderInfo& shaderInfo);
+        void DrawElement(ShaderInfo& shaderInfo);
+        void UpdateElement(ShaderInfo& shaderInfo);
+        void EndElement(ShaderInfo& shaderInfo);
+
+        SR_NODISCARD TextAtlas* GetTextAtlas(const char* text, TextBuilder* pTextBuilder);
+
+        void ClearTextAtlases();
+
+    private:
+        SR_MATH_NS::IVector2 m_scroll;
+
+        SR_GRAPH_NS::Memory::UBOManager& m_uboManager;
+        SR_GRAPH_NS::DescriptorManager& m_descriptorManager;
+
+        SR_MATH_NS::FVector2 m_viewSize;
+
+        bool m_isRendered = false;
+        bool m_updateMode = false;
         Pipeline* m_pipeline = nullptr;
         SR_GTYPES_NS::Camera::Ptr m_pCamera = nullptr;
 
-        std::vector<HTMLDrawableElement*> m_drawableElements;
-        std::unordered_map<SR_UTILS_NS::StringAtom, SR_GTYPES_NS::Shader::Ptr> m_shaders;
+        struct TextBuilderInfo {
+            TextBuilder* pTextBuilder;
+            SR_UTILS_NS::StringAtom fontName;
+        };
+        std::vector<TextBuilderInfo> m_textBuilders;
 
+        std::map<SR_UTILS_NS::StringAtom, ShaderInfo> m_shaders;
+        std::vector<TextAtlas> m_textAtlases;
     };
+#endif // SR_COMMON_LITEHTML
 }
 
 #endif //SR_ENGINE_GRAPHICS_HTML_RENDERER_H

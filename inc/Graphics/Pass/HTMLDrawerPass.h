@@ -9,6 +9,7 @@
 #include <Graphics/Render/HTMLRenderer.h>
 
 namespace SR_GRAPH_NS {
+#ifdef SR_COMMON_LITEHTML
     class HTMLDrawerPass : public BasePass {
         SR_REGISTER_LOGICAL_NODE(HTMLDrawerPass, HTML Drawer Pass, { "Passes" })
         using Super = BasePass;
@@ -28,6 +29,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Web::HTMLPage::Ptr m_pPage = nullptr;
 
     };
+#endif
 }
 
 #endif //SR_ENGINE_HTML_DRAWER_PASS_H
