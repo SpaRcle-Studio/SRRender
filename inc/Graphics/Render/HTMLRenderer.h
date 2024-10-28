@@ -9,7 +9,8 @@
 
 namespace SR_GRAPH_NS {
     class TextBuilder;
-
+  
+#ifdef SR_COMMON_LITEHTML
     class HTMLRenderContainer : public SR_UTILS_NS::Web::HTMLContainerInterface {
         using Super = SR_UTILS_NS::Web::HTMLContainerInterface;
         struct ShaderInfo {
@@ -91,6 +92,7 @@ namespace SR_GRAPH_NS {
         std::map<SR_UTILS_NS::StringAtom, ShaderInfo> m_shaders;
         std::vector<TextAtlas> m_textAtlases;
     };
+#endif // SR_COMMON_LITEHTML
 }
 
 #endif //SR_ENGINE_GRAPHICS_HTML_RENDERER_H

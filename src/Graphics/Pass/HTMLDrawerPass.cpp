@@ -10,7 +10,12 @@
 #include <Utils/Web/HTML/HTMLParser.h>
 
 namespace SR_GRAPH_NS {
+#ifdef SR_COMMON_LITEHTML
     SR_REGISTER_RENDER_PASS(HTMLDrawerPass)
+    HTMLDrawerPass::~HTMLDrawerPass() {
+        SRAssert2(m_fileWatchers.empty(), "Watchers are not empty!");
+        SRAssert2(!m_pPage, "Page is not empty!");
+    }
 
     HTMLDrawerPass::~HTMLDrawerPass() {
         SRAssert2(m_fileWatchers.empty(), "Watchers are not empty!");
@@ -173,4 +178,5 @@ namespace SR_GRAPH_NS {
 
         m_pPage->GetDocument()->render(static_cast<int32_t>(size.x));
     }
+#endif //SR_COMMON_LITEHTML
 }
