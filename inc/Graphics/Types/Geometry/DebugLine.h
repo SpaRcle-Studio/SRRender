@@ -17,7 +17,7 @@ namespace SR_GTYPES_NS {
         typedef Vertices::SimpleVertex VertexType;
 
     public:
-        DebugLine();
+        DebugLine() = default;
         DebugLine(SR_MATH_NS::FVector3 startPoint, SR_MATH_NS::FVector3 endPoint, SR_MATH_NS::FVector4 color);
 
     public:
@@ -26,6 +26,8 @@ namespace SR_GTYPES_NS {
         void SetColor(const SR_MATH_NS::FVector4& color);
 
         void UseMaterial() override;
+
+        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Line; }
 
         SR_NODISCARD uint32_t GetIndicesCount() const override { return 2; }
         SR_NODISCARD bool IsSupportVBO() const override { return false; }

@@ -5,11 +5,9 @@
 #include <Graphics/Types/Geometry/DebugWireframeMesh.h>
 #include <Utils/Types/RawMesh.h>
 
-namespace SR_GTYPES_NS {
-    DebugWireframeMesh::DebugWireframeMesh()
-        : Super(MeshType::Wireframe)
-    { }
+#include <Codegen/DebugWireframeMesh.generated.hpp>
 
+namespace SR_GTYPES_NS {
     bool DebugWireframeMesh::Calculate() {
         if (IsCalculated()) {
             return true;

@@ -8,16 +8,18 @@
 #include <Graphics/Types/Geometry/MeshComponent.h>
 
 namespace SR_GTYPES_NS {
-    class ProceduralMesh : public IndexedMeshComponent {
-        using Super = IndexedMeshComponent;
+    class ProceduralMesh final : public IndexedMesh {
+        using Super = IndexedMesh;
         SR_REGISTER_NEW_COMPONENT(ProceduralMesh, 1001);
     public:
-        ProceduralMesh();
+        ProceduralMesh() = default;
 
     public:
         typedef Vertices::StaticMeshVertex VertexType;
 
     public:
+        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Procedural; }
+
         void SetIndexedVertices(void* pData, uint64_t count);
         void SetIndices(void* pData, uint64_t count);
         void SetVertices(const std::vector<Vertices::StaticMeshVertex>& vertices);

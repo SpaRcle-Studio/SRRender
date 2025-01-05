@@ -12,9 +12,9 @@
 #include <Graphics/Animations/Skeleton.h>
 
 namespace SR_GTYPES_NS {
-    class SkinnedMesh final : public IndexedMeshComponent, public SR_HTYPES_NS::IRawMeshHolder {
+    class SkinnedMesh final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
         SR_REGISTER_NEW_COMPONENT(SkinnedMesh, 1003);
-        using Super = IndexedMeshComponent;
+        using Super = IndexedMesh;
         SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SKELETON_REF_PROP_NAME = "Skeleton";
     public:
         SkinnedMesh();
@@ -26,6 +26,8 @@ namespace SR_GTYPES_NS {
         typedef Vertices::SkinnedMeshVertex VertexType;
 
     public:
+        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Skinned; }
+
         SR_NODISCARD bool InitializeEntity() noexcept override;
 
         void LateUpdate() override;

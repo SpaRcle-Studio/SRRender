@@ -100,8 +100,7 @@ namespace SR_GRAPH_NS {
 
         SR_TRACY_ZONE;
 
-        for (auto&& sampler : m_samplers
-) {
+        for (auto&& sampler : m_samplers) {
             int32_t textureId = SR_ID_INVALID;
 
             sampler.fboId = SR_ID_INVALID;
@@ -151,7 +150,7 @@ namespace SR_GRAPH_NS {
     }
 
     void IMeshClusterPass::UseConstants(IMeshClusterPass::ShaderPtr pShader) {
-        pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 0);
+        pShader->SetConstInt(SHADER_PC_COLOR_BUFFER_MODE, 0);
     }
 
     void IMeshClusterPass::PrepareFBODependencies() {

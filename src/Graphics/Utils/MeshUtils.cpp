@@ -24,7 +24,7 @@ namespace SR_GRAPH_NS {
             case MeshType::Procedural:
                 return manager.CreateComponent<SR_GTYPES_NS::ProceduralMesh>();
             case MeshType::Wireframe:
-                return new SR_GTYPES_NS::DebugWireframeMesh();
+                return manager.CreateComponent<SR_GTYPES_NS::DebugWireframeMesh>();
             case MeshType::Unknown:
             default:
                 break;
@@ -35,7 +35,7 @@ namespace SR_GRAPH_NS {
         return nullptr;
     }
 
-    SR_GTYPES_NS::IMeshComponent* CreateMeshComponentByType(MeshType type) {
+    /*SR_GTYPES_NS::IMeshComponent* CreateMeshComponentByType(MeshType type) {
         switch (type) {
             case MeshType::Static:
             case MeshType::Sprite:
@@ -54,5 +54,5 @@ namespace SR_GRAPH_NS {
         SRHalt("Unknown mesh type!");
 
         return nullptr;
-    }
+    }*/
 }

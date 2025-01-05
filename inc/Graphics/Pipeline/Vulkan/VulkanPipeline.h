@@ -60,8 +60,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsShaderConstantSupport() const noexcept override { ++m_state.operations; return true; }
 
         SR_NODISCARD int32_t AllocateUBO(uint32_t uboSize) override;
-        SR_NODISCARD int32_t AllocateVBO(void* pVertices, Vertices::VertexType type, size_t count) override;
-        SR_NODISCARD int32_t AllocateIBO(void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) override;
+        SR_NODISCARD int32_t AllocateVBO(const void* pVertices, Vertices::VertexType type, size_t count) override;
+        SR_NODISCARD int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) override;
         SR_NODISCARD int32_t AllocDescriptorSet(const std::vector<DescriptorType>& types) override;
         SR_NODISCARD int32_t AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) override;
         SR_NODISCARD int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) override;

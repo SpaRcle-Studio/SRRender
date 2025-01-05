@@ -98,6 +98,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD LightSystem* GetLightSystem() const { return m_lightSystem; }
         SR_NODISCARD SR_ANIMATIONS_NS::Skeleton* GetCurrentSkeleton() const { return m_currentSkeleton; }
         SR_NODISCARD const RenderScene::PipelinePtr& GetPipeline() const;
+        SR_NODISCARD RenderScene::PipelinePtr GetPipeline();
         SR_NODISCARD WindowPtr GetWindow() const;
         SR_NODISCARD const WidgetManagers& GetWidgetManagers() const;
         SR_NODISCARD CameraPtr GetMainCamera() const;
@@ -105,6 +106,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD RenderStrategy* GetRenderStrategy() { return m_renderStrategy.Get(); }
         SR_NODISCARD CameraPtr GetFirstOffScreenCamera() const;
         SR_NODISCARD SR_MATH_NS::UVector2 GetSurfaceSize() const;
+        SR_NODISCARD const std::vector<CameraInfo>& GetCameras() { return m_cameras; }
 
     private:
         void SetMeshMaterial(MeshPtr pMesh);

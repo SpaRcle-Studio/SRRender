@@ -9,9 +9,9 @@
 
 namespace SR_SRSL_NS {
     SR_INLINE_STATIC const std::map<std::string, std::string> SR_SRSL_DEFAULT_PUSH_CONSTANTS = { /** NOLINT */
-            { "SHADOW_CASCADE_INDEX",           "int"           },
-            { "COLOR_BUFFER_MODE",              "int"           },
-            { "COLOR_BUFFER_VALUE",             "vec3"          },
+            { "PC_SHADOW_CASCADE_INDEX",           "int"        },
+            { "PC_COLOR_BUFFER_MODE",              "int"        },
+            { "PC_COLOR_BUFFER_VALUE",             "vec3"       },
     };
 
     SR_INLINE_STATIC const std::map<std::string, std::string> SR_SRSL_DEFAULT_SHARED_UNIFORMS = { /** NOLINT */
@@ -58,6 +58,7 @@ namespace SR_SRSL_NS {
             { "SSAO_SAMPLES",                   "vec4[64]"      },
 
             { "LINE_COLOR",                     "vec4"          },
+            { "RGBA_VALUE",                     "vec4"          },
 
             { "TEXT_RECT_X",                    "float"         },
             { "TEXT_RECT_Y",                    "float"         },

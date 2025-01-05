@@ -170,9 +170,9 @@ namespace SR_GRAPH_NS {
     void RenderScene::PostUpdate() {
         SR_TRACY_ZONE_N("Post update render");
 
-        //if (m_renderStrategy) {
-        //    m_renderStrategy->PostUpdate();
-        //}
+        if (m_debugRender) {
+            m_debugRender->PostUpdate();
+        }
 
         SR_RENDER_TECHNIQUES_CALL(PostUpdate)
     }
@@ -280,7 +280,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (auto&& pText = dynamic_cast<SR_GTYPES_NS::ITextComponent*>(pMesh); pText && !pText->GetFont()) {
+        if (auto&& pText = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh); pText && !pText->GetFont()) {
             pText->SetFont("Engine/Fonts/CalibriL.ttf");
         }
 
@@ -411,6 +411,10 @@ namespace SR_GRAPH_NS {
         return GetContext()->GetPipeline();
     }
 
+    RenderScene::PipelinePtr RenderScene::GetPipeline() {
+        return GetContext()->GetPipeline();
+    }
+
     RenderScene::WindowPtr RenderScene::GetWindow() const {
         return GetContext()->GetWindow();
     }
@@ -527,7 +531,7 @@ namespace SR_GRAPH_NS {
 
     void RenderScene::SetMeshMaterial(RenderScene::MeshPtr pMesh) {
         if (pMesh->IsFlatMesh()) {
-            if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::ITextComponent*>(pMesh)) {
+            if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh)) {
                 pText2D->SetMaterial("Engine/Materials/UI/ui_text_white.mat");
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultUIMaterial()) {
@@ -535,7 +539,7 @@ namespace SR_GRAPH_NS {
             }
         }
         else {
-            if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::ITextComponent*>(pMesh)) {
+            if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh)) {
                 pText3D->SetMaterial("Engine/Materials/text.mat");
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultMaterial()) {

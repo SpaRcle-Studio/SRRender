@@ -875,6 +875,9 @@ namespace SR_GRAPH_NS {
             return pPipeline ? pPipeline->GetUsedMemory() / 1024 / 1024 : 0;
         };
 
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationErrorAsAssert = SR_UTILS_NS::Features::Instance().Enabled("VulkanValidationErrorAsAssert", false) &&
+            SR_PLATFORM_NS::IsRunningUnderDebugger();
+
         EvoVulkan::Tools::VkFunctionsHolder::Instance().LogCallback = [GetUsedMemoryFn](const std::string& msg) {
             SR_VULKAN_LOG("[{}] {}", GetUsedMemoryFn(), msg);
         };
@@ -1194,7 +1197,7 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    int32_t VulkanPipeline::AllocateVBO(void* pVertices, Vertices::VertexType type, size_t count) {
+    int32_t VulkanPipeline::AllocateVBO(const void* pVertices, Vertices::VertexType type, size_t count) {
         SR_TRACY_ZONE;
 
         if (!m_memory) {
@@ -1215,7 +1218,7 @@ namespace SR_GRAPH_NS {
         return SR_ID_INVALID;
     }
 
-    int32_t VulkanPipeline::AllocateIBO(void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) {
+    int32_t VulkanPipeline::AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) {
         SR_TRACY_ZONE;
 
         if (!m_memory) {

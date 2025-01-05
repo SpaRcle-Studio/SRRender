@@ -72,9 +72,9 @@ namespace SR_GRAPH_NS::VulkanTools {
 
         SR_NODISCARD int32_t AllocateShaderProgram(EvoVulkan::Types::RenderPass renderPass);
 
-        SR_NODISCARD int32_t AllocateVBO(uint32_t buffSize, void* data);
+        SR_NODISCARD int32_t AllocateVBO(uint32_t buffSize, const void* data);
         SR_NODISCARD int32_t AllocateUBO(uint32_t UBOSize);
-        SR_NODISCARD int32_t AllocateIBO(uint32_t buffSize, void* data);
+        SR_NODISCARD int32_t AllocateIBO(uint32_t buffSize, const void* data);
         SR_NODISCARD int32_t AllocateSSBO(uint32_t size, SSBOUsage usage);
 
         SR_NODISCARD bool ReAllocateFBO(const VulkanFrameBufferAllocInfo& info);

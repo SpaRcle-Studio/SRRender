@@ -51,13 +51,13 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::IndexedMeshComponent*>(pMesh);
+        auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::IndexedMesh*>(pMesh);
         if (!pMeshComponent) {
             SRHalt("Failed to cast!");
             return;
         }
 
-        pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
+        /////////////////////////////////////////////////////////////////////////////////pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
 
         auto&& pMaterial = new SR_GRAPH_NS::UniqueMaterial();
         pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");

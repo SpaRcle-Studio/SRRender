@@ -7,6 +7,8 @@
 #include <Graphics/Types/IRenderComponent.h>
 #include <Graphics/Render/RenderScene.h>
 
+#include <Codegen/IRenderComponent.generated.hpp>
+
 namespace SR_GTYPES_NS {
     void IRenderComponent::OnEnable() {
         if (auto&& renderScene = TryGetRenderScene()) {

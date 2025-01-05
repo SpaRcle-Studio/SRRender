@@ -17,13 +17,11 @@ namespace SR_GTYPES_NS {
         { {  1.000000, -1.000000,  0.000000 }, { 0.000000, 0.000000 } }
     };
 
-    class Sprite : public SR_GTYPES_NS::MeshComponent {
+    class Sprite : public SR_GTYPES_NS::Mesh {
         SR_REGISTER_NEW_COMPONENT(Sprite, 1001)
-        using Super = SR_GTYPES_NS::MeshComponent;
+        using Super = SR_GTYPES_NS::Mesh;
     public:
-        Sprite();
-
-    protected:
+        Sprite() = default;
         ~Sprite() override = default;
 
     public:
@@ -36,6 +34,8 @@ namespace SR_GTYPES_NS {
         bool IsSupportVBO() const override { return false; }
 
         bool BindMesh() override;
+
+        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Sprite; }
 
         SR_NODISCARD bool InitializeEntity() noexcept override;
 

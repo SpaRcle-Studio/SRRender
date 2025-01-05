@@ -63,7 +63,12 @@ namespace SR_GRAPH_NS::Memory {
             return m_uboPool.Add(std::move(virtualUboInfo));
         }
 
-        auto&& info = m_uboPool.At(virtualUbo);
+        if (!m_uboPool.IsAlive(virtualUbo)) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("UBOManager::AllocateUBO() : virtual UBO is not alive!");
+            return SR_ID_INVALID;
+        }
+
+        auto&& info = m_uboPool.AtUnchecked(virtualUbo);
         for (auto&& dataToFree : info.data) {
             if (dataToFree.uboSize <= 0) {
                 continue;

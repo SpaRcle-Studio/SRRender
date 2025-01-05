@@ -12,20 +12,31 @@
 namespace SR_GTYPES_NS {
     class Font;
 
-    class IText : public Mesh {
+    class Text : public Mesh {
+        SR_CLASS()
         using Super = Mesh;
     public:
-        IText();
-        ~IText() override;
+        Text();
+        ~Text() override;
 
     public:
+        bool InitializeEntity() noexcept override;
+
+        SR_NODISCARD int64_t GetSortingPriority() const override;
+        SR_NODISCARD bool HasSortingPriority() const override;
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
+        const SR_MATH_NS::Matrix4x4& GetMatrix() const override;
+
         void UseMaterial() override;
         void UseModelMatrix() override;
 
         void UseSamplers() override;
 
+        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Text; }
+
         SR_NODISCARD bool IsFlatMesh() const noexcept override;
 
+        /// TODO: можно сделать при помощи 4х вершин
         SR_NODISCARD uint32_t GetIndicesCount() const override { return 6; }
 
         SR_NODISCARD bool IsCalculatable() const override;
@@ -69,12 +80,17 @@ namespace SR_GTYPES_NS {
         int32_t m_id = SR_ID_INVALID;
         SR_MATH_NS::UVector2 m_atlasSize;
 
-        SR_MATH_NS::UVector2 m_fontSize = SR_MATH_NS::UVector2(512, 512);
+        SR_MATH_NS::UVector2 m_fontSize = { 512, 512 };
 
+        /// @property
         bool m_is3D = false;
+        /// @property
         bool m_kerning = true;
+        /// @property
         bool m_debug = false;
+        /// @property
         bool m_preprocessor = false;
+        /// @property
         bool m_localization = false;
 
         SR_HTYPES_NS::UnicodeString m_text;

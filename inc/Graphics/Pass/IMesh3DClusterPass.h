@@ -8,7 +8,7 @@
 #include <Graphics/Pass/IMeshClusterPass.h>
 
 namespace SR_GRAPH_NS {
-    class IMesh3DClusterPass : public IMeshClusterPass {
+    class SR_DEPRECATED IMesh3DClusterPass : public IMeshClusterPass {
         using Super = IMeshClusterPass;
     public:
         bool Init() override;

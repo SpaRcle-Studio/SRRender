@@ -13,13 +13,32 @@
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Material/FileMaterial.h>
 
+#include <Codegen/Mesh.generated.hpp>
+
 namespace SR_GTYPES_NS {
-    Mesh::Mesh(MeshType type)
+    Mesh::Mesh()
         : m_uboManager(Memory::UBOManager::Instance())
         , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
-        , m_meshType(type)
     {
         m_materialProperty.SetMesh(this);
+
+        m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("MeshInv")
+            .SetLabel("Invalid mesh!")
+            .SetColor(SR_MATH_NS::FColor(1.f, 0.f, 0.f, 1.f))
+            .SetActiveCondition([this] { return !IsCalculatable(); })
+            .SetDontSave();
+
+        m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("MeshNotCalc")
+            .SetLabel("Mesh isn't calculated!")
+            .SetColor(SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f))
+            .SetActiveCondition([this] { return !IsCalculated(); })
+            .SetDontSave();
+
+        m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("MeshNotReg")
+            .SetLabel("Mesh isn't registered!")
+            .SetColor(SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f))
+            .SetActiveCondition([this] { return !IsGraphicsResourceRegistered(); })
+            .SetDontSave();
     }
 
     Mesh::~Mesh() {
@@ -75,14 +94,27 @@ namespace SR_GTYPES_NS {
         MarkUniformsDirty();
     }
 
+    const SR_MATH_NS::Matrix4x4& Mesh::GetMatrix() const {
+        if (auto&& pTransform = GetTransform()) {
+            return pTransform->GetMatrix();
+        }
+
+        static SR_MATH_NS::Matrix4x4 identity = SR_MATH_NS::Matrix4x4::Identity();
+        return identity;
+    }
+
     std::vector<Mesh::Ptr> Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type) {
         std::vector<Mesh::Ptr> meshes;
 
         uint32_t id = 0;
-        while (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path)) {
+        auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path);
+        while (pRawMesh) {
             if (auto&& pMesh = TryLoad(pRawMesh, type, id)) {
                 meshes.emplace_back(pMesh);
                 ++id;
+            }
+            else {
+                break;
             }
         }
 
@@ -95,6 +127,10 @@ namespace SR_GTYPES_NS {
 
     bool Mesh::IsCalculatable() const {
         return true;
+    }
+
+    bool Mesh::IsActive() const noexcept {
+        return IRenderComponent::IsActive() && !m_hasErrors;
     }
 
     void Mesh::FreeVideoMemory() {
@@ -214,6 +250,31 @@ namespace SR_GTYPES_NS {
         return empty;
     }
 
+    int64_t Mesh::GetSortingPriority() const {
+        if (auto&& pTransform = GetTransform()) {
+            if (pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
+                return static_cast<SR_UTILS_NS::Transform2D*>(pTransform)->GetPriority();
+            }
+        }
+
+        return -1;
+    }
+
+    bool Mesh::HasSortingPriority() const {
+        if (auto&& pTransform = GetTransform()) {
+            return pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
+        }
+        return false;
+    }
+
+    SR_UTILS_NS::StringAtom Mesh::GetMeshLayer() const {
+        if (!m_sceneObject) {
+            return SR_UTILS_NS::StringAtom();
+        }
+
+        return m_sceneObject->GetLayer();
+    }
+
     bool Mesh::OnResourceReloaded(SR_UTILS_NS::IResource* pResource) {
         return false;
     }
@@ -260,6 +321,52 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
+    bool Mesh::InitializeEntity() noexcept {
+        m_properties.AddEnumProperty<MeshType>("Mesh type")
+            .SetGetter([this] {
+                return SR_UTILS_NS::EnumReflector::ToStringAtom(GetMeshType());
+            })
+            .SetReadOnly();
+
+        m_properties.AddExternalProperty(&GetMaterialProperty());
+
+        return Super::InitializeEntity();
+    }
+
+    void Mesh::OnDestroy() {
+        Super::OnDestroy();
+        DestroyMesh();
+    }
+
+    void Mesh::OnMatrixDirty() {
+        MarkUniformsDirty();
+        Super::OnMatrixDirty();
+    }
+
+    void Mesh::OnLayerChanged() {
+        ReRegisterMesh();
+        Super::OnLayerChanged();
+    }
+
+    void Mesh::OnPriorityChanged() {
+        ReRegisterMesh();
+        Super::OnPriorityChanged();
+    }
+
+    void Mesh::OnEnable() {
+        Super::OnEnable();
+        if (!IsMeshRegistered()) {
+            if (auto&& pRenderScene = GetRenderScene()) {
+                pRenderScene->Register(this);
+            }
+        }
+    }
+
+    void Mesh::OnDisable() {
+        Super::OnDisable();
+        UnRegisterMesh();
+    }
+
     void Mesh::UnRegisterMesh() {
         if (IsMeshRegistered()) {
             m_registrationInfo.value().pScene->Remove(this);
@@ -284,12 +391,7 @@ namespace SR_GTYPES_NS {
         FreeVideoMemory();
         DeInitGraphicsResource();
 
-        if (auto&& pRenderComponent = dynamic_cast<IRenderComponent*>(this)) {
-            pRenderComponent->AutoFree();
-        }
-        else {
-            delete this;
-        }
+        AutoFree();
 
         return isRegistered;
     }
@@ -305,7 +407,7 @@ namespace SR_GTYPES_NS {
 
         SR_TRACY_ZONE;
 
-        if (!IsMeshActive()) SR_UNLIKELY_ATTRIBUTE {
+        if (!IsActive()) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 

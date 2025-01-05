@@ -13,14 +13,14 @@
 
 namespace SR_GTYPES_NS {
     class DebugWireframeMesh final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
+        SR_CLASS()
+        SR_REGISTER_NEW_COMPONENT(DebugWireframeMesh, 1000)
         using Super = IndexedMesh;
     public:
         typedef Vertices::SimpleVertex VertexType;
 
     public:
-        DebugWireframeMesh();
-
-    private:
+        DebugWireframeMesh() = default;
         ~DebugWireframeMesh() override = default;
 
     public:
@@ -29,6 +29,8 @@ namespace SR_GTYPES_NS {
         bool OnResourceReloaded(SR_UTILS_NS::IResource* pResource) override;
 
         void OnRawMeshChanged() override;
+
+        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Wireframe; }
 
         SR_NODISCARD std::vector<uint32_t> GetIndices() const override;
         SR_NODISCARD std::string GetMeshIdentifier() const override;

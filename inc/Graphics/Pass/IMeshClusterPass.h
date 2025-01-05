@@ -12,7 +12,7 @@ namespace SR_GRAPH_NS {
     class ShadowMapPass;
     class CascadedShadowMapPass;
 
-    class IMeshClusterPass : public BasePass {
+    class SR_DEPRECATED IMeshClusterPass : public BasePass {
         using Super = BasePass;
     public:
         struct Sampler {

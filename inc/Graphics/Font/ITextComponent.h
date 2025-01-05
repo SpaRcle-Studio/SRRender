@@ -11,7 +11,8 @@
 #include <Utils/ECS/ComponentManager.h>
 
 namespace SR_GTYPES_NS {
-    class ITextComponent : public IMeshComponent, public IText {
+    /*class ITextComponent : public IMeshComponent, public IText {
+        SR_CLASS()
     public:
         ITextComponent();
 
@@ -32,8 +33,12 @@ namespace SR_GTYPES_NS {
     };
 
     class Text final : public ITextComponent {
+        SR_CLASS()
         SR_REGISTER_NEW_COMPONENT(Text, 1000)
-    };
+    public:
+        Text() = default;
+
+    };*/
 }
 
 #endif //SR_ENGINE_I_TEXT_COMPONENT_H
