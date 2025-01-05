@@ -380,9 +380,9 @@ namespace SR_GRAPH_NS::Vertices {
                 vertex.tang   = *reinterpret_cast<glm::vec3*>((void*)&pData[i].tangent);
                 vertex.bitang = *reinterpret_cast<glm::vec3*>((void*)&pData[i].bitangent);
                 vertex.weightsCount = *reinterpret_cast<uint32_t*>((void*)&pData[i].weightsNum);
-                for (uint32_t i = 0; i < SR_MAX_BONES_ON_VERTEX; i++) {
-                    vertex.weights[i].x = static_cast<float>(pData[i].weights[i].boneId);
-                    vertex.weights[i].y = pData[i].weights[i].weight;
+                for (uint32_t j = 0; j < SR_MAX_BONES_ON_VERTEX; j++) {
+                    vertex.weights[j].x = static_cast<float>(pData[i].weights[j].boneId);
+                    vertex.weights[j].y = pData[i].weights[j].weight;
                 }
                 vertices.emplace_back(vertex);
             }

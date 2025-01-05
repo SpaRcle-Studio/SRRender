@@ -258,7 +258,12 @@ namespace SR_GRAPH_NS {
                 m_descriptorManager.Flush();
             }
 
-            pipeline.DrawIndices(indicesCount);
+            if (drawInfo.type == DebugRenderer::DrawType::Line) {
+                pipeline.Draw(indicesCount);
+            }
+            else {
+                pipeline.DrawIndices(indicesCount);
+            }
 
             ++shaderInfo.uboUsed;
 
