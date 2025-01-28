@@ -30,6 +30,7 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    class IRenderer;
     class RenderStrategy;
     class LightSystem;
     class Window;
@@ -38,7 +39,8 @@ namespace SR_GRAPH_NS {
     class Pipeline;
     class DebugRenderer;
 
-    class RenderScene : public SR_HTYPES_NS::SafePtr<RenderScene> {
+    class RenderScene : public SR_HTYPES_NS::SharedPtr<RenderScene> {
+        using Super = SR_HTYPES_NS::SharedPtr<RenderScene>;
     public:
         using WidgetManagerPtr = GUI::WidgetManager*;
         using WidgetManagers = std::vector<WidgetManagerPtr>;
@@ -47,7 +49,7 @@ namespace SR_GRAPH_NS {
         using CameraPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Camera>;
         using MeshPtr = SR_GTYPES_NS::Mesh*;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
-        using Ptr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using Ptr = SR_HTYPES_NS::SharedPtr<RenderScene>;
 
         struct CameraInfo {
             CameraPtr pCamera;
@@ -55,9 +57,10 @@ namespace SR_GRAPH_NS {
 
     public:
         explicit RenderScene(const ScenePtr& scene, RenderContext* pContext);
-        virtual ~RenderScene();
+        ~RenderScene() override;
 
     public:
+        void Init();
         void DeInit();
 
         void Render();
@@ -91,6 +94,17 @@ namespace SR_GRAPH_NS {
 
         void ForEachTechnique(const SR_HTYPES_NS::Function<void(IRenderTechnique*)>& callback);
 
+        template<typename T> SR_HTYPES_NS::SharedPtr<T> AddRenderer() {
+            return AddRenderer(T::GetClassStaticName()).template DynamicCast<T>();
+        }
+
+        template<typename T> SR_HTYPES_NS::SharedPtr<T> GetRenderer() const {
+            return GetRenderer(T::GetClassStaticName()).template DynamicCast<T>();
+        }
+
+        SR_HTYPES_NS::SharedPtr<IRenderer> AddRenderer(SR_UTILS_NS::StringAtom name);
+
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<IRenderer> GetRenderer(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD bool IsDirty() const noexcept;
         SR_NODISCARD bool IsEmpty() const;
         SR_NODISCARD bool IsOverlayEnabled() const;
@@ -102,7 +116,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD WindowPtr GetWindow() const;
         SR_NODISCARD const WidgetManagers& GetWidgetManagers() const;
         SR_NODISCARD CameraPtr GetMainCamera() const;
-        SR_NODISCARD DebugRenderer* GetDebugRenderer() const;
         SR_NODISCARD RenderStrategy* GetRenderStrategy() { return m_renderStrategy.Get(); }
         SR_NODISCARD CameraPtr GetFirstOffScreenCamera() const;
         SR_NODISCARD SR_MATH_NS::UVector2 GetSurfaceSize() const;
@@ -138,7 +151,7 @@ namespace SR_GRAPH_NS {
 
         ScenePtr m_scene;
 
-        DebugRenderer* m_debugRender = nullptr;
+        std::map<SR_UTILS_NS::StringAtom, SR_HTYPES_NS::SharedPtr<IRenderer>> m_renderers;
         IRenderTechnique* m_technique = nullptr;
         RenderContext* m_context = nullptr;
 

@@ -67,11 +67,15 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
+            if (!pRenderScene) {
+                ++pIt;
+                continue;
+            }
+
             /// Синхронизируем и проверяем, есть ли еще на сцене объекты
-            if (!pRenderScene.Do<bool>([](RenderScene* pRScene) -> bool {
-                pRScene->Synchronize();
-                return pRScene->IsEmpty();
-            }, false)) {
+            pRenderScene->Synchronize();
+
+            if (!pRenderScene->IsEmpty()) {
                 ++pIt;
                 continue;
             }
@@ -225,6 +229,7 @@ namespace SR_GRAPH_NS {
             }
 
             pRenderScene = new RenderScene(pScene, this);
+            pRenderScene->Init();
 
             m_scenes.emplace_back(std::make_pair(
                 pScene,
@@ -338,15 +343,15 @@ namespace SR_GRAPH_NS {
         }
 
         for (auto pIt = std::begin(m_scenes); pIt != std::end(m_scenes); ++pIt) {
-            auto&&[pScene, pRenderScene] = *pIt;
+            auto&& [pScene, pRenderScene] = *pIt;
 
-            if (!pScene.Valid()) {
+            if (!pScene) {
                 continue;
             }
 
-            pRenderScene.Do([&size](RenderScene *pRScene) {
-                pRScene->OnResize(size);
-            });
+            if (pRenderScene) {
+                pRenderScene->OnResize(size);
+            }
         }
     }
 

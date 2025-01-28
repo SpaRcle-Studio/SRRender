@@ -25,7 +25,7 @@ namespace SR_GRAPH_NS {
         void UseSharedUniforms(ShaderPtr pShader) override;
         void UseUniforms(ShaderPtr pShader, MeshPtr pMesh) override;
 
-        SR_NODISCARD MeshClusterTypeFlag GetClusterType() const noexcept override;
+        SR_NODISCARD MeshClusterType GetClusterType() const noexcept override;
 
     private:
         SR_MATH_NS::Matrix4x4 m_lightSpaceMatrix;

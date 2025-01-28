@@ -46,7 +46,7 @@ namespace SR_GRAPH_NS {
         using CameraPtr = SR_GTYPES_NS::Camera*;
         using Context = RenderContext*;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
     public:
         BasePass();
         ~BasePass() override = default;

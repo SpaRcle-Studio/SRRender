@@ -476,7 +476,7 @@ namespace SR_GRAPH_NS {
                 break;
         }
 
-        SRHalt("Pipeline::AllocateVBO() : unknown vertex type! Type: {}", SREnumFmt(type));
+        SRHalt("Pipeline::AllocateVBO() : unknown vertex type! Type: {}", type);
         return SR_ID_INVALID;
     }
 

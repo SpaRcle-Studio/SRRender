@@ -12,12 +12,9 @@
 #include <Graphics/Types/Geometry/DebugLine.h>
 #include <Graphics/Material/FileMaterial.h>
 
-namespace SR_GRAPH_NS {
-    DebugRenderer::DebugRenderer(RenderScene* pRenderScene)
-        : Super()
-        , m_renderScene(pRenderScene)
-    { }
+#include <Codegen/DebugRenderer.generated.hpp>
 
+namespace SR_GRAPH_NS {
     DebugRenderer::~DebugRenderer() {
         SRAssert2(m_timedObjects.IsEmpty(), "DebugRenderer::~DebugRenderer() : timed objects are not empty!");
     }
@@ -25,10 +22,10 @@ namespace SR_GRAPH_NS {
     void DebugRenderer::Init() {
         SR_INFO("DebugRenderer::Init() : initializing debug renderer...");
 
-        m_meshes.emplace_back(Memory::BakedMesh::Bake(m_renderScene->GetPipeline().Get(), "Engine/Models/cubeWireframe.obj", 0, Vertices::VertexType::SimpleVertex));
-        m_meshes.emplace_back(Memory::BakedMesh::Bake(m_renderScene->GetPipeline().Get(), "Engine/Models/planeWireframe.obj", 0, Vertices::VertexType::SimpleVertex));
-        m_meshes.emplace_back(Memory::BakedMesh::Bake(m_renderScene->GetPipeline().Get(), "Engine/Models/sphere_circle.obj", 0, Vertices::VertexType::SimpleVertex));
-        m_meshes.emplace_back(Memory::BakedMesh::Bake(m_renderScene->GetPipeline().Get(), "Engine/Models/capsule_circle.obj", 0, Vertices::VertexType::SimpleVertex));
+        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/cubeWireframe.obj", 0, Vertices::VertexType::SimpleVertex));
+        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/planeWireframe.obj", 0, Vertices::VertexType::SimpleVertex));
+        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/sphere_circle.obj", 0, Vertices::VertexType::SimpleVertex));
+        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/capsule_circle.obj", 0, Vertices::VertexType::SimpleVertex));
 
         for (uint64_t i = 0; i < m_meshes.size(); ++i) {
             if (!m_meshes[i]) {
@@ -169,7 +166,7 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        Memory::BakedMesh::Ptr pMesh = Memory::BakedMesh::Bake(m_renderScene->GetPipeline().Get(), pRawMesh, meshIndex, Vertices::VertexType::SimpleVertex);
+        Memory::BakedMesh::Ptr pMesh = Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), pRawMesh, meshIndex, Vertices::VertexType::SimpleVertex);
 
         if (freeIndex == SR_ID_INVALID) {
             m_meshes.emplace_back(pMesh);

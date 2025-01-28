@@ -46,6 +46,8 @@
 #include "../src/Graphics/UI/Anchor.cpp"
 #include "../src/Graphics/UI/Gizmo.cpp"
 #include "../src/Graphics/UI/UIWindow.cpp"
+#include "../src/Graphics/UI/UICanvasComponent.cpp"
+#include "../src/Graphics/UI/UISizeComponent.cpp"
 
 #include "../src/Graphics/Render/RenderQueue.cpp"
 #include "../src/Graphics/Render/HTMLRenderer.cpp"
@@ -62,6 +64,7 @@
 #include "../src/Graphics/Render/RenderStrategy.cpp"
 #include "../src/Graphics/Render/FrameBufferController.cpp"
 #include "../src/Graphics/Render/FrustumCulling.cpp"
+#include "../src/Graphics/Render/IRenderer.cpp"
 #include "../src/Graphics/Render/HTML/HTMLDrawableElement.cpp"
 
 #include "../src/Graphics/Types/Geometry/DebugWireframeMesh.cpp"

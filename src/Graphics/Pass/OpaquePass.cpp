@@ -37,7 +37,7 @@ namespace SR_GRAPH_NS {
         Super::UseSharedUniforms(pShader);
     }
 
-    MeshClusterTypeFlag OpaquePass::GetClusterType() const noexcept {
-        return static_cast<MeshClusterTypeFlag>(MeshClusterType::Opaque);
+    MeshClusterType OpaquePass::GetClusterType() const noexcept {
+        return static_cast<MeshClusterType>(MeshClusterType::Opaque);
     }
 }

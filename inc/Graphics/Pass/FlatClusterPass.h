@@ -12,7 +12,7 @@ namespace SR_GRAPH_NS {
         SR_REGISTER_LOGICAL_NODE(FlatClusterPass, Flat Cluster Pass, { "Passes" })
         using Super = IMeshClusterPass;
     public:
-        SR_NODISCARD MeshClusterTypeFlag GetClusterType() const noexcept override;
+        SR_NODISCARD MeshClusterType GetClusterType() const noexcept override;
 
         void Update() override;
         bool Render() override;

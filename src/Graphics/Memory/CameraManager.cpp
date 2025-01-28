@@ -197,13 +197,12 @@ namespace SR_GRAPH_NS::Memory {
 
         if (auto &&pIt = m_cameras.find(camera); pIt != m_cameras.end()) {
             auto&& [pCamera, info] = *pIt;
-            auto&& renderScene = info.pRenderScene;
+            auto&& pRenderScene = info.pRenderScene;
 
             info.destroyed = true;
 
-            if (renderScene.LockIfValid()) {
-                renderScene->SetDirty();
-                renderScene.Unlock();
+            if (pRenderScene) {
+                pRenderScene->SetDirty();
             }
             else {
                 m_pipeline->SetDirty(true);;
@@ -226,13 +225,12 @@ namespace SR_GRAPH_NS::Memory {
 
         if (auto &&pIt = m_cameras.find(camera); pIt != m_cameras.end()) {
             auto&& [pCamera, info] = *pIt;
-            auto&& renderScene = info.pRenderScene;
+            auto&& pRenderScene = info.pRenderScene;
 
             SRAssert2(!info.destroyed, "Unregistering destroyed camera!");
 
-            if (renderScene.LockIfValid()) {
-                renderScene->SetDirty();
-                renderScene.Unlock();
+            if (pRenderScene) {
+                pRenderScene->SetDirty();
             }
             else {
                 m_pipeline->SetDirty(true);

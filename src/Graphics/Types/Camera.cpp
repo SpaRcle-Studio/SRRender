@@ -305,9 +305,9 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        GetRenderScene().Do([](auto&& pRenderScene) {
+        if (auto&& pRenderScene = GetRenderScene()) {
             pRenderScene->SetDirtyCameras();
-        });
+        }
     }
 
     const SR_MATH_NS::FVector3& Camera::GetViewDirection() const {

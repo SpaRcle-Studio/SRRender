@@ -40,7 +40,7 @@ namespace SR_GRAPH_UI_NS {
         void SetWindowSize(const SR_MATH_NS::UVector2& size) noexcept;
 
     private:
-        UIWindowAttributesFlag m_flags = UIWindowAttributes::None;
+        UIWindowAttributes m_flags = UIWindowAttributes::None;
         SR_MATH_NS::UVector2 m_windowSize;
         SR_UTILS_NS::GameObject::Ptr m_content;
         SR_UTILS_NS::GameObject::Ptr m_titleBar;

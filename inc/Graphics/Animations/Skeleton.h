@@ -13,7 +13,7 @@ namespace SR_ANIMATIONS_NS {
         SR_INITIALIZE_COMPONENT(Skeleton);
         using Super = SR_UTILS_NS::Component;
     public:
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
     public:
         static Component* LoadComponent(SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* dataStorage);
 

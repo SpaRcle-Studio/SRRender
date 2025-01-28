@@ -29,7 +29,7 @@ namespace SR_GRAPH_NS::GUI {
     typedef ska::flat_hash_map<ImGuiViewport*, Widget*> ViewportsTable;
 
     class WidgetManager : public SR_UTILS_NS::NonCopyable, public SR_UTILS_NS::InputHandler {
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using ContextPtr = RenderContext*;
         using ScenePtr = SR_HTYPES_NS::SharedPtr<SR_WORLD_NS::Scene>;
     public:

@@ -49,7 +49,7 @@ namespace SR_GRAPH_NS {
     }
 
     void DebugPass::Prepare() {
-        auto&& pDebugRenderer = GetRenderScene()->GetDebugRenderer();
+        auto&& pDebugRenderer = GetRenderScene()->GetRenderer<DebugRenderer>();
         if (!pDebugRenderer) {
             return;
         }
@@ -66,7 +66,7 @@ namespace SR_GRAPH_NS {
     bool DebugPass::Render() {
         SR_TRACY_ZONE;
 
-        auto&& pDebugRenderer = GetRenderScene()->GetDebugRenderer();
+        auto&& pDebugRenderer = GetRenderScene()->GetRenderer<DebugRenderer>();
         auto&& pPipeline = GetPassPipeline();
         if (!pDebugRenderer || !pPipeline) {
             return false;
@@ -153,7 +153,7 @@ namespace SR_GRAPH_NS {
     void DebugPass::BuildQueues() {
         SR_TRACY_ZONE;
 
-        auto&& pDebugRenderer = GetRenderScene()->GetDebugRenderer();
+        auto&& pDebugRenderer = GetRenderScene()->GetRenderer<DebugRenderer>();
         auto&& pPipeline = GetPassPipeline();
         if (!pDebugRenderer || !pPipeline) {
             return;

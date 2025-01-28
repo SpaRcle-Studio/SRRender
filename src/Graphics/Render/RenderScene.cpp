@@ -4,6 +4,7 @@
 
 #include <Utils/DebugDraw.h>
 #include <Utils/Types/SafePtrLockGuard.h>
+#include <Utils/Resources/Yaml.h>
 
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/RenderContext.h>
@@ -19,30 +20,53 @@
 
 namespace SR_GRAPH_NS {
     RenderScene::RenderScene(const ScenePtr& scene, RenderContext* pContext)
-        : SR_HTYPES_NS::SafePtr<RenderScene>(this)
-        , m_lightSystem(new LightSystem(GetThis()))
+        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
         , m_scene(scene)
-        , m_debugRender(new DebugRenderer(this))
         , m_context(pContext)
-    {
-        m_renderStrategy = new RenderStrategy(this);
-        m_debugRender->Init();
-    }
+    { }
 
     RenderScene::~RenderScene() {
-        SRAssert(!m_lightSystem && !m_debugRender && !m_technique);
+        SRAssert(!m_lightSystem && !m_technique && m_renderers.empty());
         m_renderStrategy.AutoFree();
         SRAssert(IsEmpty());
+    }
+
+    void RenderScene::Init() {
+        m_renderStrategy = new RenderStrategy(this);
+        m_lightSystem = new LightSystem(GetThis());
+
+        auto&& configPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Configs/RenderScene.yml");
+        if (configPath.Exists(SR_UTILS_NS::Path::Type::File)) {
+            auto&& document = SR_UTILS_NS::Yaml::Document::Load(configPath);
+            if (document.IsValid() && document.GetRoot()) {
+                auto&& root = document.GetRoot();
+                if (auto&& renderers = root.GetChild("renderers")) {
+                    for (auto&& renderer : renderers.GetChildren()) {
+                        auto&& rendererName = renderer.GetChild("name");
+                        if (!rendererName.IsValid()) {
+                            continue;
+                        }
+                        AddRenderer(rendererName.GetValueView());
+                    }
+                }
+            }
+            else {
+                SR_ERROR("RenderScene::Init() : failed to load file \"{}\"", configPath.ToStringRef());
+            }
+        }
+        else {
+            SR_ERROR("RenderScene::Init() : file \"{}\" not found!", configPath.ToStringRef());
+        }
     }
 
     void RenderScene::DeInit() {
         SR_SAFE_DELETE_PTR(m_lightSystem);
 
-        if (m_debugRender) {
-            m_debugRender->DeInit();
-            delete m_debugRender;
-            m_debugRender = nullptr;
+        for (auto&& [name, pRenderer] : m_renderers) {
+            pRenderer->DeInit();
+            pRenderer.AutoFree();
         }
+        m_renderers.clear();
 
         if (m_technique) {
             if (auto&& pResource = dynamic_cast<SR_UTILS_NS::IResource*>(m_technique)) {
@@ -98,8 +122,10 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderScene::IsEmpty() const {
-        if (m_debugRender && !m_debugRender->IsEmpty()) {
-            return false;
+        for (auto&& [name, pRenderer] : m_renderers) {
+            if (!pRenderer->IsEmpty()) {
+                return false;
+            }
         }
 
         return m_cameras.empty();
@@ -170,8 +196,8 @@ namespace SR_GRAPH_NS {
     void RenderScene::PostUpdate() {
         SR_TRACY_ZONE_N("Post update render");
 
-        if (m_debugRender) {
-            m_debugRender->PostUpdate();
+        for (auto&& [name, pRenderer] : m_renderers) {
+            pRenderer->PostUpdate();
         }
 
         SR_RENDER_TECHNIQUES_CALL(PostUpdate)
@@ -240,8 +266,8 @@ namespace SR_GRAPH_NS {
 
         GetPipeline()->SetCurrentRenderStrategy(m_renderStrategy.Get());
 
-        if (m_debugRender) {
-            m_debugRender->Prepare();
+        for (auto&& [name, pRenderer] : m_renderers) {
+            pRenderer->Prepare();
         }
 
         if (m_dirtyCameras) {
@@ -472,8 +498,11 @@ namespace SR_GRAPH_NS {
 
         /// отладочной геометрией ничто не управляет, она уничтожается по истечению времени.
         /// ее нужно принудительно освобождать при закрытии сцены.
-        if (m_debugRender && !m_scene.Valid()) {
-            m_debugRender->Clear();
+
+        if (!m_scene.Valid()) {
+            for (auto&& [name, pRenderer] : m_renderers) {
+                pRenderer->Clear();
+            }
         }
 
         SortCameras();
@@ -501,10 +530,6 @@ namespace SR_GRAPH_NS {
         return m_surfaceSize;
     }
 
-    DebugRenderer* RenderScene::GetDebugRenderer() const {
-        return m_debugRender;
-    }
-
     void RenderScene::OnResourceReloaded(SR_UTILS_NS::IResource::Ptr pResource) {
         m_renderStrategy->OnResourceReloaded(pResource);
 
@@ -527,6 +552,29 @@ namespace SR_GRAPH_NS {
         if (m_technique) {
             callback(m_technique);
         }
+    }
+
+    IRenderer::Ptr RenderScene::AddRenderer(SR_UTILS_NS::StringAtom name) {
+        if (auto&& pIt = m_renderers.find(name); pIt != m_renderers.end()) {
+            SR_ERROR("RenderScene::AddRenderer() : renderer \"{}\" already exists!", name);
+            return pIt->second;
+        }
+
+        if (auto&& pIRenderer = SR_UTILS_NS::Factory::Instance().Create<IRenderer>(name.ToStringView())) {
+            m_renderers[name] = pIRenderer;
+            pIRenderer->SetRenderScene(this);
+            pIRenderer->Init();
+            return pIRenderer;
+        }
+
+        return nullptr;
+    }
+
+    IRenderer::Ptr RenderScene::GetRenderer(SR_UTILS_NS::StringAtom name) const {
+        if (auto&& pIt = m_renderers.find(name); pIt != m_renderers.end()) {
+            return pIt->second;
+        }
+        return nullptr;
     }
 
     void RenderScene::SetMeshMaterial(RenderScene::MeshPtr pMesh) {

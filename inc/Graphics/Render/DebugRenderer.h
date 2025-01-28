@@ -7,6 +7,7 @@
 
 #include <Graphics/Memory/MeshManager.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Render/IRenderer.h>
 
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Math/Vector3.h>
@@ -25,8 +26,9 @@ namespace SR_GRAPH_NS {
     class RenderScene;
     class FileMaterial;
 
-    class DebugRenderer : public SR_UTILS_NS::NonCopyable {
-        using Super = SR_UTILS_NS::NonCopyable;
+    class DebugRenderer : public IRenderer {
+        using Super = IRenderer;
+        SR_CLASS()
     public:
         enum class DrawType : int32_t {
             None = -2, Line = -1, Mesh = 0,
@@ -47,17 +49,15 @@ namespace SR_GRAPH_NS {
             DrawInfo drawInfo;
         };
     public:
-        explicit DebugRenderer(RenderScene* pRenderScene);
         ~DebugRenderer() override;
 
-        void Init();
-        void DeInit();
-        void Prepare();
-        void Clear();
-        void PostUpdate();
+        void Init() override;
+        void DeInit() override;
+        void Prepare() override;
+        void Clear() override;
+        void PostUpdate() override;
 
-        SR_NODISCARD bool IsEmpty() const noexcept { return m_timedObjects.IsEmpty(); }
-        SR_NODISCARD RenderScene* GetRenderScene() const noexcept { return m_renderScene; }
+        SR_NODISCARD bool IsEmpty() const noexcept override { return m_timedObjects.IsEmpty(); }
         SR_NODISCARD uint64_t GetTimedObjectPoolSize() const noexcept { return m_timedObjects.GetAliveCount(); }
         SR_NODISCARD uint64_t GetEmptyIdsPoolSize() const noexcept { return m_timedObjects.GetCapacity(); }
         SR_NODISCARD SR_HTYPES_NS::ObjectPool<DebugTimedObject>& GetTimedObjects() noexcept { return m_timedObjects; }
@@ -74,9 +74,6 @@ namespace SR_GRAPH_NS {
         void Remove(uint64_t id, bool fromPool);
 
     private:
-        mutable std::recursive_mutex m_mutex;
-
-        RenderScene* m_renderScene = nullptr;
         bool m_renderSceneChanged = false;
 
         SR_HTYPES_NS::ObjectPool<DebugTimedObject> m_timedObjects;

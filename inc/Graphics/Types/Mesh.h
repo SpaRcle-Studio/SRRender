@@ -45,7 +45,7 @@ namespace SR_GTYPES_NS {
         SR_CLASS()
         using Super = SR_GTYPES_NS::IRenderComponent;
     public:
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using ShaderPtr = Shader*;
         using MaterialPtr = BaseMaterial*;
         using Ptr = Mesh*;
