@@ -17,6 +17,8 @@ namespace SR_GTYPES_NS {
 
 namespace SR_GRAPH_NS {
     namespace Memory {
+        class MeshManager;
+
         enum class MeshMemoryType {
             Unknown, VBO, IBO
         };
