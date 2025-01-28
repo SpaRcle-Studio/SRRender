@@ -16,7 +16,7 @@ namespace SR_ANIMATIONS_NS {
         SR_INITIALIZE_COMPONENT(BoneComponent);
         using Super = SR_UTILS_NS::Component;
     public:
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
     public:
         BoneComponent();
 

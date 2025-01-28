@@ -12,11 +12,9 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Utils/MeshUtils.h>
 
-namespace SR_GTYPES_NS {
-    Mesh3D::Mesh3D()
-        : Super(MeshType::Static)
-    { }
+#include <Codegen/Mesh3D.generated.hpp>
 
+namespace SR_GTYPES_NS {
     bool Mesh3D::Calculate()  {
         if (IsCalculated()) {
             return true;
@@ -113,7 +111,7 @@ namespace SR_GTYPES_NS {
             })
             .SetType(SR_UTILS_NS::StandardType::Int16);
 
-        m_properties.AddEnumProperty("FrustumCullingType", &m_frustumCullingType);
+        /// m_properties.AddEnumProperty("FrustumCullingType", &m_frustumCullingType);
 
         return Super::InitializeEntity();
     }

@@ -12,7 +12,7 @@ namespace SR_GRAPH_NS {
     class ShadowMapPass;
     class CascadedShadowMapPass;
 
-    class IMeshClusterPass : public BasePass {
+    class SR_DEPRECATED IMeshClusterPass : public BasePass {
         using Super = BasePass;
     public:
         struct Sampler {
@@ -40,7 +40,7 @@ namespace SR_GRAPH_NS {
         void OnMultisampleChanged() override;
 
     protected:
-        SR_NODISCARD virtual MeshClusterTypeFlag GetClusterType() const noexcept;
+        SR_NODISCARD virtual MeshClusterType GetClusterType() const noexcept;
         SR_NODISCARD virtual ShaderPtr GetShader(SR_SRSL_NS::ShaderType shaderType) const { return nullptr; }
 
         virtual void UseSamplers(ShaderPtr pShader);
@@ -57,7 +57,7 @@ namespace SR_GRAPH_NS {
         bool m_dirtySamplers = true;
         bool m_needUpdateMeshes = false;
         Samplers m_samplers;
-        MeshClusterTypeFlag m_meshClusters = 0;
+        MeshClusterType m_meshClusters = MeshClusterType::None;
 
     };
 }

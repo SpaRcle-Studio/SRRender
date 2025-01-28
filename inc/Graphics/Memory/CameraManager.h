@@ -23,7 +23,7 @@ namespace SR_GRAPH_NS::Memory {
         SR_REGISTER_SINGLETON(CameraManager)
         friend class SR_GTYPES_NS::Camera;
         using CameraPtr = Types::Camera*;
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
 
         struct CameraInfo {

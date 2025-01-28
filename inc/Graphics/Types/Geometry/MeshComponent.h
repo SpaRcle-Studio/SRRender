@@ -9,7 +9,8 @@
 #include <Graphics/Types/IRenderComponent.h>
 
 namespace SR_GTYPES_NS {
-    class IMeshComponent : public SR_GTYPES_NS::IRenderComponent {
+    /*class IMeshComponent : public SR_GTYPES_NS::IRenderComponent {
+        SR_CLASS()
         using Super = SR_GTYPES_NS::IRenderComponent;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<IMeshComponent>;
@@ -44,11 +45,12 @@ namespace SR_GTYPES_NS {
     /// ----------------------------------------------------------------------------------------------------------------
 
     class IndexedMeshComponent : public IMeshComponent, public IndexedMesh {
+        SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<IndexedMeshComponent>;
 
     protected:
-        explicit IndexedMeshComponent(MeshType type);
+        IndexedMeshComponent();
 
     public:
         SR_NODISCARD SR_FORCE_INLINE bool IsMeshActive() const noexcept override {
@@ -64,16 +66,18 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD const SR_MATH_NS::Matrix4x4& GetMatrix() const override;
 
-    };
+    };*/
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class MeshComponent : public IMeshComponent, public Mesh {
+    /*class MeshComponent : public Mesh {
+        using Super = Mesh;
+        SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<MeshComponent>;
 
-    protected:
-        explicit MeshComponent(MeshType type);
+    public:
+        MeshComponent();
 
     public:
         SR_NODISCARD SR_FORCE_INLINE bool IsMeshActive() const noexcept override {
@@ -88,7 +92,10 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool HasSortingPriority() const override;
         SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
 
-    };
+    private:
+        std::string m_geometryName;
+
+    };*/
 }
 
 #endif //SR_ENGINE_GRAPHICS_MESH_COMPONENT_H

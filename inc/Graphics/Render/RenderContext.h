@@ -45,7 +45,7 @@ namespace SR_GRAPH_NS {
      * Управлением памяти мешей занимается MeshCluster, который у каждой RenderScene свой.
      */
     class RenderContext : public SR_HTYPES_NS::SafePtr<RenderContext> {
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::Pipeline>;
         using Super = SR_HTYPES_NS::SafePtr<RenderContext>;
         using MaterialPtr = SR_GRAPH_NS::FileMaterial*;

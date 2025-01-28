@@ -28,7 +28,7 @@ namespace SR_GRAPH_UI_NS {
         });
     }
 
-    void Gizmo::LoadMesh(GizmoOperationFlag operation, SR_UTILS_NS::StringAtom path, SR_UTILS_NS::StringAtom name, GizmoMeshLoadMode mode) { /// NOLINT
+    void Gizmo::LoadMesh(GizmoOperation operation, SR_UTILS_NS::StringAtom path, SR_UTILS_NS::StringAtom name, GizmoMeshLoadMode mode) { /// NOLINT
         SR_TRACY_ZONE;
 
         if (!SR_MATH_NS::IsMaskIncludedSubMask(m_operation, operation)) {
@@ -51,13 +51,13 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::IndexedMeshComponent*>(pMesh);
+        auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::IndexedMesh*>(pMesh);
         if (!pMeshComponent) {
             SRHalt("Failed to cast!");
             return;
         }
 
-        pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
+        /////////////////////////////////////////////////////////////////////////////////pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
 
         auto&& pMaterial = new SR_GRAPH_NS::UniqueMaterial();
         pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
@@ -372,8 +372,8 @@ namespace SR_GRAPH_UI_NS {
         m_relativeOrigin = (m_translationPlanOrigin - m_modelMatrix.v.position.XYZ()) * (1.f / screenFactor);
     }
 
-    SR_MATH_NS::AxisFlag Gizmo::GetAxis() const {
-        SR_MATH_NS::AxisFlag axis = SR_MATH_NS::Axis::None;
+    SR_MATH_NS::Axis Gizmo::GetAxis() const {
+        SR_MATH_NS::Axis axis = SR_MATH_NS::Axis::None;
         axis |= (m_activeOperation & GizmoOperation::X) ? SR_MATH_NS::Axis::X : SR_MATH_NS::Axis::None;
         axis |= (m_activeOperation & GizmoOperation::Y) ? SR_MATH_NS::Axis::Y : SR_MATH_NS::Axis::None;
         axis |= (m_activeOperation & GizmoOperation::Z) ? SR_MATH_NS::Axis::Z : SR_MATH_NS::Axis::None;
@@ -381,7 +381,7 @@ namespace SR_GRAPH_UI_NS {
         return axis;
     }
 
-    SR_MATH_NS::FColor Gizmo::GetColorByOperation(GizmoOperationFlag operation) const {
+    SR_MATH_NS::FColor Gizmo::GetColorByOperation(GizmoOperation operation) const {
         if (operation & GizmoOperation::Center) {
             return SR_MATH_NS::FVector4(1.f, 1.f, 1.f, 0.75f);
         }
@@ -487,7 +487,7 @@ namespace SR_GRAPH_UI_NS {
         }
     }
 
-    Utils::Component::GameObjectPtr Gizmo::GetGameObjectByOperation(GizmoMeshLoadMode mode, GizmoOperationFlag operation) const {
+    Utils::Component::GameObjectPtr Gizmo::GetGameObjectByOperation(GizmoMeshLoadMode mode, GizmoOperation operation) const {
         auto&& root = mode == GizmoMeshLoadMode::Visual ? GetGameObject() : GetGameObject()->GetOrCreateChild("Selection");
 
         if (operation & GizmoOperation::Center) {
@@ -508,7 +508,7 @@ namespace SR_GRAPH_UI_NS {
         return nullptr;
     }
 
-    void Gizmo::SetOperation(GizmoOperationFlag operation) {
+    void Gizmo::SetOperation(GizmoOperation operation) {
         if (m_operation == operation) {
             return;
         }

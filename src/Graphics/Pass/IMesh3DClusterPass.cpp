@@ -42,13 +42,13 @@ namespace SR_GRAPH_NS {
             }
 
             /// Если нет ни одного активного меша, то нет смысла идти дальше
-            for (auto&& [key, meshGroup] : subCluster) {
+           /* for (auto&& [key, meshGroup] : subCluster) {
                 for (auto&& pMesh : meshGroup) {
                     if (pMesh->IsMeshActive()) {
                         goto goDraw;
                     }
                 }
-            }
+            }*/
 
             continue;
 
@@ -91,7 +91,7 @@ namespace SR_GRAPH_NS {
 
             UseSharedUniforms(pShader);
 
-            for (auto const& [key, meshGroup] : subCluster) {
+            /*for (auto const& [key, meshGroup] : subCluster) {
                 for (const auto& pMesh : meshGroup) {
                     if (!pMesh->IsMeshActive()) {
                         continue;
@@ -110,7 +110,7 @@ namespace SR_GRAPH_NS {
 
                     pShader->Flush();
                 }
-            }
+            }*/
 
             GetRenderScene()->SetCurrentSkeleton(nullptr);
             GetContext()->SetCurrentShader(nullptr);

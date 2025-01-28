@@ -6,7 +6,7 @@
 
 namespace SR_GTYPES_NS {
     SkinnedMesh::SkinnedMesh()
-        : Super(MeshType::Skinned)
+        : Super()
     {
         m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("SkeletonInv")
             .SetLabel("Skeleton is not usable!")

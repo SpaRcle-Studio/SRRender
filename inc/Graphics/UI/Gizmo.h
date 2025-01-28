@@ -89,16 +89,16 @@ namespace SR_GRAPH_UI_NS {
         }
 
         void SetMode(GizmoMode mode) { m_mode = mode; }
-        void SetOperation(GizmoOperationFlag operation);
+        void SetOperation(GizmoOperation operation);
 
         SR_NODISCARD virtual GizmoMode GetMode() const { return m_mode; }
-        SR_NODISCARD virtual GizmoOperationFlag GetOperation() const { return m_operation; }
+        SR_NODISCARD virtual GizmoOperation GetOperation() const { return m_operation; }
 
     protected:
         void ProcessGizmo(const SR_MATH_NS::FPoint& mousePos);
         void LoadGizmo();
         void ReleaseGizmo();
-        void LoadMesh(GizmoOperationFlag operation, SR_UTILS_NS::StringAtom path, SR_UTILS_NS::StringAtom name, GizmoMeshLoadMode mode);
+        void LoadMesh(GizmoOperation operation, SR_UTILS_NS::StringAtom path, SR_UTILS_NS::StringAtom name, GizmoMeshLoadMode mode);
         void UpdateGizmoTransform();
 
         virtual void PrepareGizmo() { }
@@ -115,21 +115,21 @@ namespace SR_GRAPH_UI_NS {
         SR_NODISCARD virtual SR_MATH_NS::Matrix4x4 GetGizmoMatrix() const;
         SR_NODISCARD bool IsLocal() const { return GetMode() == GizmoMode::Local; }
 
-        SR_NODISCARD GameObjectPtr GetGameObjectByOperation(GizmoMeshLoadMode mode, GizmoOperationFlag operation) const;
+        SR_NODISCARD GameObjectPtr GetGameObjectByOperation(GizmoMeshLoadMode mode, GizmoOperation operation) const;
 
-        SR_NODISCARD SR_MATH_NS::AxisFlag GetAxis() const;
+        SR_NODISCARD SR_MATH_NS::Axis GetAxis() const;
 
         SR_NODISCARD SR_FORCE_INLINE bool ExecuteInEditMode() const override { return true; }
 
-        SR_NODISCARD SR_MATH_NS::FColor GetColorByOperation(GizmoOperationFlag operation) const;
+        SR_NODISCARD SR_MATH_NS::FColor GetColorByOperation(GizmoOperation operation) const;
 
     private:
         struct MeshInfo {
-            SR_GTYPES_NS::IndexedMeshComponent::Ptr pVisual;
-            SR_GTYPES_NS::IndexedMeshComponent::Ptr pSelection;
+            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::IndexedMesh> pVisual;
+            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::IndexedMesh> pSelection;
             bool isHovered = false;
         };
-        std::map<GizmoOperationFlag, MeshInfo> m_meshes;
+        std::map<GizmoOperation, MeshInfo> m_meshes;
 
         bool m_isGizmoDirty = false;
 
@@ -139,10 +139,10 @@ namespace SR_GRAPH_UI_NS {
         SR_MATH_NS::FPoint m_lastMousePos = SR_MATH_NS::InfinityFV2;
 
         GizmoMode m_mode = GizmoMode::Local;
-        GizmoOperationFlag m_operation = GizmoOperation::TranslateAll;
+        GizmoOperation m_operation = GizmoOperation::TranslateAll;
 
-        GizmoOperationFlag m_activeOperation = GizmoOperation::None;
-        GizmoOperationFlag m_hoveredOperation = GizmoOperation::None;
+        GizmoOperation m_activeOperation = GizmoOperation::None;
+        GizmoOperation m_hoveredOperation = GizmoOperation::None;
 
         SR_MATH_NS::FVector3 m_translationPlanOrigin;
         SR_MATH_NS::FVector3 m_relativeOrigin;

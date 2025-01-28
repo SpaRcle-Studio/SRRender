@@ -18,7 +18,7 @@ namespace SR_GRAPH_NS {
 
     class LightSystem : SR_UTILS_NS::NonCopyable {
     public:
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<SR_GRAPH_NS::RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::RenderScene>;
 
         explicit LightSystem(RenderScenePtr pRenderScene);
         ~LightSystem() override;

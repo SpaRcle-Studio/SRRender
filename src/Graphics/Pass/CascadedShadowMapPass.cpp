@@ -116,7 +116,7 @@ namespace SR_GRAPH_NS {
     }
 
     void CascadedShadowMapPass::UseConstants(ShaderUseInfo info) {
-        info.pShader->SetConstInt(SHADER_SHADOW_CASCADE_INDEX, GetPassPipeline()->GetCurrentFrameBufferLayer());
+        info.pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, GetPassPipeline()->GetCurrentFrameBufferLayer());
         Super::UseConstants(info);
     }
 

@@ -6,10 +6,6 @@
 #include <Utils/ECS/ComponentManager.h>
 
 namespace SR_GTYPES_NS {
-    ProceduralMesh::ProceduralMesh()
-        : Super(MeshType::Procedural)
-    { }
-
     void ProceduralMesh::SetVertices(const std::vector<Vertices::StaticMeshVertex>& vertices) {
         m_indices.clear();
         m_vertices.clear();

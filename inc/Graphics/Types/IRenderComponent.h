@@ -11,6 +11,7 @@ namespace SR_GTYPES_NS {
     class Camera;
 
     class IRenderComponent : public SR_UTILS_NS::Component {
+        SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:
         using RenderScenePtr = RenderScene*;

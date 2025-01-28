@@ -47,6 +47,57 @@ namespace SR_GRAPH_NS {
 
         };
 
+        class BakedMesh : public SR_HTYPES_NS::SharedPtr<BakedMesh> {
+            using Super = SR_HTYPES_NS::SharedPtr<BakedMesh>;
+            friend MeshManager;
+        public:
+            using Ptr = SR_HTYPES_NS::SharedPtr<BakedMesh>;
+
+        public:
+            BakedMesh()
+                : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+            { }
+
+            ~BakedMesh() override;
+
+        public:
+            void Destroy();
+
+            SR_NODISCARD int32_t GetVBO() const noexcept { return m_VBO; }
+            SR_NODISCARD int32_t GetIBO() const noexcept { return m_IBO; }
+            SR_NODISCARD uint32_t GetCountIndices() const noexcept { return m_countIndices; }
+            SR_NODISCARD uint32_t GetCountVertices() const noexcept { return m_countVertices; }
+            SR_NODISCARD uint32_t GetUsages() const noexcept { return m_usages; }
+            SR_NODISCARD uint64_t GetMeshIndex() const noexcept { return m_index; }
+            SR_NODISCARD Pipeline* GetPipeline() const noexcept { return m_pipeline; }
+            SR_NODISCARD SR_HTYPES_NS::RawMesh* GetRawMesh() const noexcept { return m_pRawMesh; }
+
+            void AddUsePoint() {
+                m_usages++;
+            }
+
+            void RemoveUsePoint() {
+                if (m_usages > 0) {
+                    m_usages--;
+                    return;
+                }
+                SRHalt("BakedMesh::RemoveUsePoint() : usages is less than 0!");
+            }
+
+            static Ptr Bake(Pipeline* pPipeline, std::string_view path, uint32_t index, Vertices::VertexType vertexType);
+            static Ptr Bake(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, Vertices::VertexType vertexType);
+
+        private:
+            uint32_t m_usages = 0;
+            SR_HTYPES_NS::RawMesh* m_pRawMesh = nullptr;
+            uint64_t m_index = 0;
+            int32_t m_VBO = SR_ID_INVALID;
+            int32_t m_IBO = SR_ID_INVALID;
+            uint32_t m_countIndices = 0;
+            uint32_t m_countVertices = 0;
+            Pipeline* m_pipeline = nullptr;
+        };
+
         class MeshManager : public SR_UTILS_NS::Singleton<MeshManager> {
             SR_REGISTER_SINGLETON(MeshManager)
             using Hash = uint64_t;
@@ -63,95 +114,28 @@ namespace SR_GRAPH_NS {
             MeshManager();
             ~MeshManager() override = default;
 
+        public:
+            SR_NODISCARD BakedMesh::Ptr BakeMesh(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, Vertices::VertexType vertexType);
+
+            template<MeshMemoryType memType> bool Register(const std::string_view& identifier, uint32_t size, uint32_t id, Vertices::VertexType vertexType);
+            template<Vertices::VertexType vertexType, MeshMemoryType memType> bool Register(const std::string_view& identifier, uint32_t size, uint32_t id);
+
+            template<MeshMemoryType memType> FreeResult Free(int32_t id);
+
+            template<MeshMemoryType memType> int32_t CopyIfExists(const std::string_view& identifier, Vertices::VertexType vertexType);
+            template<Vertices::VertexType vertexType, MeshMemoryType memType> int32_t CopyIfExists(const std::string_view& identifier);
+            template<Vertices::VertexType vertexType, MeshMemoryType memType> uint32_t Size(const std::string_view& identifier);
+
         private:
             VideoResourcesIter FindById(int32_t id, MeshMemoryType memType);
             VideoResourcesIter FindImpl(Hash hash, MeshMemoryType memType);
 
-            bool RegisterImpl(const std::string& identifier, MeshMemoryType memType, uint32_t size, uint32_t id);
+            bool RegisterImpl(const std::string_view& identifier, MeshMemoryType memType, uint32_t size, uint32_t id);
             FreeResult FreeImpl(VideoResourcesIter iter, MeshMemoryType memType);
 
             void OnSingletonDestroy() override;
 
-            template<Vertices::VertexType vertexType, MeshMemoryType memType> VideoResourcesIter Find(const std::string& identifier) {
-                if constexpr (memType == MeshMemoryType::VBO) {
-                    const Hash hash = SR_HASH_STR(identifier + SR_UTILS_NS::EnumReflector::ToStringAtom<Vertices::VertexType>(vertexType).ToStringRef());
-                    return FindImpl(hash, memType);
-                }
-
-                if constexpr (memType == MeshMemoryType::IBO) {
-                    const Hash hash = SR_HASH_STR(identifier);
-                    return FindImpl(hash, memType);
-                }
-
-                SRHalt("Unknown memory type!");
-
-                return std::nullopt;
-            }
-
-        public:
-            template<Vertices::VertexType vertexType, MeshMemoryType memType> bool Register(const std::string_view& identifier, uint32_t size, uint32_t id) {
-                return Register<vertexType, memType>(std::string(identifier), size, id);
-            }
-
-            template<Vertices::VertexType vertexType, MeshMemoryType memType> bool Register(const std::string& identifier, uint32_t size, uint32_t id) {
-                SR_TRACY_ZONE;
-                SR_LOCK_GUARD;
-
-                if (Find<vertexType, memType>(identifier).has_value()) {
-                    SRHalt("MeshManager::Register() : memory already registered!");
-                    return false;
-                }
-
-                if constexpr (memType == MeshMemoryType::VBO) {
-                    return RegisterImpl(identifier + SR_UTILS_NS::EnumReflector::ToStringAtom(vertexType).ToStringRef(), memType, size, id);
-                }
-                else
-                    return RegisterImpl(identifier, memType, size, id);
-            }
-
-            template<MeshMemoryType memType> FreeResult Free(int32_t id) {
-                SR_TRACY_ZONE;
-                SR_LOCK_GUARD;
-
-                if (auto iter = FindById(id, memType); !iter.has_value()) {
-                    SRHalt("Memory isn't registered!");
-                    return FreeResult::NotFound;
-                }
-                else {
-                    return FreeImpl(iter, memType);
-                }
-            }
-
-            template<Vertices::VertexType vertexType, MeshMemoryType memType> int32_t CopyIfExists(const std::string& identifier) {
-                SR_LOCK_GUARD;
-                SR_TRACY_ZONE;
-
-                if (auto memory = Find<vertexType, memType>(identifier); memory.has_value()) {
-                    return memory.value()->second.Copy();
-                }
-
-                return SR_ID_INVALID;
-            }
-
-            template<Vertices::VertexType vertexType, MeshMemoryType memType> uint32_t Size(const std::string& identifier) {
-                SR_LOCK_GUARD;
-
-                if (auto memory = Find<vertexType, memType>(std::string(identifier)); memory.has_value()) {
-                    return memory.value()->second.Size();
-                }
-
-                return 0;
-            }
-
-            template<Vertices::VertexType vertexType, MeshMemoryType memType> int32_t CopyIfExists(const std::string_view& identifier) {
-                SR_LOCK_GUARD;
-
-                if (auto memory = Find<vertexType, memType>(std::string(identifier)); memory.has_value()) {
-                    return memory.value()->second.Copy();
-                }
-
-                return SR_ID_INVALID;
-            }
+            template<MeshMemoryType memType> VideoResourcesIter Find(const std::string_view& identifier, Vertices::VertexType vertexType);
 
         private:
             VideoResources m_IBOs;
@@ -161,6 +145,104 @@ namespace SR_GRAPH_NS {
             HashTable m_VBOTable;
 
         };
+
+        /// ------------------------------------------------------------------------------------------------------------
+
+        template<MeshMemoryType memType>
+        bool MeshManager::Register(const std::string_view& identifier, uint32_t size, uint32_t id, Vertices::VertexType vertexType) {
+            SR_TRACY_ZONE;
+            SR_LOCK_GUARD;
+
+            if (auto iter = Find<memType>(std::string(identifier), vertexType); iter.has_value()) {
+                SRHalt("MeshManager::Register() : memory already registered!");
+                return false;
+            }
+
+            if constexpr (memType == MeshMemoryType::VBO) {
+                return RegisterImpl(std::string(identifier)
+                    + SR_UTILS_NS::EnumReflector::ToStringAtom(vertexType).ToStringRef(), memType, size, id);
+            }
+            else {
+                return RegisterImpl(identifier, memType, size, id);
+            }
+        }
+
+        template<Vertices::VertexType vertexType, MeshMemoryType memType>
+        bool MeshManager::Register(const std::string_view& identifier, uint32_t size, uint32_t id) {
+            SR_TRACY_ZONE;
+            SR_LOCK_GUARD;
+
+            if (Find<memType>(identifier, vertexType).has_value()) {
+                SRHalt("MeshManager::Register() : memory already registered!");
+                return false;
+            }
+
+            if constexpr (memType == MeshMemoryType::VBO) {
+                return RegisterImpl(std::string(identifier)
+                    + SR_UTILS_NS::EnumReflector::ToStringAtom(vertexType).ToStringRef(), memType, size, id);
+            }
+            else {
+                return RegisterImpl(identifier, memType, size, id);
+            }
+        }
+
+        template<MeshMemoryType memType> MeshManager::FreeResult MeshManager::Free(int32_t id) {
+            SR_TRACY_ZONE;
+            SR_LOCK_GUARD;
+
+            if (auto iter = FindById(id, memType); !iter.has_value()) {
+                SRHalt("Memory isn't registered!");
+                return FreeResult::NotFound;
+            }
+            else {
+                return FreeImpl(iter, memType);
+            }
+        }
+
+        template<MeshMemoryType memType>
+        int32_t MeshManager::CopyIfExists(const std::string_view &identifier, Vertices::VertexType vertexType) {
+            SR_LOCK_GUARD;
+            SR_TRACY_ZONE;
+
+            if (auto memory = Find<memType>(identifier, vertexType); memory.has_value()) {
+                return memory.value()->second.Copy();
+            }
+
+            return SR_ID_INVALID;
+        }
+
+        template<Vertices::VertexType vertexType, MeshMemoryType memType>
+        int32_t MeshManager::CopyIfExists(const std::string_view& identifier) {
+            return CopyIfExists<memType>(identifier, vertexType);
+        }
+
+        template<Vertices::VertexType vertexType, MeshMemoryType memType>
+        uint32_t MeshManager::Size(const std::string_view& identifier) {
+            SR_TRACY_ZONE;
+            SR_LOCK_GUARD;
+
+            if (auto memory = Find<memType>(std::string(identifier), vertexType); memory.has_value()) {
+                return memory.value()->second.Size();
+            }
+
+            return 0;
+        }
+
+        template<MeshMemoryType memType>
+        MeshManager::VideoResourcesIter MeshManager::Find(const std::string_view& identifier, Vertices::VertexType vertexType) {
+            if constexpr (memType == MeshMemoryType::VBO) {
+                const Hash hash = SR_HASH_STR_VIEW(std::string(identifier) + SR_UTILS_NS::EnumReflector::ToStringAtom(vertexType).ToStringRef());
+                return FindImpl(hash, memType);
+            }
+
+            if constexpr (memType == MeshMemoryType::IBO) {
+                const Hash hash = SR_HASH_STR_VIEW(identifier);
+                return FindImpl(hash, memType);
+            }
+
+            SRHalt("Unknown memory type!");
+            return std::nullopt;
+        }
     }
 }
 

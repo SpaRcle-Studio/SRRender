@@ -152,6 +152,27 @@ namespace SR_GRAPH_NS {
         Pipeline* m_pipeline = nullptr;
 
     };
+
+    struct RenderQueueInfo {
+        RenderQueueInfo() = default;
+        RenderQueueInfo(RenderQueue* pRenderQueue, const ShaderUseInfo& shaderUseInfo)
+            : pRenderQueue(pRenderQueue)
+            , shaderUseInfo(shaderUseInfo)
+        { }
+
+        RenderQueue* pRenderQueue;
+        ShaderUseInfo shaderUseInfo;
+        bool operator==(const RenderQueueInfo& other) const {
+            return pRenderQueue == other.pRenderQueue;
+        }
+    };
+
+    struct RenderQueuePredicate {
+        using Element = RenderQueueInfo;
+        SR_NODISCARD bool operator()(const Element& left, const Element& right) const noexcept {
+            return left.pRenderQueue < right.pRenderQueue;
+        }
+    };
 }
 
 #endif //SR_ENGINE_GRAPHICS_MESH_RENDER_QUEUE_H

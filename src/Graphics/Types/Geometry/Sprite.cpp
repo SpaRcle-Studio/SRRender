@@ -9,10 +9,6 @@
 #include <Graphics/Utils/MeshUtils.h>
 
 namespace SR_GTYPES_NS {
-    Sprite::Sprite()
-        : Super(MeshType::Sprite)
-    { }
-
     std::string Sprite::GetMeshIdentifier() const {
         static const std::string id = "SpriteFromMemory";
         return id;

@@ -7,22 +7,100 @@
 #include <Graphics/Font/TextBuilder.h>
 
 #include <Utils/Localization/Encoding.h>
+#include <Utils/ECS/SceneObject.h>
+#include <Utils/ECS/Transform2D.h>
+
+#include <Codegen/IText.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    IText::IText()
-        : Super(MeshType::Text)
-    { }
+    Text::Text()
+        : Super()
+    {
+        m_entityMessages.AddStandardProperty<SR_MATH_NS::UVector2>("Atlas size", &m_atlasSize)
+            .SetDontSave()
+            .SetReadOnly();
+    }
 
-    IText::~IText() {
+    Text::~Text() {
         SetFont(nullptr);
     }
 
-    void IText::SetUsePreprocessor(bool enabled) {
+    bool Text::InitializeEntity() noexcept {
+        GetComponentProperties().AddStandardProperty("Is 3D", &m_is3D)
+            .SetSetter([this](void* pValue) { m_is3D = *static_cast<bool*>(pValue); ReRegisterMesh(); });
+
+        GetComponentProperties().AddStandardProperty("Use localization", &m_localization)
+            .SetSetter([this](void* pValue) { SetUseLocalization(*static_cast<bool*>(pValue)); });
+
+        GetComponentProperties().AddStandardProperty("Use preprocessor", &m_preprocessor)
+            .SetSetter([this](void* pValue) { SetUsePreprocessor(*static_cast<bool*>(pValue)); });
+
+        GetComponentProperties().AddStandardProperty("Use kerning", &m_kerning)
+            .SetSetter([this](void* pValue) { SetKerning(*static_cast<bool*>(pValue)); });
+
+        GetComponentProperties().AddStandardProperty("Debug", &m_debug)
+            .SetSetter([this](void* pValue) { SetDebug(*static_cast<bool*>(pValue)); });
+
+        GetComponentProperties().AddStandardProperty("Font size", &m_fontSize)
+            .SetDrag(1)
+            .SetResetValue(512.f)
+            .SetWidth(90.f);
+
+        GetComponentProperties().AddStandardProperty("Text", &m_text)
+            .SetSetter([this](auto&& text) { SetText(*static_cast<SR_HTYPES_NS::UnicodeString*>(text)); })
+            .SetMultiline();
+
+        GetComponentProperties().AddCustomProperty<SR_UTILS_NS::PathProperty>("Font")
+            .AddFileFilter("Mesh", SR_GRAPH_NS::SR_SUPPORTED_FONT_FORMATS)
+            .SetGetter([this]()-> SR_UTILS_NS::Path {
+                return m_font ? m_font->GetResourcePath() : SR_UTILS_NS::Path();
+            })
+            .SetSetter([this](const SR_UTILS_NS::Path& path) {
+                SetFont(path);
+            });
+
+        return Super::InitializeEntity();
+    }
+
+    int64_t Text::GetSortingPriority() const {
+        if (auto&& pTransform = GetTransform()) {
+            if (pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
+                return static_cast<SR_UTILS_NS::Transform2D*>(pTransform)->GetPriority();
+            }
+        }
+
+        return -1;
+    }
+
+    bool Text::HasSortingPriority() const {
+        if (auto&& pTransform = GetTransform()) {
+            return pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
+        }
+        return false;
+    }
+
+    SR_UTILS_NS::StringAtom Text::GetMeshLayer() const {
+        if (!m_sceneObject) {
+            return SR_UTILS_NS::StringAtom();
+        }
+
+        return m_sceneObject->GetLayer();
+    }
+
+    const SR_MATH_NS::Matrix4x4& Text::GetMatrix() const {
+        if (auto&& pTransform = GetTransform()) {
+            return pTransform->GetMatrix();
+        }
+
+        return Super::GetMatrix();
+    }
+
+    void Text::SetUsePreprocessor(bool enabled) {
         m_preprocessor = enabled;
         OnTextDirty();
     }
 
-    bool IText::Calculate() {
+    bool Text::Calculate() {
         if (IsCalculated()) {
             return true;
         }
@@ -39,7 +117,7 @@ namespace SR_GTYPES_NS {
         return Super::Calculate();
     }
 
-    void IText::FreeVideoMemory() {
+    void Text::FreeVideoMemory() {
         SetFont(nullptr);
 
         if (m_id != SR_ID_INVALID) {
@@ -49,14 +127,14 @@ namespace SR_GTYPES_NS {
         Super::FreeVideoMemory();
     }
 
-    void IText::OnTextDirty() {
+    void Text::OnTextDirty() {
         m_isCalculated = false;
         if (auto&& pRenderScene = GetTextRenderScene()) {
             pRenderScene->SetDirty();
         }
     }
 
-    bool IText::BuildAtlas() {
+    bool Text::BuildAtlas() {
         if (!m_font) {
             SR_ERROR("Text::BuildAtlas() : missing font!");
             return false;
@@ -104,12 +182,12 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    void IText::UseMaterial() {
+    void Text::UseMaterial() {
         Super::UseMaterial();
         UseModelMatrix();
     }
 
-    void IText::UseModelMatrix() {
+    void Text::UseModelMatrix() {
         GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
         GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_X, 0.f);
         GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_Y, 0.f);
@@ -119,16 +197,16 @@ namespace SR_GTYPES_NS {
         Super::UseModelMatrix();
     }
 
-    void IText::UseSamplers() {
+    void Text::UseSamplers() {
         GetRenderContext()->GetCurrentShader()->SetSampler2D(SHADER_TEXT_ATLAS_TEXTURE, m_id);
         Mesh::UseSamplers();
     }
 
-    bool IText::IsFlatMesh() const noexcept {
+    bool Text::IsFlatMesh() const noexcept {
         return !m_is3D;
     }
 
-    void IText::SetFont(Font* pFont) {
+    void Text::SetFont(Font* pFont) {
         if (pFont == m_font) {
             return;
         }
@@ -144,17 +222,17 @@ namespace SR_GTYPES_NS {
         OnTextDirty();
     }
 
-    void IText::SetFontSize(const SR_MATH_NS::UVector2& size) {
+    void Text::SetFontSize(const SR_MATH_NS::UVector2& size) {
         m_fontSize = size;
         OnTextDirty();
     }
 
-    void IText::SetUseLocalization(bool enabled) {
+    void Text::SetUseLocalization(bool enabled) {
         m_localization = enabled;
         OnTextDirty();
     }
 
-    void IText::SetText(const std::string& text) {
+    void Text::SetText(const std::string& text) {
         auto&& newText = SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(text);
         if (m_text == newText) {
             return;
@@ -163,7 +241,7 @@ namespace SR_GTYPES_NS {
         OnTextDirty();
     }
 
-    void IText::SetText(const std::u16string& text) {
+    void Text::SetText(const std::u16string& text) {
         auto&& newText = SR_UTILS_NS::Localization::UtfToUtf<char32_t, char16_t>(text);
         if (m_text == newText) {
             return;
@@ -172,7 +250,7 @@ namespace SR_GTYPES_NS {
         OnTextDirty();
     }
 
-    void IText::SetText(const std::u32string& text) {
+    void Text::SetText(const std::u32string& text) {
         if (m_text == text) {
             return;
         }
@@ -180,21 +258,21 @@ namespace SR_GTYPES_NS {
         OnTextDirty();
     }
 
-    bool IText::IsCalculatable() const {
+    bool Text::IsCalculatable() const {
         return Super::IsCalculatable() && !m_text.empty() && m_font;
     }
 
-    void IText::SetKerning(bool enabled) {
+    void Text::SetKerning(bool enabled) {
         m_kerning = enabled;
         OnTextDirty();
     }
 
-    void IText::SetDebug(bool enabled) {
+    void Text::SetDebug(bool enabled) {
         m_debug = enabled;
         OnTextDirty();
     }
 
-    void IText::SetFont(const SR_UTILS_NS::Path& path) {
+    void Text::SetFont(const SR_UTILS_NS::Path& path) {
         SetFont(SR_GTYPES_NS::Font::Load(path));
     }
 }

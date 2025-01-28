@@ -7,7 +7,7 @@
 namespace SR_GRAPH_NS {
     SR_REGISTER_RENDER_PASS(FlatClusterPass)
 
-    MeshClusterTypeFlag FlatClusterPass::GetClusterType() const noexcept {
+    MeshClusterType FlatClusterPass::GetClusterType() const noexcept {
         return MeshClusterType::Flat;
     }
 

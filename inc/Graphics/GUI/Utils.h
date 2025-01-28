@@ -766,6 +766,18 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::Text(text);
     }
 
+    SR_MAYBE_UNUSED static void ColoredText(const char* text, const ImVec4& color) {
+        ImGui::PushStyleColor(ImGuiCol_Text, color);
+        ImGui::Text(text);
+        ImGui::PopStyleColor(1);
+    }
+
+    SR_MAYBE_UNUSED static void ColoredText(const std::string& text, const ImVec4& color) {
+        ImGui::PushStyleColor(ImGuiCol_Text, color);
+        ImGui::Text(text.c_str());
+        ImGui::PopStyleColor(1);
+    }
+
     SR_MAYBE_UNUSED static bool Button(const std::string& label, ImVec4 color = ImVec4(0, 0, 0, 0), ImVec4 hovered = ImVec4(0, 0, 0, 0), void* pIdentifier = nullptr) {
         const auto hasBtnColor = !Vec4Null(color);
         const auto hasHoveredColor = !Vec4Null(hovered);

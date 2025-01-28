@@ -8,8 +8,10 @@
 #include <Utils/ECS/GameObject.h>
 #include <Utils/ECS/Transform2D.h>
 
+//#include <Codegen/MeshComponent.generated.hpp>
+
 namespace SR_GTYPES_NS {
-    IMeshComponent::IMeshComponent(Mesh* pMesh)
+    /*IMeshComponent::IMeshComponent(Mesh* pMesh)
         : Super()
         , m_pInternal(pMesh)
     {
@@ -84,9 +86,8 @@ namespace SR_GTYPES_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    MeshComponent::MeshComponent(MeshType type)
-        : IMeshComponent(this)
-        , Mesh(type)
+    MeshComponent::MeshComponent()
+        : Super()
     { }
 
     const SR_MATH_NS::Matrix4x4& MeshComponent::GetMatrix() const {
@@ -124,9 +125,9 @@ namespace SR_GTYPES_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    IndexedMeshComponent::IndexedMeshComponent(MeshType type)
+    IndexedMeshComponent::IndexedMeshComponent()
         : IMeshComponent(this)
-        , IndexedMesh(type)
+        , IndexedMesh()
     { }
 
     int64_t IndexedMeshComponent::GetSortingPriority() const {
@@ -160,5 +161,5 @@ namespace SR_GTYPES_NS {
         }
 
         return IndexedMesh::GetMatrix();
-    }
+    }*/
 }

@@ -206,7 +206,7 @@ namespace SR_GRAPH_NS {
     }
 
     void MeshDrawerPass::UseConstants(ShaderUseInfo info) {
-        info.pShader->SetConstInt(SHADER_COLOR_BUFFER_MODE, 0);
+        info.pShader->SetConstInt(SHADER_PC_COLOR_BUFFER_MODE, 0);
     }
 
     RenderStrategy* MeshDrawerPass::GetRenderStrategy() const {

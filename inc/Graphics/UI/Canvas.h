@@ -17,7 +17,7 @@ namespace SR_GRAPH_NS::UI {
     class Canvas : public SR_UTILS_NS::Component {
         SR_ENTITY_SET_VERSION(1000);
         SR_INITIALIZE_COMPONENT(Canvas);
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using RenderContextPtr = SR_HTYPES_NS::SafePtr<RenderContext>;
         using Super = SR_UTILS_NS::Component;
     public:

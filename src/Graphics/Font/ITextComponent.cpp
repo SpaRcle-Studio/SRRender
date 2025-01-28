@@ -16,8 +16,10 @@
 #include <Utils/ECS/Transform2D.h>
 #include <Utils/Localization/Encoding.h>
 
+//#include <Codegen/ITextComponent.generated.hpp>
+
 namespace SR_GTYPES_NS {
-    ITextComponent::ITextComponent()
+    /*ITextComponent::ITextComponent()
         : IMeshComponent(this)
     {
         m_entityMessages.AddStandardProperty<SR_MATH_NS::UVector2>("Atlas size", &m_atlasSize)
@@ -97,5 +99,5 @@ namespace SR_GTYPES_NS {
         }
 
         return Mesh::GetMatrix();
-    }
+    }*/
 }

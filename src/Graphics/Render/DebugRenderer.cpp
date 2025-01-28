@@ -12,42 +12,40 @@
 #include <Graphics/Types/Geometry/DebugLine.h>
 #include <Graphics/Material/FileMaterial.h>
 
-namespace SR_GRAPH_NS {
-    DebugRenderer::DebugRenderer(RenderScene* pRenderScene)
-        : Super()
-        , m_renderScene(pRenderScene)
-    { }
+#include <Codegen/DebugRenderer.generated.hpp>
 
+namespace SR_GRAPH_NS {
     DebugRenderer::~DebugRenderer() {
-        SRAssert(m_timedObjects.size() == m_emptyIds.size());
+        SRAssert2(m_timedObjects.IsEmpty(), "DebugRenderer::~DebugRenderer() : timed objects are not empty!");
     }
 
     void DebugRenderer::Init() {
         SR_INFO("DebugRenderer::Init() : initializing debug renderer...");
 
-        m_meshes[0] = SR_HTYPES_NS::RawMesh::Load("Engine/Models/cubeWireframe.obj");
-        m_meshes[1] = SR_HTYPES_NS::RawMesh::Load("Engine/Models/planeWireframe.obj");
-        m_meshes[2] = SR_HTYPES_NS::RawMesh::Load("Engine/Models/sphere_circle.obj");
-        m_meshes[3] = SR_HTYPES_NS::RawMesh::Load("Engine/Models/capsule_circle.obj");
+        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/cubeWireframe.obj", 0, Vertices::VertexType::SimpleVertex));
+        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/planeWireframe.obj", 0, Vertices::VertexType::SimpleVertex));
+        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/sphere_circle.obj", 0, Vertices::VertexType::SimpleVertex));
+        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/capsule_circle.obj", 0, Vertices::VertexType::SimpleVertex));
 
-        for (auto&& pMesh : m_meshes) {
-            if (!pMesh) {
-                SR_ERROR("Failed to load debug mesh!");
-                continue;
+        for (uint64_t i = 0; i < m_meshes.size(); ++i) {
+            if (!m_meshes[i]) {
+                SR_ERROR("DebugRenderer::Init() : failed to load debug mesh on index {}!", i);
             }
-            pMesh->AddUsePoint();
+            else {
+                m_meshes[i]->AddUsePoint();
+            }
         }
 
         using namespace std::placeholders;
 
         SR_UTILS_NS::DebugDraw::Callbacks callbacks;
-        callbacks.removeCallback = std::bind(&DebugRenderer::Remove, this, _1);
-        callbacks.drawLineCallback = std::bind(&DebugRenderer::DrawLine, this, _1, _2, _3, _4, _5);
-        callbacks.drawCubeCallback = std::bind(&DebugRenderer::DrawMesh, this, m_meshes[0], 0, _1, _2, _3, _4, _5, _6);
-        callbacks.drawPlaneCallback = std::bind(&DebugRenderer::DrawMesh, this, m_meshes[1], 0, _1, _2, _3, _4, _5, _6);
-        callbacks.drawSphereCallback = std::bind(&DebugRenderer::DrawMesh, this, m_meshes[2], 0, _1, _2, _3, _4, _5, _6);
-        callbacks.drawCapsuleCallback = std::bind(&DebugRenderer::DrawMesh, this, m_meshes[3], 0, _1, _2, _3, _4, _5, _6);
-        callbacks.drawMeshCallback = std::bind(&DebugRenderer::DrawMesh, this, _1, _2, _3, _4, _5, _6, _7, _8);
+        callbacks.removeCallback = std::bind(&DebugRenderer::Remove, this, _1, true);
+        callbacks.drawLineCallback = std::bind(&DebugRenderer::AddLine, this, _1, _2, _3, _4, _5);
+        callbacks.drawCubeCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 0, _2, _3, _4, _5, _6);
+        callbacks.drawPlaneCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 1, _2, _3, _4, _5, _6);
+        callbacks.drawSphereCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 2, _2, _3, _4, _5, _6);
+        callbacks.drawCapsuleCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 3, _2, _3, _4, _5, _6);
+        callbacks.drawMeshCallback = std::bind(&DebugRenderer::AddCustomMesh, this, _1, _2, _3, _4, _5, _6, _7, _8);
 
         SR_UTILS_NS::DebugDraw::Instance().SetCallbacks(this, std::move(callbacks));
     }
@@ -56,260 +54,163 @@ namespace SR_GRAPH_NS {
         SR_LOCK_GUARD;
         SR_UTILS_NS::DebugDraw::Instance().RemoveCallbacks(this);
 
-        for (auto&& pMesh : m_meshes) {
-            if (pMesh) {
-                pMesh->RemoveUsePoint();
-                pMesh = nullptr;
-            }
+        for (auto&& pBaseMesh : m_meshes) {
+            pBaseMesh->RemoveUsePoint();
         }
 
-        if (m_wireFrameMaterial) {
-            m_wireFrameMaterial->RemoveUsePoint();
-        }
-
-        if (m_lineMaterial) {
-            m_lineMaterial->RemoveUsePoint();
-        }
+        m_meshes.clear();
     }
 
     void DebugRenderer::Prepare() {
-        /// меняем тут, иначе дедлок
+        /// INFO: Меняем тут, иначе будет дедлок
         SR_UTILS_NS::DebugDraw::Instance().SwitchCallbacks(this);
 
         SR_LOCK_GUARD;
 
         auto&& timePoint = SR_HTYPES_NS::Time::Instance().Count();
 
-        for (uint64_t i = 0; i < m_timedObjects.size(); ++i) {
-            auto&& timed = m_timedObjects[i];
+        m_timedObjects.RemoveIf([timePoint](uint64_t /* index */, const DebugTimedObject& timed) {
+            return timed.endTimePoint <= timePoint;
+        },
+        [this](const DebugTimedObject& timed) {
+            m_renderSceneChanged = true;
+            GetRenderScene()->GetPipeline()->SetDirty(true);
 
-            if (!timed.registered) {
-                m_renderScene->Register(timed.pMesh);
-                timed.registered = true;
+            if (timed.drawInfo.type >= DrawType::Mesh) {
+                m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]->RemoveUsePoint();
             }
-
-            if (!timed.pMesh) {
-                continue;
-            }
-
-            if (timed.endPoint <= timePoint && !timed.pMesh->IsUniformsDirty()) {
-                if (!timed.pMesh->DestroyMesh()) {
-                    SRHalt("Failed to unregister mesh!");
-                }
-                timed.pMesh = nullptr;
-                m_emptyIds.emplace_back(i);
-            }
-        }
+        });
     }
 
-    void DebugRenderer::Remove(uint64_t id) {
-        SR_LOCK_GUARD;
-
-        if (id == SR_ID_INVALID || id >= m_timedObjects.size()) {
-            SRHalt0();
-        }
-        else if (m_timedObjects[id].pMesh) {
-            UpdateTimedObject(id, 0.f);
-        }
-    }
-
-    FileMaterial* DebugRenderer::GetWireframeMaterial() const {
-        if (m_wireFrameMaterial) {
-            return m_wireFrameMaterial;
-        }
-        m_wireFrameMaterial = FileMaterial::Load("Engine/Materials/Debug/wireframe.mat");
-
-        if (m_wireFrameMaterial) {
-            m_wireFrameMaterial->AddUsePoint();
-        }
-        return m_wireFrameMaterial;
-    }
-
-    FileMaterial* DebugRenderer::GetLineMaterial() const {
-        if (m_lineMaterial) {
-            return m_lineMaterial;
-        }
-        m_lineMaterial = FileMaterial::Load("Engine/Materials/Debug/line.mat");
-
-        if (m_lineMaterial) {
-            m_lineMaterial->AddUsePoint();
-        }
-        return m_lineMaterial;
-    }
-
-    uint64_t DebugRenderer::DrawLine(uint64_t id, const SR_MATH_NS::FVector3 &start, const SR_MATH_NS::FVector3 &end, const SR_MATH_NS::FColor &color, float_t time) {
-        SR_LOCK_GUARD;
-
-    retry:
-        if (id == SR_ID_INVALID) {
-            if (m_timedObjects.size() == SR_UINT16_MAX) {
-                SRHaltOnce("Too many debug objects!");
-                return SR_ID_INVALID;
-            }
-
-            auto&& pDebugLine = new SR_GTYPES_NS::DebugLine(start, end, color);
-            pDebugLine->SetMaterial(m_lineMaterial);
-            return AddTimedObject(time, pDebugLine);
-        }
-        else if (id >= m_timedObjects.size()) {
-            id = SR_ID_INVALID;
-            goto retry;
-        }
-        else {
-            if (!m_timedObjects[id].pMesh) {
-                return DrawLine(SR_ID_INVALID, start, end, color, time);
-            }
-
-            auto&& pMesh = dynamic_cast<SR_GTYPES_NS::DebugLine*>(m_timedObjects[id].pMesh);
-
-            if (!pMesh && time > 0) {
-                SRHalt0();
-                return SR_ID_INVALID;
-            }
-
-            if (!pMesh) {
-                return SR_ID_INVALID;
-            }
-
-            pMesh->SetColor(color);
-            pMesh->SetStartPoint(start);
-            pMesh->SetEndPoint(end);
-
-            UpdateTimedObject(id, time);
-
-            return id;
-        }
-    }
-
-    uint64_t DebugRenderer::DrawGeometry(const std::string_view& path, uint64_t id, const SR_MATH_NS::FVector3& pos,
-        const SR_MATH_NS::Quaternion& rot, const SR_MATH_NS::FVector3& scale,
-        const SR_MATH_NS::FColor& color, float_t time
-    ) {
-        SR_LOCK_GUARD;
-
-        if (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(SR_UTILS_NS::Path(path))) {
-            return DrawMesh(pRawMesh, 0, id, pos, rot, scale, color, time);
-        }
-
-        return SR_ID_INVALID;
-    }
-
-    uint64_t DebugRenderer::AddTimedObject(float_t seconds, SR_GTYPES_NS::Mesh *pMesh) {
-        SR_LOCK_GUARD;
-
-        auto&& duration = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<float_t>(seconds));
-        auto&& timePoint = SR_HTYPES_NS::Time::Instance().Count();
-
-        DebugTimedObject timedObject{};
-
-        timedObject.pMesh = pMesh;
-        timedObject.startPoint = timePoint;
-        timedObject.duration = duration.count();
-        timedObject.endPoint = timedObject.startPoint + timedObject.duration;
-        timedObject.registered = false;
-
-        if (m_emptyIds.empty()) {
-            m_timedObjects.emplace_back(timedObject);
-            return m_timedObjects.size() - 1;
-        }
-        else {
-            uint64_t id = m_emptyIds.front();
-            m_emptyIds.pop_front();
-            m_timedObjects[id] = timedObject;
-            return id;
-        }
-    }
-
-    void DebugRenderer::UpdateTimedObject(uint64_t id, float_t seconds) {
-        SR_LOCK_GUARD;
-
-        auto&& duration = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<float_t>(seconds));
-        auto&& timePoint = SR_HTYPES_NS::Time::Instance().Count();
-
-        auto&& timedObject = m_timedObjects[id];
-
-        timedObject.startPoint = timePoint;
-        timedObject.duration = duration.count();
-        timedObject.endPoint = timedObject.startPoint + timedObject.duration;
-    }
-
-    void DebugRenderer::Clear() {
-        SR_LOCK_GUARD;
-
-        for (uint64_t i = 0; i < m_timedObjects.size(); ++i) {
-            auto&& timed = m_timedObjects[i];
-
-            if (!timed.pMesh) {
-                continue;
-            }
-
-            if (!timed.pMesh->DestroyMesh() && timed.registered) {
-                SRHalt("Failed to unregister mesh!");
-            }
-
-            timed.pMesh = nullptr;
-
-            m_emptyIds.emplace_back(i);
-        }
-    }
-
-    bool DebugRenderer::IsEmpty() const {
-        return m_timedObjects.size() == m_emptyIds.size();
-    }
-
-    uint64_t DebugRenderer::DrawMesh(SR_HTYPES_NS::RawMesh* pRawMesh, int32_t meshId, uint64_t id, const SR_MATH_NS::FVector3& pos,
-        const SR_MATH_NS::Quaternion& rot, const SR_MATH_NS::FVector3& scale,
-        const SR_MATH_NS::FColor& color, float_t time
-    ) {
+    uint64_t DebugRenderer::AddLine(const uint64_t id, const SR_MATH_NS::FVector3& start, const SR_MATH_NS::FVector3& end, const SR_MATH_NS::FColor& color, float_t seconds) {
         SR_TRACY_ZONE;
         SR_LOCK_GUARD;
 
-        if (id == SR_ID_INVALID) {
-            if (m_timedObjects.size() == SR_UINT16_MAX) {
-                SRHaltOnce("Too many debug objects!");
-                return SR_ID_INVALID;
-            }
+        m_renderSceneChanged = true;
 
-            SR_GTYPES_NS::DebugWireframeMesh* pMesh = dynamic_cast<SR_GTYPES_NS::DebugWireframeMesh *>(
-                SR_GTYPES_NS::Mesh::TryLoad(pRawMesh, MeshType::Wireframe, meshId)
-            );
+        auto&& duration = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<float_t>(seconds));
+        auto&& timePoint = SR_HTYPES_NS::Time::Instance().Count();
 
-            if (pMesh) {
-                pMesh->SetColor(color);
-                pMesh->SetMaterial(m_wireFrameMaterial);
-                pMesh->SetMatrix(SR_MATH_NS::Matrix4x4(pos, rot, scale));
+        DebugTimedObject timed;
+        timed.drawInfo.type = DrawType::Line;
+        timed.drawInfo.start = start;
+        timed.drawInfo.end = end;
+        timed.drawInfo.color = color;
+        timed.duration = duration.count();
+        timed.startTimePoint = timePoint;
+        timed.endTimePoint = timed.startTimePoint + timed.duration;
 
-                return AddTimedObject(time, pMesh);
-            }
-
-            return SR_ID_INVALID;
-        }
-        else if (id >= m_timedObjects.size()) {
-            SRHalt0();
-            return SR_ID_INVALID;
-        }
-        else {
-            if (!m_timedObjects[id].pMesh) {
-                return DrawMesh(pRawMesh, meshId, SR_ID_INVALID, pos, rot, scale, color, time);
-            }
-
-            auto&& pMesh = dynamic_cast<SR_GTYPES_NS::DebugWireframeMesh*>(m_timedObjects[id].pMesh);
-
-            if (!pMesh && time > 0) {
-                SRHalt0();
-                return SR_ID_INVALID;
-            }
-
-            if (!pMesh) {
-                return SR_ID_INVALID;
-            }
-
-            pMesh->SetColor(color);
-            pMesh->SetMatrix(SR_MATH_NS::Matrix4x4(pos, rot, scale));
-
-            UpdateTimedObject(id, time);
-
+        if (m_timedObjects.IsAlive(id)) {
+            Remove(id, false);
+            m_timedObjects.At(id) = timed;
             return id;
         }
+
+        GetRenderScene()->GetPipeline()->SetDirty(true);
+
+        return m_timedObjects.Add(std::move(timed));
+    }
+
+     uint64_t DebugRenderer::AddMesh(const uint64_t id, uint32_t meshId, const SR_MATH_NS::FVector3& pos, const SR_MATH_NS::Quaternion& rot, const SR_MATH_NS::FVector3& scale, const SR_MATH_NS::FColor& color, float_t seconds) {
+        SR_TRACY_ZONE;
+        SR_LOCK_GUARD;
+
+        m_renderSceneChanged = true;
+
+        if (meshId >= m_meshes.size()) {
+            SRHalt("DebugRenderer::DrawMesh() : invalid mesh id \"{}\"!", meshId);
+            return SR_ID_INVALID;
+        }
+
+        m_meshes[meshId]->AddUsePoint();
+
+        auto&& duration = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<float_t>(seconds));
+        auto&& timePoint = SR_HTYPES_NS::Time::Instance().Count();
+
+        DebugTimedObject timed;
+        timed.drawInfo.type = static_cast<DrawType>(meshId);
+        timed.drawInfo.modelMatrix = SR_MATH_NS::Matrix4x4::CreateTRS(pos, rot, scale);
+        timed.drawInfo.color = color;
+        timed.duration = duration.count();
+        timed.startTimePoint = timePoint;
+        timed.endTimePoint = timed.startTimePoint + timed.duration;
+
+        if (m_timedObjects.IsAlive(id)) {
+            Remove(id, false);
+            m_timedObjects.At(id) = timed;
+            return id;
+        }
+
+        GetRenderScene()->GetPipeline()->SetDirty(true);
+
+        return m_timedObjects.Add(std::move(timed));
+    }
+
+     uint64_t DebugRenderer::AddCustomMesh(SR_HTYPES_NS::RawMesh* pRawMesh, int32_t meshIndex, uint64_t id,
+         const SR_MATH_NS::FVector3& pos, const SR_MATH_NS::Quaternion& rot, const SR_MATH_NS::FVector3& scale,
+         const SR_MATH_NS::FColor& color, float_t seconds
+     ) {
+        if (pRawMesh->GetMeshesCount() <= static_cast<uint32_t>(meshIndex)) {
+            SR_ERROR("DebugRenderer::DrawMesh() : invalid mesh index \"{}\"!", meshIndex);
+            return SR_ID_INVALID;
+        }
+
+        int64_t freeIndex = SR_ID_INVALID;
+        for (int64_t i = static_cast<int64_t>(DrawType::CustomMesh); i < m_meshes.size(); ++i) {
+            if (!m_meshes[i]) {
+                freeIndex = i;
+                continue;
+            }
+            if (m_meshes[i]->GetRawMesh() == pRawMesh && m_meshes[i]->GetMeshIndex() == meshIndex) {
+                return AddMesh(id, i, pos, rot, scale, color, seconds);
+            }
+        }
+
+        Memory::BakedMesh::Ptr pMesh = Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), pRawMesh, meshIndex, Vertices::VertexType::SimpleVertex);
+
+        if (freeIndex == SR_ID_INVALID) {
+            m_meshes.emplace_back(pMesh);
+            return AddMesh(id, m_meshes.size() - 1, pos, rot, scale, color, seconds);
+        }
+
+        m_meshes[freeIndex] = pMesh;
+        return AddMesh(id, freeIndex, pos, rot, scale, color, seconds);
+     }
+
+     void DebugRenderer::Remove(uint64_t id, bool fromPool) {
+        SR_TRACY_ZONE;
+        SR_LOCK_GUARD;
+
+        if (id >= m_timedObjects.GetCapacity()) {
+            SRHalt("DebugRenderer::Remove() : out of range with id \"{}\"!", id);
+            return;
+        }
+
+        DebugTimedObject& timed = m_timedObjects.At(id);
+        if (timed.drawInfo.type >= DrawType::Mesh) {
+            m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]->RemoveUsePoint();
+        }
+
+        if (fromPool) {
+            m_renderSceneChanged = true;
+            GetRenderScene()->GetPipeline()->SetDirty(true);
+            m_timedObjects.RemoveByIndex(id);
+        }
+    }
+
+    void DebugRenderer::Clear() {
+        SR_TRACY_ZONE;
+        SR_LOCK_GUARD;
+
+        m_renderSceneChanged = true;
+
+        m_timedObjects.ForEach([this](uint64_t /* index */, const DebugTimedObject& timed) {
+            Remove(timed.endTimePoint, false);
+        });
+        m_timedObjects.Clear();
+    }
+
+    void DebugRenderer::PostUpdate() {
+        m_renderSceneChanged = false;
     }
 }

@@ -335,64 +335,68 @@ namespace SR_GRAPH_NS::Vertices {
         return info;
     }
 
-    template<typename T> static std::vector<T> CastVertices(const std::vector<SR_UTILS_NS::Vertex>& raw) {
+    template<typename T> static std::vector<T> CastVertices(const SR_UTILS_NS::Vertex* pData, uint32_t count) {
         SR_TRACY_ZONE;
 
         auto vertices = std::vector<T>();
 
-        vertices.reserve(raw.size());
+        vertices.reserve(count);
 
         if constexpr (std::is_same<Vertices::SimpleVertex, T>::value) {
-            for (const auto& vertex : raw) {
+            for (uint32_t i = 0; i < count; i++) {
                 vertices.emplace_back(T {
-                        .pos = *reinterpret_cast<glm::vec3*>((void*)&vertex.position),
+                        .pos = *reinterpret_cast<glm::vec3*>((void*)&pData[i].position),
                 });
             }
         }
 
         if constexpr (std::is_same<Vertices::UIVertex, T>::value) {
-            for (const auto& vertex : raw) {
+            for (uint32_t i = 0; i < count; i++) {
                 vertices.emplace_back(T {
-                        .pos = *reinterpret_cast<glm::vec3*>((void*)&vertex.position),
-                        .uv  = *reinterpret_cast<glm::vec2*>((void*)&vertex.uv),
+                        .pos = *reinterpret_cast<glm::vec3*>((void*)&pData[i].position),
+                        .uv  = *reinterpret_cast<glm::vec2*>((void*)&pData[i].uv),
                 });
             }
         }
 
         if constexpr (std::is_same<Vertices::StaticMeshVertex, T>::value) {
-            for (const auto& vertex : raw) {
+            for (uint32_t i = 0; i < count; i++) {
                 vertices.emplace_back(T {
-                        .pos    = *reinterpret_cast<glm::vec3*>((void*)&vertex.position),
-                        .uv     = *reinterpret_cast<glm::vec2*>((void*)&vertex.uv),
-                        .norm   = *reinterpret_cast<glm::vec3*>((void*)&vertex.normal),
-                        .tang   = *reinterpret_cast<glm::vec3*>((void*)&vertex.tangent),
-                        .bitang = *reinterpret_cast<glm::vec3*>((void*)&vertex.bitangent),
+                        .pos    = *reinterpret_cast<glm::vec3*>((void*)&pData[i].position),
+                        .uv     = *reinterpret_cast<glm::vec2*>((void*)&pData[i].uv),
+                        .norm   = *reinterpret_cast<glm::vec3*>((void*)&pData[i].normal),
+                        .tang   = *reinterpret_cast<glm::vec3*>((void*)&pData[i].tangent),
+                        .bitang = *reinterpret_cast<glm::vec3*>((void*)&pData[i].bitangent),
                 });
             }
         }
 
         if constexpr (std::is_same<Vertices::SkinnedMeshVertex, T>::value) {
-            for (const auto& rawVertex : raw) {
+            for (uint32_t i = 0; i < count; i++) {
                 T vertex;
-                vertex.pos    = *reinterpret_cast<glm::vec3*>((void*)&rawVertex.position);
-                vertex.uv     = *reinterpret_cast<glm::vec2*>((void*)&rawVertex.uv);
-                vertex.norm   = *reinterpret_cast<glm::vec3*>((void*)&rawVertex.normal);
-                vertex.tang   = *reinterpret_cast<glm::vec3*>((void*)&rawVertex.tangent);
-                vertex.bitang = *reinterpret_cast<glm::vec3*>((void*)&rawVertex.bitangent);
-                vertex.weightsCount = *reinterpret_cast<uint32_t*>((void*)&rawVertex.weightsNum);
-                for (uint32_t i = 0; i < SR_MAX_BONES_ON_VERTEX; i++) {
-                    vertex.weights[i].x = static_cast<float>(rawVertex.weights[i].boneId);
-                    vertex.weights[i].y = rawVertex.weights[i].weight;
+                vertex.pos    = *reinterpret_cast<glm::vec3*>((void*)&pData[i].position);
+                vertex.uv     = *reinterpret_cast<glm::vec2*>((void*)&pData[i].uv);
+                vertex.norm   = *reinterpret_cast<glm::vec3*>((void*)&pData[i].normal);
+                vertex.tang   = *reinterpret_cast<glm::vec3*>((void*)&pData[i].tangent);
+                vertex.bitang = *reinterpret_cast<glm::vec3*>((void*)&pData[i].bitangent);
+                vertex.weightsCount = *reinterpret_cast<uint32_t*>((void*)&pData[i].weightsNum);
+                for (uint32_t j = 0; j < SR_MAX_BONES_ON_VERTEX; j++) {
+                    vertex.weights[j].x = static_cast<float>(pData[i].weights[j].boneId);
+                    vertex.weights[j].y = pData[i].weights[j].weight;
                 }
                 vertices.emplace_back(vertex);
             }
         }
 
-        if (raw.size() != vertices.size()) {
+        if (count != vertices.size()) {
             SRHalt("Vertices::CastVertices() : sizes is different!");
         }
 
         return vertices;
+    }
+
+    template<typename T> static std::vector<T> CastVertices(const std::vector<SR_UTILS_NS::Vertex>& raw) {
+        return CastVertices<T>(raw.data(), raw.size());
     }
 }
 

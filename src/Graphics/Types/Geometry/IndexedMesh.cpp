@@ -5,6 +5,8 @@
 #include <Utils/Types/RawMesh.h>
 #include <Graphics/Types/Geometry/IndexedMesh.h>
 
+#include <Codegen/IndexedMesh.generated.hpp>
+
 namespace SR_GTYPES_NS {
     IndexedMesh::~IndexedMesh() {
         SRAssert(m_IBO == SR_ID_INVALID && m_VBO == SR_ID_INVALID);

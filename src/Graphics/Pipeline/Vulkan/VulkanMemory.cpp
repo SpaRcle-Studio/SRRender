@@ -192,7 +192,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         return m_descriptorSetPool.Add(pDescriptorSet);
     }
 
-    int32_t MemoryManager::AllocateVBO(uint32_t buffSize, void *data) {
+    int32_t MemoryManager::AllocateVBO(uint32_t buffSize, const void *data) {
         SR_TRACY_ZONE;
 
         VkBufferUsageFlags bufferUsageFlagBits = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -216,7 +216,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         return m_vboPool.Add(pVBO);
     }
 
-    int32_t MemoryManager::AllocateIBO(uint32_t buffSize, void *data)  {
+    int32_t MemoryManager::AllocateIBO(uint32_t buffSize, const void *data)  {
         SR_TRACY_ZONE;
 
         VkBufferUsageFlags bufferUsageFlagBits = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;

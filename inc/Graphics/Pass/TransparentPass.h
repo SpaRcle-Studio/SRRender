@@ -12,7 +12,7 @@ namespace SR_GRAPH_NS {
         SR_REGISTER_LOGICAL_NODE(TransparentPass, Transparent Pass, { "Passes" })
         using Super = IMesh3DClusterPass;
     public:
-        SR_NODISCARD MeshClusterTypeFlag GetClusterType() const noexcept override;
+        SR_NODISCARD MeshClusterType GetClusterType() const noexcept override;
 
     protected:
         void UseSharedUniforms(ShaderPtr pShader) override;

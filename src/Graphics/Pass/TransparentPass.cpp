@@ -11,8 +11,8 @@
 namespace SR_GRAPH_NS {
     SR_REGISTER_RENDER_PASS(TransparentPass)
 
-    MeshClusterTypeFlag TransparentPass::GetClusterType() const noexcept {
-        return static_cast<MeshClusterTypeFlag>(MeshClusterType::Transparent);
+    MeshClusterType TransparentPass::GetClusterType() const noexcept {
+        return static_cast<MeshClusterType>(MeshClusterType::Transparent);
     }
 
     void TransparentPass::UseSharedUniforms(SR_GTYPES_NS::Shader *pShader) {

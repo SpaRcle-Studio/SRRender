@@ -39,7 +39,7 @@ namespace SR_GRAPH_GUI_NS {
         friend class WidgetManager;
         using Super = SR_UTILS_NS::InputHandler;
     public:
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using ContextPtr = RenderContext*;
         using ScenePtr = SR_HTYPES_NS::SharedPtr<SR_WORLD_NS::Scene>;
 

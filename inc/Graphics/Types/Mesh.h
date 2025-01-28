@@ -9,6 +9,7 @@
 #include <Utils/Common/Enumerations.h>
 #include <Utils/Types/SafePointer.h>
 #include <Utils/Types/Function.h>
+#include <Utils/Types/SortedVector.h>
 
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
@@ -17,7 +18,8 @@
 #include <Graphics/Material/MaterialProperty.h>
 #include <Graphics/Memory/DescriptorManager.h>
 #include <Graphics/Material/MeshMaterialProperty.h>
-#include <Utils/Types/SortedVector.h>
+#include <Graphics/Render/RenderQueue.h>
+#include <Graphics/Types/IRenderComponent.h>
 
 namespace SR_UTILS_NS {
     class IResource;
@@ -39,41 +41,20 @@ namespace SR_GRAPH_NS {
 namespace SR_GTYPES_NS {
     class Shader;
 
-    class Mesh : public SR_UTILS_NS::NonCopyable, public Memory::IGraphicsResource {
+    class Mesh : public SR_GTYPES_NS::IRenderComponent, public Memory::IGraphicsResource {
+        SR_CLASS()
+        using Super = SR_GTYPES_NS::IRenderComponent;
     public:
-        using RenderScenePtr = SR_HTYPES_NS::SafePtr<RenderScene>;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using ShaderPtr = Shader*;
         using MaterialPtr = BaseMaterial*;
         using Ptr = Mesh*;
 
-        struct RenderQueueInfo {
-            RenderQueueInfo() = default;
-            RenderQueueInfo(RenderQueue* pRenderQueue, const ShaderUseInfo& shaderUseInfo)
-                : pRenderQueue(pRenderQueue)
-                , shaderUseInfo(shaderUseInfo)
-            { }
-
-            RenderQueue* pRenderQueue;
-            ShaderUseInfo shaderUseInfo;
-            bool operator==(const RenderQueueInfo& other) const {
-                return pRenderQueue == other.pRenderQueue;
-            }
-        };
-
-        struct RenderQueuePredicate {
-            using Element = RenderQueueInfo;
-            SR_NODISCARD bool operator()(const Element& left, const Element& right) const noexcept {
-                return left.pRenderQueue < right.pRenderQueue;
-            }
-        };
-
-        using RenderQueues = SR_HTYPES_NS::SortedVector<RenderQueueInfo, RenderQueuePredicate>;
+        using RenderQueues = SR_HTYPES_NS::SortedVector<SR_GRAPH_NS::RenderQueueInfo, SR_GRAPH_NS::RenderQueuePredicate>;
 
     public:
+        Mesh();
         ~Mesh() override;
-
-    protected:
-        explicit Mesh(MeshType type);
 
     public:
         static std::vector<Mesh::Ptr> Load(const SR_UTILS_NS::Path& path, MeshType type);
@@ -83,42 +64,48 @@ namespace SR_GTYPES_NS {
         static Mesh::Ptr Load(const SR_UTILS_NS::Path& path, MeshType type, SR_UTILS_NS::StringAtom name);
 
     public:
+        SR_NODISCARD bool InitializeEntity() noexcept override;
+        void OnDestroy() override;
+        void OnMatrixDirty() override;
+        void OnLayerChanged() override;
+        void OnPriorityChanged() override;
+        void OnEnable() override;
+        void OnDisable() override;
+
         SR_NODISCARD virtual int32_t GetIBO() { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t GetVBO() { return SR_ID_INVALID; }
 
         SR_NODISCARD virtual bool IsCalculatable() const;
         SR_NODISCARD virtual bool IsUniqueMesh() const { return false; }
 
-        SR_NODISCARD virtual SR_FORCE_INLINE bool IsMeshActive() const noexcept { return !m_hasErrors; }
+        SR_NODISCARD bool IsActive() const noexcept override;
         SR_NODISCARD virtual SR_FORCE_INLINE bool IsFlatMesh() const noexcept { return false; }
-        SR_NODISCARD virtual std::string GetGeometryName() const { return std::string(); }
         SR_NODISCARD virtual std::string GetMeshIdentifier() const;
-        SR_NODISCARD virtual int64_t GetSortingPriority() const { return 0; }
-        SR_NODISCARD virtual bool HasSortingPriority() const { return false; }
-        SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetMeshLayer() const { return SR_UTILS_NS::StringAtom(); }
+        SR_NODISCARD virtual int64_t GetSortingPriority() const;
+        SR_NODISCARD virtual bool HasSortingPriority() const;
+        SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetMeshLayer() const;
         SR_NODISCARD virtual bool IsSupportVBO() const = 0;
         SR_NODISCARD virtual uint32_t GetIndicesCount() const = 0;
-        SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const { return FrustumCullingType::None; }
+        SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
         SR_NODISCARD ShaderPtr GetShader() const;
         SR_NODISCARD MeshMaterialProperty& GetMaterialProperty() noexcept { return m_materialProperty; }
         SR_NODISCARD MaterialPtr GetMaterial() const { return m_materialProperty.GetMaterial(); }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
-        SR_NODISCARD MeshType GetMeshType() const noexcept { return m_meshType; }
+        SR_NODISCARD virtual MeshType GetMeshType() const noexcept = 0;
         SR_NODISCARD bool IsWaitReRegister() const noexcept { return m_isWaitReRegister; }
         SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
         SR_NODISCARD bool IsUniformsDirty() const noexcept { return m_isUniformsDirty; }
         SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
         SR_NODISCARD RenderQueues& GetRenderQueues() noexcept { return m_renderQueues; }
+        SR_NODISCARD std::string GetGeometryName() const { return m_geometryName; }
+        SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const noexcept { return m_frustumCullingType; }
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
 
         virtual void SetMatrix(const SR_MATH_NS::Matrix4x4& matrix);
 
-        SR_NODISCARD virtual const SR_MATH_NS::Matrix4x4& GetMatrix() const {
-            static SR_MATH_NS::Matrix4x4 identity = SR_MATH_NS::Matrix4x4::Identity();
-            return identity;
-        }
+        SR_NODISCARD virtual const SR_MATH_NS::Matrix4x4& GetMatrix() const;
 
         virtual bool OnResourceReloaded(SR_UTILS_NS::IResource* pResource);
         virtual void SetGeometryName(const std::string& name) { }
@@ -155,8 +142,6 @@ namespace SR_GTYPES_NS {
         Memory::UBOManager& m_uboManager;
         SR_GRAPH_NS::DescriptorManager& m_descriptorManager;
 
-        MeshType m_meshType = MeshType::Unknown;
-
         MeshMaterialProperty m_materialProperty;
 
         bool m_isWaitReRegister = false;
@@ -167,8 +152,13 @@ namespace SR_GTYPES_NS {
         int32_t m_virtualUBO = SR_ID_INVALID;
         int32_t m_virtualDescriptor = SR_ID_INVALID;
 
+        /// TODO: remove it
+        std::string m_geometryName;
+
     private:
         std::optional<MeshRegistrationInfo> m_registrationInfo;
+
+        FrustumCullingType m_frustumCullingType = FrustumCullingType::Sphere;
 
     };
 }

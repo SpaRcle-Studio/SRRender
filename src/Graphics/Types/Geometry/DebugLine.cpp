@@ -5,12 +5,8 @@
 #include <Graphics/Types/Geometry/DebugLine.h>
 
 namespace SR_GTYPES_NS {
-    DebugLine::DebugLine()
-        : Super(MeshType::Line)
-    { }
-
     DebugLine::DebugLine(SR_MATH_NS::FVector3 startPoint, SR_MATH_NS::FVector3 endPoint, SR_MATH_NS::FVector4 color)
-        : Super(MeshType::Line)
+        : Super()
         , m_startPoint(startPoint)
         , m_endPoint(endPoint)
         , m_color(color)

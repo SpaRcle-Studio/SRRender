@@ -10,7 +10,7 @@
 namespace SR_GTYPES_NS {
     class Mesh;
     class Shader;
-    class IMeshComponent;
+    //class IMeshComponent;
 }
 
 namespace SR_GRAPH_NS {
@@ -43,7 +43,7 @@ namespace SR_GRAPH_NS {
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_FONT_FORMATS = "ttf";
 
     SR_GTYPES_NS::Mesh* CreateMeshByType(MeshType type);
-    SR_GTYPES_NS::IMeshComponent* CreateMeshComponentByType(MeshType type);
+    //SR_GTYPES_NS::IMeshComponent* CreateMeshComponentByType(MeshType type);
 }
 
 #endif //SR_ENGINE_MESH_UTILS_H

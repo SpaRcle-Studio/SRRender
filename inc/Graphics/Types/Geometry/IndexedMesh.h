@@ -11,12 +11,12 @@
 
 namespace SR_GTYPES_NS {
     class IndexedMesh : public Mesh {
+        SR_CLASS()
     protected:
-        ~IndexedMesh() override;
+        IndexedMesh() = default;
 
-        explicit IndexedMesh(MeshType type)
-            : Mesh(type)
-        { }
+    public:
+        ~IndexedMesh() override;
 
     public:
         SR_NODISCARD int32_t GetIBO() override;
@@ -95,7 +95,7 @@ namespace SR_GTYPES_NS {
                 return false;
             }
 
-            if (m_VBO = m_pipeline->AllocateVBO((void*)vertices.data(), type, m_countVertices); m_VBO == SR_ID_INVALID) {
+            if (m_VBO = m_pipeline->AllocateVBO(static_cast<const void*>(vertices.data()), type, m_countVertices); m_VBO == SR_ID_INVALID) {
                 SR_ERROR("IndexedMesh::CalculateVBO() : failed calculate VBO \"" + GetGeometryName() + "\" mesh!");
                 m_hasErrors = true;
                 return false;
