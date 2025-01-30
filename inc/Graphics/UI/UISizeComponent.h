@@ -22,6 +22,8 @@ namespace SR_GRAPH_UI_NS {
         void OnChanged();
 
     private:
+        /// @property @changeCallback(OnChanged)
+        MeshType m_meshType = MeshType::Static;
         /// @property @changeCallback(OnChanged) @getter(IsWidthChangeable)
         bool m_isWidthChangeable = true;
         /// @property @changeCallback(OnChanged)
@@ -34,16 +36,18 @@ namespace SR_GRAPH_UI_NS {
         uint64_t m_uint64 = 500 + 400;
         /// @property @changeCallback(OnChanged)
         float_t m_height = 200.0f;
-        /// @property @changeCallback(OnChanged)
-        SR_MATH_NS::FSize2 m_size;
-        /// @property @changeCallback(OnChanged) @drag(0.01f) @resetValue(1.0f)
+        /// @property @changeCallback(OnChanged) @drag(0.01f) @resetValue(SR_MATH_NS::FVector3(1.0f, 0.0f, 2.0f))
         SR_MATH_NS::FVector3 m_position;
+        /// @property @changeCallback(OnChanged) @drag(0.01f)
+        SR_MATH_NS::FVector6 m_6d;
         /// @property @changeCallback(OnChanged)
         SR_MATH_NS::FVector2 m_2d;
         /// @property @changeCallback(OnChanged)
         SR_MATH_NS::BVector4 m_4db;
         /// @property @readOnly
         bool m_hasChanged = false;
+        /// @property @changeCallback(OnChanged)
+        SR_MATH_NS::FSize2 m_size;
         /// @property @getter(GetTest)
         std::vector<float> m_test;
 
