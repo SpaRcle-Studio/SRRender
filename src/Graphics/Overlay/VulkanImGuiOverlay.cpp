@@ -619,4 +619,12 @@ namespace SR_GRAPH_NS {
         m_submitInfo.SetWaitDstStageMask(pKernel->GetSubmitPipelineStages());
         m_submitInfo.AddSignalSemaphore(m_semaphore);
     }
+
+    void VulkanImGuiOverlay::ReloadFonts() {
+        Super::ReloadFonts();
+
+        if (ImGui::GetIO().BackendRendererUserData) {
+            ImGui_ImplVulkan_CreateFontsTexture();
+        }
+    }
 }

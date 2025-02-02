@@ -39,10 +39,10 @@ namespace SR_GRAPH_NS {
     RenderPassMap& GetRenderPassMap();
 
     class BasePass : public SR_UTILS_NS::ResourceContainer, public SR_SRLM_NS::IExecutableNode {
+        using Super = SR_UTILS_NS::ResourceContainer;
     public:
         using ShaderPtr = SR_GTYPES_NS::Shader*;
         using MeshPtr = SR_GTYPES_NS::Mesh*;
-        using Super = SR_UTILS_NS::ResourceContainer;
         using CameraPtr = SR_GTYPES_NS::Camera*;
         using Context = RenderContext*;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;

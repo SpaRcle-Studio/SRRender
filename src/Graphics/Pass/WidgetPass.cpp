@@ -7,8 +7,17 @@
 namespace SR_GRAPH_NS {
     SR_REGISTER_RENDER_PASS(WidgetPass)
 
+    void WidgetPass::Prepare()
+    {
+        Super::Prepare();
+
+        if (auto&& pPipeline = GetContext()->GetPipeline()) {
+            pPipeline->PrepareOverlay(OverlayType::ImGui);
+        }
+    }
+
     bool WidgetPass::Overlay() {
-        auto&& pipeline = GetContext()->GetPipeline();
+        auto&& pPipeline = GetContext()->GetPipeline();
 
         auto&& widgetManagers = GetRenderScene()->GetWidgetManagers();
 
@@ -16,7 +25,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        if (pipeline->BeginDrawOverlay(OverlayType::ImGui)) {
+        if (pPipeline->BeginDrawOverlay(OverlayType::ImGui)) {
             /// Во время отрисовки виджета он может быть удален
             for (uint16_t i = 0; ; ++i) {
                 if (i >= widgetManagers.size()) {
@@ -26,7 +35,7 @@ namespace SR_GRAPH_NS {
                 widgetManagers[i]->Draw();
             }
 
-            pipeline->EndDrawOverlay(OverlayType::ImGui);
+            pPipeline->EndDrawOverlay(OverlayType::ImGui);
 
             return true;
         }

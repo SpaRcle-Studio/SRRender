@@ -35,6 +35,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD EvoVulkan::SubmitInfo& GetSubmitInfo() { return m_submitInfo; }
 
         void ResetSubmitInfo();
+        void ReloadFonts() override;
 
         void Destroy() override;
 

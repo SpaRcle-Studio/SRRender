@@ -10,7 +10,9 @@
 namespace SR_GRAPH_NS {
     class WidgetPass : public BasePass {
         SR_REGISTER_LOGICAL_NODE(WidgetPass, Widget Pass, { "Passes" })
+        using Super = BasePass;
     public:
+        void Prepare() override;
         bool Overlay() override;
 
     };

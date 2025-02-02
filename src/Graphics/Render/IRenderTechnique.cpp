@@ -42,7 +42,7 @@ namespace SR_GRAPH_NS {
     void IRenderTechnique::Prepare() {
         SR_TRACY_ZONE;
 
-        if ((m_dirty && !Build()) || !m_camera || !m_camera->IsActive()) {
+        if ((m_dirty && !Build()) || (m_camera && !m_camera->IsActive())) {
             return;
         }
 
@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS {
     void IRenderTechnique::Update() {
         SR_TRACY_ZONE;
 
-        if (m_dirty || !m_camera || !m_camera->IsActive()) {
+        if (m_dirty || (m_camera && !m_camera->IsActive())) {
             return;
         }
 

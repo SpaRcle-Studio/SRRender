@@ -355,6 +355,15 @@ namespace SR_GRAPH_NS {
         return pIt->second;
     }
 
+    void Pipeline::PrepareOverlay(OverlayType overlayType) {
+        SR_TRACY_ZONE;
+        auto&& pIt = m_overlays.find(overlayType);
+        if (pIt == m_overlays.end() || !pIt->second) {
+            return;
+        }
+        pIt->second->Prepare();
+    }
+
     void Pipeline::PipelineError(const std::string& msg) const {
         ++m_errorsCount;
         SR_ERROR(msg);

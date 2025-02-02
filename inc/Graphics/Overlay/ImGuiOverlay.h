@@ -26,12 +26,19 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD ImFont* GetIconFont() const { return m_iconFont; }
         SR_NODISCARD ImFont* GetMainFont() const { return m_mainFont; }
 
+        void Prepare() override;
         void Destroy() override;
+
+    protected:
+        virtual void ReloadFonts();
 
     protected:
         ImGuiContext* m_context = nullptr;
         ImFont* m_mainFont = nullptr;
         ImFont* m_iconFont = nullptr;
+
+        float_t m_fontSize = 12.0f;
+        float_t m_iconFontSize = 40.0f;
 
         SR_UTILS_NS::Path m_iniPathEditor;
         SR_UTILS_NS::Path m_iniPathWidgets;

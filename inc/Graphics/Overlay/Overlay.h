@@ -26,7 +26,6 @@ namespace SR_GRAPH_NS {
 
     public:
         explicit Overlay(PipelinePtr pPipeline);
-        virtual ~Overlay() = default;
 
     public:
         SR_NODISCARD virtual bool Init() = 0;
@@ -34,12 +33,14 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual bool ReCreate() = 0;
         SR_NODISCARD bool IsSurfaceDirty() const noexcept { return m_surfaceDirty; }
         SR_NODISCARD bool IsEnabled() const noexcept { return m_enabled; }
+        SR_NODISCARD const PipelinePtr& GetPipeline() const noexcept { return m_pipeline; }
 
         SR_NODISCARD virtual void* GetTextureDescriptorSet(uint32_t textureId) { return nullptr; }
         SR_NODISCARD virtual std::string GetName() const = 0;
 
         virtual void Destroy() = 0;
 
+        virtual void Prepare() { }
         virtual bool BeginDraw() = 0;
         virtual void EndDraw() = 0;
 

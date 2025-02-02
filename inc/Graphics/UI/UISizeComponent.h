@@ -16,7 +16,7 @@ namespace SR_GRAPH_UI_NS {
         void Prepare(SR_UTILS_NS::UI::UIModifierContext& context) const override;
 
         SR_NODISCARD const bool& IsWidthChangeable() const { return m_isWidthChangeable; }
-        std::vector<float> GetTest() { return m_test; }
+        std::vector<float>& GetTest() { return m_test; }
 
     protected:
         void OnChanged();
@@ -44,12 +44,24 @@ namespace SR_GRAPH_UI_NS {
         SR_MATH_NS::FVector2 m_2d;
         /// @property @changeCallback(OnChanged)
         SR_MATH_NS::BVector4 m_4db;
-        /// @property @readOnly
+        /// @property @readOnly @dontSave
         bool m_hasChanged = false;
         /// @property @changeCallback(OnChanged)
         SR_MATH_NS::FSize2 m_size;
         /// @property @getter(GetTest)
         std::vector<float> m_test;
+        /// @property
+        std::vector<std::vector<int>> m_test2;
+        /// @property
+        std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<float_t>>>>>> m_test4;
+        /// @property
+        std::vector<int> m_test3 = { 1, 2, 3 };
+        /// @property
+        std::vector<SR_MATH_NS::FVector3> m_testMathVector3;
+        /// @property
+        std::vector<std::vector<SR_MATH_NS::FVector4>> m_testMathVector4;
+        /// @property
+        std::vector<SR_UTILS_NS::PlatformType> m_testPlatformType;
 
     };
 }

@@ -6,6 +6,8 @@
 #include <Graphics/GUI/Editor/Theme.h>
 #include <Graphics/GUI/Icons.h>
 
+#include <Utils/Common/StoreUtils.h>
+
 namespace SR_GRAPH_NS {
     bool ImGuiOverlay::Init() {
         SR_GRAPH("ImGuiOverlay::Init() : initializing ImGui...");
@@ -15,40 +17,7 @@ namespace SR_GRAPH_NS {
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         ImGuiStyle& style = ImGui::GetStyle();
 
-        auto&& fontPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/tahoma.ttf");
-
-        SR_GRAPH("ImGuiOverlay::Init() : load editor font...\n\tPath: " + fontPath.ToString());
-        if (fontPath.Exists()) {
-            ImFontConfig font_config;
-            font_config.OversampleH = 1; /// Or 2 is the same
-            font_config.OversampleV = 1;
-            font_config.PixelSnapH = true;
-
-            static const ImWchar ranges[] = {
-                0x0020, 0x00FF, /// Basic Latin + Latin Supplement
-                0x0400, 0x044F, /// Cyrillic
-                0,
-            };
-
-            m_mainFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 12.0f, nullptr, ranges);
-        }
-        else {
-            SR_ERROR("ImGuiOverlay::Init() : file not found!\n\tPath: " + fontPath.ToString());
-        }
-
-        auto&& iconsFont = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/fa-solid-900.ttf");
-
-        SR_GRAPH("ImGuiOverlay::Init() : load icon font...\n\tPath: " + iconsFont.ToString());
-        if (iconsFont.Exists()) {
-            ImFontConfig config;
-            config.MergeMode = false;
-            config.GlyphMinAdvanceX = 13.0f;
-            static const ImWchar icon_ranges[] = { SR_ICON_MIN, SR_ICON_MAX, 0 };
-            m_iconFont = ImGui::GetIO().Fonts->AddFontFromFileTTF(iconsFont.CStr(), 40.0f, &config, icon_ranges);
-        }
-        else {
-            SR_ERROR("ImGuiOverlay::Init() : file not found! \n\tPath: " + iconsFont.ToString());
-        }
+        ReloadFonts();
 
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -90,10 +59,89 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
+    void ImGuiOverlay::Prepare() {
+        SR_TRACY_ZONE;
+
+        Super::Prepare();
+
+        const bool isFontChanged =
+            m_fontSize != SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiFontSize", m_fontSize) ||
+            m_iconFontSize != SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiIconFontSize", m_iconFontSize);
+
+        if (isFontChanged) {
+            ReloadFonts();
+            GetPipeline()->SetDirty(true);
+        }
+    }
+
     void ImGuiOverlay::Destroy() {
         if (m_context) {
             ImGui::DestroyContext(m_context);
             m_context = nullptr;
+        }
+    }
+
+    void ImGuiOverlay::ReloadFonts() {
+        SR_TRACY_ZONE;
+
+        SR_INFO("ImGuiOverlay::ReloadFonts() : reloading fonts...");
+
+        m_fontSize = SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiFontSize", m_fontSize);
+        m_iconFontSize = SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiIconFontSize", m_iconFontSize);
+
+        SR_UTILS_NS::StoreUtils::User::SetFloat("ImGuiFontSize", m_fontSize);
+        SR_UTILS_NS::StoreUtils::User::SetFloat("ImGuiIconFontSize", m_iconFontSize);
+
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+        io.Fonts->Clear();
+
+        auto&& fontPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/tahoma.ttf");
+
+        SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: " + fontPath.ToString());
+        if (fontPath.Exists()) {
+            ImFontConfig font_config;
+            font_config.OversampleH = 1; /// Or 2 is the same
+            font_config.OversampleV = 1;
+            font_config.PixelSnapH = true;
+
+            static const ImWchar ranges[] = {
+                0x0020, 0x00FF, /// Basic Latin + Latin Supplement
+                0x0400, 0x044F, /// Cyrillic
+                0,
+            };
+
+            m_mainFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), m_fontSize, nullptr, ranges);
+        }
+        else {
+            SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found!\n\tPath: " + fontPath.ToString());
+        }
+
+        auto&& iconsFont = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/fa-solid-900.ttf");
+
+        SR_GRAPH("ImGuiOverlay::ReloadFonts() : load icon font...\n\tPath: " + iconsFont.ToString());
+        if (iconsFont.Exists()) {
+            ImFontConfig config;
+            config.MergeMode = false;
+            config.GlyphMinAdvanceX = 13.0f;
+            static const ImWchar icon_ranges[] = { SR_ICON_MIN, SR_ICON_MAX, 0 };
+            m_iconFont = ImGui::GetIO().Fonts->AddFontFromFileTTF(iconsFont.CStr(), m_iconFontSize, &config, icon_ranges);
+        }
+        else {
+            SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found! \n\tPath: " + iconsFont.ToString());
+        }
+
+        SR_GRAPH("ImGuiOverlay::ReloadFonts() : build fonts...");
+        if (!io.Fonts->Build()) {
+            SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to build fonts!");
+            return;
+        }
+
+        if (m_mainFont && m_iconFont) {
+            SR_GRAPH("ImGuiOverlay::ReloadFonts() : fonts loaded successfully!");
+        }
+        else {
+            SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to load fonts!");
         }
     }
 

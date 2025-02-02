@@ -766,6 +766,57 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::Text(text);
     }
 
+    SR_MAYBE_UNUSED static ImGuiDataType_ GetImGuiDataType(std::string_view type) {
+        static const std::map<std::string_view, ImGuiDataType_> table = {
+            { "int", ImGuiDataType_::ImGuiDataType_S32 },
+            { "unsigned int", ImGuiDataType_::ImGuiDataType_U32 },
+            { "float", ImGuiDataType_::ImGuiDataType_Float },
+            { "double", ImGuiDataType_::ImGuiDataType_Double }
+        };
+        if (auto it = table.find(type); it != table.end()) {
+            return it->second;
+        }
+        return ImGuiDataType_::ImGuiDataType_COUNT;
+    }
+
+    SR_MAYBE_UNUSED static ImGuiDataType_ GetImGuiDataType(uint64_t size, bool isSigned, bool isIntegral) {
+        static const std::map<uint64_t, ImGuiDataType_> signedTable = {
+            { 1, ImGuiDataType_::ImGuiDataType_S8  },
+            { 2, ImGuiDataType_::ImGuiDataType_S16 },
+            { 4, ImGuiDataType_::ImGuiDataType_S32 },
+            { 8, ImGuiDataType_::ImGuiDataType_S64 }
+        };
+
+        static const std::map<uint64_t, ImGuiDataType_> unsignedTable = {
+            { 1, ImGuiDataType_::ImGuiDataType_U8  },
+            { 2, ImGuiDataType_::ImGuiDataType_U16 },
+            { 4, ImGuiDataType_::ImGuiDataType_U32 },
+            { 8, ImGuiDataType_::ImGuiDataType_U64 }
+        };
+
+        if (!isIntegral) {
+            if (size == 4) {
+                return ImGuiDataType_::ImGuiDataType_Float;
+            } else if (size == 8) {
+                return ImGuiDataType_::ImGuiDataType_Double;
+            }
+            return ImGuiDataType_::ImGuiDataType_COUNT;
+        }
+
+        if (isSigned) {
+            if (auto it = signedTable.find(size); it != signedTable.end()) {
+                return it->second;
+            }
+        }
+        else {
+            if (auto it = unsignedTable.find(size); it != unsignedTable.end()) {
+                return it->second;
+            }
+        }
+
+        return ImGuiDataType_::ImGuiDataType_COUNT;
+    }
+
     SR_MAYBE_UNUSED static void ColoredText(const char* text, const ImVec4& color) {
         ImGui::PushStyleColor(ImGuiCol_Text, color);
         ImGui::Text(text);
