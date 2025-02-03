@@ -12,6 +12,6 @@ namespace SR_GRAPH_UI_NS {
     }
 
     void UISizeComponent::OnChanged() {
-        m_hasChanged = true;
+
     }
 }
