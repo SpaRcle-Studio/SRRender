@@ -17,13 +17,20 @@ namespace SR_GRAPH_GUI_NS {
     public:
         explicit ImGuiDisabledLockGuard(bool disabled)
             : SR_UTILS_NS::NonCopyable()
+            , m_disabled(disabled)
         {
-            ImGui::BeginDisabled(disabled);
+            if (m_disabled) {
+                ImGui::BeginDisabled(true);
+            }
         }
 
         ~ImGuiDisabledLockGuard() override {
-            ImGui::EndDisabled();
+            if (m_disabled) {
+                ImGui::EndDisabled();
+            }
         }
+    private:
+        bool m_disabled = false;
     };
 
     SR_MAYBE_UNUSED static ImVec4 MakeDisableColor(ImVec4 color) {
@@ -827,6 +834,20 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::PushStyleColor(ImGuiCol_Text, color);
         ImGui::Text(text.c_str());
         ImGui::PopStyleColor(1);
+    }
+
+    SR_MAYBE_UNUSED static uint32_t BeginForceEnabled() {
+        const uint32_t stackSize = GImGui->DisabledStackSize;
+        for (uint32_t i = 0; i < stackSize; ++i) {
+            ImGui::EndDisabled();
+        }
+        return stackSize;
+    }
+
+    SR_MAYBE_UNUSED static void EndForceEnabled(uint32_t stackSize) {
+        for (uint32_t i = 0; i < stackSize; ++i) {
+            ImGui::BeginDisabled();
+        }
     }
 
     SR_MAYBE_UNUSED static bool Button(const std::string& label, ImVec4 color = ImVec4(0, 0, 0, 0), ImVec4 hovered = ImVec4(0, 0, 0, 0), void* pIdentifier = nullptr) {

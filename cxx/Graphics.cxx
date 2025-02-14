@@ -92,6 +92,7 @@
 #include "../src/Graphics/Material/BaseMaterial.cpp"
 #include "../src/Graphics/Material/FileMaterial.cpp"
 #include "../src/Graphics/Material/UniqueMaterial.cpp"
+#include "../src/Graphics/Material/MaterialData.cpp"
 
 #include "../src/Graphics/Utils/MeshUtils.cpp"
 #include "../src/Graphics/Utils/AtlasBuilder.cpp"

@@ -431,6 +431,10 @@ namespace SR_GRAPH_UI_NS {
                 isScaleOperation ? m_modelMatrix.GetScale() : SR_MATH_NS::FVector3(1.f)
         );
 
+        if (!m_modelMatrix.IsFinite()) {
+            m_modelMatrix = SR_MATH_NS::Matrix4x4::Identity();
+        }
+
         if (IsHandledAnotherObject()) {
             GetTransform()->SetTranslation(m_modelMatrix.GetTranslate());
             GetTransform()->SetRotation(m_modelMatrix.GetQuat());

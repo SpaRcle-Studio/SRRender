@@ -9,11 +9,13 @@
 
 namespace SR_GRAPH_NS {
     class UniqueMaterial : public BaseMaterial {
+        SR_CLASS()
         using Super = BaseMaterial;
     public:
         using Ptr = UniqueMaterial*;
 
     public:
+        SR_NODISCARD const MaterialData::Ptr& GetMaterialData() const noexcept override;
         SR_NODISCARD MaterialType GetMaterialType() const noexcept override;
 
         void UnregisterMesh(uint32_t *pId) override;

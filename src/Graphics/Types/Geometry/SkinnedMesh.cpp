@@ -32,10 +32,6 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
-            SR_LOG("SkinnedMesh::Calculate() : calculating \"" + m_geometryName + "\"...");
-        }
-
         if (!CalculateVBO<Vertices::VertexType::SkinnedMeshVertex, Vertices::SkinnedMeshVertex>([this]() {
             return Vertices::CastVertices<Vertices::SkinnedMeshVertex>(GetVertices());
         })) {

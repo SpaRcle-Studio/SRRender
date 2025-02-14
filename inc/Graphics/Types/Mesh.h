@@ -47,7 +47,7 @@ namespace SR_GTYPES_NS {
     public:
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using ShaderPtr = Shader*;
-        using MaterialPtr = BaseMaterial*;
+        using MaterialPtr = SR_HTYPES_NS::SharedPtr<BaseMaterial>;
         using Ptr = Mesh*;
 
         using RenderQueues = SR_HTYPES_NS::SortedVector<SR_GRAPH_NS::RenderQueueInfo, SR_GRAPH_NS::RenderQueuePredicate>;
@@ -64,7 +64,8 @@ namespace SR_GTYPES_NS {
         static Mesh::Ptr Load(const SR_UTILS_NS::Path& path, MeshType type, SR_UTILS_NS::StringAtom name);
 
     public:
-        SR_NODISCARD bool InitializeEntity() noexcept override;
+        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
+
         void OnDestroy() override;
         void OnMatrixDirty() override;
         void OnLayerChanged() override;
@@ -89,8 +90,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
         SR_NODISCARD ShaderPtr GetShader() const;
-        SR_NODISCARD MeshMaterialProperty& GetMaterialProperty() noexcept { return m_materialProperty; }
-        SR_NODISCARD MaterialPtr GetMaterial() const { return m_materialProperty.GetMaterial(); }
+        SR_NODISCARD const MaterialPtr& GetMaterial() const noexcept { return m_material; }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
         SR_NODISCARD virtual MeshType GetMeshType() const noexcept = 0;
         SR_NODISCARD bool IsWaitReRegister() const noexcept { return m_isWaitReRegister; }
@@ -125,7 +125,7 @@ namespace SR_GTYPES_NS {
         void ReRegisterMesh();
         void UnRegisterMesh();
 
-        void SetMaterial(BaseMaterial* pMaterial);
+        void SetMaterial(const MaterialPtr& pMaterial);
         void SetMaterial(const SR_UTILS_NS::Path& path);
 
         void SetErrorsClean() { m_hasErrors = false; }
@@ -142,23 +142,31 @@ namespace SR_GTYPES_NS {
         Memory::UBOManager& m_uboManager;
         SR_GRAPH_NS::DescriptorManager& m_descriptorManager;
 
-        MeshMaterialProperty m_materialProperty;
-
-        bool m_isWaitReRegister = false;
-        bool m_hasErrors = false;
-        bool m_dirtyMaterial = false;
-        bool m_isUniformsDirty = false;
-
         int32_t m_virtualUBO = SR_ID_INVALID;
         int32_t m_virtualDescriptor = SR_ID_INVALID;
 
-        /// TODO: remove it
+    protected:
+        /// @virtualProperty(meshType) @getter(GetMeshType) @readOnly @dontSave
+        SR_VIRTUAL_PROPERTY
+        /// TODO: remove geometry name
+        /// @property @readOnly @dontSave
         std::string m_geometryName;
+        /// @property @setter(SetMaterial) @getter(GetMaterial)
+        MaterialPtr m_material;
+        /// @property
+        FrustumCullingType m_frustumCullingType = FrustumCullingType::Sphere;
+        /// @property @readOnly @dontSave
+        bool m_isWaitReRegister = false;
+        /// @property @readOnly @dontSave
+        bool m_hasErrors = false;
+        /// @property @readOnly @dontSave
+        bool m_dirtyMaterial = false;
+        /// @property @readOnly @dontSave
+        bool m_isUniformsDirty = false;
 
     private:
         std::optional<MeshRegistrationInfo> m_registrationInfo;
-
-        FrustumCullingType m_frustumCullingType = FrustumCullingType::Sphere;
+        uint32_t m_materialRegisterId = SR_ID_INVALID;
 
     };
 }

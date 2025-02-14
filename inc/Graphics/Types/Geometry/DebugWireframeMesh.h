@@ -14,7 +14,7 @@
 namespace SR_GTYPES_NS {
     class DebugWireframeMesh final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(DebugWireframeMesh, 1000)
+        SR_REGISTER_NEW_COMPONENT(DebugWireframeMesh, 1001)
         using Super = IndexedMesh;
     public:
         typedef Vertices::SimpleVertex VertexType;

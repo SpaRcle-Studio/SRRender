@@ -5,53 +5,42 @@
 #include <Graphics/Material/FileMaterial.h>
 #include <Graphics/Types/Shader.h>
 
+#include <Codegen/FileMaterial.generated.hpp>
+
 namespace SR_GRAPH_NS {
-    FileMaterial::FileMaterial()
-        : BaseMaterial()
-        , IResource(SR_COMPILE_TIME_CRC32_TYPE_NAME(FileMaterial))
+    FileMaterialResource::FileMaterialResource()
+        : IResource(SR_COMPILE_TIME_CRC32_TYPE_NAME(FileMaterialResource))
     { }
 
-    FileMaterial::~FileMaterial() = default;
-
-    uint32_t FileMaterial::RegisterMesh(BaseMaterial::MeshPtr pMesh) {
-        AddUsePoint();
-        return BaseMaterial::RegisterMesh(pMesh);
-    }
-
-    void FileMaterial::UnregisterMesh(uint32_t* pId) {
-        RemoveUsePoint();
-        BaseMaterial::UnregisterMesh(pId);
-    }
-
-    SR_UTILS_NS::IResource::Ptr FileMaterial::CopyResource(SR_UTILS_NS::IResource::Ptr pDestination) const {
+    SR_UTILS_NS::IResource::Ptr FileMaterialResource::CopyResource(SR_UTILS_NS::IResource::Ptr pDestination) const {
         SRHalt("Material is not are copyable!");
         return nullptr;
     }
 
-    FileMaterial::Ptr FileMaterial::Load(SR_UTILS_NS::Path rawPath) {
+    FileMaterialResource* FileMaterialResource::Load(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
 
         auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
 
-        FileMaterial* pMaterial = nullptr;
+        FileMaterialResource* pMaterial = nullptr;
 
         resourceManager.Execute([&](){
             auto&& path = rawPath.SelfRemoveSubPath(resourceManager.GetResPathRef());
             if (!resourceManager.GetResPathRef().Concat(path).Exists()) {
-                SR_WARN("Material::Load() : path to the material doesn't exist! Loading is aborted.\n\tPath: " + path.ToStringRef());
+                SR_WARN("FileMaterialResource::Load() : path to the material doesn't exist! Loading is aborted.\n\tPath: " + path.ToStringRef());
                 return;
             }
 
-            if ((pMaterial = resourceManager.Find<FileMaterial>(path))) {
+            if ((pMaterial = resourceManager.Find<FileMaterialResource>(path))) {
                 return;
             }
 
-            pMaterial = new FileMaterial();
+            pMaterial = new FileMaterialResource();
 
             pMaterial->SetId(path.ToStringRef(), false);
 
             if (!pMaterial->Reload()) {
-                delete pMaterial;
+                pMaterial->DeleteResource();
                 pMaterial = nullptr;
                 return;
             }
@@ -62,132 +51,149 @@ namespace SR_GRAPH_NS {
         return pMaterial;
     }
 
-    void FileMaterial::OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) {
-        bool hasChangedTexture = false;
-
-        for (auto&& pTexture : GetTexturesFromMatProperties(m_properties)) {
-            if (pTexture == pContainer) {
-                hasChangedTexture = true;
-                break;
-            }
-        }
-
-        if (hasChangedTexture || m_dirtyShader) {
-            m_meshes.ForEach([](uint32_t, auto&& pMesh) {
-                pMesh->MarkMaterialDirty();
-            });
-        }
-
-        IResource::OnResourceUpdated(pContainer, depth);
-    }
-
-    bool FileMaterial::Load() {
+    bool FileMaterialResource::Load() {
         SR_TRACY_ZONE;
 
         const auto&& path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(GetResourcePath());
 
-        auto&& document = SR_XML_NS::Document::Load(path);
-        if (!document.Valid()) {
-            SR_ERROR("Material::Load() : file is not found! \n\tPath: " + path.ToString());
+        SR_UTILS_NS::SRADeserializer deserializer;
+        if (!deserializer.LoadFromFile(path)) {
+            SR_ERROR("FileMaterial::Load() : failed to deserialize material from file! \n\tPath: " + path.ToString());
             return false;
         }
 
-        auto&& matXml = document.Root().GetNode("Material");
-        if (!matXml) {
-            SR_ERROR("Material::Load() : \"Material\" node is not found! \n\tPath: " + path.ToString());
-            return false;
-        }
+        m_data = SRNew<MaterialData>();
+        m_data->Load(deserializer);
 
-        if (auto&& shader = matXml.TryGetNode("Shader")) {
-            SetShader(SR_GTYPES_NS::Shader::Load(shader.GetAttribute("Path").ToString()));
-        }
-        else {
-            SR_ERROR("Material::Load() : the material have not shader!");
-            return false;
-        }
-
-        LoadProperties(matXml.TryGetNode("Properties"));
-
-        return IResource::Load();
+        return Super::Load();
     }
 
-    bool FileMaterial::LoadProperties(const SR_XML_NS::Node& propertiesNode) {
-        InitMaterialProperties();
-        /// Применяем сохраненные в материале значения
-        LoadMaterialProperties(GetResourcePath().ToStringRef(), propertiesNode, &m_properties);
-        return true;
-    }
-
-    bool FileMaterial::Unload() {
+    bool FileMaterialResource::Unload() {
         SR_TRACY_ZONE;
-        SetShader(nullptr);
-
-        m_properties.ClearContainer();
-
-        return IResource::Unload();
+        m_data.AutoFree();
+        return Super::Unload();
     }
 
-    bool FileMaterial::Reload() {
+    bool FileMaterialResource::CreateTemplateMaterial(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
 
-        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Medium) {
-            SR_LOG("Material::Reload() : reloading \"" + std::string(GetResourceId()) + "\" material...");
-        }
+        SR_UTILS_NS::Path&& path = rawPath.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+        path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
 
-        m_loadState = LoadState::Reloading;
-
-        /// ========= Stash Properties =========
-        auto&& stashTextures = GetTexturesFromMatProperties(m_properties);
-        for (auto&& pTexture : stashTextures) {
-            pTexture->AddUsePoint();
-        }
-
-        SR_GTYPES_NS::Shader* stashShader = m_shader;
-        if (stashShader) {
-            stashShader->AddUsePoint();
-        }
-        /// ========= Stash Properties =========
-
-        Unload();
-
-        if (!Load()) {
-            m_loadState = LoadState::Error;
+        if (!path.CreateIfNotExists()) {
+            SR_ERROR("FileMaterialResource::CreateTemplateMaterial() : failed to create path for the material! \n\tPath: " + path.ToString());
             return false;
         }
 
-        /// ========= UnStash Properties =========
-        for (auto&& pTexture : stashTextures) {
-            pTexture->RemoveUsePoint();
-        }
-        if (stashShader) {
-            stashShader->RemoveUsePoint();
-        }
-        /// ========= UnStash Properties =========
+        MaterialData::Ptr pData = SRNew<MaterialData>();
 
-        UpdateResources();
+        pData->SetShader("Engine/Shaders/SSAO/ssao_geometry.srsl");
+        pData->SetShader("Engine/Shaders/CascadedShadowMap/spatial.srsl", "Shadow");
 
-        m_context.Do([](RenderContext* ptr) {
-            ptr->SetDirty();
-        });
+        pData->SetSampler("diffuse", "Engine/Textures/default_improved.png");
+        pData->SetData("color", SR_MATH_NS::FVector4(1.f, 1.f, 1.f, 1.f), ShaderVarType::Vec4);
+
+        SR_UTILS_NS::SRASerializer serializer;
+        serializer.SetUseTabs(true);
+
+        pData->Save(serializer);
+
+        if (!serializer.SaveToFile(path)) {
+            SR_ERROR("FileMaterialResource::CreateTemplateMaterial() : failed to save material to file! \n\tPath: " + path.ToString());
+            return false;
+        }
 
         return true;
     }
 
-    SR_UTILS_NS::Path FileMaterial::GetAssociatedPath() const {
-        return SR_UTILS_NS::ResourceManager::Instance().GetResPath();
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    BaseMaterial::Ptr FileMaterial::Load(const SR_UTILS_NS::Path& rawPath) {
+        SR_TRACY_ZONE;
+
+        auto&& pResource = FileMaterialResource::Load(rawPath);
+        if (!pResource) {
+            SR_ERROR("FileMaterial::Load() : failed to load material resource! \n\tPath: " + rawPath.ToString());
+            return nullptr;
+        }
+
+        FileMaterial::Ptr pFileMaterial = SRNew<FileMaterial>();
+        pFileMaterial->m_pResource = pResource;
+
+        pFileMaterial->Init();
+
+        if (!pFileMaterial->m_data || !pFileMaterial->m_pResource) {
+            SR_ERROR("FileMaterial::Load() : failed to load material from file! \n\tPath: " + rawPath.ToString());
+            return nullptr;
+        }
+
+        return pFileMaterial.StaticCast<BaseMaterial>();
     }
 
-    void FileMaterial::InitContext() {
-        if (!m_context) {
-            BaseMaterial::InitContext();
-            if (m_context) {
-                m_context->Register(this);
+    const MaterialData::Ptr& FileMaterial::GetMaterialData() const noexcept {
+        static MaterialData::Ptr pEmptyData;
+        return m_pResource ? m_pResource->GetData() : pEmptyData;
+    }
+
+    FileMaterial::~FileMaterial() {
+        if (m_pResource) {
+            m_pResource->RemoveUsePoint();
+            m_pResource = nullptr;
+        }
+    }
+
+    void FileMaterial::SetMaterialPath(const SR_UTILS_NS::Path& path) noexcept {
+        FileMaterialResource* pMaterial = nullptr;
+
+        if (!path.IsEmpty()) {
+            pMaterial = FileMaterialResource::Load(path);
+            if (!pMaterial) {
+                SR_ERROR("FileMaterial::SetMaterialPath() : failed to load material resource! \n\tPath: " + path.ToString());
             }
         }
+
+        if (m_pResource == pMaterial) {
+            return;
+        }
+
+        if (m_pResource) {
+            m_pResource->RemoveUsePoint();
+            m_pResource = nullptr;
+        }
+
+        m_pResource = pMaterial;
+
+        Init();
+
+        OnShaderChanged();
     }
 
-    void FileMaterial::DeleteResource() {
-        FinalizeMaterial();
-        IResource::DeleteResource();
+    void FileMaterial::Init() {
+        if (m_pResource) {
+            m_pResource->AddUsePoint();
+
+            m_reloadSubscription = m_pResource->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT,
+                [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                    OnShaderChanged();
+                }
+            );
+
+            m_shaderChangedSubscription = GetMaterialData()->Subscribe(MaterialData::SHADER_CHANGED_EVENT,
+                [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                    OnShaderChanged();
+                }
+            );
+
+            m_propertyChangedSubscription = GetMaterialData()->Subscribe(MaterialData::PROPERTY_CHANGED_EVENT,
+                [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                    OnPropertyChanged(msg.GetBool(MaterialData::ONLY_UNIFORMS_BOOL_ID));
+                }
+            );
+        }
+        else {
+            m_shaderChangedSubscription.Reset();
+            m_propertyChangedSubscription.Reset();
+            m_reloadSubscription.Reset();
+        }
     }
 }

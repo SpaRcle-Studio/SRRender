@@ -61,7 +61,7 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        auto&& pShader = m_materialProperty.GetMaterial()->GetShader();
+        /*auto&& pShader = m_materialProperty.GetMaterial()->GetShader();
         auto&& uboManager = Memory::UBOManager::Instance();
 
         if (m_dirtyMaterial)
@@ -99,7 +99,7 @@ namespace SR_GTYPES_NS {
             case Memory::UBOManager::BindResult::Failed:
             default:
                 break;
-        }
+        }*/
     }
 
     bool ProceduralMesh::IsCalculatable() const {

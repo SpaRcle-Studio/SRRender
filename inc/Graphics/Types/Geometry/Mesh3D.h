@@ -6,13 +6,14 @@
 #define SR_ENGINE_GRAPHICS_MESH_3D_H
 
 #include <Utils/Types/IRawMeshHolder.h>
+
 #include <Graphics/Types/Geometry/MeshComponent.h>
 
 namespace SR_GTYPES_NS {
     class Mesh3D final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
-        SR_CLASS()
         using Super = IndexedMesh;
-        SR_REGISTER_NEW_COMPONENT(Mesh3D, 1002);
+        SR_CLASS()
+        SR_REGISTER_NEW_COMPONENT(Mesh3D, 1004);
     public:
         Mesh3D() = default;
 
@@ -38,6 +39,10 @@ namespace SR_GTYPES_NS {
         bool Calculate() override;
 
     private:
+        /// @virtualProperty(meshPath) @getter(GetMeshPath) @setter(SetRawMesh)
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)
+        SR_VIRTUAL_PROPERTY
 
     };
 }

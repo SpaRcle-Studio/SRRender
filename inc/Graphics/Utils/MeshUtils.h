@@ -31,7 +31,7 @@ namespace SR_GRAPH_NS {
     struct MeshRegistrationInfo {
         uint32_t poolId = static_cast<uint32_t>(SR_ID_INVALID);
         SR_GTYPES_NS::Mesh* pMesh = nullptr;
-        BaseMaterial* pMaterial = nullptr;
+        const BaseMaterial* pMaterial = nullptr;
         SR_GTYPES_NS::Shader* pShader = nullptr;
         SR_UTILS_NS::StringAtom layer;
         std::optional<int32_t> VBO;

@@ -20,7 +20,7 @@ namespace SR_GTYPES_NS {
         : m_uboManager(Memory::UBOManager::Instance())
         , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
     {
-        m_materialProperty.SetMesh(this);
+        /*m_materialProperty.SetMesh(this);
 
         m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("MeshInv")
             .SetLabel("Invalid mesh!")
@@ -38,11 +38,10 @@ namespace SR_GTYPES_NS {
             .SetLabel("Mesh isn't registered!")
             .SetColor(SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f))
             .SetActiveCondition([this] { return !IsGraphicsResourceRegistered(); })
-            .SetDontSave();
+            .SetDontSave();*/
     }
 
     Mesh::~Mesh() {
-        SetMaterial(nullptr);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
         SRAssert(!m_registrationInfo.has_value());
         SRAssert2(!m_isUniformsDirty, "Application will crash if you delete mesh with dirty uniforms!");
@@ -154,25 +153,41 @@ namespace SR_GTYPES_NS {
 
     void Mesh::SetMaterial(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
-        m_materialProperty.SetMaterial(path);
+        SetMaterial(FileMaterial::Load(path));
     }
 
-    void Mesh::SetMaterial(MaterialPtr pMaterial) {
+    void Mesh::SetMaterial(const MaterialPtr& pMaterial) {
         SR_TRACY_ZONE;
-        m_materialProperty.SetMaterial(pMaterial);
+
+        if (pMaterial == m_material) {
+            return;
+        }
+
+        MarkMaterialDirty();
+        SetErrorsClean();
+
+        if (m_material) {
+            m_material->UnregisterMesh(&m_materialRegisterId);
+        }
+
+        m_material = pMaterial;
+
+        if (m_material) {
+            m_materialRegisterId = m_material->RegisterMesh(this);
+        }
+
+        ReRegisterMesh();
     }
 
     Mesh::ShaderPtr Mesh::GetShader() const {
-        if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
-            return pMaterial->GetShader();
-        }
-        return nullptr;
+        return m_material ? m_material->GetShader() : nullptr;
     }
 
     void Mesh::UseMaterial() {
         SR_TRACY_ZONE;
-        if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
-            pMaterial->Use();
+
+        if (m_material) {
+            m_material->Use();
         }
     }
 
@@ -240,8 +255,8 @@ namespace SR_GTYPES_NS {
     }
 
     void Mesh::UseSamplers() {
-        if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
-            pMaterial->UseSamplers();
+        if (m_material) {
+            m_material->UseSamplers();
         }
     }
 
@@ -321,18 +336,6 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
-    bool Mesh::InitializeEntity() noexcept {
-        m_properties.AddEnumProperty<MeshType>("Mesh type")
-            .SetGetter([this] {
-                return SR_UTILS_NS::EnumReflector::ToStringAtom(GetMeshType());
-            })
-            .SetReadOnly();
-
-        m_properties.AddExternalProperty(&GetMaterialProperty());
-
-        return Super::InitializeEntity();
-    }
-
     void Mesh::OnDestroy() {
         Super::OnDestroy();
         DestroyMesh();
@@ -375,10 +378,18 @@ namespace SR_GTYPES_NS {
 
     void Mesh::ReRegisterMesh() {
         SR_TRACY_ZONE;
-        if (m_registrationInfo.has_value() && !m_isWaitReRegister) {
+
+        if (m_isWaitReRegister) {
+            return;
+        }
+
+        if (m_registrationInfo.has_value()) {
             const auto pRenderScene = m_registrationInfo.value().pScene;
             m_isWaitReRegister = true;
             pRenderScene->ReRegister(m_registrationInfo.value());
+        }
+        else if (auto&& pRenderScene = TryGetRenderScene()) {
+            pRenderScene->Register(this);
         }
     }
 
@@ -390,6 +401,7 @@ namespace SR_GTYPES_NS {
 
         FreeVideoMemory();
         DeInitGraphicsResource();
+        SetMaterial(MaterialPtr());
 
         AutoFree();
 

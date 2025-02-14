@@ -10,7 +10,7 @@
 namespace SR_GTYPES_NS {
     class ProceduralMesh final : public IndexedMesh {
         using Super = IndexedMesh;
-        SR_REGISTER_NEW_COMPONENT(ProceduralMesh, 1001);
+        SR_REGISTER_NEW_COMPONENT(ProceduralMesh, 1002);
     public:
         ProceduralMesh() = default;
 

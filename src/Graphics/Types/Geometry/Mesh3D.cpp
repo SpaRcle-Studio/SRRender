@@ -93,7 +93,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Mesh3D::InitializeEntity() noexcept {
-        m_properties.AddCustomProperty<SR_UTILS_NS::PathProperty>("Mesh")
+        /*m_properties.AddCustomProperty<SR_UTILS_NS::PathProperty>("Mesh")
             .AddFileFilter("Mesh", SR_GRAPH_NS::SR_SUPPORTED_MESH_FORMATS)
             .SetGetter([this]()-> SR_UTILS_NS::Path {
                 return GetRawMesh() ? GetRawMesh()->GetResourcePath() : SR_UTILS_NS::Path();
@@ -111,7 +111,7 @@ namespace SR_GTYPES_NS {
             })
             .SetType(SR_UTILS_NS::StandardType::Int16);
 
-        /// m_properties.AddEnumProperty("FrustumCullingType", &m_frustumCullingType);
+        /// m_properties.AddEnumProperty("FrustumCullingType", &m_frustumCullingType);*/
 
         return Super::InitializeEntity();
     }

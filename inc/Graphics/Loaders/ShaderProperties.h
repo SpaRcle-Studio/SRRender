@@ -19,20 +19,15 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class BaseMaterial;
 
-    struct ShaderAttachment {
-        SR_GTYPES_NS::Texture* pTexture;
-        std::string framebuffer;
-        uint8_t layer;
-    };
-
+    /// Реализация аттачментов (выходов кадровых буферов) сделана на уровне проходов рендера.
+    /// См. ISamplersPass. На уровне шейдера не должны поддерживаться аттачменты, т.к. это не безопасно.
     typedef std::variant<
         SR_GTYPES_NS::Texture*,
         float_t,
         int32_t,
         SR_MATH_NS::FVector2,
         SR_MATH_NS::FVector3,
-        SR_MATH_NS::FVector4,
-        ShaderAttachment
+        SR_MATH_NS::FVector4
     > ShaderPropertyVariant;
 
     SR_ENUM_NS_CLASS_T(ShaderVarType, uint8_t,
@@ -63,20 +58,24 @@ namespace SR_GRAPH_NS {
 
     struct ShaderProperty {
         ShaderProperty() = default;
-        ShaderProperty(SR_UTILS_NS::StringAtom id, ShaderVarType type)
+        ShaderProperty(const SR_UTILS_NS::StringAtom id, const ShaderVarType type, const bool pushConstant)
             : id(id)
             , type(type)
+            , pushConstant(pushConstant)
         { }
-        ShaderProperty(SR_UTILS_NS::StringAtom id, ShaderVarType type, std::optional<ShaderPropertyVariant> defaultData)
+        ShaderProperty(const SR_UTILS_NS::StringAtom id, const ShaderVarType type, const bool pushConstant, const std::optional<ShaderPropertyVariant>& defaultData)
             : id(id)
             , type(type)
+            , pushConstant(pushConstant)
             , defaultData(defaultData)
         { }
 
         SR_UTILS_NS::StringAtom id;
-        ShaderVarType type;
+        ShaderVarType type = ShaderVarType::Unknown;
+        bool pushConstant = false;
         std::optional<ShaderPropertyVariant> defaultData;
 
+        SR_NODISCARD bool IsPushConstant() const { return pushConstant; }
         SR_NODISCARD bool HasDefaultData() const { return defaultData.has_value(); }
         SR_NODISCARD ShaderPropertyVariant GetData() const;
         SR_NODISCARD ShaderPropertyVariant GetDefaultData() const;
@@ -100,7 +99,7 @@ namespace SR_GRAPH_NS {
     };
     typedef std::vector<SSBOBinding> SSBOBindings;
 
-    SR_MAYBE_UNUSED static bool IsSamplerType(ShaderVarType type) {
+    SR_MAYBE_UNUSED static bool SR_FASTCALL IsSamplerType(const ShaderVarType type) {
         switch (type) {
             case ShaderVarType::Sampler1D:
             case ShaderVarType::Sampler2D:

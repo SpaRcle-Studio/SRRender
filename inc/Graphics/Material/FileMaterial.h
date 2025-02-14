@@ -8,41 +8,60 @@
 #include <Graphics/Material/BaseMaterial.h>
 
 namespace SR_GRAPH_NS {
-    class FileMaterial : public BaseMaterial, public SR_UTILS_NS::IResource {
+    class FileMaterialResource final : public SR_UTILS_NS::IResource {
+        using Super = SR_UTILS_NS::IResource;
     public:
-        using Ptr = FileMaterial*;
+        FileMaterialResource();
+
+    public:
+        SR_NODISCARD static bool CreateTemplateMaterial(const SR_UTILS_NS::Path& path);
+        static FileMaterialResource* Load(const SR_UTILS_NS::Path& rawPath);
+
+    public:
+        SR_NODISCARD SR_UTILS_NS::IResource::Ptr CopyResource(SR_UTILS_NS::IResource::Ptr pDestination) const override;
+        SR_NODISCARD const SR_GRAPH_NS::MaterialData::Ptr& GetData() const noexcept { return m_data; }
 
     private:
-        FileMaterial();
+        bool Load() override;
+        bool Unload() override;
 
+    private:
+        SR_GRAPH_NS::MaterialData::Ptr m_data;
+
+    };
+
+    class FileMaterial final : public BaseMaterial {
+        using Super = BaseMaterial;
+        SR_CLASS()
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<FileMaterial>;
+
         ~FileMaterial() override;
 
     public:
-        static FileMaterial::Ptr Load(SR_UTILS_NS::Path rawPath);
+        SR_NODISCARD static BaseMaterial::Ptr Load(const SR_UTILS_NS::Path& rawPath);
 
     public:
         SR_NODISCARD MaterialType GetMaterialType() const noexcept override { return MaterialType::File; }
+        SR_NODISCARD const MaterialData::Ptr& GetMaterialData() const noexcept override;
 
-        SR_NODISCARD uint32_t RegisterMesh(MeshPtr pMesh) override;
-        void UnregisterMesh(uint32_t* pId) override;
-
-        SR_NODISCARD SR_UTILS_NS::IResource::Ptr CopyResource(SR_UTILS_NS::IResource::Ptr pDestination) const override;
-
-        SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
-
-        void OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) override;
-
-    protected:
-        void InitContext() override;
-
-        bool LoadProperties(const SR_XML_NS::Node& propertiesNode);
+        SR_NODISCARD SR_UTILS_NS::Path GetMaterialPath() const noexcept { return m_pResource ? m_pResource->GetResourcePath() : SR_UTILS_NS::Path(); }
+        SR_NODISCARD void SetMaterialPath(const SR_UTILS_NS::Path& path) noexcept;
 
     private:
-        void DeleteResource() override;
-        bool Reload() override;
-        bool Load() override;
-        bool Unload() override;
+        void Init();
+
+    private:
+        /// @virtualProperty(materialPath) @getter(GetMaterialPath) @setter(SetMaterialPath)
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(materialData) @getter(GetMaterialData) @dontSave @readOnly @noHeader
+        SR_VIRTUAL_PROPERTY
+
+        FileMaterialResource* m_pResource = nullptr;
+
+        SR_UTILS_NS::Subscription m_reloadSubscription;
+        SR_UTILS_NS::Subscription m_shaderChangedSubscription;
+        SR_UTILS_NS::Subscription m_propertyChangedSubscription;
 
     };
 }
