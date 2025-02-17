@@ -18,13 +18,14 @@ namespace SR_ANIMATIONS_NS {
     class AnimationChannel;
 
     class Animator : public SR_UTILS_NS::Component {
-        SR_REGISTER_NEW_COMPONENT(Animator, 1001);
+        SR_CLASS()
+        SR_REGISTER_NEW_COMPONENT(Animator, 1003);
         using Super = SR_UTILS_NS::Component;
     public:
         ~Animator() override;
 
     public:
-        bool InitializeEntity() noexcept override;
+        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
 
         void FixedUpdate() override;
         void Update(float_t dt) override;
@@ -36,6 +37,7 @@ namespace SR_ANIMATIONS_NS {
 
         void SetGraph(const SR_UTILS_NS::Path& path);
 
+        SR_NODISCARD SR_UTILS_NS::Path GetGraphPath() const noexcept;
         SR_NODISCARD AnimationGraph* GetGraph() const noexcept { return m_graph; }
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<Skeleton>& GetSkeleton() noexcept { return m_skeleton; }
 
@@ -43,11 +45,17 @@ namespace SR_ANIMATIONS_NS {
         void UpdateInternal(float_t dt);
 
     private:
+        /// @property
         uint32_t m_frameRate = 1;
+        /// @property
         float_t m_tolerance = 0.001f;
-
+        /// @property
         bool m_sync = false;
+        /// @property
         bool m_fpsCompensation = false;
+
+        /// @virtualProperty(graph) @getter(GetGraphPath) @setter(SetGraph)
+        SR_VIRTUAL_PROPERTY
 
         AnimationGraph* m_graph = nullptr;
 

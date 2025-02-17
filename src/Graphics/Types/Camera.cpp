@@ -12,9 +12,9 @@
 
 #include <Graphics/Window/Window.h>
 
-namespace SR_GTYPES_NS {
-    SR_REGISTER_COMPONENT(Camera);
+#include <Codegen/Camera.generated.hpp>
 
+namespace SR_GTYPES_NS {
     Camera::Camera()
         : Super()
     { }
@@ -32,7 +32,7 @@ namespace SR_GTYPES_NS {
     }
 
     void Camera::OnAttached() {
-        Component::OnAttached();
+        Super::OnAttached();
 
         if (auto&& pRenderScene = GetRenderScene(); pRenderScene.RecursiveLockIfValid()) {
             pRenderScene->Register(GetThis().DynamicCast<Camera>());
@@ -57,36 +57,6 @@ namespace SR_GTYPES_NS {
         GetThis().AutoFree([](auto&& pData) {
             delete pData;
         });
-    }
-
-    SR_HTYPES_NS::Marshal::Ptr Camera::SaveLegacy(SR_UTILS_NS::SavableContext data) const {
-        auto&& pMarshal = Component::SaveLegacy(data);
-
-        pMarshal->Write<std::string>(m_renderTechnique.path.ToStringRef());
-        pMarshal->Write<float_t>(m_far);
-        pMarshal->Write<float_t>(m_near);
-        pMarshal->Write<float_t>(m_FOV);
-        pMarshal->Write<int32_t>(m_priority);
-
-        return pMarshal;
-    }
-
-    SR_UTILS_NS::Component* Camera::LoadComponent(SR_HTYPES_NS::Marshal &marshal, const SR_HTYPES_NS::DataStorage *dataStorage) {
-        const auto&& renderTechniquePath = marshal.Read<std::string>();
-        const auto&& _far = marshal.Read<float_t>();
-        const auto&& _near = marshal.Read<float_t>();
-        const auto&& FOV = marshal.Read<float_t>();
-        const auto&& priority = marshal.Read<int32_t>();
-
-        auto&& pCamera = new Camera();
-
-        pCamera->SetFar(_far);
-        pCamera->SetNear(_near);
-        pCamera->SetFOV(FOV);
-        pCamera->SetPriority(priority);
-        pCamera->SetRenderTechnique(renderTechniquePath);
-
-        return pCamera;
     }
 
     IRenderTechnique* Camera::GetRenderTechnique() {
@@ -258,7 +228,7 @@ namespace SR_GTYPES_NS {
             renderScene.Unlock();
         }
 
-        Component::OnEnable();
+        Super::OnEnable();
     }
 
     void Camera::OnDisable() {
@@ -267,7 +237,7 @@ namespace SR_GTYPES_NS {
             renderScene.Unlock();
         }
 
-        Component::OnDisable();
+        Super::OnDisable();
     }
 
     void Camera::OnMatrixDirty() {
@@ -280,7 +250,7 @@ namespace SR_GTYPES_NS {
 
         UpdateView();
 
-        Component::OnMatrixDirty();
+        Super::OnMatrixDirty();
     }
 
     void Camera::SetRenderTechnique(const SR_UTILS_NS::Path& path) {
@@ -317,20 +287,6 @@ namespace SR_GTYPES_NS {
     SR_MATH_NS::FVector3 Camera::GetViewDirection(const SR_MATH_NS::FVector3& pos) const noexcept {
         auto&& dir = m_position.Direction(pos);
         return m_rotation * SR_MATH_NS::FVector3(dir);
-    }
-
-    SR_UTILS_NS::Component *Camera::CopyComponent() const {
-        auto&& pCamera = new Camera();
-
-        pCamera->m_priority = m_priority;
-
-        pCamera->m_far = m_far;
-        pCamera->m_near = m_near;
-        pCamera->m_aspect = m_aspect;
-        pCamera->m_FOV = m_FOV;
-        pCamera->m_renderTechnique.path = m_renderTechnique.path;
-
-        return dynamic_cast<Component*>(pCamera);
     }
 
     SR_MATH_NS::FVector3 Camera::GetViewPosition() const {
