@@ -39,6 +39,8 @@ namespace SR_GTYPES_NS {
         bool Calculate() override;
 
     private:
+        /// @virtualProperty(geometryName) @getter(GetGeometryName) @dontSave @readOnly
+        SR_VIRTUAL_PROPERTY
         /// @virtualProperty(meshPath) @getter(GetMeshPath) @setter(SetRawMesh)
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)

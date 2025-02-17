@@ -11,6 +11,8 @@
 #include <Utils/Types/Time.h>
 #include <Utils/Common/Features.h>
 
+#include <Enum/VertexType.hpp>
+
 #ifdef SR_DEBUG
     #define SR_PIPELINE_RENDER_GUARD(ret)                   \
         if (!m_isRenderState) SR_UNLIKELY_ATTRIBUTE {       \

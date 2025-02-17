@@ -7,16 +7,30 @@
 #include <Codegen/UniqueMaterial.generated.hpp>
 
 namespace SR_GRAPH_NS {
+    UniqueMaterial::UniqueMaterial() = default;
+
+    UniqueMaterial::~UniqueMaterial() {
+        DeInitMaterialDataSubscriptions();
+        m_data.Reset();
+    }
+
+    void UniqueMaterial::SetMaterialData(const MaterialData::Ptr& pData) noexcept {
+        DeInitMaterialDataSubscriptions();
+        m_data.Reset();
+        m_data = pData;
+        InitMaterialDataSubscriptions();
+    }
+
     const MaterialData::Ptr& UniqueMaterial::GetMaterialData() const noexcept {
-        static MaterialData::Ptr pEmptyData;
-        return pEmptyData;
+        if (!m_data) {
+            m_data = SRNew<MaterialData>();
+            InitMaterialDataSubscriptions();
+        }
+
+        return m_data;
     }
 
     MaterialType UniqueMaterial::GetMaterialType() const noexcept {
         return MaterialType::Unique;
-    }
-
-    void UniqueMaterial::UnregisterMesh(uint32_t *pId) {
-        Super::UnregisterMesh(pId);
     }
 }

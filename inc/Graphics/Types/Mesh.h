@@ -98,7 +98,6 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsUniformsDirty() const noexcept { return m_isUniformsDirty; }
         SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
         SR_NODISCARD RenderQueues& GetRenderQueues() noexcept { return m_renderQueues; }
-        SR_NODISCARD std::string GetGeometryName() const { return m_geometryName; }
         SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const noexcept { return m_frustumCullingType; }
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
@@ -108,7 +107,6 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual const SR_MATH_NS::Matrix4x4& GetMatrix() const;
 
         virtual bool OnResourceReloaded(SR_UTILS_NS::IResource* pResource);
-        virtual void SetGeometryName(const std::string& name) { }
         virtual bool BindMesh();
 
         virtual void Draw();
@@ -148,15 +146,14 @@ namespace SR_GTYPES_NS {
     protected:
         /// @virtualProperty(meshType) @getter(GetMeshType) @readOnly @dontSave
         SR_VIRTUAL_PROPERTY
-        /// TODO: remove geometry name
-        /// @property @readOnly @dontSave
-        std::string m_geometryName;
-        /// @property @setter(SetMaterial) @getter(GetMaterial)
+        /// @property @setter(SetMaterial) @getter(GetMaterial) @inspector(MaterialPropertyDrawer)
         MaterialPtr m_material;
         /// @property
         FrustumCullingType m_frustumCullingType = FrustumCullingType::Sphere;
         /// @property @readOnly @dontSave
         bool m_isWaitReRegister = false;
+        /// @virtualProperty(isRegistered) @getter(IsMeshRegistered) @readOnly @dontSave
+        SR_VIRTUAL_PROPERTY
         /// @property @readOnly @dontSave
         bool m_hasErrors = false;
         /// @property @readOnly @dontSave
@@ -165,6 +162,7 @@ namespace SR_GTYPES_NS {
         bool m_isUniformsDirty = false;
 
     private:
+        bool m_isDestroyingState = false;
         std::optional<MeshRegistrationInfo> m_registrationInfo;
         uint32_t m_materialRegisterId = SR_ID_INVALID;
 

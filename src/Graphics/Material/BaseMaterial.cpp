@@ -79,7 +79,7 @@ namespace SR_GRAPH_NS {
         *pId = SR_ID_INVALID;
     }
 
-    void BaseMaterial::OnPropertyChanged(bool onlyUniforms) {
+    void BaseMaterial::OnPropertyChanged(bool onlyUniforms) const {
         SR_TRACY_ZONE;
 
         if (onlyUniforms) {
@@ -97,7 +97,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void BaseMaterial::OnShaderChanged() {
+    void BaseMaterial::OnShaderChanged() const {
         SR_TRACY_ZONE;
 
         m_meshes.ForEach([](uint32_t, auto&& pMesh) {
@@ -141,5 +141,24 @@ namespace SR_GRAPH_NS {
                 return;
             }
         }
+    }
+
+    void BaseMaterial::InitMaterialDataSubscriptions() const {
+        m_shaderChangedSubscription = GetMaterialData()->Subscribe(MaterialData::SHADER_CHANGED_EVENT,
+            [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                OnShaderChanged();
+            }
+        );
+
+        m_propertyChangedSubscription = GetMaterialData()->Subscribe(MaterialData::PROPERTY_CHANGED_EVENT,
+            [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                OnPropertyChanged(msg.GetBool(MaterialData::ONLY_UNIFORMS_BOOL_ID));
+            }
+        );
+    }
+
+    void BaseMaterial::DeInitMaterialDataSubscriptions() const {
+        m_shaderChangedSubscription.Reset();
+        m_propertyChangedSubscription.Reset();
     }
 }

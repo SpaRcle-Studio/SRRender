@@ -43,6 +43,13 @@ namespace SR_GRAPH_NS::Memory {
         SR_UTILS_NS::BoolExt m_alpha;
         bool m_cpuUsage;
 
+        SR_NODISCARD ImageFormat GetFormat() const noexcept { return m_format; }
+        SR_NODISCARD TextureFilter GetFilter() const noexcept { return m_filter; }
+        SR_NODISCARD TextureCompression GetCompression() const noexcept { return m_compression; }
+        SR_NODISCARD uint32_t GetMipLevels() const noexcept { return m_mipLevels; }
+        SR_NODISCARD SR_UTILS_NS::BoolExt GetAlpha() const noexcept { return m_alpha; }
+        SR_NODISCARD bool GetCpuUsage() const noexcept { return m_cpuUsage; }
+
         bool operator==(const TextureConfig& lrs) const {
             return m_format == lrs.m_format
                    && m_filter == lrs.m_filter

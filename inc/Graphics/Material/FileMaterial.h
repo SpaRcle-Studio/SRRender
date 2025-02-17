@@ -59,9 +59,8 @@ namespace SR_GRAPH_NS {
 
         FileMaterialResource* m_pResource = nullptr;
 
-        SR_UTILS_NS::Subscription m_reloadSubscription;
-        SR_UTILS_NS::Subscription m_shaderChangedSubscription;
-        SR_UTILS_NS::Subscription m_propertyChangedSubscription;
+        SR_UTILS_NS::Subscription m_reloadBeginSubscription;
+        SR_UTILS_NS::Subscription m_reloadDoneSubscription;
 
     };
 }

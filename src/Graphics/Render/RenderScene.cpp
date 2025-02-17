@@ -302,7 +302,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (!pMesh->GetMaterial()) {
-            SR_ERROR("RenderScene::Register() : mesh material and default material are nullptr! Mesh: " + pMesh->GetGeometryName());
+            SR_ERROR("RenderScene::Register() : mesh material and default material are nullptr! Mesh: " + pMesh->GetMeshIdentifier());
             return;
         }
 
@@ -311,13 +311,16 @@ namespace SR_GRAPH_NS {
         }
 
         if (!pMesh->GetMaterial()->GetShader()) {
-            SR_ERROR("RenderScene::Register() : mesh have not shader!");
+            SR_ERROR("RenderScene::Register() : mesh have not shader! Mesh: " + pMesh->GetMeshIdentifier());
             return;
         }
 
-        pMesh->SetRenderContext(m_context);
+        /// Меш мог быть зарегистрирован при инициализации дефолтных материалов
+        if (!pMesh->IsMeshRegistered()) {
+            pMesh->SetRenderContext(m_context);
+            m_renderStrategy->RegisterMesh(pMesh);
+        }
 
-        m_renderStrategy->RegisterMesh(pMesh);
         SetDirty();
     }
 

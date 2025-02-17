@@ -4,6 +4,8 @@
 
 #include <Graphics/Material/MaterialData.h>
 
+#include <Enum/ShaderVarType.hpp>
+
 #include <Codegen/MaterialData.generated.hpp>
 
 namespace SR_GRAPH_NS {
@@ -93,6 +95,15 @@ namespace SR_GRAPH_NS {
             default:
                 SRHalt("MaterialShaderProperty::Load() : unknown property type! Property id: {}, Type: {}", id, type);
                 break;
+        }
+    }
+
+    void MaterialShaderData::ForEachProperty(const SR_HTYPES_NS::Function<void(MaterialShaderProperty&)>& func) {
+        for (MaterialShaderProperty& uniform : uniforms) {
+            func(uniform);
+        }
+        for (MaterialShaderProperty& sampler : samplers) {
+            func(sampler);
         }
     }
 
@@ -458,6 +469,20 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    MaterialShaderData* MaterialData::GetShaderData(SR_UTILS_NS::StringAtom id) noexcept {
+        if (auto&& pIt = m_shaders.find(id); pIt != m_shaders.end()) {
+            return &pIt->second;
+        }
+        return nullptr;
+    }
+
+    const MaterialShaderData* MaterialData::GetShaderData(SR_UTILS_NS::StringAtom id) const noexcept {
+        if (auto&& pIt = m_shaders.find(id); pIt != m_shaders.end()) {
+            return &pIt->second;
+        }
+        return nullptr;
+    }
+
     void MaterialData::SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept {
         SR_TRACY_ZONE;
 
@@ -544,7 +569,7 @@ namespace SR_GRAPH_NS {
     void MaterialData::SetData(const SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, const ShaderVarType type) noexcept {
         SR_TRACY_ZONE;
 
-        uint8_t changeResult = std::max(changeResult, static_cast<uint8_t>(m_defaultShader.SetData(id, v, type)));
+        uint8_t changeResult = std::max(static_cast<uint8_t>(0), static_cast<uint8_t>(m_defaultShader.SetData(id, v, type)));
 
         for (MaterialShaderData& data : m_shaders | std::views::values) {
             changeResult = std::max(changeResult, static_cast<uint8_t>(data.SetData(id, v, type)));
@@ -629,7 +654,7 @@ namespace SR_GRAPH_NS {
     }
 
     void MaterialData::OnShaderChanged() {
-        Broadcast(PROPERTY_CHANGED_EVENT);
+        Broadcast(SHADER_CHANGED_EVENT);
     }
 
     void MaterialData::OnPropertyChanged(const bool onlyUniforms) {

@@ -172,28 +172,24 @@ namespace SR_GRAPH_NS {
         if (m_pResource) {
             m_pResource->AddUsePoint();
 
-            m_reloadSubscription = m_pResource->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT,
+            m_reloadBeginSubscription = m_pResource->Subscribe(SR_UTILS_NS::IResource::RELOAD_BEGIN_EVENT,
                 [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
-                    OnShaderChanged();
+                    DeInitMaterialDataSubscriptions();
                 }
             );
 
-            m_shaderChangedSubscription = GetMaterialData()->Subscribe(MaterialData::SHADER_CHANGED_EVENT,
+            m_reloadDoneSubscription = m_pResource->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT,
                 [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                    InitMaterialDataSubscriptions();
                     OnShaderChanged();
-                }
-            );
-
-            m_propertyChangedSubscription = GetMaterialData()->Subscribe(MaterialData::PROPERTY_CHANGED_EVENT,
-                [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
-                    OnPropertyChanged(msg.GetBool(MaterialData::ONLY_UNIFORMS_BOOL_ID));
+                    OnPropertyChanged(false);
                 }
             );
         }
         else {
-            m_shaderChangedSubscription.Reset();
-            m_propertyChangedSubscription.Reset();
-            m_reloadSubscription.Reset();
+            DeInitMaterialDataSubscriptions();
+            m_reloadBeginSubscription.Reset();
+            m_reloadDoneSubscription.Reset();
         }
     }
 }

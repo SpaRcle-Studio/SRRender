@@ -61,19 +61,24 @@ namespace SR_GRAPH_NS {
         virtual void SetShader(ShaderPtr pShader, SR_UTILS_NS::StringAtom stage = SR_UTILS_NS::StringAtom());
         void SetShader(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom stage = SR_UTILS_NS::StringAtom());
 
-        void OnPropertyChanged(bool onlyUniforms);
-        void OnShaderChanged();
+        void OnPropertyChanged(bool onlyUniforms) const;
+        void OnShaderChanged() const;
 
         void Use();
         void UseSamplers();
 
     protected:
         virtual void InitContext() const;
+        void InitMaterialDataSubscriptions() const;
+        void DeInitMaterialDataSubscriptions() const;
 
     protected:
         mutable RenderContextPtr m_context;
 
         SR_HTYPES_NS::ObjectPool<MeshPtr, uint32_t> m_meshes;
+
+        mutable SR_UTILS_NS::Subscription m_shaderChangedSubscription;
+        mutable SR_UTILS_NS::Subscription m_propertyChangedSubscription;
 
     };
 }

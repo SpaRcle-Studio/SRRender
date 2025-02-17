@@ -29,7 +29,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Full) {
-            SR_LOG("Mesh3D::Calculate() : calculating \"" + GetGeometryName() + "\"...");
+            SR_LOG("Mesh3D::Calculate() : calculating \"" + GetMeshIdentifier() + "\"...");
         }
 
         if (!CalculateVBO<Vertices::VertexType::StaticMeshVertex, Vertices::StaticMeshVertex>([this]() {
@@ -62,10 +62,6 @@ namespace SR_GTYPES_NS {
 
     void Mesh3D::OnRawMeshChanged() {
         IRawMeshHolder::OnRawMeshChanged();
-
-        if (GetRawMesh() && IsValidMeshId()) {
-            SetGeometryName(GetRawMesh()->GetGeometryName(GetMeshId()));
-        }
 
         ReRegisterMesh();
 

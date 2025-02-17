@@ -73,7 +73,7 @@ namespace SR_GRAPH_GUI_NS {
         return ImGui::TreeNodeBehavior(id, flags, label.c_str());
     }
 
-    bool ImageButton(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::IVector2& size, int32_t framePadding, ImGuiButtonFlags flags) {
+    bool ImageButton(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding, ImGuiButtonFlags flags) {
         ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 
         const bool result = ImageButtonInternal(imageId.data(), pDescriptor, size, framePadding, flags);
@@ -83,7 +83,7 @@ namespace SR_GRAPH_GUI_NS {
         return result;
     }
 
-    bool ImageButtonInternal(std::string_view &&imageId, void* pDescriptor, const SR_MATH_NS::IVector2& size, int32_t framePadding, ImGuiButtonFlags flags) {
+    bool ImageButtonInternal(std::string_view &&imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding, ImGuiButtonFlags flags) {
         ImGuiContext& g = *GImGui;
         ImGuiWindow* window = g.CurrentWindow;
         if (window->SkipItems)
@@ -128,7 +128,7 @@ namespace SR_GRAPH_GUI_NS {
         return pressed;
     }
 
-    ImVec2 DrawTexture(const void* pDescriptor, const SR_MATH_NS::IVector2& size, SR_GRAPH_NS::PipelineType pipelineType, bool imposition) {
+    ImVec2 DrawTexture(const void* pDescriptor, const SR_MATH_NS::FVector2& size, SR_GRAPH_NS::PipelineType pipelineType, bool imposition) {
         if (!pDescriptor) {
             return ImVec2(); /// NOLINT
         }
@@ -198,19 +198,19 @@ namespace SR_GRAPH_GUI_NS {
         return false;
     }
 
-    bool ImageButton(void* pDescriptor, const SR_MATH_NS::IVector2& size) {
+    bool ImageButton(void* pDescriptor, const SR_MATH_NS::FVector2& size) {
         return ImageButton(pDescriptor, size, -1);
     }
 
-    bool ImageButton(void* pDescriptor, const SR_MATH_NS::IVector2& size, int32_t framePadding) {
+    bool ImageButton(void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding) {
         return ImageButton("##image", pDescriptor, size, framePadding);
     }
 
-    bool ImageButtonDouble(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::IVector2& size, int32_t framePadding) {
+    bool ImageButtonDouble(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding) {
         return ImageButton(imageId.data(), pDescriptor, size, framePadding, ImGuiButtonFlags_PressedOnDoubleClick);
     }
 
-    bool ImageButton(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::IVector2& size, int32_t framePadding) {
+    bool ImageButton(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding) {
         return ImageButton(imageId.data(), pDescriptor, size, framePadding, ImGuiButtonFlags_None);
     }
 
@@ -266,7 +266,7 @@ namespace SR_GRAPH_GUI_NS {
         return ImGui::SplitterBehavior(bb, id, split_vertically ? ImGuiAxis_X : ImGuiAxis_Y, size1, size2, min_size1, min_size2, 0.0f);
     }
 
-    ImVec2 DrawTexture(const SR_GRAPH_NS::Pipeline* pPipeline, uint32_t textureId, const SR_MATH_NS::IVector2 &size, bool imposition) {
+    ImVec2 DrawTexture(const SR_GRAPH_NS::Pipeline* pPipeline, uint32_t textureId, const SR_MATH_NS::FVector2 &size, bool imposition) {
         void* pDescriptor = nullptr;
 
         switch (pPipeline->GetType()) {

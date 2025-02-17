@@ -59,7 +59,7 @@ namespace SR_GRAPH_UI_NS {
 
         /////////////////////////////////////////////////////////////////////////////////pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
 
-        auto&& pMaterial = new SR_GRAPH_NS::UniqueMaterial();
+        const BaseMaterial::Ptr pMaterial = SRNew<SR_GRAPH_NS::UniqueMaterial>();
         pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
         pMaterial->SetVec4("color", GetColorByOperation(operation));
 

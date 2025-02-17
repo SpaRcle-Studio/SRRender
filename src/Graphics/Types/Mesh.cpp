@@ -42,6 +42,7 @@ namespace SR_GTYPES_NS {
     }
 
     Mesh::~Mesh() {
+        SRAssert(m_isDestroyingState);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
         SRAssert(!m_registrationInfo.has_value());
         SRAssert2(!m_isUniformsDirty, "Application will crash if you delete mesh with dirty uniforms!");
@@ -359,9 +360,7 @@ namespace SR_GTYPES_NS {
     void Mesh::OnEnable() {
         Super::OnEnable();
         if (!IsMeshRegistered()) {
-            if (auto&& pRenderScene = GetRenderScene()) {
-                pRenderScene->Register(this);
-            }
+            ReRegisterMesh();
         }
     }
 
@@ -379,13 +378,18 @@ namespace SR_GTYPES_NS {
     void Mesh::ReRegisterMesh() {
         SR_TRACY_ZONE;
 
-        if (m_isWaitReRegister) {
+        if (m_isDestroyingState) {
             return;
         }
 
         if (m_registrationInfo.has_value()) {
-            const auto pRenderScene = m_registrationInfo.value().pScene;
+            if (m_isWaitReRegister) {
+                return;
+            }
+
             m_isWaitReRegister = true;
+
+            const auto pRenderScene = m_registrationInfo.value().pScene;
             pRenderScene->ReRegister(m_registrationInfo.value());
         }
         else if (auto&& pRenderScene = TryGetRenderScene()) {
@@ -394,6 +398,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool Mesh::DestroyMesh() {
+        m_isDestroyingState = true;
+
         const bool isRegistered = IsMeshRegistered();
         if (isRegistered) {
             m_registrationInfo.value().pScene->Remove(this);

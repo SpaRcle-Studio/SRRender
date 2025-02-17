@@ -55,6 +55,8 @@ namespace SR_GRAPH_NS {
         /// @property
         std::vector<MaterialShaderProperty> samplers;
 
+        void ForEachProperty(const SR_HTYPES_NS::Function<void(MaterialShaderProperty&)>& func);
+
         MaterialPropertyChangeResult SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
         void UpdateProperties();
 
@@ -93,6 +95,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const MaterialShaderData& GetDefaultShaderData() const noexcept { return m_defaultShader; }
         SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, MaterialShaderData>& GetShadersData() const noexcept { return m_shaders; }
         SR_NODISCARD std::map<SR_UTILS_NS::StringAtom, MaterialShaderData>& GetShadersData() noexcept { return m_shaders; }
+        SR_NODISCARD MaterialShaderData* GetShaderData(SR_UTILS_NS::StringAtom id) noexcept;
+        SR_NODISCARD const MaterialShaderData* GetShaderData(SR_UTILS_NS::StringAtom id) const noexcept;
 
         void SR_FASTCALL SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept;
         void SR_FASTCALL SetShader(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom stage = SR_UTILS_NS::StringAtom());
@@ -101,10 +105,10 @@ namespace SR_GRAPH_NS {
         void SR_FASTCALL OnSamplerChanged(SR_GTYPES_NS::Texture* pOldTexture, SR_GTYPES_NS::Texture* pNewTexture) noexcept;
 
         void RemoveStage(SR_UTILS_NS::StringAtom stage);
+        void OnPropertyChanged(bool onlyUniforms);
 
     private:
         void OnShaderChanged();
-        void OnPropertyChanged(bool onlyUniforms);
 
     private:
         std::map<SR_GTYPES_NS::Shader*, std::pair<SR_UTILS_NS::Subscription, uint32_t>> m_shaderSubscriptions;

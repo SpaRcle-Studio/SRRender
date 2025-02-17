@@ -182,10 +182,6 @@ namespace SR_GTYPES_NS {
     void SkinnedMesh::OnRawMeshChanged() {
         IRawMeshHolder::OnRawMeshChanged();
 
-        if (GetRawMesh() && IsValidMeshId()) {
-            SetGeometryName(GetRawMesh()->GetGeometryName(GetMeshId()));
-        }
-
         if (GetSkeleton().IsValid()) {
             if (auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>()) {
                 pSkeleton->ResetSkeleton();
