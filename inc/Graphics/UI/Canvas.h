@@ -13,22 +13,17 @@ namespace SR_GRAPH_NS {
     class RenderScene;
 }
 
-namespace SR_GRAPH_NS::UI {
+namespace SR_GRAPH_UI_NS {
     class Canvas : public SR_UTILS_NS::Component {
-        SR_ENTITY_SET_VERSION(1000);
-        SR_INITIALIZE_COMPONENT(Canvas);
+        SR_CLASS()
+        SR_REGISTER_NEW_COMPONENT(Canvas, 1001);
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using RenderContextPtr = SR_HTYPES_NS::SafePtr<RenderContext>;
         using Super = SR_UTILS_NS::Component;
     public:
-        Canvas();
-        ~Canvas() override = default;
+        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
+        SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
-    public:
-        static SR_UTILS_NS::Component* LoadComponent(SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* dataStorage);
-
-    public:
-        bool ExecuteInEditMode() const override;
         void OnAttached() override;
         void OnDestroy() override;
 

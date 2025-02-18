@@ -13,6 +13,8 @@
 #include <Utils/Input/InputSystem.h>
 #include <Utils/DebugDraw.h>
 
+#include <Codegen/Gizmo.generated.hpp>
+
 namespace SR_GRAPH_UI_NS {
     void Gizmo::OnAttached() {
         Super::OnAttached();
@@ -281,22 +283,6 @@ namespace SR_GRAPH_UI_NS {
         m_lastMousePos = mousePos;
 
         Super::FixedUpdate();
-    }
-
-    bool Gizmo::InitializeEntity() noexcept {
-        GetComponentProperties()
-            .AddStandardProperty("Zoom factor", &m_zoomFactor)
-            .SetResetValue(0.1f)
-            .SetDrag(0.05f)
-            .SetWidth(60.f);
-
-        GetComponentProperties()
-            .AddStandardProperty("Move factor", &m_moveFactor)
-            .SetResetValue(0.1f)
-            .SetDrag(0.05f)
-            .SetWidth(60.f);
-
-        return Super::InitializeEntity();
     }
 
     void Gizmo::ProcessGizmo(const SR_MATH_NS::FPoint& mousePos) {

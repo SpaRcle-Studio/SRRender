@@ -10,13 +10,9 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
 
-namespace SR_GRAPH_NS::UI {
-    SR_REGISTER_COMPONENT(Canvas);
+#include <Codegen/Canvas.generated.hpp>
 
-    Canvas::Canvas()
-        : Super()
-    { }
-
+namespace SR_GRAPH_UI_NS {
     void Canvas::OnAttached() {
         if (auto&& pScene = GetScene()) {
             m_renderScene = pScene->GetDataStorage().GetValue<RenderScenePtr>();
@@ -27,10 +23,6 @@ namespace SR_GRAPH_NS::UI {
         }
 
         Super::OnAttached();
-    }
-
-    SR_UTILS_NS::Component* Canvas::LoadComponent(SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* pDataStorage) {
-        return new Canvas();
     }
 
     void Canvas::OnDestroy() {
@@ -96,9 +88,5 @@ namespace SR_GRAPH_NS::UI {
         }
 
         Super::Update(dt);
-    }
-
-    bool Canvas::ExecuteInEditMode() const {
-        return true;
     }
 }

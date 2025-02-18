@@ -494,8 +494,13 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialData::SetShader(const SR_UTILS_NS::Path& path, const SR_UTILS_NS::StringAtom stage) {
+    void MaterialData::SetShader(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom stage) {
         SR_TRACY_ZONE;
+
+        static const SR_UTILS_NS::StringAtom defaultStage = "Default";
+        if (stage == defaultStage) {
+            stage = SR_UTILS_NS::StringAtom();
+        }
 
         if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path)) {
             SetShader(pShader, stage);

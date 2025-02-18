@@ -58,14 +58,13 @@ namespace SR_GRAPH_UI_NS {
     );
 
     class Gizmo : public SR_GTYPES_NS::IRenderComponent {
-        SR_REGISTER_NEW_COMPONENT(Gizmo, 1001);
+        SR_CLASS()
+        SR_REGISTER_NEW_COMPONENT(Gizmo, 1002);
         using Super = SR_GTYPES_NS::IRenderComponent;
         enum class GizmoMeshLoadMode {
             Visual, Selection, All
         };
     public:
-        bool InitializeEntity() noexcept override;
-
         void OnEnable() override;
         void OnDisable() override;
         void OnAttached() override;
@@ -90,6 +89,8 @@ namespace SR_GRAPH_UI_NS {
 
         void SetMode(GizmoMode mode) { m_mode = mode; }
         void SetOperation(GizmoOperation operation);
+
+        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
 
         SR_NODISCARD virtual GizmoMode GetMode() const { return m_mode; }
         SR_NODISCARD virtual GizmoOperation GetOperation() const { return m_operation; }
@@ -133,7 +134,9 @@ namespace SR_GRAPH_UI_NS {
 
         bool m_isGizmoDirty = false;
 
+        /// @property
         float_t m_zoomFactor = 0.0665f;
+        /// @property
         float_t m_moveFactor = 0.1f;
 
         SR_MATH_NS::FPoint m_lastMousePos = SR_MATH_NS::InfinityFV2;
