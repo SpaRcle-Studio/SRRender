@@ -98,6 +98,20 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void MaterialShaderData::OnPreLoad() {
+        for (MaterialShaderProperty& sampler : samplers) {
+            pOwnedMaterialData->OnSamplerChanged(std::get<SR_GTYPES_NS::Texture*>(sampler.data), nullptr);
+        }
+        Serializable::OnPreLoad();
+    }
+
+    void MaterialShaderData::OnPostLoad() {
+        for (MaterialShaderProperty& sampler : samplers) {
+            pOwnedMaterialData->OnSamplerChanged(nullptr, std::get<SR_GTYPES_NS::Texture*>(sampler.data));
+        }
+        Serializable::OnPostLoad();
+    }
+
     void MaterialShaderData::ForEachProperty(const SR_HTYPES_NS::Function<void(MaterialShaderProperty&)>& func) {
         for (MaterialShaderProperty& uniform : uniforms) {
             func(uniform);

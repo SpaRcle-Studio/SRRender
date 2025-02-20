@@ -55,6 +55,9 @@ namespace SR_GRAPH_NS {
         /// @property
         std::vector<MaterialShaderProperty> samplers;
 
+        void OnPreLoad() override;
+        void OnPostLoad() override;
+
         void ForEachProperty(const SR_HTYPES_NS::Function<void(MaterialShaderProperty&)>& func);
 
         MaterialPropertyChangeResult SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;

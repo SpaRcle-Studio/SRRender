@@ -13,7 +13,7 @@ namespace SR_GTYPES_NS {
     class Mesh3D final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
         using Super = IndexedMesh;
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(Mesh3D, 1004);
+        SR_REGISTER_NEW_COMPONENT(Mesh3D, 1005);
     public:
         Mesh3D() = default;
 

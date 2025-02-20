@@ -130,6 +130,38 @@ namespace SR_GRAPH_NS {
         return pFileMaterial.StaticCast<BaseMaterial>();
     }
 
+    BaseMaterial::Ptr FileMaterial::LoadAsUnique(const SR_UTILS_NS::Path& rawPath) {
+        auto&& pFileMaterial = Load(rawPath);
+        if (!pFileMaterial) {
+            SR_ERROR("FileMaterial::LoadAsUnique() : failed to load material from file! \n\tPath: " + rawPath.ToString());
+            return nullptr;
+        }
+
+        auto&& pFileMaterialData = pFileMaterial->GetMaterialData();
+
+        UniqueMaterial::Ptr pUniqueMaterial = SRNew<UniqueMaterial>();
+        auto&& pUniqueMaterialData = pUniqueMaterial->GetMaterialData();
+
+        auto&& defaultData = pFileMaterialData->GetDefaultShaderData();
+        if (auto&& pDefaultShader = defaultData.pShader) {
+            pUniqueMaterialData->SetShader(pDefaultShader);
+            defaultData.ForEachProperty([&](const SR_GRAPH_NS::MaterialShaderProperty& property) {
+                pUniqueMaterialData->GetDefaultShaderData().SetData(property.id, property.data, property.type);
+            });
+        }
+
+        for (auto&& [stage, data] : pFileMaterialData->GetShadersData()) {
+            if (auto&& pShader = data.pShader) {
+                pUniqueMaterialData->SetShader(pShader, stage);
+                data.ForEachProperty([&](const SR_GRAPH_NS::MaterialShaderProperty& property) {
+                    pUniqueMaterialData->GetShaderData(stage)->SetData(property.id, property.data, property.type);
+                });
+            }
+        }
+
+        return pUniqueMaterial.StaticCast<BaseMaterial>();
+    }
+
     const MaterialData::Ptr& FileMaterial::GetMaterialData() const noexcept {
         static MaterialData::Ptr pEmptyData;
         return m_pResource ? m_pResource->GetData() : pEmptyData;

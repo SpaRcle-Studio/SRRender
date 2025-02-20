@@ -20,7 +20,7 @@ namespace SR_GRAPH_NS {
 namespace SR_GTYPES_NS {
     class Camera : public SR_UTILS_NS::Component {
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(Camera, 1004);
+        SR_REGISTER_NEW_COMPONENT(Camera, 1005);
         struct RenderTechniqueInfo {
             SR_UTILS_NS::Path path;
             SR_GRAPH_NS::IRenderTechnique* pTechnique = nullptr;

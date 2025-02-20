@@ -9,24 +9,22 @@
 
 namespace SR_ANIMATIONS_NS {
     class Skeleton : public SR_UTILS_NS::Component {
-        SR_ENTITY_SET_VERSION(1001);
-        SR_INITIALIZE_COMPONENT(Skeleton);
+        SR_CLASS()
+        SR_REGISTER_NEW_COMPONENT(Skeleton, 1003);
         using Super = SR_UTILS_NS::Component;
     public:
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
     public:
-        static Component* LoadComponent(SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* dataStorage);
-
         ~Skeleton() override;
 
     public:
-        SR_NODISCARD Component* CopyComponent() const override;
-        SR_NODISCARD SR_HTYPES_NS::Marshal::Ptr SaveLegacy(SR_UTILS_NS::SavableContext data) const override;
-
         void Update(float_t dt) override;
 
+        bool UseNewSerialization() const noexcept override { return true; }
+
+        void OnPostLoad() override;
+
         void OnAttached() override;
-        void OnLoaded() override;
         void OnDestroy() override;
 
         bool ReCalculateSkeleton();
@@ -37,8 +35,9 @@ namespace SR_ANIMATIONS_NS {
         void SetOptimizedBones(const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& bones);
         void SetBonesOffsets(const std::vector<SR_MATH_NS::Matrix4x4>& offsets);
 
-        Bone* AddBone(Bone* pParent, const std::string& name, bool recalculate);
-        SR_NODISCARD Bone* GetRootBone() const noexcept { return m_rootBone; }
+        Bone* AddBone(Bone* pParent, SR_UTILS_NS::StringAtom name, bool recalculate);
+        SR_NODISCARD const Bone* GetRootBone() const noexcept { return m_rootBone.Get(); }
+        SR_NODISCARD Bone* GetRootBone() noexcept { return m_rootBone.Get(); }
 
         const SR_MATH_NS::Matrix4x4& GetMatrixByIndex(uint16_t index) noexcept;
         SR_NODISCARD const std::vector<SR_MATH_NS::Matrix4x4>& GetMatrices() noexcept;
@@ -61,8 +60,6 @@ namespace SR_ANIMATIONS_NS {
         void DisableDebug();
 
     private:
-        bool m_debugEnabled = false;
-
         ska::flat_hash_map<Bone*, uint64_t> m_debugLines;
         ska::flat_hash_map<SR_UTILS_NS::StringAtom, Bone*> m_bonesByName;
 
@@ -73,9 +70,13 @@ namespace SR_ANIMATIONS_NS {
         std::vector<SR_MATH_NS::Matrix4x4> m_matrices;
         std::vector<SR_MATH_NS::Matrix4x4> m_skeletonOffsets;
 
+    private:
+        /// @property @notNull
+        Bone::Ptr m_rootBone = nullptr;
+        /// @property @dontSave @setter(SetDebugEnabled)
+        bool m_debugEnabled = false;
+        /// @property @dontSave @readOnly
         bool m_dirtyMatrices = false;
-
-        Bone* m_rootBone = nullptr;
 
     };
 }
