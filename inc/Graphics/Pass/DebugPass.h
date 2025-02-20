@@ -45,7 +45,7 @@ namespace SR_GRAPH_NS {
         std::vector<std::pair<uint32_t, uint32_t>> m_meshesCountCache;
         std::map<SR_UTILS_NS::StringAtom, ShaderInfo> m_shaders;
         bool m_hasRendered = false;
-        bool m_needUpdate = false;
+        bool m_isNeedUpdate = false;
 
     };
 }

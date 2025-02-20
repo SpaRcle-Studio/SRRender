@@ -54,9 +54,10 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        m_needUpdate = pDebugRenderer->IsRenderSceneChanged();
+        m_isNeedUpdate = pDebugRenderer->IsRenderSceneChanged();
+        pDebugRenderer->ResetChangedFlags();
 
-        if (m_needUpdate) {
+        if (m_isNeedUpdate) {
             BuildQueues();
         }
 
@@ -73,7 +74,7 @@ namespace SR_GRAPH_NS {
         }
 
         m_hasRendered = false;
-        m_needUpdate = true;
+        m_isNeedUpdate = true;
 
         for (auto& [id, shaderInfo] : m_shaders) {
             shaderInfo.uboUsed = 0;
@@ -284,7 +285,7 @@ namespace SR_GRAPH_NS {
             shaderInfo.pShader->EndSharedUBO();
         }
 
-        if (!m_needUpdate) {
+        if (!m_isNeedUpdate) {
             return;
         }
 

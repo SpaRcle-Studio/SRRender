@@ -362,6 +362,7 @@ namespace SR_GTYPES_NS {
         if (!IsMeshRegistered()) {
             ReRegisterMesh();
         }
+        MarkUniformsDirty();
     }
 
     void Mesh::OnDisable() {
