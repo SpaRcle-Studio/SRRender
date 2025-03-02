@@ -42,7 +42,6 @@ namespace SR_GTYPES_NS {
         void Update(float_t dt) override;
 
         SR_NODISCARD virtual bool IsEditorCamera() const noexcept { return false; }
-        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
 
     public:
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetView() const noexcept { return m_viewMat; }

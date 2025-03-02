@@ -21,7 +21,6 @@ namespace SR_ANIMATIONS_NS {
     public:
         void Initialize(Skeleton* pSkeleton, uint16_t boneIndex);
 
-        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
     private:

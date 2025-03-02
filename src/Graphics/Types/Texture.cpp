@@ -9,6 +9,11 @@
 #include <Graphics/Loaders/TextureLoader.h>
 #include <Graphics/Render/RenderContext.h>
 
+#include <Enum/BoolExt.hpp>
+#include <Enum/TextureCompression.hpp>
+#include <Enum/TextureFilter.hpp>
+#include <Enum/ImageFormat.hpp>
+
 namespace SR_GTYPES_NS {
     Texture::Texture()
         : IResource(SR_COMPILE_TIME_CRC32_TYPE_NAME(Texture))
@@ -56,7 +61,24 @@ namespace SR_GTYPES_NS {
         resourceManager.Execute([&]() {
             if ((pTexture = SR_UTILS_NS::ResourceManager::Instance().Find<Texture>(path))) {
                 if (config && pTexture->m_config != config.value()) {
-                    SR_WARN("Texture::Load() : copy values do not match load values.");
+                    const std::string debugInfo =
+                        "\n\tPath: {}"
+                        "\n\tOld alpha: {}, New alpha: {}"
+                        "\n\tOld mip levels: {}, New mip levels: {}"
+                        "\n\tOld format: {}, New format: {}"
+                        "\n\tOld filter: {}, New filter: {}"
+                        "\n\tOld compression: {}, New compression: {}"
+                        "\n\tOld cpu usage: {}, New cpu usage: {}"
+                        ""_format(
+                            path,
+                            pTexture->m_config.m_alpha, config.value().m_alpha,
+                            pTexture->m_config.m_mipLevels, config.value().m_mipLevels,
+                            pTexture->m_config.m_format, config.value().m_format,
+                            pTexture->m_config.m_filter, config.value().m_filter,
+                            pTexture->m_config.m_compression, config.value().m_compression,
+                            pTexture->m_config.m_cpuUsage, config.value().m_cpuUsage
+                    );
+                    SR_WARN("Texture::Load() : copy values do not match load values!" + debugInfo);
                 }
 
                 return;

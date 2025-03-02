@@ -240,11 +240,9 @@ namespace SR_ANIMATIONS_NS {
         }
 
         if (pGameObject) {
-            return pGameObject->GetTransform();
+            return pGameObject->GetTransform().Get();
         }
-        else {
-            return nullptr;
-        }
+        return nullptr;
     }
 
     uint64_t Skeleton::GetBoneIndex(SR_UTILS_NS::StringAtom name) {

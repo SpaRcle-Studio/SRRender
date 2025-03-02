@@ -136,14 +136,4 @@ namespace SR_GTYPES_NS {
         Mesh::UseModelMatrix();
         GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
     }
-
-    SR_UTILS_NS::Component* ProceduralMesh::CopyComponent() const {
-        if (auto&& pComponent = dynamic_cast<ProceduralMesh*>(Super::CopyComponent())) {
-            pComponent->SetIndexedVertices((void*)m_vertices.data(), m_vertices.size());
-            pComponent->SetIndices((void*)m_indices.data(), m_indices.size());
-            return pComponent;
-        }
-
-        return nullptr;
-    }
 }

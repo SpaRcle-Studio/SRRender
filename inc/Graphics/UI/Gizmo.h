@@ -90,8 +90,6 @@ namespace SR_GRAPH_UI_NS {
         void SetMode(GizmoMode mode) { m_mode = mode; }
         void SetOperation(GizmoOperation operation);
 
-        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
-
         SR_NODISCARD virtual GizmoMode GetMode() const { return m_mode; }
         SR_NODISCARD virtual GizmoOperation GetOperation() const { return m_operation; }
 

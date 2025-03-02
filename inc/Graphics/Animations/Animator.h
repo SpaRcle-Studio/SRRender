@@ -25,8 +25,6 @@ namespace SR_ANIMATIONS_NS {
         ~Animator() override;
 
     public:
-        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
-
         void FixedUpdate() override;
         void Update(float_t dt) override;
 

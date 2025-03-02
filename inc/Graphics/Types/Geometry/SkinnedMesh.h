@@ -23,7 +23,6 @@ namespace SR_GTYPES_NS {
         typedef Vertices::SkinnedMeshVertex VertexType;
 
     public:
-        bool UseNewSerialization() const noexcept override { return true; }
         SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Skinned; }
 
         void LateUpdate() override;

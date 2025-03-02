@@ -64,8 +64,6 @@ namespace SR_GTYPES_NS {
         static Mesh::Ptr Load(const SR_UTILS_NS::Path& path, MeshType type, SR_UTILS_NS::StringAtom name);
 
     public:
-        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
-
         void OnDestroy() override;
         void OnMatrixDirty() override;
         void OnLayerChanged() override;

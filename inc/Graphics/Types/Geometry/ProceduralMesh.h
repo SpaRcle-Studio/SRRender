@@ -31,8 +31,6 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsCalculatable() const override;
 
-        SR_NODISCARD Component* CopyComponent() const override;
-
     private:
         bool Calculate() override;
         void Draw() override;

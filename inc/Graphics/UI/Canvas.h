@@ -21,7 +21,6 @@ namespace SR_GRAPH_UI_NS {
         using RenderContextPtr = SR_HTYPES_NS::SafePtr<RenderContext>;
         using Super = SR_UTILS_NS::Component;
     public:
-        SR_NODISCARD bool UseNewSerialization() const noexcept override { return true; }
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
         void OnAttached() override;

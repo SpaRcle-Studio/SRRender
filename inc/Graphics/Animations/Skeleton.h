@@ -20,8 +20,6 @@ namespace SR_ANIMATIONS_NS {
     public:
         void Update(float_t dt) override;
 
-        bool UseNewSerialization() const noexcept override { return true; }
-
         void OnPostLoad() override;
 
         void OnAttached() override;
