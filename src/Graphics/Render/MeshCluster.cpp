@@ -16,7 +16,7 @@ namespace SR_GRAPH_NS {
         , m_shader(pShader)
     { }
 
-    bool ShadedMeshSubCluster::Add(SR_GTYPES_NS::Mesh::Ptr pMesh) noexcept {
+    /*bool ShadedMeshSubCluster::Add(SR_GTYPES_NS::Mesh::Ptr pMesh) noexcept {
         SR_TRACY_ZONE;
 
         const int32_t groupID = pMesh->GetVBO();
@@ -30,7 +30,7 @@ namespace SR_GRAPH_NS {
         }
 
         return true;
-    }
+    }*/
 
     bool ShadedMeshSubCluster::Empty() const noexcept {
         return m_groups.empty();
@@ -62,16 +62,16 @@ namespace SR_GRAPH_NS {
                     ShadedMeshSubCluster(pShader)
             ));
 
-            if (!subCluster->second.Add(pMesh)) {
-                SRHalt0();
-            }
+            //if (!subCluster->second.Add(pMesh)) {
+            //    SRHalt0();
+            //}
 
             return true;
         }
         else {
-            if (!subClusterIt->second.Add(pMesh)) {
-                SRHalt0();
-            }
+            //if (!subClusterIt->second.Add(pMesh)) {
+            //    SRHalt0();
+            //}
 
             return true;
         }

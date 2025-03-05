@@ -170,6 +170,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetFramesPerSecond() const noexcept { return m_framesPerSecond; }
         SR_NODISCARD const PipelineState& GetPreviousState() const { return m_previousState; }
         SR_NODISCARD const PipelineState& GetBuildState() const { return m_buildState; }
+        SR_NODISCARD const PipelineState& GetState() const { return m_state; }
         SR_NODISCARD uint8_t GetSamplesCount() const;
         SR_NODISCARD bool IsMultiSamplingSupported() const noexcept;
         SR_NODISCARD virtual bool IsVSyncEnabled() const { return false; }

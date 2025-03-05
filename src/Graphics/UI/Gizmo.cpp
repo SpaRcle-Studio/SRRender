@@ -53,12 +53,6 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::IndexedMesh*>(pMesh);
-        if (!pMeshComponent) {
-            SRHalt("Failed to cast!");
-            return;
-        }
-
         /////////////////////////////////////////////////////////////////////////////////pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
 
         const BaseMaterial::Ptr pMaterial = SRNew<SR_GRAPH_NS::UniqueMaterial>();
@@ -70,24 +64,24 @@ namespace SR_GRAPH_UI_NS {
         if (mode == GizmoMeshLoadMode::Visual) {
             if (SR_MATH_NS::IsMaskIncludedSubMask(operation, GizmoOperation::Rotate)) {
                 auto&& gameObject = GetGameObjectByOperation(mode, operation);
-                gameObject->AddComponent(pMeshComponent);
+                gameObject->AddComponent(pMesh.StaticCast<SR_UTILS_NS::Component>());
                 gameObject->SetLayer("Gizmo");
             }
             else {
-                GetGameObject()->AddComponent(pMeshComponent);
+                GetGameObject()->AddComponent(pMesh.StaticCast<SR_UTILS_NS::Component>());
             }
-            m_meshes[operation].pVisual = pMeshComponent;
+            m_meshes[operation].pVisual = pMesh;
         }
         else if (mode == GizmoMeshLoadMode::Selection) {
             if (SR_MATH_NS::IsMaskIncludedSubMask(operation, GizmoOperation::Rotate)) {
                 auto&& gameObject = GetGameObjectByOperation(mode, operation);
-                gameObject->AddComponent(pMeshComponent);
+                gameObject->AddComponent(pMesh.StaticCast<SR_UTILS_NS::Component>());
                 gameObject->SetLayer("GizmoSelection");
             }
             else {
-                GetGameObject()->GetOrCreateChild("Selection")->AddComponent(pMeshComponent);
+                GetGameObject()->GetOrCreateChild("Selection")->AddComponent(pMesh.StaticCast<SR_UTILS_NS::Component>());
             }
-            m_meshes[operation].pSelection = pMeshComponent;
+            m_meshes[operation].pSelection = pMesh;
         }
         else {
             SRHalt("Unresolved situation!");

@@ -48,7 +48,7 @@ namespace SR_GTYPES_NS {
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using ShaderPtr = Shader*;
         using MaterialPtr = SR_HTYPES_NS::SharedPtr<BaseMaterial>;
-        using Ptr = Mesh*;
+        using Ptr = SR_HTYPES_NS::SharedPtr<Mesh>;
 
         using RenderQueues = SR_HTYPES_NS::SortedVector<SR_GRAPH_NS::RenderQueueInfo, SR_GRAPH_NS::RenderQueuePredicate>;
 
@@ -85,6 +85,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetMeshLayer() const;
         SR_NODISCARD virtual bool IsSupportVBO() const = 0;
         SR_NODISCARD virtual uint32_t GetIndicesCount() const = 0;
+        SR_NODISCARD virtual uint32_t GetVerticesCount() const { return 0; }
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
         SR_NODISCARD ShaderPtr GetShader() const;
@@ -143,6 +144,10 @@ namespace SR_GTYPES_NS {
 
     protected:
         /// @virtualProperty(meshType) @getter(GetMeshType) @readOnly @dontSave
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(verticesCount) @getter(GetVerticesCount) @readOnly @dontSave
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(indicesCount) @getter(GetIndicesCount) @readOnly @dontSave
         SR_VIRTUAL_PROPERTY
         /// @property @setter(SetMaterial) @getter(GetMaterial) @inspector(MaterialPropertyDrawer)
         MaterialPtr m_material;

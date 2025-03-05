@@ -8,12 +8,14 @@
 #include <Graphics/Animations/Bone.h>
 
 namespace SR_ANIMATIONS_NS {
+    /// @category(Animations)
     class Skeleton : public SR_UTILS_NS::Component {
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(Skeleton, 1003);
         using Super = SR_UTILS_NS::Component;
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<Skeleton>;
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
+
     public:
         ~Skeleton() override;
 

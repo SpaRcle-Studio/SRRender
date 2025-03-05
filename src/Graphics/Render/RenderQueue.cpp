@@ -212,6 +212,12 @@ namespace SR_GRAPH_NS {
         for (MeshInfo* pElement = pStart; pElement < pEnd; ) {
             const MeshInfo info = *pElement;
 
+            if (info.pMesh->IsWaitReRegister()) SR_UNLIKELY_ATTRIBUTE {
+                pElement->state = QUEUE_STATE_ERROR;
+                ++pElement;
+                continue;
+            }
+
             const bool invalidVBO = info.vbo == SR_ID_INVALID && info.pMesh->IsSupportVBO();
             if (!info.shaderUseInfo.pShader || invalidVBO) SR_UNLIKELY_ATTRIBUTE {
                 pElement->state = QUEUE_STATE_ERROR;

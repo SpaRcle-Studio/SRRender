@@ -17,9 +17,9 @@ namespace SR_ANIMATIONS_NS {
     class AnimationClip;
     class AnimationChannel;
 
+    /// @category(Animations)
     class Animator : public SR_UTILS_NS::Component {
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(Animator, 1004);
         using Super = SR_UTILS_NS::Component;
     public:
         ~Animator() override;

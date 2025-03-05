@@ -12,11 +12,13 @@
 #include <Graphics/Animations/Skeleton.h>
 
 namespace SR_GTYPES_NS {
+    /// @category(Render)
     class SkinnedMesh final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(SkinnedMesh, 1006);
         using Super = IndexedMesh;
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<SkinnedMesh>;
+
         SkinnedMesh();
 
     public:

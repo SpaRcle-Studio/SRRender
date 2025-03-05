@@ -10,10 +10,10 @@
 #include <Graphics/Types/Geometry/MeshComponent.h>
 
 namespace SR_GTYPES_NS {
+    /// @category(Render)
     class Mesh3D final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
         using Super = IndexedMesh;
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(Mesh3D, 1005);
     public:
         Mesh3D() = default;
 
@@ -40,6 +40,8 @@ namespace SR_GTYPES_NS {
         /// @virtualProperty(geometryName) @getter(GetGeometryName) @dontSave @readOnly
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(meshPath) @getter(GetMeshPath) @setter(SetRawMesh)
+        /// @customArgs(pick: enabled, filter name: Meshes)
+        /// @customArg(filter value: fbx,blend,obj,pmx,stl,dae)
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)
         SR_VIRTUAL_PROPERTY

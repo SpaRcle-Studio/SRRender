@@ -57,9 +57,9 @@ namespace SR_GRAPH_UI_NS {
         Universal = TranslateAll | RotateAll | ScaleAll
     );
 
+    /// @category(Render)
     class Gizmo : public SR_GTYPES_NS::IRenderComponent {
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(Gizmo, 1002);
         using Super = SR_GTYPES_NS::IRenderComponent;
         enum class GizmoMeshLoadMode {
             Visual, Selection, All
@@ -124,8 +124,8 @@ namespace SR_GRAPH_UI_NS {
 
     private:
         struct MeshInfo {
-            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::IndexedMesh> pVisual;
-            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::IndexedMesh> pSelection;
+            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> pVisual;
+            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> pSelection;
             bool isHovered = false;
         };
         std::map<GizmoOperation, MeshInfo> m_meshes;

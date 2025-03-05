@@ -18,7 +18,6 @@ namespace SR_GTYPES_NS {
     };
 
     class Sprite : public SR_GTYPES_NS::Mesh {
-        SR_REGISTER_NEW_COMPONENT(Sprite, 1002)
         using Super = SR_GTYPES_NS::Mesh;
     public:
         Sprite() = default;

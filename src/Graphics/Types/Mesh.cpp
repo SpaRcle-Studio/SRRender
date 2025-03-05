@@ -59,6 +59,16 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
+    Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
+        if (SR_HTYPES_NS::RawMesh* pRawMesh = SR_HTYPES_NS::RawMesh::Load(path)) {
+            if (auto&& pMesh = TryLoad(pRawMesh, type, id)) {
+                return pMesh;
+            }
+            pRawMesh->CheckResourceUsage();
+        }
+        return nullptr;
+    }
+
     Mesh::Ptr Mesh::TryLoad(SR_HTYPES_NS::RawMesh* pRawMesh, MeshType type, uint32_t id) {
         Mesh::Ptr pMesh = nullptr;
         bool exists = false;
@@ -72,17 +82,17 @@ namespace SR_GTYPES_NS {
             return nullptr;
         }
 
-        if (!exists || !(pMesh = CreateMeshByType(type))) {
+        if (!exists || !((pMesh = CreateMeshByType(type)))) {
             pRawMesh->CheckResourceUsage();
             return nullptr;
         }
 
-        if (auto&& pRawMeshHolder = dynamic_cast<SR_HTYPES_NS::IRawMeshHolder*>(pMesh)) {
+        if (auto&& pRawMeshHolder = pMesh.DynamicCast<SR_HTYPES_NS::IRawMeshHolder>()) {
             pRawMeshHolder->SetRawMesh(pRawMesh);
             pRawMeshHolder->SetMeshId(id);
         }
         else {
-            SRHalt("Mesh is not a raw mesh holder! Memory leak...");
+            SRHalt("Mesh is not a raw mesh holder! Memory leak possible...");
             pRawMesh->CheckResourceUsage();
             return nullptr;
         }
@@ -297,37 +307,6 @@ namespace SR_GTYPES_NS {
 
     void Mesh::MarkMaterialDirty() {
         m_dirtyMaterial = true;
-    }
-
-    Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
-        Mesh::Ptr pMesh = nullptr;
-        bool exists = false;
-
-        /// Проверяем существование меша
-        SR_HTYPES_NS::RawMesh* pRawMesh = nullptr;
-        if ((pRawMesh = SR_HTYPES_NS::RawMesh::Load(path))) {
-            exists = id < pRawMesh->GetMeshesCount();
-        }
-        else {
-            return nullptr;
-        }
-
-        if (!exists || !((pMesh = CreateMeshByType(type)))) {
-            pRawMesh->CheckResourceUsage();
-            return nullptr;
-        }
-
-        if (auto&& pRawMeshHolder = dynamic_cast<SR_HTYPES_NS::IRawMeshHolder*>(pMesh)) {
-            pRawMeshHolder->SetRawMesh(pRawMesh);
-            pRawMeshHolder->SetMeshId(id);
-        }
-        else {
-            SRHalt("Mesh is not a raw mesh holder! Memory leak...");
-            pRawMesh->CheckResourceUsage();
-            return nullptr;
-        }
-
-        return pMesh;
     }
 
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, SR_UTILS_NS::StringAtom name) {

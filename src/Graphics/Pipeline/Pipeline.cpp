@@ -147,10 +147,12 @@ namespace SR_GRAPH_NS {
 
     void Pipeline::BindVBO(uint32_t VBO) {
         ++m_state.operations;
+        m_state.VBOId = static_cast<int32_t>(VBO);
     }
 
     void Pipeline::BindIBO(uint32_t IBO) {
         ++m_state.operations;
+        m_state.IBOId = static_cast<int32_t>(IBO);
     }
 
     void Pipeline::BindUBO(uint32_t UBO) {

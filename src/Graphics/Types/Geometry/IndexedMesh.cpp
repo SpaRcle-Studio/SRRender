@@ -26,7 +26,10 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         SRAssert(m_pipeline);
-        SRAssert(m_IBO == SR_ID_INVALID);
+
+        if (!SRVerify2(m_IBO == SR_ID_INVALID, "IBO already calculated!")) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
 
         using namespace Memory;
 

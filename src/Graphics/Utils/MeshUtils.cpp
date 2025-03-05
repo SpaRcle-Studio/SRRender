@@ -11,20 +11,18 @@
 #include <Graphics/Types/Geometry/Sprite.h>
 
 namespace SR_GRAPH_NS {
-    SR_GTYPES_NS::Mesh* CreateMeshByType(MeshType type) {
-        auto&& manager = SR_UTILS_NS::ComponentManager::Instance();
-
+    SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> CreateMeshByType(MeshType type) {
         switch (type) {
-            case MeshType::Static:
-                return manager.CreateComponent<SR_GTYPES_NS::Mesh3D>();
+        case MeshType::Static:
+                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::Mesh3D>().StaticCast<SR_GTYPES_NS::Mesh>();
             case MeshType::Sprite:
-                return manager.CreateComponent<SR_GTYPES_NS::Sprite>();
+                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::Sprite>().StaticCast<SR_GTYPES_NS::Mesh>();
             case MeshType::Skinned:
-                return manager.CreateComponent<SR_GTYPES_NS::SkinnedMesh>();
+                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::SkinnedMesh>().StaticCast<SR_GTYPES_NS::Mesh>();
             case MeshType::Procedural:
-                return manager.CreateComponent<SR_GTYPES_NS::ProceduralMesh>();
+                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::ProceduralMesh>().StaticCast<SR_GTYPES_NS::Mesh>();
             case MeshType::Wireframe:
-                return manager.CreateComponent<SR_GTYPES_NS::DebugWireframeMesh>();
+                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::DebugWireframeMesh>().StaticCast<SR_GTYPES_NS::Mesh>();
             case MeshType::Unknown:
             default:
                 break;
@@ -34,25 +32,4 @@ namespace SR_GRAPH_NS {
 
         return nullptr;
     }
-
-    /*SR_GTYPES_NS::IMeshComponent* CreateMeshComponentByType(MeshType type) {
-        switch (type) {
-            case MeshType::Static:
-            case MeshType::Sprite:
-            case MeshType::Skinned:
-            case MeshType::Procedural: {
-                if (auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::IMeshComponent*>(CreateMeshByType(type))) {
-                    return pMeshComponent;
-                }
-                SRHalt("Mesh is not a component! Memory leak...");
-                return nullptr;
-            }
-            default:
-                break;
-        }
-
-        SRHalt("Unknown mesh type!");
-
-        return nullptr;
-    }*/
 }

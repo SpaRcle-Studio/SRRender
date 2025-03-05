@@ -34,7 +34,6 @@ namespace SR_GTYPES_NS {
 
     class Text final : public ITextComponent {
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(Text, 1000)
     public:
         Text() = default;
 

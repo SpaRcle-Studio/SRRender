@@ -111,6 +111,7 @@ namespace SR_GRAPH_NS {
 
     void RenderScene::SetDirty() {
         m_dirty.Increment();
+        GetPipeline()->SetDirty(true);
     }
 
     bool RenderScene::IsDirty() const noexcept {

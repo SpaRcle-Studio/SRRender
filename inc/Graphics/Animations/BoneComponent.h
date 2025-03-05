@@ -11,9 +11,9 @@
 namespace SR_ANIMATIONS_NS {
     class Skeleton;
 
+    /// @category(Animations)
     class BoneComponent : public SR_UTILS_NS::Component {
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(BoneComponent, 1002);
         using Super = SR_UTILS_NS::Component;
     public:
         BoneComponent();
