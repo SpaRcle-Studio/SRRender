@@ -109,12 +109,17 @@ namespace SR_ANIMATIONS_NS {
     AnimationClipState* AnimationClipState::Load(const SR_XML_NS::Node& nodeXml) {
         auto&& path = nodeXml.GetAttribute("Path").ToString();
         auto&& name = nodeXml.GetAttribute("Name").ToString();
+        auto&& skeleton = nodeXml.TryGetAttribute("Skeleton").ToString("");
         if (path.empty() || name.empty()) {
             SR_ERROR("AnimationClipState::Load() : path or name is empty!");
             return nullptr;
         }
 
-        if (auto&& pClip = AnimationClip::Load(path, name)) {
+        if (skeleton.empty()) {
+            skeleton = path;
+        }
+
+        if (auto&& pClip = AnimationClip::Load(path, skeleton, name)) {
             auto&& pState = new AnimationClipState();
             pState->SetClip(pClip);
             return pState;

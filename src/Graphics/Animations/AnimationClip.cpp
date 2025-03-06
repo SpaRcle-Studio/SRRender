@@ -22,7 +22,7 @@ namespace SR_ANIMATIONS_NS {
         m_channels.clear();
     }
 
-    AnimationClip* AnimationClip::Load(const SR_UTILS_NS::Path &rawPath, SR_UTILS_NS::StringAtom name) {
+    AnimationClip* AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton, SR_UTILS_NS::StringAtom name) {
         SR_GLOBAL_LOCK
 
         auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
@@ -46,6 +46,7 @@ namespace SR_ANIMATIONS_NS {
 
             pAnimationClip = new AnimationClip();
             pAnimationClip->SetId(resourceId, false /** auto register */);
+            pAnimationClip->m_skeletonPath = SR_UTILS_NS::Path(skeleton).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
 
             if (!pAnimationClip->Reload()) {
                 SR_ERROR("AnimationClip::Load() : failed to load animation clip! \n\tPath: " + path.ToString());
@@ -61,7 +62,7 @@ namespace SR_ANIMATIONS_NS {
         return pAnimationClip;
     }
 
-    std::vector<AnimationClip*> AnimationClip::Load(const SR_UTILS_NS::Path& rawPath) {
+    std::vector<AnimationClip*> AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton) {
         std::vector<AnimationClip*> animations;
 
         SR_HTYPES_NS::RawMeshParams params;
@@ -74,7 +75,7 @@ namespace SR_ANIMATIONS_NS {
 
         auto&& animationNames = pRawMesh->GetAnimationNames();
         for (auto&& name : animationNames) {
-            auto&& pAnimationClip = Load(rawPath, name);
+            auto&& pAnimationClip = Load(rawPath, skeleton, name);
             animations.emplace_back(pAnimationClip);
         }
 
@@ -85,7 +86,7 @@ namespace SR_ANIMATIONS_NS {
         return animations;
     }
 
-    bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, const std::string& name) {
+    bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, const std::string& name) {
         const aiAnimation* pAnimation = nullptr;
 
         for (uint32_t i = 0; i < pRawMesh->GetAssimpScene()->mNumAnimations; ++i) {
@@ -101,7 +102,7 @@ namespace SR_ANIMATIONS_NS {
 
         for (uint32_t channelIndex = 0; channelIndex < pAnimation->mNumChannels; ++channelIndex) {
             AnimationChannel::Load(
-                pRawMesh,
+                pSkeleton,
                 pAnimation->mChannels[channelIndex],
                 static_cast<float_t>(pAnimation->mTicksPerSecond),
                 m_channels
@@ -145,7 +146,20 @@ namespace SR_ANIMATIONS_NS {
                 return false;
             }
 
-            if (!LoadChannels(pRawMesh, animationName)) {
+            SR_HTYPES_NS::RawMesh* pSkeletonMesh = nullptr;
+
+            if (m_skeletonPath.empty() || m_skeletonPath == rawPath) {
+                pSkeletonMesh = pRawMesh;
+            }
+            else if (!m_skeletonPath.empty()) {
+                pSkeletonMesh = SR_HTYPES_NS::RawMesh::Load(m_skeletonPath);
+                if (!pSkeletonMesh) {
+                    pRawMesh->CheckResourceUsage();
+                    return false;
+                }
+            }
+
+            if (!LoadChannels(pRawMesh, pSkeletonMesh, animationName)) {
                 std::string animations;
                 for (uint32_t i = 0; i < pRawMesh->GetAssimpScene()->mNumAnimations; ++i) {
                     animations += pRawMesh->GetAssimpScene()->mAnimations[i]->mName.C_Str();
@@ -153,9 +167,14 @@ namespace SR_ANIMATIONS_NS {
                         animations += ", ";
                     }
                 }
+                pRawMesh->CheckResourceUsage();
+                pSkeletonMesh->CheckResourceUsage();
                 SR_ERROR("AnimationClip::Load() : wrong animation name \"{}\"!\n\tTotal animations: {}", animationName, animations);
                 return false;
             }
+
+            pRawMesh->CheckResourceUsage();
+            pSkeletonMesh->CheckResourceUsage();
         }
 
         for (auto&& pChannel : GetChannels()) {

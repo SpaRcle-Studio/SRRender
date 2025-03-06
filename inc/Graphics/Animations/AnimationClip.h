@@ -23,8 +23,8 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationClip() override;
 
     public:
-        static std::vector<AnimationClip*> Load(const SR_UTILS_NS::Path& path);
-        static AnimationClip* Load(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom name);
+        static std::vector<AnimationClip*> Load(const SR_UTILS_NS::Path& path, const SR_UTILS_NS::Path& skeleton);
+        static AnimationClip* Load(const SR_UTILS_NS::Path& path, const SR_UTILS_NS::Path& skeleton, SR_UTILS_NS::StringAtom name);
 
     public:
         SR_NODISCARD const std::vector<AnimationChannel*>& GetChannels() const { return m_channels; }
@@ -42,9 +42,10 @@ namespace SR_ANIMATIONS_NS {
         bool Load() override;
 
     private:
-        SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, const std::string& name);
+        SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, const std::string& name);
 
     private:
+        SR_UTILS_NS::Path m_skeletonPath;
         std::vector<AnimationChannel*> m_channels;
 
         float_t m_duration = 0.f;
