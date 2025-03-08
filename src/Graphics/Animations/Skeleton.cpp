@@ -101,7 +101,7 @@ namespace SR_ANIMATIONS_NS {
         }
 
         if (!pBoneIt->second->gameObject && !pBoneIt->second->hasError && !pBoneIt->second->Initialize()) {
-            SR_WARN("Skeleton::GetBone() : failed to find bone game object!\n\tName: " + pBoneIt->second->name);
+            SR_WARN("Skeleton::GetBone() : failed to find bone game object!\n\tName: {}", pBoneIt->second->name);
         }
 
         return pBoneIt->second;

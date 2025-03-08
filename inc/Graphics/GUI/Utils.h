@@ -824,6 +824,53 @@ namespace SR_GRAPH_GUI_NS {
         return ImGuiDataType_::ImGuiDataType_COUNT;
     }
 
+    union ImGuiDataTypeUnion {
+        int8_t   s8;
+        uint8_t  u8;
+        int16_t  s16;
+        uint16_t u16;
+        int32_t  s32;
+        uint32_t u32;
+        int64_t  s64;
+        uint64_t u64;
+        float    f32;
+        double   f64;
+    };
+
+    SR_MAYBE_UNUSED static ImGuiDataTypeUnion ReadImGuiDataType(void* pData, ImGuiDataType_ type) {
+        ImGuiDataTypeUnion result = {};
+        switch (type) {
+            case ImGuiDataType_::ImGuiDataType_S8:  result.s8   = *(int8_t*)pData; break;
+            case ImGuiDataType_::ImGuiDataType_U8:  result.u8   = *(uint8_t*)pData; break;
+            case ImGuiDataType_::ImGuiDataType_S16: result.s16  = *(int16_t*)pData; break;
+            case ImGuiDataType_::ImGuiDataType_U16: result.u16  = *(uint16_t*)pData; break;
+            case ImGuiDataType_::ImGuiDataType_S32: result.s32  = *(int32_t*)pData; break;
+            case ImGuiDataType_::ImGuiDataType_U32: result.u32  = *(uint32_t*)pData; break;
+            case ImGuiDataType_::ImGuiDataType_S64: result.s64  = *(int64_t*)pData; break;
+            case ImGuiDataType_::ImGuiDataType_U64: result.u64  = *(uint64_t*)pData; break;
+            case ImGuiDataType_::ImGuiDataType_Float: result.f32 = *(float*)pData; break;
+            case ImGuiDataType_::ImGuiDataType_Double: result.f64 = *(double*)pData; break;
+            default: SRHalt("Unknown ImGuiDataType!"); break;
+        }
+        return result;
+    }
+
+    SR_MAYBE_UNUSED static void WriteImGuiDataType(void* pData, ImGuiDataType_ type, ImGuiDataTypeUnion value) {
+        switch (type) {
+            case ImGuiDataType_::ImGuiDataType_S8:  *(int8_t*)pData   = value.s8; break;
+            case ImGuiDataType_::ImGuiDataType_U8:  *(uint8_t*)pData  = value.u8; break;
+            case ImGuiDataType_::ImGuiDataType_S16: *(int16_t*)pData  = value.s16; break;
+            case ImGuiDataType_::ImGuiDataType_U16: *(uint16_t*)pData = value.u16; break;
+            case ImGuiDataType_::ImGuiDataType_S32: *(int32_t*)pData  = value.s32; break;
+            case ImGuiDataType_::ImGuiDataType_U32: *(uint32_t*)pData = value.u32; break;
+            case ImGuiDataType_::ImGuiDataType_S64: *(int64_t*)pData  = value.s64; break;
+            case ImGuiDataType_::ImGuiDataType_U64: *(uint64_t*)pData = value.u64; break;
+            case ImGuiDataType_::ImGuiDataType_Float: *(float*)pData   = value.f32; break;
+            case ImGuiDataType_::ImGuiDataType_Double: *(double*)pData = value.f64; break;
+            default: SRHalt("Unknown ImGuiDataType!"); break;
+        }
+    }
+
     SR_MAYBE_UNUSED static void ColoredText(const char* text, const ImVec4& color) {
         ImGui::PushStyleColor(ImGuiCol_Text, color);
         ImGui::Text(text);
