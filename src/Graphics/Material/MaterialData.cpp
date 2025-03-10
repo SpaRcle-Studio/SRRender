@@ -44,8 +44,10 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialShaderProperty::Load(SR_UTILS_NS::IDeserializer& deserializer) {
-        Super::Load(deserializer);
+    bool MaterialShaderProperty::Load(SR_UTILS_NS::IDeserializer& deserializer) {
+        if (!Super::Load(deserializer)) {
+            return false;
+        }
 
         if (IsSamplerType(type)) {
             SR_UTILS_NS::Path path;
@@ -65,7 +67,7 @@ namespace SR_GRAPH_NS {
                 pTexture->AddUsePoint();
             }
 
-            return;
+            return true;
         }
 
         data = GetVariantFromShaderVarType(type);
@@ -96,6 +98,8 @@ namespace SR_GRAPH_NS {
                 SRHalt("MaterialShaderProperty::Load() : unknown property type! Property id: {}, Type: {}", id, type);
                 break;
         }
+
+        return true;
     }
 
     void MaterialShaderData::OnPreLoad() {
@@ -336,8 +340,12 @@ namespace SR_GRAPH_NS {
         serializer.EndArray();
     }
 
-    void MaterialData::Load(SR_UTILS_NS::IDeserializer& deserializer) {
+    bool MaterialData::Load(SR_UTILS_NS::IDeserializer& deserializer) {
         SR_TRACY_ZONE;
+
+        if (!Super::Load(deserializer)) {
+            return false;
+        }
 
         Finalize();
 
@@ -382,6 +390,8 @@ namespace SR_GRAPH_NS {
 
             deserializer.EndArray();
         }
+
+        return true;
     }
 
     SR_GTYPES_NS::Shader* MaterialData::GetShader(const Pipeline* pPipeline) const noexcept {

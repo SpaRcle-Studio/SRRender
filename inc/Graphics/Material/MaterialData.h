@@ -29,7 +29,7 @@ namespace SR_GRAPH_NS {
 
     public:
         void Save(SR_UTILS_NS::ISerializer& serializer) const override;
-        void Load(SR_UTILS_NS::IDeserializer& deserializer) override;
+        bool Load(SR_UTILS_NS::IDeserializer& deserializer) override;
 
     public:
         uint32_t editorOrder = 0;
@@ -71,6 +71,7 @@ namespace SR_GRAPH_NS {
         , public SR_HTYPES_NS::SharedPtr<MaterialData>
         , public SR_UTILS_NS::SubscriptionHolder
     {
+        using Super = SR_UTILS_NS::Serializable;
         SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<MaterialData>;
@@ -83,7 +84,7 @@ namespace SR_GRAPH_NS {
         ~MaterialData() override;
 
         void Save(SR_UTILS_NS::ISerializer& serializer) const override;
-        void Load(SR_UTILS_NS::IDeserializer& deserializer) override;
+        bool Load(SR_UTILS_NS::IDeserializer& deserializer) override;
 
         SR_NODISCARD SR_GTYPES_NS::Shader* GetShader(const Pipeline* pPipeline) const noexcept;
 
