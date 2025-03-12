@@ -33,11 +33,10 @@
 #include "../src/Graphics/Memory/CameraManager.cpp"
 #include "../src/Graphics/Memory/IGraphicsResource.cpp"
 
-#include "../src/Graphics/Font/IText.cpp"
+#include "../src/Graphics/Font/Text.cpp"
 #include "../src/Graphics/Font/Font.cpp"
 #include "../src/Graphics/Font/FontLoader.cpp"
 #include "../src/Graphics/Font/SDF.cpp"
-#include "../src/Graphics/Font/ITextComponent.cpp"
 #include "../src/Graphics/Font/TextBuilder.cpp"
 #include "../src/Graphics/Font/Glyph.cpp"
 #include "../src/Graphics/Font/FreeType.cpp"

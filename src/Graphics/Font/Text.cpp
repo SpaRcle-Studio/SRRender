@@ -2,97 +2,22 @@
 // Created by Monika on 20.06.2024.
 //
 
+#include <Graphics/Font/Text.h>
 #include <Graphics/Font/Font.h>
-#include <Graphics/Font/IText.h>
 #include <Graphics/Font/TextBuilder.h>
 
 #include <Utils/Localization/Encoding.h>
 #include <Utils/ECS/SceneObject.h>
-#include <Utils/ECS/Transform2D.h>
 
-#include <Codegen/IText.generated.hpp>
+#include <Codegen/Text.generated.hpp>
 
 namespace SR_GTYPES_NS {
     Text::Text()
         : Super()
-    {
-        m_entityMessages.AddStandardProperty<SR_MATH_NS::UVector2>("Atlas size", &m_atlasSize)
-            .SetDontSave()
-            .SetReadOnly();
-    }
+    { }
 
     Text::~Text() {
         SetFont(nullptr);
-    }
-
-    bool Text::InitializeEntity() noexcept {
-        GetComponentProperties().AddStandardProperty("Is 3D", &m_is3D)
-            .SetSetter([this](void* pValue) { m_is3D = *static_cast<bool*>(pValue); ReRegisterMesh(); });
-
-        GetComponentProperties().AddStandardProperty("Use localization", &m_localization)
-            .SetSetter([this](void* pValue) { SetUseLocalization(*static_cast<bool*>(pValue)); });
-
-        GetComponentProperties().AddStandardProperty("Use preprocessor", &m_preprocessor)
-            .SetSetter([this](void* pValue) { SetUsePreprocessor(*static_cast<bool*>(pValue)); });
-
-        GetComponentProperties().AddStandardProperty("Use kerning", &m_kerning)
-            .SetSetter([this](void* pValue) { SetKerning(*static_cast<bool*>(pValue)); });
-
-        GetComponentProperties().AddStandardProperty("Debug", &m_debug)
-            .SetSetter([this](void* pValue) { SetDebug(*static_cast<bool*>(pValue)); });
-
-        GetComponentProperties().AddStandardProperty("Font size", &m_fontSize)
-            .SetDrag(1)
-            .SetResetValue(512.f)
-            .SetWidth(90.f);
-
-        GetComponentProperties().AddStandardProperty("Text", &m_text)
-            .SetSetter([this](auto&& text) { SetText(*static_cast<SR_HTYPES_NS::UnicodeString*>(text)); })
-            .SetMultiline();
-
-        GetComponentProperties().AddCustomProperty<SR_UTILS_NS::PathProperty>("Font")
-            .AddFileFilter("Mesh", SR_GRAPH_NS::SR_SUPPORTED_FONT_FORMATS)
-            .SetGetter([this]()-> SR_UTILS_NS::Path {
-                return m_font ? m_font->GetResourcePath() : SR_UTILS_NS::Path();
-            })
-            .SetSetter([this](const SR_UTILS_NS::Path& path) {
-                SetFont(path);
-            });
-
-        return Super::InitializeEntity();
-    }
-
-    int64_t Text::GetSortingPriority() const {
-        if (auto&& pTransform = GetTransform()) {
-            if (pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
-                return static_cast<SR_UTILS_NS::Transform2D*>(pTransform)->GetPriority();
-            }
-        }
-
-        return -1;
-    }
-
-    bool Text::HasSortingPriority() const {
-        if (auto&& pTransform = GetTransform()) {
-            return pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
-        }
-        return false;
-    }
-
-    SR_UTILS_NS::StringAtom Text::GetMeshLayer() const {
-        if (!m_sceneObject) {
-            return SR_UTILS_NS::StringAtom();
-        }
-
-        return m_sceneObject->GetLayer();
-    }
-
-    const SR_MATH_NS::Matrix4x4& Text::GetMatrix() const {
-        if (auto&& pTransform = GetTransform()) {
-            return pTransform->GetMatrix();
-        }
-
-        return Super::GetMatrix();
     }
 
     void Text::SetUsePreprocessor(bool enabled) {
@@ -129,7 +54,7 @@ namespace SR_GTYPES_NS {
 
     void Text::OnTextDirty() {
         m_isCalculated = false;
-        if (auto&& pRenderScene = GetTextRenderScene()) {
+        if (auto&& pRenderScene = TryGetRenderScene()) {
             pRenderScene->SetDirty();
         }
     }
@@ -147,7 +72,7 @@ namespace SR_GTYPES_NS {
         TextBuilder textBuilder(m_font);
         textBuilder.SetKerning(m_kerning);
         textBuilder.SetDebug(m_debug);
-        //textBuilder.SetCharSize(m_fontSize);
+        textBuilder.SetFontSize(m_fontSize);
 
         if (!textBuilder.Build(m_text)) {
             return false;
@@ -222,7 +147,7 @@ namespace SR_GTYPES_NS {
         OnTextDirty();
     }
 
-    void Text::SetFontSize(const SR_MATH_NS::UVector2& size) {
+    void Text::SetFontSize(const uint16_t& size) {
         m_fontSize = size;
         OnTextDirty();
     }
@@ -273,6 +198,17 @@ namespace SR_GTYPES_NS {
     }
 
     void Text::SetFont(const SR_UTILS_NS::Path& path) {
+        if (path.empty()) {
+            SetFont(nullptr);
+            return;
+        }
         SetFont(SR_GTYPES_NS::Font::Load(path));
+    }
+
+    SR_UTILS_NS::Path Text::GetFontPath() const noexcept {
+        if (m_font) {
+            return m_font->GetResourcePath();
+        }
+        return SR_UTILS_NS::Path();
     }
 }

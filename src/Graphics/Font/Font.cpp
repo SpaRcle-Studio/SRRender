@@ -18,6 +18,11 @@ namespace SR_GTYPES_NS {
 
         SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
 
+        if (path.empty()) {
+            SRHalt("Font::Load() : path is empty!");
+            return nullptr;
+        }
+
         if (auto&& pResource = SR_UTILS_NS::ResourceManager::Instance().Find<Font>(path)) {
             return pResource;
         }

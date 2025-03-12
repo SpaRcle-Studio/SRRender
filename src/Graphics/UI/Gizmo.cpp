@@ -144,6 +144,9 @@ namespace SR_GRAPH_UI_NS {
     }
 
     void Gizmo::ReleaseGizmo() {
+        m_hoveredOperation = GizmoOperation::None;
+        m_activeOperation = GizmoOperation::None;
+
         for (auto&& [operation, info] : m_meshes) {
             if (info.pSelection) {
                 info.pSelection->Detach();

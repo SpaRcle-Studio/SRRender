@@ -19,9 +19,9 @@ namespace SR_GRAPH_UI_NS {
         void OnChanged();
 
     private:
-        /// @property @changeCallback(OnChanged)
+        /// @property @onChanged(OnChanged)
         bool m_isWidthChangeable = true;
-        /// @property @changeCallback(OnChanged)
+        /// @property @onChanged(OnChanged)
         bool m_isHeightChangeable = true;
 
     };
