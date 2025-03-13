@@ -2,8 +2,8 @@
 // Created by Monika on 20.06.2024.
 //
 
-#ifndef SR_ENGINE_I_TEXT_H
-#define SR_ENGINE_I_TEXT_H
+#ifndef SR_ENGINE_TEXT_H
+#define SR_ENGINE_TEXT_H
 
 #include <Graphics/Types/Vertices.h>
 #include <Graphics/Types/Mesh.h>
@@ -20,13 +20,6 @@ namespace SR_GTYPES_NS {
         ~Text() override;
 
     public:
-        bool InitializeEntity() noexcept override;
-
-        SR_NODISCARD int64_t GetSortingPriority() const override;
-        SR_NODISCARD bool HasSortingPriority() const override;
-        SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override;
-        const SR_MATH_NS::Matrix4x4& GetMatrix() const override;
-
         void UseMaterial() override;
         void UseModelMatrix() override;
 
@@ -45,10 +38,11 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD SR_FORCE_INLINE bool IsPreprocessorEnabled() const noexcept { return m_preprocessor; }
         SR_NODISCARD SR_FORCE_INLINE bool IsLocalizationEnabled() const noexcept { return m_localization; }
         SR_NODISCARD SR_FORCE_INLINE Font* GetFont() const noexcept { return m_font; }
-        SR_NODISCARD SR_FORCE_INLINE SR_MATH_NS::UVector2 GetFontSize() const noexcept { return m_fontSize; }
+        SR_NODISCARD SR_FORCE_INLINE uint16_t GetFontSize() const noexcept { return m_fontSize; }
 
         SR_NODISCARD bool IsSupportVBO() const override { return false; }
 
+        SR_NODISCARD SR_UTILS_NS::Path GetFontPath() const noexcept;
         SR_NODISCARD uint32_t GetAtlasWidth() const noexcept { return m_atlasSize.x; }
         SR_NODISCARD uint32_t GetAtlasHeight() const noexcept { return m_atlasSize.y; }
 
@@ -61,41 +55,45 @@ namespace SR_GTYPES_NS {
         void SetDebug(bool enabled);
         void SetFont(Font* pFont);
         void SetFont(const SR_UTILS_NS::Path& path);
-        void SetFontSize(const SR_MATH_NS::UVector2& size);
+        void SetFontSize(const uint16_t& size);
         void SetUseLocalization(bool enabled);
         void SetUsePreprocessor(bool enabled);
 
         bool Calculate() override;
         void FreeVideoMemory() override;
 
-        SR_NODISCARD virtual RenderScene* GetTextRenderScene() const = 0;
-
     protected:
         void OnTextDirty();
         SR_NODISCARD bool BuildAtlas();
 
     protected:
-        Font* m_font = nullptr;
-
-        int32_t m_id = SR_ID_INVALID;
+        /// @property @setter(SetText) @getter(GetText)
+        /// @customArg(text-box: enabled)
+        SR_HTYPES_NS::UnicodeString m_text;
+        /// @virtualProperty(font) @setter(SetFont) @getter(GetFontPath)
+        /// @customArgs(pick: enabled, filter name: Fonts)
+        /// @customArg(filter value: ttf)
+        SR_VIRTUAL_PROPERTY
+        /// @property @readOnly @dontSave
         SR_MATH_NS::UVector2 m_atlasSize;
-
-        SR_MATH_NS::UVector2 m_fontSize = { 512, 512 };
-
-        /// @property
+        /// @property @setter(SetFontSize)
+        uint16_t m_fontSize = 16;
+        /// @property @onChanged(ReRegisterMesh)
         bool m_is3D = false;
-        /// @property
+        /// @property @setter(SetKerning)
         bool m_kerning = true;
-        /// @property
+        /// @property @setter(SetDebug)
         bool m_debug = false;
-        /// @property
+        /// @property @setter(SetUsePreprocessor)
         bool m_preprocessor = false;
-        /// @property
+        /// @property @setter(SetUseLocalization)
         bool m_localization = false;
 
-        SR_HTYPES_NS::UnicodeString m_text;
+    private:
+        int32_t m_id = SR_ID_INVALID;
+        Font* m_font = nullptr;
 
     };
 }
 
-#endif //SR_ENGINE_I_TEXT_H
+#endif //SR_ENGINE_TEXT_H

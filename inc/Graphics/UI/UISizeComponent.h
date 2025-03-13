@@ -8,9 +8,9 @@
 #include <Utils/UI/UIModifier.h>
 
 namespace SR_GRAPH_UI_NS {
+    /// @category(UI)
     class UISizeComponent : public SR_UTILS_NS::UI::UIModifierComponent {
         using Super = SR_UTILS_NS::UI::UIModifierComponent;
-        SR_REGISTER_NEW_COMPONENT(UISizeComponent, 1001);
         SR_CLASS()
     public:
         void Prepare(SR_UTILS_NS::UI::UIModifierContext& context) const override;
@@ -19,9 +19,9 @@ namespace SR_GRAPH_UI_NS {
         void OnChanged();
 
     private:
-        /// @property @changeCallback(OnChanged)
+        /// @property @onChanged(OnChanged)
         bool m_isWidthChangeable = true;
-        /// @property @changeCallback(OnChanged)
+        /// @property @onChanged(OnChanged)
         bool m_isHeightChangeable = true;
 
     };

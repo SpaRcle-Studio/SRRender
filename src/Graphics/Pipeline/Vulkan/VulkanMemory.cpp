@@ -237,6 +237,11 @@ namespace SR_GRAPH_NS::VulkanTools {
             return SR_ID_INVALID;
         }
 
+        EvoVulkan::Types::VmaBufferDebugInfo debugInfo;
+        debugInfo.itemCount = buffSize / sizeof(uint32_t);
+        debugInfo.itemSize = sizeof(uint32_t);
+        pIBO->SetDebugInfo(debugInfo);
+
         return m_iboPool.Add(pIBO);
     }
 

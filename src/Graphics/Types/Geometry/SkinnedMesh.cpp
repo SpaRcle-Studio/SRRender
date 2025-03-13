@@ -4,19 +4,19 @@
 
 #include <Graphics/Types/Geometry/SkinnedMesh.h>
 
+#include <Codegen/SkinnedMesh.generated.hpp>
+
 namespace SR_GTYPES_NS {
     SkinnedMesh::SkinnedMesh()
         : Super()
     {
-        m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("SkeletonInv")
-            .SetLabel("Skeleton is not usable!")
-            .SetColor(SR_MATH_NS::FColor(1.f, 0.f, 0.f, 1.f))
-            .SetActiveCondition([this] { return !IsSkeletonUsable(); })
-            .SetDontSave();
-    }
+        m_skeleton.SetOwner(GetThis());
 
-    SkinnedMesh::~SkinnedMesh() {
-        SetRawMesh(nullptr);
+        // m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("SkeletonInv")
+        //     .SetLabel("Skeleton is not usable!")
+        //     .SetColor(SR_MATH_NS::FColor(1.f, 0.f, 0.f, 1.f))
+        //     .SetActiveCondition([this] { return !IsSkeletonUsable(); })
+        //     .SetDontSave();
     }
 
     bool SkinnedMesh::Calculate()  {
@@ -30,10 +30,6 @@ namespace SR_GTYPES_NS {
 
         if (!IsCalculatable()) {
             return false;
-        }
-
-        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
-            SR_LOG("SkinnedMesh::Calculate() : calculating \"" + m_geometryName + "\"...");
         }
 
         if (!CalculateVBO<Vertices::VertexType::SkinnedMeshVertex, Vertices::SkinnedMeshVertex>([this]() {
@@ -186,10 +182,6 @@ namespace SR_GTYPES_NS {
     void SkinnedMesh::OnRawMeshChanged() {
         IRawMeshHolder::OnRawMeshChanged();
 
-        if (GetRawMesh() && IsValidMeshId()) {
-            SetGeometryName(GetRawMesh()->GetGeometryName(GetMeshId()));
-        }
-
         if (GetSkeleton().IsValid()) {
             if (auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>()) {
                 pSkeleton->ResetSkeleton();
@@ -208,41 +200,6 @@ namespace SR_GTYPES_NS {
         }
 
         return Super::GetMeshIdentifier();
-    }
-
-    bool SkinnedMesh::InitializeEntity() noexcept {
-        m_properties.AddCustomProperty<SR_UTILS_NS::PathProperty>("Mesh")
-            .AddFileFilter("Mesh", SR_GRAPH_NS::SR_SUPPORTED_MESH_FORMATS)
-            .SetGetter([this]()-> SR_UTILS_NS::Path {
-                return GetRawMesh() ? GetRawMesh()->GetResourcePath() : SR_UTILS_NS::Path();
-            })
-            .SetSetter([this](const SR_UTILS_NS::Path& path) {
-                SetRawMesh(path);
-            });
-
-        m_properties.AddCustomProperty<SR_UTILS_NS::StandardProperty>("Index")
-            .SetGetter([this](void* pData) {
-                *reinterpret_cast<int16_t*>(pData) = static_cast<int16_t>(GetMeshId());
-            })
-            .SetSetter([this](void* pData) {
-                SetMeshId(static_cast<MeshIndex>(*reinterpret_cast<int16_t*>(pData)));
-            })
-            .SetType(SR_UTILS_NS::StandardType::Int16);
-
-        m_properties.AddEntityRefProperty(SR_SKELETON_REF_PROP_NAME, GetThis())
-            .SetWidth(260.f);
-
-        return Super::InitializeEntity();
-    }
-
-    SR_UTILS_NS::EntityRef& SkinnedMesh::GetSkeleton() const {
-        auto&& pSkeletonRefProperty = GetComponentProperties().Find<SR_UTILS_NS::EntityRefProperty>(SR_SKELETON_REF_PROP_NAME);
-        if (pSkeletonRefProperty) {
-            return pSkeletonRefProperty->GetEntityRef();
-        }
-        SRHaltOnce0();
-        static SR_UTILS_NS::EntityRef defaultEntityRef;
-        return defaultEntityRef;
     }
 
     void SkinnedMesh::FreeVideoMemory() {

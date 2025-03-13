@@ -44,6 +44,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD int32_t GetId() noexcept;
         SR_NODISCARD void* GetDescriptor();
         SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
+        SR_NODISCARD const Memory::TextureConfig& GetTextureConfig() const noexcept { return m_config; }
 
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
 

@@ -11,23 +11,14 @@
 namespace SR_ANIMATIONS_NS {
     class Skeleton;
 
+    /// @category(Animations)
     class BoneComponent : public SR_UTILS_NS::Component {
-        SR_ENTITY_SET_VERSION(1000);
-        SR_INITIALIZE_COMPONENT(BoneComponent);
+        SR_CLASS()
         using Super = SR_UTILS_NS::Component;
-    public:
-        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
     public:
         BoneComponent();
 
-        static Component* LoadComponent(SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* pDataStorage);
-
     public:
-        SR_NODISCARD Component* CopyComponent() const override;
-        SR_NODISCARD SR_HTYPES_NS::Marshal::Ptr SaveLegacy(SR_UTILS_NS::SavableContext data) const override;
-
-        void OnMatrixDirty() override;
-
         void Initialize(Skeleton* pSkeleton, uint16_t boneIndex);
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }

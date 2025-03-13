@@ -12,9 +12,9 @@
 #include <Graphics/Types/Uniforms.h>
 
 namespace SR_GTYPES_NS {
+    /// @category(Render)
     class DebugWireframeMesh final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
         SR_CLASS()
-        SR_REGISTER_NEW_COMPONENT(DebugWireframeMesh, 1000)
         using Super = IndexedMesh;
     public:
         typedef Vertices::SimpleVertex VertexType;

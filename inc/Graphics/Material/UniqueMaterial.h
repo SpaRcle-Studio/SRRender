@@ -9,14 +9,23 @@
 
 namespace SR_GRAPH_NS {
     class UniqueMaterial : public BaseMaterial {
+        SR_CLASS()
         using Super = BaseMaterial;
     public:
-        using Ptr = UniqueMaterial*;
+        using Ptr = SR_HTYPES_NS::SharedPtr<UniqueMaterial>;
 
     public:
+        UniqueMaterial();
+        ~UniqueMaterial() override;
+
+    public:
+        void SetMaterialData(const MaterialData::Ptr& pData) noexcept;
+        SR_NODISCARD const MaterialData::Ptr& GetMaterialData() const noexcept override;
         SR_NODISCARD MaterialType GetMaterialType() const noexcept override;
 
-        void UnregisterMesh(uint32_t *pId) override;
+    private:
+        /// @property @noHeader @getter(GetMaterialData) @setter(SetMaterialData)
+        mutable SR_GRAPH_NS::MaterialData::Ptr m_data;
 
     };
 }

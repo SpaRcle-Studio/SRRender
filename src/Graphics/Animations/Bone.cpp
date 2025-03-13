@@ -5,13 +5,32 @@
 #include <Utils/World/Scene.h>
 
 #include <Graphics/Animations/Bone.h>
+#include <Graphics/Animations/Skeleton.h>
 #include <Graphics/Animations/BoneComponent.h>
 
+#include <Codegen/Bone.generated.hpp>
+
 namespace SR_ANIMATIONS_NS {
+    void Bone::InitTree(Bone* pParent) {
+        this->pRoot = pParent ? pParent->pRoot : this;
+        this->pSkeleton = pParent ? pParent->pSkeleton : pSkeleton;
+        this->pParent = pParent;
+
+        for (auto&& pChild : bones) {
+            pChild->InitTree(this);
+        }
+    }
+
     bool Bone::Initialize() {
         SR_TRACY_ZONE;
 
-        if (!pRoot->gameObject && !pRoot->pScene) {
+        if (!pRoot) {
+            SRHalt0();
+            hasError = true;
+            return false;
+        }
+
+        if (!pRoot->gameObject && !pRoot->pSkeleton) {
             SRHalt0();
             hasError = true;
             return false;
@@ -37,7 +56,7 @@ namespace SR_ANIMATIONS_NS {
                 }
             }
             else {
-                if (!((gameObject = pRoot->pScene->Find(names[i]).DynamicCast<SR_UTILS_NS::GameObject>()))) {
+                if (!((gameObject = pRoot->pSkeleton->GetScene()->Find(names[i]).DynamicCast<SR_UTILS_NS::GameObject>()))) {
                     break;
                 }
             }
@@ -50,5 +69,11 @@ namespace SR_ANIMATIONS_NS {
         SR_NOOP;
 
         return true;
+    }
+
+    void Bone::InitTreeIfNeed() {
+        if (!pRoot) {
+            InitTree(nullptr);
+        }
     }
 }

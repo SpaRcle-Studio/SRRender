@@ -18,16 +18,18 @@ namespace SR_GRAPH_NS::Memory {
         m_IBOTable.resize(reserve);
     }
 
-    MeshManager::VideoResourcesIter MeshManager::FindImpl(Hash hash, MeshMemoryType memType) {
+    MeshManager::VideoResourcesIter MeshManager::FindImpl(SR_UTILS_NS::StringAtom id, MeshMemoryType memType) {
+        SR_TRACY_ZONE;
+
         switch (memType) {
             case MeshMemoryType::VBO: {
-                if (auto mem = m_VBOs.find(hash); mem != m_VBOs.end()) {
+                if (auto mem = m_VBOs.find(id); mem != m_VBOs.end()) {
                     return mem;
                 }
                 break;
             }
             case MeshMemoryType::IBO: {
-                if (auto mem = m_IBOs.find(hash); mem != m_IBOs.end()) {
+                if (auto mem = m_IBOs.find(id); mem != m_IBOs.end()) {
                     return mem;
                 }
                 break;
@@ -163,26 +165,26 @@ namespace SR_GRAPH_NS::Memory {
 
         SRAssert2(id <= 32768, "Buffer overflow!");
 
-        Hash hash = SR_HASH_STR_VIEW(resourceId);
+        SR_UTILS_NS::StringAtom atomResourceId = resourceId;
 
         switch (memType) {
             case MeshMemoryType::VBO: {
-                m_VBOs[hash] = MeshVidMemInfo(size, id, memType);
+                m_VBOs[atomResourceId] = MeshVidMemInfo(size, id, memType);
 
                 if (id >= m_VBOTable.size()) {
                     m_VBOTable.resize(SR_MAX(m_VBOTable.size() * 2, id + 1));
                 }
-                m_VBOTable[id] = hash;
+                m_VBOTable[id] = atomResourceId;
 
                 return true;
             }
             case MeshMemoryType::IBO: {
-                m_IBOs[hash] = MeshVidMemInfo(size, id, memType);
+                m_IBOs[atomResourceId] = MeshVidMemInfo(size, id, memType);
 
                 if (id >= m_IBOTable.size()) {
                     m_IBOTable.resize(SR_MAX(m_IBOTable.size() * 2, id + 1));
                 }
-                m_IBOTable[id] = hash;
+                m_IBOTable[id] = atomResourceId;
 
                 return true;
             }

@@ -29,7 +29,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Full) {
-            SR_LOG("Mesh3D::Calculate() : calculating \"" + GetGeometryName() + "\"...");
+            SR_LOG("Mesh3D::Calculate() : calculating \"" + GetMeshIdentifier() + "\"...");
         }
 
         if (!CalculateVBO<Vertices::VertexType::StaticMeshVertex, Vertices::StaticMeshVertex>([this]() {
@@ -63,10 +63,6 @@ namespace SR_GTYPES_NS {
     void Mesh3D::OnRawMeshChanged() {
         IRawMeshHolder::OnRawMeshChanged();
 
-        if (GetRawMesh() && IsValidMeshId()) {
-            SetGeometryName(GetRawMesh()->GetGeometryName(GetMeshId()));
-        }
-
         ReRegisterMesh();
 
         MarkMaterialDirty();
@@ -90,29 +86,5 @@ namespace SR_GTYPES_NS {
             return true;
         }
         return changed;
-    }
-
-    bool Mesh3D::InitializeEntity() noexcept {
-        m_properties.AddCustomProperty<SR_UTILS_NS::PathProperty>("Mesh")
-            .AddFileFilter("Mesh", SR_GRAPH_NS::SR_SUPPORTED_MESH_FORMATS)
-            .SetGetter([this]()-> SR_UTILS_NS::Path {
-                return GetRawMesh() ? GetRawMesh()->GetResourcePath() : SR_UTILS_NS::Path();
-            })
-            .SetSetter([this](const SR_UTILS_NS::Path& path) {
-                SetRawMesh(path);
-            });
-
-        m_properties.AddCustomProperty<SR_UTILS_NS::StandardProperty>("Index")
-            .SetGetter([this](void* pData) {
-                *reinterpret_cast<int16_t*>(pData) = static_cast<int16_t>(GetMeshId());
-            })
-            .SetSetter([this](void* pData) {
-                SetMeshId(static_cast<MeshIndex>(*reinterpret_cast<int16_t*>(pData)));
-            })
-            .SetType(SR_UTILS_NS::StandardType::Int16);
-
-        /// m_properties.AddEnumProperty("FrustumCullingType", &m_frustumCullingType);
-
-        return Super::InitializeEntity();
     }
 }

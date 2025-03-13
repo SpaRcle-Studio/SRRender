@@ -60,7 +60,7 @@ namespace SR_GRAPH_NS {
         /// Вызывается перед началом рендера, подготовка к рендеру
         virtual void PrepareFrame();
 
-        /// Вызывается в начале постоения сцены рендера, чистит очередь рендера.
+        /// Вызывается в начале построения сцены рендера, чистит очередь рендера.
         virtual void ClearFrameBuffersQueue();
         virtual void ResetSubmitQueue();
 
@@ -68,13 +68,13 @@ namespace SR_GRAPH_NS {
         /// После вызова функции кадр считается законченным и PipelineState очищается
         virtual void DrawFrame();
 
-        /// Начало записи в буффер комманд. Разделение необходимо некоторым графическим API
+        /// Начало записи в буфер команд. Разделение необходимо некоторым графическим API
         virtual bool BeginCmdBuffer();
 
-        /// Конец записи в буффер комманд. Разделение необходимо некоторым графическим API
+        /// Конец записи в буфер команд. Разделение необходимо некоторым графическим API
         virtual void EndCmdBuffer();
 
-        /// Начало рендера в кадровый буффер или в SwapChain
+        /// Начало рендера в кадровый буфер или в SwapChain
         virtual bool BeginRender();
 
         /// Обязательно нужно вызвать после успешного вызова BeginRender
@@ -128,6 +128,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual uint8_t GetSupportedSamples() const noexcept { return m_supportedSampleCount; }
         SR_NODISCARD virtual bool IsShaderConstantSupport() const { ++m_state.operations; return false; }
         SR_NODISCARD virtual SR_MATH_NS::FColor GetPixelColor(uint32_t textureId, uint32_t x, uint32_t y) { return SR_MATH_NS::FColor(0.f); }
+        SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetRenderStageId() const { return SR_UTILS_NS::StringAtom(); }
 
         virtual void SetCurrentShader(ShaderPtr pShader) { ++m_state.operations; m_state.pShader = pShader; }
         virtual void SetCurrentShaderId(int32_t id) { ++m_state.operations; m_state.shaderId = id; }
@@ -169,6 +170,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetFramesPerSecond() const noexcept { return m_framesPerSecond; }
         SR_NODISCARD const PipelineState& GetPreviousState() const { return m_previousState; }
         SR_NODISCARD const PipelineState& GetBuildState() const { return m_buildState; }
+        SR_NODISCARD const PipelineState& GetState() const { return m_state; }
         SR_NODISCARD uint8_t GetSamplesCount() const;
         SR_NODISCARD bool IsMultiSamplingSupported() const noexcept;
         SR_NODISCARD virtual bool IsVSyncEnabled() const { return false; }
@@ -239,7 +241,7 @@ namespace SR_GRAPH_NS {
         /// Привязываем к дескриптору юниформы. Работает не во всех API
         virtual void UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo);
 
-        /// Передает данные в шейдер, которые не будут обновляться до следующего перерисовывания сцены
+        /// Передает данные в шейдер, которые не будут обновляться до следующего перерисовывания сцены.
         /// Поддерживается не всеми API
         virtual void PushConstants(void* pData, uint64_t size);
 

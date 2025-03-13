@@ -20,7 +20,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
-            SR_LOG("DebugWireframeMesh::Calculate() : calculating \"" + GetGeometryName() + "\"...");
+            SR_LOG("DebugWireframeMesh::Calculate() : calculating \"" + GetMeshIdentifier() + "\"...");
         }
 
         if (!CalculateVBO<Vertices::VertexType::SimpleVertex, Vertices::SimpleVertex>([this]() {

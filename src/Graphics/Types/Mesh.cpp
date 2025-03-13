@@ -20,7 +20,7 @@ namespace SR_GTYPES_NS {
         : m_uboManager(Memory::UBOManager::Instance())
         , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
     {
-        m_materialProperty.SetMesh(this);
+        /*m_materialProperty.SetMesh(this);
 
         m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("MeshInv")
             .SetLabel("Invalid mesh!")
@@ -38,11 +38,11 @@ namespace SR_GTYPES_NS {
             .SetLabel("Mesh isn't registered!")
             .SetColor(SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f))
             .SetActiveCondition([this] { return !IsGraphicsResourceRegistered(); })
-            .SetDontSave();
+            .SetDontSave();*/
     }
 
     Mesh::~Mesh() {
-        SetMaterial(nullptr);
+        SRAssert(m_isDestroyingState);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
         SRAssert(!m_registrationInfo.has_value());
         SRAssert2(!m_isUniformsDirty, "Application will crash if you delete mesh with dirty uniforms!");
@@ -59,6 +59,16 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
+    Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
+        if (SR_HTYPES_NS::RawMesh* pRawMesh = SR_HTYPES_NS::RawMesh::Load(path)) {
+            if (auto&& pMesh = TryLoad(pRawMesh, type, id)) {
+                return pMesh;
+            }
+            pRawMesh->CheckResourceUsage();
+        }
+        return nullptr;
+    }
+
     Mesh::Ptr Mesh::TryLoad(SR_HTYPES_NS::RawMesh* pRawMesh, MeshType type, uint32_t id) {
         Mesh::Ptr pMesh = nullptr;
         bool exists = false;
@@ -72,17 +82,17 @@ namespace SR_GTYPES_NS {
             return nullptr;
         }
 
-        if (!exists || !(pMesh = CreateMeshByType(type))) {
+        if (!exists || !((pMesh = CreateMeshByType(type)))) {
             pRawMesh->CheckResourceUsage();
             return nullptr;
         }
 
-        if (auto&& pRawMeshHolder = dynamic_cast<SR_HTYPES_NS::IRawMeshHolder*>(pMesh)) {
+        if (auto&& pRawMeshHolder = pMesh.DynamicCast<SR_HTYPES_NS::IRawMeshHolder>()) {
             pRawMeshHolder->SetRawMesh(pRawMesh);
             pRawMeshHolder->SetMeshId(id);
         }
         else {
-            SRHalt("Mesh is not a raw mesh holder! Memory leak...");
+            SRHalt("Mesh is not a raw mesh holder! Memory leak possible...");
             pRawMesh->CheckResourceUsage();
             return nullptr;
         }
@@ -154,25 +164,41 @@ namespace SR_GTYPES_NS {
 
     void Mesh::SetMaterial(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
-        m_materialProperty.SetMaterial(path);
+        SetMaterial(FileMaterial::Load(path));
     }
 
-    void Mesh::SetMaterial(MaterialPtr pMaterial) {
+    void Mesh::SetMaterial(const MaterialPtr& pMaterial) {
         SR_TRACY_ZONE;
-        m_materialProperty.SetMaterial(pMaterial);
+
+        if (pMaterial == m_material) {
+            return;
+        }
+
+        MarkMaterialDirty();
+        SetErrorsClean();
+
+        if (m_material) {
+            m_material->UnregisterMesh(&m_materialRegisterId);
+        }
+
+        m_material = pMaterial;
+
+        if (m_material) {
+            m_materialRegisterId = m_material->RegisterMesh(this);
+        }
+
+        ReRegisterMesh();
     }
 
     Mesh::ShaderPtr Mesh::GetShader() const {
-        if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
-            return pMaterial->GetShader();
-        }
-        return nullptr;
+        return m_material ? m_material->GetShader() : nullptr;
     }
 
     void Mesh::UseMaterial() {
         SR_TRACY_ZONE;
-        if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
-            pMaterial->Use();
+
+        if (m_material) {
+            m_material->Use();
         }
     }
 
@@ -240,8 +266,8 @@ namespace SR_GTYPES_NS {
     }
 
     void Mesh::UseSamplers() {
-        if (auto&& pMaterial = m_materialProperty.GetMaterial()) {
-            pMaterial->UseSamplers();
+        if (m_material) {
+            m_material->UseSamplers();
         }
     }
 
@@ -283,54 +309,11 @@ namespace SR_GTYPES_NS {
         m_dirtyMaterial = true;
     }
 
-    Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
-        Mesh::Ptr pMesh = nullptr;
-        bool exists = false;
-
-        /// Проверяем существование меша
-        SR_HTYPES_NS::RawMesh* pRawMesh = nullptr;
-        if ((pRawMesh = SR_HTYPES_NS::RawMesh::Load(path))) {
-            exists = id < pRawMesh->GetMeshesCount();
-        }
-        else {
-            return nullptr;
-        }
-
-        if (!exists || !((pMesh = CreateMeshByType(type)))) {
-            pRawMesh->CheckResourceUsage();
-            return nullptr;
-        }
-
-        if (auto&& pRawMeshHolder = dynamic_cast<SR_HTYPES_NS::IRawMeshHolder*>(pMesh)) {
-            pRawMeshHolder->SetRawMesh(pRawMesh);
-            pRawMeshHolder->SetMeshId(id);
-        }
-        else {
-            SRHalt("Mesh is not a raw mesh holder! Memory leak...");
-            pRawMesh->CheckResourceUsage();
-            return nullptr;
-        }
-
-        return pMesh;
-    }
-
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, SR_UTILS_NS::StringAtom name) {
         if (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path)) {
             return Load(path, type, pRawMesh->GetMeshId(name));
         }
         return nullptr;
-    }
-
-    bool Mesh::InitializeEntity() noexcept {
-        m_properties.AddEnumProperty<MeshType>("Mesh type")
-            .SetGetter([this] {
-                return SR_UTILS_NS::EnumReflector::ToStringAtom(GetMeshType());
-            })
-            .SetReadOnly();
-
-        m_properties.AddExternalProperty(&GetMaterialProperty());
-
-        return Super::InitializeEntity();
     }
 
     void Mesh::OnDestroy() {
@@ -356,10 +339,9 @@ namespace SR_GTYPES_NS {
     void Mesh::OnEnable() {
         Super::OnEnable();
         if (!IsMeshRegistered()) {
-            if (auto&& pRenderScene = GetRenderScene()) {
-                pRenderScene->Register(this);
-            }
+            ReRegisterMesh();
         }
+        MarkUniformsDirty();
     }
 
     void Mesh::OnDisable() {
@@ -375,14 +357,29 @@ namespace SR_GTYPES_NS {
 
     void Mesh::ReRegisterMesh() {
         SR_TRACY_ZONE;
-        if (m_registrationInfo.has_value() && !m_isWaitReRegister) {
-            const auto pRenderScene = m_registrationInfo.value().pScene;
+
+        if (m_isDestroyingState) {
+            return;
+        }
+
+        if (m_registrationInfo.has_value()) {
+            if (m_isWaitReRegister) {
+                return;
+            }
+
             m_isWaitReRegister = true;
+
+            const auto pRenderScene = m_registrationInfo.value().pScene;
             pRenderScene->ReRegister(m_registrationInfo.value());
+        }
+        else if (auto&& pRenderScene = TryGetRenderScene()) {
+            pRenderScene->Register(this);
         }
     }
 
     bool Mesh::DestroyMesh() {
+        m_isDestroyingState = true;
+
         const bool isRegistered = IsMeshRegistered();
         if (isRegistered) {
             m_registrationInfo.value().pScene->Remove(this);
@@ -390,6 +387,7 @@ namespace SR_GTYPES_NS {
 
         FreeVideoMemory();
         DeInitGraphicsResource();
+        SetMaterial(MaterialPtr());
 
         AutoFree();
 

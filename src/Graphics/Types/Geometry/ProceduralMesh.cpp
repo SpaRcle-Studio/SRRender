@@ -61,7 +61,7 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        auto&& pShader = m_materialProperty.GetMaterial()->GetShader();
+        /*auto&& pShader = m_materialProperty.GetMaterial()->GetShader();
         auto&& uboManager = Memory::UBOManager::Instance();
 
         if (m_dirtyMaterial)
@@ -99,7 +99,7 @@ namespace SR_GTYPES_NS {
             case Memory::UBOManager::BindResult::Failed:
             default:
                 break;
-        }
+        }*/
     }
 
     bool ProceduralMesh::IsCalculatable() const {
@@ -135,15 +135,5 @@ namespace SR_GTYPES_NS {
     void ProceduralMesh::UseModelMatrix() {
         Mesh::UseModelMatrix();
         GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-    }
-
-    SR_UTILS_NS::Component* ProceduralMesh::CopyComponent() const {
-        if (auto&& pComponent = dynamic_cast<ProceduralMesh*>(Super::CopyComponent())) {
-            pComponent->SetIndexedVertices((void*)m_vertices.data(), m_vertices.size());
-            pComponent->SetIndices((void*)m_indices.data(), m_indices.size());
-            return pComponent;
-        }
-
-        return nullptr;
     }
 }

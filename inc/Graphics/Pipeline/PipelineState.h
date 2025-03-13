@@ -91,6 +91,8 @@ namespace SR_GRAPH_NS {
         int32_t UBOId = SR_ID_INVALID;
         int32_t FBOId = SR_ID_INVALID;
         int32_t SSBOId = SR_ID_INVALID;
+        int32_t IBOId = SR_ID_INVALID;
+        int32_t VBOId = SR_ID_INVALID;
         int32_t descriptorSetId = SR_ID_INVALID;
         int32_t shaderId = SR_ID_INVALID;
         int32_t frameBufferId = SR_ID_INVALID;

@@ -55,7 +55,8 @@ namespace SR_GRAPH_NS {
         void DeInit() override;
         void Prepare() override;
         void Clear() override;
-        void PostUpdate() override;
+
+        void ResetChangedFlags() noexcept;
 
         SR_NODISCARD bool IsEmpty() const noexcept override { return m_timedObjects.IsEmpty(); }
         SR_NODISCARD uint64_t GetTimedObjectPoolSize() const noexcept { return m_timedObjects.GetAliveCount(); }
@@ -72,6 +73,7 @@ namespace SR_GRAPH_NS {
     private:
         uint64_t AddTimedObject(float_t seconds, SR_GTYPES_NS::Mesh* pMesh);
         void Remove(uint64_t id, bool fromPool);
+        void OnSceneChanged();
 
     private:
         bool m_renderSceneChanged = false;

@@ -10,7 +10,6 @@
 namespace SR_GTYPES_NS {
     class ProceduralMesh final : public IndexedMesh {
         using Super = IndexedMesh;
-        SR_REGISTER_NEW_COMPONENT(ProceduralMesh, 1001);
     public:
         ProceduralMesh() = default;
 
@@ -30,8 +29,6 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsUniqueMesh() const override { return true; }
 
         SR_NODISCARD bool IsCalculatable() const override;
-
-        SR_NODISCARD Component* CopyComponent() const override;
 
     private:
         bool Calculate() override;

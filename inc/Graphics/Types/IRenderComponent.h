@@ -10,15 +10,13 @@
 namespace SR_GTYPES_NS {
     class Camera;
 
+    /// @hidden @category(Render)
     class IRenderComponent : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:
         using RenderScenePtr = RenderScene*;
         using CameraPtr = SR_HTYPES_NS::SharedPtr<Camera>;
-
-    protected:
-        IRenderComponent() = default;
 
     public:
         void OnEnable() override;

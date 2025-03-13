@@ -22,7 +22,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD int32_t GetIBO() override;
         SR_NODISCARD int32_t GetVBO() override;
 
-        SR_NODISCARD uint32_t GetVerticesCount() const { return m_countVertices; }
+        SR_NODISCARD uint32_t GetVerticesCount() const override { return m_countVertices; }
         SR_NODISCARD uint32_t GetIndicesCount() const override { return m_countIndices; }
 
         SR_NODISCARD virtual std::vector<uint32_t> GetIndices() const { return { }; }
@@ -96,7 +96,7 @@ namespace SR_GTYPES_NS {
             }
 
             if (m_VBO = m_pipeline->AllocateVBO(static_cast<const void*>(vertices.data()), type, m_countVertices); m_VBO == SR_ID_INVALID) {
-                SR_ERROR("IndexedMesh::CalculateVBO() : failed calculate VBO \"" + GetGeometryName() + "\" mesh!");
+                SR_ERROR("IndexedMesh::CalculateVBO() : failed calculate VBO \"" + GetMeshIdentifier() + "\" mesh!");
                 m_hasErrors = true;
                 return false;
             }

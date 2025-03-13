@@ -12,23 +12,20 @@
 #include <Graphics/Animations/Skeleton.h>
 
 namespace SR_GTYPES_NS {
+    /// @category(Render)
     class SkinnedMesh final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
-        SR_REGISTER_NEW_COMPONENT(SkinnedMesh, 1003);
+        SR_CLASS()
         using Super = IndexedMesh;
-        SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SKELETON_REF_PROP_NAME = "Skeleton";
     public:
-        SkinnedMesh();
+        using Ptr = SR_HTYPES_NS::SharedPtr<SkinnedMesh>;
 
-    private:
-        ~SkinnedMesh() override;
+        SkinnedMesh();
 
     public:
         typedef Vertices::SkinnedMeshVertex VertexType;
 
     public:
         SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Skinned; }
-
-        SR_NODISCARD bool InitializeEntity() noexcept override;
 
         void LateUpdate() override;
         void UseMaterial() override;
@@ -38,7 +35,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD bool IsUpdatable() const noexcept override { return true; }
         SR_NODISCARD std::string GetMeshIdentifier() const override;
-        SR_NODISCARD SR_UTILS_NS::EntityRef& GetSkeleton() const;
+        SR_NODISCARD const SR_UTILS_NS::EntityRef& GetSkeleton() const noexcept { return m_skeleton; }
+        SR_NODISCARD SR_UTILS_NS::EntityRef& GetSkeleton() noexcept { return m_skeleton; }
 
         void FreeVideoMemory() override;
 
@@ -59,6 +57,17 @@ namespace SR_GTYPES_NS {
         bool m_skeletonIsBroken = false;
         int32_t m_ssboBones = SR_ID_INVALID;
         int32_t m_ssboOffsets = SR_ID_INVALID;
+
+    private:
+        /// @property
+        SR_UTILS_NS::EntityRef m_skeleton;
+
+        /// @virtualProperty(geometryName) @getter(GetGeometryName) @dontSave @readOnly
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(meshPath) @getter(GetMeshPath) @setter(SetRawMesh)
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)
+        SR_VIRTUAL_PROPERTY
 
     };
 }

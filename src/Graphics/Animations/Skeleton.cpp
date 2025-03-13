@@ -10,66 +10,12 @@
 #include <Utils/Types/RawMesh.h>
 #include <Utils/DebugDraw.h>
 
-namespace SR_ANIMATIONS_NS {
-    SR_REGISTER_COMPONENT(Skeleton);
+#include <Codegen/Skeleton.generated.hpp>
 
+namespace SR_ANIMATIONS_NS {
     Skeleton::~Skeleton() {
         DisableDebug();
         m_bonesByName.clear();
-        SR_SAFE_DELETE_PTR(m_rootBone);
-    }
-
-    SR_UTILS_NS::Component* Skeleton::LoadComponent(SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* dataStorage) {
-        auto&& pComponent = new Skeleton();
-
-        if (marshal.Read<bool>()) {
-            const SR_HTYPES_NS::Function<void(SR_ANIMATIONS_NS::Bone*)> processBone = [&](SR_ANIMATIONS_NS::Bone* pBone) {
-                pBone = pComponent->AddBone(pBone, marshal.Read<std::string>(), false);
-
-                const uint8_t count = marshal.Read<uint8_t>();
-
-                for (uint8_t i = 0; i < count; ++i) {
-                    processBone(pBone);
-                }
-            };
-
-            processBone(nullptr);
-        }
-
-        return pComponent;
-    }
-
-    SR_UTILS_NS::Component* Skeleton::CopyComponent() const {
-        auto&& pComponent = new Skeleton();
-
-        if (m_rootBone) {
-            pComponent->m_rootBone = m_rootBone->CloneRoot();
-        }
-
-        return pComponent;
-    }
-
-    SR_HTYPES_NS::Marshal::Ptr Skeleton::SaveLegacy(SR_UTILS_NS::SavableContext data) const {
-        auto&& pMarshal = Super::SaveLegacy(data);
-
-        const SR_HTYPES_NS::Function<void(SR_ANIMATIONS_NS::Bone*)> processBone = [&](SR_ANIMATIONS_NS::Bone* pBone) {
-            pMarshal->Write<std::string>(pBone->name);
-            pMarshal->Write<uint8_t>(pBone->bones.size());
-
-            for (auto&& pSubNode : pBone->bones) {
-                processBone(pSubNode);
-            }
-        };
-
-        if (GetRootBone()) {
-            pMarshal->Write<bool>(true);
-            processBone(GetRootBone());
-        }
-        else {
-            pMarshal->Write<bool>(false);
-        }
-
-        return pMarshal;
     }
 
     void Skeleton::OnDestroy() {
@@ -79,19 +25,15 @@ namespace SR_ANIMATIONS_NS {
         });
     }
 
-    void Skeleton::OnLoaded() {
-        Super::OnLoaded();
-    }
-
-    Bone* Skeleton::AddBone(Bone *pParent, const std::string& name, bool recalculate) {
+    Bone* Skeleton::AddBone(Bone* pParent, const SR_UTILS_NS::StringAtom name, bool recalculate) {
         if ((!pParent && m_rootBone) || (pParent && !m_rootBone)) {
             SRHalt0();
             return nullptr;
         }
 
-        auto&& pBone = new Bone();
+        Bone::Ptr pBone = SRNew<Bone>();
 
-        pBone->pRoot = m_rootBone ? m_rootBone : pBone;
+        pBone->pRoot = (m_rootBone ? m_rootBone : pBone).Get();
         pBone->pParent = pParent;
         pBone->name = name;
 
@@ -100,13 +42,15 @@ namespace SR_ANIMATIONS_NS {
         }
         else {
             m_rootBone = pBone;
+            m_rootBone->SetSkeleton(this);
+            m_rootBone->InitTreeIfNeed();
         }
 
         if (recalculate) {
             ReCalculateSkeleton();
         }
 
-        return pBone;
+        return pBone.Get();
     }
 
     bool Skeleton::ReCalculateSkeleton() {
@@ -117,9 +61,10 @@ namespace SR_ANIMATIONS_NS {
             return false;
         }
 
+        m_rootBone->InitTreeIfNeed();
+
         if (m_rootBone) {
             m_rootBone->gameObject = GetGameObject();
-            m_rootBone->pScene = TryGetScene();
         }
 
         m_bonesByName.reserve(SR_HUMANOID_MAX_BONES);
@@ -136,29 +81,37 @@ namespace SR_ANIMATIONS_NS {
             m_bonesByName.insert(std::make_pair(pBone->name, pBone));
 
             for (auto&& pSubBone : pBone->bones) {
-                processBone(pSubBone);
+                processBone(pSubBone.Get());
             }
         };
 
-        processBone(m_rootBone);
+        processBone(m_rootBone.Get());
 
         return true;
     }
 
     Bone* Skeleton::GetBone(SR_UTILS_NS::StringAtom name) {
+        if (m_rootBone) {
+            m_rootBone->InitTreeIfNeed();
+        }
+
         auto&& pBoneIt = m_bonesByName.find(name);
         if (pBoneIt == m_bonesByName.end()) {
             return nullptr;
         }
 
         if (!pBoneIt->second->gameObject && !pBoneIt->second->hasError && !pBoneIt->second->Initialize()) {
-            SR_WARN("Skeleton::GetBone() : failed to find bone game object!\n\tName: " + pBoneIt->second->name);
+            SR_WARN("Skeleton::GetBone() : failed to find bone game object!\n\tName: {}", pBoneIt->second->name);
         }
 
         return pBoneIt->second;
     }
 
     Bone* Skeleton::GetBoneByIndex(uint16_t index) const {
+        if (m_rootBone) {
+            m_rootBone->InitTreeIfNeed();
+        }
+
         if (index >= m_bonesByIndex.size()) SR_UNLIKELY_ATTRIBUTE {
             return nullptr;
         }
@@ -173,6 +126,10 @@ namespace SR_ANIMATIONS_NS {
     }
 
     Bone* Skeleton::TryGetBone(SR_UTILS_NS::StringAtom name) {
+        if (m_rootBone) {
+            m_rootBone->InitTreeIfNeed();
+        }
+
         auto&& pBoneIt = m_bonesByName.find(name);
         if (pBoneIt == m_bonesByName.end()) {
             return nullptr;
@@ -183,6 +140,13 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return pBoneIt->second;
+    }
+
+    void Skeleton::OnPostLoad() {
+        if (m_rootBone) {
+            m_rootBone->SetSkeleton(this);
+        }
+        Super::OnPostLoad();
     }
 
     void Skeleton::OnAttached() {
@@ -276,11 +240,9 @@ namespace SR_ANIMATIONS_NS {
         }
 
         if (pGameObject) {
-            return pGameObject->GetTransform();
+            return pGameObject->GetTransform().Get();
         }
-        else {
-            return nullptr;
-        }
+        return nullptr;
     }
 
     uint64_t Skeleton::GetBoneIndex(SR_UTILS_NS::StringAtom name) {

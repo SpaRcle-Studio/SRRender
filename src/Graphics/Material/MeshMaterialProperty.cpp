@@ -16,7 +16,7 @@ namespace SR_GRAPH_NS {
         SRAssert(m_materialRegisterId == SR_ID_INVALID);
     }
 
-    void MeshMaterialProperty::SaveProperty(MarshalRef marshal) const noexcept {
+    void MeshMaterialProperty::SaveProperty(MarshalRef marshal) const noexcept {/*
         if (auto&& pBlock = AllocatePropertyBlock()) {
             const MaterialType type = m_pMaterial ? m_pMaterial->GetMaterialType() : MaterialType::None;
             pBlock->Write<uint8_t>(static_cast<uint8_t>(type));
@@ -41,10 +41,10 @@ namespace SR_GRAPH_NS {
             }
 
             SavePropertyBase(marshal, std::move(pBlock));
-        }
+        }*/
     }
 
-    void MeshMaterialProperty::LoadProperty(MarshalRef marshal) noexcept {
+    void MeshMaterialProperty::LoadProperty(MarshalRef marshal) noexcept { /*
         if (auto&& pBlock = LoadPropertyBase(marshal)) {
             const auto type = static_cast<MaterialType>(pBlock->Read<uint8_t>()); /// NOLINT
 
@@ -70,7 +70,7 @@ namespace SR_GRAPH_NS {
                     SRHalt("MeshMaterialProperty::LoadProperty() : unknown material type!");
                     return;
             }
-        }
+        }*/
     }
 
     MaterialType MeshMaterialProperty::GetMaterialType() const noexcept {
@@ -99,13 +99,13 @@ namespace SR_GRAPH_NS {
     }
 
     void MeshMaterialProperty::SetMaterial(const SR_UTILS_NS::Path& path) noexcept {
-        if (m_pMaterial && m_pMaterial->GetMaterialType() == MaterialType::File) {
+        /*if (m_pMaterial && m_pMaterial->GetMaterialType() == MaterialType::File) {
             auto&& pFileMaterial = SR_UTILS_NS::PolymorphicCast<FileMaterial*>(m_pMaterial);
             if (pFileMaterial->GetResourcePath().ToStringView() == path.View()) {
                 return;
             }
         }
 
-        SetMaterial(path.empty() ? nullptr : FileMaterial::Load(path));
+        SetMaterial(path.empty() ? nullptr : FileMaterial::Load(path));*/
     }
 }

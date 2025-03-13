@@ -6,6 +6,7 @@
 #define SR_ENGINE_CAMERA_H
 
 #include <Utils/ECS/Component.h>
+#include <Utils/ECS/ComponentManager.h>
 #include <Utils/Math/Vector3.h>
 #include <Utils/Math/Matrix4x4.h>
 
@@ -17,9 +18,9 @@ namespace SR_GRAPH_NS {
 }
 
 namespace SR_GTYPES_NS {
+    /// @category(Render)
     class Camera : public SR_UTILS_NS::Component {
-        SR_ENTITY_SET_VERSION(1002);
-        SR_INITIALIZE_COMPONENT(Camera);
+        SR_CLASS()
         struct RenderTechniqueInfo {
             SR_UTILS_NS::Path path;
             SR_GRAPH_NS::IRenderTechnique* pTechnique = nullptr;
@@ -34,9 +35,6 @@ namespace SR_GTYPES_NS {
         ~Camera() override;
 
     public:
-        static Component* LoadComponent(SR_HTYPES_NS::Marshal& marshal, const SR_HTYPES_NS::DataStorage* dataStorage);
-
-    public:
         void Start() override;
         void OnMatrixDirty() override;
         void OnAttached() override;
@@ -44,10 +42,6 @@ namespace SR_GTYPES_NS {
         void Update(float_t dt) override;
 
         SR_NODISCARD virtual bool IsEditorCamera() const noexcept { return false; }
-
-        SR_NODISCARD SR_HTYPES_NS::Marshal::Ptr SaveLegacy(SR_UTILS_NS::SavableContext data) const override;
-
-        SR_NODISCARD Component* CopyComponent() const override;
 
     public:
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetView() const noexcept { return m_viewMat; }
@@ -107,14 +101,24 @@ namespace SR_GTYPES_NS {
     private:
         /** >= 0 - одна главная камера, < 0 - закадровые камеры, которые рендерятся в RenderTexture.
          * Выбирается та камера, что ближе к нулю */
+        /// @property @setter(SetPriority)
         int32_t m_priority = 0;
 
+        /// @property @setter(SetFar)
         float_t m_far = 750.f;
+        /// @property @setter(SetNear)
         float_t m_near = 0.01f;
-        float_t m_aspect = 1.f;
+        /// @property @setter(SetFOV)
         float_t m_FOV = 70.f;
 
+        /// @virtualProperty(renderTechnique) @getter(GetRenderTechniquePath) @setter(SetRenderTechnique)
+        SR_VIRTUAL_PROPERTY
+
+        /// @property @readOnly @dontSave
+        float_t m_aspect = 1.f;
+        /// @property @readOnly @dontSave
         bool m_hasErrors = false;
+        /// @property @readOnly @dontSave
         bool m_isRegistered = false;
 
         SR_MATH_NS::Matrix4x4 m_projection;

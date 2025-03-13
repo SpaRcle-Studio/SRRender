@@ -10,7 +10,6 @@
 namespace SR_GTYPES_NS {
     class Mesh;
     class Shader;
-    //class IMeshComponent;
 }
 
 namespace SR_GRAPH_NS {
@@ -31,7 +30,7 @@ namespace SR_GRAPH_NS {
     struct MeshRegistrationInfo {
         uint32_t poolId = static_cast<uint32_t>(SR_ID_INVALID);
         SR_GTYPES_NS::Mesh* pMesh = nullptr;
-        BaseMaterial* pMaterial = nullptr;
+        const BaseMaterial* pMaterial = nullptr;
         SR_GTYPES_NS::Shader* pShader = nullptr;
         SR_UTILS_NS::StringAtom layer;
         std::optional<int32_t> VBO;
@@ -42,8 +41,7 @@ namespace SR_GRAPH_NS {
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_MESH_FORMATS = "obj,pmx,fbx,blend,stl,dae,3ds";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_FONT_FORMATS = "ttf";
 
-    SR_GTYPES_NS::Mesh* CreateMeshByType(MeshType type);
-    //SR_GTYPES_NS::IMeshComponent* CreateMeshComponentByType(MeshType type);
+    SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> CreateMeshByType(MeshType type);
 }
 
 #endif //SR_ENGINE_MESH_UTILS_H

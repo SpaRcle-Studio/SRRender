@@ -57,15 +57,14 @@ namespace SR_GRAPH_UI_NS {
         Universal = TranslateAll | RotateAll | ScaleAll
     );
 
+    /// @category(Render)
     class Gizmo : public SR_GTYPES_NS::IRenderComponent {
-        SR_REGISTER_NEW_COMPONENT(Gizmo, 1001);
+        SR_CLASS()
         using Super = SR_GTYPES_NS::IRenderComponent;
         enum class GizmoMeshLoadMode {
             Visual, Selection, All
         };
     public:
-        bool InitializeEntity() noexcept override;
-
         void OnEnable() override;
         void OnDisable() override;
         void OnAttached() override;
@@ -125,15 +124,17 @@ namespace SR_GRAPH_UI_NS {
 
     private:
         struct MeshInfo {
-            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::IndexedMesh> pVisual;
-            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::IndexedMesh> pSelection;
+            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> pVisual;
+            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> pSelection;
             bool isHovered = false;
         };
         std::map<GizmoOperation, MeshInfo> m_meshes;
 
         bool m_isGizmoDirty = false;
 
+        /// @property
         float_t m_zoomFactor = 0.0665f;
+        /// @property
         float_t m_moveFactor = 0.1f;
 
         SR_MATH_NS::FPoint m_lastMousePos = SR_MATH_NS::InfinityFV2;

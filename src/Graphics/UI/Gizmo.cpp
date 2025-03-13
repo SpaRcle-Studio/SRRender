@@ -13,6 +13,8 @@
 #include <Utils/Input/InputSystem.h>
 #include <Utils/DebugDraw.h>
 
+#include <Codegen/Gizmo.generated.hpp>
+
 namespace SR_GRAPH_UI_NS {
     void Gizmo::OnAttached() {
         Super::OnAttached();
@@ -51,15 +53,9 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        auto&& pMeshComponent = dynamic_cast<SR_GTYPES_NS::IndexedMesh*>(pMesh);
-        if (!pMeshComponent) {
-            SRHalt("Failed to cast!");
-            return;
-        }
-
         /////////////////////////////////////////////////////////////////////////////////pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
 
-        auto&& pMaterial = new SR_GRAPH_NS::UniqueMaterial();
+        const BaseMaterial::Ptr pMaterial = SRNew<SR_GRAPH_NS::UniqueMaterial>();
         pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
         pMaterial->SetVec4("color", GetColorByOperation(operation));
 
@@ -68,24 +64,24 @@ namespace SR_GRAPH_UI_NS {
         if (mode == GizmoMeshLoadMode::Visual) {
             if (SR_MATH_NS::IsMaskIncludedSubMask(operation, GizmoOperation::Rotate)) {
                 auto&& gameObject = GetGameObjectByOperation(mode, operation);
-                gameObject->AddComponent(pMeshComponent);
+                gameObject->AddComponent(pMesh.StaticCast<SR_UTILS_NS::Component>());
                 gameObject->SetLayer("Gizmo");
             }
             else {
-                GetGameObject()->AddComponent(pMeshComponent);
+                GetGameObject()->AddComponent(pMesh.StaticCast<SR_UTILS_NS::Component>());
             }
-            m_meshes[operation].pVisual = pMeshComponent;
+            m_meshes[operation].pVisual = pMesh;
         }
         else if (mode == GizmoMeshLoadMode::Selection) {
             if (SR_MATH_NS::IsMaskIncludedSubMask(operation, GizmoOperation::Rotate)) {
                 auto&& gameObject = GetGameObjectByOperation(mode, operation);
-                gameObject->AddComponent(pMeshComponent);
+                gameObject->AddComponent(pMesh.StaticCast<SR_UTILS_NS::Component>());
                 gameObject->SetLayer("GizmoSelection");
             }
             else {
-                GetGameObject()->GetOrCreateChild("Selection")->AddComponent(pMeshComponent);
+                GetGameObject()->GetOrCreateChild("Selection")->AddComponent(pMesh.StaticCast<SR_UTILS_NS::Component>());
             }
-            m_meshes[operation].pSelection = pMeshComponent;
+            m_meshes[operation].pSelection = pMesh;
         }
         else {
             SRHalt("Unresolved situation!");
@@ -148,6 +144,9 @@ namespace SR_GRAPH_UI_NS {
     }
 
     void Gizmo::ReleaseGizmo() {
+        m_hoveredOperation = GizmoOperation::None;
+        m_activeOperation = GizmoOperation::None;
+
         for (auto&& [operation, info] : m_meshes) {
             if (info.pSelection) {
                 info.pSelection->Detach();
@@ -283,22 +282,6 @@ namespace SR_GRAPH_UI_NS {
         Super::FixedUpdate();
     }
 
-    bool Gizmo::InitializeEntity() noexcept {
-        GetComponentProperties()
-            .AddStandardProperty("Zoom factor", &m_zoomFactor)
-            .SetResetValue(0.1f)
-            .SetDrag(0.05f)
-            .SetWidth(60.f);
-
-        GetComponentProperties()
-            .AddStandardProperty("Move factor", &m_moveFactor)
-            .SetResetValue(0.1f)
-            .SetDrag(0.05f)
-            .SetWidth(60.f);
-
-        return Super::InitializeEntity();
-    }
-
     void Gizmo::ProcessGizmo(const SR_MATH_NS::FPoint& mousePos) {
         if (m_activeOperation == GizmoOperation::None) {
             return;
@@ -430,6 +413,10 @@ namespace SR_GRAPH_UI_NS {
                 IsLocal() ? m_modelMatrix.GetQuat() : SR_MATH_NS::Quaternion::Identity(),
                 isScaleOperation ? m_modelMatrix.GetScale() : SR_MATH_NS::FVector3(1.f)
         );
+
+        if (!m_modelMatrix.IsFinite()) {
+            m_modelMatrix = SR_MATH_NS::Matrix4x4::Identity();
+        }
 
         if (IsHandledAnotherObject()) {
             GetTransform()->SetTranslation(m_modelMatrix.GetTranslate());

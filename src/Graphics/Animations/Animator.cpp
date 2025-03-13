@@ -6,28 +6,11 @@
 
 #include <Utils/ECS/ComponentManager.h>
 
+#include <Codegen/Animator.generated.hpp>
+
 namespace SR_ANIMATIONS_NS {
     Animator::~Animator() {
         SetGraph(SR_UTILS_NS::Path());
-    }
-
-    bool Animator::InitializeEntity() noexcept {
-        GetComponentProperties().AddCustomProperty<SR_UTILS_NS::PathProperty>("Graph")
-            .AddFileFilter("Animation graph", {{ "xml" }})
-            .SetGetter([this]()-> SR_UTILS_NS::Path {
-                return m_graph ? m_graph->GetPath() : SR_UTILS_NS::Path();
-            })
-            .SetSetter([this](const SR_UTILS_NS::Path& path) {
-                SetGraph(path);
-            });
-
-        GetComponentProperties().AddStandardProperty("Frame rate", &m_frameRate);
-        GetComponentProperties().AddStandardProperty("Tolerance", &m_tolerance);
-
-        GetComponentProperties().AddStandardProperty("Sync", &m_sync);
-        GetComponentProperties().AddStandardProperty("FPS compensation", &m_fpsCompensation);
-
-        return Super::InitializeEntity();
     }
 
     void Animator::OnDestroy() {
@@ -113,6 +96,7 @@ namespace SR_ANIMATIONS_NS {
 
     void Animator::SetGraph(const SR_UTILS_NS::Path& path) {
         SR_SAFE_DELETE_PTR(m_graph);
+
         if (path.IsEmpty()) {
             return;
         }
@@ -123,6 +107,10 @@ namespace SR_ANIMATIONS_NS {
         else {
             m_graph = AnimationGraph::Load(this, path);
         }
+    }
+
+    SR_UTILS_NS::Path Animator::GetGraphPath() const noexcept {
+        return m_graph ? m_graph->GetPath() : SR_UTILS_NS::Path();
     }
 
     //void Animator::SetClipPath(const SR_UTILS_NS::Path& path) {

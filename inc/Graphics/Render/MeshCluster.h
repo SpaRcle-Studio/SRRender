@@ -73,7 +73,7 @@ namespace SR_GRAPH_NS {
 
         void OnResourceReloaded(SR_UTILS_NS::IResource* pResource);
 
-        bool SR_FASTCALL Add(SR_GTYPES_NS::Mesh *mesh) noexcept;
+        //bool SR_FASTCALL Add(SR_GTYPES_NS::Mesh *mesh) noexcept;
         SR_NODISCARD bool SR_FASTCALL Empty() const noexcept;
 
         SR_NODISCARD SR_SRSL_NS::ShaderType GetShaderType() const noexcept;

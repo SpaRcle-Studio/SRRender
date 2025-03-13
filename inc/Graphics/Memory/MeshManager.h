@@ -102,10 +102,9 @@ namespace SR_GRAPH_NS {
 
         class MeshManager : public SR_UTILS_NS::Singleton<MeshManager> {
             SR_REGISTER_SINGLETON(MeshManager)
-            using Hash = uint64_t;
-            using HashTable = std::vector<uint64_t>;
+            using HashTable = std::vector<SR_UTILS_NS::StringAtom>;
         public:
-            typedef std::unordered_map<Hash, MeshVidMemInfo> VideoResources;
+            typedef std::unordered_map<SR_UTILS_NS::StringAtom, MeshVidMemInfo> VideoResources;
             typedef std::optional<VideoResources::iterator> VideoResourcesIter;
 
             enum class FreeResult {
@@ -130,7 +129,7 @@ namespace SR_GRAPH_NS {
 
         private:
             VideoResourcesIter FindById(int32_t id, MeshMemoryType memType);
-            VideoResourcesIter FindImpl(Hash hash, MeshMemoryType memType);
+            VideoResourcesIter FindImpl(SR_UTILS_NS::StringAtom id, MeshMemoryType memType);
 
             bool RegisterImpl(const std::string_view& identifier, MeshMemoryType memType, uint32_t size, uint32_t id);
             FreeResult FreeImpl(VideoResourcesIter iter, MeshMemoryType memType);
@@ -232,14 +231,15 @@ namespace SR_GRAPH_NS {
 
         template<MeshMemoryType memType>
         MeshManager::VideoResourcesIter MeshManager::Find(const std::string_view& identifier, Vertices::VertexType vertexType) {
+            SR_TRACY_ZONE;
+
             if constexpr (memType == MeshMemoryType::VBO) {
-                const Hash hash = SR_HASH_STR_VIEW(std::string(identifier) + SR_UTILS_NS::EnumReflector::ToStringAtom(vertexType).ToStringRef());
-                return FindImpl(hash, memType);
+                SR_UTILS_NS::StringAtom id = (std::string(identifier) + SR_UTILS_NS::EnumReflector::ToStringAtom(vertexType).ToStringRef());
+                return FindImpl(id, memType);
             }
 
             if constexpr (memType == MeshMemoryType::IBO) {
-                const Hash hash = SR_HASH_STR_VIEW(identifier);
-                return FindImpl(hash, memType);
+                return FindImpl(identifier, memType);
             }
 
             SRHalt("Unknown memory type!");

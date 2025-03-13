@@ -11,63 +11,37 @@
 #include <Graphics/Types/Mesh.h>
 
 namespace SR_ANIMATIONS_NS {
+    class Skeleton;
     class BoneComponent;
 
-    struct Bone : public SR_UTILS_NS::NonCopyable {
+    struct Bone final : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<Bone> {
+        SR_CLASS()
     public:
-        ~Bone() override {
-            for (auto&& pBone : bones) {
-                delete pBone;
-            }
-        }
+        Bone()
+            : SR_HTYPES_NS::SharedPtr<Bone>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+        { }
 
-        SR_NODISCARD Bone* CloneRoot() const noexcept {
-            Bone* pRootBone = new Bone();
-
-            pRootBone->name = name;
-            pRootBone->gameObject = gameObject;
-            pRootBone->pRoot = pRootBone;
-            pRootBone->pParent = nullptr;
-            pRootBone->pScene = pScene;
-
-            pRootBone->bones.reserve(bones.size());
-
-            for (auto&& pSubBone : bones) {
-                pRootBone->bones.emplace_back(pSubBone->Clone(pRootBone));
-            }
-
-            return pRootBone;
+        void SetSkeleton(Skeleton* pSkeleton) {
+            this->pSkeleton = pSkeleton;
         }
 
         bool Initialize();
+        void InitTreeIfNeed();
 
     private:
-        SR_NODISCARD Bone* Clone(Bone* pParentBone) const noexcept {
-            Bone* pBone = new Bone();
-
-            pBone->name = name;
-            pBone->gameObject = gameObject;
-            pBone->pParent = pParentBone;
-            pBone->pRoot = pParentBone->pRoot;
-            pBone->pScene = pParentBone->pScene;
-
-            pBone->bones.reserve(bones.size());
-
-            for (auto&& pSubBone : bones) {
-                pBone->bones.emplace_back(pSubBone->Clone(pBone));
-            }
-
-            return pBone;
-        }
+        void InitTree(Bone* pParent);
 
     public:
+        /// @property
         SR_UTILS_NS::StringAtom name;
-        SR_WORLD_NS::Scene* pScene = nullptr;
+        /// @property
+        std::vector<Bone::Ptr> bones;
+
         SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::GameObject> gameObject;
-        std::vector<Bone*> bones;
         Bone* pParent = nullptr;
         Bone* pRoot = nullptr;
         bool hasError = false;
+        Skeleton* pSkeleton = nullptr;
 
     };
 }

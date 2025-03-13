@@ -6,13 +6,14 @@
 #define SR_ENGINE_GRAPHICS_MESH_3D_H
 
 #include <Utils/Types/IRawMeshHolder.h>
+
 #include <Graphics/Types/Geometry/MeshComponent.h>
 
 namespace SR_GTYPES_NS {
+    /// @category(Render)
     class Mesh3D final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
-        SR_CLASS()
         using Super = IndexedMesh;
-        SR_REGISTER_NEW_COMPONENT(Mesh3D, 1002);
+        SR_CLASS()
     public:
         Mesh3D() = default;
 
@@ -20,8 +21,6 @@ namespace SR_GTYPES_NS {
         typedef Vertices::StaticMeshVertex VertexType;
 
     public:
-        SR_NODISCARD bool InitializeEntity() noexcept override;
-
         void UseMaterial() override;
         void UseModelMatrix() override;
 
@@ -38,6 +37,14 @@ namespace SR_GTYPES_NS {
         bool Calculate() override;
 
     private:
+        /// @virtualProperty(geometryName) @getter(GetGeometryName) @dontSave @readOnly
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(meshPath) @getter(GetMeshPath) @setter(SetRawMesh)
+        /// @customArgs(pick: enabled, filter name: Meshes)
+        /// @customArg(filter value: fbx,blend,obj,pmx,stl,dae)
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)
+        SR_VIRTUAL_PROPERTY
 
     };
 }

@@ -1591,6 +1591,19 @@ namespace SR_GRAPH_NS {
 
         Super::DrawIndices(count);
 
+        if (m_state.IBOId != SR_ID_INVALID) {
+            auto&& pIBO = m_memory->GetIBO(m_state.IBOId);
+            if (!pIBO) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("VulkanPipeline::DrawIndices() : IBO is nullptr!");
+                return;
+            }
+
+            if (pIBO->GetDebugInfo().itemCount < count) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("VulkanPipeline::DrawIndices() : trying to draw more indices than IBO has! Has: {}, Draw: {}", pIBO->GetDebugInfo().itemCount, count);
+                return;
+            }
+        }
+
         if (m_currentDescriptorSet) {
             vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
         }

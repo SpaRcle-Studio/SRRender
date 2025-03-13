@@ -44,7 +44,6 @@ namespace SR_GRAPH_NS {
             case RCUpdateQueueState::Shaders: dirty |= Update(m_shaders); break;
             case RCUpdateQueueState::Textures: dirty |= Update(m_textures); break;
             case RCUpdateQueueState::Techniques: dirty |= Update(m_techniques); break;
-            case RCUpdateQueueState::Materials: dirty |= Update(m_materials); break;
             case RCUpdateQueueState::Skyboxes: dirty |= Update(m_skyboxes); break;
             case RCUpdateQueueState::End:
                 m_updateState = RCUpdateQueueState::Begin;
@@ -169,15 +168,8 @@ namespace SR_GRAPH_NS {
             m_defaultTexture = nullptr;
         }
 
-        if (m_defaultMaterial) {
-            m_defaultMaterial->RemoveUsePoint();
-            m_defaultMaterial = nullptr;
-        }
-
-        if (m_defaultUIMaterial) {
-            m_defaultUIMaterial->RemoveUsePoint();
-            m_defaultUIMaterial = nullptr;
-        }
+        m_defaultMaterial.Reset();
+        m_defaultUIMaterial.Reset();
 
         uint32_t syncStep = 0;
         const uint32_t maxErrStep = 50;
@@ -274,13 +266,6 @@ namespace SR_GRAPH_NS {
         m_techniques.emplace_back(pResource);
     }
 
-    void RenderContext::Register(RenderContext::MaterialPtr pResource) {
-        if (!RegisterResource(pResource)) {
-            return;
-        }
-        m_materials.emplace_back(pResource);
-    }
-
     void RenderContext::Register(RenderContext::SkyboxPtr pResource) {
         if (!RegisterResource(pResource)) {
             return;
@@ -297,7 +282,6 @@ namespace SR_GRAPH_NS {
             m_shaders.empty() &&
             m_framebuffers.empty() &&
             m_textures.empty() &&
-            m_materials.empty() &&
             m_skyboxes.empty() &&
             m_scenes.empty() &&
             m_techniques.empty();
@@ -458,10 +442,6 @@ namespace SR_GRAPH_NS {
         return m_techniques;
     }
 
-    const std::vector<RenderContext::MaterialPtr>& RenderContext::GetMaterials() const noexcept {
-        return m_materials;
-    }
-
     const std::vector<SR_GTYPES_NS::Skybox*>& RenderContext::GetSkyboxes() const noexcept {
         return m_skyboxes;
     }
@@ -507,20 +487,29 @@ namespace SR_GRAPH_NS {
 
         /// ----------------------------------------------------------------------------
 
-        if ((m_defaultUIMaterial = FileMaterial::Load("Engine/Materials/UI/ui.mat"))) {
-            m_defaultUIMaterial->AddUsePoint();
+        if (!((m_defaultMaterial = FileMaterial::Load("Engine/Materials/default.mat")))) {
+            SR_ERROR("RenderContext::LoadDefaultResources() : failed to load default material!");
         }
-        else {
+
+        /// ----------------------------------------------------------------------------
+
+        if (!((m_defaultUIMaterial = FileMaterial::Load("Engine/Materials/UI/ui.mat")))) {
             SR_ERROR("RenderContext::LoadDefaultResources() : failed to load default UI material!");
         }
 
         /// ----------------------------------------------------------------------------
 
-        if ((m_defaultMaterial = FileMaterial::Load("Engine/Materials/default.mat"))) {
-            m_defaultMaterial->AddUsePoint();
-        }
-        else {
-            SR_ERROR("RenderContext::LoadDefaultResources() : failed to load default material!");
+        if (!m_defaultMaterial || !m_defaultUIMaterial) {
+            static const SR_UTILS_NS::Path templateMaterialPath = "Engine/Materials/template.mat";
+
+            SR_INFO("RenderContext::LoadDefaultResources() : failed to load default materials! Creating template material at: " + templateMaterialPath.ToString());
+
+            if (!SR_GRAPH_NS::FileMaterialResource::CreateTemplateMaterial(templateMaterialPath)) {
+                SR_ERROR("RenderContext::LoadDefaultResources() : failed to create template material!");
+            }
+            else {
+                SR_INFO("RenderContext::LoadDefaultResources() : template material created successfully! Use it for creating materials.");
+            }
         }
 
         return true;
