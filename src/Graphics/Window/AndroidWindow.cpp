@@ -47,8 +47,8 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void SR_GRAPH_NS::AndroidWindow::PollEvents() const {
-        auto&& pAndroidApp = (android_app*)SR_PLATFORM_NS::GetInstance();
+    void AndroidWindow::PollEvents() {
+        /*auto&& pAndroidApp = (android_app*)SR_PLATFORM_NS::GetInstance();
 
         int ident;
         int events;
@@ -61,14 +61,14 @@ namespace SR_GRAPH_NS {
             }
 
             // If a sensor has data, process it now.
-            /*if (ident == LOOPER_ID_USER) {
+            //if (ident == LOOPER_ID_USER) {
 
-            }*/
+            //}
 
             // Check if we are exiting.
             if (pAndroidApp->destroyRequested != 0) {
                 return;
             }
-        }
+        }*/
     }
 }

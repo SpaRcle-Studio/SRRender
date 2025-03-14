@@ -15,8 +15,10 @@ message("$ENV{VULKAN_SDK}")
 
 find_package(Vulkan REQUIRED)
 
-if (UNIX AND NOT APPLE)
-    set(SR_RENDER_GLFW ON)
+if (NOT ANDROID_NDK)
+    if (UNIX AND NOT APPLE)
+        set(SR_RENDER_GLFW ON)
+    endif()
 endif()
 
 if (SR_RENDER_GLFW)
@@ -67,35 +69,37 @@ else()
     endif()
 endif()
 
-if (UNIX AND NOT APPLE)
-    target_include_directories(Graphics PUBLIC "${X11_xcb_keysyms_INCLUDE_PATH}")
-    target_link_libraries(Graphics ${X11_xcb_keysyms_LIB})
+if (NOT ANDROID_NDK)
+    if (UNIX AND NOT APPLE)
+        target_include_directories(Graphics PUBLIC "${X11_xcb_keysyms_INCLUDE_PATH}")
+        target_link_libraries(Graphics ${X11_xcb_keysyms_LIB})
 
-    target_include_directories(Graphics PUBLIC "${X11_xcb_cursor_INCLUDE_PATH}")
-    target_link_libraries(Graphics ${X11_xcb_cursor_LIB} xcb-cursor)
+        target_include_directories(Graphics PUBLIC "${X11_xcb_cursor_INCLUDE_PATH}")
+        target_link_libraries(Graphics ${X11_xcb_cursor_LIB} xcb-cursor)
 
-    target_include_directories(Graphics PUBLIC "${X11_xcb_xfixes_INCLUDE_PATH}")
-    target_link_libraries(Graphics ${X11_xcb_xfixes_LIB})
+        target_include_directories(Graphics PUBLIC "${X11_xcb_xfixes_INCLUDE_PATH}")
+        target_link_libraries(Graphics ${X11_xcb_xfixes_LIB})
 
-    target_include_directories(Graphics PUBLIC "${X11_xcb_INCLUDE_PATH}")
-    target_link_libraries(Graphics ${X11_xcb_LIB})
+        target_include_directories(Graphics PUBLIC "${X11_xcb_INCLUDE_PATH}")
+        target_link_libraries(Graphics ${X11_xcb_LIB})
 
-    target_include_directories(Graphics PUBLIC "${X11_xcb_randr_INCLUDE_PATH}")
-    target_link_libraries(Graphics ${X11_xcb_randr_LIB})
+        target_include_directories(Graphics PUBLIC "${X11_xcb_randr_INCLUDE_PATH}")
+        target_link_libraries(Graphics ${X11_xcb_randr_LIB})
 
-    target_include_directories(Graphics PUBLIC ${X11_X11_xcb_INCLUDE_PATH})
-    target_link_libraries(Graphics ${X11_X11_xcb_LIB})
+        target_include_directories(Graphics PUBLIC ${X11_X11_xcb_INCLUDE_PATH})
+        target_link_libraries(Graphics ${X11_X11_xcb_LIB})
 
-    target_include_directories(Graphics PUBLIC ${X11_xcb_xkb_INCLUDE_PATH})
-    target_link_libraries(Graphics ${X11_xcb_xkb_LIB})
+        target_include_directories(Graphics PUBLIC ${X11_xcb_xkb_INCLUDE_PATH})
+        target_link_libraries(Graphics ${X11_xcb_xkb_LIB})
 
-    target_include_directories(Graphics PUBLIC ${X11_xcb_ewmh_INCLUDE_PATH})
-    target_link_libraries(Graphics ${X11_xcb_ewmh_LIB} xcb-ewmh xcb-util)
+        target_include_directories(Graphics PUBLIC ${X11_xcb_ewmh_INCLUDE_PATH})
+        target_link_libraries(Graphics ${X11_xcb_ewmh_LIB} xcb-ewmh xcb-util)
+    endif()
 endif()
 
 target_link_libraries(Graphics CMP_Core freetype)
 
-if (UNIX AND NOT APPLE)
+if (SR_RENDER_GLFW)
     target_link_libraries(Graphics glfw)
     #target_include_directories(Graphics PUBLIC libs/glfw/include)
 endif()
