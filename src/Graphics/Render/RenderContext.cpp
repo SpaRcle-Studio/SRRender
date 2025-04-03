@@ -174,7 +174,7 @@ namespace SR_GRAPH_NS {
         uint32_t syncStep = 0;
         const uint32_t maxErrStep = 50;
 
-        SR_UTILS_NS::ResourceManager::Instance().UpdateWatchers(0.f);
+        SR_UTILS_NS::ResourceManager::Instance().PullWatchers();
         SR_UTILS_NS::ResourceManager::Instance().ReloadResources(0.f);
 
         SR_UTILS_NS::ResourceManager::Instance().Synchronize(true);

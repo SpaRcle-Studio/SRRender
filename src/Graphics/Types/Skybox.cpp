@@ -299,9 +299,9 @@ namespace SR_GTYPES_NS {
                 continue;
             }
 
-            auto&& pWatch = resourcesManager.StartWatch(pTextureData->GetPath());
+            auto&& pWatch = SR_UTILS_NS::FileWatcher::MakeShared(pTextureData->GetPath());
 
-            pWatch->SetCallBack([this](auto &&pWatcher) {
+            pWatch->SetCallBack([this](auto&& pWatcher) {
                 SignalWatch();
             });
 

@@ -597,13 +597,11 @@ namespace SR_GRAPH_NS::Types {
         auto&& resourcesManager = SR_UTILS_NS::ResourceManager::Instance();
 
         for (auto&& path : m_includes) {
-            auto&& pWatch = resourcesManager.StartWatch(resourcesManager.GetResPath().Concat(path));
+            auto&& pWatch = SR_UTILS_NS::FileWatcher::MakeShared(resourcesManager.GetResPath().Concat(path));
 
             pWatch->SetCallBack([this](auto&& pWatcher) {
                 SignalWatch();
             });
-
-            pWatch->Init();
 
             m_watchers.emplace_back(pWatch);
         }

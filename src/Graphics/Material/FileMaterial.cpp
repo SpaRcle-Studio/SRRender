@@ -204,6 +204,8 @@ namespace SR_GRAPH_NS {
         if (m_pResource) {
             m_pResource->AddUsePoint();
 
+            InitMaterialDataSubscriptions();
+
             m_reloadBeginSubscription = m_pResource->Subscribe(SR_UTILS_NS::IResource::RELOAD_BEGIN_EVENT,
                 [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
                     DeInitMaterialDataSubscriptions();

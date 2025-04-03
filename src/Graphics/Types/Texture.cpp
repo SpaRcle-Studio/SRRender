@@ -116,9 +116,9 @@ namespace SR_GTYPES_NS {
 
         m_isCalculated = false;
 
-        m_context.Do([](RenderContext* ptr) {
-            ptr->SetDirty();
-        });
+        if (auto&& pRenderContext = GetRenderContext()) {
+            pRenderContext->SetDirty();
+        }
 
         return !hasErrors;
     }
@@ -144,9 +144,9 @@ namespace SR_GTYPES_NS {
             SRHalt("Texture already calculated!");
         }
 
-        m_context.Do([](RenderContext* ptr) {
-            ptr->SetDirty();
-        });
+        if (auto&& pRenderContext = GetRenderContext()) {
+            pRenderContext->SetDirty();
+        }
 
         return !hasErrors;
     }
@@ -164,14 +164,17 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (!SRVerifyFalse2(!(m_context = SR_THIS_THREAD->GetContext()->GetValue<RenderContextPtr>()), "Is not render context!")) {
-            m_hasErrors = true;
-            return false;
+        if (!IsGraphicsResourceRegistered()) {
+            auto&& pRenderContext = SR_THIS_THREAD->GetContext()->GetValue<RenderContextPtr>();
+            if (!pRenderContext) {
+                SRHalt("Texture::Calculate() : is not in render context!");
+                m_hasErrors = true;
+                return false;
+            }
+            pRenderContext.Do([this](RenderContext* ptr) {
+                ptr->Register(this);
+            });
         }
-
-        m_context.Do([this](RenderContext* ptr) {
-            ptr->Register(this);
-        });
 
         if (IsDestroyed()) {
             SR_ERROR("Texture::Calculate() : the texture is destroyed!");
