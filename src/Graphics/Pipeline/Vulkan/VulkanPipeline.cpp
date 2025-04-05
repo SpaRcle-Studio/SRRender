@@ -220,7 +220,8 @@ namespace SR_GRAPH_NS {
             if (auto&& pImpl = m_window->GetImplementation<GLFWWindow>()) {
                 VkSurfaceKHR surface;
                 VkResult error = glfwCreateWindowSurface(instance, pImpl->GetWindow(), nullptr, &surface);
-                if (error) {
+
+                if (error != VK_SUCCESS) {
                     PipelineError("VulkanPipeline::Init() : GLFW window surface initialization failed!");
                     return VK_NULL_HANDLE;
                 }

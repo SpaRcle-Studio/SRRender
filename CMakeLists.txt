@@ -24,6 +24,9 @@ endif()
 if (SR_RENDER_GLFW)
     set(SR_RENDER_GLFW ON)
 
+    #set(GLFW_BUILD_WAYLAND ON)
+    set(GLFW_BUILD_X11 ON)
+
     add_subdirectory(libs/glfw)
     include_directories(libs/glfw/include)
 endif()
