@@ -4,12 +4,13 @@ project(Graphics)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
+option(SR_USE_SKIA "" ON)
+option(SR_RENDER_GLFW "Build and use GLFW. Used by default on Linux (no alternatives at the moment)." OFF)
+
 set(BUILD_SHARED_LIBS OFF)
 
 set(FT_CONFIG_OPTION_USE_ZLIdB OFF)
 set(FT_DISABLE_HARFBUZZ ON)
-
-option(SR_RENDER_GLFW "" OFF)
 
 message("$ENV{VULKAN_SDK}")
 
@@ -29,6 +30,11 @@ if (SR_RENDER_GLFW)
 endif()
 
 set(EVO_VULKAN_USE_OWN_GLFW OFF)
+
+if (SR_USE_SKIA)
+    set(EVO_VULKAN_BUILD_VMA OFF CACHE INTERNAL "" FORCE)
+endif()
+
 add_subdirectory(libs/EvoVulkan/Core)
 
 if (ANDROID_NDK)
@@ -40,6 +46,12 @@ include(freetype.cmake)
 
 if (SR_RENDER_GLFW)
     add_compile_definitions(SR_RENDER_GLFW)
+endif()
+
+if (SR_USE_SKIA)
+    add_compile_definitions(SR_USE_SKIA)
+
+    include(cmake/CompileSkia.cmake)
 endif()
 
 add_subdirectory(libs/cmp_core)
@@ -102,6 +114,13 @@ target_link_libraries(Graphics CMP_Core freetype)
 if (SR_RENDER_GLFW)
     target_link_libraries(Graphics glfw)
     #target_include_directories(Graphics PUBLIC libs/glfw/include)
+endif()
+
+if (SR_USE_SKIA)
+    target_include_directories(Graphics PRIVATE libs/skia)
+    target_link_directories(Graphics PUBLIC libs/skia/out/srengine) # See cmake/CompileSkia.cmake
+
+    target_link_libraries(Graphics skia)
 endif()
 
 if (EVO_VULKAN_STATIC_LIBRARY)

@@ -103,6 +103,10 @@
     #include "../src/Graphics/Overlay/ImGuiOverlay.cpp"
 #endif
 
+#if defined(SR_USE_SKIA)
+    #include "../src/Graphics/Overlay/SkiaOverlay.cpp"
+#endif
+
 #if defined(SR_USE_VULKAN)
     #include "../src/Graphics/Pipeline/Vulkan/VulkanPipeline.cpp"
     #include "../src/Graphics/Pipeline/Vulkan/VulkanMemory.cpp"
@@ -114,6 +118,10 @@
 
     #if defined(SR_USE_IMGUI)
         #include "../src/Graphics/Overlay/VulkanImGuiOverlay.cpp"
+    #endif
+
+    #if defined(SR_USE_SKIA)
+        #include "../src/Graphics/Overlay/VulkanSkiaOverlay.cpp"
     #endif
 
     #if defined(SR_TRACY_ENABLE)
