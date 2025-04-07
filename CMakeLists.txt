@@ -35,8 +35,6 @@ if (SR_USE_SKIA)
     set(EVO_VULKAN_BUILD_VMA OFF CACHE INTERNAL "" FORCE)
 endif()
 
-add_subdirectory(libs/EvoVulkan/Core)
-
 if (ANDROID_NDK)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-function -Wunused-function -Wno-comment -Wunused-variable")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unused-function -Wunused-function -Wno-comment -Wunused-variable")
@@ -54,6 +52,7 @@ if (SR_USE_SKIA)
     include(cmake/CompileSkia.cmake)
 endif()
 
+add_subdirectory(libs/EvoVulkan/Core)
 add_subdirectory(libs/cmp_core)
 
 set(SR_GRAPHICS_SOURCES cxx/Graphics.cxx cxx/ImGUI.cxx cxx/SRSL.cxx cxx/Pass.cxx cxx/GUI.cxx cxx/Animations.cxx)
@@ -109,18 +108,18 @@ if (NOT ANDROID_NDK)
     endif()
 endif()
 
-target_link_libraries(Graphics CMP_Core freetype)
-
-if (SR_RENDER_GLFW)
-    target_link_libraries(Graphics glfw)
-    #target_include_directories(Graphics PUBLIC libs/glfw/include)
-endif()
-
 if (SR_USE_SKIA)
     target_include_directories(Graphics PRIVATE libs/skia)
     target_link_directories(Graphics PUBLIC libs/skia/out/srengine) # See cmake/CompileSkia.cmake
 
     target_link_libraries(Graphics skia)
+endif()
+
+target_link_libraries(Graphics CMP_Core freetype)
+
+if (SR_RENDER_GLFW)
+    target_link_libraries(Graphics glfw)
+    #target_include_directories(Graphics PUBLIC libs/glfw/include)
 endif()
 
 if (EVO_VULKAN_STATIC_LIBRARY)
