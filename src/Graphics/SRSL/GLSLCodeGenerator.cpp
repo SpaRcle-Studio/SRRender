@@ -30,6 +30,10 @@ namespace SR_SRSL_NS {
             stages[ShaderStage::Fragment] = code.value();
         }
 
+        if (auto&& code = GenerateComputeStage()) {
+            stages[ShaderStage::Compute] = code.value();
+        }
+
         if (auto&& code = GenerateRayGenStage()) {
             stages[ShaderStage::Raygen] = code.value();
         }
@@ -89,17 +93,20 @@ namespace SR_SRSL_NS {
         auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(stage);
         if (auto&& pFunctionCallStack = m_shader->GetUseStack()->FindFunction(entryPoint)) {
             for (auto&& pUnit : m_shader->GetAnalyzedTree()->pLexicalTree->lexicalTree) {
-                auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit);
+                if (auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit)) {
+                    if (!pFunctionCallStack->IsFunctionUsed(pFunction->pName->token)) {
+                        continue;
+                    }
 
-                if (!pFunction) {
-                    continue;
+                    code += GenerateFunction(pFunction, 0) + "\n\n";
                 }
+                else if (auto&& pStructure = dynamic_cast<SRSLStructureStatement*>(pUnit)) {
+                    if (!pFunctionCallStack->IsStructUsed(pStructure->pName->token)) {
+                        continue;
+                    }
 
-                if (!pFunctionCallStack->IsFunctionUsed(pFunction->pName->token)) {
-                    continue;
+                    code += GenerateStructure(pStructure, 0) + "\n\n";
                 }
-
-                code += GenerateFunction(pFunction, 0) + "\n\n";
             }
         }
 
@@ -203,6 +210,28 @@ namespace SR_SRSL_NS {
         return code;
     }
 
+    std::optional<std::string> GLSLCodeGenerator::GenerateComputeStage() {
+        auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(ShaderStage::Compute);
+        auto&& pStageFunction = m_shader->GetAnalyzedTree()->pLexicalTree->FindFunction(entryPoint);
+        auto&& pUseStackFunction = m_shader->GetUseStack()->FindFunction(entryPoint);
+        if (!pStageFunction || !pUseStackFunction) {
+            return std::optional<std::string>();
+        }
+
+        /*
+        *in uvec3 gl_NumWorkGroups;
+        in uvec3 gl_WorkGroupID;
+        in uvec3 gl_LocalInvocationID;
+        in uvec3 gl_GlobalInvocationID;
+        in uint  gl_LocalInvocationIndex;
+        */
+
+        auto&& code = GenerateStage(ShaderStage::Compute, std::string());
+        code += GenerateFunction(pStageFunction, 0);
+
+        return code;
+    }
+
     std::string GLSLCodeGenerator::GetVersion(ShaderStage stage) const {
         return "450";
     }
@@ -257,6 +286,25 @@ namespace SR_SRSL_NS {
                 code += SR_FORMAT("layout (location = {}) in int VERTEX_INDEX;\n", location);
             }
             ++location;
+        }
+
+        if (stage == ShaderStage::Compute) {
+            auto&& pComputeFunction = m_shader->GetAnalyzedTree()->pLexicalTree->FindFunction("compute");
+            if (pComputeFunction) {
+                auto&& threadsDecorator = pComputeFunction->pDecorators->Find("THREADS");
+                if (threadsDecorator && threadsDecorator->args.size() == 3) {
+                    code += SR_FORMAT("layout (local_size_x = {}, local_size_y = {}, local_size_z = {}) in;\n",
+                        threadsDecorator->args[0]->token.c_str(),
+                        threadsDecorator->args[1]->token.c_str(),
+                        threadsDecorator->args[2]->token.c_str()
+                    );
+                }
+                else {
+                    SR_ERROR("GLSLCodeGenerator::GenerateInputLocations() : invalid threads decorator for compute function!"
+                        "\n\tShader: {}", m_shader->GetPath()
+                    );
+                }
+            }
         }
 
         SR_UNUSED_VARIABLE(location);
@@ -365,6 +413,21 @@ namespace SR_SRSL_NS {
         if (pFunction->pLexicalTree) {
             code += GenerateLexicalTree(pFunction->pLexicalTree, deep, preCode, postCode);
         }
+
+        return code;
+    }
+
+    std::string GLSLCodeGenerator::GenerateStructure(SRSLStructureStatement* pStructure, int32_t deep) const {
+        std::string code;
+
+        code += GenerateTab(deep);
+        code += "struct " + GenerateName(pStructure->pName, 0) + " ";
+
+        if (pStructure->pLexicalTree) {
+            code += GenerateLexicalTree(pStructure->pLexicalTree, deep);
+        }
+
+        code += ";";
 
         return code;
     }
@@ -551,7 +614,17 @@ namespace SR_SRSL_NS {
         }
 
         for (auto&& [name, uniformBlock] : m_shader->GetSSBOBlocks()) {
-            std::string blockCode = SR_SPRINTF("layout (set = 0, binding = %d) buffer StorageBuffer_%s {\n", uniformBlock.binding, name.c_str());
+            std::string accessMode = uniformBlock.isReadOnly ? (uniformBlock.isReadOnly.value() ? " readonly" : " writeonly") : std::string();
+
+            std::string modifiers = "{}{}{}{}"_format(
+                accessMode,
+                uniformBlock.isCoherent ? " coherent" : std::string(),
+                uniformBlock.isVolatile ? " volatile" : std::string(),
+                uniformBlock.isRestrict ? " restrict" : std::string()
+            );
+
+
+            std::string blockCode = SR_SPRINTF("layout (set = 0, binding = %d)%s buffer StorageBuffer_%s {\n", uniformBlock.binding, modifiers.c_str(), name.c_str());
             bool hasUsage = false;
 
             for (auto&& field : uniformBlock.fields) {

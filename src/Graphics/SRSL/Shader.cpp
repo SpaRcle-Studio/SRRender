@@ -188,12 +188,12 @@ namespace SR_SRSL_NS {
                 return Vertices::VertexType::SimpleVertex;
             case ShaderType::Text:
             case ShaderType::TextUI:
+            case ShaderType::Compute:
             case ShaderType::Canvas:
             case ShaderType::Line:
                 return Vertices::VertexType::None;
             case ShaderType::Custom:
             case ShaderType::Particles:
-            case ShaderType::Compute:
             case ShaderType::Unknown:
             default:
                 SRHalt0();
@@ -273,6 +273,28 @@ namespace SR_SRSL_NS {
                 auto&& usedStages = m_useStack->IsVariableUsedInEntryPointsExt(field.name);
 
                 auto&& uniformBlock = m_ssboBlocks[blockName];
+
+                uniformBlock.isCoherent = static_cast<bool>(pVariable->pDecorators->Find("coherent"));
+                uniformBlock.isVolatile = static_cast<bool>(pVariable->pDecorators->Find("volatile"));
+                uniformBlock.isRestrict = static_cast<bool>(pVariable->pDecorators->Find("restrict"));
+
+                bool isReadOnly = static_cast<bool>(pVariable->pDecorators->Find("readonly"));
+                bool isWriteOnly = static_cast<bool>(pVariable->pDecorators->Find("readonly"));
+
+                if (isReadOnly && isWriteOnly) {
+                    SR_WARN("SRSLShader::PrepareUniformBlocks() : using 'readonly' and 'writeonly' on a SSBO block has no effects!"
+                        "\n\tPath: {}\n\tSSBO name: {}", m_path, field.name
+                    );
+                }
+                else {
+                    if (isReadOnly) {
+                        uniformBlock.isReadOnly = true;
+                    }
+                    else if (isWriteOnly) {
+                        uniformBlock.isReadOnly = false;
+                    }
+                }
+
                 uniformBlock.fields.emplace_back(field);
                 uniformBlock.stages.insert(usedStages.begin(), usedStages.end());
             }

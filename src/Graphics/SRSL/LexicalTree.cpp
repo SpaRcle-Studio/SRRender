@@ -196,4 +196,9 @@ namespace SR_SRSL_NS {
         SR_SAFE_DELETE_PTR(pVar);
         SR_SAFE_DELETE_PTR(pLexicalTree);
     }
+
+    SRSLStructureStatement::~SRSLStructureStatement() {
+        SR_SAFE_DELETE_PTR(pName);
+        SR_SAFE_DELETE_PTR(pLexicalTree);
+    }
 }
