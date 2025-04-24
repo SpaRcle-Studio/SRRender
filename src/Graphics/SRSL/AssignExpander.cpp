@@ -103,7 +103,9 @@ namespace SR_SRSL_NS {
                 1,
                 LexemKind::OpeningBracket,
                 "(",
-                GetCurrentLexem()->fileIndex
+                GetCurrentLexem()->fileIndex,
+                GetCurrentLexem()->line,
+                GetCurrentLexem()->position
             )
         );
 
@@ -119,7 +121,9 @@ namespace SR_SRSL_NS {
                     1,
                     LexemKind::ClosingBracket,
                     ")",
-                    GetCurrentLexem()->fileIndex
+                    GetCurrentLexem()->fileIndex,
+                    GetCurrentLexem()->line,
+                    GetCurrentLexem()->position
                 )
             );
         }

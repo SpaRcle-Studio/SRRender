@@ -193,6 +193,7 @@ namespace SR_SRSL_NS {
 
                         pForStatement->pExpr = SR_UTILS_NS::Exchange(m_expr, nullptr);
 
+                        SRAssert(GetCurrentLexem() && GetCurrentLexem()->kind == LexemKind::ClosingBracket);
                         ++m_currentLexem; /// )
 
                         break;
