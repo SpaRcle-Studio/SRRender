@@ -434,6 +434,11 @@ namespace SR_SRSL_NS {
             return;
         }
 
+        if (exprLexems.empty()) {
+            m_result = SRSLResult(SRSLReturnCode::EmptyExpression, GetCurrentLexem());
+            return;
+        }
+
         auto&& [pExpr, result] = SR_SRSL_NS::SRSLMathExpression::Instance().Analyze(std::move(exprLexems));
         m_expr = pExpr;
         m_result = std::move(result);

@@ -83,9 +83,6 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     void ShaderUBOBlock::DeInit() {
-        m_dataCount = 0;
-        m_alignedBlock = 0;
-
         if (m_data) {
             delete[] m_data;
             m_data = nullptr;
@@ -95,6 +92,9 @@ namespace SR_GRAPH_NS::Memory {
 
         m_size = 0;
         m_binding = SR_ID_INVALID;
+
+        m_dataCount = 0;
+        m_alignedBlock = 0;
 
         m_initialized = false;
     }
@@ -233,6 +233,9 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     void ShaderUBOBlock::ResetDefaultValues() {
+        if (!m_memory || m_size == 0) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
         memset(m_memory, 0, m_size);
         for (auto&& defaultValue : m_defaultValues) {
             std::visit([this, &defaultValue](ShaderPropertyVariant&& arg) {

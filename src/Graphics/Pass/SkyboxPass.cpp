@@ -89,6 +89,8 @@ namespace SR_GRAPH_NS {
             pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
             pShader->SetMat4(SHADER_PROJECTION_NO_FOV_MATRIX, m_camera->GetProjectionNoFOV());
             pShader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
+            pShader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
+            pShader->SetVec3(SHADER_VIEW_DIRECTION, m_camera->GetViewDirection());
             pShader->EndSharedUBO();
         }
         else {
