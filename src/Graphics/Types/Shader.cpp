@@ -529,6 +529,9 @@ namespace SR_GRAPH_NS::Types {
             }
         }
 
+        m_uniformBlock.ResetDefaultValues();
+        m_constBlock.ResetDefaultValues();
+
         return IResource::Load();
     }
 
@@ -731,5 +734,9 @@ namespace SR_GRAPH_NS::Types {
 
             ssbo.ssbo = SR_ID_INVALID;
         }
+    }
+
+    void Shader::ResetUBOToDefaults() {
+        m_uniformBlock.ResetDefaultValues();
     }
 }

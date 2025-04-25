@@ -91,10 +91,10 @@ namespace SR_GRAPH_NS::Memory {
             m_data = nullptr;
         }
 
+        FreeMemory(m_memory);
+
         m_size = 0;
         m_binding = SR_ID_INVALID;
-
-        FreeMemory(m_memory);
 
         m_initialized = false;
     }
@@ -164,6 +164,10 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     char* ShaderUBOBlock::AllocMemory(uint64_t size) {
+        if (size == 0) {
+            SRHalt("Size is 0!");
+            return nullptr;
+        }
         SRAssert(m_align == 0 || size % m_align == 0);
         auto&& pMemory = (char*)malloc(size);
         memset(pMemory, 0, size);

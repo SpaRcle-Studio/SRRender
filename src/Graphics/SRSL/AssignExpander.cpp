@@ -97,36 +97,44 @@ namespace SR_SRSL_NS {
             return;
         }
 
-        m_lexems.insert(m_lexems.begin() + m_currentLexem + 2,
-            Lexem(
-                GetCurrentLexem()->offset,
-                1,
-                LexemKind::OpeningBracket,
-                "(",
-                GetCurrentLexem()->fileIndex,
-                GetCurrentLexem()->line,
-                GetCurrentLexem()->position
-            )
-        );
+        --m_currentLexem; /// back to variable name
 
-        std::swap(m_lexems[m_currentLexem], m_lexems[m_currentLexem + 1]);
-        m_lexems.insert(m_lexems.begin() + m_currentLexem + 1, lexems.begin(), lexems.end());
-
-        const uint64_t semicolon = FindSemicolon();
-
-        if (semicolon < m_lexems.size()) {
-            m_lexems.insert(m_lexems.begin() + semicolon,
-                Lexem(
-                    GetCurrentLexem()->offset,
-                    1,
-                    LexemKind::ClosingBracket,
-                    ")",
-                    GetCurrentLexem()->fileIndex,
-                    GetCurrentLexem()->line,
-                    GetCurrentLexem()->position
-                )
-            );
+        if (!GetLexem(0) || !GetLexem(1) || !GetLexem(2)) {
+            m_result.AddError(SRSLReturnCode::InvalidExpression);
+            return;
         }
+
+        Lexem variable = *GetLexem(0);
+        Lexem operation = *GetLexem(1);
+        Lexem assign = *GetLexem(2);
+
+        std::vector<Lexem> copy;
+        copy.insert(copy.end(), m_lexems.begin() + m_currentLexem, m_lexems.end());
+        auto&& [pExpr, result] = SRSLMathExpression::Instance().Analyze(std::move(copy));
+
+        if (result.HasErrors()) {
+            m_result.AddError(SRSLReturnCode::InvalidExpression);
+            return;
+        }
+
+        /// variable = (variable operation expression)
+        //m_lexems.insert(m_lexems.begin() + m_currentLexem, variable);
+        //m_lexems.insert(m_lexems.begin() + m_currentLexem + 1, assign);
+        //m_lexems.insert(m_lexems.begin() + m_currentLexem + 2, Lexem(variable.offset, 1, LexemKind::OpeningBracket, "(", variable.fileIndex, variable.line, variable.position));
+        //m_lexems.insert(m_lexems.begin() + m_currentLexem + 3, variable);
+        //m_lexems.insert(m_lexems.begin() + m_currentLexem + 4, operation);
+        //m_lexems.insert(m_lexems.begin() + m_currentLexem + 5 + result.processedLexems, Lexem(variable.offset, 1, LexemKind::ClosingBracket, ")", variable.fileIndex, variable.line, variable.position));
+
+        /// add closing bracket to end expression
+        m_lexems.insert(m_lexems.begin() + m_currentLexem + result.processedLexems, Lexem(variable.offset, 1, LexemKind::ClosingBracket, ")", variable.fileIndex, variable.line, variable.position));
+        /// add opening bracket to expression
+        m_lexems.insert(m_lexems.begin() + m_currentLexem + 2, Lexem(variable.offset, 1, LexemKind::OpeningBracket, "(", variable.fileIndex, variable.line, variable.position));
+        /// add variable name af
+        m_lexems.insert(m_lexems.begin() + m_currentLexem + 3, variable);
+
+
+        //m_currentLexem += 5 + result.processedLexems;
+        ++m_currentLexem; /// closing bracket
     }
 
     void SRSLAssignExpander::ExpandTriple() {
@@ -157,11 +165,23 @@ namespace SR_SRSL_NS {
     }
 
     uint64_t SRSLAssignExpander::FindSemicolon() {
-        while (auto&& pLexem = GetCurrentLexem()) {
+        int64_t offset = 0;
+        while (auto&& pLexem = GetLexem(offset)) {
             if (pLexem->kind == LexemKind::Semicolon) {
-                return m_currentLexem;
+                return m_currentLexem + offset;
             }
-            ++m_currentLexem;
+            ++offset;
+        }
+        return SR_ID_INVALID;
+    }
+
+    uint64_t SRSLAssignExpander::FindClosingBracket() {
+        int64_t offset = 0;
+        while (auto&& pLexem = GetLexem(offset)) {
+            if (pLexem->kind == LexemKind::ClosingBracket) {
+                return m_currentLexem + offset;
+            }
+            ++offset;
         }
         return SR_ID_INVALID;
     }
