@@ -150,7 +150,7 @@ namespace SR_GRAPH_GUI_NS {
             return false;
         }
 
-        if (IsLinked()) {
+        /*if (IsLinked()) {
             if (GetType() == PinType::Flow && GetKind() == PinKind::Output) {
                 return false;
             }
@@ -169,7 +169,7 @@ namespace SR_GRAPH_GUI_NS {
             if (GetKind() == PinKind::Input) {
                 return false;
             }
-        }
+        }*/
 
         return true;
     }
@@ -221,7 +221,7 @@ namespace SR_GRAPH_GUI_NS {
 
         switch (GetType()) {
             case PinType::Enum: {
-                auto&& pEnum = dynamic_cast<SR_SRLM_NS::DataTypeEnum*>(m_dataType);
+                /*auto&& pEnum = dynamic_cast<SR_SRLM_NS::DataTypeEnum*>(m_dataType);
                 if (!pEnum) {
                     break;
                 }
@@ -247,7 +247,7 @@ namespace SR_GRAPH_GUI_NS {
                     ImGui::EndChild();
                     ImGui::EndPopup();
                 }
-
+                */
                 break;
             }
             default:

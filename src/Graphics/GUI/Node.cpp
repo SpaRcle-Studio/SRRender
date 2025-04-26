@@ -15,7 +15,7 @@ namespace SR_GRAPH_GUI_NS {
         : Node(std::string(), NodeType::None, ImColor(255, 255, 255, 255))
     { }
 
-    Node::Node(SR_SRLM_NS::LogicalNode* pNode)
+    /*Node::Node(SR_SRLM_NS::LogicalNode* pNode)
         : m_logicalNode(pNode)
     {
         m_name = pNode->GetNodeName();
@@ -42,7 +42,7 @@ namespace SR_GRAPH_GUI_NS {
         for (auto&& pin : pNode->GetOutputs()) {
             AddOutput(new Pin(SR_HASH_TO_STR(pin.hashName).data(), pin.pData));
         }
-    }
+    }*/
 
     Node::Node(const std::string& name)
         : Node(name, NodeType::None, ImColor(255, 255, 255, 255))
@@ -362,7 +362,7 @@ namespace SR_GRAPH_GUI_NS {
         return m_name;
     }
 
-    Node& Node::AddInput(PinType type) {
+    /*Node& Node::AddInput(PinType type) {
         return AddInput(new Pin(std::string(), SR_SRLM_NS::DataTypeAllocator::Instance().Allocate(type)));
     }
 
@@ -384,10 +384,11 @@ namespace SR_GRAPH_GUI_NS {
 
     Node& Node::AddOutput(const std::string& name, SR_SRLM_NS::DataType* pDataType) {
         return AddOutput(new Pin(name, pDataType));
-    }
+    }*/
 
     uint64_t Node::GetHashName() const {
-        return m_logicalNode->GetNodeHashName();
+        //return m_logicalNode->GetNodeHashName();
+        return 0;
     }
 
     SR_MATH_NS::FVector2 Node::GetPosition() const {

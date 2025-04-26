@@ -57,7 +57,7 @@ namespace SR_GRAPH_UI_NS {
 
         const BaseMaterial::Ptr pMaterial = SRNew<SR_GRAPH_NS::UniqueMaterial>();
         pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
-        pMaterial->SetVec4("color", GetColorByOperation(operation));
+        pMaterial->SetColor("color", GetColorByOperation(operation));
 
         pMesh->SetMaterial(pMaterial);
 
@@ -232,11 +232,11 @@ namespace SR_GRAPH_UI_NS {
                 }
 
                 if (pMesh == info.pSelection.Get() && info.pSelection.Get()) {
-                    info.pVisual->GetMaterial()->SetVec4("color", SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f));
+                    info.pVisual->GetMaterial()->SetColor("color", SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f));
                     m_hoveredOperation = flag;
                 }
                 else {
-                    info.pVisual->GetMaterial()->SetVec4("color", GetColorByOperation(flag));
+                    info.pVisual->GetMaterial()->SetColor("color", GetColorByOperation(flag));
                 }
             }
         }

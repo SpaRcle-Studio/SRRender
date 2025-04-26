@@ -24,6 +24,13 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void BaseMaterial::SetColor(const SR_UTILS_NS::StringAtom id, const SR_MATH_NS::FColor& v) noexcept {
+        if (auto&& pData = GetMaterialData()) {
+            InitContext();
+            pData->SetData(id, SR_MATH_NS::FVector4(v.r, v.g, v.b, v.a), ShaderVarType::Vec4);
+        }
+    }
+
     void BaseMaterial::SetBool(const SR_UTILS_NS::StringAtom id, bool v) noexcept {
         if (auto&& pData = GetMaterialData()) {
             InitContext();

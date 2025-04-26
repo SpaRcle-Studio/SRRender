@@ -89,9 +89,11 @@ namespace SR_ANIMATIONS_NS {
     bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, const std::string& name) {
         const aiAnimation* pAnimation = nullptr;
 
-        for (uint32_t i = 0; i < pRawMesh->GetAssimpScene()->mNumAnimations; ++i) {
-            if (pRawMesh->GetAssimpScene()->mAnimations[i]->mName.C_Str() == name) {
-                pAnimation = pRawMesh->GetAssimpScene()->mAnimations[i];
+        const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
+
+        for (uint32_t i = 0; i < pScene->mNumAnimations; ++i) {
+            if (pScene->mAnimations[i]->mName.C_Str() == name) {
+                pAnimation = pScene->mAnimations[i];
                 break;
             }
         }
@@ -161,9 +163,10 @@ namespace SR_ANIMATIONS_NS {
 
             if (!LoadChannels(pRawMesh, pSkeletonMesh, animationName)) {
                 std::string animations;
-                for (uint32_t i = 0; i < pRawMesh->GetAssimpScene()->mNumAnimations; ++i) {
-                    animations += pRawMesh->GetAssimpScene()->mAnimations[i]->mName.C_Str();
-                    if (i < pRawMesh->GetAssimpScene()->mNumAnimations - 1) {
+                const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
+                for (uint32_t i = 0; i < pScene->mNumAnimations; ++i) {
+                    animations += pScene->mAnimations[i]->mName.C_Str();
+                    if (i < pScene->mNumAnimations - 1) {
                         animations += ", ";
                     }
                 }

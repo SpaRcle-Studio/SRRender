@@ -248,7 +248,7 @@ namespace SR_GRAPH_GUI_NS {
     void NodeWidget::InitStructsCreationPopup() {
         auto&& menu = m_creationPopup->AddMenu("Structs");
 
-        for (auto&& [hashName, pStruct] : SR_SRLM_NS::DataTypeManager::Instance().GetStructs()) {
+        /*for (auto&& [hashName, pStruct] : SR_SRLM_NS::DataTypeManager::Instance().GetStructs()) {
             auto&& structMenu = menu.AddMenu(std::string(SR_HASH_TO_STR(hashName)));
 
             structMenu.AddMenu("Create").SetAction([typeHashName = hashName](const SR_GRAPH_GUI_NS::DrawPopupContext& context) {
@@ -264,11 +264,11 @@ namespace SR_GRAPH_GUI_NS {
                 pNode->InitNode();
                 context.pWidget->AddNode(new Node(pNode)).SetPosition(context.popupPos);
             });
-        }
+        }*/
     }
 
     void NodeWidget::InitCreationPopup() {
-        for (auto&& [hashName, nodeInfo] : SR_SRLM_NS::LogicalNodeManager::Instance().GetNodeConstructors()) {
+        /*for (auto&& [hashName, nodeInfo] : SR_SRLM_NS::LogicalNodeManager::Instance().GetNodeConstructors()) {
             if (nodeInfo.category.empty()) {
                 continue;
             }
@@ -280,22 +280,22 @@ namespace SR_GRAPH_GUI_NS {
                 pLogicalNode->InitValues();
                 context.pWidget->AddNode(new Node(pLogicalNode)).SetPosition(context.popupPos);
             });
-        }
+        }*/
     }
 
     void NodeWidget::TopPanelSaveAt() {
-        auto&& path = SR_UTILS_NS::FileDialog::Instance().SaveDialog(SR_UTILS_NS::ResourceManager::Instance().GetResPath(), { { "SRLM", "srlm" } });
+        /*auto&& path = SR_UTILS_NS::FileDialog::Instance().SaveDialog(SR_UTILS_NS::ResourceManager::Instance().GetResPath(), { { "SRLM", "srlm" } });
         if (path.empty()) {
             return;
         }
 
         m_currentFile = path;
 
-        TopPanelSave();
+        TopPanelSave();*/
     }
 
     void NodeWidget::TopPanelOpen() {
-        auto&& path = SR_UTILS_NS::FileDialog::Instance().OpenDialog(SR_UTILS_NS::ResourceManager::Instance().GetResPath(), { { "SRLM", "srlm" } });
+        /*auto&& path = SR_UTILS_NS::FileDialog::Instance().OpenDialog(SR_UTILS_NS::ResourceManager::Instance().GetResPath(), { { "SRLM", "srlm" } });
         if (path.empty()) {
             return;
         }
@@ -349,11 +349,11 @@ namespace SR_GRAPH_GUI_NS {
 
         for (auto&& [uid, pNode] : nodes) {
             AddNode(pNode);
-        }
+        }*/
     }
 
     void NodeWidget::TopPanelSave() {
-        if (m_currentFile.empty()) {
+        /*if (m_currentFile.empty()) {
             TopPanelSaveAt();
             return;
         }
@@ -386,11 +386,11 @@ namespace SR_GRAPH_GUI_NS {
             xmlLink.AppendAttribute("EP", pLink->GetEnd()->GetIndex());
         }
 
-        xmlDocument.Save(m_currentFile);
+        xmlDocument.Save(m_currentFile);*/
     }
 
     void NodeWidget::Execute() {
-        if (m_nodes.empty() && m_properties.empty()) {
+        /*if (m_nodes.empty() && m_properties.empty()) {
             TopPanelOpen();
         }
         else {
@@ -402,7 +402,7 @@ namespace SR_GRAPH_GUI_NS {
             pLogicalMachine->Init();
             pLogicalMachine->UpdateMachine(0.f);
             pLogicalMachine->RemoveUsePoint();
-        }
+        }*/
     }
 
     void NodeWidget::TopPanelClose() {

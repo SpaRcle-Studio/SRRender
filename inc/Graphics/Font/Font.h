@@ -9,7 +9,7 @@
 #include <Graphics/Font/FreeType.h>
 
 namespace SR_GTYPES_NS {
-    class SR_DLL_EXPORT Font : public SR_UTILS_NS::IResource {
+    class SR_RENDERER_DLL_API Font : public SR_UTILS_NS::IResource {
         using Super = SR_UTILS_NS::IResource;
         using FontLibrary = FT_Library;
         using FontFace = FT_Face;
