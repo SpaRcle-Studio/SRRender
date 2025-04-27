@@ -15,6 +15,7 @@ namespace SR_SRSL_NS {
         }
 
         auto&& pExpr = ParseBinaryExpression(0);
+        m_result.processedLexems = m_currentLexem;
         return std::make_pair(pExpr, std::move(m_result));
     }
 
@@ -92,7 +93,7 @@ namespace SR_SRSL_NS {
                 }
             }
 
-            if (!InBounds() || GetCurrentLexem()->kind == LexemKind::OpeningSquareBracket) {
+            if (!InBounds() || GetCurrentLexem()->kind == LexemKind::OpeningSquareBracket || GetLexem(-1)->kind == LexemKind::Comma) {
                 return pLeftExpr;
             }
         }
@@ -292,6 +293,18 @@ namespace SR_SRSL_NS {
         }
 
         //else if (operation == ".") return 25;
+
+        else if (operation == "+=") return 10;
+        else if (operation == "-=") return 10;
+        else if (operation == "%=") return 10;
+        else if (operation == "|=") return 10;
+        else if (operation == "&=") return 10;
+        else if (operation == "^=") return 10;
+        else if (operation == "~=") return 10;
+        else if (operation == "*=") return 10;
+        else if (operation == "/=") return 10;
+        else if (operation == ">>=") return 10;
+        else if (operation == "<<=") return 10;
 
         else if (operation == "=") return 30;
 

@@ -102,6 +102,19 @@ namespace SR_SRSL_NS {
                         break;
                     }
 
+                    if (GetCurrentLexem()->value == "struct") {
+                        ++m_currentLexem;
+
+                        auto&& pStructureStatement = new SRSLStructureStatement();
+                        pStructureStatement->pName = SRSLExpr::CreateStringExpression(GetCurrentLexem()->value);
+
+                        ++m_currentLexem;
+
+                        m_lexicalTree.back()->lexicalTree.emplace_back(pStructureStatement);
+                        m_states.emplace_back(LXAState::StructureStatement);
+                        break;
+                    }
+
                     if (auto&& pUnit = TryProcessIdentifier()) {
                         if (dynamic_cast<SRSLFunction*>(pUnit)) {
                             m_states.emplace_back(LXAState::Function);
@@ -180,6 +193,7 @@ namespace SR_SRSL_NS {
 
                         pForStatement->pExpr = SR_UTILS_NS::Exchange(m_expr, nullptr);
 
+                        SRAssert(GetCurrentLexem() && GetCurrentLexem()->kind == LexemKind::ClosingBracket);
                         ++m_currentLexem; /// )
 
                         break;
@@ -271,6 +285,11 @@ namespace SR_SRSL_NS {
                     ++m_currentLexem;
                     return;
                 }
+                else if (!m_states.empty() && m_states.back() == LXAState::StructureStatement) {
+                    m_states.back() = LXAState::StructureStatementBody;
+                    ++m_currentLexem;
+                    return;
+                }
 
                 return;
             }
@@ -302,6 +321,11 @@ namespace SR_SRSL_NS {
                     m_states.pop_back();
                     auto&& pForStatement = dynamic_cast<SRSLForStatement*>(m_lexicalTree.back()->lexicalTree.back());
                     pForStatement->pLexicalTree = std::move(pLexicalTree);
+                }
+                else if (!m_states.empty() && m_states.back() == LXAState::StructureStatementBody) {
+                    m_states.pop_back();
+                    auto&& pStructureStatement = dynamic_cast<SRSLStructureStatement*>(m_lexicalTree.back()->lexicalTree.back());
+                    pStructureStatement->pLexicalTree = std::move(pLexicalTree);
                 }
                 else {
                     m_lexicalTree.back()->lexicalTree.emplace_back(pLexicalTree);
@@ -407,6 +431,11 @@ namespace SR_SRSL_NS {
             else {
                 m_result = SRSLResult(SRSLReturnCode::IncompleteExpression);
             }
+            return;
+        }
+
+        if (exprLexems.empty()) {
+            m_result = SRSLResult(SRSLReturnCode::EmptyExpression, GetCurrentLexem());
             return;
         }
 

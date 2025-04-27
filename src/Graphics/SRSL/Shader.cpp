@@ -57,13 +57,13 @@ namespace SR_SRSL_NS {
 
         lexems = std::move(preProcessedLexems);
 
-        auto&& [expandedLexems, expandResult] = SR_SRSL_NS::SRSLAssignExpander::Instance().Expand(std::move(lexems));
+        /*auto&& [expandedLexems, expandResult] = SR_SRSL_NS::SRSLAssignExpander::Instance().Expand(std::move(lexems));
         if (expandResult.HasErrors()) {
             SR_ERROR("SRSLShader::Load() : failed to expand assign shader!" + expandResult.ToString(includes));
             return nullptr;
         }
 
-        lexems = std::move(expandedLexems);
+        lexems = std::move(expandedLexems);*/
 
         auto&& [pAnalyzedTree, analyzeResult] = SR_SRSL_NS::SRSLLexicalAnalyzer::Instance().Analyze(std::move(lexems));
 
@@ -188,12 +188,12 @@ namespace SR_SRSL_NS {
                 return Vertices::VertexType::SimpleVertex;
             case ShaderType::Text:
             case ShaderType::TextUI:
+            case ShaderType::Compute:
             case ShaderType::Canvas:
             case ShaderType::Line:
                 return Vertices::VertexType::None;
             case ShaderType::Custom:
             case ShaderType::Particles:
-            case ShaderType::Compute:
             case ShaderType::Unknown:
             default:
                 SRHalt0();
@@ -273,6 +273,28 @@ namespace SR_SRSL_NS {
                 auto&& usedStages = m_useStack->IsVariableUsedInEntryPointsExt(field.name);
 
                 auto&& uniformBlock = m_ssboBlocks[blockName];
+
+                uniformBlock.isCoherent = static_cast<bool>(pVariable->pDecorators->Find("coherent"));
+                uniformBlock.isVolatile = static_cast<bool>(pVariable->pDecorators->Find("volatile"));
+                uniformBlock.isRestrict = static_cast<bool>(pVariable->pDecorators->Find("restrict"));
+
+                bool isReadOnly = static_cast<bool>(pVariable->pDecorators->Find("readonly"));
+                bool isWriteOnly = static_cast<bool>(pVariable->pDecorators->Find("readonly"));
+
+                if (isReadOnly && isWriteOnly) {
+                    SR_WARN("SRSLShader::PrepareUniformBlocks() : using 'readonly' and 'writeonly' on a SSBO block has no effects!"
+                        "\n\tPath: {}\n\tSSBO name: {}", m_path, field.name
+                    );
+                }
+                else {
+                    if (isReadOnly) {
+                        uniformBlock.isReadOnly = true;
+                    }
+                    else if (isWriteOnly) {
+                        uniformBlock.isReadOnly = false;
+                    }
+                }
+
                 uniformBlock.fields.emplace_back(field);
                 uniformBlock.stages.insert(usedStages.begin(), usedStages.end());
             }
@@ -294,7 +316,7 @@ namespace SR_SRSL_NS {
                 field.name = pVariable->pName->ToString(0);
                 field.type = pVariable->pType->ToString(0);
                 field.isPublic = bool(pVariable->pDecorators->Find("public"));
-                field.defaultValue = EvalExpressionValue(pVariable->pExpr);
+                field.defaultValue = EvalExpressionValue(pVariable->pExpr, pVariable->pType);
 
                 std::string blockName;
 
@@ -598,6 +620,14 @@ namespace SR_SRSL_NS {
         return SR_UTILS_NS::LexicalCast<float_t>(pExpression->token);
     }
 
+    int32_t SRSLShader::EvalExpressionInt(SRSLExpr *pExpression) const {
+        if (!pExpression->args.empty()) {
+            SR_ERROR("SRSLShader::EvalExpressionInt() : invalid expression args count! Count: " + std::to_string(pExpression->args.size()));
+            return 0;
+        }
+        return SR_UTILS_NS::LexicalCast<int32_t>(pExpression->token);
+    }
+
     SR_MATH_NS::FVector2 SRSLShader::EvalExpressionVec2(SRSLExpr* pExpression) const {
         if (pExpression->args.size() == 2) {
             const float_t x = EvalExpressionFloat(pExpression->args[0]);
@@ -649,7 +679,7 @@ namespace SR_SRSL_NS {
         return SR_MATH_NS::FVector4();
     }
 
-    std::optional<ShaderPropertyVariant> SRSLShader::EvalExpressionValue(SRSLExpr* pExpression) const {
+    std::optional<ShaderPropertyVariant> SRSLShader::EvalExpressionValue(SRSLExpr* pExpression, SRSLExpr* pType) const {
         if (!pExpression) {
             return std::nullopt;
         }
@@ -666,7 +696,15 @@ namespace SR_SRSL_NS {
             return EvalExpressionVec4(pExpression);
         }
 
-        SR_ERROR("SRSLShader::EvalExpressionValue() : unknown expression token! Type: " + pExpression->token);
+        if (pType->token == "int") {
+            return EvalExpressionInt(pExpression);
+        }
+
+        if (pType->token == "float") {
+            return EvalExpressionFloat(pExpression);
+        }
+
+        SRHalt("SRSLShader::EvalExpressionValue() : unknown expression token! Type: " + pExpression->token);
 
         return std::nullopt;
     }

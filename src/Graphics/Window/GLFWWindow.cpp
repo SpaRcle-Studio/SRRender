@@ -5,12 +5,15 @@
 #include <Graphics/Window/GLFWWindow.h>
 
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 namespace SR_GRAPH_NS {
     bool GLFWWindow::Initialize(
         const std::string &name, const SR_MATH_NS::IVector2 &position,
         const SR_MATH_NS::UVector2 &size, bool fullScreen, bool resizable
     ) {
+        SR_LOG("GLFWWindow::Initialize() : initializing GLFW window...");
+
         if (!glfwInit())
         {
             SR_ERROR("GLFWWindow::Initialize() : failed to initialize GLFW.");
@@ -26,7 +29,6 @@ namespace SR_GRAPH_NS {
             SR_ERROR("GLFWWindow::Initialize() : failed to create window.");
             return false;
         }
-
 
         int32_t x = -1;
         int32_t y = -1;

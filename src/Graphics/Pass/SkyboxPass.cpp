@@ -74,10 +74,23 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        GetPassPipeline()->SetCurrentShader(pShader);
+
+        auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
+        if (uboManager.BindNoDublicateUBO(m_skybox->GetVirtualUBO()) != Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("SkyboxPass::Update() : failed to bind UBO!");
+            return;
+        }
+
+        SR_UNUSED_VARIABLE(pShader->Flush());
+
         if (pShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
             pShader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, m_camera->GetView());
             pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
             pShader->SetMat4(SHADER_PROJECTION_NO_FOV_MATRIX, m_camera->GetProjectionNoFOV());
+            pShader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
+            pShader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
+            pShader->SetVec3(SHADER_VIEW_DIRECTION, m_camera->GetViewDirection());
             pShader->EndSharedUBO();
         }
         else {

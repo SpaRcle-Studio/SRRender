@@ -38,6 +38,11 @@ namespace SR_SRSL_NS {
 
         void Align(const SRSLAnalyzedTree::Ptr& pAnalyzedTree);
 
+        std::optional<bool> isReadOnly; /// true - read only, false - write only, nullopt - read/write
+        bool isVolatile = false;
+        bool isCoherent = false;
+        bool isRestrict = false;
+
         uint64_t size = 0;
         uint64_t binding = 0;
 
@@ -70,6 +75,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SRSLUniformBlock::Field* FindField(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD Vertices::VertexType GetVertexType() const;
         SR_NODISCARD SR_SRSL_NS::ShaderType GetType() const;
+        SR_NODISCARD SR_UTILS_NS::Path GetPath() const { return m_path; }
         SR_NODISCARD const SRSLAnalyzedTree::Ptr GetAnalyzedTree() const;
         SR_NODISCARD const SRSLUseStack::Ptr GetUseStack() const;
         SR_NODISCARD const UniformBlocks& GetUniformBlocks() const { return m_uniformBlocks; }
@@ -83,10 +89,11 @@ namespace SR_SRSL_NS {
 
     private:
         SR_NODISCARD float_t EvalExpressionFloat(SRSLExpr* pExpression) const;
+        SR_NODISCARD int32_t EvalExpressionInt(SRSLExpr* pExpression) const;
         SR_NODISCARD SR_MATH_NS::FVector2 EvalExpressionVec2(SRSLExpr* pExpression) const;
         SR_NODISCARD SR_MATH_NS::FVector3 EvalExpressionVec3(SRSLExpr* pExpression) const;
         SR_NODISCARD SR_MATH_NS::FVector4 EvalExpressionVec4(SRSLExpr* pExpression) const;
-        SR_NODISCARD std::optional<ShaderPropertyVariant> EvalExpressionValue(SRSLExpr* pExpression) const;
+        SR_NODISCARD std::optional<ShaderPropertyVariant> EvalExpressionValue(SRSLExpr* pExpression, SRSLExpr* pType) const;
 
         SR_NODISCARD ISRSLCodeGenerator::SRSLCodeGenRes GenerateStages(ShaderLanguage shaderLanguage) const;
 

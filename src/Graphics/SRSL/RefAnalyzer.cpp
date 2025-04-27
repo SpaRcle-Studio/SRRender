@@ -72,6 +72,12 @@ namespace SR_SRSL_NS {
         return false;
     }
 
+    bool SRSLUseStack::IsStructUsed(const std::string& name) const {
+        // TODO: Monika will handle this <3
+
+        return true;
+    }
+
     SRSLUseStack::Ptr SRSLUseStack::FindFunction(const std::string &name) const {
         for (auto&& function : functions) {
             if (function.first == name) {
