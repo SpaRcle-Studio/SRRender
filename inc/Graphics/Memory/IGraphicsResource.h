@@ -19,7 +19,7 @@ namespace SR_GRAPH_NS::Memory {
         using RenderContextPtr = RenderContext*;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
     protected:
-        constexpr IGraphicsResource() = default;
+        IGraphicsResource() = default;
         virtual ~IGraphicsResource();
 
     public:
