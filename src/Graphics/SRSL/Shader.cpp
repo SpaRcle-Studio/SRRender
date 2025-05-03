@@ -279,7 +279,7 @@ namespace SR_SRSL_NS {
                 uniformBlock.isRestrict = static_cast<bool>(pVariable->pDecorators->Find("restrict"));
 
                 bool isReadOnly = static_cast<bool>(pVariable->pDecorators->Find("readonly"));
-                bool isWriteOnly = static_cast<bool>(pVariable->pDecorators->Find("readonly"));
+                bool isWriteOnly = static_cast<bool>(pVariable->pDecorators->Find("writeonly"));
 
                 if (isReadOnly && isWriteOnly) {
                     SR_WARN("SRSLShader::PrepareUniformBlocks() : using 'readonly' and 'writeonly' on a SSBO block has no effects!"
