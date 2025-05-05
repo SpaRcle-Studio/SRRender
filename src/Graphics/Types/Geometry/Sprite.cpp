@@ -15,7 +15,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Sprite::InitializeEntity() noexcept {
-        m_properties.AddStandardProperty("Sliced", &m_sliced);
+        /*m_properties.AddStandardProperty("Sliced", &m_sliced);
 
         m_properties.AddStandardProperty("Texture border", &m_textureBorder)
             .SetDrag(0.01f)
@@ -27,7 +27,7 @@ namespace SR_GTYPES_NS {
             .SetDrag(0.01f)
             .SetResetValue(0.15f)
             .SetActiveCondition([this]() { return m_sliced; })
-            .SetWidth(90.f);
+            .SetWidth(90.f);*/
 
         return Super::InitializeEntity();
     }
