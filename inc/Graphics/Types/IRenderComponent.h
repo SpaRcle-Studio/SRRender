@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_I_RENDER_COMPONENT_H
 #define SR_ENGINE_I_RENDER_COMPONENT_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/ECS/Component.h>
 
 namespace SR_GTYPES_NS {

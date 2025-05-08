@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_DYNAMICTEXTUREDESCRIPTORSET_H
 #define SR_ENGINE_DYNAMICTEXTUREDESCRIPTORSET_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/macros.h>
 #include <EvoVulkan/Memory/Allocator.h>
 

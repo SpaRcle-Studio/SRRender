@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_FREETYPE_H
 #define SR_ENGINE_FREETYPE_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/macros.h>
 
 #include <ft2build.h>

@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_ANIMATIONCLIP_H
 #define SR_ENGINE_ANIMATIONCLIP_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/Resources/IResource.h>
 
 class aiAnimation;

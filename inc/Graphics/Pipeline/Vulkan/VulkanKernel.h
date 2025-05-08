@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_GRAPHICS_VULKAN_KERNEL_H
 #define SR_ENGINE_GRAPHICS_VULKAN_KERNEL_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/Types/SharedPtr.h>
 #include <EvoVulkan/VulkanKernel.h>
 

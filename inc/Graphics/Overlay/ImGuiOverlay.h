@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_GRAPHICS_IMGUI_OVERLAY_H
 #define SR_ENGINE_GRAPHICS_IMGUI_OVERLAY_H
 
+#include <Graphics/macros.h>
+
 #include <Graphics/Overlay/Overlay.h>
 
 struct ImFont;

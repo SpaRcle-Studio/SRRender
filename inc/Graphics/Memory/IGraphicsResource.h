@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_IGRAHPICSRESOURCE_H
 #define SR_ENGINE_IGRAHPICSRESOURCE_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/Debug.h>
 
 namespace SR_GRAPH_NS {

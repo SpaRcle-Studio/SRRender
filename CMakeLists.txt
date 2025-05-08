@@ -9,6 +9,8 @@ set(BUILD_SHARED_LIBS OFF)
 set(FT_CONFIG_OPTION_USE_ZLIdB OFF)
 set(FT_DISABLE_HARFBUZZ ON)
 
+option(SR_GRAPHICS_DLL_EXPORTS "" ON)
+
 option(SR_RENDER_GLFW "" OFF)
 
 message("$ENV{VULKAN_SDK}")
@@ -62,55 +64,68 @@ else()
     add_library(Graphics::lib ALIAS Graphics)
 
     if (MINGW)
-        target_link_libraries(Graphics ${Vulkan_LIBRARY} Dwmapi.lib)
+        target_link_libraries(Graphics PUBLIC ${Vulkan_LIBRARY} Dwmapi.lib)
     else()
         if (ANDROID_NDK)
 
         else()
-            target_link_libraries(Graphics ${Vulkan_LIBRARY})
+            target_link_libraries(Graphics PUBLIC ${Vulkan_LIBRARY})
         endif()
     endif()
+
+    if (UNIX)
+        target_compile_options(Graphics PRIVATE -fPIC)
+    endif()
+
+    target_link_libraries(Graphics PUBLIC Utils)
+
+    SR_COPY_SHARED_MODULE_TO_EXECUTABLE_FOLDER(Graphics)
+endif()
+
+if (SR_GRAPHICS_DLL_EXPORTS)
+    message("Graphics will be using DLL exports")
+    target_compile_definitions(Graphics PUBLIC SR_GRAPHICS_DLL_EXPORTS)
 endif()
 
 if (NOT ANDROID_NDK)
     if (UNIX AND NOT APPLE)
         target_include_directories(Graphics PUBLIC "${X11_xcb_keysyms_INCLUDE_PATH}")
-        target_link_libraries(Graphics ${X11_xcb_keysyms_LIB})
+        target_link_libraries(Graphics PUBLIC ${X11_xcb_keysyms_LIB})
 
         target_include_directories(Graphics PUBLIC "${X11_xcb_cursor_INCLUDE_PATH}")
-        target_link_libraries(Graphics ${X11_xcb_cursor_LIB} xcb-cursor)
+        target_link_libraries(Graphics PUBLIC ${X11_xcb_cursor_LIB} xcb-cursor)
 
         target_include_directories(Graphics PUBLIC "${X11_xcb_xfixes_INCLUDE_PATH}")
-        target_link_libraries(Graphics ${X11_xcb_xfixes_LIB})
+        target_link_libraries(Graphics PUBLIC ${X11_xcb_xfixes_LIB})
 
         target_include_directories(Graphics PUBLIC "${X11_xcb_INCLUDE_PATH}")
-        target_link_libraries(Graphics ${X11_xcb_LIB})
+        target_link_libraries(Graphics PUBLIC ${X11_xcb_LIB})
 
         target_include_directories(Graphics PUBLIC "${X11_xcb_randr_INCLUDE_PATH}")
-        target_link_libraries(Graphics ${X11_xcb_randr_LIB})
+        target_link_libraries(Graphics PUBLIC ${X11_xcb_randr_LIB})
 
         target_include_directories(Graphics PUBLIC ${X11_X11_xcb_INCLUDE_PATH})
-        target_link_libraries(Graphics ${X11_X11_xcb_LIB})
+        target_link_libraries(Graphics PUBLIC ${X11_X11_xcb_LIB})
 
         target_include_directories(Graphics PUBLIC ${X11_xcb_xkb_INCLUDE_PATH})
-        target_link_libraries(Graphics ${X11_xcb_xkb_LIB})
+        target_link_libraries(Graphics PUBLIC ${X11_xcb_xkb_LIB})
 
         target_include_directories(Graphics PUBLIC ${X11_xcb_ewmh_INCLUDE_PATH})
-        target_link_libraries(Graphics ${X11_xcb_ewmh_LIB} xcb-ewmh xcb-util)
+        target_link_libraries(Graphics PUBLIC ${X11_xcb_ewmh_LIB} xcb-ewmh xcb-util)
     endif()
 endif()
 
-target_link_libraries(Graphics CMP_Core freetype)
+target_link_libraries(Graphics PUBLIC CMP_Core freetype)
 
 if (SR_RENDER_GLFW)
-    target_link_libraries(Graphics glfw)
+    target_link_libraries(Graphics PUBLIC glfw)
     #target_include_directories(Graphics PUBLIC libs/glfw/include)
 endif()
 
 if (EVO_VULKAN_STATIC_LIBRARY)
-    target_link_libraries(Graphics EvoVulkan)
+    target_link_libraries(Graphics PUBLIC EvoVulkan)
 else()
-    target_link_libraries(Graphics EvoVulkan::lib)
+    target_link_libraries(Graphics PUBLIC EvoVulkan::lib)
 endif()
 
 target_include_directories(Graphics PUBLIC inc)

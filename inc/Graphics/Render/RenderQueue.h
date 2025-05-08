@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_GRAPHICS_MESH_RENDER_QUEUE_H
 #define SR_ENGINE_GRAPHICS_MESH_RENDER_QUEUE_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/SortedVector.h>
 #include <Graphics/Memory/UBOManager.h>

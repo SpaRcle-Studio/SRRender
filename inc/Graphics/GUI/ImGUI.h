@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_UTILS_GUI_H
 #define SR_ENGINE_UTILS_GUI_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/Debug.h>
 #include <Utils/Math/Vector2.h>
 

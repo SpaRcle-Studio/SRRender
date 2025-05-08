@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_GRAPHICS_BASE_MATERIAL_H
 #define SR_ENGINE_GRAPHICS_BASE_MATERIAL_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/Resources/IResource.h>
 
 #include <Utils/Math/Vector3.h>

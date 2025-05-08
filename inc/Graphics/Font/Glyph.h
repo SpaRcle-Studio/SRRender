@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_GLYPH_H
 #define SR_ENGINE_GLYPH_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/Common/NonCopyable.h>
 #include <Graphics/Font/FreeType.h>
 

@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_POPUPMENU_H
 #define SR_ENGINE_POPUPMENU_H
 
+#include <Graphics/macros.h>
+
 #include <Graphics/GUI/ImGUI.h>
 
 namespace SR_GRAPH_GUI_NS {

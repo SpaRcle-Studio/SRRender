@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_FONT_H
 #define SR_ENGINE_FONT_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/Resources/IResource.h>
 #include <Graphics/Font/FreeType.h>
 

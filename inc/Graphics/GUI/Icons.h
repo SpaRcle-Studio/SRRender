@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_ICONS_H
 #define SR_ENGINE_ICONS_H
 
+#include <Graphics/macros.h>
+
 #include <imgui.h>
 
 #define SR_ICON_MIN 0xe005
