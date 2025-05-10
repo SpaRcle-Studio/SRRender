@@ -12,7 +12,7 @@
 
 namespace SR_GRAPH_GUI_NS {
     Node::Node()
-        : Node(std::string(), NodeType::None, ImColor(255, 255, 255, 255))
+       // : Node(std::string(), NodeType::None, ImColor(255, 255, 255, 255))
     { }
 
     /*Node::Node(SR_SRLM_NS::LogicalNode* pNode)
@@ -44,23 +44,23 @@ namespace SR_GRAPH_GUI_NS {
         }
     }*/
 
-    Node::Node(const std::string& name)
-        : Node(name, NodeType::None, ImColor(255, 255, 255, 255))
-    { }
+  // Node::Node(const std::string& name)
+  //     : Node(name, NodeType::None, ImColor(255, 255, 255, 255))
+  // { }
 
-    Node::Node(const std::string& name, NodeType type)
-        : Node(name, type, ImColor(255, 255, 255, 255))
-    { }
+  // Node::Node(const std::string& name, NodeType type)
+  //     : Node(name, type, ImColor(255, 255, 255, 255))
+  // { }
 
-    Node::Node(const std::string& name, ImColor color)
-        : Node(name, NodeType::None, color)
-    { }
+  // Node::Node(const std::string& name, ImColor color)
+  //     : Node(name, NodeType::None, color)
+  // { }
 
-    Node::Node(std::string  name, NodeType type, ImColor color)
-        : m_name(std::move(name))
-        , m_color(color)
-        , m_type(type)
-    { }
+  // Node::Node(std::string  name, NodeType type, ImColor color)
+  //     : m_name(std::move(name))
+  //     , m_color(color)
+  //     , m_type(type)
+  // { }
 
     Node& Node::AddInput(Pin *pin) {
         pin->m_kind = PinKind::Input;
@@ -89,218 +89,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Node::Draw(NodeBuilder* pBuilder, Pin* pNewLinkPin) {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
-        if (IsConnector()) {
-            ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_NodeBorderWidth, 0.0f);
-            ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_GroupBorderWidth, 0.0f);
-            ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_NodeBg, ImVec4(0.f, 0.f, 0.f, 0.f));
-        }
 
-        pBuilder->Begin(this);
-
-        const bool isSimple = m_type == NodeType::Simple;
-
-        if (!IsConnector() && !isSimple) {
-            pBuilder->Header(m_color);
-
-            ImGui::Spring(0);
-            if (!m_name.empty() && !IsConnector()) {
-                ImGui::TextUnformatted(m_name.c_str());
-            }
-            ImGui::Spring(1);
-            ImGui::Dummy(ImVec2(0, 28));
-
-            const bool isSequence = dynamic_cast<SR_SRLM_NS::SequenceNode*>(m_logicalNode);
-            const bool isSynchronize = dynamic_cast<SR_SRLM_NS::SynchronizeNode*>(m_logicalNode);
-
-            if (isSequence || isSynchronize) {
-                ImGui::BeginVertical(m_logicalNode, ImVec2(0, 28));
-
-                ImGui::Spring(1, 0);
-
-                ImGui::BeginHorizontal(m_logicalNode);
-
-                if (ImGui::Button("+")) {
-                    if (isSequence) {
-                        auto&& pin = m_logicalNode->AddOutputData<SR_SRLM_NS::DataTypeFlow>(SR_HASH_STR_REGISTER(SR_FORMAT("Then {}", m_logicalNode->GetOutputs().size())));
-                        AddOutput(new Pin(SR_HASH_TO_STR(pin.hashName), pin.pData));
-                    }
-                    else {
-                        auto&& pin = m_logicalNode->AddInputData<SR_SRLM_NS::DataTypeFlow>(SR_HASH_STR_REGISTER(SR_FORMAT("If {}", m_logicalNode->GetInputs().size())));
-                        AddInput(new Pin(SR_HASH_TO_STR(pin.hashName), pin.pData));
-                    }
-                }
-
-                if (ImGui::Button("-")) {
-                    if (isSequence) {
-                        if (!m_logicalNode->GetOutputs().empty()) {
-                            RemoveOutput(m_logicalNode->GetOutputs().size() - 1);
-                            m_logicalNode->RemoveOutput(m_logicalNode->GetOutputs().size() - 1);
-                        }
-                    }
-                    else {
-                        if (!m_logicalNode->GetInputs().empty()) {
-                            RemoveInput(m_logicalNode->GetInputs().size() - 1);
-                            m_logicalNode->RemoveInput(m_logicalNode->GetInputs().size() - 1);
-                        }
-                    }
-                }
-
-                ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.x / 2);
-                ImGui::EndHorizontal();
-
-                ImGui::Spring(1, 0);
-                ImGui::EndVertical();
-                ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.x / 2);
-            }
-
-            if (m_hasOutputDelegates) {
-                /** ImGui::BeginVertical("delegates", ImVec2(0, 28));
-                ImGui::Spring(1, 0);
-
-                for (auto&& pOutput : m_outputs) {
-                    if (pOutput->GetType() != PinType::Delegate)
-                        continue;
-
-                    auto alpha = ImGui::GetStyle().Alpha;
-                    if (pNewLinkPin && !CanCreateLink(pNewLinkPin, pOutput) && pOutput != pNewLinkPin)
-                        alpha = alpha * (48.0f / 255.0f);
-
-                    ax::NodeEditor::BeginPin(pOutput->GetId(), ax::NodeEditor::PinKind::Output);
-                    ax::NodeEditor::PinPivotAlignment(ImVec2(1.0f, 0.5f));
-                    ax::NodeEditor::PinPivotSize(ImVec2(0, 0));
-
-                    ImGui::BeginHorizontal(pOutput->GetId());
-                    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
-
-                    if (!pOutput->m_name.empty()) {
-                        ImGui::TextUnformatted(pOutput->m_name.c_str());
-                        ImGui::Spring(0);
-                    }
-
-                    pOutput->DrawPinIcon(pOutput->IsLinked(), (int)(alpha * 255));
-
-                    ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.x / 2);
-                    ImGui::EndHorizontal();
-                    ImGui::PopStyleVar();
-
-                    ax::NodeEditor::EndPin();
-                }
-
-                ImGui::Spring(1, 0);
-                ImGui::EndVertical();
-                ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.x / 2);*/
-            }
-            else {
-                ImGui::Spring(0);
-            }
-
-            pBuilder->EndHeader();
-        }
-
-        auto&& cursorPos = ImGui::GetCursorPos();
-
-        for (auto&& pInput : m_inputs) {
-            auto alpha = ImGui::GetStyle().Alpha;
-
-            if (pNewLinkPin && !CanCreateLink(pNewLinkPin, pInput) && pInput != pNewLinkPin)
-                alpha = alpha * (48.0f / 255.0f);
-
-            pBuilder->Input(pInput);
-
-            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
-            pInput->DrawPinIcon(pInput->IsLinked(), (int)(alpha * 255));
-
-            if (!IsConnector()) {
-                ImGui::Spring(0);
-            }
-
-            if (!pInput->m_name.empty()) {
-                ImGui::TextUnformatted(pInput->m_name.c_str());
-                ImGui::Spring(0);
-            }
-
-            if (!pInput->IsLinked() && !IsConnector()) {
-                pInput->DrawOption();
-                ImGui::Spring(0);
-            }
-
-            // if (pInput->GetType() == PinType::Bool)
-            // {
-            //     ImGui::Button("Hello");
-            // }
-
-            ImGui::PopStyleVar();
-            pBuilder->EndInput();
-        }
-
-        if (isSimple) {
-            pBuilder->Middle();
-
-            ImGui::Spring(1, 0);
-            if (!m_name.empty() && !IsConnector()) {
-                ImGui::TextUnformatted(m_name.c_str());
-            }
-            ImGui::Spring(1, 0);
-        }
-
-        if (IsConnector()) {
-            ImGui::SetCursorPos(cursorPos + ImVec2(5, 0));
-        }
-
-        for (auto&& pOutput: m_outputs) {
-            /// if (!isSimple && pOutput->GetType() == PinType::Delegate)
-            ///     continue;
-
-            auto alpha = ImGui::GetStyle().Alpha;
-
-            if (pNewLinkPin && !CanCreateLink(pNewLinkPin, pOutput) && pOutput != pNewLinkPin)
-                alpha = alpha * (48.0f / 255.0f);
-
-            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
-            pBuilder->Output(pOutput);
-
-            //if (pOutput->GetType() == SR_SRLM_NS::DataTypeClass::String) {
-            //    static char buffer[128] = "Edit Me\nMultiline!";
-            //    static bool wasActive = false;
-            //    ImGui::PushItemWidth(100.0f);
-            //    ImGui::InputText("##edit", buffer, 127);
-            //    ImGui::PopItemWidth();
-            //    if (ImGui::IsItemActive() && !wasActive)
-            //    {
-            //        ax::NodeEditor::EnableShortcuts(false);
-            //        wasActive = true;
-            //    }
-            //    else if (!ImGui::IsItemActive() && wasActive)
-            //    {
-            //        ax::NodeEditor::EnableShortcuts(true);
-            //        wasActive = false;
-            //    }
-            //    ImGui::Spring(0);
-            //}
-
-            if (!pOutput->m_name.empty()) {
-                ImGui::Spring(0);
-                ImGui::TextUnformatted(pOutput->m_name.c_str());
-            }
-
-            if (!IsConnector()) {
-                ImGui::Spring(0);
-            }
-
-            pOutput->DrawPinIcon(pOutput->IsLinked(), (int) (alpha * 255));
-
-            ImGui::PopStyleVar();
-            pBuilder->EndOutput();
-        }
-
-        pBuilder->End();
-
-        if (IsConnector()) {
-            ax::NodeEditor::PopStyleVar(2);
-            ax::NodeEditor::PopStyleColor();
-        }
-    #endif
     }
 
     void Node::PostDraw() {
@@ -342,9 +131,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     Node& Node::SetPosition(const SR_MATH_NS::FVector2& pos) {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
-        ax::NodeEditor::SetNodePosition(GetId(), ImVec2(pos.x, pos.y));
-    #endif
+
         return *this;
     }
 

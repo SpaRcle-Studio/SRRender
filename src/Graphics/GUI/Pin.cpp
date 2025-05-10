@@ -41,7 +41,7 @@ namespace SR_GRAPH_GUI_NS {
         m_node = nullptr;
     }
 
-    ImColor Pin::GetIconColor(const PinType& type) {
+    /*ImColor Pin::GetIconColor(const PinType& type) {
         switch (type) {
             case PinType::Flow:   return ImColor(255, 255, 255);
             case PinType::Bool:   return ImColor(220,  48,  48);
@@ -71,7 +71,7 @@ namespace SR_GRAPH_GUI_NS {
                 SRHalt("Unknown icon type!");
                 return ImColor(0, 0, 0);
         }
-    }
+    }*/
 
     IconType Pin::GetIconType(const PinType &type) {
         switch (type) {
@@ -183,14 +183,8 @@ namespace SR_GRAPH_GUI_NS {
             case PinKind::None:
                 break;
             case PinKind::Output:
-            #ifdef SR_USE_IMGUI_NODE_EDITOR
-                ax::NodeEditor::BeginPin(GetId(), ax::NodeEditor::PinKind::Output);
-            #endif
                 break;
             case PinKind::Input:
-            #ifdef SR_USE_IMGUI_NODE_EDITOR
-                ax::NodeEditor::BeginPin(GetId(), ax::NodeEditor::PinKind::Input);
-            #endif
                 break;
             default:
                 break;
@@ -198,19 +192,14 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Pin::End() const {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
-        ax::NodeEditor::EndPin();
-    #endif
     }
 
     void Pin::DrawPinIcon(bool connected, uint32_t alpha) {
         IconType iconType = GetIconType(GetType());
-        ImColor color = GetIconColor(GetType());
-        color.Value.w = alpha / 255.0f;
+        //ImColor color = GetIconColor(GetType());
+        //color.Value.w = alpha / 255.0f;
 
         const float_t pinIconSize = 24.f;
-
-        SR_GRAPH_NS::GUI::Icon(ImVec2(pinIconSize, pinIconSize), iconType, connected, color, ImColor(32, 32, 32, alpha));
     }
 
     void Pin::PostDrawOption() {
@@ -256,7 +245,6 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Pin::DrawOption() {
-        SR_GRAPH_GUI_NS::DrawDataType(m_dataType, &m_editEnum, (void*)this);
     }
 
     Pin::PinType Pin::GetType() const {

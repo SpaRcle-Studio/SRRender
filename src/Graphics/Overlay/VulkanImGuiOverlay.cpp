@@ -8,6 +8,8 @@
 #include <EvoVulkan/Types/DescriptorPool.h>
 #include <EvoVulkan/DescriptorManager.h>
 
+#include <Graphics/GUI/ImGui.h>
+
 #ifdef SR_WIN32
     extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #endif
@@ -336,11 +338,6 @@ namespace SR_GRAPH_NS {
         #endif
 
         ImGui::NewFrame();
-
-    #ifdef SR_USE_IMGUIZMO
-        ImGuizmo::BeginFrame();
-        ImGuizmo::Enable(true);
-    #endif
 
         return true;
     }

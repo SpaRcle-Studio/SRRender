@@ -153,7 +153,7 @@ namespace SR_GRAPH_NS::GUI {
     void WidgetManager::HideAll() {
     #ifdef SR_WIN32
         for (auto&& widget : ViewportsTableManager::Instance().GetViewportsTable()) {
-            ShowWindow((HWND)widget.first->PlatformHandle, SW_HIDE);
+            ShowWindow((HWND)((ImGuiViewport*)widget.first)->PlatformHandle, SW_HIDE);
         }
     #endif
     }
@@ -161,12 +161,12 @@ namespace SR_GRAPH_NS::GUI {
     void WidgetManager::ShowAll() {
     #ifdef SR_WIN32
         for (auto&& widget : ViewportsTableManager::Instance().GetViewportsTable()) {
-            ShowWindow((HWND)widget.first->PlatformHandle, SW_SHOW);
+            ShowWindow((HWND)((ImGuiViewport*)widget.first)->PlatformHandle, SW_SHOW);
         }
     #endif
     }
 
-    Widget* ViewportsTableManager::GetWidgetByViewport(ImGuiViewport *viewport) const {
+    Widget* ViewportsTableManager::GetWidgetByViewport(void *viewport) const {
         if (m_viewports.count(viewport) == 0) {
             return nullptr;
         }
@@ -174,7 +174,7 @@ namespace SR_GRAPH_NS::GUI {
         return m_viewports.at(viewport);
     }
 
-    void ViewportsTableManager::RegisterWidget(Widget* widget, ImGuiViewport* viewport) {
+    void ViewportsTableManager::RegisterWidget(Widget* widget, void* viewport) {
         m_viewports[viewport] = widget;
     }
 }

@@ -12,10 +12,10 @@ namespace SR_GRAPH_NS::GUI {
         GlobalWidgetManager::Instance().Register(this);
 
         SetCenter(true);
-        SetFlags(ImGuiWindowFlags_NoMove
-                 | ImGuiWindowFlags_NoDecoration
-                 | ImGuiWindowFlags_AlwaysAutoResize
-                 | ImGuiWindowFlags_NoSavedSettings);
+        SetFlags(WindowFlags::NoMove
+                 | WindowFlags::NoDecoration
+                 | WindowFlags::AlwaysAutoResize
+                 | WindowFlags::NoSavedSettings);
     }
 
     MessageBoxWidget::~MessageBoxWidget() {

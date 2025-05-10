@@ -2,7 +2,6 @@
 
 #include "../src/Graphics/GUI/WidgetContainer.cpp"
 #include "../src/Graphics/GUI/Link.cpp"
-#include "../src/Graphics/GUI/ICanvas.cpp"
 #include "../src/Graphics/GUI/Node.cpp"
 #include "../src/Graphics/GUI/Icons.cpp"
 #include "../src/Graphics/GUI/NodeManager.cpp"
@@ -17,4 +16,6 @@
 #include "../src/Graphics/GUI/Utils.cpp"
 #include "../src/Graphics/GUI/PopupMenu.cpp"
 #include "../src/Graphics/GUI/NodeCreation.cpp"
+#include "../src/Graphics/GUI/ImmediateGUI.cpp"
+
 #include "../src/Graphics/GUI/ImGUI.cpp"

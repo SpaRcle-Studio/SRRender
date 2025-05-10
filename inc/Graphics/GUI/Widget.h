@@ -15,7 +15,9 @@
 #include <Utils/Input/InputSystem.h>
 #include <Utils/Input/InputHandler.h>
 
-#include <Graphics/GUI/ImGUI.h>
+#include <Graphics/GUI/ImmediateGUI.h>
+
+#include <Enum/WindowFlags.hpp>
 
 namespace SR_GRAPH_NS {
     class RenderScene;
@@ -28,7 +30,6 @@ namespace SR_WORLD_NS {
 
 namespace SR_GRAPH_GUI_NS {
     class WidgetManager;
-    typedef ImGuiWindowFlags WindowFlags;
 
     enum WidgetFlags : uint32_t {
         WIDGET_FLAG_NONE         = 1 << 0, /** NOLINT */
@@ -121,7 +122,7 @@ namespace SR_GRAPH_GUI_NS {
         std::atomic<bool> m_open = false;
         std::atomic<bool> m_center = false;
         std::atomic<WidgetFlagBits> m_internalFlags = WIDGET_FLAG_NONE;
-        WindowFlags m_windowFlags = ImGuiWindowFlags_None;
+        WindowFlags m_windowFlags = WindowFlags::None;
         SR_MATH_NS::IVector2 m_size;
         WidgetManager* m_manager = nullptr;
 

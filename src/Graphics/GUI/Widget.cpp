@@ -64,7 +64,7 @@ namespace SR_GRAPH_GUI_NS {
 
         if (!m_size.Contains(SR_INT32_MAX)) {
             ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
-            flags |= ImGuiWindowFlags_::ImGuiWindowFlags_NoResize;
+            flags |= WindowFlags::NoResize;
         }
 
         auto&& pPreviousViewport = ImGui::GetWindowViewport();

@@ -34,7 +34,7 @@ namespace SR_GRAPH_NS::GUI {
         void Begin(Node* pNode);
         void End();
 
-        void Header(const ImVec4& color = ImVec4(1, 1, 1, 1));
+        //void Header(const ImVec4& color = ImVec4(1, 1, 1, 1));
         void EndHeader();
 
         void Input(Pin* pPin);
@@ -48,7 +48,7 @@ namespace SR_GRAPH_NS::GUI {
     private:
         bool SetStage(Stage stage);
 
-        SR_NODISCARD ImTextureID GetTextureId() const;
+        //SR_NODISCARD ImTextureID GetTextureId() const;
 
     private:
         SR_GTYPES_NS::Texture* m_texture = nullptr;
@@ -59,10 +59,10 @@ namespace SR_GRAPH_NS::GUI {
         Pin* m_currentPin = nullptr;
 
         Stage m_currentStage = Stage::Invalid;
-        ImU32 m_headerColor = 0;
-
-        ImVec2 m_headerMin;
-        ImVec2 m_headerMax;
+        //ImU32 m_headerColor = 0;
+//
+        //ImVec2 m_headerMin;
+        //ImVec2 m_headerMax;
 
         bool m_hasHeader = false;
 

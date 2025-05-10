@@ -1,9 +1,3 @@
-[submodule "libs/imgui-node-editor"]
-	path = libs/imgui-node-editor
-	url = https://github.com/Monika0000/imgui-node-editor
-[submodule "libs/ImGuizmo"]
-	path = libs/ImGuizmo
-	url = https://github.com/SpaRcle-Studio/ImGuizmo
 [submodule "libs/EvoVulkan"]
 	path = libs/EvoVulkan
 	url = https://github.com/Monika0000/EvoVulkan

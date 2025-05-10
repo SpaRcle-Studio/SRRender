@@ -42,7 +42,7 @@ namespace SR_GRAPH_NS::GUI {
         ~Pin() override;
 
     public:
-        static ImColor GetIconColor(const PinType& type);
+        //static ImColor GetIconColor(const PinType& type);
         static IconType GetIconType(const PinType& type);
 
         void DrawPinIcon(bool connected, uint32_t alpha);

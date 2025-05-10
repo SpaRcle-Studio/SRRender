@@ -2,11 +2,13 @@
 // Created by Monika on 15.09.2023.
 //
 
+#include <Utils/Common/StoreUtils.h>
+
 #include <Graphics/Overlay/ImGuiOverlay.h>
 #include <Graphics/GUI/Editor/Theme.h>
 #include <Graphics/GUI/Icons.h>
 
-#include <Utils/Common/StoreUtils.h>
+#include <Graphics/GUI/ImGui.h>
 
 namespace SR_GRAPH_NS {
     bool ImGuiOverlay::Init() {
@@ -15,7 +17,6 @@ namespace SR_GRAPH_NS {
         m_context = ImGui::CreateContext();
 
         ImGuiIO& io = ImGui::GetIO(); (void)io;
-        ImGuiStyle& style = ImGui::GetStyle();
 
         ReloadFonts();
 
@@ -32,7 +33,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (auto&& pTheme = SR_GRAPH_GUI_NS::Theme::Load("Engine/Configs/Themes/Dark.xml")) {
-            pTheme->Apply(style);
+            pTheme->Apply();
             delete pTheme;
         }
         else {
@@ -76,7 +77,7 @@ namespace SR_GRAPH_NS {
 
     void ImGuiOverlay::Destroy() {
         if (m_context) {
-            ImGui::DestroyContext(m_context);
+            ImGui::DestroyContext(((ImGuiContext*)m_context));
             m_context = nullptr;
         }
     }
@@ -147,7 +148,7 @@ namespace SR_GRAPH_NS {
 
     bool ImGuiOverlay::IsUndockingActive() const {
         if (m_context && ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            return m_context->Viewports.size() > 1;
+            return ((ImGuiContext*)m_context)->Viewports.size() > 1;
         }
 
         return false;

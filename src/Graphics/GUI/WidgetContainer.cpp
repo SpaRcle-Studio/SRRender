@@ -4,6 +4,8 @@
 
 #include <Graphics/GUI/WidgetContainer.h>
 
+#include <Graphics/GUI/ImGUI.h>
+
 namespace SR_GRAPH_GUI_NS {
     WidgetContainerElement::WidgetContainerElement()
         : SR_HTYPES_NS::SharedPtr<WidgetContainerElement>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
