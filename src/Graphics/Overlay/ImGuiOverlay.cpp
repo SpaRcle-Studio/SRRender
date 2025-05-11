@@ -8,7 +8,7 @@
 #include <Graphics/GUI/Editor/Theme.h>
 #include <Graphics/GUI/Icons.h>
 
-#include <Graphics/GUI/ImGui.h>
+#include <Graphics/GUI/ImGUI.h>
 
 namespace SR_GRAPH_NS {
     bool ImGuiOverlay::Init() {

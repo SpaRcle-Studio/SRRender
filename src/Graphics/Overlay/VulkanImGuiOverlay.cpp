@@ -8,7 +8,7 @@
 #include <EvoVulkan/Types/DescriptorPool.h>
 #include <EvoVulkan/DescriptorManager.h>
 
-#include <Graphics/GUI/ImGui.h>
+#include <Graphics/GUI/ImGUI.h>
 
 #ifdef SR_WIN32
     extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
