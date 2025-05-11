@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 
 add_library(CMP_Core STATIC)
 
+if (UNIX)
+    target_compile_options(CMP_Core PRIVATE -fPIC)
+endif()
+
 target_sources(CMP_Core
                PRIVATE
                 shaders/bc1_encode_kernel.h

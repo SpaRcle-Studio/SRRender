@@ -346,6 +346,10 @@ add_library(freetype
         ${BASE_SRCS}
         )
 
+if (UNIX)
+    target_compile_options(freetype PRIVATE -fPIC)
+endif()
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(freetype PRIVATE -Wno-unused-function -Wimplicit-function-declaration)
 endif()

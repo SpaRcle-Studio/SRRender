@@ -716,7 +716,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return IRToFR(ImGui::GetCurrentWindow()->Rect());
     }
 
-    bool Immediate::Combo(const char *label, int *current_item, bool (*items_getter)(void *, int, const char **), void *data, int items_count, int popup_max_height_in_items) {
+    bool Combo(const char *label, int *current_item, bool (*items_getter)(void *, int, const char **), void *data, int items_count, int popup_max_height_in_items) {
         return ImGui::Combo(label, current_item, items_getter, data, items_count, popup_max_height_in_items);
     }
 
