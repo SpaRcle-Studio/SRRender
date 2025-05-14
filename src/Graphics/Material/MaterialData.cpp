@@ -490,6 +490,9 @@ namespace SR_GRAPH_NS {
             if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture*>(sampler.data)) {
                 pShader->SetSampler2D(sampler.id, pTexture);
             }
+            else {
+                pShader->SetSampler2D(sampler.id, nullptr);
+            }
         }
     }
 
