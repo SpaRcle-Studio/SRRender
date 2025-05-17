@@ -13,9 +13,10 @@ option(SR_GRAPHICS_DLL_EXPORTS "" ON)
 
 option(SR_RENDER_GLFW "" OFF)
 
-set(SR_RENDER_USE_VULKAN ON)
 if (SR_EMSCRIPTEN)
     set(SR_RENDER_USE_VULKAN OFF)
+else()
+    set(SR_RENDER_USE_VULKAN ON)
 endif()
 
 if (SR_RENDER_USE_VULKAN)
@@ -55,7 +56,9 @@ if (SR_RENDER_GLFW)
     add_compile_definitions(SR_RENDER_GLFW)
 endif()
 
-add_subdirectory(libs/cmp_core)
+if (NOT SR_EMSCRIPTEN)
+    add_subdirectory(libs/cmp_core)
+endif()
 
 set(SR_GRAPHICS_SOURCES cxx/Graphics.cxx cxx/ImGUI.cxx cxx/SRSL.cxx cxx/Pass.cxx cxx/GUI.cxx cxx/Animations.cxx)
 
@@ -126,7 +129,12 @@ if (NOT ANDROID_NDK)
     endif()
 endif()
 
-target_link_libraries(Graphics PUBLIC CMP_Core freetype)
+if (NOT SR_EMSCRIPTEN)
+    target_link_libraries(Graphics PUBLIC CMP_Core)
+    target_include_directories(Graphics PUBLIC libs/cmp_core/source)
+endif()
+
+target_link_libraries(Graphics PUBLIC freetype)
 
 if (SR_RENDER_GLFW)
     target_link_libraries(Graphics PUBLIC glfw)
@@ -144,7 +152,6 @@ endif()
 target_compile_definitions(Graphics PRIVATE SR_IMGUI_INCLUDE_CHECK)
 
 target_include_directories(Graphics PUBLIC inc)
-target_include_directories(Graphics PUBLIC libs/cmp_core/source)
 target_include_directories(Graphics PUBLIC libs/inc)
 target_include_directories(Graphics PUBLIC libs/imgui)
 #target_include_directories(Graphics PUBLIC libs/imgui-node-editor)
