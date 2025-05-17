@@ -50,7 +50,9 @@ if (ANDROID_NDK)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unused-function -Wunused-function -Wno-comment -Wunused-variable")
 endif()
 
-include(freetype.cmake)
+if (NOT SR_EMSCRIPTEN)
+    include(freetype.cmake)
+endif()
 
 if (SR_RENDER_GLFW)
     add_compile_definitions(SR_RENDER_GLFW)
@@ -134,7 +136,9 @@ if (NOT SR_EMSCRIPTEN)
     target_include_directories(Graphics PUBLIC libs/cmp_core/source)
 endif()
 
-target_link_libraries(Graphics PUBLIC freetype)
+if (NOT SR_EMSCRIPTEN)
+    target_link_libraries(Graphics PUBLIC freetype)
+endif()
 
 if (SR_RENDER_GLFW)
     target_link_libraries(Graphics PUBLIC glfw)
