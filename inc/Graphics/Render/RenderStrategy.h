@@ -35,6 +35,7 @@ namespace SR_GRAPH_NS {
     class RenderScene;
     class RenderQueue;
     class MeshDrawerPass;
+    class RenderContext;
 
     /// ----------------------------------------------------------------------------------------------------------------
 

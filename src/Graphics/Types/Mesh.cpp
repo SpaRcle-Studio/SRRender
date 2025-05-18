@@ -5,6 +5,7 @@
 #include <Utils/ECS/Component.h>
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Resources/IResource.h>
+#include <Utils/ECS/Node.h>
 
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Render/RenderContext.h>
@@ -105,8 +106,17 @@ namespace SR_GTYPES_NS {
     }
 
     const SR_MATH_NS::Matrix4x4& Mesh::GetMatrix() const {
-        if (auto&& pTransform = GetTransform()) {
-            return pTransform->GetMatrix();
+        if (HasParent()) SR_LIKELY_ATTRIBUTE {
+            auto&& pSO = GetSceneObject();
+            switch (pSO->GetSceneObjectType()) {
+                case SR_UTILS_NS::SceneObjectType::GameObject:
+                    return static_cast<const SR_UTILS_NS::GameObject*>(pSO.Get())->GetTransform()->GetMatrix();
+                case SR_UTILS_NS::SceneObjectType::Node:
+                    return static_cast<const SR_UTILS_NS::Node*>(pSO.Get())->GetMatrix();
+                default:
+                    SRHalt("Mesh::GetMatrix() : unknown scene object type!");
+                    break;
+            }
         }
 
         static SR_MATH_NS::Matrix4x4 identity = SR_MATH_NS::Matrix4x4::Identity();

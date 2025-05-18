@@ -8,6 +8,8 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Utils/MeshUtils.h>
 
+#include <Codegen/Sprite.generated.hpp>
+
 namespace SR_GTYPES_NS {
     std::string Sprite::GetMeshIdentifier() const {
         static const std::string id = "SpriteFromMemory";
@@ -15,20 +17,6 @@ namespace SR_GTYPES_NS {
     }
 
     bool Sprite::InitializeEntity() noexcept {
-        /*m_properties.AddStandardProperty("Sliced", &m_sliced);
-
-        m_properties.AddStandardProperty("Texture border", &m_textureBorder)
-            .SetDrag(0.01f)
-            .SetResetValue(0.15f)
-            .SetActiveCondition([this]() { return m_sliced; })
-            .SetWidth(90.f);
-
-        m_properties.AddStandardProperty("Window border", &m_windowBorder)
-            .SetDrag(0.01f)
-            .SetResetValue(0.15f)
-            .SetActiveCondition([this]() { return m_sliced; })
-            .SetWidth(90.f);*/
-
         return Super::InitializeEntity();
     }
 
@@ -68,5 +56,39 @@ namespace SR_GTYPES_NS {
 
     bool Sprite::BindMesh() {
         return true;
+    }
+
+    bool Sprite::IsSupportVBO() const {
+        return false;
+    }
+
+    MeshType Sprite::GetMeshType() const noexcept {
+        return MeshType::Sprite;
+    }
+
+    uint32_t Sprite::GetIndicesCount() const {
+        return 4;
+    }
+
+    bool Sprite::IsFlatMesh() const noexcept {
+        return true;
+    }
+
+    SR_MATH_NS::FVector2 Sprite::GetTextureBorder() const {
+        return m_textureBorder;
+    }
+
+    SR_MATH_NS::FVector2 Sprite::GetWindowBorder() const {
+        return m_windowBorder;
+    }
+
+    void Sprite::SetTextureBorder(const SR_MATH_NS::FVector2& border) {
+        m_textureBorder = border;
+        MarkUniformsDirty();
+    }
+
+    void Sprite::SetWindowBorder(const SR_MATH_NS::FVector2& border) {
+        m_windowBorder = border;
+        MarkUniformsDirty();
     }
 }
