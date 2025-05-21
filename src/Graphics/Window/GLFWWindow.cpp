@@ -8,17 +8,29 @@
 #include <GLFW/glfw3native.h>
 
 namespace SR_GRAPH_NS {
+    SR_ENUM_NS_CLASS_T(GLFWPlatform, int64_t,
+        Windows = GLFW_PLATFORM_WIN32,
+        X11 = GLFW_PLATFORM_X11,
+        Wayland = GLFW_PLATFORM_WAYLAND,
+        Cocoa = GLFW_PLATFORM_COCOA,
+        Null = GLFW_PLATFORM_NULL
+    );
+
     bool GLFWWindow::Initialize(
         const std::string &name, const SR_MATH_NS::IVector2 &position,
         const SR_MATH_NS::UVector2 &size, bool fullScreen, bool resizable
     ) {
         SR_LOG("GLFWWindow::Initialize() : initializing GLFW window...");
+        SR_LOG("GLFWWindow::Initialize() : GLFW info: \n{}", glfwGetVersionString());
 
         if (!glfwInit())
         {
             SR_ERROR("GLFWWindow::Initialize() : failed to initialize GLFW.");
             return false;
         }
+
+        auto&& platform = SR_UTILS_NS::EnumReflector::ToStringAtom<GLFWPlatform>(glfwGetPlatform());
+        SR_LOG("GLFWWindow::Initialize() : GLFW is using '{}' platform.", platform);
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
@@ -29,6 +41,7 @@ namespace SR_GRAPH_NS {
             SR_ERROR("GLFWWindow::Initialize() : failed to create window.");
             return false;
         }
+
 
         int32_t x = -1;
         int32_t y = -1;
