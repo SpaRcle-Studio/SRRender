@@ -12,6 +12,7 @@ set(FT_DISABLE_HARFBUZZ ON)
 option(SR_GRAPHICS_DLL_EXPORTS "" ON)
 
 option(SR_RENDER_GLFW "" OFF)
+option(SR_RENDER_USE_YOGA "" ON)
 
 if (SR_EMSCRIPTEN)
     set(SR_RENDER_USE_VULKAN OFF)
@@ -129,6 +130,13 @@ if (NOT ANDROID_NDK)
         target_include_directories(Graphics PUBLIC ${X11_xcb_ewmh_INCLUDE_PATH})
         target_link_libraries(Graphics PUBLIC ${X11_xcb_ewmh_LIB} xcb-ewmh xcb-util)
     endif()
+endif()
+
+if (SR_RENDER_USE_YOGA)
+    add_subdirectory(libs/yoga)
+    target_link_libraries(Graphics PUBLIC yogacore)
+    target_include_directories(Graphics PUBLIC libs/yoga)
+    target_compile_definitions(Graphics PUBLIC SR_RENDER_USE_YOGA)
 endif()
 
 if (NOT SR_EMSCRIPTEN)

@@ -12,16 +12,14 @@ namespace SR_GRAPH_UI_NS {
         float_t maxHeight = 0;
 
         for (const SR_UTILS_NS::SceneObject::Ptr& pChild : GetChildrenRef()) {
-            if (pChild->GetSceneObjectType() != SR_UTILS_NS::SceneObjectType::Node) SR_UNLIKELY_ATTRIBUTE {
+            if (pChild->GetSceneObjectType() != SR_UTILS_NS::SceneObjectType::Node || !pChild->IsActive()) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
 
-            auto&& pNode = static_cast<const Node*>(pChild.Get());
-            if (pNode->GetNodeType() != SR_UTILS_NS::ECSNodeType::UIControlNode) SR_UNLIKELY_ATTRIBUTE {
+            auto&& pUIControlNode = dynamic_cast<const UIControlNode*>(pChild.Get());
+            if (!pUIControlNode) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
-
-            auto&& pUIControlNode = static_cast<const UIControlNode*>(pNode);
 
             auto&& childSize = pUIControlNode->CalculateContentSize();
             totalWidth += childSize.x + pUIControlNode->GetLayout().margin.Horizontal();
@@ -37,28 +35,26 @@ namespace SR_GRAPH_UI_NS {
     void UIHBoxContainerNode::Layout(const SR_MATH_NS::FRect& available) {
         Super::Layout(available);
 
-        /// 1. Доступная область для детей = finalRect - padding
+        /*/// 1. Доступная область для детей = finalRect - padding
         SR_MATH_NS::FRect childArea = m_finalRect;
-        childArea.position.x += GetLayout().padding.left;
-        childArea.position.y += GetLayout().padding.top;
-        childArea.size.x -= (GetLayout().padding.left + GetLayout().padding.right);
-        childArea.size.y -= (GetLayout().padding.top + GetLayout().padding.bottom);
+        //childArea.position.x += GetLayout().padding.left;
+        //childArea.position.y += GetLayout().padding.top;
+        //childArea.size.x -= (GetLayout().padding.left + GetLayout().padding.right);
+        //childArea.size.y -= (GetLayout().padding.top + GetLayout().padding.bottom);
 
         /// 2. Вычисляем общую ширину всех фиксированных и процентных детей
         float_t totalFixedWidth = 0;
         int fillCount = 0;
 
         for (const SR_UTILS_NS::SceneObject::Ptr& pChild : GetChildrenRef()) {
-            if (pChild->GetSceneObjectType() != SR_UTILS_NS::SceneObjectType::Node) SR_UNLIKELY_ATTRIBUTE {
+            if (pChild->GetSceneObjectType() != SR_UTILS_NS::SceneObjectType::Node || !pChild->IsActive()) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
 
-            auto&& pNode = static_cast<const Node*>(pChild.Get());
-            if (pNode->GetNodeType() != SR_UTILS_NS::ECSNodeType::UIControlNode) SR_UNLIKELY_ATTRIBUTE {
+            auto&& pUIControlNode = dynamic_cast<const UIControlNode*>(pChild.Get());
+            if (!pUIControlNode) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
-
-            auto&& pUIControlNode = static_cast<const UIControlNode*>(pNode);
 
             switch (pUIControlNode->GetLayout().widthPolicy) {
                 case UISizePolicy::Fixed:
@@ -81,21 +77,23 @@ namespace SR_GRAPH_UI_NS {
             totalFixedWidth += pUIControlNode->GetLayout().margin.left + pUIControlNode->GetLayout().margin.right;
         }
 
-        float_t remainingWidth = std::max(0.0f, childArea.size.x - totalFixedWidth);
+        //float_t remainingWidth = std::max(0.0f, childArea.size.x - totalFixedWidth);
+        float_t remainingWidth = m_finalRect.w;
         float_t x = childArea.position.x;
 
         /// 3. Расставляем детей по горизонтали
+        uint32_t childIndex = 0;
         for (SR_UTILS_NS::SceneObject::Ptr& pChild : GetChildrenRef()) {
-            if (pChild->GetSceneObjectType() != SR_UTILS_NS::SceneObjectType::Node) SR_UNLIKELY_ATTRIBUTE {
+            if (pChild->GetSceneObjectType() != SR_UTILS_NS::SceneObjectType::Node || !pChild->IsActive()) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
 
-            auto&& pNode = static_cast<Node*>(pChild.Get());
-            if (pNode->GetNodeType() != SR_UTILS_NS::ECSNodeType::UIControlNode) SR_UNLIKELY_ATTRIBUTE {
+            auto&& pUIControlNode = dynamic_cast<UIControlNode*>(pChild.Get());
+            if (!pUIControlNode) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
 
-            auto&& pUIControlNode = static_cast<UIControlNode*>(pNode);
+            ++childIndex;
 
             float_t childWidth = 0;
             switch (pUIControlNode->GetLayout().widthPolicy) {
@@ -132,8 +130,54 @@ namespace SR_GRAPH_UI_NS {
             childRect.size = { childWidth, childHeight };
 
             pUIControlNode->Layout(childRect);
+            //pUIControlNode->Layout(SR_MATH_NS::FRect(0 + 400 * childIndex, 0, 200, 200));
 
             x += childWidth + pUIControlNode->GetLayout().margin.left + pUIControlNode->GetLayout().margin.right;
+        }*/
+
+        uint32_t childCount = 0;
+
+        for (SR_UTILS_NS::SceneObject::Ptr& pChild : GetChildrenRef()) {
+            if (pChild->GetSceneObjectType() != SR_UTILS_NS::SceneObjectType::Node || !pChild->IsActive()) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
+
+            auto&& pUIControlNode = dynamic_cast<UIControlNode*>(pChild.Get());
+            if (!pUIControlNode) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
+
+            ++childCount;
+        }
+
+        if (childCount == 0) {
+            return;
+        }
+
+        //uint32_t childIndex = 0;
+        float_t childPosX = m_finalRect.position.x;
+
+        for (SR_UTILS_NS::SceneObject::Ptr& pChild : GetChildrenRef()) {
+            if (pChild->GetSceneObjectType() != SR_UTILS_NS::SceneObjectType::Node || !pChild->IsActive()) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
+
+            auto&& pUIControlNode = dynamic_cast<UIControlNode*>(pChild.Get());
+            if (!pUIControlNode) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
+
+            //++childIndex;
+
+            float_t childWidth = m_finalRect.w / static_cast<float_t>(childCount);
+
+            SR_MATH_NS::FRect childRect;
+            childRect.position = { childPosX, m_finalRect.y };
+            childRect.size = { childWidth, m_finalRect.h };
+
+            pUIControlNode->Layout(childRect);
+
+            childPosX += childWidth * 2.f;
         }
     }
 }

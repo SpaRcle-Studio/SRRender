@@ -705,6 +705,10 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImGui::IsMouseReleased(static_cast<ImGuiMouseButton>(button));
     }
 
+    bool IsMouseDown(MouseButton button) {
+        return ImGui::IsMouseDown(static_cast<ImGuiMouseButton>(button));
+    }
+
     SR_MATH_NS::FVector2 GetMousePos() {
         return ImV2ToF2(ImGui::GetMousePos());
     }

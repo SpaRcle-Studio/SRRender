@@ -5,7 +5,7 @@
 #include <Graphics/UI/UIWindow.h>
 
 namespace SR_GRAPH_UI_NS {
-    bool UIWindow::InitializeEntity() noexcept {
+    //bool UIWindow::InitializeEntity() noexcept {
         //GetComponentProperties().AddStandardProperty<bool>("Resizable")
         //    .SetGetter([this](void* pData) { *static_cast<bool*>(pData) = IsResizable(); })
         //    .SetSetter([this](void* pData) { SetResizable(*static_cast<bool*>(pData)); });
@@ -34,8 +34,8 @@ namespace SR_GRAPH_UI_NS {
         //    .SetGetter([this](void* pData) { *static_cast<SR_MATH_NS::UVector2*>(pData) = m_windowSize; })
         //    .SetSetter([this](void* pData) { SetWindowSize(*static_cast<SR_MATH_NS::UVector2*>(pData)); });
 
-        return true;
-    }
+    //    return true;
+    //}
 
     void UIWindow::SetResizable(bool value) noexcept {
     }

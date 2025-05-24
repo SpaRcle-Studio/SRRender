@@ -469,7 +469,13 @@ namespace SR_SRSL_NS {
             code += ")";
         }
         else if (pExpr->isArray) {
-            code += GenerateExpression(pExpr->args[0], 0) + "[" + GenerateExpression(pExpr->args[1], 0) + "]";
+            if (pExpr->args.size() != 2) {
+                SRHalt("GLSLCodeGenerator::GenerateExpression() : invalid array expression! "
+                    "\n\tShader: {}", m_shader->GetPath());
+            }
+            else {
+                code += GenerateExpression(pExpr->args[0], 0) + "[" + GenerateExpression(pExpr->args[1], 0) + "]";
+            }
         }
         else if (pExpr->isList) {
             code += "{ ";

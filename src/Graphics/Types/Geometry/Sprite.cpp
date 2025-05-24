@@ -7,6 +7,7 @@
 #include <Graphics/Types/Uniforms.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Utils/MeshUtils.h>
+#include <Graphics/UI/UINode.h>
 
 #include <Codegen/Sprite.generated.hpp>
 
@@ -14,10 +15,6 @@ namespace SR_GTYPES_NS {
     std::string Sprite::GetMeshIdentifier() const {
         static const std::string id = "SpriteFromMemory";
         return id;
-    }
-
-    bool Sprite::InitializeEntity() noexcept {
-        return Super::InitializeEntity();
     }
 
     bool Sprite::Calculate() {
@@ -41,7 +38,13 @@ namespace SR_GTYPES_NS {
 
     void Sprite::UseModelMatrix() {
         if (auto&& pShader = GetRenderContext()->GetCurrentShader()) {
-            pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+            // pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+
+            if (HasParent()) SR_LIKELY_ATTRIBUTE {
+                if (auto&& pUINode = GetParent()->DynamicCast<SR_GRAPH_UI_NS::UINode>()) SR_LIKELY_ATTRIBUTE {
+                    pShader->SetVec4(SHADER_NDC_RECT, pUINode->GetNDCVector());
+                }
+            }
 
             if (m_sliced) {
                 pShader->SetVec2(SHADER_SLICED_TEXTURE_BORDER, m_textureBorder);

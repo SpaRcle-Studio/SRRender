@@ -287,20 +287,16 @@ namespace SR_GTYPES_NS {
     }
 
     int64_t Mesh::GetSortingPriority() const {
-        if (auto&& pTransform = GetTransform()) {
-            if (pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
-                return static_cast<SR_UTILS_NS::Transform2D*>(pTransform)->GetPriority();
+        if (auto&& pSO = GetSceneObject()) {
+            if (pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node) {
+                return static_cast<const SR_UTILS_NS::Node*>(pSO.Get())->GetNodePriority();
             }
         }
-
         return -1;
     }
 
     bool Mesh::HasSortingPriority() const {
-        if (auto&& pTransform = GetTransform()) {
-            return pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
-        }
-        return false;
+        return GetSceneObject()->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node;
     }
 
     SR_UTILS_NS::StringAtom Mesh::GetMeshLayer() const {

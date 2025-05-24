@@ -37,7 +37,7 @@ namespace SR_GRAPH_UI_NS {
     void UIVBoxContainerNode::Layout(const SR_MATH_NS::FRect& available) {
         Super::Layout(available);
 
-        /// 1. Доступная область для детей = finalRect - padding
+        /*// 1. Доступная область для детей = finalRect - padding
         SR_MATH_NS::FRect childArea = m_finalRect;
         childArea.position.x += GetLayout().padding.left;
         childArea.position.y += GetLayout().padding.top;
@@ -140,6 +140,6 @@ namespace SR_GRAPH_UI_NS {
             pUIControlNode->Layout(childRect);
 
             y += childHeight + pUIControlNode->GetLayout().margin.top + pUIControlNode->GetLayout().margin.bottom;
-        }
+        }*/
     }
 }

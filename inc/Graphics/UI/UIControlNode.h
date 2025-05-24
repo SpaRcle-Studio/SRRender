@@ -14,17 +14,31 @@ namespace SR_GRAPH_UI_NS {
     )
 
     SR_ENUM_NS_CLASS_T(UISizePolicy, uint8_t,
-        Fixed,   /// размер задаётся явно
-        Percent, /// размер в % от доступного пространства
-        Content, /// подстраивается под содержимое (например, текст)
-        Fill     /// занимает всё доступное пространство
+        Auto,
+        Fixed,
+        Percent
+    )
+
+    SR_ENUM_NS_CLASS_T(UIJustify, uint8_t,
+        Auto,
+        FlexStart,
+        Center,
+        FlexEnd,
+        SpaceBetween,
+        SpaceAround,
+        SpaceEvenly
     )
 
     SR_ENUM_NS_CLASS_T(UIAlign, uint8_t,
+        Auto,
         Start,
         Center,
         End,
-        Stretch
+        Stretch,
+        Baseline,
+        SpaceBetween,
+        SpaceAround,
+        SpaceEvenly
     )
 
     struct UILayout : public SR_UTILS_NS::Serializable {
@@ -33,13 +47,15 @@ namespace SR_GRAPH_UI_NS {
         /// Размеры
 
         /// @property
-        UISizePolicy widthPolicy = UISizePolicy::Fixed;
+        UISizePolicy widthPolicy = UISizePolicy::Auto;
         /// @property
-        UISizePolicy heightPolicy = UISizePolicy::Fixed;
+        UISizePolicy heightPolicy = UISizePolicy::Auto;
         /// @property
         float_t width = 0.0f; /// используется, если policy == Fixed или Percent
         /// @property
         float_t height = 0.0f;
+        /// @property
+        float_t aspectRatio = 0.0f;
 
         /// Положение
 
@@ -52,17 +68,15 @@ namespace SR_GRAPH_UI_NS {
 
         /// Внешние и внутренние отступы
 
-        /// @property
+        /// @property @inspector(MarginPropertyDrawer)
         SR_MATH_NS::FRect margin;
-        /// @property
+        /// @property @inspector(MarginPropertyDrawer)
         SR_MATH_NS::FRect padding;
 
         /// Выравнивание
 
         /// @property
-        UIAlign horizontalAlign = UIAlign::Start;
-        /// @property
-        UIAlign verticalAlign = UIAlign::Start;
+        UIAlign align = UIAlign::Auto;
     };
 
     class UIControlNode : public UINode {
@@ -72,10 +86,12 @@ namespace SR_GRAPH_UI_NS {
         using Ptr = SR_HTYPES_NS::SharedPtr<UIControlNode>;
 
     public:
+        void Prepare(uint64_t& priority) override;
         void Layout(const SR_MATH_NS::FRect& available) override;
 
         SR_NODISCARD SR_MATH_NS::FVector2 CalculateContentSize() const override;
         SR_NODISCARD const UILayout& GetLayout() const noexcept;
+        SR_NODISCARD UILayout& GetLayout() noexcept;
         SR_NODISCARD SR_UTILS_NS::ECSNodeType GetNodeType() const noexcept override;
 
     private:

@@ -160,10 +160,19 @@ namespace SR_GTYPES_NS {
 
         m_orthogonal = SR_MATH_NS::Matrix4x4::Identity();
 
-        m_orthogonal[0][0] = 1.f / m_aspect;
+        //m_orthogonal[0][0] = 1.f / m_aspect;
+
+        m_orthogonal[0][0] = 1.f;
         m_orthogonal[1][1] = -1.f;
         m_orthogonal[2][2] = 1.f / (m_far - m_near);
         m_orthogonal[3][2] = m_near / (m_far - m_near);
+
+        //m_orthogonal[0][0] =  2.0f / m_viewportSize.x;
+        //m_orthogonal[1][1] = -2.0f / m_viewportSize.y; // В Vulkan Y растёт вниз
+        //m_orthogonal[2][2] = 1.0f / (m_far - m_near);
+        //m_orthogonal[3][0] = -1.0f;
+        //m_orthogonal[3][1] = 1.0f;
+        //m_orthogonal[3][2] = m_near / (m_near - m_far);
 
         //////////////////////////////////////////////////////////////////////////////////////////////
 
