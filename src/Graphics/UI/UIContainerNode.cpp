@@ -14,6 +14,8 @@ namespace SR_GRAPH_UI_NS {
     }
 
     void UIContainerNode::Prepare(uint64_t& priority) {
+        SR_TRACY_ZONE;
+
         Super::Prepare(priority);
 
         switch (m_containerAlign) {
@@ -68,6 +70,8 @@ namespace SR_GRAPH_UI_NS {
     }
 
     void UIContainerNode::Layout(const SR_MATH_NS::FRect& available) {
+        SR_TRACY_ZONE;
+
         Super::Layout(available);
 
         for (auto&& pChild : GetChildrenRef()) {

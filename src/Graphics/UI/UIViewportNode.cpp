@@ -27,6 +27,8 @@ namespace SR_GRAPH_UI_NS {
     }
 
     void UIViewportNode::Layout(const SR_MATH_NS::FRect&) {
+        SR_TRACY_ZONE;
+
         auto&& pMainCamera = GetCamera();
         if (!pMainCamera) {
             return;
@@ -43,7 +45,7 @@ namespace SR_GRAPH_UI_NS {
 
         m_doRecalcLayout = false;
 
-        YGNodeCalculateLayout(GetYGNode(), m_viewportSize.x, m_viewportSize.y, YGDirectionLTR);
+        CalculateLayout();
 
         GetLayout().width = viewportSize.x;
         GetLayout().height = viewportSize.y;
@@ -62,5 +64,10 @@ namespace SR_GRAPH_UI_NS {
                 pNode->Layout(SR_MATH_NS::FRect());
             }
         }
+    }
+
+    void UIViewportNode::CalculateLayout() {
+        SR_TRACY_ZONE;
+        YGNodeCalculateLayout(GetYGNode(), m_viewportSize.x, m_viewportSize.y, YGDirectionLTR);
     }
 }
