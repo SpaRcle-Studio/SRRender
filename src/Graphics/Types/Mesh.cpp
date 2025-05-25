@@ -239,6 +239,8 @@ namespace SR_GTYPES_NS {
             return;
         }
 
+        SRAssert(IRenderComponent::IsActive());
+
         if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
             m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
             if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
@@ -363,6 +365,10 @@ namespace SR_GTYPES_NS {
 
     void Mesh::ReRegisterMesh() {
         SR_TRACY_ZONE;
+
+        if (!IsActive()) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
 
         if (m_isDestroyingState) {
             return;

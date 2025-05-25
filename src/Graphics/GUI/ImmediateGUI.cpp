@@ -610,6 +610,14 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         ImGui::EndMenu();
     }
 
+    bool BeginListBox(const char* label, const SR_MATH_NS::FVector2& size) {
+        return ImGui::BeginListBox(label, F2ToImV2(size));
+    }
+
+    void EndListBox() {
+        ImGui::EndListBox();
+    }
+
     bool BeginMenu(const char *label) {
         return ImGui::BeginMenu(label);
     }
@@ -752,8 +760,24 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImGui::BeginChild(str_id, F2ToImV2(size), border);
     }
 
+    bool BeginTable(const char* str_id, int columns) {
+        return ImGui::BeginTable(str_id, columns);
+    }
+
+    void TableSetColumnIndex(int column_n) {
+        ImGui::TableSetColumnIndex(column_n);
+    }
+
+    void EndTable() {
+        ImGui::EndTable();
+    }
+
     void EndChild() {
         ImGui::EndChild();
+    }
+
+    void TableNextRow() {
+        ImGui::TableNextRow();
     }
 
     const void* AcceptDragDropPayload(const char* type) {

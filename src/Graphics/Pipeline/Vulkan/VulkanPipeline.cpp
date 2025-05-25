@@ -342,7 +342,7 @@ namespace SR_GRAPH_NS {
             auto&& framebuffer = m_memory->GetFBO(FBO - 1);
 
             if (auto&& layers = framebuffer->GetLayers(); !layers.empty()) SR_LIKELY_ATTRIBUTE {
-                return (void*)layers[SR_MIN(layers.size() - 1, m_state.frameBufferLayer)]->GetFramebuffer();
+                return (void*)layers[SR_MIN(layers.size() - 1, m_state.frameBufferLayer)]->GetRenderPass();
             }
 
             PipelineError("Vulkan::GetCurrentFBOHandle() : frame buffer has no layers!");
@@ -362,11 +362,7 @@ namespace SR_GRAPH_NS {
         }
 
         m_memory->ForEachFBO([&handles](int32_t index, auto&& pFBO) {
-            for (auto&& layer : pFBO->GetLayers()) {
-                if (auto&& pVkFrameBuffer = layer->GetFramebuffer()) {
-                    handles.insert((void*)pVkFrameBuffer);
-                }
-            }
+            handles.insert((void*)pFBO->GetRenderPass());
         });
 
         return handles;

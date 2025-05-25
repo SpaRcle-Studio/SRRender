@@ -38,8 +38,6 @@ namespace SR_GTYPES_NS {
 
     void Sprite::UseModelMatrix() {
         if (auto&& pShader = GetRenderContext()->GetCurrentShader()) {
-            // pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-
             if (HasParent()) SR_LIKELY_ATTRIBUTE {
                 if (auto&& pUINode = GetParent()->DynamicCast<SR_GRAPH_UI_NS::UINode>()) SR_LIKELY_ATTRIBUTE {
                     pShader->SetVec4(SHADER_NDC_RECT, pUINode->GetNDCVector());
