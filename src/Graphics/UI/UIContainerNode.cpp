@@ -60,7 +60,7 @@ namespace SR_GRAPH_UI_NS {
                 break;
         }
 
-        //YGNodeSetAlwaysFormsContainingBlock(GetYGNode(), true /*alwaysFormsContainingBlock*/);
+        // YGNodeSetAlwaysFormsContainingBlock(GetYGNode(), true /*alwaysFormsContainingBlock*/);
 
         for (auto&& pChild : GetChildrenRef()) {
             if (auto&& pNode = dynamic_cast<UINode*>(pChild.Get())) {

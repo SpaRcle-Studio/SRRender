@@ -3,7 +3,8 @@
 //
 
 #include <Graphics/Types/Geometry/ProceduralMesh.h>
-#include <Utils/ECS/ComponentManager.h>
+
+#include <Codegen/ProceduralMesh.generated.hpp>
 
 namespace SR_GTYPES_NS {
     void ProceduralMesh::SetVertices(const std::vector<Vertices::StaticMeshVertex>& vertices) {
@@ -31,6 +32,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool ProceduralMesh::Calculate()  {
+        SR_TRACY_ZONE;
+
         if (IsCalculated()) {
             return true;
         }
@@ -45,61 +48,11 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        return IndexedMesh::Calculate();
+        return Super::Calculate();
     }
 
     std::vector<uint32_t> ProceduralMesh::GetIndices() const {
-        return std::move(m_indices);
-    }
-
-    void ProceduralMesh::Draw() {
-        if (!IsActive()) {
-            return;
-        }
-
-        if ((!m_isCalculated && !Calculate()) || m_hasErrors) {
-            return;
-        }
-
-        /*auto&& pShader = m_materialProperty.GetMaterial()->GetShader();
-        auto&& uboManager = Memory::UBOManager::Instance();
-
-        if (m_dirtyMaterial)
-        {
-            m_dirtyMaterial = false;
-
-            m_virtualUBO = uboManager.AllocateUBO(m_virtualUBO);
-
-            if (m_virtualUBO != SR_ID_INVALID) {
-                uboManager.BindUBO(m_virtualUBO);
-            }
-            else {
-                m_hasErrors = true;
-                return;
-            }
-
-            //pShader->InitUBOBlock();
-            pShader->Flush();
-
-            m_materialProperty.GetMaterial()->UseSamplers();
-            pShader->FlushSamplers();
-        }
-
-        switch (uboManager.BindUBO(m_virtualUBO)) {
-            case Memory::UBOManager::BindResult::Duplicated:
-                //pShader->InitUBOBlock();
-                pShader->Flush();
-                m_materialProperty.GetMaterial()->UseSamplers();
-                pShader->FlushSamplers();
-                SR_FALLTHROUGH;
-            case Memory::UBOManager::BindResult::Success:
-                pShader->FlushConstants();
-                m_pipeline->DrawIndices(m_countIndices);
-                break;
-            case Memory::UBOManager::BindResult::Failed:
-            default:
-                break;
-        }*/
+        return m_indices;
     }
 
     bool ProceduralMesh::IsCalculatable() const {
@@ -107,20 +60,37 @@ namespace SR_GTYPES_NS {
     }
 
     void ProceduralMesh::SetIndexedVertices(void *pData, uint64_t count) {
-        m_vertices.resize((m_countVertices = count));
-        memcpy(m_vertices.data(), pData, count * sizeof(Vertices::StaticMeshVertex));
+        SR_TRACY_ZONE;
+
+        if (!pData || count == 0) {
+            m_vertices.clear();
+        }
+        else {
+            m_vertices.resize((m_countVertices = count));
+            memcpy(m_vertices.data(), pData, count * sizeof(Vertices::StaticMeshVertex));
+        }
+        m_countVertices = static_cast<uint32_t>(m_vertices.size());
         SetDirtyMesh();
     }
 
     void ProceduralMesh::SetIndices(void *pData, uint64_t count) {
-        m_indices.resize((m_countIndices = count));
-        memcpy(m_indices.data(), pData, count * sizeof(uint32_t));
+        SR_TRACY_ZONE;
+
+        if (!pData || count == 0) {
+            m_indices.clear();
+        }
+        else {
+            m_indices.resize((m_countIndices = count));
+            memcpy(m_indices.data(), pData, count * sizeof(uint32_t));
+        }
+        m_countIndices = static_cast<uint32_t>(m_indices.size());
         SetDirtyMesh();
     }
 
     void ProceduralMesh::SetDirtyMesh() {
         m_isCalculated = false;
         MarkMaterialDirty();
+        ReRegisterMesh();
 
         if (auto&& renderScene = TryGetRenderScene()) {
             renderScene->SetDirty();
@@ -128,12 +98,12 @@ namespace SR_GTYPES_NS {
     }
 
     void ProceduralMesh::UseMaterial() {
-        Mesh::UseMaterial();
+        Super::UseMaterial();
         UseModelMatrix();
     }
 
     void ProceduralMesh::UseModelMatrix() {
-        Mesh::UseModelMatrix();
+        Super::UseModelMatrix();
         GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
     }
 }

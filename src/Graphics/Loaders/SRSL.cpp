@@ -155,7 +155,6 @@ bool SR_GRAPH_NS::SRSL::SRSLLoader::PrepareUnit(SRSLUnit& unit, const SRSLVars& 
     /// prepare settings
     for (const auto& var : vars) {
         auto&& args = SR_UTILS_NS::StringUtils::Split(var, " ");
-
         if (args.size() != 2) {
             continue;
         }
@@ -264,8 +263,9 @@ std::string SR_GRAPH_NS::SRSL::SRSLLoader::MakeUniformsCode(SRSLUnit& unit, cons
         if (var.show) {
             source += " // public\n";
         }
-        else
+        else {
             source += " // hidden\n";
+        }
     }
 
     /// ----------------------------------------------------------------------------------------------------------------

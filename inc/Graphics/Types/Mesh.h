@@ -157,6 +157,8 @@ namespace SR_GTYPES_NS {
         bool m_isWaitReRegister = false;
         /// @virtualProperty(isRegistered) @getter(IsMeshRegistered) @readOnly @dontSave
         SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(isCalculated) @getter(IsCalculated) @readOnly @dontSave
+        SR_VIRTUAL_PROPERTY
         /// @property @readOnly @dontSave
         bool m_hasErrors = false;
         /// @property @readOnly @dontSave
