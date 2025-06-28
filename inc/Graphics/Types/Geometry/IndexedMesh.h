@@ -9,6 +9,8 @@
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Utils/Types/FastMemoryArray.h>
+
 namespace SR_GTYPES_NS {
     class IndexedMesh : public Mesh {
         SR_CLASS()
@@ -25,7 +27,10 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD uint32_t GetVerticesCount() const override { return m_countVertices; }
         SR_NODISCARD uint32_t GetIndicesCount() const override { return m_countIndices; }
 
-        SR_NODISCARD virtual std::vector<uint32_t> GetIndices() const { return { }; }
+        SR_NODISCARD virtual const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const {
+            static SR_HTYPES_NS::FastMemoryArray<uint32_t> empty;
+            return empty;
+        }
 
         SR_NODISCARD bool IsSupportVBO() const override { return true; }
 
@@ -35,8 +40,8 @@ namespace SR_GTYPES_NS {
 
         void FreeVideoMemory() override;
 
-        template<Vertices::VertexType type, typename Vertex> bool CalculateVBO(const std::vector<Vertex>& vertices);
-        template<Vertices::VertexType type, typename Vertex> bool CalculateVBO(const SR_HTYPES_NS::Function<std::vector<Vertex>()>& getter);
+        template<Vertices::VertexType type, typename Vertex> bool CalculateVBO(const SR_HTYPES_NS::FastMemoryArray<Vertex>& vertices);
+        template<Vertices::VertexType type, typename Vertex> bool CalculateVBO(const SR_HTYPES_NS::Function<SR_HTYPES_NS::FastMemoryArray<Vertex>()>& getter);
 
         bool FreeVBO();
         bool FreeIBO();
@@ -51,7 +56,7 @@ namespace SR_GTYPES_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    template<Vertices::VertexType type, typename Vertex> bool IndexedMesh::CalculateVBO(const SR_HTYPES_NS::Function<std::vector<Vertex>()>& getter) {
+    template<Vertices::VertexType type, typename Vertex> bool IndexedMesh::CalculateVBO(const SR_HTYPES_NS::Function<SR_HTYPES_NS::FastMemoryArray<Vertex>()>& getter) {
         SR_TRACY_ZONE;
 
         SRAssert(m_pipeline);
@@ -77,7 +82,7 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    template<Vertices::VertexType type, typename Vertex> bool IndexedMesh::CalculateVBO(const std::vector<Vertex>& vertices) {
+    template<Vertices::VertexType type, typename Vertex> bool IndexedMesh::CalculateVBO(const SR_HTYPES_NS::FastMemoryArray<Vertex>& vertices) {
         SR_TRACY_ZONE;
 
         SRAssert(m_pipeline);

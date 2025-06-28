@@ -57,7 +57,7 @@ namespace SR_GTYPES_NS {
         }
     }
 
-    std::vector<uint32_t> SkinnedMesh::GetIndices() const {
+    const SR_HTYPES_NS::FastMemoryArray<uint32_t>& SkinnedMesh::GetIndices() const {
         return GetRawMesh()->GetIndices(GetMeshId());
     }
 

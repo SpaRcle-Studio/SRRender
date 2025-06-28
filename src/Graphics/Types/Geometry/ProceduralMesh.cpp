@@ -51,12 +51,24 @@ namespace SR_GTYPES_NS {
         return Super::Calculate();
     }
 
-    std::vector<uint32_t> ProceduralMesh::GetIndices() const {
+    const SR_HTYPES_NS::FastMemoryArray<uint32_t>& ProceduralMesh::GetIndices() const {
         return m_indices;
     }
 
     bool ProceduralMesh::IsCalculatable() const {
         return m_countVertices > 0;
+    }
+
+    void ProceduralMesh::SwapIndexedVertices(SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertex>& vertices) {
+        std::swap(m_vertices, vertices);
+        m_countVertices = static_cast<uint32_t>(m_vertices.size());
+        SetDirtyMesh();
+    }
+
+    void ProceduralMesh::SwapIndices(SR_HTYPES_NS::FastMemoryArray<uint32_t>& indices) {
+        std::swap(m_indices, indices);
+        m_countIndices = static_cast<uint32_t>(m_indices.size());
+        SetDirtyMesh();
     }
 
     void ProceduralMesh::SetIndexedVertices(void *pData, uint64_t count) {

@@ -32,7 +32,7 @@ namespace SR_GTYPES_NS {
         return IndexedMesh::Calculate();
     }
 
-    std::vector<uint32_t> DebugWireframeMesh::GetIndices() const {
+    const SR_HTYPES_NS::FastMemoryArray<uint32_t>& DebugWireframeMesh::GetIndices() const {
         return GetRawMesh()->GetIndices(GetMeshId());
     }
 
