@@ -8,6 +8,8 @@
 
 namespace SR_GTYPES_NS {
     void ProceduralMesh::SetVertices(const std::vector<Vertices::StaticMeshVertex>& vertices) {
+        SRAssert(!m_useSSBOInsteadOfVertices);
+
         m_indices.clear();
         m_vertices.clear();
 
@@ -38,34 +40,71 @@ namespace SR_GTYPES_NS {
             return true;
         }
 
+        const uint32_t size = m_countVertices * sizeof(Vertices::StaticMeshVertexAligned);
+        int32_t oldSSBO = SR_ID_INVALID;
+        if (m_ssboSize >= size && m_useSSBOInsteadOfVertices) {
+            std::swap(m_ssbo, oldSSBO);
+        }
+
         FreeVideoMemory();
 
         if (!IsCalculatable()) {
             return false;
         }
 
-        if (!CalculateVBO<Vertices::VertexType::StaticMeshVertex>(m_vertices)) {
-            return false;
+        if (m_useSSBOInsteadOfVertices) {
+            if (oldSSBO == SR_ID_INVALID) {
+                SRAssert(m_ssbo == SR_ID_INVALID);
+                m_ssbo = GetPipeline()->AllocateSSBO(size, SSBOUsage::Write);
+                m_ssboSize = size;
+            }
+            else {
+                m_ssbo = oldSSBO;
+            }
+
+            GetPipeline()->UpdateSSBO(m_ssbo, (void*)m_verticesAligned.data(), size);
+
+            m_isCalculated = true;
+            /// чтобы в случае перезагрузки обновить все связанные данные
+            MarkMaterialDirty();
+        }
+        else {
+            if (!CalculateVBO<Vertices::VertexType::StaticMeshVertex>(m_vertices)) {
+                return false;
+            }
+
+            return Super::Calculate();
         }
 
-        return Super::Calculate();
+        return true;
     }
 
     const SR_HTYPES_NS::FastMemoryArray<uint32_t>& ProceduralMesh::GetIndices() const {
-        return m_indices;
+        static SR_HTYPES_NS::FastMemoryArray<uint32_t> empty;
+        return m_useSSBOInsteadOfVertices ? empty : m_indices;
     }
 
     bool ProceduralMesh::IsCalculatable() const {
         return m_countVertices > 0;
     }
 
+    void ProceduralMesh::SwapIndexedVertices(SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertexAligned>& vertices) {
+        SRAssert(m_useSSBOInsteadOfVertices);
+        std::swap(m_verticesAligned, vertices);
+        m_countVertices = static_cast<uint32_t>(m_verticesAligned.size());
+        m_countIndices = m_countVertices;
+        SetDirtyMesh();
+    }
+
     void ProceduralMesh::SwapIndexedVertices(SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertex>& vertices) {
+        SRAssert(!m_useSSBOInsteadOfVertices);
         std::swap(m_vertices, vertices);
         m_countVertices = static_cast<uint32_t>(m_vertices.size());
         SetDirtyMesh();
     }
 
     void ProceduralMesh::SwapIndices(SR_HTYPES_NS::FastMemoryArray<uint32_t>& indices) {
+        SRAssert(!m_useSSBOInsteadOfVertices);
         std::swap(m_indices, indices);
         m_countIndices = static_cast<uint32_t>(m_indices.size());
         SetDirtyMesh();
@@ -73,6 +112,8 @@ namespace SR_GTYPES_NS {
 
     void ProceduralMesh::SetIndexedVertices(void *pData, uint64_t count) {
         SR_TRACY_ZONE;
+
+        SRAssert(!m_useSSBOInsteadOfVertices);
 
         if (!pData || count == 0) {
             m_vertices.clear();
@@ -82,11 +123,14 @@ namespace SR_GTYPES_NS {
             memcpy(m_vertices.data(), pData, count * sizeof(Vertices::StaticMeshVertex));
         }
         m_countVertices = static_cast<uint32_t>(m_vertices.size());
+
         SetDirtyMesh();
     }
 
     void ProceduralMesh::SetIndices(void *pData, uint64_t count) {
         SR_TRACY_ZONE;
+
+        SRAssert(!m_useSSBOInsteadOfVertices);
 
         if (!pData || count == 0) {
             m_indices.clear();
@@ -117,5 +161,23 @@ namespace SR_GTYPES_NS {
     void ProceduralMesh::UseModelMatrix() {
         Super::UseModelMatrix();
         GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+    }
+
+    bool ProceduralMesh::IsSupportVBO() const {
+        return !m_useSSBOInsteadOfVertices;
+    }
+
+    void ProceduralMesh::UseSSBO() {
+        if (m_useSSBOInsteadOfVertices && m_ssbo != SR_ID_INVALID) {
+            GetPipeline()->GetCurrentShader()->BindSSBO("ssboVertices", m_ssbo);
+        }
+        Super::UseSSBO();
+    }
+
+    void ProceduralMesh::FreeVideoMemory() {
+        if (m_ssbo != SR_ID_INVALID) {
+            GetPipeline()->FreeSSBO(&m_ssbo);
+        }
+        Super::FreeVideoMemory();
     }
 }

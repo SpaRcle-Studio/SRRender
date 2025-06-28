@@ -84,13 +84,25 @@ namespace SR_SRSL_NS {
             code += vertexLocations + "\n";
         }
 
+        auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(stage);
+        if (auto&& pFunctionCallStack = m_shader->GetUseStack()->FindFunction(entryPoint)) {
+            for (auto&& pUnit : m_shader->GetAnalyzedTree()->pLexicalTree->lexicalTree) {
+                if (auto&& pStructure = dynamic_cast<SRSLStructureStatement*>(pUnit)) {
+                    if (!pFunctionCallStack->IsStructUsed(pStructure->pName->token)) {
+                        continue;
+                    }
+
+                    code += GenerateStructure(pStructure, 0) + "\n\n";
+                }
+            }
+        }
+
         if (auto&& uniformsCode = GenerateUniforms(stage); !uniformsCode.empty()) {
             code += uniformsCode + "\n";
         }
 
         code += preCode;
 
-        auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(stage);
         if (auto&& pFunctionCallStack = m_shader->GetUseStack()->FindFunction(entryPoint)) {
             for (auto&& pUnit : m_shader->GetAnalyzedTree()->pLexicalTree->lexicalTree) {
                 if (auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit)) {
@@ -99,13 +111,6 @@ namespace SR_SRSL_NS {
                     }
 
                     code += GenerateFunction(pFunction, 0) + "\n\n";
-                }
-                else if (auto&& pStructure = dynamic_cast<SRSLStructureStatement*>(pUnit)) {
-                    if (!pFunctionCallStack->IsStructUsed(pStructure->pName->token)) {
-                        continue;
-                    }
-
-                    code += GenerateStructure(pStructure, 0) + "\n\n";
                 }
             }
         }
@@ -137,7 +142,7 @@ namespace SR_SRSL_NS {
         }
 
         if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("VERTEX_INDEX")) {
-            preCode += GenerateTab(1) + "VERTEX_INDEX = gl_VertexIndex;\n";
+            preCode += GenerateTab(1) + "int VERTEX_INDEX = gl_VertexIndex;\n";
         }
 
         std::string postCode;
@@ -347,9 +352,9 @@ namespace SR_SRSL_NS {
                 }
             }
 
-            if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("VERTEX_INDEX")) {
-                code += SR_FORMAT("layout (location = {}) out int VERTEX_INDEX;\n", location);
-            }
+            //if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("VERTEX_INDEX")) {
+            //    code += SR_FORMAT("layout (location = {}) out int VERTEX_INDEX;\n", location);
+            //}
             ++location;
         }
 

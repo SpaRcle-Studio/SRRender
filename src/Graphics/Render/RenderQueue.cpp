@@ -218,7 +218,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            const bool invalidVBO = info.vbo == SR_ID_INVALID && info.pMesh->IsSupportVBO();
+            const bool invalidVBO = info.vbo == SR_INVALID_VBO && info.pMesh->IsSupportVBO();
             if (!info.shaderUseInfo.pShader || invalidVBO) SR_UNLIKELY_ATTRIBUTE {
                 pElement->state = QUEUE_STATE_ERROR;
                 ++pElement;

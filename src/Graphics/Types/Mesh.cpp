@@ -243,13 +243,15 @@ namespace SR_GTYPES_NS {
 
         if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
             m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
-            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            if (m_virtualUBO == SR_INVALID_UBO) SR_UNLIKELY_ATTRIBUTE {
                 m_hasErrors = true;
                 return;
             }
 
             m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
         }
+
+        SRAssert(m_virtualUBO != SR_INVALID_UBO);
 
         m_uboManager.BindUBO(m_virtualUBO);
 

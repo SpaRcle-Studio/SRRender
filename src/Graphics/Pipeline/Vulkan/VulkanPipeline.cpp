@@ -668,14 +668,14 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         SRAssert2(UBO != SR_ID_INVALID, "Invalid UBO ID!");
         Super::UpdateUBO(UBO, pData, size);
-        m_memory->GetUBO(UBO)->CopyToDevice(pData, size);
+        m_memory->GetUBO(UBO)->CopyToDevice(pData, size, true);
     }
 
     void VulkanPipeline::UpdateSSBO(uint32_t SSBO, void *pData, uint64_t size) {
         SR_TRACY_ZONE;
         SRAssert2(SSBO != SR_ID_INVALID, "Invalid SSBO ID!");
         Super::UpdateSSBO(SSBO, pData, size);
-        m_memory->GetSSBO(SSBO)->CopyToDevice(pData, size);
+        m_memory->GetSSBO(SSBO)->CopyToDevice(pData, size, true);
     }
 
     uint8_t VulkanPipeline::GetBuildIterationsCount() const noexcept {
