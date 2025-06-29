@@ -75,6 +75,7 @@
 #include "../src/Graphics/Types/Geometry/SkinnedMesh.cpp"
 #include "../src/Graphics/Types/Geometry/Sprite.cpp"
 
+#include "../src/Graphics/Types/ComputeShader.cpp"
 #include "../src/Graphics/Types/IRenderComponent.cpp"
 #include "../src/Graphics/Types/EditorGrid.cpp"
 #include "../src/Graphics/Types/Framebuffer.cpp"

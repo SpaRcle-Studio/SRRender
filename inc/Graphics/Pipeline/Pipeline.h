@@ -77,6 +77,12 @@ namespace SR_GRAPH_NS {
         /// Начало рендера в кадровый буфер или в SwapChain
         virtual bool BeginRender();
 
+        /// Начало вычислений в Compute Shader
+        virtual bool BeginCompute();
+
+        /// Конец вычислений в Compute Shader
+        virtual void EndCompute();
+
         /// Обязательно нужно вызвать после успешного вызова BeginRender
         virtual void EndRender();
 
@@ -84,6 +90,8 @@ namespace SR_GRAPH_NS {
         virtual void SetScissor(int32_t width = -1, int32_t height = -1) { ++m_state.operations; };
 
         virtual void SwitchWindow(const WindowPtr& pWindow);
+
+        virtual void WaitComputeIdle();
 
         /// ------------------------------------------ Работа с Overlay ------------------------------------------------
 
@@ -213,6 +221,10 @@ namespace SR_GRAPH_NS {
         /// Обычная отрисовка вершин
         virtual void Draw(uint32_t count);
 
+        /// -------------------------------------------- Вычисления ----------------------------------------------------
+
+        virtual void Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+
         /// --------------------------------------------- Биндинги -----------------------------------------------------
 
         virtual void UseShader(uint32_t shaderProgram);
@@ -238,6 +250,9 @@ namespace SR_GRAPH_NS {
         /// Обеспечивает обновление данных в шейдере
         virtual void UpdateSSBO(uint32_t SSBO, void* pData, uint64_t size);
 
+        /// Читает данные из SSBO в память
+        virtual void ReadSSBO(uint32_t SSBO, void* pData, uint64_t size);
+
         /// Привязываем к дескриптору юниформы. Работает не во всех API
         virtual void UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo);
 
@@ -260,6 +275,7 @@ namespace SR_GRAPH_NS {
 
         FrameBufferQueue m_fboQueue;
 
+        bool m_isComputeState = false;
         bool m_isRenderState = false;
         bool m_isCmdState = false;
         bool m_enableValidationLayers = false;

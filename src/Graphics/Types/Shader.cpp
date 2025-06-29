@@ -437,6 +437,8 @@ namespace SR_GRAPH_NS::Types {
 
         /// ------------------------------------------------------------------------------------------------------------
 
+        m_computeWorkGroupSize = pShader->GetComputeWorkGroupSize();
+
         if (auto&& pBlock = pShader->FindUniformBlock("BLOCK")) {
             for (auto&& field : pBlock->fields) {
                 m_uniformBlock.Append(field.name.GetHash(), field.size, field.alignedSize, !field.isPublic);
@@ -738,5 +740,13 @@ namespace SR_GRAPH_NS::Types {
 
     void Shader::ResetUBOToDefaults() {
         m_uniformBlock.ResetDefaultValues();
+    }
+
+    void Shader::Dispatch(uint32_t x, uint32_t y, uint32_t z) {
+        GetPipeline()->Dispatch(x, y, z);
+    }
+
+    void Shader::Dispatch() {
+        GetPipeline()->Dispatch(m_computeWorkGroupSize.x, m_computeWorkGroupSize.y, m_computeWorkGroupSize.z);
     }
 }

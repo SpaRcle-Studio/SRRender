@@ -98,6 +98,10 @@ namespace SR_GRAPH_NS {
         m_state.vertices += count;
     }
 
+    void Pipeline::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
+        ++m_state.operations;
+    }
+
     bool Pipeline::BeginCmdBuffer() {
         ++m_state.operations;
 
@@ -173,6 +177,13 @@ namespace SR_GRAPH_NS {
     }
 
     void Pipeline::UpdateSSBO(uint32_t SSBO, void *pData, uint64_t size) {
+        SRAssert(pData != nullptr && size > 0);
+        ++m_state.operations;
+        m_state.transferredMemory += size;
+        ++m_state.transferredCount;
+    }
+
+    void Pipeline::ReadSSBO(uint32_t SSBO, void *pData, uint64_t size) {
         SRAssert(pData != nullptr && size > 0);
         ++m_state.operations;
         m_state.transferredMemory += size;
@@ -495,5 +506,43 @@ namespace SR_GRAPH_NS {
 
     void Pipeline::ResetSubmitQueue() {
         ++m_state.operations;
+    }
+
+    bool Pipeline::BeginCompute() {
+        if (m_isCmdState) {
+            SRHalt("Pipeline::BeginCompute() : is cmd state now!");
+            return false;
+        }
+
+        if (m_isRenderState) {
+            SRHalt("Pipeline::BeginCompute() : is render state now!");
+            return false;
+        }
+
+        if (m_isComputeState) {
+            SRHalt("Pipeline::BeginCompute() : missing call \"EndCompute\"!");
+            return false;
+        }
+
+        m_bindedDescriptors.Fill(false);
+        m_state.descriptorSetId = SR_ID_INVALID;
+
+        m_isComputeState = true;
+        ++m_state.operations;
+
+        return true;
+    }
+
+    void Pipeline::EndCompute() {
+        if (!m_isComputeState) {
+            SRHalt("Pipeline::EndCompute() : missing call \"BeginCompute\"!");
+            return;
+        }
+        ++m_state.operations;
+        m_isComputeState = false;
+    }
+
+    void Pipeline::WaitComputeIdle() {
+        m_state.operations++;
     }
 }

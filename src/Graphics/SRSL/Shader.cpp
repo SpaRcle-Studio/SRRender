@@ -171,7 +171,7 @@ namespace SR_SRSL_NS {
     }
 
     SR_SRSL_NS::ShaderType SRSLShader::GetType() const {
-        return m_type;
+        return m_createInfo.shaderType;
     }
 
     Vertices::VertexType SRSLShader::GetVertexType() const {
@@ -208,7 +208,7 @@ namespace SR_SRSL_NS {
                 std::string& varValue = pVariable->pName->token;
 
                 if (varName == "ShaderType") {
-                    m_type = SR_UTILS_NS::EnumReflector::FromString<SR_SRSL_NS::ShaderType>(varValue);
+                    m_createInfo.shaderType = SR_UTILS_NS::EnumReflector::FromString<SR_SRSL_NS::ShaderType>(varValue);
                 }
                 else if (varName == "PolygonMode") {
                     m_createInfo.polygonMode = SR_UTILS_NS::EnumReflector::FromString<PolygonMode>(varValue);
@@ -538,6 +538,30 @@ namespace SR_SRSL_NS {
             auto&& pFunction = m_analyzedTree->pLexicalTree->FindFunction(entryPoint);
             if (!pFunction) {
                 continue;
+            }
+
+            if (stage == ShaderStage::Compute) {
+                if (auto&& pComputeDecorator = pFunction->pDecorators->Find("THREADS")) {
+                    if (pComputeDecorator->args.size() != 3) {
+                        SR_ERROR("SRSLShader::PrepareStages() : compute shader must have 3 args! Shader: {}", m_path);
+                        return false;
+                    }
+
+                    m_computeWorkGroupSize = SR_MATH_NS::UVector3(
+                        SR_UTILS_NS::LexicalCast<uint32_t>(pComputeDecorator->args[0]->token),
+                        SR_UTILS_NS::LexicalCast<uint32_t>(pComputeDecorator->args[1]->token),
+                        SR_UTILS_NS::LexicalCast<uint32_t>(pComputeDecorator->args[2]->token)
+                    );
+
+                    if (m_computeWorkGroupSize.HasZero()) {
+                        SR_ERROR("SRSLShader::PrepareStages() : compute shader work group size must not be zero! Shader: {}", m_path);
+                        return false;
+                    }
+                }
+                else {
+                    SR_ERROR("SRSLShader::PrepareStages() : compute shader must have 'THREADS' decorator!");
+                    return false;
+                }
             }
 
             m_createInfo.stages[stage].path = m_path.ToString() + "/shader." + SR_SRSL_STAGE_EXTENSIONS.at(stage);

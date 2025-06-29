@@ -103,15 +103,13 @@ namespace SR_GRAPH_NS {
         else if (pShader->GetSamplersCount() > 0) {
             m_allocationTypesCache.emplace_back(DescriptorType::CombinedImage);
         }
+        else if (pShader->HasSSBOBindings()) {
+            m_allocationTypesCache.emplace_back(DescriptorType::Storage);
+        }
 
         if (pShader->HasSharedUBO()) {
             m_allocationTypesCache.emplace_back(DescriptorType::Uniform);
         }
-
-        /// TODO: Implement storage buffer support
-        /// if (pShader->GetStorageBuffersCount() > 0) {
-        ///     m_allocationTypesCache.emplace_back(DescriptorType::Storage);
-        /// }
 
         if (m_allocationTypesCache.empty()) SR_UNLIKELY_ATTRIBUTE {
             return SR_ID_INVALID;

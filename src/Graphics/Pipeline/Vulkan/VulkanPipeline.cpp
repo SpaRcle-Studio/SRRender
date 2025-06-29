@@ -300,7 +300,7 @@ namespace SR_GRAPH_NS {
     int32_t VulkanPipeline::AllocDescriptorSet(const std::vector<DescriptorType>& types) {
         SR_TRACY_ZONE;
 
-        if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_isComputeState && (!m_isRenderState || m_state.buildIteration > 0)) SR_UNLIKELY_ATTRIBUTE {
             PipelineError("VulkanPipeline::AllocDescriptorSet() : render state isn't active or isn't in first build iteration!");
             SRHaltOnce0();
             return SR_ID_INVALID;
@@ -410,7 +410,7 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
         ++m_state.allocations;
 
-        if (fbo < 0) {
+        if (fbo < 0 && createInfo.shaderType != SR_SRSL_NS::ShaderType::Compute) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("VulkanPipeline::AllocateShaderProgram() : vulkan requires valid FBO for shaders!");
             return SR_ID_INVALID;
         }
@@ -426,7 +426,7 @@ namespace SR_GRAPH_NS {
         }
 
         EvoVulkan::Types::RenderPass renderPass = m_kernel->GetRenderPass();
-        if (fbo != 0) {
+        if (fbo > 0) {
             renderPass = m_memory->GetFBO(fbo - 1)->GetRenderPass();
         }
 
@@ -485,44 +485,58 @@ namespace SR_GRAPH_NS {
 
         EVK_POP_LOG_LEVEL();
 
-        auto&& vkVertexDescriptions = VulkanTools::AbstractVertexDescriptionsToVk(createInfo.vertexDescriptions);
-        auto&& vkVertexAttributes = VulkanTools::AbstractAttributesToVkAttributes(createInfo.vertexAttributes);
-        if (vkVertexAttributes.size() != createInfo.vertexAttributes.size()) {
-            PipelineError("VulkanPipeline::LinkShader() : vkVertexDescriptions size != vertexDescriptions size!");
-            FreeShader(&shaderProgram);
-            return SR_ID_INVALID;
-        }
+        if (createInfo.shaderType == SR_SRSL_NS::ShaderType::Compute) {
+            EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
 
-        if (!pShaderProgram->SetVertexDescriptions(vkVertexDescriptions, vkVertexAttributes)) {
-            PipelineError("VulkanPipeline::LinkShader() : failed to set vertex descriptions!");
-            FreeShader(&shaderProgram);
-            return SR_ID_INVALID;
-        }
+            if (!pShaderProgram->CompileCompute()) {
+                EVK_POP_LOG_LEVEL();
+                PipelineError("VulkanPipeline::LinkShader() : failed to compile Evo Vulkan compute shader!");
+                FreeShader(&shaderProgram);
+                return SR_ID_INVALID;
+            }
 
-        const CullMode cullMode = createInfo.cullMode;
-        const uint8_t sampleCount = GetFrameBufferSampleCount();
-        const VkSampleCountFlagBits vkSampleCount = EvoVulkan::Tools::Convert::IntToSampleCount(sampleCount);
-        const bool depthEnabled = m_currentVkFrameBuffer ? m_currentVkFrameBuffer->IsDepthEnabled() : true; /// NOLINT
-
-        EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
-
-        if (!pShaderProgram->Compile(
-            VulkanTools::AbstractPolygonModeToVk(createInfo.polygonMode),
-            VulkanTools::AbstractCullModeToVk(cullMode),
-            VulkanTools::AbstractDepthOpToVk(createInfo.depthCompare),
-            createInfo.blendEnabled && depthEnabled,
-            createInfo.depthWrite,
-            createInfo.depthTest,
-            VulkanTools::AbstractPrimitiveTopologyToVk(createInfo.primitiveTopology),
-            vkSampleCount
-        )) {
             EVK_POP_LOG_LEVEL();
-            PipelineError("VulkanPipeline::LinkShader() : failed to compile Evo Vulkan shader!");
-            FreeShader(&shaderProgram);
-            return SR_ID_INVALID;
         }
+        else {
+            auto&& vkVertexDescriptions = VulkanTools::AbstractVertexDescriptionsToVk(createInfo.vertexDescriptions);
+            auto&& vkVertexAttributes = VulkanTools::AbstractAttributesToVkAttributes(createInfo.vertexAttributes);
+            if (vkVertexAttributes.size() != createInfo.vertexAttributes.size()) {
+                PipelineError("VulkanPipeline::LinkShader() : vkVertexDescriptions size != vertexDescriptions size!");
+                FreeShader(&shaderProgram);
+                return SR_ID_INVALID;
+            }
 
-        EVK_POP_LOG_LEVEL();
+            if (!pShaderProgram->SetVertexDescriptions(vkVertexDescriptions, vkVertexAttributes)) {
+                PipelineError("VulkanPipeline::LinkShader() : failed to set vertex descriptions!");
+                FreeShader(&shaderProgram);
+                return SR_ID_INVALID;
+            }
+
+            const CullMode cullMode = createInfo.cullMode;
+            const uint8_t sampleCount = GetFrameBufferSampleCount();
+            const VkSampleCountFlagBits vkSampleCount = EvoVulkan::Tools::Convert::IntToSampleCount(sampleCount);
+            const bool depthEnabled = m_currentVkFrameBuffer ? m_currentVkFrameBuffer->IsDepthEnabled() : true; /// NOLINT
+
+            EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
+
+            if (!pShaderProgram->Compile(
+                VulkanTools::AbstractPolygonModeToVk(createInfo.polygonMode),
+                VulkanTools::AbstractCullModeToVk(cullMode),
+                VulkanTools::AbstractDepthOpToVk(createInfo.depthCompare),
+                createInfo.blendEnabled && depthEnabled,
+                createInfo.depthWrite,
+                createInfo.depthTest,
+                VulkanTools::AbstractPrimitiveTopologyToVk(createInfo.primitiveTopology),
+                vkSampleCount
+            )) {
+                EVK_POP_LOG_LEVEL();
+                PipelineError("VulkanPipeline::LinkShader() : failed to compile Evo Vulkan shader!");
+                FreeShader(&shaderProgram);
+                return SR_ID_INVALID;
+            }
+
+            EVK_POP_LOG_LEVEL();
+        }
 
         return shaderProgram;
     }
@@ -614,7 +628,7 @@ namespace SR_GRAPH_NS {
 
         Super::UpdateDescriptorSets(descriptorSet, updateInfo);
 
-        if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_isComputeState && (!m_isRenderState || m_state.buildIteration > 0)) SR_UNLIKELY_ATTRIBUTE {
             PipelineError("VulkanPipeline::UpdateDescriptorSets() : render state isn't active or not in first build iteration!");
             SRHaltOnce0();
             return;
@@ -676,6 +690,13 @@ namespace SR_GRAPH_NS {
         SRAssert2(SSBO != SR_ID_INVALID, "Invalid SSBO ID!");
         Super::UpdateSSBO(SSBO, pData, size);
         m_memory->GetSSBO(SSBO)->CopyToDevice(pData, size, true);
+    }
+
+    void VulkanPipeline::ReadSSBO(uint32_t SSBO, void* pData, uint64_t size) {
+        SR_TRACY_ZONE;
+        SRAssert2(SSBO != SR_ID_INVALID, "Invalid SSBO ID!");
+        Super::ReadSSBO(SSBO, pData, size);
+        m_memory->GetSSBO(SSBO)->CopyFromDevice(pData, size);
     }
 
     uint8_t VulkanPipeline::GetBuildIterationsCount() const noexcept {
@@ -948,6 +969,11 @@ namespace SR_GRAPH_NS {
     #endif
 
         return Super::PostInit();
+    }
+
+    void VulkanPipeline::WaitComputeIdle() {
+        SR_TRACY_ZONE;
+        m_kernel->WaitComputeIdle();
     }
 
     bool VulkanPipeline::BeginCmdBuffer() {
@@ -1481,7 +1507,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        SRAssert2(m_isRenderState, "Render state isn't active!");
+        SRAssert2(m_isComputeState || m_isRenderState, "Render or compute state must be active to bind descriptor set!");
 
         m_currentDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
 
@@ -1498,7 +1524,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_isComputeState && (!m_isRenderState || m_state.buildIteration > 0)) SR_UNLIKELY_ATTRIBUTE {
             PipelineError("VulkanPipeline::BindAttachment() : render state isn't active or not in first build iteration!");
             SRHaltOnce0();
             return;
@@ -1863,5 +1889,57 @@ namespace SR_GRAPH_NS {
         m_kernel->GetWaitSemaphores().emplace_back(m_kernel->GetPresentCompleteSemaphore());
 
         Super::ResetSubmitQueue();
+    }
+
+    void VulkanPipeline::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
+        SR_TRACY_ZONE;
+
+        if (!m_currentCmd) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::Dispatch() : cmd buffer is nullptr!");
+            return;
+        }
+
+        if (!m_currentVkShader) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::Dispatch() : current shader is nullptr!");
+            return;
+        }
+
+        if (!m_state.pShader) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::Dispatch() : shader program is nullptr!");
+            return;
+        }
+
+        if (m_state.pShader->GetType() != SR_SRSL_NS::ShaderType::Compute) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::Dispatch() : current shader is not a compute shader!");
+            return;
+        }
+
+        Super::Dispatch(groupCountX, groupCountY, groupCountZ);
+
+        if (m_currentDescriptorSet) {
+            vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
+        }
+
+        vkCmdDispatch(m_currentCmd, groupCountX, groupCountY, groupCountZ);
+    }
+
+    bool VulkanPipeline::BeginCompute() {
+        if (!Super::BeginCompute()) {
+            return false;
+        }
+
+        m_lastVkShader = nullptr;
+        m_isShaderChanged = true;
+
+        m_currentCmd = m_kernel->GetComputeCmdBuffers()[0];
+        vkBeginCommandBuffer(m_currentCmd, &m_cmdBufInfo);
+
+        return true;
+    }
+
+    void VulkanPipeline::EndCompute() {
+        Super::EndCompute();
+
+        vkEndCommandBuffer(m_currentCmd);
     }
 }

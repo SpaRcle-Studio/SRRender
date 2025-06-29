@@ -223,15 +223,29 @@ namespace SR_SRSL_NS {
             return std::optional<std::string>();
         }
 
-        /*
-        *in uvec3 gl_NumWorkGroups;
-        in uvec3 gl_WorkGroupID;
-        in uvec3 gl_LocalInvocationID;
-        in uvec3 gl_GlobalInvocationID;
-        in uint  gl_LocalInvocationIndex;
-        */
+        std::string preCode;
 
-        auto&& code = GenerateStage(ShaderStage::Compute, std::string());
+        if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("GLOBAL_INVOCATION_ID")) {
+            preCode += GenerateTab(1) + "uvec3 GLOBAL_INVOCATION_ID = gl_GlobalInvocationID;\n";
+        }
+
+        if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("WORK_GROUP_ID")) {
+            preCode += GenerateTab(1) + "uvec3 WORK_GROUP_ID = gl_WorkGroupID;\n";
+        }
+
+        if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("NUM_WORK_GROUPS")) {
+            preCode += GenerateTab(1) + "uvec3 NUM_WORK_GROUPS = gl_NumWorkGroups;\n";
+        }
+
+        if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("LOCAL_INVOCATION_ID")) {
+            preCode += GenerateTab(1) + "uvec3 LOCAL_INVOCATION_ID = gl_LocalInvocationID;\n";
+        }
+
+        if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("LOCAL_INVOCATION_INDEX")) {
+            preCode += GenerateTab(1) + "uint LOCAL_INVOCATION_INDEX = gl_LocalInvocationIndex;\n";
+        }
+
+        auto&& code = GenerateStage(ShaderStage::Compute, preCode);
         code += GenerateFunction(pStageFunction, 0);
 
         return code;
