@@ -201,4 +201,15 @@ namespace SR_SRSL_NS {
         SR_SAFE_DELETE_PTR(pName);
         SR_SAFE_DELETE_PTR(pLexicalTree);
     }
+
+    bool SRSLStructureStatement::HasDynamicArray() const {
+        for (auto&& pUnit : pLexicalTree->lexicalTree) {
+            if (auto&& pVar = dynamic_cast<SRSLVariable*>(pUnit)) {
+                if (pVar->pName && pVar->pName->isArray && pVar->pName->args.size() == 1) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

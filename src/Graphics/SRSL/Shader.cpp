@@ -253,10 +253,7 @@ namespace SR_SRSL_NS {
                 continue;
             }
 
-            /// не добавляем в блок переменные, которые объявили и не используем
-            if (!m_useStack->IsVariableUsedInEntryPoints(pVariable->GetName())) {
-                continue;
-            }
+            bool isUsed = m_useStack->IsVariableUsedInEntryPoints(pVariable->GetName());
 
             if (auto&& pDecorator = pVariable->pDecorators->Find("ssbo")) {
                 SRSLUniformBlock::Field field;
@@ -297,8 +294,15 @@ namespace SR_SRSL_NS {
 
                 uniformBlock.fields.emplace_back(field);
                 uniformBlock.stages.insert(usedStages.begin(), usedStages.end());
+                uniformBlock.hasUsage |= isUsed;
             }
-            else if ((pDecorator = pVariable->pDecorators->Find("shared"))) {
+
+            /// не добавляем в блок переменные, которые объявили и не используем
+            if (!isUsed) {
+                continue;
+            }
+
+            if (auto&& pDecorator = pVariable->pDecorators->Find("shared")) {
                 SR_UTILS_NS::StringAtom vaeName = pVariable->pName->ToString(0);
 
                 if (std::find_if(m_shared.begin(), m_shared.end(), [vaeName](const auto& pair) -> bool {
@@ -337,17 +341,24 @@ namespace SR_SRSL_NS {
                 if (pVariable->pDecorators->Find("const")) {
                     m_pushConstants.fields.emplace_back(field);
                     m_pushConstants.stages.insert(usedStages.begin(), usedStages.end());
+                    m_pushConstants.hasUsage = true;
                 }
                 else {
                     auto&& uniformBlock = m_uniformBlocks[blockName];
                     uniformBlock.fields.emplace_back(field);
                     uniformBlock.stages.insert(usedStages.begin(), usedStages.end());
+                    uniformBlock.hasUsage = true;
                 }
             }
             else if ((pDecorator = pVariable->pDecorators->Find("const"))) {
                 m_constants[pVariable->pName->ToString(0)] = pVariable;
             }
         }
+
+        /// remove unused ssbo blocks
+        std::erase_if(m_ssboBlocks, [this](const auto& pair) -> bool {
+            return !pair.second.hasUsage;
+        });
 
         /// sort by type size from less to more
         std::sort(m_shared.begin(), m_shared.end(), [this](const auto& a, const auto& b) -> bool {
@@ -407,9 +418,9 @@ namespace SR_SRSL_NS {
             block.Align(m_analyzedTree);
         }
 
-        for (auto&& [name, block] : m_ssboBlocks) {
-            block.Align(m_analyzedTree);
-        }
+        /// for (auto&& [name, block] : m_ssboBlocks) {
+        ///     block.Align(m_analyzedTree);
+        /// }
 
         m_pushConstants.Align(m_analyzedTree);
 
@@ -787,5 +798,16 @@ namespace SR_SRSL_NS {
         else {
             SR_WARN("SRSLShader::ClearShadersCache() : cache is already clean!");
         }
+    }
+
+    const SRSLStructureStatement* SRSLShader::FindStructure(const Utils::StringAtom &name) const {
+        for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
+            if (auto&& pStructure = dynamic_cast<SRSLStructureStatement*>(pUnit)) {
+                if (pStructure->pName->token == name) {
+                    return pStructure;
+                }
+            }
+        }
+        return nullptr;
     }
 }

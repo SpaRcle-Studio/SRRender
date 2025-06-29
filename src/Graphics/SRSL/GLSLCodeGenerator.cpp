@@ -92,7 +92,12 @@ namespace SR_SRSL_NS {
                         continue;
                     }
 
-                    code += GenerateStructure(pStructure, 0) + "\n\n";
+                    std::string structureCode = GenerateStructure(pStructure, 0);
+                    if (structureCode.empty()) {
+                        continue;
+                    }
+
+                    code += structureCode + "\n\n";
                 }
             }
         }
@@ -437,6 +442,10 @@ namespace SR_SRSL_NS {
     }
 
     std::string GLSLCodeGenerator::GenerateStructure(SRSLStructureStatement* pStructure, int32_t deep) const {
+        if (pStructure->HasDynamicArray()) {
+            return std::string();
+        }
+
         std::string code;
 
         code += GenerateTab(deep);
@@ -488,7 +497,10 @@ namespace SR_SRSL_NS {
             code += ")";
         }
         else if (pExpr->isArray) {
-            if (pExpr->args.size() != 2) {
+            if (pExpr->args.size() == 1) {
+                code += GenerateExpression(pExpr->args[0], 0) + "[]";
+            }
+            else if (pExpr->args.size() != 2) {
                 SRHalt("GLSLCodeGenerator::GenerateExpression() : invalid array expression! "
                     "\n\tShader: {}", m_shader->GetPath());
             }
@@ -599,6 +611,40 @@ namespace SR_SRSL_NS {
         return std::string(deep * 4, ' ');
     }
 
+    void GLSLCodeGenerator::GenerateSSBOBlock(std::string& code, SR_UTILS_NS::StringAtom name, const SRSLUniformBlock& uniformBlock, const SRSLUseStack::Ptr& pFunction) const {
+        std::string accessMode = uniformBlock.isReadOnly ? (uniformBlock.isReadOnly.value() ? " readonly" : " writeonly") : std::string();
+
+        std::string modifiers = "{}{}{}{}"_format(
+            accessMode,
+            uniformBlock.isCoherent ? " coherent" : std::string(),
+            uniformBlock.isVolatile ? " volatile" : std::string(),
+            uniformBlock.isRestrict ? " restrict" : std::string()
+        );
+
+        std::string blockCode = SR_SPRINTF("layout (set = 0, binding = %d)%s buffer StorageBuffer_%s {\n", uniformBlock.binding, modifiers.c_str(), name.c_str());
+
+        for (auto&& field : uniformBlock.fields) {
+            auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));
+            auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
+
+            std::string strDimension;
+
+            for (auto&& dim : dimension) {
+                if (dim == 0) {
+                    strDimension += "[]";
+                }
+                else {
+                    strDimension += "[" +  std::to_string(dim) + "]";
+                }
+            }
+
+            blockCode += SR_FORMAT("\t{} {}{};\n", typeName.c_str(), field.name.c_str(), strDimension.c_str());
+        }
+
+        blockCode += "};\n";
+        code += blockCode;
+    }
+
     std::string GLSLCodeGenerator::GenerateUniforms(ShaderStage stage) const {
         std::string code;
 
@@ -639,44 +685,7 @@ namespace SR_SRSL_NS {
         }
 
         for (auto&& [name, uniformBlock] : m_shader->GetSSBOBlocks()) {
-            std::string accessMode = uniformBlock.isReadOnly ? (uniformBlock.isReadOnly.value() ? " readonly" : " writeonly") : std::string();
-
-            std::string modifiers = "{}{}{}{}"_format(
-                accessMode,
-                uniformBlock.isCoherent ? " coherent" : std::string(),
-                uniformBlock.isVolatile ? " volatile" : std::string(),
-                uniformBlock.isRestrict ? " restrict" : std::string()
-            );
-
-
-            std::string blockCode = SR_SPRINTF("layout (set = 0, binding = %d)%s buffer StorageBuffer_%s {\n", uniformBlock.binding, modifiers.c_str(), name.c_str());
-            bool hasUsage = false;
-
-            for (auto&& field : uniformBlock.fields) {
-                hasUsage |= pFunction->IsVariableUsed(field.name);
-
-                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));
-                auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
-
-                std::string strDimension;
-
-                for (auto&& dim : dimension) {
-                    if (dim == 0) {
-                        strDimension += "[]";
-                    }
-                    else {
-                        strDimension += "[" +  std::to_string(dim) + "]";
-                    }
-                }
-
-                blockCode += SR_FORMAT("\t{} {}{};\n", typeName.c_str(), field.name.c_str(), strDimension.c_str());
-            }
-
-            blockCode += "};\n";
-
-            if (hasUsage) {
-                uniformsCode += blockCode;
-            }
+            GenerateSSBOBlock(uniformsCode, name, uniformBlock, pFunction);
         }
 
         /// ------------------------------------------------------------------------------------------------------------

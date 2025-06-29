@@ -244,6 +244,9 @@ namespace SR_GRAPH_NS {
         /// Shader Storage Buffer Object - обеспечивает привязку для передачм данных в шейдеры
         virtual void BindSSBO(uint32_t SSBO);
 
+        virtual bool MapSSBO(uint32_t SSBO, void** ppData) { return false; }
+        virtual void UnMapSSBO(uint32_t SSBO) {}
+
         /// Обеспечивает обновление данных в шейдере
         virtual void UpdateUBO(uint32_t UBO, void* pData, uint64_t size);
 

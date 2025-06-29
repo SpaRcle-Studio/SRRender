@@ -46,6 +46,8 @@ namespace SR_SRSL_NS {
         uint64_t size = 0;
         uint64_t binding = 0;
 
+        bool hasUsage = false;
+
         std::vector<Field> fields;
         std::set<ShaderStage> stages;
     };
@@ -71,6 +73,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD bool IsCacheActual() const;
         SR_NODISCARD bool IsCacheActual(ShaderLanguage shaderLanguage) const;
 
+        SR_NODISCARD const SRSLStructureStatement* FindStructure(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD const SRSLUniformBlock* FindUniformBlock(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD const SRSLUniformBlock::Field* FindField(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD Vertices::VertexType GetVertexType() const;

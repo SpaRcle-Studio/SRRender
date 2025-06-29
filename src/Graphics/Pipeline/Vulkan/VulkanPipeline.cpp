@@ -1942,4 +1942,27 @@ namespace SR_GRAPH_NS {
 
         vkEndCommandBuffer(m_currentCmd);
     }
+
+    bool VulkanPipeline::MapSSBO(uint32_t SSBO, void **ppData) {
+        SR_TRACY_ZONE;
+
+        if (!ppData) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("VulkanPipeline::MapSSBO() : ppData is nullptr!");
+            return false;
+        }
+
+        if (SSBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("VulkanPipeline::MapSSBO() : invalid SSBO ID!");
+            return false;
+        }
+
+        *ppData = m_memory->GetSSBO(SSBO)->MapData();
+        return true;
+    }
+
+    void VulkanPipeline::UnMapSSBO(uint32_t SSBO) {
+        SR_TRACY_ZONE;
+        SRAssert2(SSBO != SR_ID_INVALID, "Invalid SSBO ID!");
+        m_memory->GetSSBO(SSBO)->Unmap();
+    }
 }
