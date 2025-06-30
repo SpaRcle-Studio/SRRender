@@ -359,11 +359,13 @@ namespace SR_SRSL_NS {
         switch (lexemKind)
         {
             case LexemKind::OpeningCurlyBracket:
-                if (auto&& pPrev = GetLexem(-1); pPrev->kind == LexemKind::Assign) {
-                    exprLexems.emplace_back(m_lexems[m_currentLexem]);
-                    ++m_currentLexem;
-                    ++deep;
-                    goto retry;
+                if (auto&& pPrev = GetLexem(-1)) {
+                    if (pPrev->kind == LexemKind::Assign || pPrev->kind == LexemKind::OpeningCurlyBracket || pPrev->kind == LexemKind::Comma) {
+                        exprLexems.emplace_back(m_lexems[m_currentLexem]);
+                        ++m_currentLexem;
+                        ++deep;
+                        goto retry;
+                    }
                 }
                 break;
             case LexemKind::OpeningBracket:

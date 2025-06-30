@@ -31,6 +31,17 @@ namespace SR_SRSL_NS {
         return std::string();
     }
 
+    std::string SRSLExpr::GetAsName() {
+        if (!isArray) {
+            return token;
+        }
+
+        if (args.size() >= 1) {
+            return args[0]->GetAsName();
+        }
+        return std::string();
+    }
+
     std::string SRSLDecorator::ToString(uint32_t deep) const {
         std::string code = "[" + name;
 
@@ -136,11 +147,11 @@ namespace SR_SRSL_NS {
     }
 
     std::string SRSLVariable::GetName() const {
-        if (pName) {
-            return pName->token;
+        if (!pName) {
+            return std::string();
         }
 
-        return std::string();
+        return pName->GetAsName();
     }
 
     std::string SRSLFunction::ToString(uint32_t deep) const {

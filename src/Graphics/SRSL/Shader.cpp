@@ -351,7 +351,7 @@ namespace SR_SRSL_NS {
                 }
             }
             else if ((pDecorator = pVariable->pDecorators->Find("const"))) {
-                m_constants[pVariable->pName->ToString(0)] = pVariable;
+                m_constants[pVariable->pName->GetAsName()] = pVariable;
             }
         }
 

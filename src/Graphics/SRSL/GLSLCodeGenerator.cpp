@@ -250,8 +250,8 @@ namespace SR_SRSL_NS {
             preCode += GenerateTab(1) + "uint LOCAL_INVOCATION_INDEX = gl_LocalInvocationIndex;\n";
         }
 
-        auto&& code = GenerateStage(ShaderStage::Compute, preCode);
-        code += GenerateFunction(pStageFunction, 0);
+        auto&& code = GenerateStage(ShaderStage::Compute);
+        code += GenerateFunction(pStageFunction, 0, preCode, std::string());
 
         return code;
     }
@@ -269,7 +269,7 @@ namespace SR_SRSL_NS {
         for (auto&& [name, pVariable] : m_shader->GetConstants()) {
             if (pFunction->IsVariableUsed(name)) {
                 auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
-                code += SR_FORMAT("const {} {} = {};\n", type.c_str(), name.c_str(), GenerateExpression(pVariable->pExpr, 0).c_str());
+                code += SR_FORMAT("const {} {} = {};\n\n", type.c_str(), pVariable->pName->ToString(0), GenerateExpression(pVariable->pExpr, 0).c_str());
             }
         }
 

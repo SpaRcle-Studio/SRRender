@@ -170,6 +170,12 @@ namespace SR_SRSL_NS {
                 ++m_currentLexem;
                 goto retrySubExpr;
             }
+            else if (pLexem && pLexem->kind == LexemKind::Identifier && pLexem->value.starts_with('x')) {
+                if (pBasicExpr->token == "0") {
+                    pBasicExpr->token += pLexem->value;
+                    ++m_currentLexem;
+                }
+            }
 
             return pBasicExpr;
         }
@@ -179,14 +185,14 @@ namespace SR_SRSL_NS {
 
             if (!InBounds()) {
                 SR_SAFE_DELETE_PTR(pExpr);
-                m_result = SRSLResult(SRSLReturnCode::InvalidComplexExpression);
+                m_result = SRSLResult(SRSLReturnCode::InvalidComplexExpression, GetCurrentLexem());
                 return nullptr;
             }
 
             std::string parsedToken = ParseToken();
             if (parsedToken != ")") {
                 SR_SAFE_DELETE_PTR(pExpr);
-                m_result = SRSLResult(SRSLReturnCode::InvalidComplexExpression);
+                m_result = SRSLResult(SRSLReturnCode::InvalidComplexExpression, GetCurrentLexem());
                 return nullptr;
             }
 
@@ -414,6 +420,12 @@ namespace SR_SRSL_NS {
                     break;
                 }
             }
+        }
+
+        if (!GetCurrentLexem()) {
+            m_result = SRSLResult(SRSLReturnCode::EmptyToken);
+            SRHalt("SRSLMathExpression::ParseToken() : GetCurrentLexem() is nullptr!");
+            return std::string();
         }
 
         switch (GetCurrentLexem()->kind) {
