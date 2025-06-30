@@ -204,6 +204,8 @@ namespace SR_SRSL_NS {
             auto&& pListExpr = new SRSLExpr(std::move(token));
 
         labelNextArrayElem:
+            int64_t currentLexemStash = m_currentLexem;
+
             token = ParseToken();
 
             if (token.empty()) {
@@ -220,7 +222,7 @@ namespace SR_SRSL_NS {
                 return pListExpr;
             }
 
-            --m_currentLexem;
+            m_currentLexem = currentLexemStash;
 
             if (auto&& pListElemExpr = ParseBinaryExpression(0)) {
                 pListExpr->args.emplace_back(pListElemExpr);

@@ -35,7 +35,7 @@ namespace SR_SRSL_NS {
         auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
 
         if (!absPath.Exists()) {
-            SR_ERROR("SRSLShader::Load() : file not exists!\n\tPath: " + path.ToString());
+            SR_ERROR("SRSLShader::Load() : file not exists!\n\tPath: " + absPath.ToString());
             return nullptr;
         }
 

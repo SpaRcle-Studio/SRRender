@@ -8,6 +8,8 @@
 
 namespace SR_GTYPES_NS {
     void ProceduralMesh::SetVertices(const std::vector<Vertices::StaticMeshVertex>& vertices) {
+        SR_TRACY_ZONE;
+
         SRAssert(!m_useSSBOInsteadOfVertices);
 
         m_indices.clear();
