@@ -234,7 +234,12 @@ namespace SR_SRSL_NS {
     }
 
     SRSLFunction *SRSLRefAnalyzer::FindFunction(SRSLLexicalTree* pTree, const std::string &name) const {
-        for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
+        if (!pTree) {
+            SRHalt("SRSLRefAnalyzer::FindFunction() : pTree is nullptr!");
+            return nullptr;
+        }
+
+        for (auto&& pUnit : pTree->lexicalTree) {
             if (auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit)) {
                 if (pFunction->pName->token == name) {
                     return pFunction;
@@ -242,7 +247,7 @@ namespace SR_SRSL_NS {
             }
             else if (auto&& pSubTree = dynamic_cast<SRSLLexicalTree*>(pUnit)) {
                 if (pSubTree == pTree) {
-                    SRHalt0();
+                    SRHalt("SRSLRefAnalyzer::FindFunction() : pSubTree is equal to pTree! This is a bug!");
                     return nullptr;
                 }
 

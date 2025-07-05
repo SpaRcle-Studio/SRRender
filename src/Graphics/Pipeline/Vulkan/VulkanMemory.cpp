@@ -369,6 +369,7 @@ namespace SR_GRAPH_NS::VulkanTools {
             VK_SHARING_MODE_EXCLUSIVE,
             static_cast<VkBufferCreateFlags>(0),
             /// TODO: я не уверен зачем это нужно
+            //VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
             VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
             nullptr
         );

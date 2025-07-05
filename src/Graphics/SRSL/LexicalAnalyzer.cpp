@@ -102,6 +102,13 @@ namespace SR_SRSL_NS {
                         break;
                     }
 
+                    if (GetCurrentLexem()->value == "while") {
+                        ++m_currentLexem;
+                        m_lexicalTree.back()->lexicalTree.emplace_back(new SRSLWhileStatement());
+                        m_states.emplace_back(LXAState::WhileStatement);
+                        break;
+                    }
+
                     if (GetCurrentLexem()->value == "struct") {
                         ++m_currentLexem;
 
@@ -223,6 +230,22 @@ namespace SR_SRSL_NS {
                     ++m_currentLexem;
                     return;
                 }
+                else if (!m_states.empty() && m_states.back() == LXAState::WhileStatement) {
+                    m_states.back() = LXAState::WhileStatementCondition;
+                    ++m_currentLexem;
+
+                    ProcessExpression(false, true);
+
+                    auto&& pWhileStatement = dynamic_cast<SRSLWhileStatement*>(m_lexicalTree.back()->lexicalTree.back());
+                    SRAssert(pWhileStatement && m_expr);
+
+                    pWhileStatement->pCondition = SR_UTILS_NS::Exchange(m_expr, nullptr);
+
+                    SRAssert(GetCurrentLexem() && GetCurrentLexem()->kind == LexemKind::ClosingBracket);
+                    ++m_currentLexem; /// )
+
+                    return;
+                }
                 else if (!m_states.empty() && m_states.back() == LXAState::Function) {
                     ++m_currentLexem;
                     m_states.back() = LXAState::FunctionArgs;
@@ -275,6 +298,11 @@ namespace SR_SRSL_NS {
                     ++m_currentLexem;
                     return;
                 }
+                else if (!m_states.empty() && m_states.back() == LXAState::WhileStatementCondition) {
+                    m_states.back() = LXAState::WhileStatementBody;
+                    ++m_currentLexem;
+                    return;
+                }
                 else if (!m_states.empty() && m_states.back() == LXAState::Function) {
                     m_states.back() = LXAState::FunctionBody;
                     ++m_currentLexem;
@@ -321,6 +349,11 @@ namespace SR_SRSL_NS {
                     m_states.pop_back();
                     auto&& pForStatement = dynamic_cast<SRSLForStatement*>(m_lexicalTree.back()->lexicalTree.back());
                     pForStatement->pLexicalTree = std::move(pLexicalTree);
+                }
+                else if (!m_states.empty() && m_states.back() == LXAState::WhileStatementBody) {
+                    m_states.pop_back();
+                    auto&& pWhileStatement = dynamic_cast<SRSLWhileStatement*>(m_lexicalTree.back()->lexicalTree.back());
+                    pWhileStatement->pLexicalTree = std::move(pLexicalTree);
                 }
                 else if (!m_states.empty() && m_states.back() == LXAState::StructureStatementBody) {
                     m_states.pop_back();

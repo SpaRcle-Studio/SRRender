@@ -124,8 +124,9 @@ namespace SR_GTYPES_NS {
             if (m_descriptorSet != SR_ID_INVALID) {
                 SR_GRAPH_NS::DescriptorManager::Instance().Bind(m_descriptorSet);
 
-                m_pShader->AttachDescriptorSets();
-                m_pShader->Dispatch();
+                if (m_pShader->AttachDescriptorSets()) {
+                    m_pShader->Dispatch();
+                }
             }
             else {
                 SR_ERROR("ComputeShader::Dispatch() : failed to allocate descriptor set!");

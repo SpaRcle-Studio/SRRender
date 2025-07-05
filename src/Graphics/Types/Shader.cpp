@@ -685,7 +685,7 @@ namespace SR_GRAPH_NS::Types {
         }
     }
 
-    void Shader::AttachDescriptorSets() {
+    bool Shader::AttachDescriptorSets() {
         SR_TRACY_ZONE;
 
         for (auto&& [hashName, samplerInfo] : m_samplers) {
@@ -699,7 +699,7 @@ namespace SR_GRAPH_NS::Types {
 
         auto&& descriptorSet = GetPipeline()->GetCurrentDescriptorSet();
         if (descriptorSet == SR_ID_INVALID) {
-            return;
+            return false;
         }
 
         auto&& ubo = GetPipeline()->GetCurrentUBO();
@@ -725,7 +725,7 @@ namespace SR_GRAPH_NS::Types {
         for (auto&& ssbo : m_ssboBindings) {
             if (ssbo.ssbo == SR_ID_INVALID) {
                 SR_ERROR("Shader::AttachDescriptorSets() : invalid \"{}\" SSBO!", ssbo.name.ToStringView());
-                continue;
+                return false;
             }
             SRDescriptorUpdateInfo updateInfo;
             updateInfo.binding = ssbo.binding;
@@ -736,6 +736,8 @@ namespace SR_GRAPH_NS::Types {
 
             ssbo.ssbo = SR_ID_INVALID;
         }
+
+        return true;
     }
 
     void Shader::ResetUBOToDefaults() {

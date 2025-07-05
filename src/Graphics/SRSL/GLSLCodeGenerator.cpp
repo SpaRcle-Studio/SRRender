@@ -536,6 +536,9 @@ namespace SR_SRSL_NS {
         else if (pExpr->args.size() == 2 && pExpr->token.empty()) { /// increment or decrement
             code += GenerateExpression(pExpr->args[0], 0) + GenerateExpression(pExpr->args[1], 0);
         }
+        else if (pExpr->args.size() == 2 && (pExpr->token == "==" || pExpr->token == "!=")) {
+            code += "((" + GenerateExpression(pExpr->args[0], 0) + ") " + pExpr->token + " (" +  GenerateExpression(pExpr->args[1], 0) + "))";
+        }
         else if (pExpr->args.size() == 2) {
             code += "(" + GenerateExpression(pExpr->args[0], 0) + " " + ReplaceToken(pExpr->token) + " " +  GenerateExpression(pExpr->args[1], 0) + ")";
         }
@@ -581,6 +584,9 @@ namespace SR_SRSL_NS {
             }
             else if (auto&& pForStatement = dynamic_cast<SRSLForStatement*>(pUnit)) {
                 code += GenerateForStatement(pForStatement, deep + 1);
+            }
+            else if (auto&& pWhileStatement = dynamic_cast<SRSLWhileStatement*>(pUnit)) {
+                code += GenerateWhileStatement(pWhileStatement, deep + 1);
             }
 
             if (i + 1 < pLexicalTree->lexicalTree.size()) {
@@ -831,6 +837,22 @@ namespace SR_SRSL_NS {
 
     std::optional<std::string> GLSLCodeGenerator::GenerateRayMissSecondaryStage() {
         return std::optional<std::string>();
+    }
+
+    std::string GLSLCodeGenerator::GenerateWhileStatement(SRSLWhileStatement* pWhileStatement, int32_t deep) const {
+        std::string code;
+
+        code += GenerateTab(deep) + "while (";
+
+        if (pWhileStatement->pCondition) {
+            code += GenerateExpression(pWhileStatement->pCondition, 0) + ") ";
+        }
+
+        if (pWhileStatement->pLexicalTree) {
+            code += GenerateLexicalTree(pWhileStatement->pLexicalTree, deep);
+        }
+
+        return code;
     }
 
     std::string GLSLCodeGenerator::GenerateForStatement(SRSLForStatement *pForStatement, int32_t deep) const {

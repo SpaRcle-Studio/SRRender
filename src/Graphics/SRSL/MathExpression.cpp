@@ -176,6 +176,12 @@ namespace SR_SRSL_NS {
                     ++m_currentLexem;
                 }
             }
+            else if (pLexem && pLexem->kind == LexemKind::Identifier && pLexem->value.starts_with('u')) {
+                if (SR_MATH_NS::IsNumber(pBasicExpr->token)) {
+                    pBasicExpr->token += pLexem->value;
+                    ++m_currentLexem;
+                }
+            }
 
             return pBasicExpr;
         }

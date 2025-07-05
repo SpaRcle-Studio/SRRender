@@ -223,4 +223,9 @@ namespace SR_SRSL_NS {
         }
         return false;
     }
+
+    SRSLWhileStatement::~SRSLWhileStatement() {
+        SR_SAFE_DELETE_PTR(pCondition);
+        SR_SAFE_DELETE_PTR(pLexicalTree);
+    }
 }
