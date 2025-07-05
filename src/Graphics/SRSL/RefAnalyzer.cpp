@@ -145,6 +145,9 @@ namespace SR_SRSL_NS {
             else if (auto&& pForStatement = dynamic_cast<SRSLForStatement*>(pUnit)) {
                 AnalyzeForStatement(pUseStack, stack, pForStatement);
             }
+            else if (auto&& pWhileStatement = dynamic_cast<SRSLWhileStatement*>(pUnit)) {
+                AnalyzeWhileStatement(pUseStack, stack, pWhileStatement);
+            }
             else if (auto&& pReturn = dynamic_cast<SRSLReturn*>(pUnit)) {
                 AnalyzeExpression(pUseStack, stack, pReturn->pExpr);
             }
@@ -276,6 +279,15 @@ namespace SR_SRSL_NS {
             SRHalt("EntryPoint function must have a body!");
         }
         stack.pop_back();
+    }
+
+    void SRSLRefAnalyzer::AnalyzeWhileStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLWhileStatement* pWhileStatement) {
+        if (pWhileStatement->pCondition) {
+            AnalyzeExpression(pUseStack, stack, pWhileStatement->pCondition);
+        }
+        if (pWhileStatement->pLexicalTree) {
+            pUseStack->Concat(AnalyzeTree(stack, pWhileStatement->pLexicalTree));
+        }
     }
 
     void SRSLRefAnalyzer::AnalyzeForStatement(SRSLUseStack::Ptr &pUseStack, std::list<std::string> &stack, SRSLForStatement *pForStatement) {

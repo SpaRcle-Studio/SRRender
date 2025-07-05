@@ -117,14 +117,21 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_pShader->Use() == SR_GRAPH_NS::ShaderBindResult::Success) {
+            m_virtualUBO = SR_GRAPH_NS::Memory::UBOManager::Instance().AllocateUBO(m_virtualUBO);
+
             if (m_descriptorSet == SR_ID_INVALID) {
                 m_descriptorSet = SR_GRAPH_NS::DescriptorManager::Instance().AllocateDescriptorSet(SR_ID_INVALID);
+            }
+
+            if (m_virtualUBO != SR_ID_INVALID) {
+                SR_GRAPH_NS::Memory::UBOManager::Instance().BindNoDublicateUBO(m_virtualUBO);
             }
 
             if (m_descriptorSet != SR_ID_INVALID) {
                 SR_GRAPH_NS::DescriptorManager::Instance().Bind(m_descriptorSet);
 
                 if (m_pShader->AttachDescriptorSets()) {
+                    m_pShader->FlushConstants();
                     m_pShader->Dispatch();
                 }
             }

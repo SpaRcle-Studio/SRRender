@@ -15,6 +15,9 @@ namespace SR_GTYPES_NS {
         m_indices.clear();
         m_vertices.clear();
 
+        m_vertices.reserve(vertices.size());
+        m_indices.reserve(vertices.size());
+
         m_countVertices = 0;
         m_countIndices = 0;
 
@@ -23,6 +26,41 @@ namespace SR_GTYPES_NS {
         std::unordered_map<Vertices::StaticMeshVertex, uint32_t> uniqueVertices;
 
         for (const auto& vertex : vertices) {
+            if (uniqueVertices.count(vertex) == 0) {
+                uniqueVertices[vertex] = static_cast<uint32_t>(m_vertices.size());
+                m_vertices.push_back(vertex);
+            }
+
+            m_indices.push_back(uniqueVertices[vertex]);
+        }
+
+        m_countVertices = m_vertices.size();
+        m_countIndices = m_indices.size();
+    }
+
+    void ProceduralMesh::SetVertices(const SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertex>& vertices) {
+        SR_TRACY_ZONE;
+
+        if (m_useSSBOInsteadOfVertices) {
+            SRHalt("ProceduralMesh::SetVertices() : cannot set vertices when using SSBO!");
+            return;
+        }
+
+        m_indices.clear();
+        m_vertices.clear();
+
+        m_vertices.reserve(vertices.size());
+        m_indices.reserve(vertices.size());
+
+        m_countVertices = 0;
+        m_countIndices = 0;
+
+        SetDirtyMesh();
+
+        std::unordered_map<Vertices::StaticMeshVertex, uint32_t> uniqueVertices;
+
+        for (uint32_t i = 0; i < vertices.size(); ++i) {
+            auto& vertex = vertices[i];
             if (uniqueVertices.count(vertex) == 0) {
                 uniqueVertices[vertex] = static_cast<uint32_t>(m_vertices.size());
                 m_vertices.push_back(vertex);

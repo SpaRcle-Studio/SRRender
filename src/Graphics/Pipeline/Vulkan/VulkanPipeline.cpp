@@ -272,8 +272,8 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateUBO(uint32_t uboSize) {
-        if (!m_isRenderState) SR_UNLIKELY_ATTRIBUTE {
-            PipelineError("VulkanPipeline::AllocateUBO() : render state isn't active!");
+        if (!m_isComputeState && !m_isRenderState) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::AllocateUBO() : render or compute state isn't active!");
             SRHaltOnce0();
             return SR_ID_INVALID;
         }
