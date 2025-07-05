@@ -41,8 +41,8 @@ namespace SR_GTYPES_NS {
         const uint32_t sizeBones = GetRawMesh()->GetOptimizedBones().size() * sizeof(SR_MATH_NS::Matrix4x4);
         const uint32_t sizeOffsets = GetRawMesh()->GetBoneOffsets().size() * sizeof(SR_MATH_NS::Matrix4x4);
 
-        m_ssboBones = GetPipeline()->AllocateSSBO(sizeBones, SSBOUsage::Write);
-        m_ssboOffsets = GetPipeline()->AllocateSSBO(sizeOffsets, SSBOUsage::Write);
+        m_ssboBones = GetPipeline()->AllocateSSBO(sizeBones, SSBOUsage::CPUToGPU);
+        m_ssboOffsets = GetPipeline()->AllocateSSBO(sizeOffsets, SSBOUsage::CPUToGPU);
 
         return IndexedMesh::Calculate();
     }

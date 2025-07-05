@@ -346,14 +346,35 @@ namespace SR_GRAPH_NS::VulkanTools {
         VmaMemoryUsage memoryUsage;
 
         switch (usage) {
-            case SSBOUsage::Read:
+            case SSBOUsage::CPUToGPU:
                 memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
                 break;
-            case SSBOUsage::Write:
+            case SSBOUsage::GPUToCPU:
                 memoryUsage = VMA_MEMORY_USAGE_GPU_TO_CPU;
                 break;
-            case SSBOUsage::ReadWrite:
+            case SSBOUsage::AutoPreferDevice:
                 memoryUsage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+                break;
+            case SSBOUsage::AutoPreferHost:
+                memoryUsage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+                break;
+            case SSBOUsage::Auto:
+                memoryUsage = VMA_MEMORY_USAGE_AUTO;
+                break;
+            case SSBOUsage::CPUCopy:
+                memoryUsage = VMA_MEMORY_USAGE_CPU_COPY;
+                break;;
+            case SSBOUsage::GPUOnly:
+                memoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
+                break;
+            case SSBOUsage::CPUOnly:
+                memoryUsage = VMA_MEMORY_USAGE_CPU_ONLY;
+                break;
+            case SSBOUsage::GPULazyAlloc:
+                memoryUsage = VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED;
+                break;
+            case SSBOUsage::Unknown:
+                memoryUsage = VMA_MEMORY_USAGE_UNKNOWN;
                 break;
             default:
                 SR_ERROR("MemoryManager::AllocateSSBO() : unknown usage!");

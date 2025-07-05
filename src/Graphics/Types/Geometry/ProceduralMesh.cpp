@@ -95,7 +95,7 @@ namespace SR_GTYPES_NS {
         if (m_useSSBOInsteadOfVertices) {
             if (oldSSBO == SR_ID_INVALID) {
                 SRAssert(m_ssbo == SR_ID_INVALID);
-                m_ssbo = GetPipeline()->AllocateSSBO(size, SSBOUsage::Write);
+                m_ssbo = GetPipeline()->AllocateSSBO(size, SSBOUsage::CPUToGPU);
                 m_ssboSize = size;
             }
             else {
