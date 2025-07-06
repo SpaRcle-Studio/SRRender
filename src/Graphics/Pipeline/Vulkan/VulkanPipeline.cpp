@@ -699,6 +699,13 @@ namespace SR_GRAPH_NS {
         m_memory->GetSSBO(SSBO)->CopyFromDevice(pData, size);
     }
 
+    void VulkanPipeline::FlushSSBO(uint32_t SSBO, uint64_t offset, uint64_t size) {
+        SR_TRACY_ZONE;
+        SRAssert2(SSBO != SR_ID_INVALID, "Invalid SSBO ID!");
+        Super::FlushSSBO(SSBO, offset, size);
+        m_memory->GetSSBO(SSBO)->Flush(offset, size);
+    }
+
     uint8_t VulkanPipeline::GetBuildIterationsCount() const noexcept {
         return m_kernel ? m_kernel->GetCountBuildIterations() : 0;
     }

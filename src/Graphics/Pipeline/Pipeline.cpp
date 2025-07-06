@@ -545,4 +545,8 @@ namespace SR_GRAPH_NS {
     void Pipeline::WaitComputeIdle() {
         m_state.operations++;
     }
+
+    void Pipeline::FlushSSBO(uint32_t SSBO, uint64_t offset, uint64_t size) {
+        m_state.operations++;
+    }
 }
