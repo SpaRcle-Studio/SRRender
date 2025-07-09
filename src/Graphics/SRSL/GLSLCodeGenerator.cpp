@@ -539,6 +539,9 @@ namespace SR_SRSL_NS {
         else if (pExpr->args.size() == 2 && (pExpr->token == "==" || pExpr->token == "!=")) {
             code += "((" + GenerateExpression(pExpr->args[0], 0) + ") " + pExpr->token + " (" +  GenerateExpression(pExpr->args[1], 0) + "))";
         }
+        else if (pExpr->args.size() == 2 && (pExpr->token == "?")) {
+            code += GenerateExpression(pExpr->args[0], 0) + " " + ReplaceToken(pExpr->token) + " " +  GenerateExpression(pExpr->args[1], 0);
+        }
         else if (pExpr->args.size() == 2) {
             code += "(" + GenerateExpression(pExpr->args[0], 0) + " " + ReplaceToken(pExpr->token) + " " +  GenerateExpression(pExpr->args[1], 0) + ")";
         }

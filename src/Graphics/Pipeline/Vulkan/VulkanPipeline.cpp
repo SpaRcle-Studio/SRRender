@@ -1477,6 +1477,11 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        if (size > pushConstants.data()->size) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("Push constants size is too big! Expected: {}, got: {}", pushConstants.data()->size, size);
+            return;
+        }
+
         vkCmdPushConstants(m_currentCmd, m_currentLayout,
             pushConstants.data()->stageFlags,
             0, size, pData

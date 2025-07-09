@@ -24,6 +24,14 @@ namespace SR_SRSL_NS {
         std::sort(fields.begin(), fields.end(), [](const SRSLUniformBlock::Field& a, const SRSLUniformBlock::Field& b) -> bool {
             return a.size > b.size;
         });
+
+        const uint32_t align = 16;
+        if (size % align == 0) {
+            return;
+        }
+
+        const uint32_t alignedSize = static_cast<uint32_t>(static_cast<float_t>((size + (align - 1)) / static_cast<float_t>(align))) * align;
+        size = alignedSize;
     }
 
     SRSLShader::SRSLShader(SR_UTILS_NS::Path path)
@@ -696,6 +704,23 @@ namespace SR_SRSL_NS {
         return SR_MATH_NS::FVector3::Zero();
     }
 
+    SR_MATH_NS::IVector3 SRSLShader::EvalExpressionIVec3(SRSLExpr* pExpression) const {
+        if (pExpression->args.size() == 3) {
+            const int32_t x = EvalExpressionInt(pExpression->args[0]);
+            const int32_t y = EvalExpressionInt(pExpression->args[1]);
+            const int32_t z = EvalExpressionInt(pExpression->args[2]);
+            return SR_MATH_NS::IVector3(x, y, z);
+        }
+
+        if (pExpression->args.size() == 1) {
+            const int32_t x = EvalExpressionInt(pExpression->args[0]);
+            return SR_MATH_NS::IVector3(x, x, x);
+        }
+
+        SR_ERROR("SRSLShader::EvalExpressionIVec3() : invalid expression args count! Count: " + std::to_string(pExpression->args.size()));
+        return SR_MATH_NS::IVector3::Zero();
+    }
+
     SR_MATH_NS::FVector4 SRSLShader::EvalExpressionVec4(SRSLExpr* pExpression) const {
         if (pExpression->args.size() == 4) {
             const float_t x = EvalExpressionFloat(pExpression->args[0]);
@@ -725,6 +750,10 @@ namespace SR_SRSL_NS {
 
         if (pExpression->token == "vec3") {
             return EvalExpressionVec3(pExpression);
+        }
+
+        if (pExpression->token == "ivec3") {
+            return EvalExpressionIVec3(pExpression);
         }
 
         if (pExpression->token == "vec4") {

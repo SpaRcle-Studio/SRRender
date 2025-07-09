@@ -35,6 +35,9 @@ namespace SR_GRAPH_NS {
             case ShaderVarType::Vec3:
                 SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::FVector3>(data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
+            case ShaderVarType::IVec3:
+                SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::IVector3>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                break;
             case ShaderVarType::Vec4:
                 SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::FVector4>(data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
@@ -90,6 +93,9 @@ namespace SR_GRAPH_NS {
                 break;
             case ShaderVarType::Vec3:
                 SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::FVector3>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                break;
+            case ShaderVarType::IVec3:
+                SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::IVector3>(data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Vec4:
                 SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::FVector4>(data), SR_UTILS_NS::SerializationId::Create("value"));
@@ -189,13 +195,18 @@ namespace SR_GRAPH_NS {
                                 return MaterialPropertyChangeResult::None;
                             }
                             break;
+                        case ShaderVarType::IVec3:
+                            if (std::get<SR_MATH_NS::IVector3>(uniform.data) == std::get<SR_MATH_NS::IVector3>(v)) {
+                                return MaterialPropertyChangeResult::None;
+                            }
+                            break;
                         case ShaderVarType::Vec4:
                             if (std::get<SR_MATH_NS::FVector4>(uniform.data) == std::get<SR_MATH_NS::FVector4>(v)) {
                                 return MaterialPropertyChangeResult::None;
                             }
                             break;
                         default:
-                            SR_ERROR("MaterialShaderData::SetData() : unknown property type! Property id: {}, Type: {}", id, type);
+                            SRHalt("MaterialShaderData::SetData() : unknown property type! Property id: {}, Type: {}", id, type);
                             return MaterialPropertyChangeResult::Error;
                     }
 
@@ -464,6 +475,9 @@ namespace SR_GRAPH_NS {
                     break;
                 case ShaderVarType::Vec3:
                     pShader->SetVec3(uniform.id, std::get<SR_MATH_NS::FVector3>(uniform.data).template Cast<float_t>());
+                    break;
+                case ShaderVarType::IVec3:
+                    pShader->SetIVec3(uniform.id, std::get<SR_MATH_NS::IVector3>(uniform.data).template Cast<int32_t>());
                     break;
                 case ShaderVarType::Vec4:
                     pShader->SetVec4(uniform.id, std::get<SR_MATH_NS::FVector4>(uniform.data).template Cast<float_t>());

@@ -133,6 +133,10 @@ namespace SR_GRAPH_NS::Memory {
                 const auto v = std::get<SR_MATH_NS::FVector3>(arg);
                 SetField(hashId, static_cast<const void*>(&v));
             }
+            else if (std::holds_alternative<SR_MATH_NS::IVector3>(arg)) {
+                const auto v = std::get<SR_MATH_NS::IVector3>(arg);
+                SetField(hashId, static_cast<const void*>(&v));
+            }
             else if (std::holds_alternative<SR_MATH_NS::FVector4>(arg)) {
                 const auto v = std::get<SR_MATH_NS::FVector4>(arg);
                 SetField(hashId, static_cast<const void*>(&v));
@@ -253,6 +257,10 @@ namespace SR_GRAPH_NS::Memory {
                 }
                 else if (std::holds_alternative<SR_MATH_NS::FVector3>(arg)) {
                     const auto v = std::get<SR_MATH_NS::FVector3>(arg);
+                    std::memcpy(m_memory + defaultValue.offset, &v, defaultValue.size);
+                }
+                else if (std::holds_alternative<SR_MATH_NS::IVector3>(arg)) {
+                    const auto v = std::get<SR_MATH_NS::IVector3>(arg);
                     std::memcpy(m_memory + defaultValue.offset, &v, defaultValue.size);
                 }
                 else if (std::holds_alternative<SR_MATH_NS::FVector4>(arg)) {

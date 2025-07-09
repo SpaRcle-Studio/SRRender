@@ -242,6 +242,7 @@ namespace SR_GRAPH_NS::Types {
     void Shader::SetRect(uint64_t hashId, const SR_MATH_NS::FRect& v) noexcept { SetValue<false>(hashId, &v); }
     void Shader::SetVec2(uint64_t hashId, const SR_MATH_NS::FVector2& v) noexcept { SetValue<false>(hashId, &v); }
     void Shader::SetIVec2(uint64_t hashId, const SR_MATH_NS::IVector2& v) noexcept { SetValue<false>(hashId, &v); }
+    void Shader::SetIVec3(uint64_t hashId, const SR_MATH_NS::IVector3& v) noexcept { SetValue<false>(hashId, &v); }
 
     void Shader::SetConstBool(uint64_t hashId, bool v) noexcept { SetValue<true>(hashId, &v); }
     void Shader::SetConstFloat(uint64_t hashId, float_t v) noexcept { SetValue<true>(hashId, &v); }
@@ -252,6 +253,7 @@ namespace SR_GRAPH_NS::Types {
     void Shader::SetConstColor(uint64_t hashId, const SR_MATH_NS::FColor& v) noexcept { SetValue<true>(hashId, &v); }
     void Shader::SetConstVec2(uint64_t hashId, const SR_MATH_NS::FVector2& v) noexcept { SetValue<true>(hashId, &v); }
     void Shader::SetConstIVec2(uint64_t hashId, const SR_MATH_NS::IVector2& v) noexcept { SetValue<true>(hashId, &v); }
+    void Shader::SetConstIVec3(uint64_t hashId, const SR_MATH_NS::IVector3& v) noexcept { SetValue<true>(hashId, &v); }
 
     void Shader::SetSampler(SR_UTILS_NS::StringAtom name, int32_t sampler) noexcept {
         m_samplers.at(name).samplerId = sampler;

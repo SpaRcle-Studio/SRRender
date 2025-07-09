@@ -220,4 +220,58 @@ namespace SR_GTYPES_NS {
         }
         Super::FreeVideoMemory();
     }
+
+    bool ProceduralMesh::Export(const SR_UTILS_NS::Path& path) const {
+        SR_TRACY_ZONE;
+
+        if (path.empty()) {
+            SR_ERROR("ProceduralMesh::Export() : path is empty!");
+            return false;
+        }
+
+        if (path.GetExtensionView() != "obj") {
+            SR_ERROR("ProceduralMesh::Export() : only .obj format is supported!");
+            return false;
+        }
+
+        if (!path.CreateIfNotExists()) {
+            SR_ERROR("ProceduralMesh::Export() : failed to create directory for export! Path: {}", path.ToString());
+            return false;
+        }
+
+        std::string content;
+        content += "# Exported IndexedMesh\n";
+        content += "o " + GetMeshIdentifier() + "\n";
+
+        for (uint64_t i = 0; i < GetVerticesCount(); ++i) {
+            const auto& vertex = m_vertices[i];
+            content += "v " + std::to_string(vertex.pos.x) + " " +
+                       std::to_string(vertex.pos.y) + " " +
+                       std::to_string(vertex.pos.z) + "\n";
+        }
+
+        for (uint64_t i = 0; i < GetVerticesCount(); ++i) {
+            const auto& vertex = m_vertices[i];
+            content += "vn " + std::to_string(vertex.norm.x) + " " +
+                       std::to_string(vertex.norm.y) + " " +
+                       std::to_string(vertex.norm.z) + "\n";
+        }
+
+        for (uint64_t i = 0; i < GetIndicesCount() / 3; ++i) {
+            content += "f " + std::to_string(m_indices[i * 3] + 1) + " " +
+                       std::to_string(m_indices[i * 3 + 1] + 1) + " " +
+                       std::to_string(m_indices[i * 3 + 2] + 1) + "\n";
+        }
+
+        if (path.IsFile()) {
+            SR_PLATFORM_NS::Delete(path);
+        }
+
+        if (!SR_UTILS_NS::FileSystem::WriteToFile(path.ToStringRef(), content)) {
+            SR_ERROR("ProceduralMesh::Export() : failed to write to file! Path: {}", path.ToString());
+            return false;
+        }
+
+        return true;
+    }
 }
