@@ -80,7 +80,10 @@ namespace SR_GRAPH_NS {
                 return BindResult::Failed;
             }
 
-            info.emplace_back(pShaderHandle, descriptorSet);
+            DescriptorSetInfo& descriptorSetInfo = info.emplace_back();
+            descriptorSetInfo.pShaderHandle = pShaderHandle;
+            descriptorSetInfo.descriptorSet = descriptorSet;
+
             result = BindResult::Duplicated;
         }
 
