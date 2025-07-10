@@ -2,8 +2,10 @@
 // Created by Monika on 08.01.2023.
 //
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
+#ifdef SR_UTILS_ASSIMP
+    #include <assimp/Importer.hpp>
+    #include <assimp/scene.h>
+#endif
 
 #include <Graphics/Animations/AnimationClip.h>
 #include <Graphics/Animations/AnimationChannel.h>
@@ -87,6 +89,7 @@ namespace SR_ANIMATIONS_NS {
     }
 
     bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, const std::string& name) {
+    #ifdef SR_UTILS_ASSIMP
         const aiAnimation* pAnimation = nullptr;
 
         const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
@@ -112,6 +115,9 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return true;
+    #else
+        return false;
+    #endif
     }
 
     bool AnimationClip::Unload() {
@@ -163,6 +169,7 @@ namespace SR_ANIMATIONS_NS {
 
             if (!LoadChannels(pRawMesh, pSkeletonMesh, animationName)) {
                 std::string animations;
+            #ifdef SR_UTILS_ASSIMP
                 const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
                 for (uint32_t i = 0; i < pScene->mNumAnimations; ++i) {
                     animations += pScene->mAnimations[i]->mName.C_Str();
@@ -170,6 +177,7 @@ namespace SR_ANIMATIONS_NS {
                         animations += ", ";
                     }
                 }
+            #endif
                 pRawMesh->CheckResourceUsage();
                 pSkeletonMesh->CheckResourceUsage();
                 SR_ERROR("AnimationClip::Load() : wrong animation name \"{}\"!\n\tTotal animations: {}", animationName, animations);

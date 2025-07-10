@@ -55,6 +55,9 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::DebugDraw::Instance().RemoveCallbacks(this);
 
         for (auto&& pBaseMesh : m_meshes) {
+            if (!pBaseMesh) {
+                continue;
+            }
             pBaseMesh->RemoveUsePoint();
         }
 
@@ -135,14 +138,18 @@ namespace SR_GRAPH_NS {
 
         if (m_timedObjects.IsAlive(id)) {
             if (m_timedObjects.AtUnchecked(id).drawInfo.type != timed.drawInfo.type) {
-                m_meshes[meshId]->AddUsePoint();
+                if (m_meshes[meshId]) {
+                    m_meshes[meshId]->AddUsePoint();
+                }
                 Remove(id, false);
             }
             m_timedObjects.At(id) = timed;
             return id;
         }
 
-        m_meshes[meshId]->AddUsePoint();
+        if (m_meshes[meshId]) {
+            m_meshes[meshId]->AddUsePoint();
+        }
 
         return m_timedObjects.Add(std::move(timed));
     }

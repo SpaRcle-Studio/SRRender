@@ -80,6 +80,7 @@ namespace SR_ANIMATIONS_NS {
     void AnimationChannel::Load(SR_HTYPES_NS::RawMesh* pRawMesh, aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel*>& channels) {
         SR_TRACY_ZONE;
 
+#ifdef SR_UTILS_ASSIMP
         auto&& boneName = SR_UTILS_NS::StringAtom(pChannel->mNodeName.C_Str());
         auto&& boneIndex = pRawMesh->GetBoneIndex(boneName);
         if (boneIndex == SR_ID_INVALID) {
@@ -142,6 +143,7 @@ namespace SR_ANIMATIONS_NS {
 
             channels.emplace_back(pScalingChannel);
         }
+#endif
     }
 
     void AnimationChannel::SetName(SR_UTILS_NS::StringAtom name) {

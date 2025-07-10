@@ -12,8 +12,10 @@
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Common/Enumerations.h>
 
-#include <assimp/vector3.h>
-#include <assimp/quaternion.h>
+#ifdef SR_UTILS_ASSIMP
+    #include <assimp/vector3.h>
+    #include <assimp/quaternion.h>
+#endif
 
 namespace SR_ANIMATIONS_NS {
     /// Это тип свойства которое изменяет AnimationKey
@@ -38,6 +40,7 @@ namespace SR_ANIMATIONS_NS {
         GameObjectTag
     );*/
 
+#ifdef SR_UTILS_ASSIMP
     static SR_MATH_NS::FVector3 AiV3ToFV3(const aiVector3D& v, float_t multiplier) {
         return SR_MATH_NS::FVector3(v.x, v.y, v.z) * multiplier;
     }
@@ -45,6 +48,7 @@ namespace SR_ANIMATIONS_NS {
     static SR_MATH_NS::Quaternion AiQToQ(const aiQuaternion& q) {
         return SR_MATH_NS::Quaternion(q.x, q.y, q.z, q.w);
     }
+#endif
 
     SR_ENUM_NS_CLASS_T(AnimationGraphNodeType, uint8_t,
         None, Final, Mix, Clip, StateMachine

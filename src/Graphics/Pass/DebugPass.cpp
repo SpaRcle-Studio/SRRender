@@ -96,6 +96,9 @@ namespace SR_GRAPH_NS {
                 }
 
                 const auto meshId = static_cast<int32_t>(queue.back().type);
+                if (!pDebugRenderer->IsMeshValid(meshId)) {
+                    continue;
+                }
 
                 if (meshId == static_cast<int32_t>(DebugRenderer::DrawType::Line)) {
                     DrawQueue(pPipeline.GetUncheckedRef(), queue, shaderInfo, 2);

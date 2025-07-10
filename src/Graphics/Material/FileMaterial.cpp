@@ -153,8 +153,9 @@ namespace SR_GRAPH_NS {
         for (auto&& [stage, data] : pFileMaterialData->GetShadersData()) {
             if (auto&& pShader = data.pShader) {
                 pUniqueMaterialData->SetShader(pShader, stage);
+                SR_UTILS_NS::StringAtom stageName = stage;
                 data.ForEachProperty([&](const SR_GRAPH_NS::MaterialShaderProperty& property) {
-                    pUniqueMaterialData->GetShaderData(stage)->SetData(property.id, property.data, property.type);
+                    pUniqueMaterialData->GetShaderData(stageName)->SetData(property.id, property.data, property.type);
                 });
             }
         }
