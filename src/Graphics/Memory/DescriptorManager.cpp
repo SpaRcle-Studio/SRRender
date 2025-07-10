@@ -35,8 +35,13 @@ namespace SR_GRAPH_NS {
                 }
                 m_pipeline->FreeDescriptorSet(&descriptor.descriptorSet);
             }
+
             descriptors.clear();
-            descriptors.emplace_back(pShaderHandle, descriptorSet);
+
+            DescriptorSetInfo& info = descriptors.emplace_back();
+            info.pShaderHandle = pShaderHandle;
+            info.descriptorSet = descriptorSet;
+
             return reallocation;
         }
 
