@@ -417,7 +417,7 @@ namespace SR_GRAPH_NS {
     void MaterialData::Finalize() {
         SR_TRACY_ZONE;
 
-        for (MaterialShaderData& data : m_shaders | std::views::values) {
+        for (auto&& [stage, data] : m_shaders) {
             if (data.pShader) {
                 data.pShader->RemoveUsePoint();
                 data.pShader = nullptr;
@@ -617,7 +617,7 @@ namespace SR_GRAPH_NS {
 
         uint8_t changeResult = std::max(static_cast<uint8_t>(0), static_cast<uint8_t>(m_defaultShader.SetData(id, v, type)));
 
-        for (MaterialShaderData& data : m_shaders | std::views::values) {
+        for (auto&& [stage, data] : m_shaders) {
             changeResult = std::max(changeResult, static_cast<uint8_t>(data.SetData(id, v, type)));
         }
 
