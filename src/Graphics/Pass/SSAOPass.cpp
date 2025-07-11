@@ -59,7 +59,7 @@ namespace SR_GRAPH_NS {
         return kernel;
     }
 
-    SR_GTYPES_NS::Texture* SSAOPass::CreateNoise() const {
+    SR_GTYPES_NS::Texture::Ptr SSAOPass::CreateNoise() const {
         std::vector<SR_MATH_NS::Vector3<float_t>> noise;
         noise.resize(16);
 
@@ -140,7 +140,7 @@ namespace SR_GRAPH_NS {
         if (!GetFramebuffer()) {
             return std::vector<SR_GTYPES_NS::Framebuffer*>();
         }
-        return { GetFramebuffer() };
+        return { GetFramebuffer().Get() };
     }
 
     IRenderTechnique* SSAOPass::GetFrameBufferRenderTechnique() const {

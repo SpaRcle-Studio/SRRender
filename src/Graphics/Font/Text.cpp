@@ -17,7 +17,7 @@ namespace SR_GTYPES_NS {
     { }
 
     Text::~Text() {
-        SetFont(nullptr);
+        SetFont(SR_GTYPES_NS::Font::Ptr());
     }
 
     void Text::SetUsePreprocessor(bool enabled) {
@@ -43,7 +43,7 @@ namespace SR_GTYPES_NS {
     }
 
     void Text::FreeVideoMemory() {
-        SetFont(nullptr);
+        SetFont(SR_GTYPES_NS::Font::Ptr());
 
         if (m_id != SR_ID_INVALID) {
             SRVerifyFalse(!m_pipeline->FreeTexture(&m_id));
@@ -69,7 +69,7 @@ namespace SR_GTYPES_NS {
             SRVerifyFalse(!m_pipeline->FreeTexture(&m_id));
         }
 
-        TextBuilder textBuilder(m_font);
+        TextBuilder textBuilder(m_font.Get());
         textBuilder.SetKerning(m_kerning);
         textBuilder.SetDebug(m_debug);
         textBuilder.SetFontSize(m_fontSize);
@@ -131,7 +131,7 @@ namespace SR_GTYPES_NS {
         return !m_is3D;
     }
 
-    void Text::SetFont(Font* pFont) {
+    void Text::SetFont(const SR_GTYPES_NS::Font::Ptr& pFont) {
         if (pFont == m_font) {
             return;
         }
@@ -199,7 +199,7 @@ namespace SR_GTYPES_NS {
 
     void Text::SetFont(const SR_UTILS_NS::Path& path) {
         if (path.empty()) {
-            SetFont(nullptr);
+            SetFont(SR_GTYPES_NS::Font::Ptr());
             return;
         }
         SetFont(SR_GTYPES_NS::Font::Load(path));

@@ -67,13 +67,7 @@ namespace SR_GRAPH_NS {
             pRenderer.AutoFree();
         }
         m_renderers.clear();
-
-        if (m_technique) {
-            if (auto&& pResource = dynamic_cast<SR_UTILS_NS::IResource*>(m_technique)) {
-                pResource->RemoveUsePoint();
-            }
-            m_technique = nullptr;
-        }
+        SetTechnique(IRenderTechnique::Ptr());
     }
 
     void RenderScene::Render() {
@@ -210,22 +204,14 @@ namespace SR_GRAPH_NS {
         GetPipeline()->DrawFrame();
     }
 
-    void RenderScene::SetTechnique(IRenderTechnique *pTechnique) {
+    void RenderScene::SetTechnique(const IRenderTechnique::Ptr& pTechnique) {
         if (m_technique) {
-            if (auto&& pResource = dynamic_cast<SR_UTILS_NS::IResource*>(m_technique)) {
-                pResource->RemoveUsePoint();
-            }
+            m_technique->KillTechnique();
             m_technique = nullptr;
         }
 
         if ((m_technique = pTechnique)) {
-            if (auto&& pResource = dynamic_cast<SR_UTILS_NS::IResource*>(m_technique)) {
-                pResource->AddUsePoint();
-            }
             m_technique->SetRenderScene(GetThis());
-        }
-        else {
-            SR_ERROR("RenderScene::SetTechnique() : failed to load render technique!");
         }
 
         SetDirty();
@@ -233,7 +219,7 @@ namespace SR_GRAPH_NS {
 
     void RenderScene::SetTechnique(const SR_UTILS_NS::Path &path) {
         SRAssert2(GetContext()->GetPipeline(), "RenderScene::SetTechnique() : pipeline is nullptr!");
-        SetTechnique(RenderTechnique::Load(path));
+        SetTechnique(FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>());
     }
 
     const RenderScene::WidgetManagers &RenderScene::GetWidgetManagers() const {
@@ -534,7 +520,7 @@ namespace SR_GRAPH_NS {
         return m_surfaceSize;
     }
 
-    void RenderScene::OnResourceReloaded(SR_UTILS_NS::IResource::Ptr pResource) {
+    void RenderScene::OnResourceReloaded(const SR_UTILS_NS::IResource::Ptr& pResource) {
         m_renderStrategy->OnResourceReloaded(pResource);
 
         SetDirty();
@@ -554,7 +540,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_technique) {
-            callback(m_technique);
+            callback(m_technique.Get());
         }
     }
 

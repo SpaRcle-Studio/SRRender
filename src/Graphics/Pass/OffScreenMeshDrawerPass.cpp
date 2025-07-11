@@ -15,7 +15,7 @@ namespace SR_GRAPH_NS {
         if (!GetFramebuffer()) {
             return std::vector<SR_GTYPES_NS::Framebuffer*>(); /// NOLINT
         }
-        return { GetFramebuffer() };
+        return { GetFramebuffer().Get() };
     }
 
     uint8_t OffScreenMeshDrawerPass::GetMeshDrawerFBOLayers() const noexcept {

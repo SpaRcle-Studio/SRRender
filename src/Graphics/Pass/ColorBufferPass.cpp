@@ -34,7 +34,7 @@ namespace SR_GRAPH_NS {
     }
 
     SR_GTYPES_NS::Framebuffer* ColorBufferPass::GetColorFrameBuffer() const noexcept {
-        return GetFramebuffer();
+        return GetFramebuffer().Get();
     }
 
     void ColorBufferPass::UseConstants(ShaderUseInfo info) {

@@ -14,17 +14,17 @@
 #include <Enum/TextureFilter.hpp>
 #include <Enum/ImageFormat.hpp>
 
+#include <Codegen/Texture.generated.hpp>
+
 namespace SR_GTYPES_NS {
-    Texture::Texture()
-        : IResource(SR_COMPILE_TIME_CRC32_TYPE_NAME(Texture))
-    { }
+    Texture::Texture() = default;
 
     Texture::~Texture() {
         FreeTextureData();
     }
 
     Texture::Ptr Texture::LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const Memory::TextureConfig& config) {
-        auto&& pTexture = new Texture();
+        auto&& pTexture = Texture::MakeShared<Texture>();
 
         auto&& pCopyData = new uint8_t[bytes];
         memcpy(pCopyData, pData, bytes);
@@ -84,7 +84,7 @@ namespace SR_GTYPES_NS {
                 return;
             }
 
-            pTexture = new Texture();
+            pTexture = Texture::MakeShared<Texture>();
 
             if (config) {
                 pTexture->SetConfig(config.value());
@@ -103,7 +103,7 @@ namespace SR_GTYPES_NS {
             }
 
             /// отложенная ручная регистрация
-            SR_UTILS_NS::ResourceManager::Instance().RegisterResource(pTexture);
+            SR_UTILS_NS::ResourceManager::Instance().RegisterResource(pTexture.StaticCast<SR_UTILS_NS::IResource>());
         });
 
         return pTexture;
@@ -268,15 +268,16 @@ namespace SR_GTYPES_NS {
         return m_id;
     }
 
-    Texture* Texture::LoadFromMemory(const std::string& data, const Memory::TextureConfig &config) {
+    Texture::Ptr Texture::LoadFromMemory(const std::string& data, const Memory::TextureConfig &config) {
         SR_TRACY_ZONE;
 
-        auto&& pTexture = new Texture();
+        auto&& pTexture = Texture::MakeShared<Texture>();
 
         pTexture->m_textureData = TextureLoader::LoadFromMemory(data, config);
         if (!pTexture->m_textureData) {
             SR_ERROR("Texture::LoadFromMemory() : failed to load texture from memory!");
             pTexture->DeleteResource();
+            pTexture = nullptr;
             return nullptr;
         }
 

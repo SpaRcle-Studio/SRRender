@@ -3,24 +3,25 @@
 //
 
 #include <Utils/Resources/ResourceManager.h>
+
 #include <Graphics/Types/RenderTexture.h>
+
+#include <Codegen/RenderTexture.generated.hpp>
 
 namespace SR_GTYPES_NS {
     RenderTexture::RenderTexture()
         : SR_UTILS_NS::Settings()
     { }
 
-    RenderTexture::~RenderTexture() {
+    RenderTexture::~RenderTexture() = default;
 
-    }
-
-    RenderTexture *RenderTexture::Load(const SR_UTILS_NS::Path &rawPath) {
+    RenderTexture::Ptr RenderTexture::Load(const SR_UTILS_NS::Path &rawPath) {
         SR_GLOBAL_LOCK
 
         auto&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
 
         if (auto&& pResource = SR_UTILS_NS::ResourceManager::Instance().Find<Settings>(path)) {
-            auto&& pRenderTexture = dynamic_cast<RenderTexture *>(pResource);
+            auto&& pRenderTexture = pResource.DynamicCast<RenderTexture>();
 
             if (!pRenderTexture) {
                 SR_ERROR("RenderTexture::Load() : failed to cast the resource!\n\tPath: " + path.ToString());
@@ -29,18 +30,19 @@ namespace SR_GTYPES_NS {
             return pRenderTexture;
         }
 
-        auto&& pRenderTexture = new RenderTexture();
+        auto&& pRenderTexture = RenderTexture::MakeShared<RenderTexture>();
 
         pRenderTexture->SetId(path.ToStringRef(), false /** auto register */);
 
         if (!pRenderTexture->Reload()) {
             SR_ERROR("RenderTexture::Load() : failed to load render texture!\n\tPath: " + path.ToString());
-            delete pRenderTexture;
+            pRenderTexture->DeleteResource();
+            pRenderTexture = nullptr;
             return nullptr;
         }
 
         /// отложенная ручная регистрация
-        SR_UTILS_NS::ResourceManager::Instance().RegisterResource(pRenderTexture);
+        SR_UTILS_NS::ResourceManager::Instance().RegisterResource(pRenderTexture.StaticCast<SR_UTILS_NS::IResource>());
 
         return pRenderTexture;
     }

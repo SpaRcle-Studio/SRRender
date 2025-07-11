@@ -74,7 +74,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        GetPassPipeline()->SetCurrentShader(pShader);
+        GetPassPipeline()->SetCurrentShader(pShader.Get());
 
         auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
         if (uboManager.BindNoDublicateUBO(m_skybox->GetVirtualUBO()) != Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {

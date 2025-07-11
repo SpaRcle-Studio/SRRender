@@ -24,7 +24,7 @@ namespace SR_GRAPH_NS {
 
     class RenderQueue : public SR_HTYPES_NS::SharedPtr<RenderQueue> {
         using Super = SR_HTYPES_NS::SharedPtr<RenderQueue>;
-        using ShaderPtr = SR_GTYPES_NS::Shader*;
+        using ShaderPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>;
         using VBO = uint32_t;
         using Layer = SR_UTILS_NS::StringAtom;
         using MeshPtr = SR_GTYPES_NS::Mesh*;
@@ -49,7 +49,7 @@ namespace SR_GRAPH_NS {
 
             bool operator==(const MeshInfo& other) const noexcept {
                 return
-                    shaderUseInfo.pShader == other.shaderUseInfo.pShader &&
+                    shaderUseInfo.pShader.Get() == other.shaderUseInfo.pShader.Get() &&
                     vbo == other.vbo &&
                     pMesh == other.pMesh &&
                     priority == other.priority;
@@ -57,15 +57,15 @@ namespace SR_GRAPH_NS {
         };
 
         struct RenderQueueLessPredicate {
-            SR_NODISCARD constexpr bool operator()(const MeshInfo& left, const MeshInfo& right) const noexcept {
+            SR_NODISCARD bool operator()(const MeshInfo& left, const MeshInfo& right) const noexcept {
                 /// Сравниваем приоритеты
                 if (left.priority != right.priority) SR_UNLIKELY_ATTRIBUTE {
                     return left.priority < right.priority;
                 }
 
                 /// Сравниваем указатели на шейдеры
-                if (left.shaderUseInfo.pShader != right.shaderUseInfo.pShader) SR_LIKELY_ATTRIBUTE {
-                    return left.shaderUseInfo.pShader < right.shaderUseInfo.pShader;
+                if (left.shaderUseInfo.pShader.Get() != right.shaderUseInfo.pShader.Get()) SR_LIKELY_ATTRIBUTE {
+                    return left.shaderUseInfo.pShader.Get() < right.shaderUseInfo.pShader.Get();
                 }
 
                 /// Если шейдеры одинаковые, сравниваем VBO
@@ -86,8 +86,8 @@ namespace SR_GRAPH_NS {
         };
 
         struct ShaderQueueLessPredicate {
-            SR_NODISCARD constexpr bool operator()(const ShaderUseInfo& left, const ShaderUseInfo& right) const noexcept {
-                return left.pShader < right.pShader;
+            SR_NODISCARD bool operator()(const ShaderUseInfo& left, const ShaderUseInfo& right) const noexcept {
+                return left.pShader.Get() < right.pShader.Get();
             }
         };
 

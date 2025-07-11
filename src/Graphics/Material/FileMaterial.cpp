@@ -8,47 +8,11 @@
 #include <Codegen/FileMaterial.generated.hpp>
 
 namespace SR_GRAPH_NS {
-    FileMaterialResource::FileMaterialResource()
-        : IResource(SR_COMPILE_TIME_CRC32_TYPE_NAME(FileMaterialResource))
-    { }
+    FileMaterialResource::FileMaterialResource() = default;
 
-    SR_UTILS_NS::IResource::Ptr FileMaterialResource::CopyResource(SR_UTILS_NS::IResource::Ptr pDestination) const {
-        SRHalt("Material is not are copyable!");
-        return nullptr;
-    }
-
-    FileMaterialResource* FileMaterialResource::Load(const SR_UTILS_NS::Path& rawPath) {
+    FileMaterialResource::Ptr FileMaterialResource::Load(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
-
-        auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
-
-        FileMaterialResource* pMaterial = nullptr;
-
-        resourceManager.Execute([&](){
-            auto&& path = rawPath.SelfRemoveSubPath(resourceManager.GetResPathRef());
-            if (!resourceManager.GetResPathRef().Concat(path).Exists()) {
-                SR_WARN("FileMaterialResource::Load() : path to the material doesn't exist! Loading is aborted.\n\tPath: " + path.ToStringRef());
-                return;
-            }
-
-            if ((pMaterial = resourceManager.Find<FileMaterialResource>(path))) {
-                return;
-            }
-
-            pMaterial = new FileMaterialResource();
-
-            pMaterial->SetId(path.ToStringRef(), false);
-
-            if (!pMaterial->Reload()) {
-                pMaterial->DeleteResource();
-                pMaterial = nullptr;
-                return;
-            }
-
-            resourceManager.RegisterResource(pMaterial);
-        });
-
-        return pMaterial;
+        return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<FileMaterialResource>(rawPath);
     }
 
     bool FileMaterialResource::Load() {
@@ -176,7 +140,7 @@ namespace SR_GRAPH_NS {
     }
 
     void FileMaterial::SetMaterialPath(const SR_UTILS_NS::Path& path) noexcept {
-        FileMaterialResource* pMaterial = nullptr;
+        FileMaterialResource::Ptr pMaterial = nullptr;
 
         if (!path.IsEmpty()) {
             pMaterial = FileMaterialResource::Load(path);

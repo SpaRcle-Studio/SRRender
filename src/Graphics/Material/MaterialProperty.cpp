@@ -56,22 +56,6 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    std::list<SR_GTYPES_NS::Texture*> GetTexturesFromMatProperties(const MaterialProperties& properties) {
-        std::list<SR_GTYPES_NS::Texture*> textures;
-
-        properties.ForEachProperty<MaterialProperty>([&textures](auto&& pProperty){
-            std::visit([&textures](ShaderPropertyVariant&& arg) {
-                if (std::holds_alternative<SR_GTYPES_NS::Texture*>(arg)) {
-                    if (auto&& value = std::get<SR_GTYPES_NS::Texture*>(arg)) {
-                        textures.emplace_back(value);
-                    }
-                }
-            }, pProperty->GetData());
-        });
-
-        return textures;
-    }
-
     void MaterialProperty::Use(SR_GTYPES_NS::Shader* pShader) const noexcept {
         SR_TRACY_ZONE;
 
@@ -95,7 +79,7 @@ namespace SR_GRAPH_NS {
                 pShader->SetVec4(hashId, std::get<SR_MATH_NS::FVector4>(GetData()).template Cast<float_t>());
                 break;
             case ShaderVarType::Sampler2D:
-                pShader->SetSampler2D(GetName(), std::get<SR_GTYPES_NS::Texture*>(GetData()));
+                pShader->SetSampler2D(GetName(), std::get<SR_GTYPES_NS::Texture::Ptr>(GetData()));
                 break;
             default:
                 SRAssertOnce(false);
@@ -103,10 +87,10 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialProperty::SetTextureInternal(SR_GTYPES_NS::Texture* pTexture) {
+    void MaterialProperty::SetTextureInternal(SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture> pTexture) {
         SRAssert(GetShaderVarType() == ShaderVarType::Sampler2D);
 
-        if (auto&& pOldTexture = std::get<SR_GTYPES_NS::Texture*>(GetData())) {
+        if (auto&& pOldTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(GetData())) {
             pOldTexture->RemoveUsePoint();
             m_textureOnReloadDoneSubscription.Reset();
         }
@@ -125,7 +109,7 @@ namespace SR_GRAPH_NS {
 
     MaterialProperty::~MaterialProperty() {
         if (GetShaderVarType() == ShaderVarType::Sampler2D) {
-            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture*>(GetData())) {
+            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(GetData())) {
                 pTexture->RemoveUsePoint();
                 m_textureOnReloadDoneSubscription.Reset();
             }
@@ -164,7 +148,7 @@ namespace SR_GRAPH_NS {
                     pBlock->Write<SR_MATH_NS::FVector4>(std::get<SR_MATH_NS::FVector4>(GetData()));
                     break;
                 case ShaderVarType::Sampler2D: {
-                    auto&& pTexture = std::get<SR_GTYPES_NS::Texture*>(GetData());
+                    auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(GetData());
                     std::string path = pTexture ? pTexture->GetResourcePath().ToString() : "";
                     pBlock->Write<std::string>(path);
                     break;

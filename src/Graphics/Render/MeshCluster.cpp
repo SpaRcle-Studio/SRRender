@@ -56,25 +56,25 @@ namespace SR_GRAPH_NS {
         SRAssert(pMesh->GetPipeline());
         SRAssert(pShader);
 
-        if (auto&& subClusterIt = m_subClusters.find(pShader); subClusterIt == m_subClusters.end()) {
-            auto&& [subCluster, _] = m_subClusters.insert(std::make_pair(
-                    pShader,
-                    ShadedMeshSubCluster(pShader)
-            ));
+    // if (auto&& subClusterIt = m_subClusters.find(pShader); subClusterIt == m_subClusters.end()) {
+    //     auto&& [subCluster, _] = m_subClusters.insert(std::make_pair(
+    //             pShader,
+    //             ShadedMeshSubCluster(pShader)
+    //     ));
 
-            //if (!subCluster->second.Add(pMesh)) {
-            //    SRHalt0();
-            //}
+    //     //if (!subCluster->second.Add(pMesh)) {
+    //     //    SRHalt0();
+    //     //}
 
-            return true;
-        }
-        else {
-            //if (!subClusterIt->second.Add(pMesh)) {
-            //    SRHalt0();
-            //}
+    //     return true;
+    // }
+    // else {
+    //     //if (!subClusterIt->second.Add(pMesh)) {
+    //     //    SRHalt0();
+    //     //}
 
-            return true;
-        }
+         return true;
+    // }
     }
 
     bool MeshCluster::Empty() const noexcept {

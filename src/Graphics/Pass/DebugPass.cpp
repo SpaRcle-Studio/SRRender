@@ -280,7 +280,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        GetPassPipeline()->SetCurrentShader(shaderInfo.pShader);
+        GetPassPipeline()->SetCurrentShader(shaderInfo.pShader.Get());
 
         if (shaderInfo.pShader->BeginSharedUBO()) {
             shaderInfo.pShader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());

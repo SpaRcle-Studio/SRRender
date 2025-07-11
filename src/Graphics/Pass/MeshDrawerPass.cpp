@@ -213,7 +213,7 @@ namespace SR_GRAPH_NS {
         return GetRenderScene()->GetRenderStrategy();
     }
 
-    ShaderUseInfo MeshDrawerPass::ReplaceShader(ShaderPtr pShader) const {
+    ShaderUseInfo MeshDrawerPass::ReplaceShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& pShader) const {
         if (!pShader) SR_UNLIKELY_ATTRIBUTE {
             return ShaderUseInfo(pShader);
         }

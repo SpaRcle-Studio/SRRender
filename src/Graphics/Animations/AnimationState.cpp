@@ -129,7 +129,7 @@ namespace SR_ANIMATIONS_NS {
         return nullptr;
     }
 
-    void AnimationClipState::SetClip(AnimationClip* pClip) {
+    void AnimationClipState::SetClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip) {
         SR_TRACY_ZONE;
 
         if (m_clip == pClip) {

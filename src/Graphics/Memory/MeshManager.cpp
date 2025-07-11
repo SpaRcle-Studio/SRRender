@@ -71,8 +71,8 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     BakedMesh::Ptr BakedMesh::Bake(Pipeline *pPipeline, std::string_view path, uint32_t index, Vertices::VertexType vertexType) {
-        if (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path); pRawMesh) {
-            return Bake(pPipeline, pRawMesh, index, vertexType);
+        if (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path)) {
+            return Bake(pPipeline, pRawMesh.Get(), index, vertexType);
         }
         SR_ERROR("BakedMesh::Bake() : failed load raw mesh \"{}\"!", path);
         return nullptr;

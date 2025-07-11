@@ -84,7 +84,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        GetPassPipeline()->SetCurrentFrameBuffer(pFrameBuffer);
+        GetPassPipeline()->SetCurrentFrameBuffer(pFrameBuffer.Get());
 
         GroupPass::Update();
 
@@ -95,7 +95,7 @@ namespace SR_GRAPH_NS {
         if (!GetFramebuffer()) {
             return std::vector<SR_GTYPES_NS::Framebuffer*>(); /// NOLINT
         }
-        return { GetFramebuffer() };
+        return { GetFramebuffer().Get() };
     }
 
     IRenderTechnique* FramebufferPass::GetFrameBufferRenderTechnique() const {

@@ -62,7 +62,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        GetPassPipeline()->SetCurrentShader(m_shader);
+        GetPassPipeline()->SetCurrentShader(m_shader.Get());
 
         if (m_shader && m_shader->BeginSharedUBO()) {
             SR_MATH_NS::FVector2 resolution;
@@ -118,7 +118,7 @@ namespace SR_GRAPH_NS {
         return Super::Load(passNode);
     }
 
-    void PostProcessPass::SetShader(SR_GTYPES_NS::Shader* pShader) {
+    void PostProcessPass::SetShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& pShader) {
         if (m_shader == pShader) {
             return;
         }
@@ -126,7 +126,7 @@ namespace SR_GRAPH_NS {
         m_dirtyShader = true;
 
         if (m_shader) {
-            RemoveDependency(m_shader);
+            RemoveDependency(m_shader.StaticCast<SR_UTILS_NS::ResourceContainer>());
             m_shader = nullptr;
         }
 
@@ -134,7 +134,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        AddDependency(m_shader);
+        AddDependency(m_shader.StaticCast<SR_UTILS_NS::ResourceContainer>());
     }
 
     void PostProcessPass::DeInit() {
@@ -149,7 +149,7 @@ namespace SR_GRAPH_NS {
     }
 
     void PostProcessPass::OnResourceUpdated(SR_UTILS_NS::ResourceContainer *pContainer, int32_t depth) {
-        if (dynamic_cast<SR_GTYPES_NS::Shader*>(pContainer) == m_shader && m_shader) {
+        if (dynamic_cast<SR_GTYPES_NS::Shader*>(pContainer) == m_shader.Get() && m_shader) {
             m_dirtyShader = true;
         }
 

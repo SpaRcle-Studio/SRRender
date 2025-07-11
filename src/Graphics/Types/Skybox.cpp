@@ -16,10 +16,11 @@
 #include <Graphics/Memory/DescriptorManager.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Codegen/Skybox.generated.hpp>
+
 namespace SR_GTYPES_NS {
     Skybox::Skybox()
-        : IResource(SR_COMPILE_TIME_CRC32_TYPE_NAME(Skybox))
-        , m_uboManager(Memory::UBOManager::Instance())
+        : m_uboManager(Memory::UBOManager::Instance())
         , m_descriptorManager(DescriptorManager::Instance())
     { }
 
@@ -38,7 +39,7 @@ namespace SR_GTYPES_NS {
         }
     }
 
-    Skybox* Skybox::Load(const SR_UTILS_NS::Path& rawPath) {
+    Skybox::Ptr Skybox::Load(const SR_UTILS_NS::Path& rawPath) {
         SR_GLOBAL_LOCK;
         SR_TRACY_ZONE;
 
@@ -82,7 +83,7 @@ namespace SR_GTYPES_NS {
             sides[i] = pTextureData;
         }
 
-        auto&& pSkybox = new Skybox();
+        auto&& pSkybox = Skybox::MakeShared<Skybox>();
 
         pSkybox->m_width = W;
         pSkybox->m_height = H;
@@ -244,7 +245,7 @@ namespace SR_GTYPES_NS {
     }
 
     void Skybox::OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) {
-        if (dynamic_cast<Shader*>(pContainer) == m_shader && m_shader) {
+        if (dynamic_cast<Shader*>(pContainer) == m_shader.Get() && m_shader) {
             m_dirtyShader = true;
             m_hasErrors = false;
         }
@@ -252,7 +253,7 @@ namespace SR_GTYPES_NS {
         IResource::OnResourceUpdated(pContainer, depth);
     }
 
-    void Skybox::SetShader(Shader *shader) {
+    void Skybox::SetShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& shader) {
         if (m_shader == shader) {
             return;
         }
@@ -260,7 +261,7 @@ namespace SR_GTYPES_NS {
         m_dirtyShader = true;
 
         if (m_shader) {
-            RemoveDependency(m_shader);
+            RemoveDependency(m_shader.StaticCast<SR_UTILS_NS::ResourceContainer>());
             m_shader = nullptr;
         }
 
@@ -268,7 +269,7 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        AddDependency(m_shader);
+        AddDependency(m_shader.StaticCast<SR_UTILS_NS::ResourceContainer>());
     }
 
     int32_t Skybox::GetVBO() {

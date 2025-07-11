@@ -5,10 +5,10 @@
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/Shader.h>
 
+#include <Codegen/Framebuffer.generated.hpp>
+
 namespace SR_GTYPES_NS {
-    Framebuffer::Framebuffer()
-        : Super(SR_COMPILE_TIME_CRC32_TYPE_NAME(Framebuffer))
-    {
+    Framebuffer::Framebuffer() {
         SR_UTILS_NS::ResourceManager::Instance().RegisterResource(this);
     }
 
@@ -48,7 +48,7 @@ namespace SR_GTYPES_NS {
     }
 
     Framebuffer::Ptr Framebuffer::Create(const std::list<ImageFormat> &colors, ImageFormat depth, const SR_MATH_NS::IVector2 &size, uint8_t samples, uint32_t layersCount, ImageAspect depthAspect) {
-        auto&& pFBO = new Framebuffer();
+        auto&& pFBO = Framebuffer::MakeShared<Framebuffer>();
 
         SRAssert(!size.HasZero() && !size.HasNegative());
 

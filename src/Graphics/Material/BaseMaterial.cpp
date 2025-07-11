@@ -38,10 +38,10 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void BaseMaterial::SetTexture(const SR_UTILS_NS::StringAtom id, SR_GTYPES_NS::Texture* pTexture) noexcept {
+    void BaseMaterial::SetTexture(const SR_UTILS_NS::StringAtom id, const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>& pTexture) noexcept {
         if (auto&& pData = GetMaterialData()) {
             InitContext();
-            pData->SetData(id, pTexture, ShaderVarType::Sampler2D);
+            pData->SetData(id, const_cast<SR_GTYPES_NS::Texture*>(pTexture.Get()), ShaderVarType::Sampler2D);
         }
     }
 

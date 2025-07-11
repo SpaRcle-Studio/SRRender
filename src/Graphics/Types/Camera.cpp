@@ -20,15 +20,7 @@ namespace SR_GTYPES_NS {
     { }
 
     Camera::~Camera() {
-        if (m_renderTechnique.pTechnique) {
-            if (auto&& pResource = dynamic_cast<SR_UTILS_NS::IResource*>(m_renderTechnique.pTechnique)) {
-                pResource->RemoveUsePoint();
-            }
-            else {
-                SRHalt0();
-            }
-            m_renderTechnique.pTechnique = nullptr;
-        }
+        SetRenderTechnique(SR_UTILS_NS::Path());
     }
 
     void Camera::OnAttached() {
@@ -61,16 +53,17 @@ namespace SR_GTYPES_NS {
 
     IRenderTechnique* Camera::GetRenderTechnique() {
         if (m_renderTechnique.pTechnique || m_hasErrors) {
-            return m_renderTechnique.pTechnique;
+            return m_renderTechnique.pTechnique.Get();
         }
 
         auto&& path = GetRenderTechniquePath();
 
         if (path.GetExtensionView() == "srlm") {
-            m_renderTechnique.pTechnique = ScriptableRenderTechnique::Load(path);
+            //m_renderTechnique.pTechnique = ScriptableRenderTechnique::Load(path);
         }
         else {
-            m_renderTechnique.pTechnique = RenderTechnique::Load(path);
+            m_renderTechnique.pTechnique.AutoFree();
+            m_renderTechnique.pTechnique = FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>();
         }
 
         if (m_renderTechnique.pTechnique) {
@@ -78,17 +71,13 @@ namespace SR_GTYPES_NS {
             m_renderTechnique.pTechnique->SetRenderScene(GetRenderScene());
         }
 
-        if (auto&& pResourceRenderTechnique = dynamic_cast<SR_UTILS_NS::IResource*>(m_renderTechnique.pTechnique)) {
-            pResourceRenderTechnique->AddUsePoint();
-        }
-
-        return m_renderTechnique.pTechnique;
+        return m_renderTechnique.pTechnique.Get();
     }
 
     const SR_UTILS_NS::Path& Camera::GetRenderTechniquePath() {
         /// default technique
         if (m_renderTechnique.path.IsEmpty()) {
-            m_renderTechnique.path = RenderTechnique::DEFAULT_RENDER_TECHNIQUE;
+            m_renderTechnique.path = FileRenderTechnique::DEFAULT_RENDER_TECHNIQUE;
         }
 
         return m_renderTechnique.path;
@@ -264,12 +253,7 @@ namespace SR_GTYPES_NS {
 
     void Camera::SetRenderTechnique(const SR_UTILS_NS::Path& path) {
         if (m_renderTechnique.pTechnique) {
-            if (auto&& pResource = dynamic_cast<SR_UTILS_NS::IResource*>(m_renderTechnique.pTechnique)) {
-                pResource->RemoveUsePoint();
-            }
-            else {
-                SRHalt("Render technique is not a resource! Memory leak possible.");
-            }
+            m_renderTechnique.pTechnique->KillTechnique();
             m_renderTechnique.pTechnique = nullptr;
         }
 
@@ -303,10 +287,6 @@ namespace SR_GTYPES_NS {
     }
 
     void Camera::Update(float_t dt) {
-        if (auto&& pScriptable = dynamic_cast<SR_GRAPH_NS::ScriptableRenderTechnique*>(m_renderTechnique.pTechnique)) {
-            pScriptable->UpdateMachine(dt);
-        }
-
         Super::Update(dt);
     }
 

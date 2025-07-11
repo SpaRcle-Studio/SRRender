@@ -15,10 +15,11 @@
 #include <Graphics/SRSL/Shader.h>
 #include <Graphics/SRSL/TypeInfo.h>
 
+#include <Codegen/Shader.generated.hpp>
+
 namespace SR_GRAPH_NS::Types {
     Shader::Shader()
-        : IResource(SR_COMPILE_TIME_CRC32_TYPE_NAME(Shader))
-        , m_manager(Memory::ShaderProgramManager::Instance())
+        : m_manager(Memory::ShaderProgramManager::Instance())
         , m_uboManager(Memory::UBOManager::Instance())
     { }
 
@@ -173,44 +174,14 @@ namespace SR_GRAPH_NS::Types {
         }
     }
 
-    Shader* Shader::Load(const SR_UTILS_NS::Path &rawPath) {
+    Shader::Ptr Shader::Load(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
-
-        auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
-
-        SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(resourceManager.GetResPath());
-
-        if (auto&& pShader = resourceManager.Find<Shader>(path)) {
-            return pShader;
-        }
-
-        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Medium) {
-            SR_LOG("Shader::Load() : load \"" + path.ToString() + "\" shader...");
-        }
-
-        if (!SRVerifyFalse2(path.IsEmpty(), "Invalid shader path!")) {
-            SR_WARN("Shader::Load() : failed to load shader!");
-            return nullptr;
-        }
-
-        if (path.GetExtensionView() != "srsl") {
+        if (rawPath.GetExtensionView() != "srsl") {
             SR_ERROR("Shader::Load() : unknown extension!");
             return nullptr;
         }
 
-        auto&& pShader = new Shader();
-
-        pShader->SetId(path.ToString(), false);
-
-        if (!pShader->Reload()) {
-            SR_ERROR("Shader::Load() : failed to reload shader!\n\tPath: " + path.ToString());
-            pShader->DeleteResource();
-            return nullptr;
-        }
-
-        resourceManager.RegisterResource(pShader);
-
-        return pShader;
+       return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<Shader>(rawPath);
     }
 
     int32_t Shader::GetID() {
@@ -284,7 +255,7 @@ namespace SR_GRAPH_NS::Types {
         }
     }
 
-    void Shader::SetSampler2D(SR_UTILS_NS::StringAtom name, SR_GTYPES_NS::Texture* pSampler) noexcept {
+    void Shader::SetSampler2D(SR_UTILS_NS::StringAtom name, SR_HTYPES_NS::SharedPtr<Texture> pSampler) noexcept {
         if (!IsLoaded() || m_samplers.count(name) == 0) {
             return;
         }
@@ -381,7 +352,7 @@ namespace SR_GRAPH_NS::Types {
     void Shader::LoadDefaultSampler(SR_UTILS_NS::StringAtom name) {
         if (m_defaultSamplers.count(name) == 1) {
             if (auto&& pTexture = SR_GTYPES_NS::Texture::Load(name)) {
-                AddDependency(pTexture);
+                AddDependency(pTexture.StaticCast<SR_UTILS_NS::ResourceContainer>());
                 m_defaultSamplers[name] = pTexture;
             }
             else {
@@ -399,7 +370,7 @@ namespace SR_GRAPH_NS::Types {
             if (!pTexture) {
                 continue;
             }
-            RemoveDependency(pTexture);
+            RemoveDependency(pTexture.StaticCast<SR_UTILS_NS::ResourceContainer>());
         }
         m_defaultSamplers.clear();
     }

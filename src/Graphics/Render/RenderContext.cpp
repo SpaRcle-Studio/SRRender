@@ -238,8 +238,8 @@ namespace SR_GRAPH_NS {
         return pRenderScene;
     }
 
-    void RenderContext::Register(SR_GTYPES_NS::Framebuffer* pResource) {
-        if (!RegisterResource(pResource)) {
+    void RenderContext::Register(SR_GTYPES_NS::Framebuffer::Ptr pResource) {
+        if (!RegisterResource(pResource.Get())) {
             return;
         }
         m_framebuffers.emplace_back(pResource);
@@ -430,15 +430,15 @@ namespace SR_GRAPH_NS {
         return m_shaders;
     }
 
-    const std::vector<SR_GTYPES_NS::Framebuffer*>& RenderContext::GetFramebuffers() const noexcept {
+    const std::vector<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>>& RenderContext::GetFramebuffers() const noexcept {
         return m_framebuffers;
     }
 
-    const std::vector<SR_GTYPES_NS::Texture*>& RenderContext::GetTextures() const noexcept {
+    const std::vector<RenderContext::TexturePtr>& RenderContext::GetTextures() const noexcept {
         return m_textures;
     }
 
-    const std::vector<IRenderTechnique*>& RenderContext::GetRenderTechniques() const noexcept {
+    const std::vector<IRenderTechnique::Ptr>& RenderContext::GetRenderTechniques() const noexcept {
         return m_techniques;
     }
 

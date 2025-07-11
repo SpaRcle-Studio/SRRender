@@ -149,9 +149,9 @@ namespace SR_GTYPES_NS {
         //}
     }
 
-    bool SkinnedMesh::OnResourceReloaded(SR_UTILS_NS::IResource* pResource) {
+    bool SkinnedMesh::OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) {
         bool changed = Mesh::OnResourceReloaded(pResource);
-        if (GetRawMesh() == pResource) {
+        if (GetRawMesh().Get() == pResource) {
             OnRawMeshChanged();
             return true;
         }

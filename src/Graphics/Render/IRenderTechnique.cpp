@@ -17,7 +17,7 @@ namespace SR_GRAPH_NS {
 
     IRenderTechnique::~IRenderTechnique() {
         for (auto&& pPass : m_passes) {
-            delete pPass;
+            pPass.AutoFree();
         }
         m_passes.clear();
         ReleaseFrameBufferControllers();
@@ -129,7 +129,7 @@ namespace SR_GRAPH_NS {
             if (pPass->IsInit()) {
                 pPass->DeInit();
             }
-            delete pPass;
+            pPass.AutoFree();
         }
         m_passes.clear();
         ReleaseFrameBufferControllers();
@@ -207,5 +207,9 @@ namespace SR_GRAPH_NS {
             pController.AutoFree();
         }
         m_frameBufferControllers.clear();
+    }
+
+    bool IRenderTechnique::IsTechniqueDead() const {
+        return m_isDead;
     }
 }

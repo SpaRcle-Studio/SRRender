@@ -7,7 +7,7 @@
 namespace SR_GRAPH_NS {
     GroupPass::~GroupPass() {
         for (auto&& pPass : m_passes) {
-            delete pPass;
+            pPass.AutoFree();
         }
         m_passes.clear();
     }
@@ -152,11 +152,11 @@ namespace SR_GRAPH_NS {
 
     bool GroupPass::ForEachPass(const SR_HTYPES_NS::Function<bool(BasePass*)>& callback) const {
         for (auto&& pPass : m_passes) {
-            if (!callback(pPass)) {
+            if (!callback(const_cast<BasePass*>(pPass.Get()))) {
                 return false;
             }
 
-            if (auto&& pGroupPass = dynamic_cast<GroupPass*>(pPass)) {
+            if (auto&& pGroupPass = pPass.DynamicCast<GroupPass>()) {
                 if (!pGroupPass->ForEachPass(callback)) {
                     return false;
                 }
@@ -165,9 +165,9 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    BasePass *GroupPass::FindPass(const SR_UTILS_NS::StringAtom& name) const {
+    BasePass* GroupPass::FindPass(const SR_UTILS_NS::StringAtom& name) const {
         for (auto&& pPass : m_passes) {
-            if (auto&& pGroupPass = dynamic_cast<GroupPass*>(pPass)) {
+            if (auto&& pGroupPass = pPass.DynamicCast<GroupPass>()) {
                 if (auto&& pFoundPass = pGroupPass->FindPass(name)) {
                     return pFoundPass;
                 }
@@ -177,7 +177,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            return pPass;
+            return const_cast<BasePass*>(pPass.Get());
         }
 
         return nullptr;

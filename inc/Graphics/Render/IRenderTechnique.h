@@ -37,6 +37,9 @@ namespace SR_GRAPH_NS {
         using Context = RenderContext*;
         SR_INLINE static const std::string DEFAULT_RENDER_TECHNIQUE = "Engine/Configs/MainRenderTechnique.xml";
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<IRenderTechnique>;
+
+    public:
         IRenderTechnique();
         ~IRenderTechnique() override;
 
@@ -45,8 +48,11 @@ namespace SR_GRAPH_NS {
         bool Overlay() override;
         bool Render() override;
         void Update() override;
+        void SetDirty();
 
         bool Init() override;
+
+        void KillTechnique() { SRAssert(!m_isDead); m_isDead = true; }
 
         void FreeVideoMemory() override;
 
@@ -56,6 +62,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD CameraPtr GetCamera() const noexcept { return m_camera; }
         SR_NODISCARD RenderScenePtr GetRenderScene() const override;
         SR_NODISCARD bool IsEmpty() const;
+        SR_NODISCARD bool IsTechniqueDead() const;
 
         void OnResize(const SR_MATH_NS::UVector2& size) override;
         void OnMultisampleChanged() override;
@@ -70,7 +77,6 @@ namespace SR_GRAPH_NS {
 
     protected:
         virtual bool Build() { return true; }
-        void SetDirty();
         void DeInitPasses();
         void ReleaseFrameBufferControllers();
 
@@ -81,6 +87,7 @@ namespace SR_GRAPH_NS {
         RenderScenePtr m_renderScene;
         std::atomic<bool> m_dirty = false;
         std::atomic<bool> m_hasErrors = false;
+        std::atomic<bool> m_isDead = false;
 
         std::map<SR_UTILS_NS::StringAtom, FrameBufferControllerPtr> m_frameBufferControllers;
 

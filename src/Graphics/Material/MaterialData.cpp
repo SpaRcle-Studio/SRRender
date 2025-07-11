@@ -13,7 +13,7 @@ namespace SR_GRAPH_NS {
         Super::Save(serializer);
 
         if (IsSamplerType(type)) {
-            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture*>(data)) {
+            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(data)) {
                 SR_UTILS_NS::Serialization::Save(serializer, pTexture->GetResourcePath(), SR_UTILS_NS::SerializationId::Create("value"));
             }
             return;
@@ -58,7 +58,7 @@ namespace SR_GRAPH_NS {
 
             auto&& pTexture = SR_GTYPES_NS::Texture::Load(path);
 
-            if (auto&& pOldTextureRef = std::get_if<SR_GTYPES_NS::Texture*>(&data)) {
+            if (auto&& pOldTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&data)) {
                 if (*pOldTextureRef) {
                     (*pOldTextureRef)->RemoveUsePoint();
                 }
@@ -110,14 +110,14 @@ namespace SR_GRAPH_NS {
 
     void MaterialShaderData::OnPreLoad() {
         for (MaterialShaderProperty& sampler : samplers) {
-            pOwnedMaterialData->OnSamplerChanged(std::get<SR_GTYPES_NS::Texture*>(sampler.data), nullptr);
+            pOwnedMaterialData->OnSamplerChanged(std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data), nullptr);
         }
         Serializable::OnPreLoad();
     }
 
     void MaterialShaderData::OnPostLoad() {
         for (MaterialShaderProperty& sampler : samplers) {
-            pOwnedMaterialData->OnSamplerChanged(nullptr, std::get<SR_GTYPES_NS::Texture*>(sampler.data));
+            pOwnedMaterialData->OnSamplerChanged(nullptr, std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data));
         }
         Serializable::OnPostLoad();
     }
@@ -142,11 +142,11 @@ namespace SR_GRAPH_NS {
                         return MaterialPropertyChangeResult::Error;
                     }
 
-                    if (std::get<SR_GTYPES_NS::Texture*>(sampler.data) == std::get<SR_GTYPES_NS::Texture*>(v)) {
+                    if (std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data) == std::get<SR_GTYPES_NS::Texture::Ptr>(v)) {
                         return MaterialPropertyChangeResult::None;
                     }
 
-                    if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture*>(sampler.data)) {
+                    if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data)) {
                         pTexture->RemoveUsePoint();
                         if (SRVerify(pOwnedMaterialData)) {
                             pOwnedMaterialData->OnSamplerChanged(pTexture, nullptr);
@@ -155,7 +155,7 @@ namespace SR_GRAPH_NS {
 
                     sampler.data = v;
 
-                    if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture*>(sampler.data)) {
+                    if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data)) {
                         pTexture->AddUsePoint();
                         if (SRVerify(pOwnedMaterialData)) {
                             pOwnedMaterialData->OnSamplerChanged(nullptr, pTexture);
@@ -295,7 +295,7 @@ namespace SR_GRAPH_NS {
 
         for (auto it = samplers.begin(); it != samplers.end();) {
             if (samplersIds.find(it->id) == samplersIds.end()) {
-                if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture*>(it->data)) {
+                if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(it->data)) {
                     pTexture->RemoveUsePoint();
                     if (SRVerify(pOwnedMaterialData)) {
                         pOwnedMaterialData->OnSamplerChanged(pTexture, nullptr);
@@ -405,7 +405,7 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    SR_GTYPES_NS::Shader* MaterialData::GetShader(const Pipeline* pPipeline) const noexcept {
+    SR_GTYPES_NS::Shader::Ptr MaterialData::GetShader(const Pipeline* pPipeline) const noexcept {
         SR_TRACY_ZONE;
 
         if (auto&& pIt = m_shaders.find(pPipeline->GetRenderStageId()); pIt != m_shaders.end()) {
@@ -423,7 +423,7 @@ namespace SR_GRAPH_NS {
                 data.pShader = nullptr;
             }
             for (MaterialShaderProperty& sampler : data.samplers) {
-                if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture*>(&sampler.data)) {
+                if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&sampler.data)) {
                     if (*pTextureRef) {
                         (*pTextureRef)->RemoveUsePoint();
                     }
@@ -438,7 +438,7 @@ namespace SR_GRAPH_NS {
             m_defaultShader.pShader = nullptr;
         }
         for (MaterialShaderProperty& sampler : m_defaultShader.samplers) {
-            if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture*>(&sampler.data)) {
+            if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&sampler.data)) {
                 if (*pTextureRef) {
                     (*pTextureRef)->RemoveUsePoint();
                 }
@@ -501,7 +501,7 @@ namespace SR_GRAPH_NS {
         }
 
         for (MaterialShaderProperty& sampler : shaderData.samplers) {
-            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture*>(sampler.data)) {
+            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data)) {
                 pShader->SetSampler2D(sampler.id, pTexture);
             }
             else {
@@ -551,7 +551,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialData::SetShader(SR_GTYPES_NS::Shader* pShader, const SR_UTILS_NS::StringAtom stage) {
+    void MaterialData::SetShader(SR_GTYPES_NS::Shader::Ptr pShader, const SR_UTILS_NS::StringAtom stage) {
         SR_TRACY_ZONE;
 
         if (!pShader) {
@@ -629,7 +629,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialData::OnSamplerChanged(SR_GTYPES_NS::Texture* pOldTexture, SR_GTYPES_NS::Texture* pNewTexture) noexcept {
+    void MaterialData::OnSamplerChanged(SR_GTYPES_NS::Texture::Ptr pOldTexture, SR_GTYPES_NS::Texture::Ptr pNewTexture) noexcept {
         if (pOldTexture == pNewTexture) {
             return;
         }
@@ -679,7 +679,7 @@ namespace SR_GRAPH_NS {
         pStageIt->second.pShader = nullptr;
 
         for (MaterialShaderProperty& sampler : pStageIt->second.samplers) {
-            if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture*>(&sampler.data)) {
+            if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&sampler.data)) {
                 if (*pTextureRef) {
                     (*pTextureRef)->RemoveUsePoint();
 

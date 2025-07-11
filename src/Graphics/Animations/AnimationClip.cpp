@@ -12,10 +12,10 @@
 
 #include <Utils/Types/RawMesh.h>
 
+#include <Codegen/AnimationClip.generated.hpp>
+
 namespace SR_ANIMATIONS_NS {
-    AnimationClip::AnimationClip()
-        : Super(SR_COMPILE_TIME_CRC32_TYPE_NAME(AnimationClip))
-    { }
+    AnimationClip::AnimationClip() = default;
 
     AnimationClip::~AnimationClip() {
         for (auto&& pChannel : m_channels) {
@@ -24,7 +24,7 @@ namespace SR_ANIMATIONS_NS {
         m_channels.clear();
     }
 
-    AnimationClip* AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton, SR_UTILS_NS::StringAtom name) {
+    AnimationClip::Ptr AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton, SR_UTILS_NS::StringAtom name) {
         SR_GLOBAL_LOCK
 
         auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
@@ -35,7 +35,7 @@ namespace SR_ANIMATIONS_NS {
             return nullptr;
         }
 
-        AnimationClip* pAnimationClip = nullptr;
+        AnimationClip::Ptr pAnimationClip = nullptr;
 
         resourceManager.Execute([&]() {
             auto&& resourceId = path.GetExtensionView() == "animation" ? path.ToString() :
@@ -46,7 +46,7 @@ namespace SR_ANIMATIONS_NS {
                 return;
             }
 
-            pAnimationClip = new AnimationClip();
+            pAnimationClip = AnimationClip::MakeShared<AnimationClip>();
             pAnimationClip->SetId(resourceId, false /** auto register */);
             pAnimationClip->m_skeletonPath = SR_UTILS_NS::Path(skeleton).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
 
@@ -58,14 +58,14 @@ namespace SR_ANIMATIONS_NS {
             }
 
             /// отложенная ручная регистрация
-            SR_UTILS_NS::ResourceManager::Instance().RegisterResource(pAnimationClip);
+            SR_UTILS_NS::ResourceManager::Instance().RegisterResource(pAnimationClip.StaticCast<SR_UTILS_NS::IResource>());
         });
 
         return pAnimationClip;
     }
 
-    std::vector<AnimationClip*> AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton) {
-        std::vector<AnimationClip*> animations;
+    std::vector<AnimationClip::Ptr> AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton) {
+        std::vector<AnimationClip::Ptr> animations;
 
         SR_HTYPES_NS::RawMeshParams params;
         params.animation = true;
@@ -154,7 +154,7 @@ namespace SR_ANIMATIONS_NS {
                 return false;
             }
 
-            SR_HTYPES_NS::RawMesh* pSkeletonMesh = nullptr;
+            SR_HTYPES_NS::RawMesh::Ptr pSkeletonMesh = nullptr;
 
             if (m_skeletonPath.empty() || m_skeletonPath == rawPath) {
                 pSkeletonMesh = pRawMesh;
@@ -167,7 +167,7 @@ namespace SR_ANIMATIONS_NS {
                 }
             }
 
-            if (!LoadChannels(pRawMesh, pSkeletonMesh, animationName)) {
+            if (!LoadChannels(pRawMesh.Get(), pSkeletonMesh.Get(), animationName)) {
                 std::string animations;
             #ifdef SR_UTILS_ASSIMP
                 const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());

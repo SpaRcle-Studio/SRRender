@@ -14,28 +14,28 @@
 namespace SR_GRAPH_NS {
     SR_REGISTER_RENDER_PASS(OpaquePass)
 
-    void OpaquePass::UseSharedUniforms(SR_GTYPES_NS::Shader *pShader) {
-        if (m_camera) {
-            pShader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());
-            pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
-            pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, m_camera->GetOrthogonal());
-            pShader->SetVec3(SHADER_VIEW_DIRECTION, m_camera->GetViewDirection());
-            pShader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
-        }
+//  void OpaquePass::UseSharedUniforms(SR_GTYPES_NS::Shader *pShader) {
+//      if (m_camera) {
+//          pShader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());
+//          pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
+//          pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, m_camera->GetOrthogonal());
+//          pShader->SetVec3(SHADER_VIEW_DIRECTION, m_camera->GetViewDirection());
+//          pShader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
+//      }
 
-        SR_MATH_NS::FVector3 lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
-        pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
+//      SR_MATH_NS::FVector3 lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
+//      pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
 
-        if (m_shadowMapPass) {
-            pShader->SetMat4(SHADER_LIGHT_SPACE_MATRIX, m_shadowMapPass->GetLightSpaceMatrix());
-        }
-        else if (m_cascadedShadowMapPass) {
-            pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadedShadowMapPass->GetCascadeMatrices().data());
-            pShader->SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadedShadowMapPass->GetSplitDepths().data());
-        }
+//      if (m_shadowMapPass) {
+//          pShader->SetMat4(SHADER_LIGHT_SPACE_MATRIX, m_shadowMapPass->GetLightSpaceMatrix());
+//      }
+//      else if (m_cascadedShadowMapPass) {
+//          pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadedShadowMapPass->GetCascadeMatrices().data());
+//          pShader->SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadedShadowMapPass->GetSplitDepths().data());
+//      }
 
-        Super::UseSharedUniforms(pShader);
-    }
+//      Super::UseSharedUniforms(pShader);
+//  }
 
     MeshClusterType OpaquePass::GetClusterType() const noexcept {
         return static_cast<MeshClusterType>(MeshClusterType::Opaque);

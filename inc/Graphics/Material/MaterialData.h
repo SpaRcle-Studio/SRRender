@@ -50,7 +50,7 @@ namespace SR_GRAPH_NS {
         SR_STRUCT()
 
         MaterialData* pOwnedMaterialData = nullptr;
-        SR_GTYPES_NS::Shader* pShader = nullptr;
+        SR_GTYPES_NS::Shader::Ptr pShader = nullptr;
 
         /// @property
         std::vector<MaterialShaderProperty> uniforms;
@@ -88,7 +88,7 @@ namespace SR_GRAPH_NS {
         void Save(SR_UTILS_NS::ISerializer& serializer) const override;
         bool Load(SR_UTILS_NS::IDeserializer& deserializer) override;
 
-        SR_NODISCARD SR_GTYPES_NS::Shader* GetShader(const Pipeline* pPipeline) const noexcept;
+        SR_NODISCARD SR_GTYPES_NS::Shader::Ptr GetShader(const Pipeline* pPipeline) const noexcept;
 
         void Finalize();
 
@@ -104,9 +104,9 @@ namespace SR_GRAPH_NS {
 
         void SR_FASTCALL SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept;
         void SR_FASTCALL SetShader(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom stage = SR_UTILS_NS::StringAtom());
-        void SR_FASTCALL SetShader(SR_GTYPES_NS::Shader* pShader, SR_UTILS_NS::StringAtom stage = SR_UTILS_NS::StringAtom());
+        void SR_FASTCALL SetShader(SR_GTYPES_NS::Shader::Ptr pShader, SR_UTILS_NS::StringAtom stage = SR_UTILS_NS::StringAtom());
         void SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
-        void SR_FASTCALL OnSamplerChanged(SR_GTYPES_NS::Texture* pOldTexture, SR_GTYPES_NS::Texture* pNewTexture) noexcept;
+        void SR_FASTCALL OnSamplerChanged(SR_GTYPES_NS::Texture::Ptr pOldTexture, SR_GTYPES_NS::Texture::Ptr pNewTexture) noexcept;
 
         void RemoveStage(SR_UTILS_NS::StringAtom stage);
         void OnPropertyChanged(bool onlyUniforms);
@@ -115,8 +115,8 @@ namespace SR_GRAPH_NS {
         void OnShaderChanged();
 
     private:
-        std::map<SR_GTYPES_NS::Shader*, std::pair<SR_UTILS_NS::Subscription, uint32_t>> m_shaderSubscriptions;
-        std::map<SR_GTYPES_NS::Texture*, std::pair<SR_UTILS_NS::Subscription, uint32_t>> m_textureSubscriptions;
+        std::map<SR_GTYPES_NS::Shader::Ptr, std::pair<SR_UTILS_NS::Subscription, uint32_t>> m_shaderSubscriptions;
+        std::map<SR_GTYPES_NS::Texture::Ptr, std::pair<SR_UTILS_NS::Subscription, uint32_t>> m_textureSubscriptions;
         MaterialShaderData m_defaultShader;
         std::map<SR_UTILS_NS::StringAtom, MaterialShaderData> m_shaders;
 

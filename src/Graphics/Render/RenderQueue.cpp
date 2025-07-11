@@ -164,7 +164,7 @@ namespace SR_GRAPH_NS {
 
         for (auto* pElement = pStart; pElement < pEnd; ++pElement) {
             const auto pMesh = pElement->first;
-            const auto& info = pElement->second;
+            auto& info = pElement->second;
 
             pMesh->SetUniformsClean();
 
@@ -173,7 +173,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            m_pipeline->SetCurrentShader(info.pShader);
+            m_pipeline->SetCurrentShader(info.pShader.Get());
 
             /** Если меш не был отрисован, то бинд не пройдет */
             if (m_uboManager.BindNoDublicateUBO(virtualUbo) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
@@ -313,7 +313,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_renderContext->SetCurrentShader(pShader);
+        m_renderContext->SetCurrentShader(pShader.Get());
 
         if (m_pipeline->IsShaderChanged()) {
             m_meshDrawerPass->UseConstants(info);

@@ -75,7 +75,7 @@ namespace SR_GTYPES_NS {
 
         m_isComputeState = true;
 
-        GetPipeline()->SetCurrentShader(m_pShader);
+        GetPipeline()->SetCurrentShader(m_pShader.Get());
 
         return GetPipeline()->BeginCompute();
     }

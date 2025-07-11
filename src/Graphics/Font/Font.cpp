@@ -7,40 +7,14 @@
 
 #include <freetype/include/freetype/ftglyph.h>
 
+#include <Codegen/Font.generated.hpp>
+
 namespace SR_GTYPES_NS {
-    Font::Font()
-        : Super(SR_COMPILE_TIME_CRC32_TYPE_NAME(Font))
-    { }
+    Font::Font() = default;
 
-    Font* Font::Load(const SR_UTILS_NS::Path& rawPath) {
+    Font::Ptr Font::Load(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
-        SR_GLOBAL_LOCK
-
-        SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
-
-        if (path.empty()) {
-            SRHalt("Font::Load() : path is empty!");
-            return nullptr;
-        }
-
-        if (auto&& pResource = SR_UTILS_NS::ResourceManager::Instance().Find<Font>(path)) {
-            return pResource;
-        }
-
-        auto&& pResource = new Font();
-
-        pResource->SetId(path.ToStringRef(), false /** auto register */);
-
-        if (!pResource->Reload()) {
-            SR_ERROR("Font::Load() : failed to load font! \n\tPath: " + path.ToString());
-            pResource->DeleteResource();
-            return nullptr;
-        }
-
-        /// отложенная ручная регистрация
-        SR_UTILS_NS::ResourceManager::Instance().RegisterResource(pResource);
-
-        return pResource;
+        return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<Font>(rawPath);
     }
 
     bool Font::Unload() {

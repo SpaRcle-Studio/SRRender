@@ -64,7 +64,7 @@ namespace SR_GRAPH_NS {
         }
 
         /// установим кадровый буфер, чтобы BeginCmdBuffer понимал какие значение для очистки ставить
-        pPipeline->SetCurrentFrameBuffer(pFrameBuffer);
+        pPipeline->SetCurrentFrameBuffer(pFrameBuffer.Get());
 
         if (GetLayersCount() > 1) {
             return RenderFrameBuffer(pPipeline, GetLayersCount());
@@ -120,7 +120,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        pPipeline->SetCurrentFrameBuffer(pFrameBuffer);
+        pPipeline->SetCurrentFrameBuffer(pFrameBuffer.Get());
 
         for (uint32_t i = 0; i < GetLayersCount(); ++i) {
             pPipeline->SetCurrentFrameBufferLayer(i);

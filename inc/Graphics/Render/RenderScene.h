@@ -70,7 +70,7 @@ namespace SR_GRAPH_NS {
 
         void Synchronize();
 
-        void OnResourceReloaded(SR_UTILS_NS::IResource* pResource);
+        void OnResourceReloaded(const SR_UTILS_NS::IResource::Ptr& pResource);
         void OnResize(const SR_MATH_NS::UVector2& size);
 
         /// Можно вызывать не синхронно
@@ -78,7 +78,7 @@ namespace SR_GRAPH_NS {
 
         void SetDirtyCameras();
 
-        void SetTechnique(IRenderTechnique* pTechnique);
+        void SetTechnique(const SR_HTYPES_NS::SharedPtr<IRenderTechnique>& pTechnique);
         void SetTechnique(const SR_UTILS_NS::Path& path);
 
         void Register(const CameraPtr& pCamera);
@@ -154,7 +154,7 @@ namespace SR_GRAPH_NS {
         ScenePtr m_scene;
 
         std::map<SR_UTILS_NS::StringAtom, SR_HTYPES_NS::SharedPtr<IRenderer>> m_renderers;
-        IRenderTechnique* m_technique = nullptr;
+        SR_HTYPES_NS::SharedPtr<IRenderTechnique> m_technique;
         RenderContext* m_context = nullptr;
 
         PassQueues m_queues;

@@ -13,6 +13,7 @@
 
 #include <Graphics/Render/MeshCluster.h>
 #include <Graphics/Memory/IGraphicsResource.h>
+#include <Graphics/Render/IRenderTechnique.h>
 #include <Graphics/Pipeline/PipelineType.h>
 
 namespace SR_GTYPES_NS {
@@ -50,9 +51,9 @@ namespace SR_GRAPH_NS {
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::Pipeline>;
         using Super = SR_HTYPES_NS::SafePtr<RenderContext>;
         using MaterialPtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::BaseMaterial>;
-        using TexturePtr = SR_GTYPES_NS::Texture*;
+        using TexturePtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>;
         using SkyboxPtr = SR_GTYPES_NS::Skybox*;
-        using FramebufferPtr = SR_GTYPES_NS::Framebuffer*;
+        using FramebufferPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>;
         using CameraPtr = SR_GTYPES_NS::Camera*;
         using ShaderPtr = SR_GTYPES_NS::Shader*;
         using WindowPtr = SR_HTYPES_NS::SharedPtr<Window>;
@@ -105,9 +106,9 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD FramebufferPtr FindFramebuffer(SR_UTILS_NS::StringAtom name, CameraPtr pCamera) const;
         SR_NODISCARD SR_MATH_NS::UVector2 GetWindowSize() const;
         SR_NODISCARD const std::vector<SR_GTYPES_NS::Shader*>& GetShaders() const noexcept;
-        SR_NODISCARD const std::vector<SR_GTYPES_NS::Framebuffer*>& GetFramebuffers() const noexcept;
-        SR_NODISCARD const std::vector<SR_GTYPES_NS::Texture*>& GetTextures() const noexcept;
-        SR_NODISCARD const std::vector<IRenderTechnique*>& GetRenderTechniques() const noexcept;
+        SR_NODISCARD const std::vector<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>>& GetFramebuffers() const noexcept;
+        SR_NODISCARD const std::vector<TexturePtr>& GetTextures() const noexcept;
+        SR_NODISCARD const std::vector<IRenderTechnique::Ptr>& GetRenderTechniques() const noexcept;
         SR_NODISCARD const std::vector<SR_GTYPES_NS::Skybox*>& GetSkyboxes() const noexcept;
         SR_NODISCARD const RenderScenes& GetScenes() const noexcept { return m_scenes; }
 
@@ -142,10 +143,10 @@ namespace SR_GRAPH_NS {
     private:
         RCUpdateQueueState m_updateState = RCUpdateQueueState::Begin;
 
-        std::vector<SR_GTYPES_NS::Framebuffer*> m_framebuffers;
+        std::vector<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>> m_framebuffers;
         std::vector<SR_GTYPES_NS::Shader*> m_shaders;
         std::vector<TexturePtr> m_textures;
-        std::vector<IRenderTechnique*> m_techniques;
+        std::vector<SR_HTYPES_NS::SharedPtr<IRenderTechnique>> m_techniques;
         std::vector<SkyboxPtr> m_skyboxes;
 
         RenderScenes m_scenes;
@@ -174,44 +175,69 @@ namespace SR_GRAPH_NS {
         
         bool dirty = false;
 
-        static auto&& freeVideoMemory = [](SR_UTILS_NS::IResource* pResource) {
-            /// Ресурс необязательно имеет видеопамять, а лишь содержит другие ресурсы, например материал.
-            if (auto&& pGraphicsResource = dynamic_cast<Memory::IGraphicsResource*>(pResource)) {
-                pGraphicsResource->FreeVideoMemory();
-                pGraphicsResource->DeInitGraphicsResource();
-            }
-        };
+        if constexpr (std::is_same_v<T, std::vector<SR_HTYPES_NS::SharedPtr<IRenderTechnique>>>) {
+            for (auto&& pIt = std::begin(resourceList); pIt != std::end(resourceList); ) {
+                SR_HTYPES_NS::SharedPtr<IRenderTechnique> pRenderTechnique = *pIt;
 
-        for (auto pIt = std::begin(resourceList); pIt != std::end(resourceList); ) {
-            auto&& pRenderResource = *pIt;
+                if (!pRenderTechnique) {
+                    SRHalt("Render technique is nullptr!");
+                    pIt = resourceList.erase(pIt);
+                    dirty |= true;
+                    continue;
+                }
 
-            auto&& pResource = dynamic_cast<SR_UTILS_NS::IResource*>(pRenderResource);
-
-            if (pResource) {
-                const bool removed = pResource->Execute([&]() -> bool {
-                    if (pResource->GetCountUses() == 1) {
-                        SRAssert(pResource->GetContainerParents().empty());
-
-                        freeVideoMemory(pResource);
-
-                        pResource->RemoveUsePoint();
-                        pIt = resourceList.erase(pIt);
-                        /// После освобождения ресурса необходимо перестроить все контекстные сцены рендера.
-                        dirty |= true;
-                        return true;
-                    }
-
-                    return false;
-                });
-
-                /// TODO: это безопасно?
-                if (!removed) {
+                if (pRenderTechnique->IsTechniqueDead()) {
+                    pRenderTechnique->FreeVideoMemory();
+                    pRenderTechnique->DeInitGraphicsResource();
+                    pIt = resourceList.erase(pIt);
+                    pRenderTechnique.AutoFree();
+                    dirty |= true;
+                }
+                else {
                     ++pIt;
                 }
             }
-            else {
-                freeVideoMemory(pResource);
-                ++pIt;
+        }
+        else {
+            static auto&& freeVideoMemory = [](SR_UTILS_NS::IResource* pResource) {
+                /// Ресурс необязательно имеет видеопамять, а лишь содержит другие ресурсы, например материал.
+                if (auto&& pGraphicsResource = dynamic_cast<Memory::IGraphicsResource*>(pResource)) {
+                    pGraphicsResource->FreeVideoMemory();
+                    pGraphicsResource->DeInitGraphicsResource();
+                }
+            };
+
+            for (auto pIt = std::begin(resourceList); pIt != std::end(resourceList); ) {
+                auto&& pRenderResource = *pIt;
+
+                auto&& pResource = dynamic_cast<SR_UTILS_NS::IResource*>(pRenderResource->Get());
+
+                if (pResource) {
+                    const bool removed = pResource->Execute([&]() -> bool {
+                        if (pResource->GetCountUses() == 1) {
+                            SRAssert(pResource->GetContainerParents().empty());
+
+                            freeVideoMemory(pResource);
+
+                            pResource->RemoveUsePoint();
+                            pIt = resourceList.erase(pIt);
+                            /// После освобождения ресурса необходимо перестроить все контекстные сцены рендера.
+                            dirty |= true;
+                            return true;
+                        }
+
+                        return false;
+                    });
+
+                    /// TODO: это безопасно?
+                    if (!removed) {
+                        ++pIt;
+                    }
+                }
+                else {
+                    freeVideoMemory(pResource);
+                    ++pIt;
+                }
             }
         }
 

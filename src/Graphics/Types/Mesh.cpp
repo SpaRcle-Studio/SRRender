@@ -52,7 +52,7 @@ namespace SR_GTYPES_NS {
 
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, uint32_t id) {
         if (auto&& pRawMesh =  SR_HTYPES_NS::RawMesh::Load(path)) {
-            return TryLoad(pRawMesh, type, id);
+            return TryLoad(pRawMesh.Get(), type, id);
         }
 
         SR_ERROR("Mesh::Load() : failed to load mesh!\n\tPath: " + path.ToStringRef() + "\n\tId: " + std::to_string(id));
@@ -61,8 +61,8 @@ namespace SR_GTYPES_NS {
     }
 
     Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
-        if (SR_HTYPES_NS::RawMesh* pRawMesh = SR_HTYPES_NS::RawMesh::Load(path)) {
-            if (auto&& pMesh = TryLoad(pRawMesh, type, id)) {
+        if (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path)) {
+            if (auto&& pMesh = TryLoad(pRawMesh.Get(), type, id)) {
                 return pMesh;
             }
             pRawMesh->CheckResourceUsage();
@@ -129,7 +129,7 @@ namespace SR_GTYPES_NS {
         uint32_t id = 0;
         auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path);
         while (pRawMesh) {
-            if (auto&& pMesh = TryLoad(pRawMesh, type, id)) {
+            if (auto&& pMesh = TryLoad(pRawMesh.Get(), type, id)) {
                 meshes.emplace_back(pMesh);
                 ++id;
             }
@@ -311,7 +311,7 @@ namespace SR_GTYPES_NS {
         return m_sceneObject->GetLayer();
     }
 
-    bool Mesh::OnResourceReloaded(SR_UTILS_NS::IResource* pResource) {
+    bool Mesh::OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) {
         return false;
     }
 
