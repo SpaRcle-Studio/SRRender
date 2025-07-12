@@ -118,7 +118,7 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        if (m_pShader->Use() == SR_GRAPH_NS::ShaderBindResult::Success) {
+        if (m_pShader->Use() != SR_GRAPH_NS::ShaderBindResult::Failed) {
             m_virtualUBO = SR_GRAPH_NS::Memory::UBOManager::Instance().AllocateUBO(m_virtualUBO);
 
             if (m_descriptorSet == SR_ID_INVALID) {

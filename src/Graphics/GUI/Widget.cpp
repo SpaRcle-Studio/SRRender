@@ -71,6 +71,13 @@ namespace SR_GRAPH_GUI_NS {
 
         bool open = m_open;
         if (ImGui::Begin(m_name.c_str(), &open, flags)) {
+            auto&& windowSize = ImGui::GetWindowSize();
+            if (windowSize.x < 40.0f || windowSize.y < 40.0f) {
+                if (!m_defaultSize.HasZero()) {
+                    ImGui::SetWindowSize(ImVec2(m_defaultSize.x, m_defaultSize.y));
+                }
+            }
+
             auto&& pCurrentViewport = ImGui::GetWindowViewport();
 
             if (pPreviousViewport != pCurrentViewport) {
@@ -105,7 +112,13 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::Text("%s", text.c_str());
     }
 
-    void Widget::Open()  {
+    void Widget::Focus() {
+        if (!IsFocused())  {
+            ImGui::SetWindowFocus(m_name.c_str());
+        }
+    }
+
+    void Widget::Open() {
         if (!m_open)
             OnOpen();
 
