@@ -99,20 +99,20 @@ namespace SR_GRAPH_NS {
 
         auto&& fontPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/tahoma.ttf");
 
+        static const ImWchar ranges[] = {
+            0x0020, 0x00FF, /// Basic Latin + Latin Supplement
+            0x0400, 0x044F, /// Cyrillic
+            0,
+        };
+
         SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: " + fontPath.ToString());
         if (fontPath.Exists()) {
             ImFontConfig font_config;
             font_config.OversampleH = 1; /// Or 2 is the same
             font_config.OversampleV = 1;
             font_config.PixelSnapH = true;
-
-            static const ImWchar ranges[] = {
-                0x0020, 0x00FF, /// Basic Latin + Latin Supplement
-                0x0400, 0x044F, /// Cyrillic
-                0,
-            };
-
             m_mainFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), m_fontSize, nullptr, ranges);
+            m_smallFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), m_fontSize * 0.75f, nullptr, ranges);
         }
         else {
             SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found!\n\tPath: " + fontPath.ToString());
