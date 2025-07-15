@@ -47,6 +47,9 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Widget::DrawWindow()  {
+        SR_TRACY_ZONE;
+        SR_TRACY_ZONE_TEXT(GetName());
+
         m_widgetFlags = WIDGET_FLAG_NONE;
 
         if (m_center) {

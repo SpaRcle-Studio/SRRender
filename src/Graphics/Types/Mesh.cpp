@@ -403,7 +403,7 @@ namespace SR_GTYPES_NS {
         DeInitGraphicsResource();
         SetMaterial(MaterialPtr());
 
-        AutoFree();
+        GetThis().AutoFree();
 
         return isRegistered;
     }
