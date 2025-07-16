@@ -325,7 +325,7 @@ namespace SR_GRAPH_NS::Types {
         return m_samplers.size();
     }
 
-    ShaderProperties Shader::GetProperties() {
+    const ShaderProperties& Shader::GetProperties() const {
         return m_properties;
     }
 

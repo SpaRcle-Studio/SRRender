@@ -220,7 +220,11 @@ namespace SR_GRAPH_NS {
     }
 
     void MaterialShaderData::UpdateProperties() {
+        SR_TRACY_ZONE;
         const ShaderProperties& properties = pShader->GetProperties();
+
+        samplers.reserve(16);
+        uniforms.reserve(16);
 
         std::set<SR_UTILS_NS::StringAtom> uniformsIds;
         std::set<SR_UTILS_NS::StringAtom> samplersIds;
@@ -700,10 +704,12 @@ namespace SR_GRAPH_NS {
     }
 
     void MaterialData::OnShaderChanged() {
+        SR_TRACY_ZONE;
         Broadcast(SHADER_CHANGED_EVENT);
     }
 
     void MaterialData::OnPropertyChanged(const bool onlyUniforms) {
+        SR_TRACY_ZONE;
         SR_UTILS_NS::SubscriptionMessage msg;
         msg.SetBool(ONLY_UNIFORMS_BOOL_ID, onlyUniforms);
         Broadcast(PROPERTY_CHANGED_EVENT, msg);
