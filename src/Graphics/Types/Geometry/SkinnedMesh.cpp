@@ -11,12 +11,6 @@ namespace SR_GTYPES_NS {
         : Super()
     {
         m_skeleton.SetOwner(GetThis());
-
-        // m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("SkeletonInv")
-        //     .SetLabel("Skeleton is not usable!")
-        //     .SetColor(SR_MATH_NS::FColor(1.f, 0.f, 0.f, 1.f))
-        //     .SetActiveCondition([this] { return !IsSkeletonUsable(); })
-        //     .SetDontSave();
     }
 
     bool SkinnedMesh::Calculate()  {

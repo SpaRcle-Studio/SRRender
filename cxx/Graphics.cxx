@@ -45,7 +45,7 @@
 #include "../src/Graphics/UI/Canvas.cpp"
 #include "../src/Graphics/UI/Anchor.cpp"
 #include "../src/Graphics/UI/Gizmo.cpp"
-#include "../src/Graphics/UI/UIWindow.cpp"
+#include "../src/Graphics/UI/UIWindowNode.cpp"
 #include "../src/Graphics/UI/UICanvasComponent.cpp"
 #include "../src/Graphics/UI/UISizeComponent.cpp"
 

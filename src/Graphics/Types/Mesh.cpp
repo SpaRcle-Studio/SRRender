@@ -20,27 +20,7 @@ namespace SR_GTYPES_NS {
     Mesh::Mesh()
         : m_uboManager(Memory::UBOManager::Instance())
         , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
-    {
-        /*m_materialProperty.SetMesh(this);
-
-        m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("MeshInv")
-            .SetLabel("Invalid mesh!")
-            .SetColor(SR_MATH_NS::FColor(1.f, 0.f, 0.f, 1.f))
-            .SetActiveCondition([this] { return !IsCalculatable(); })
-            .SetDontSave();
-
-        m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("MeshNotCalc")
-            .SetLabel("Mesh isn't calculated!")
-            .SetColor(SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f))
-            .SetActiveCondition([this] { return !IsCalculated(); })
-            .SetDontSave();
-
-        m_entityMessages.AddCustomProperty<SR_UTILS_NS::LabelProperty>("MeshNotReg")
-            .SetLabel("Mesh isn't registered!")
-            .SetColor(SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f))
-            .SetActiveCondition([this] { return !IsGraphicsResourceRegistered(); })
-            .SetDontSave();*/
-    }
+    { }
 
     Mesh::~Mesh() {
         SRAssert(m_isDestroyingState);
