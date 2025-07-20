@@ -9,9 +9,7 @@
 namespace SR_GTYPES_NS {
     SkinnedMesh::SkinnedMesh()
         : Super()
-    {
-        m_skeleton.SetOwner(GetThis());
-    }
+    { }
 
     bool SkinnedMesh::Calculate()  {
         SR_TRACY_ZONE;
@@ -60,7 +58,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool SkinnedMesh::IsSkeletonUsable() const {
-        return GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>();
+        return m_skeleton;
     }
 
     void SkinnedMesh::LateUpdate() {
@@ -76,7 +74,7 @@ namespace SR_GTYPES_NS {
             if (m_ssboBones == SR_ID_INVALID || m_ssboOffsets == SR_ID_INVALID) {
                 return Super::LateUpdate();
             }
-            auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>();
+            auto&& pSkeleton = m_skeleton.Get();
             if (!pSkeleton || pSkeleton->GetOptimizedBones().empty()) {
                 return Super::LateUpdate();
             }
@@ -109,16 +107,16 @@ namespace SR_GTYPES_NS {
 
         pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
 
-        auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>();
-        auto&& pRenderScene = GetRenderScene();
+        //auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>();
+        //auto&& pRenderScene = GetRenderScene();
 
-        SRAssert(pRenderScene);
+        //SRAssert(pRenderScene);
 
         //if (pRenderScene->GetCurrentSkeleton() == pSkeleton.Get()) {
         //    return;
         //}
 
-        pRenderScene->SetCurrentSkeleton(pSkeleton.Get());
+        //pRenderScene->SetCurrentSkeleton(pSkeleton.Get());
 
 
         //GetRawMesh()->GetOptimizedBones().size();
@@ -161,8 +159,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>();
-
+        auto&& pSkeleton = m_skeleton.Get();
         if (!pSkeleton || !pSkeleton->GetRootBone()) {
             return false;
         }
@@ -176,10 +173,8 @@ namespace SR_GTYPES_NS {
     void SkinnedMesh::OnRawMeshChanged() {
         IRawMeshHolder::OnRawMeshChanged();
 
-        if (GetSkeleton().IsValid()) {
-            if (auto&& pSkeleton = GetSkeleton().GetComponent<SR_ANIMATIONS_NS::Skeleton>()) {
-                pSkeleton->ResetSkeleton();
-            }
+        if (m_skeleton.IsResolved()) {
+            m_skeleton.Get()->ResetSkeleton();
         }
 
         ReRegisterMesh();

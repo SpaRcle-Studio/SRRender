@@ -6,7 +6,7 @@
 #define SR_ENGINE_GRAPHICS_SKINNED_MESH_H
 
 #include <Utils/Types/IRawMeshHolder.h>
-#include <Utils/ECS/EntityRefOld.h>
+#include <Utils/ECS/EntityRef.h>
 
 #include <Graphics/Types/Geometry/MeshComponent.h>
 #include <Graphics/Animations/Skeleton.h>
@@ -16,6 +16,7 @@ namespace SR_GTYPES_NS {
     class SkinnedMesh final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
         SR_CLASS()
         using Super = IndexedMesh;
+        using SkeletonRef = SR_UTILS_NS::EntityRef<SR_ANIMATIONS_NS::Skeleton>;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<SkinnedMesh>;
 
@@ -35,8 +36,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD bool IsUpdatable() const noexcept override { return true; }
         SR_NODISCARD std::string GetMeshIdentifier() const override;
-        SR_NODISCARD const SR_UTILS_NS::EntityRefOld& GetSkeleton() const noexcept { return m_skeleton; }
-        SR_NODISCARD SR_UTILS_NS::EntityRefOld& GetSkeleton() noexcept { return m_skeleton; }
+        SR_NODISCARD const SkeletonRef& GetSkeletonRef() const noexcept { return m_skeleton; }
+        SR_NODISCARD SkeletonRef& GetSkeletonRef() noexcept { return m_skeleton; }
 
         void FreeVideoMemory() override;
 
@@ -60,7 +61,7 @@ namespace SR_GTYPES_NS {
 
     private:
         /// @property
-        SR_UTILS_NS::EntityRefOld m_skeleton;
+        SkeletonRef m_skeleton;
 
         /// @virtualProperty(geometryName) @getter(GetGeometryName) @dontSave @readOnly
         SR_VIRTUAL_PROPERTY

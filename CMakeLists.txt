@@ -19,6 +19,8 @@ option(SR_GRAPHICS_DLL_EXPORTS "" ON)
 option(SR_RENDER_GLFW "" OFF)
 option(SR_RENDER_USE_YOGA "" ON)
 
+SRUseAssimpIfPossible(Graphics)
+
 if (SR_EMSCRIPTEN)
     set(SR_RENDER_USE_VULKAN OFF)
 else()
