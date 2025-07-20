@@ -10,59 +10,33 @@
 namespace SR_GRAPH_NS {
     FileMaterialResource::FileMaterialResource() = default;
 
-    FileMaterialResource::Ptr FileMaterialResource::Load(const SR_UTILS_NS::Path& rawPath) {
-        SR_TRACY_ZONE;
-        return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<FileMaterialResource>(rawPath);
-    }
-
-    bool FileMaterialResource::Load() {
-        SR_TRACY_ZONE;
-
-        const auto&& path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(GetResourcePath());
-
-        SR_UTILS_NS::SRADeserializer deserializer;
-        if (!deserializer.LoadFromFile(path)) {
-            SR_ERROR("FileMaterial::Load() : failed to deserialize material from file! \n\tPath: " + path.ToString());
-            return false;
-        }
-
-        m_data = SRNew<MaterialData>();
-        m_data->Load(deserializer);
-
-        return Super::Load();
-    }
-
-    bool FileMaterialResource::Unload() {
-        SR_TRACY_ZONE;
-        m_data.AutoFree();
-        return Super::Unload();
-    }
-
     bool FileMaterialResource::CreateTemplateMaterial(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
 
         SR_UTILS_NS::Path&& path = rawPath.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
-        path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
 
         if (!path.CreateIfNotExists()) {
             SR_ERROR("FileMaterialResource::CreateTemplateMaterial() : failed to create path for the material! \n\tPath: " + path.ToString());
             return false;
         }
 
+        auto&& pResource = SR_UTILS_NS::Asset::CreateNew<FileMaterialResource>(path);
+        if (!pResource) {
+            SR_ERROR("FileMaterialResource::CreateTemplateMaterial() : failed to create material resource! \n\tPath: " + path.ToString());
+            return false;
+        }
+
         MaterialData::Ptr pData = SRNew<MaterialData>();
+        {
+            pData->SetShader("Engine/Shaders/SSAO/ssao_geometry.srsl");
+            pData->SetShader("Engine/Shaders/CascadedShadowMap/spatial.srsl", "Shadow");
 
-        pData->SetShader("Engine/Shaders/SSAO/ssao_geometry.srsl");
-        pData->SetShader("Engine/Shaders/CascadedShadowMap/spatial.srsl", "Shadow");
+            pData->SetSampler("diffuse", "Engine/Textures/default_improved.png");
+            pData->SetData("color", SR_MATH_NS::FVector4(1.f, 1.f, 1.f, 1.f), ShaderVarType::Vec4);
+        }
+        pResource->SetData(pData);
 
-        pData->SetSampler("diffuse", "Engine/Textures/default_improved.png");
-        pData->SetData("color", SR_MATH_NS::FVector4(1.f, 1.f, 1.f, 1.f), ShaderVarType::Vec4);
-
-        SR_UTILS_NS::SRASerializer serializer;
-        serializer.SetUseTabs(true);
-
-        pData->Save(serializer);
-
-        if (!serializer.SaveToFile(path)) {
+        if (!pResource->SaveAsset(path)) {
             SR_ERROR("FileMaterialResource::CreateTemplateMaterial() : failed to save material to file! \n\tPath: " + path.ToString());
             return false;
         }
@@ -75,7 +49,7 @@ namespace SR_GRAPH_NS {
     BaseMaterial::Ptr FileMaterial::Load(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
 
-        auto&& pResource = FileMaterialResource::Load(rawPath);
+        auto&& pResource = SR_UTILS_NS::Asset::Load<FileMaterialResource>(rawPath);
         if (!pResource) {
             SR_ERROR("FileMaterial::Load() : failed to load material resource! \n\tPath: " + rawPath.ToString());
             return nullptr;
@@ -143,7 +117,7 @@ namespace SR_GRAPH_NS {
         FileMaterialResource::Ptr pMaterial = nullptr;
 
         if (!path.IsEmpty()) {
-            pMaterial = FileMaterialResource::Load(path);
+            pMaterial = SR_UTILS_NS::Asset::Load<FileMaterialResource>(path);
             if (!pMaterial) {
                 SR_ERROR("FileMaterial::SetMaterialPath() : failed to load material resource! \n\tPath: " + path.ToString());
             }
