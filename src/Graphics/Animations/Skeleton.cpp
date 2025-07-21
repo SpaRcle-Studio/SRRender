@@ -179,6 +179,33 @@ namespace SR_ANIMATIONS_NS {
         Super::Update(dt);
     }
 
+    void Skeleton::CalculateTransforms() {
+        SR_TRACY_ZONE;
+
+        auto&& optimizedBones = GetOptimizedBones();
+
+        m_matrices.resize(optimizedBones.size());
+        m_transforms.resize(optimizedBones.size());
+        m_indices.resize(optimizedBones.size());
+
+        m_hasInvalidBones = false;
+        m_isNeedRecalcTransforms = false;
+
+        uint32_t transformIndex = 0;
+
+        for (auto&& [hashName, index] : optimizedBones) {
+            auto&& pBone = GetBone(hashName);
+            auto&& pGameObject = pBone->gameObject;
+
+            if (pGameObject || pBone->hasError || pBone->Initialize()) {
+                m_transforms[index] = pGameObject ? pGameObject->GetTransform().DynamicCast<SR_UTILS_NS::Transform3D>() : nullptr;
+            }
+            m_hasInvalidBones |= !m_transforms[index];
+
+            m_indices[transformIndex++] = index;
+        }
+    }
+
     void Skeleton::DisableDebug() {
         if (m_debugLines.empty()) {
             return;
@@ -227,24 +254,6 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    SR_UTILS_NS::Transform* Skeleton::GetTransformByIndex(uint16_t index) noexcept {
-        if (index >= m_bonesByIndex.size()) {
-            return nullptr;
-        }
-
-        auto&& pBone = m_bonesByIndex[index];
-        auto&& pGameObject = pBone->gameObject;
-
-        if (!pGameObject && !pBone->hasError && !pBone->Initialize()) {
-            return nullptr;
-        }
-
-        if (pGameObject) {
-            return pGameObject->GetTransform().Get();
-        }
-        return nullptr;
-    }
-
     uint64_t Skeleton::GetBoneIndex(SR_UTILS_NS::StringAtom name) {
         for (uint64_t i = 0; i < m_bonesByIndex.size(); ++i) {
             if (m_bonesByIndex[i]->name == name) {
@@ -253,31 +262,6 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return SR_ID_INVALID;
-    }
-
-    void Skeleton::CalculateMatrices() {
-        if (!m_dirtyMatrices) {
-            return;
-        }
-
-        SR_TRACY_ZONE;
-
-        m_matrices.resize(m_bonesByIndex.size());
-
-        for (uint16_t i = 0; i < m_bonesByIndex.size(); ++i) {
-            auto&& pBone = m_bonesByIndex[i];
-            auto&& pGameObject = pBone->gameObject;
-
-            if (!pGameObject && !pBone->hasError && !pBone->Initialize()) {
-                continue;
-            }
-
-            if (pGameObject) {
-                m_matrices[i] = pGameObject->GetTransform()->GetMatrix();
-            }
-        }
-
-        m_dirtyMatrices = false;
     }
 
     const SR_MATH_NS::Matrix4x4& Skeleton::GetMatrixByIndex(uint16_t index) noexcept {
@@ -290,6 +274,14 @@ namespace SR_ANIMATIONS_NS {
         return m_matrices[index];
     }
 
+    const std::vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetOffsets() const noexcept {
+        if (auto&& pRawMesh = GetRawMesh()) {
+            return pRawMesh->GetBoneOffsets();
+        }
+        const static std::vector<SR_MATH_NS::Matrix4x4> defValue;
+        return defValue;
+    }
+
     const std::vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetMatrices() noexcept {
         if (!m_dirtyMatrices) {
             return m_matrices;
@@ -297,18 +289,31 @@ namespace SR_ANIMATIONS_NS {
 
         SR_TRACY_ZONE;
 
-        m_matrices.resize(m_optimizedBones.size());
+        if (m_isNeedRecalcTransforms) {
+            CalculateTransforms();
+        }
 
-        for (auto&& [hashName, index] : m_optimizedBones) {
-            auto&& pBone = GetBone(hashName);
-            auto&& pGameObject = pBone->gameObject;
+        bool hasDirty = false;
+        const uint64_t optimizedBonesSize = GetOptimizedBones().size();
 
-            if (!pGameObject && !pBone->hasError && !pBone->Initialize()) {
+        for (uint64_t i = 0; i < optimizedBonesSize; ++i) {
+            const uint32_t index = m_indices[i];
+
+            auto&& pTransform = m_transforms[index].Get();
+            if (!pTransform) SR_UNLIKELY_ATTRIBUTE {
+                static const auto identityMatrix = SR_MATH_NS::Matrix4x4::Identity();
+                m_matrices[index] = identityMatrix;
                 continue;
             }
 
-            if (pGameObject) {
-                m_matrices[index] = pGameObject->GetTransform()->GetMatrix();
+            if (hasDirty) {
+                m_matrices[index] = pTransform->GetMatrix();
+                continue;
+            }
+
+            if (pTransform->IsDirty()) {
+                hasDirty = true;
+                m_matrices[index] = pTransform->GetMatrix();
             }
         }
 
@@ -317,21 +322,31 @@ namespace SR_ANIMATIONS_NS {
         return m_matrices;
     }
 
-    void Skeleton::SetOptimizedBones(const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& bones) {
-        if (m_optimizedBones.empty()) {
-            m_optimizedBones = bones;
+    const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& Skeleton::GetOptimizedBones() const noexcept {
+        if (auto&& pRawMesh = GetRawMesh()) {
+            return pRawMesh->GetOptimizedBones();
+        }
+        static ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t> defValue;
+        return defValue;
+    }
+
+    void Skeleton::OnRawMeshChanged() {
+        IRawMeshHolder::OnRawMeshChanged();
+        m_isNeedRecalcTransforms = true;
+        m_isSSBODirty = true;
+        if (m_bonesSSBO) {
+            m_bonesSSBO->GetRenderContext()->SetDirty();
         }
     }
 
-    void Skeleton::SetBonesOffsets(const std::vector<SR_MATH_NS::Matrix4x4>& offsets) {
-        if (m_skeletonOffsets.empty()) {
-            m_skeletonOffsets = offsets;
-            m_skeletonOffsets.resize(m_skeletonOffsets.size());
+    int32_t Skeleton::GetOffsetsSSBO() const noexcept {
+        if (!m_bonesSSBO || m_isSSBODirty) {
+            SR_TRACY_ZONE;
+            auto&& offsets = GetOffsets();
+            m_bonesSSBO = SR_GRAPH_NS::SSBOInstance::Create<SR_MATH_NS::Matrix4x4>(offsets.size(), SSBOUsage::CPUToGPU);
+            m_bonesSSBO->UpdateSSBO(offsets.data());
+            m_isSSBODirty = false;
         }
-    }
-
-    void Skeleton::ResetSkeleton() {
-        m_optimizedBones.clear();
-        m_skeletonOffsets.clear();
+        return m_bonesSSBO->GetSSBO();
     }
 }

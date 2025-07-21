@@ -7,6 +7,7 @@
 
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Pipeline/TextureHelper.h>
+#include <Graphics/Render/RenderContext.h>
 
 namespace SR_GRAPH_NS {
     SR_ENUM_NS_STRUCT_T(SSBOFlags, uint32_t,
@@ -43,7 +44,6 @@ namespace SR_GRAPH_NS {
             return Create(sizeof(T) * count, usage, name, flags);
         }
 
-        SR_NODISCARD Pipeline::Ptr GetPipeline() const noexcept;
         void DeAllocate();
 
         void Resize(uint64_t size);
@@ -67,6 +67,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t GetSSBO() const noexcept;
         SR_NODISCARD uint32_t GetCounter() const;
         SR_NODISCARD void* GetMappedData() const;
+        SR_NODISCARD const SR_GRAPH_NS::RenderContext::Ptr& GetRenderContext() const noexcept;
+        SR_NODISCARD const Pipeline::Ptr& GetPipeline() const noexcept;
 
     private:
         bool ReAllocate();
@@ -82,7 +84,8 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom m_name;
         SSBOUsage m_usage = SSBOUsage::Auto;
         SSBOFlags m_flags = SSBOFlags::None;
-        mutable SR_GRAPH_NS::Pipeline::Ptr m_pipeline = nullptr;
+        mutable SR_GRAPH_NS::Pipeline::Ptr m_pipeline;
+        mutable SR_GRAPH_NS::RenderContext::Ptr m_renderContext;
 
     };
 }

@@ -219,7 +219,9 @@ namespace SR_GRAPH_NS {
         OnSceneChanged();
 
         m_timedObjects.ForEach([this](uint64_t /* index */, const DebugTimedObject& timed) {
-            Remove(timed.endTimePoint, false);
+            if (timed.drawInfo.type >= DrawType::Mesh) {
+                m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]->RemoveUsePoint();
+            }
         });
         m_timedObjects.Clear();
     }

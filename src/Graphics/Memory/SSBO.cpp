@@ -56,19 +56,23 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    Pipeline::Ptr SSBOInstance::GetPipeline() const noexcept {
-        if (m_pipeline) {
+    const SR_GRAPH_NS::RenderContext::Ptr& SSBOInstance::GetRenderContext() const noexcept {
+        if (!m_renderContext) SR_UNLIKELY_ATTRIBUTE {
+            SRAssert2(SR_THIS_THREAD, "SSBOInstance::GetPipeline() : SR_THIS_THREAD is nullptr!");
+            m_renderContext = SR_THIS_THREAD->GetContext()->GetValue<SR_GRAPH_NS::RenderContext::Ptr>();
+            SRAssert2(m_renderContext, "Failed to get render context from thread context!");
+        }
+        return m_renderContext;
+    }
+
+    const Pipeline::Ptr& SSBOInstance::GetPipeline() const noexcept {
+        if (m_pipeline) SR_LIKELY_ATTRIBUTE {
             return m_pipeline;
         }
 
         SR_TRACY_ZONE;
 
-        SRAssert2(SR_THIS_THREAD, "SSBOInstance::GetPipeline() : SR_THIS_THREAD is nullptr!");
-
-        auto&& pRenderContext = SR_THIS_THREAD->GetContext()->GetValue<SR_GRAPH_NS::RenderContext::Ptr>();
-        SRAssert2(pRenderContext, "SSBOInstance::GetPipeline() : pRenderContext is nullptr!");
-
-        m_pipeline = pRenderContext->GetPipeline();
+        m_pipeline = GetRenderContext()->GetPipeline();
         SRAssert2(m_pipeline, "SSBOInstance::GetPipeline() : m_pipeline is nullptr!");
 
         return m_pipeline;

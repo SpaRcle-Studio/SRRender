@@ -55,6 +55,8 @@ namespace SR_GRAPH_NS {
             m_renderTechniques.erase(renderTechnique);
         }
 
+        SR_NODISCARD bool IsAllowedMultiInstance() const override { return true; }
+
     protected:
         bool Load() override;
         bool Unload() override;

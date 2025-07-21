@@ -96,12 +96,18 @@ namespace SR_GRAPH_NS {
                 }
 
                 const auto meshId = static_cast<int32_t>(queue.back().type);
-                if (!pDebugRenderer->IsMeshValid(meshId)) {
-                    continue;
-                }
 
                 if (meshId == static_cast<int32_t>(DebugRenderer::DrawType::Line)) {
                     DrawQueue(pPipeline.GetUncheckedRef(), queue, shaderInfo, 2);
+                    continue;
+                }
+
+                if (meshId < 0) {
+                    SR_ERROR("DebugPass::Render() : invalid meshId {} for shader \"{}\"!", meshId, id);
+                    continue;
+                }
+
+                if (!pDebugRenderer->IsMeshValid(meshId)) {
                     continue;
                 }
 
