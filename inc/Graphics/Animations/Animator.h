@@ -45,8 +45,8 @@ namespace SR_ANIMATIONS_NS {
     private:
         /// @property
         uint32_t m_frameRate = 1;
-        /// @property
-        float_t m_tolerance = 0.001f;
+        /// @property @drag(0.01f)
+        float_t m_tolerance = 0.1f;
         /// @property
         bool m_sync = false;
         /// @property

@@ -67,7 +67,6 @@ namespace SR_ANIMATIONS_NS {
 
         std::vector<Bone*> m_bonesByIndex;
 
-        bool m_hasInvalidBones = false;
         bool m_isNeedRecalcTransforms = true;
         mutable bool m_isSSBODirty = true;
 
@@ -84,6 +83,8 @@ namespace SR_ANIMATIONS_NS {
         bool m_debugEnabled = false;
         /// @property @dontSave @readOnly
         bool m_dirtyMatrices = false;
+        /// @property @dontSave @readOnly
+        bool m_hasInvalidBones = false;
         /// @virtualProperty(meshPath) @getter(GetMeshPath) @setter(SetRawMesh)
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)

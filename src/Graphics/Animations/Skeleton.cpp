@@ -299,12 +299,14 @@ namespace SR_ANIMATIONS_NS {
         for (uint64_t i = 0; i < optimizedBonesSize; ++i) {
             const uint32_t index = m_indices[i];
 
-            auto&& pTransform = m_transforms[index].Get();
-            if (!pTransform) SR_UNLIKELY_ATTRIBUTE {
+            if (!m_transforms[index]) SR_UNLIKELY_ATTRIBUTE {
                 static const auto identityMatrix = SR_MATH_NS::Matrix4x4::Identity();
                 m_matrices[index] = identityMatrix;
+                m_isNeedRecalcTransforms = true;
                 continue;
             }
+
+            auto&& pTransform = m_transforms[index].Get();
 
             if (hasDirty) {
                 m_matrices[index] = pTransform->GetMatrix();
