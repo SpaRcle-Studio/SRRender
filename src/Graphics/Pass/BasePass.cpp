@@ -67,8 +67,8 @@ namespace SR_GRAPH_NS {
         m_pipeline = m_pipeline ? m_pipeline : m_context->GetPipeline();
     }
 
-    void StartPassNode::InitNode() {
-        IExecutableNode::InitNode();
-        AddOutputData<SR_SRLM_NS::DataTypeFlow>();
-    }
+  //void StartPassNode::InitNode() {
+  //    IExecutableNode::InitNode();
+  //    AddOutputData<SR_SRLM_NS::DataTypeFlow>();
+  //}
 }

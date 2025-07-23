@@ -53,14 +53,14 @@ namespace SR_GRAPH_NS {
         GroupPass::Update();
     }
 
-    void SwapchainPass::InitNode() {
-        IExecutableNode::InitNode();
+  //void SwapchainPass::InitNode() {
+  //    IExecutableNode::InitNode();
 
-        AddInputData<SR_SRLM_NS::DataTypeFlow>();
+  //    AddInputData<SR_SRLM_NS::DataTypeFlow>();
 
-        AddInputData<SR_SRLM_NS::DataTypeFloat>(SR_HASH_STR_REGISTER("Depth"));
-        AddInputData<SR_SRLM_NS::DataTypeStruct>(SR_HASH_STR_REGISTER("FVector4"));
+  //    AddInputData<SR_SRLM_NS::DataTypeFloat>(SR_HASH_STR_REGISTER("Depth"));
+  //    AddInputData<SR_SRLM_NS::DataTypeStruct>(SR_HASH_STR_REGISTER("FVector4"));
 
-        AddOutputData<SR_SRLM_NS::DataTypeFlow>();
-    }
+  //    AddOutputData<SR_SRLM_NS::DataTypeFlow>();
+  //}
 }

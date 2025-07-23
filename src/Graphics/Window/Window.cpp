@@ -131,6 +131,15 @@ namespace SR_GRAPH_NS {
         return m_windowImpl->GetPosition();
     }
 
+    SR_MATH_NS::FRect Window::GetWindowRect() const {
+        if (!m_windowImpl) {
+            SR_ERROR("Window::GetWindowRect() : window implementation is nullptr.");
+            return { };
+        }
+
+        return SR_MATH_NS::FRect(GetPosition().CastToFloat(), GetSize().CastToFloat());
+    }
+
     bool Window::IsMaximized() const {
         if (!m_windowImpl) {
             SR_ERROR("Window::IsMaximized() : window implementation is nullptr.");
