@@ -33,7 +33,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
 
-        void FreeVideoMemory() override;
+        void FreeVMemory() override;
         void Draw();
 
         void SetShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& shader);
@@ -62,6 +62,7 @@ namespace SR_GTYPES_NS {
         uint32_t m_height = 0;
 
         bool m_hasErrors = false;
+        bool m_idDirty = true;
         bool m_dirtyShader = false;
 
         Memory::UBOManager& m_uboManager;

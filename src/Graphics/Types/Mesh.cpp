@@ -133,7 +133,7 @@ namespace SR_GTYPES_NS {
         return IRenderComponent::IsActive() && !m_hasErrors;
     }
 
-    void Mesh::FreeVideoMemory() {
+    void Mesh::FreeVMemory() {
         if (m_virtualUBO != SR_ID_INVALID && !m_uboManager.FreeUBO(&m_virtualUBO)) {
             SR_ERROR("Mesh::FreeVideoMemory() : failed to free virtual uniform buffer object!");
         }
@@ -141,8 +141,6 @@ namespace SR_GTYPES_NS {
         if (m_virtualDescriptor != SR_ID_INVALID) {
             m_descriptorManager.FreeDescriptorSet(&m_virtualDescriptor);
         }
-
-        IGraphicsResource::FreeVideoMemory();
     }
 
     bool Mesh::Calculate() {
@@ -177,7 +175,9 @@ namespace SR_GTYPES_NS {
             m_materialRegisterId = m_material->RegisterMesh(this);
         }
 
-        ReRegisterMesh();
+        if (m_registrationInfo.has_value()) {
+            ReRegisterMesh();
+        }
     }
 
     Mesh::ShaderPtr Mesh::GetShader() const {
@@ -196,14 +196,14 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         if (auto&& VBO = GetVBO(); VBO != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
-            m_pipeline->BindVBO(VBO);
+            GetPipeline()->BindVBO(VBO);
         }
         else {
             return false;
         }
 
         if (auto&& IBO = GetIBO(); IBO != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
-            m_pipeline->BindIBO(IBO);
+            GetPipeline()->BindIBO(IBO);
         }
         else {
             return false;
@@ -237,22 +237,22 @@ namespace SR_GTYPES_NS {
 
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
-        if (m_pipeline->GetCurrentBuildIteration() == 0) {
+        if (GetPipeline()->GetCurrentBuildIteration() == 0) {
             if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
                 UseSamplers();
                 UseSSBO();
                 MarkUniformsDirty(true);
                 m_descriptorManager.Flush();
             }
-            m_pipeline->GetCurrentShader()->FlushConstants();
+            GetPipeline()->GetCurrentShader()->FlushConstants();
         }
 
         if (result != DescriptorManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
             if (IsSupportVBO()) {
-                m_pipeline->DrawIndices(GetIndicesCount());
+                GetPipeline()->DrawIndices(GetIndicesCount());
             }
             else {
-                m_pipeline->Draw(GetIndicesCount());
+                GetPipeline()->Draw(GetIndicesCount());
             }
         }
 
@@ -280,7 +280,10 @@ namespace SR_GTYPES_NS {
     }
 
     bool Mesh::HasSortingPriority() const {
-        return GetSceneObject()->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node;
+        if (auto&& pSO = GetSceneObject()) {
+            return pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node;
+        }
+        return false;
     }
 
     SR_UTILS_NS::StringAtom Mesh::GetMeshLayer() const {
@@ -379,8 +382,7 @@ namespace SR_GTYPES_NS {
             m_registrationInfo.value().pScene->Remove(this);
         }
 
-        FreeVideoMemory();
-        DeInitGraphicsResource();
+        FreeVMemory();
         SetMaterial(MaterialPtr());
 
         GetThis().AutoFree();

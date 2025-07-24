@@ -112,9 +112,9 @@ namespace SR_GTYPES_NS {
     bool Texture::Unload() {
         bool hasErrors = !IResource::Unload();
 
-        FreeTextureData();
+        m_isDirty = true;
 
-        m_isCalculated = false;
+        FreeTextureData();
 
         if (auto&& pRenderContext = GetRenderContext()) {
             pRenderContext->SetDirty();
@@ -126,22 +126,19 @@ namespace SR_GTYPES_NS {
     bool Texture::Load() {
         SR_TRACY_ZONE;
 
+        m_isDirty = true;
+
         bool hasErrors = !IResource::Load();
 
-        if (!IsCalculated()) {
-            SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(GetResourceId());
-            if (!path.IsAbs()) {
-                path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
-            }
-
-            m_textureData = TextureLoader::Load(path);
-            if (!m_textureData) {
-                SR_ERROR("Texture::Load() : failed to load texture!");
-                hasErrors |= true;
-            }
+        SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(GetResourceId());
+        if (!path.IsAbs()) {
+            path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
         }
-        else {
-            SRHalt("Texture already calculated!");
+
+        m_textureData = TextureLoader::Load(path);
+        if (!m_textureData) {
+            SR_ERROR("Texture::Load() : failed to load texture!");
+            hasErrors |= true;
         }
 
         if (auto&& pRenderContext = GetRenderContext()) {
@@ -154,9 +151,9 @@ namespace SR_GTYPES_NS {
     bool Texture::Calculate() {
         SR_TRACY_ZONE;
 
-        if (m_isCalculated) {
-            SR_ERROR("Texture::Calculate() : texture is already calculated!");
-            return false;
+        if (!m_isDirty) {
+            SRHalt("Texture::Calculate() : the texture \"{}\" is not dirty!", GetResourceId());
+            return true;
         }
 
         if (!m_textureData) {
@@ -164,17 +161,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (!IsGraphicsResourceRegistered()) {
-            auto&& pRenderContext = SR_THIS_THREAD->GetContext()->GetValue<RenderContextPtr>();
-            if (!pRenderContext) {
-                SRHalt("Texture::Calculate() : is not in render context!");
-                m_hasErrors = true;
-                return false;
-            }
-            pRenderContext.Do([this](RenderContext* ptr) {
-                ptr->Register(this);
-            });
-        }
+        RegisterGraphicsResource();
 
         if (IsDestroyed()) {
             SR_ERROR("Texture::Calculate() : the texture is destroyed!");
@@ -186,7 +173,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_id != SR_ID_INVALID) {
-            SRVerifyFalse(!m_pipeline->FreeTexture(&m_id));
+            SRVerifyFalse(!GetPipeline()->FreeTexture(&m_id));
         }
 
         EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
@@ -202,7 +189,7 @@ namespace SR_GTYPES_NS {
         createInfo.mipLevels = m_config.m_mipLevels;
         createInfo.filter = m_config.m_filter;
 
-        m_id = m_pipeline->AllocateTexture(createInfo);
+        m_id = GetPipeline()->AllocateTexture(createInfo);
 
         EVK_POP_LOG_LEVEL();
 
@@ -216,28 +203,21 @@ namespace SR_GTYPES_NS {
             }
         }
 
-        m_isCalculated = true;
+        m_isDirty = false;
 
         return true;
     }
 
-    void Texture::FreeVideoMemory() {
-        /// Просто игнорируем, текстура могла быть не использована
-        if (!m_isCalculated) {
-            return;
-        }
-
+    void Texture::FreeVMemory() {
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Low) {
-            SR_LOG("Texture::FreeVideoMemory() : free \"" + std::string(GetResourceId()) + "\" texture's video memory...");
+            SR_LOG("Texture::FreeVMemory() : free \"" + std::string(GetResourceId()) + "\" texture's video memory...");
         }
 
-        SRAssert(m_pipeline);
-
-        if (m_pipeline && !m_pipeline->FreeTexture(&m_id)) {
-            SR_ERROR("Texture::FreeVideoMemory() : failed to free texture!");
+        if (!GetPipeline()->FreeTexture(&m_id)) {
+            SR_ERROR("Texture::FreeVMemory() : failed to free texture!");
         }
 
-        IGraphicsResource::FreeVideoMemory();
+        IGraphicsResource::FreeVMemory();
     }
 
     void Texture::SetConfig(const Memory::TextureConfig &config) {
@@ -259,11 +239,13 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        if (!m_isCalculated && !Calculate()) {
+        if (m_isDirty && !Calculate()) {
             SR_ERROR("Texture::GetId() : failed to calculate the texture!");
             m_hasErrors = true;
             return SR_ID_INVALID;
         }
+
+        SRAssert2(m_id != SR_ID_INVALID, "Texture::GetId() : the texture \"{}\" has invalid id!", GetResourceId());
 
         return m_id;
     }
@@ -296,7 +278,7 @@ namespace SR_GTYPES_NS {
             return nullptr;
         }
 
-        return m_pipeline->GetOverlayTextureDescriptorSet(textureId, OverlayType::ImGui);
+        return GetPipeline()->GetOverlayTextureDescriptorSet(textureId, OverlayType::ImGui);
     }
 
     SR_UTILS_NS::Path SR_GTYPES_NS::Texture::GetAssociatedPath() const {
@@ -305,11 +287,6 @@ namespace SR_GTYPES_NS {
 
     void Texture::FreeTextureData() {
         m_textureData.Reset();
-    }
-
-    SR_UTILS_NS::IResource::RemoveUPResult Texture::RemoveUsePoint() {
-        SRAssert2(!(IsCalculated() && GetCountUses() == 1), "Possible multi threading error!");
-        return IResource::RemoveUsePoint();
     }
 
     uint32_t Texture::GetWidth() const noexcept {

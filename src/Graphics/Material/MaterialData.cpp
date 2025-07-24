@@ -421,6 +421,11 @@ namespace SR_GRAPH_NS {
     void MaterialData::Finalize() {
         SR_TRACY_ZONE;
 
+        if (m_defaultShader.pShader) {
+            m_defaultShader.pShader->RemoveUsePoint();
+            m_defaultShader.pShader = nullptr;
+        }
+
         for (auto&& [stage, data] : m_shaders) {
             if (data.pShader) {
                 data.pShader->RemoveUsePoint();
@@ -437,10 +442,6 @@ namespace SR_GRAPH_NS {
         }
         m_shaders.clear();
 
-        if (m_defaultShader.pShader) {
-            m_defaultShader.pShader->RemoveUsePoint();
-            m_defaultShader.pShader = nullptr;
-        }
         for (MaterialShaderProperty& sampler : m_defaultShader.samplers) {
             if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&sampler.data)) {
                 if (*pTextureRef) {
@@ -460,12 +461,12 @@ namespace SR_GRAPH_NS {
         const SR_UTILS_NS::StringAtom renderStageId = pPipeline->GetRenderStageId();
         SR_GTYPES_NS::Shader* pShader = pPipeline->GetCurrentShader();
 
-        MaterialShaderData& shaderData = m_defaultShader;
+        MaterialShaderData* pShaderData = &m_defaultShader;
         if (auto&& pIt = m_shaders.find(renderStageId); pIt != m_shaders.end()) {
-            shaderData = pIt->second;
+            pShaderData = &pIt->second;
         }
 
-        for (MaterialShaderProperty& uniform : shaderData.uniforms) {
+        for (MaterialShaderProperty& uniform : pShaderData->uniforms) {
             switch (uniform.type) {
                 case ShaderVarType::Int:
                 case ShaderVarType::Bool:
@@ -499,12 +500,12 @@ namespace SR_GRAPH_NS {
         const SR_UTILS_NS::StringAtom renderStageId = pPipeline->GetRenderStageId();
         SR_GTYPES_NS::Shader* pShader = pPipeline->GetCurrentShader();
 
-        MaterialShaderData& shaderData = m_defaultShader;
+        MaterialShaderData* pShaderData = &m_defaultShader;
         if (auto&& pIt = m_shaders.find(renderStageId); pIt != m_shaders.end()) {
-            shaderData = pIt->second;
+            pShaderData = &pIt->second;
         }
 
-        for (MaterialShaderProperty& sampler : shaderData.samplers) {
+        for (MaterialShaderProperty& sampler : pShaderData->samplers) {
             if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data)) {
                 pShader->SetSampler2D(sampler.id, pTexture);
             }

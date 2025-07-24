@@ -50,7 +50,7 @@ namespace SR_GTYPES_NS {
         bool Flush() const;
         void FlushSamplers();
         void FlushConstants();
-        void FreeVideoMemory() override;
+        void FreeVMemory() override;
         void Dispatch(uint32_t x, uint32_t y, uint32_t z);
         void Dispatch();
         void StartWatch() override;
@@ -61,6 +61,8 @@ namespace SR_GTYPES_NS {
         void EndSharedUBO();
 
         void ResetUBOToDefaults();
+
+        RemoveUPResult RemoveUsePoint() override;
 
     public:
         SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
@@ -147,8 +149,8 @@ namespace SR_GTYPES_NS {
 
         ShaderProgram m_shaderProgram = SR_ID_INVALID;
 
+        bool m_isDirty = false;
         bool m_hasErrors = false;
-        bool m_isRegistered = false;
         bool m_sharedUBOMode = false;
 
         SRShaderCreateInfo m_shaderCreateInfo = { };

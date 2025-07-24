@@ -86,7 +86,7 @@ namespace SR_GTYPES_NS {
             std::swap(m_ssbo, oldSSBO);
         }
 
-        FreeVideoMemory();
+        FreeVMemory();
 
         if (!IsCalculatable()) {
             return false;
@@ -200,7 +200,7 @@ namespace SR_GTYPES_NS {
 
     void ProceduralMesh::UseModelMatrix() {
         Super::UseModelMatrix();
-        GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+        GetPipeline()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
     }
 
     bool ProceduralMesh::IsSupportVBO() const {
@@ -214,11 +214,11 @@ namespace SR_GTYPES_NS {
         Super::UseSSBO();
     }
 
-    void ProceduralMesh::FreeVideoMemory() {
+    void ProceduralMesh::FreeVMemory() {
         if (m_ssbo != SR_ID_INVALID) {
             GetPipeline()->FreeSSBO(&m_ssbo);
         }
-        Super::FreeVideoMemory();
+        Super::FreeVMemory();
     }
 
     bool ProceduralMesh::Export(const SR_UTILS_NS::Path& path) const {

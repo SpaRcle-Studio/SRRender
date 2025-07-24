@@ -22,7 +22,7 @@ namespace SR_GTYPES_NS {
             return true;
         }
 
-        FreeVideoMemory();
+        FreeVMemory();
 
         if (!IsCalculatable()) {
             return false;
@@ -37,7 +37,7 @@ namespace SR_GTYPES_NS {
     }
 
     void Sprite::UseModelMatrix() {
-        if (auto&& pShader = GetRenderContext()->GetCurrentShader()) {
+        if (auto&& pShader = GetPipeline()->GetCurrentShader()) {
             if (HasParent()) SR_LIKELY_ATTRIBUTE {
                 if (auto&& pUINode = GetParent()->DynamicCast<SR_GRAPH_UI_NS::UINode>()) SR_LIKELY_ATTRIBUTE {
                     pShader->SetVec4(SHADER_NDC_RECT, pUINode->GetNDCVector());

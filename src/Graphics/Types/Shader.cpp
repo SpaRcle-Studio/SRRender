@@ -26,6 +26,8 @@ namespace SR_GRAPH_NS::Types {
     Shader::~Shader() {
         m_samplers.clear();
         SRAssert(m_defaultSamplers.empty());
+        SRAssert(m_shaderProgram == SR_ID_INVALID);
+        SRAssert(m_virtualUBO.first == SR_ID_INVALID);
     }
 
     bool Shader::Init() {
@@ -33,39 +35,20 @@ namespace SR_GRAPH_NS::Types {
 
         SR_SHADER("Shader::Init() : initialize \"" + GetResourceId().ToStringRef() + "\" shader...");
 
-        if (m_isCalculated) {
-            SRHalt("Double shader initialization!");
-            return true;
-        }
+        RegisterGraphicsResource();
 
-        auto&& pContext = SR_THIS_THREAD->GetContext()->GetValue<SR_HTYPES_NS::SafePtr<RenderContext>>();
-        if (!pContext) {
-            SRHalt("Render context is nullptr!");
-            m_hasErrors = true;
-            return false;
-        }
-
-        if (pContext.LockIfValid()) {
-            for (auto&& [hashName, sampler] : m_samplers) {
-                if (sampler.isAttachment || sampler.isArray) {
-                    continue;
-                }
-                auto&& pIt = m_defaultSamplers.find(sampler.defaultValue);
-                if (pIt != m_defaultSamplers.end()) {
-                    LoadDefaultSampler(sampler.defaultValue);
-                    sampler.samplerId = pIt->second->GetId();
-                }
-                else {
-                    sampler.samplerId = pContext->GetDefaultTexture()->GetId();
-                }
+        for (auto&& [hashName, sampler] : m_samplers) {
+            if (sampler.isAttachment || sampler.isArray) {
+                continue;
             }
-
-            if (!m_isRegistered) {
-                pContext->Register(this);
-                m_isRegistered = true;
+            auto&& pIt = m_defaultSamplers.find(sampler.defaultValue);
+            if (pIt != m_defaultSamplers.end()) {
+                LoadDefaultSampler(sampler.defaultValue);
+                sampler.samplerId = pIt->second->GetId();
             }
-
-            pContext.Unlock();
+            else {
+                sampler.samplerId = GetRenderContext()->GetDefaultTexture()->GetId();
+            }
         }
 
         if (!m_shaderCreateInfo.Validate()) {
@@ -88,7 +71,7 @@ namespace SR_GRAPH_NS::Types {
             SetResourceHash(hash);
         }
 
-        m_isCalculated = true;
+        m_isDirty = false;
 
         return true;
     }
@@ -100,7 +83,7 @@ namespace SR_GRAPH_NS::Types {
             return ShaderBindResult::Failed;
         }
 
-        if (!m_isCalculated && !Init()) {
+        if (m_isDirty && !Init()) {
             SR_ERROR("Shader::Use() : failed to initialize shader!");
             return ShaderBindResult::Failed;
         }
@@ -155,23 +138,21 @@ namespace SR_GRAPH_NS::Types {
         }
     }
 
-    void Shader::FreeVideoMemory() {
-        if (m_isCalculated) {
-            SR_SHADER("Shader::FreeVideoMemory() : free \"" + GetResourceId().ToStringRef() + "\" video memory...");
-
+    void Shader::FreeVMemory() {
+        if (m_shaderProgram != SR_ID_INVALID) {
             if (!Memory::ShaderProgramManager::Instance().FreeProgram(&m_shaderProgram)) {
-                SR_ERROR("Shader::Free() : failed to free shader program! \n\tPath: " + GetResourcePath().ToString());
+                SR_ERROR("Shader::FreeVMemory() : failed to free shader program! \n\tPath: " + GetResourcePath().ToString());
             }
-
-            if (m_virtualUBO.first != SR_ID_INVALID) {
-                if (!m_uboManager.FreeUBO(&m_virtualUBO.first)) {
-                    SR_ERROR("Shader::Free() : failed to free virtual UBO! \n\tPath: " + GetResourcePath().ToString());
-                }
-            }
-            m_virtualUBO.second = true;
-
-            m_isCalculated = false;
         }
+
+        if (m_virtualUBO.first != SR_ID_INVALID) {
+            if (!m_uboManager.FreeUBO(&m_virtualUBO.first)) {
+                SR_ERROR("Shader::FreeVMemory() : failed to free virtual UBO! \n\tPath: " + GetResourcePath().ToString());
+            }
+        }
+        m_virtualUBO.second = true;
+
+        IGraphicsResource::FreeVMemory();
     }
 
     Shader::Ptr Shader::Load(const SR_UTILS_NS::Path& rawPath) {
@@ -193,7 +174,7 @@ namespace SR_GRAPH_NS::Types {
             return SR_ID_INVALID;
         }
 
-        if (!m_isCalculated) SR_UNLIKELY_ATTRIBUTE {
+        if (m_isDirty) SR_UNLIKELY_ATTRIBUTE {
             if (!Init()) {
                 SR_ERROR("Shader::GetId() : failed to initialize shader!");
                 return SR_ID_INVALID;
@@ -273,7 +254,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Shader::Ready() const {
-        return !m_hasErrors && m_isCalculated && m_shaderProgram != SR_ID_INVALID;
+        return !m_hasErrors && !m_isDirty && m_shaderProgram != SR_ID_INVALID;
     }
 
     uint64_t Shader::GetUBOBlockSize() const {
@@ -313,9 +294,9 @@ namespace SR_GRAPH_NS::Types {
             return false;
         }
 
-        auto&& ubo = m_pipeline->GetCurrentUBO();
+        auto&& ubo = GetPipeline()->GetCurrentUBO();
         if (ubo != SR_ID_INVALID && m_uniformBlock.Valid()) SR_LIKELY_ATTRIBUTE {
-            m_pipeline->UpdateUBO(ubo, m_uniformBlock.m_memory, m_uniformBlock.m_size);
+            GetPipeline()->UpdateUBO(ubo, m_uniformBlock.m_memory, m_uniformBlock.m_size);
         }
 
         return true;
@@ -377,6 +358,8 @@ namespace SR_GRAPH_NS::Types {
 
     bool Shader::Load() {
         SR_TRACY_ZONE;
+
+        m_isDirty = true;
 
         SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(GetResourceId());
 
@@ -515,8 +498,8 @@ namespace SR_GRAPH_NS::Types {
     bool Shader::Unload() {
         bool hasErrors = !IResource::Unload();
 
-        m_isCalculated = false;
         m_hasErrors = false;
+        m_isDirty = true;
 
         m_uniformBlock.DeInit();
         m_uniformSharedBlock.DeInit();
@@ -545,8 +528,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Shader::ReviveResource() {
-        m_isCalculated = false;
-        m_isRegistered = false;
+        m_isDirty = true;
         m_hasErrors = false;
         IResource::ReviveResource();
     }
@@ -559,17 +541,17 @@ namespace SR_GRAPH_NS::Types {
     void Shader::FlushSamplers() {
         for (auto&& [hashName, samplerInfo] : m_samplers) {
             if (samplerInfo.isAttachment) {
-                m_pipeline->BindAttachment(samplerInfo.binding, samplerInfo.samplerId);
+                GetPipeline()->BindAttachment(samplerInfo.binding, samplerInfo.samplerId);
             }
             else {
-                m_pipeline->BindTexture(samplerInfo.binding, samplerInfo.samplerId);
+                GetPipeline()->BindTexture(samplerInfo.binding, samplerInfo.samplerId);
             }
         }
     }
 
     void Shader::FlushConstants() {
         if (m_constBlock.m_size > 0) {
-            m_pipeline->PushConstants(m_constBlock.m_memory, m_constBlock.m_size);
+            GetPipeline()->PushConstants(m_constBlock.m_memory, m_constBlock.m_size);
         }
     }
 
@@ -593,7 +575,7 @@ namespace SR_GRAPH_NS::Types {
                 continue;
             }
 
-            if (!m_pipeline->IsSamplerValid(samplerInfo.samplerId)) {
+            if (!GetPipeline()->IsSamplerValid(samplerInfo.samplerId)) {
                 return false;
             }
         }
@@ -615,7 +597,7 @@ namespace SR_GRAPH_NS::Types {
             m_uniformSharedBlock.ResetDefaultValues();
         }
 
-        m_pipeline->SetCurrentShader(this);
+        GetPipeline()->SetCurrentShader(this);
 
         if (m_virtualUBO.second) SR_UNLIKELY_ATTRIBUTE {
             m_virtualUBO.first = m_uboManager.AllocateUBO(m_virtualUBO.first, m_uniformSharedBlock.m_size);
@@ -654,7 +636,7 @@ namespace SR_GRAPH_NS::Types {
         m_sharedUBOMode = false;
 
         if (m_uniformSharedBlock.Valid()) SR_LIKELY_ATTRIBUTE {
-            m_pipeline->UpdateUBO(m_pipeline->GetCurrentUBO(), m_uniformSharedBlock.m_memory, m_uniformSharedBlock.m_size);
+            GetPipeline()->UpdateUBO(GetPipeline()->GetCurrentUBO(), m_uniformSharedBlock.m_memory, m_uniformSharedBlock.m_size);
         }
     }
 
@@ -663,10 +645,10 @@ namespace SR_GRAPH_NS::Types {
 
         for (auto&& [hashName, samplerInfo] : m_samplers) {
             if (samplerInfo.isAttachment) {
-                m_pipeline->BindAttachment(samplerInfo.binding, samplerInfo.samplerId);
+                GetPipeline()->BindAttachment(samplerInfo.binding, samplerInfo.samplerId);
             }
             else {
-                m_pipeline->BindTexture(samplerInfo.binding, samplerInfo.samplerId);
+                GetPipeline()->BindTexture(samplerInfo.binding, samplerInfo.samplerId);
             }
         }
 
@@ -723,5 +705,12 @@ namespace SR_GRAPH_NS::Types {
 
     void Shader::Dispatch() {
         GetPipeline()->Dispatch(m_computeWorkGroupSize.x, m_computeWorkGroupSize.y, m_computeWorkGroupSize.z);
+    }
+
+    Utils::IResource::RemoveUPResult Shader::RemoveUsePoint() {
+        if (GetCountUses() == 1 && IsGraphicsResourceRegistered()) {
+            SRAssert(m_shaderProgram != SR_ID_INVALID);
+        }
+        return IResource::RemoveUsePoint();
     }
 }

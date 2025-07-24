@@ -18,7 +18,7 @@ namespace SR_GTYPES_NS {
             return true;
         }
 
-        FreeVideoMemory();
+        FreeVMemory();
 
         if (!IsCalculatable()) {
             return false;
@@ -95,7 +95,7 @@ namespace SR_GTYPES_NS {
     }
 
     void SkinnedMesh::UseModelMatrix() {
-        if (auto&& pShader = GetRenderContext()->GetCurrentShader()) {
+        if (auto&& pShader = GetPipeline()->GetCurrentShader()) {
             pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
         }
     }
@@ -126,9 +126,9 @@ namespace SR_GTYPES_NS {
         return Super::GetMeshIdentifier();
     }
 
-    void SkinnedMesh::FreeVideoMemory() {
+    void SkinnedMesh::FreeVMemory() {
         FreeSSBO();
-        Super::FreeVideoMemory();
+        Super::FreeVMemory();
     }
 
     void SkinnedMesh::UseSSBO() {

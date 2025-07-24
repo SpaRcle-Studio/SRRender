@@ -7,23 +7,35 @@
 
 namespace SR_GRAPH_NS::Memory {
     IGraphicsResource::~IGraphicsResource() {
-        SRAssert(m_isCalculated == false);
+        if (IsGraphicsResourceRegistered()) {
+            SRHalt("IGraphicsResource is not deinitialized before destruction!");
+        }
     }
 
-    void IGraphicsResource::SetRenderContext(const IGraphicsResource::RenderContextPtr& renderContext) {
-        m_renderContext = renderContext;
+    void IGraphicsResource::RegisterGraphicsResource() {
+        if (m_renderContext) {
+            return;
+        }
+
+        auto&& pContext = SR_THIS_THREAD->GetContext()->GetValue<SR_HTYPES_NS::SafePtr<RenderContext>>();
+        if (!pContext) {
+            SRHalt("Render context is nullptr!");
+            return;
+        }
+
+        m_renderContext = pContext.Get();
         m_pipeline = m_renderContext->GetPipeline();
-        SRAssert(m_pipeline);
+
+        if (!m_pipeline) {
+            SRHalt("Pipeline is nullptr!");
+        }
+
+        m_renderContext->Register(this, SR_UTILS_NS::PassKey<IGraphicsResource>(this));
     }
 
-    void IGraphicsResource::DeInitGraphicsResource() {
+    void IGraphicsResource::DeInitGraphicsResource(SR_UTILS_NS::PassKey<RenderContext>) {
+        FreeVMemory();
         m_pipeline = nullptr;
         m_renderContext = nullptr;
-    }
-
-    void IGraphicsResource::MarkPipelineUnBuild() {
-        if (m_isCalculated && m_pipeline) {
-            m_pipeline->SetDirty(true);
-        }
     }
 }

@@ -91,15 +91,9 @@ namespace SR_GRAPH_NS {
         }
 
         m_renderScene = pRScene;
+        SetContext(m_renderScene->GetContext());
 
-        if (m_renderScene.RecursiveLockIfValid()) {
-            SetContext(m_renderScene->GetContext());
-            GetContext()->Register(this);
-            m_renderScene.Unlock();
-        }
-        else {
-            SR_ERROR("RenderTechnique::SetRenderScene() : render scene are invalid!");
-        }
+        RegisterGraphicsResource();
     }
 
     IRenderTechnique::RenderScenePtr IRenderTechnique::GetRenderScene() const {
@@ -107,7 +101,7 @@ namespace SR_GRAPH_NS {
         return m_renderScene;
     }
 
-    void IRenderTechnique::FreeVideoMemory() {
+    void IRenderTechnique::FreeVMemory() {
         for (auto&& pPass : m_passes) {
             if (!pPass->IsInit()) {
                 continue;
@@ -116,6 +110,7 @@ namespace SR_GRAPH_NS {
             pPass->DeInit();
         }
         ReleaseFrameBufferControllers();
+        Super::FreeVMemory();
     }
 
     bool IRenderTechnique::IsEmpty() const {

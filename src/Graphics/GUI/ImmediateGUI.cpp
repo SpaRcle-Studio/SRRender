@@ -368,6 +368,11 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     bool ImageButtonInternal(std::string_view &&imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding, ButtonFlags flags) {
+        if (!pDescriptor) {
+            SRHalt("ImmediateGUI::ImageButtonInternal() : pDescriptor is null!");
+            return false; /// NOLINT
+        }
+
         ImGuiContext& g = *GImGui;
         ImGuiWindow* window = g.CurrentWindow;
         if (window->SkipItems)

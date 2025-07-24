@@ -304,7 +304,7 @@ namespace SR_GRAPH_NS {
 
         /// Меш мог быть зарегистрирован при инициализации дефолтных материалов
         if (!pMesh->IsMeshRegistered()) {
-            pMesh->SetRenderContext(m_context);
+            pMesh->SetPipeline(GetPipeline().Get());
             m_renderStrategy->RegisterMesh(pMesh);
         }
 

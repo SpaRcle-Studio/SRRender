@@ -42,14 +42,14 @@ namespace SR_GTYPES_NS {
         return Super::Calculate();
     }
 
-    void Text::FreeVideoMemory() {
+    void Text::FreeVMemory() {
         SetFont(SR_GTYPES_NS::Font::Ptr());
 
         if (m_id != SR_ID_INVALID) {
             SRVerifyFalse(!m_pipeline->FreeTexture(&m_id));
         }
 
-        Super::FreeVideoMemory();
+        Super::FreeVMemory();
     }
 
     void Text::OnTextDirty() {
@@ -113,17 +113,17 @@ namespace SR_GTYPES_NS {
     }
 
     void Text::UseModelMatrix() {
-        GetRenderContext()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-        GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_X, 0.f);
-        GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_Y, 0.f);
-        GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_WIDTH, static_cast<float_t>(m_atlasSize.x) / 100.f);
-        GetRenderContext()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_HEIGHT, static_cast<float_t>(m_atlasSize.y) / 100.f);
+        GetPipeline()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+        GetPipeline()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_X, 0.f);
+        GetPipeline()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_Y, 0.f);
+        GetPipeline()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_WIDTH, static_cast<float_t>(m_atlasSize.x) / 100.f);
+        GetPipeline()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_HEIGHT, static_cast<float_t>(m_atlasSize.y) / 100.f);
 
         Super::UseModelMatrix();
     }
 
     void Text::UseSamplers() {
-        GetRenderContext()->GetCurrentShader()->SetSampler2D(SHADER_TEXT_ATLAS_TEXTURE, m_id);
+        GetPipeline()->GetCurrentShader()->SetSampler2D(SHADER_TEXT_ATLAS_TEXTURE, m_id);
         Mesh::UseSamplers();
     }
 

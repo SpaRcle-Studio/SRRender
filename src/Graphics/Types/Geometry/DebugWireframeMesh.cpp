@@ -13,7 +13,7 @@ namespace SR_GTYPES_NS {
             return true;
         }
 
-        FreeVideoMemory();
+        FreeVMemory();
 
         if (!IsCalculatable()) {
             return false;

@@ -22,7 +22,7 @@ namespace SR_GTYPES_NS {
 
         SR_TRACY_ZONE;
 
-        FreeVideoMemory();
+        FreeVMemory();
 
         if (!IsCalculatable()) {
             return false;
@@ -56,7 +56,7 @@ namespace SR_GTYPES_NS {
     }
 
     void Mesh3D::UseModelMatrix() {
-        auto&& pShader = GetRenderContext()->GetCurrentShader();
+        auto&& pShader = GetPipeline()->GetCurrentShader();
         pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
     }
 

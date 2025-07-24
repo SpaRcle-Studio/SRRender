@@ -25,6 +25,7 @@ namespace SR_GRAPH_NS {
         : Super(this)
     {
         m_pipeline = new VulkanPipeline(GetThis());
+        m_pipeline->SetRenderStageId("Shadow");
     }
 
     bool RenderContext::Update() noexcept {
@@ -191,7 +192,15 @@ namespace SR_GRAPH_NS {
             SR_UTILS_NS::ResourceManager::Instance().Synchronize(true);
 
             if (maxErrStep == syncStep) {
-                SR_ERROR("RenderContext::Close() : [FATAL] resources can not be released!");
+                SR_ERROR("RenderContext::Close() : [FATAL] resources can not be released! Render resources:\n"
+                    "\tSkyboxes: {}\n"
+                    "\tShaders: {}\n"
+                    "\tRender techniques: {}\n"
+                    "\tFrameBuffers: {}\n"
+                    "\tTextures: {}",
+                    m_skyboxes.size(), m_shaders.size(), m_techniques.size(), m_framebuffers.size(), m_textures.size()
+                );
+
                 SR_UTILS_NS::ResourceManager::Instance().PrintMemoryDump();
                 SR_PLATFORM_NS::Terminate();
                 break;
@@ -238,39 +247,31 @@ namespace SR_GRAPH_NS {
         return pRenderScene;
     }
 
-    void RenderContext::Register(SR_GTYPES_NS::Framebuffer::Ptr pResource) {
-        if (!RegisterResource(pResource.Get())) {
-            return;
-        }
-        m_framebuffers.emplace_back(pResource);
-    }
+    void RenderContext::Register(Memory::IGraphicsResource* pResource, SR_UTILS_NS::PassKey<Memory::IGraphicsResource>) {
+        SRAssert2(!m_isClosed, "RenderContext is closed");
 
-    void RenderContext::Register(SR_GTYPES_NS::Shader *pResource) {
-        if (!RegisterResource(pResource)) {
-            return;
+        if (auto&& pIResource = dynamic_cast<SR_UTILS_NS::IResource*>(pResource)) {
+            pIResource->AddUsePoint();
         }
-        m_shaders.emplace_back(pResource);
-    }
 
-    void RenderContext::Register(SR_GTYPES_NS::Texture* pResource) {
-        if (!RegisterResource(pResource)) {
-            return;
+        if (auto&& pFrameBuffer = dynamic_cast<SR_GTYPES_NS::Framebuffer*>(pResource)) {
+            m_framebuffers.emplace_back(pFrameBuffer);
         }
-        m_textures.emplace_back(pResource);
-    }
-
-    void RenderContext::Register(IRenderTechnique* pResource) {
-        if (!RegisterResource(pResource)) {
-            return;
+        else if (auto&& pShader = dynamic_cast<SR_GTYPES_NS::Shader*>(pResource)) {
+            m_shaders.emplace_back(pShader);
         }
-        m_techniques.emplace_back(pResource);
-    }
-
-    void RenderContext::Register(RenderContext::SkyboxPtr pResource) {
-        if (!RegisterResource(pResource)) {
-            return;
+        else if (auto&& pTexture = dynamic_cast<SR_GTYPES_NS::Texture*>(pResource)) {
+            m_textures.emplace_back(pTexture);
         }
-        m_skyboxes.emplace_back(pResource);
+        else if (auto&& pTechnique = dynamic_cast<IRenderTechnique*>(pResource)) {
+            m_techniques.emplace_back(pTechnique);
+        }
+        else if (auto&& pSkybox = dynamic_cast<SR_GTYPES_NS::Skybox*>(pResource)) {
+            m_skyboxes.emplace_back(pSkybox);
+        }
+        else {
+            SRHalt("RenderContext::Register() : unknown resource type!");
+        }
     }
 
     bool RenderContext::IsEmpty() const {
@@ -378,7 +379,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderContext::SetCurrentShader(RenderContext::ShaderPtr pShader) {
-        m_pipeline->SetCurrentShader(pShader);
+        m_pipeline->SetCurrentShader(pShader.Get());
 
         if (pShader && !pShader->IsAvailable()) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("The shader was not bound and not available!");
@@ -396,12 +397,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         for (auto&& pFrameBuffer : m_framebuffers) {
-            if (!pFrameBuffer->IsDirty() && pFrameBuffer->IsCalculated()) {
-                continue;
-            }
-
             pFrameBuffer->Update();
-
             m_hasChangedFrameBuffers = true;
         }
 
@@ -426,7 +422,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    const std::vector<SR_GTYPES_NS::Shader*>& RenderContext::GetShaders() const noexcept {
+    const std::vector<SR_GTYPES_NS::Shader::Ptr>& RenderContext::GetShaders() const noexcept {
         return m_shaders;
     }
 
@@ -442,7 +438,7 @@ namespace SR_GRAPH_NS {
         return m_techniques;
     }
 
-    const std::vector<SR_GTYPES_NS::Skybox*>& RenderContext::GetSkyboxes() const noexcept {
+    const std::vector<SR_GTYPES_NS::Skybox::Ptr>& RenderContext::GetSkyboxes() const noexcept {
         return m_skyboxes;
     }
 

@@ -59,7 +59,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_framebuffer) {
-            pContext->Register(m_framebuffer);
+            m_framebuffer->RegisterGraphicsResource();
         }
 
         return true;

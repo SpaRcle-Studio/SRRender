@@ -81,18 +81,18 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (!IsCalculated() || m_dirty) {
+        if (m_dirty) {
             return false;
         }
 
-        m_pipeline->BindFrameBuffer(this);
-        m_pipeline->SetCurrentFrameBuffer(this);
+        GetPipeline()->BindFrameBuffer(this);
+        GetPipeline()->SetCurrentFrameBuffer(this);
 
         return true;
     }
 
     bool Framebuffer::Update() {
-        if (IsCalculated() && !m_dirty) {
+        if (!m_dirty) {
             return true;
         }
 
@@ -103,18 +103,18 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_sampleCount == 0) {
-            m_currentSampleCount = m_pipeline->GetSamplesCount();
+            m_currentSampleCount = GetPipeline()->GetSamplesCount();
         }
         else {
             m_currentSampleCount = m_sampleCount;
         }
 
         /// если устройство не поддерживает, то не будем пытаться использовать
-        if (!m_pipeline->IsMultiSamplingSupported()) {
+        if (!GetPipeline()->IsMultiSamplingSupported()) {
             m_currentSampleCount = 1;
         }
         else {
-            m_currentSampleCount = SR_MIN(m_currentSampleCount, m_pipeline->GetSupportedSamples());
+            m_currentSampleCount = SR_MIN(m_currentSampleCount, GetPipeline()->GetSupportedSamples());
         }
 
         SRFrameBufferCreateInfo createInfo;
@@ -126,7 +126,7 @@ namespace SR_GTYPES_NS {
         createInfo.layersCount = m_layersCount;
         createInfo.features = m_features;
 
-        if (!m_pipeline->AllocateFrameBuffer(createInfo)) {
+        if (!GetPipeline()->AllocateFrameBuffer(createInfo)) {
             SR_ERROR("FrameBuffer::Update() : failed to allocate frame buffer!");
             m_hasErrors = true;
             return false;
@@ -134,21 +134,20 @@ namespace SR_GTYPES_NS {
 
         m_hasErrors = false;
         m_dirty = false;
-        m_isCalculated = true;
 
-        m_pipeline->SetDirty(true);
+        GetPipeline()->SetDirty(true);
 
         return true;
     }
 
-    void Framebuffer::FreeVideoMemory() {
+    void Framebuffer::FreeVMemory() {
         if (m_frameBuffer != SR_ID_INVALID) {
-            SRVerifyFalse(!m_pipeline->FreeFBO(&m_frameBuffer));
+            SRVerifyFalse(!GetPipeline()->FreeFBO(&m_frameBuffer));
             m_frameBuffer = SR_ID_INVALID;
         }
 
         if (m_depth.texture != SR_ID_INVALID) {
-            SRVerifyFalse(!m_pipeline->FreeTexture(&m_depth.texture));
+            SRVerifyFalse(!GetPipeline()->FreeTexture(&m_depth.texture));
         }
 
         for (auto&& texture : m_depth.subLayers) {
@@ -156,7 +155,7 @@ namespace SR_GTYPES_NS {
                 continue;
             }
 
-            SRVerifyFalse(!m_pipeline->FreeTexture(&texture));
+            SRVerifyFalse(!GetPipeline()->FreeTexture(&texture));
         }
 
         for (auto&& [texture, format] : m_colors) {
@@ -164,10 +163,10 @@ namespace SR_GTYPES_NS {
                 continue;
             }
 
-            SRVerifyFalse(!m_pipeline->FreeTexture(&texture));
+            SRVerifyFalse(!GetPipeline()->FreeTexture(&texture));
         }
 
-        IGraphicsResource::FreeVideoMemory();
+        IGraphicsResource::FreeVMemory();
     }
 
     void Framebuffer::SetSize(const SR_MATH_NS::IVector2 &size) {
@@ -176,9 +175,9 @@ namespace SR_GTYPES_NS {
     }
 
     bool Framebuffer::BeginCmdBuffer(const ClearColors& clearColors, std::optional<float_t> depth) {
-        m_pipeline->ClearBuffers(clearColors, depth);
+        GetPipeline()->ClearBuffers(clearColors, depth);
 
-        if (!m_pipeline->BeginCmdBuffer()) {
+        if (!GetPipeline()->BeginCmdBuffer()) {
             return false;
         }
 
@@ -188,9 +187,9 @@ namespace SR_GTYPES_NS {
     }
 
     bool Framebuffer::BeginCmdBuffer() {
-        m_pipeline->ClearBuffers();
+        GetPipeline()->ClearBuffers();
 
-        if (!m_pipeline->BeginCmdBuffer()) {
+        if (!GetPipeline()->BeginCmdBuffer()) {
             return false;
         }
 
@@ -200,7 +199,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Framebuffer::BeginRender() {
-        if (!m_pipeline->BeginRender()) {
+        if (!GetPipeline()->BeginRender()) {
             return false;
         }
 
@@ -210,11 +209,11 @@ namespace SR_GTYPES_NS {
     }
 
     void Framebuffer::EndRender() {
-        m_pipeline->EndRender();
+        GetPipeline()->EndRender();
     }
 
     void Framebuffer::EndCmdBuffer() {
-        m_pipeline->EndCmdBuffer();
+        GetPipeline()->EndCmdBuffer();
     }
 
     int32_t Framebuffer::GetId() const {
@@ -222,7 +221,7 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        if (!IsCalculated() || m_dirty) {
+        if (m_dirty) {
             return SR_ID_INVALID;
         }
 
@@ -236,7 +235,7 @@ namespace SR_GTYPES_NS {
     int32_t Framebuffer::GetColorTexture(uint32_t layer) {
         SR_TRACY_ZONE;
 
-        if (!IsCalculated() || m_dirty) {
+        if (m_dirty) {
             return SR_ID_INVALID;
         }
 
@@ -274,7 +273,7 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        if (!IsCalculated() || m_dirty) {
+        if (m_dirty) {
             return SR_ID_INVALID;
         }
 
@@ -298,8 +297,8 @@ namespace SR_GTYPES_NS {
     void Framebuffer::SetDirty() {
         m_dirty = true;
 
-        if (m_pipeline) {
-            m_pipeline->SetDirty(true);
+        if (GetPipeline()) {
+            GetPipeline()->SetDirty(true);
         }
     }
 
@@ -314,8 +313,8 @@ namespace SR_GTYPES_NS {
     }
 
     void Framebuffer::SetViewportScissor() {
-        m_pipeline->SetViewport(m_size.x, m_size.y);
-        m_pipeline->SetScissor(m_size.x, m_size.y);
+        GetPipeline()->SetViewport(m_size.x, m_size.y);
+        GetPipeline()->SetScissor(m_size.x, m_size.y);
     }
 
     void Framebuffer::SetFeatures(const FrameBufferFeatures& features) {
