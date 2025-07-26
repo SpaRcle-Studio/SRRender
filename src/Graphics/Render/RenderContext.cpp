@@ -25,7 +25,6 @@ namespace SR_GRAPH_NS {
         : Super(this)
     {
         m_pipeline = new VulkanPipeline(GetThis());
-        m_pipeline->SetRenderStageId("Shadow");
     }
 
     bool RenderContext::Update() noexcept {
@@ -347,16 +346,16 @@ namespace SR_GRAPH_NS {
     RenderContext::FramebufferPtr RenderContext::FindFramebuffer(SR_UTILS_NS::StringAtom name, CameraPtr pCamera) const {
         SR_TRACY_ZONE;
 
-        for (auto&& pTechnique : m_techniques) {
-            if (pTechnique->GetCamera() != pCamera) {
-                continue;
-            }
+        //for (auto&& pTechnique : m_techniques) {
+        //    if (pTechnique->GetCamera() != pCamera) {
+        //        continue;
+        //    }
 
-            auto&& pController = pTechnique->GetFrameBufferController(name);
-            if (pController) {
-                return pController->GetFramebuffer();
-            }
-        }
+        //    auto&& pController = pTechnique->GetFrameBufferController(name);
+        //    if (pController) {
+        //        return pController->GetFramebuffer();
+        //    }
+        //}
 
         return nullptr;
     }

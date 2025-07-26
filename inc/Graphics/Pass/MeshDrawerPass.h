@@ -6,7 +6,6 @@
 #define SR_ENGINE_MESH_DRAWER_PASS_H
 
 #include <Graphics/Pass/BasePass.h>
-#include <Graphics/Pass/ISamplersPass.h>
 #include <Graphics/Render/RenderPredicates.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/SRSL/ShaderType.h>
@@ -17,18 +16,8 @@ namespace SR_GRAPH_NS {
     class CascadedShadowMapPass;
     class ShadowMapPass;
 
-    class MeshDrawerPass : public BasePass, public ISamplersPass, public LayerFilterPredicate, public ShaderReplacePredicate, public PriorityFilterPredicate {
-        SR_REGISTER_LOGICAL_NODE(MeshDrawerPass, Mesh Drawer Pass, { "Passes" })
+    /*class MeshDrawerPass : public BasePass, public LayerFilterPredicate, public ShaderReplacePredicate, public PriorityFilterPredicate {
         using Super = BasePass;
-        struct Sampler {
-            uint32_t textureId = SR_ID_INVALID;
-            uint32_t fboId = SR_ID_INVALID;
-            SR_UTILS_NS::StringAtom id;
-            SR_UTILS_NS::StringAtom fboName;
-            uint64_t index = 0;
-            bool depth = false;
-        };
-        using Samplers = std::vector<Sampler>;
     public:
         using RenderQueuePtr = SR_HTYPES_NS::SharedPtr<RenderQueue>;
 
@@ -40,7 +29,6 @@ namespace SR_GRAPH_NS {
 
         bool Init() override;
         void DeInit() override;
-        void Prepare() override;
         bool Render() override;
         void Update() override;
 
@@ -61,11 +49,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::vector<RenderQueuePtr>& GetRenderQueues() const noexcept { return m_renderQueues; }
 
     protected:
-        void OnResize(const SR_MATH_NS::UVector2& size) override;
-        void OnMultisampleChanged() override;
-        void OnSamplersChanged() override;
-        void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
-
         SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
         SR_NODISCARD virtual RenderQueuePtr AllocateRenderQueue();
 
@@ -78,8 +61,8 @@ namespace SR_GRAPH_NS {
 
         std::vector<RenderQueuePtr> m_renderQueues;
 
-        ShadowMapPass* m_shadowMapPass = nullptr;
-        CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;
+        //ShadowMapPass* m_shadowMapPass = nullptr;
+        //CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;
 
         SR_HTYPES_NS::Time& m_time;
 
@@ -89,7 +72,7 @@ namespace SR_GRAPH_NS {
         std::set<SR_UTILS_NS::StringAtom> m_allowedLayers;
         std::set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
 
-    };
+    };*/
 }
 
 #endif //SR_ENGINE_MESH_DRAWER_PASS_H

@@ -2,17 +2,18 @@
 // Created by Monika on 21.01.2023.
 //
 
-#include <Graphics/Pass/IFramebufferPass.h>
+#include <Graphics/Pass/Data/FrameBufferPassData.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Types/Framebuffer.h>
 
 namespace SR_GRAPH_NS {
-    IFramebufferPass::IFramebufferPass()
-        : m_frameBufferUboManager(SR_GRAPH_NS::Memory::UBOManager::Instance())
+    FrameBufferPassData::FrameBufferPassData()
+        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+        , m_frameBufferUboManager(SR_GRAPH_NS::Memory::UBOManager::Instance())
     { }
 
-    void IFramebufferPass::LoadFramebufferSettings(const SR_XML_NS::Node& passNode) {
+    void FrameBufferPassData::LoadFramebufferSettings(const SR_XML_NS::Node& passNode) {
         auto&& settingsNode = passNode.TryGetNode("FramebufferSettings");
         if (!settingsNode) {
             return;
@@ -24,7 +25,7 @@ namespace SR_GRAPH_NS {
             m_frameBufferName = settingsNode.GetAttribute("Name").ToString();
             m_frameBufferController = GetFrameBufferRenderTechnique()->GetFrameBufferController(m_frameBufferName);
             if (!m_frameBufferController) {
-                SR_ERROR("IFramebufferPass::LoadFramebufferSettings() : failed to find frame buffer controller!\n\tName: " + m_frameBufferName.ToStringRef());
+                SR_ERROR("FrameBufferPassData::LoadFramebufferSettings() : failed to find frame buffer controller!\n\tName: " + m_frameBufferName.ToStringRef());
             }
         }
 
@@ -52,7 +53,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    bool IFramebufferPass::RenderFrameBuffer(const PipelinePtr& pPipeline) {
+    bool FrameBufferPassData::RenderFrameBuffer(const PipelinePtr& pPipeline) {
         auto&& pFrameBuffer = GetFramebuffer();
 
         if (!pFrameBuffer && !IsDirectional()) {
@@ -91,7 +92,7 @@ namespace SR_GRAPH_NS {
         return IsDirectional();
     }
 
-    bool IFramebufferPass::RenderFrameBuffer(const PipelinePtr& pPipeline, uint8_t layers) {
+    bool FrameBufferPassData::RenderFrameBuffer(const PipelinePtr& pPipeline, uint8_t layers) {
         auto&& pFrameBuffer = GetFramebuffer();
 
         pFrameBuffer->BeginCmdBuffer(m_clearColors, m_depth);
@@ -114,7 +115,7 @@ namespace SR_GRAPH_NS {
         return IsDirectional();
     }
 
-    void IFramebufferPass::UpdateFrameBuffer(const PipelinePtr& pPipeline) {
+    void FrameBufferPassData::UpdateFrameBuffer(const PipelinePtr& pPipeline) {
         auto&& pFrameBuffer = GetFramebuffer();
         if (!IsDirectional() && (!pFrameBuffer || pFrameBuffer->IsDirty())) {
             return;
@@ -130,11 +131,11 @@ namespace SR_GRAPH_NS {
         pPipeline->SetCurrentFrameBuffer(nullptr);
     }
 
-    IFramebufferPass::FramebufferPtr IFramebufferPass::GetFramebuffer() const noexcept {
+    FrameBufferPassData::FramebufferPtr FrameBufferPassData::GetFramebuffer() const noexcept {
         return m_frameBufferController ? m_frameBufferController->GetFramebuffer() : nullptr;
     }
 
-    uint8_t IFramebufferPass::GetLayersCount() const noexcept {
+    uint8_t FrameBufferPassData::GetLayersCount() const noexcept {
         return m_frameBufferController ? m_frameBufferController->GetLayersCount() : 1;
     }
 }

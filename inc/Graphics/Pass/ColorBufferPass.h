@@ -18,8 +18,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    class ColorBufferPass : public OffScreenMeshDrawerPass, public IColorBufferPass {
-        SR_REGISTER_LOGICAL_NODE(ColorBufferPass, Color Buffer Pass, { "Passes" })
+    /*class ColorBufferPass : public OffScreenMeshDrawerPass, public IColorBufferPass {
         using ShaderPtr = SR_GTYPES_NS::Shader*;
         using FramebufferPtr = SR_GTYPES_NS::Framebuffer*;
         using MeshPtr = SR_GTYPES_NS::Mesh*;
@@ -40,7 +39,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD RenderQueuePtr AllocateRenderQueue() override;
 
-    };
+    };*/
 }
 
 #endif //SR_ENGINE_COLORBUFFERPASS_H

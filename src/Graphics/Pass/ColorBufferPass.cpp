@@ -6,7 +6,7 @@
 #include <Graphics/Pipeline/Pipeline.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(ColorBufferPass)
+    /*SR_REGISTER_RENDER_PASS(ColorBufferPass)
 
     ColorBufferRenderQueue::ColorBufferRenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer)
         : Super(pStrategy, pDrawer)
@@ -51,5 +51,5 @@ namespace SR_GRAPH_NS {
     bool ColorBufferPass::Load(const SR_XML_NS::Node& passNode) {
         SetColorMultiplier(passNode.TryGetAttribute("ColorMultiplier").ToInt(1));
         return Super::Load(passNode);
-    }
+    }*/
 }

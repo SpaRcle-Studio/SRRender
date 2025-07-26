@@ -9,32 +9,30 @@
 #include <Graphics/Pass/GroupPass.h>
 #include <Graphics/Pass/IColorBufferPass.h>
 
+#include <Codegen/IRenderTechnique.generated.hpp>
+
 namespace SR_GRAPH_NS {
     IRenderTechnique::IRenderTechnique()
-        : Super()
-        , m_dirty(true)
+        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
     { }
 
     IRenderTechnique::~IRenderTechnique() {
-        for (auto&& pPass : m_passes) {
-            pPass.AutoFree();
-        }
-        m_passes.clear();
-        ReleaseFrameBufferControllers();
+        m_data.pass.AutoFree();
+        ReleaseFrameBuffers();
     }
 
     bool IRenderTechnique::Render() {
         SR_TRACY_ZONE;
 
-        if (m_dirty || !m_camera || !m_camera->IsActive()) {
+        if (m_dirty || !m_data.pass || !m_data.pass->IsActive()) {
             return false;
         }
 
         bool hasDrawData = false;
 
-        hasDrawData |= GroupPass::PreRender();
-        hasDrawData |= GroupPass::Render();
-        hasDrawData |= GroupPass::PostRender();
+        hasDrawData |= m_data.pass->PreRender();
+        hasDrawData |= m_data.pass->Render();
+        hasDrawData |= m_data.pass->PostRender();
 
         return hasDrawData;
     }
@@ -42,21 +40,35 @@ namespace SR_GRAPH_NS {
     void IRenderTechnique::Prepare() {
         SR_TRACY_ZONE;
 
-        if ((m_dirty && !Build()) || (m_camera && !m_camera->IsActive())) {
+        if (!m_data.pass) {
             return;
         }
 
-        GroupPass::Prepare();
+        if (!BuildTechnique() || !m_data.pass->IsActive()) {
+            return;
+        }
+
+        m_data.pass->Prepare();
     }
 
     void IRenderTechnique::Update() {
         SR_TRACY_ZONE;
 
-        if (m_dirty || (m_camera && !m_camera->IsActive())) {
+        if (!m_data.pass || m_dirty || !m_data.pass->IsActive()) {
             return;
         }
 
-        GroupPass::Update();
+        m_data.pass->Update();
+    }
+
+    void IRenderTechnique::PostUpdate() {
+        SR_TRACY_ZONE;
+
+        if (!m_data.pass || m_dirty || !m_data.pass->IsActive()) {
+            return;
+        }
+
+        m_data.pass->PostUpdate();
     }
 
     bool IRenderTechnique::Overlay() {
@@ -66,7 +78,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        return GroupPass::Overlay();
+        return m_data.pass->Overlay();
     }
 
     void IRenderTechnique::SetDirty() {
@@ -81,63 +93,92 @@ namespace SR_GRAPH_NS {
     }
 
     void IRenderTechnique::SetCamera(IRenderTechnique::CameraPtr pCamera) {
-        m_camera = pCamera;
-    }
-
-    void IRenderTechnique::SetRenderScene(const IRenderTechnique::RenderScenePtr& pRScene) {
-        if (m_renderScene.Valid()) {
-            SR_ERROR("RenderTechnique::SetRenderScene() : render scene already exists!");
+        if (!pCamera) {
+            SRHalt("IRenderTechnique::SetCamera() : pCamera is nullptr!");
             return;
         }
 
-        m_renderScene = pRScene;
-        SetContext(m_renderScene->GetContext());
-
-        RegisterGraphicsResource();
+        m_camera = pCamera;
+        SetRenderScene(m_camera->GetRenderScene());
     }
 
-    IRenderTechnique::RenderScenePtr IRenderTechnique::GetRenderScene() const {
-        SRAssert(m_renderScene.Valid());
-        return m_renderScene;
+    void IRenderTechnique::SetRenderScene(const IRenderTechnique::RenderScenePtr& pRScene) {
+        if (!m_renderScene) {
+            m_renderScene = pRScene;
+            RegisterGraphicsResource();
+        }
+        else {
+            SRHalt("RenderTechnique already has a render scene!");
+        }
     }
 
     void IRenderTechnique::FreeVMemory() {
-        for (auto&& pPass : m_passes) {
-            if (!pPass->IsInit()) {
-                continue;
-            }
-
-            pPass->DeInit();
+        if (m_data.pass && m_data.pass->IsInit()) {
+            m_data.pass->DeInit();
         }
-        ReleaseFrameBufferControllers();
-        Super::FreeVMemory();
+        ReleaseFrameBuffers();
+        Memory::IGraphicsResource::FreeVMemory();
     }
 
     bool IRenderTechnique::IsEmpty() const {
-        /// Не делаем блокировки, так как взаимодействие
-        /// идет только из графического потока
-        return m_passes.empty() && m_frameBufferControllers.empty();
+        return !m_data.pass && m_data.frameBuffers.empty();
     }
 
     void IRenderTechnique::DeInitPasses() {
-        for (auto&& pPass : m_passes) {
-            if (pPass->IsInit()) {
-                pPass->DeInit();
-            }
-            pPass.AutoFree();
+        if (m_data.pass && m_data.pass->IsInit()) {
+            m_data.pass->DeInit();
         }
-        m_passes.clear();
-        ReleaseFrameBufferControllers();
+        m_data.pass.AutoFree();
+        ReleaseFrameBuffers();
+    }
+
+    bool IRenderTechnique::BuildTechnique() {
+        if (!m_dirty) {
+            return true;
+        }
+
+        if (m_hasErrors) {
+            return false;
+        }
+
+        if (!m_data.pass) {
+            SR_WARN("IRenderTechnique::BuildTechnique() : technique \"{}\" does not have a passes!", m_data.name);
+            m_hasErrors = true;
+            return false;
+        }
+
+        uint32_t countQueues = 0;
+        for (auto&& queue : m_data.queues) {
+            queue.passes.resize(queue.passNames.size());
+            for (uint32_t i = 0; i < queue.passNames.size(); ++i) {
+                queue.passes[i] = m_data.pass->FindPass(queue.passNames[i]);
+                if (!queue.passes[i]) {
+                    SR_ERROR("IRenderTechnique::BuildTechnique() : pass with name \"{}\" not found in \"{}\" technique!", queue.passNames[i], m_data.name);
+                    m_hasErrors = true;
+                    return false;
+                }
+                ++countQueues;
+            }
+        }
+
+        if (countQueues == 0) {
+            SR_WARN("IRenderTechnique::BuildTechnique() : technique \"{}\" does not have any queues!", m_data.name);
+            m_hasErrors = true;
+            return false;
+        }
+
+        m_dirty = false;
+        return true;
     }
 
     SR_GTYPES_NS::Mesh* IRenderTechnique::PickMeshAt(float_t x, float_t y, SR_UTILS_NS::StringAtom passName) const {
-        SR_TRACY_ZONE;
-
-        if (auto&& pPass = dynamic_cast<SR_GRAPH_NS::IColorBufferPass*>(FindPass(passName))) {
-            if (auto&& pMesh = pPass->GetMesh(x, y)) {
-                return pMesh;
-            }
-        }
+        //SR_TRACY_ZONE;
+        //
+        //if (auto&& pPass = dynamic_cast<SR_GRAPH_NS::IColorBufferPass*>(FindPass(passName))) {
+        //    if (auto&& pMesh = pPass->GetMesh(x, y)) {
+        //        return pMesh;
+        //    }
+        //}
         return nullptr;
     }
 
@@ -160,28 +201,33 @@ namespace SR_GRAPH_NS {
     }
 
     void IRenderTechnique::OnResize(const SR_MATH_NS::UVector2& size) {
-        for (auto&& [name, pController] : m_frameBufferControllers) {
+        for (auto&& pController : m_data.frameBuffers) {
             pController->OnResize(size);
         }
 
-        GroupPass::OnResize(size);
+        if (m_data.pass) {
+            m_data.pass->OnResize(size);
+        }
     }
 
     void IRenderTechnique::OnMultisampleChanged() {
-        GroupPass::OnMultisampleChanged();
+        if (m_data.pass) {
+            m_data.pass->OnMultisampleChanged();
+        }
     }
 
-    IRenderTechnique::FrameBufferControllerPtr IRenderTechnique::GetFrameBufferController(SR_UTILS_NS::StringAtom name) const {
-        auto&& pIt = m_frameBufferControllers.find(name);
-        if (pIt != m_frameBufferControllers.end()) {
-            return pIt->second;
+    const FrameBufferController::Ptr& IRenderTechnique::GetFrameBufferController(SR_UTILS_NS::StringAtom name) const {
+        for (auto&& pController : m_data.frameBuffers) {
+            if (pController->GetName() == name) {
+                return pController;
+            }
         }
-
-        return nullptr;
+        static const FrameBufferController::Ptr emptyPtr;
+        return emptyPtr;
     }
 
     bool IRenderTechnique::Init() {
-        for (auto&& [name, pController] : m_frameBufferControllers) {
+        /*for (auto&& [name, pController] : m_frameBufferControllers) {
             if (!pController->InitializeFramebuffer(GetRenderContext())) {
                 SR_ERROR("RenderTechnique::Init() : failed to initialize \"" + name.ToStringRef() + "\" framebuffer controller!");
             }
@@ -192,19 +238,30 @@ namespace SR_GRAPH_NS {
                 SR_ERROR("RenderTechnique::Init() : failed to initialize \"" + pPass->GetName().ToStringRef() + "\" pass!");
                 return false;
             }
-        }
+        }*/
 
         return true;
     }
 
-    void IRenderTechnique::ReleaseFrameBufferControllers() {
-        for (auto&& [name, pController] : m_frameBufferControllers) {
+    void IRenderTechnique::ReleaseFrameBuffers() {
+        for (auto&& pController : m_data.frameBuffers) {
             pController.AutoFree();
         }
-        m_frameBufferControllers.clear();
+        m_data.frameBuffers.clear();
     }
 
     bool IRenderTechnique::IsTechniqueDead() const {
         return m_isDead;
+    }
+
+    void IRenderTechnique::SetRenderTechniqueData(RenderTechniqueData&& data) {
+        SR_TRACY_ZONE;
+        DeInitPasses();
+        m_dirty = true;
+        m_data = std::move(data);
+
+        if (m_data.pass) {
+            m_data.pass->SetRenderTechnique(this);
+        }
     }
 }

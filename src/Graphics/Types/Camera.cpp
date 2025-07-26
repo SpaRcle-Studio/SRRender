@@ -58,17 +58,15 @@ namespace SR_GTYPES_NS {
 
         auto&& path = GetRenderTechniquePath();
 
-        if (path.GetExtensionView() == "srlm") {
-            //m_renderTechnique.pTechnique = ScriptableRenderTechnique::Load(path);
-        }
-        else {
-            m_renderTechnique.pTechnique.AutoFree();
-            m_renderTechnique.pTechnique = FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>();
-        }
+        m_renderTechnique.pTechnique.AutoFree();
+        m_renderTechnique.pTechnique = FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>();
 
         if (m_renderTechnique.pTechnique) {
             m_renderTechnique.pTechnique->SetCamera(this);
-            m_renderTechnique.pTechnique->SetRenderScene(GetRenderScene());
+        }
+        else {
+            SR_ERROR("Camera::GetRenderTechnique() : failed to load render technique from path: \"{}\"!", path);
+            m_hasErrors = true;
         }
 
         return m_renderTechnique.pTechnique.Get();

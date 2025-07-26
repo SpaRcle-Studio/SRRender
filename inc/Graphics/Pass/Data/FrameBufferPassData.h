@@ -18,16 +18,17 @@ namespace SR_GRAPH_NS {
     class IRenderTechnique;
     class Pipeline;
 
-    class IFramebufferPass {
+    class FrameBufferPassData final : public SR_HTYPES_NS::SharedPtr<FrameBufferPassData> {
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
+        using Super = SR_HTYPES_NS::SharedPtr<FrameBufferPassData>;
     public:
         using ColorFormats = std::list<ImageFormat>;
         using ClearColors = std::vector<SR_MATH_NS::FColor>;
         using FramebufferPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>;
 
     public:
-        IFramebufferPass();
-        virtual ~IFramebufferPass() = default;
+        FrameBufferPassData();
+        ~FrameBufferPassData() override;
 
     public:
         SR_NODISCARD FramebufferPtr GetFramebuffer() const noexcept;

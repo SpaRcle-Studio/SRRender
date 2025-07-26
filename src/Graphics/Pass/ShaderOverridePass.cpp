@@ -5,7 +5,7 @@
 #include <Graphics/Pass/ShaderOverridePass.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(ShaderOverridePass)
+    /*SR_REGISTER_RENDER_PASS(ShaderOverridePass)
 
     ShaderOverridePass::~ShaderOverridePass() {
         for (auto&& [type, pShader] : m_shaders) {
@@ -55,7 +55,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool ShaderOverridePass::Render() {
-        /*if (!m_framebuffer && !IsDirectional()) {
+         if (!m_framebuffer && !IsDirectional()) {
             return false;
         }
 
@@ -79,12 +79,12 @@ namespace SR_GRAPH_NS {
         }
 
         m_uboManager.SetIdentifier(pIdentifier);
-    */
+
         return IsDirectional();
     }
 
     void ShaderOverridePass::Update() {
-       /* if (!IsDirectional() && (!m_framebuffer || m_framebuffer->IsDirty())) {
+       if (!IsDirectional() && (!m_framebuffer || m_framebuffer->IsDirty())) {
             return;
         }
 
@@ -97,7 +97,7 @@ namespace SR_GRAPH_NS {
 
         m_uboManager.SetIdentifier(pIdentifier);
 
-        GetPassPipeline()->SetCurrentFrameBuffer(nullptr);*/
+        GetPassPipeline()->SetCurrentFrameBuffer(nullptr);
     }
 
     ShaderOverridePass::ShaderPtr ShaderOverridePass::GetShader(SR_SRSL_NS::ShaderType type) const {
@@ -125,5 +125,5 @@ namespace SR_GRAPH_NS {
             return std::vector<SR_GTYPES_NS::Framebuffer*>(); /// NOLINT
         }
         return { GetFramebuffer().Get() };
-    }
+    }*/
 }

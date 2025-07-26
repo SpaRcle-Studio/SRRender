@@ -539,6 +539,8 @@ namespace SR_GRAPH_NS {
 
         vkResetCommandPool(*m_device, m_cmdPools[frame], 0);
 
+        static bool hasWarn = false;
+
         if (m_tracyEnabled) {
             vkBeginCommandBuffer(buffer, &m_cmdBuffBI);
             {
@@ -550,7 +552,8 @@ namespace SR_GRAPH_NS {
                 if (auto&& drawData = ImGui::GetDrawData()) {
                     ImGui_ImplVulkan_RenderDrawData(drawData, m_cmdBuffs[frame]);
                 }
-                else {
+                else if (!hasWarn) {
+                    hasWarn = true;
                     VK_WARN("VkImGUI::Render() : imgui draw data is nullptr!");
                 }
 
@@ -567,7 +570,8 @@ namespace SR_GRAPH_NS {
                 if (auto&& drawData = ImGui::GetDrawData()) {
                     ImGui_ImplVulkan_RenderDrawData(drawData, m_cmdBuffs[frame]);
                 }
-                else {
+                else if (!hasWarn) {
+                    hasWarn = true;
                     VK_WARN("VkImGUI::Render() : imgui draw data is nullptr!");
                 }
 

@@ -113,6 +113,8 @@ namespace SR_GTYPES_NS {
         float_t m_FOV = 70.f;
 
         /// @virtualProperty(renderTechnique) @getter(GetRenderTechniquePath) @setter(SetRenderTechnique)
+        /// @customArgs(pick: enabled, filter name: Render Techniques)
+        /// @customArg(filter value: srtech)
         SR_VIRTUAL_PROPERTY
 
         /// @property @readOnly @dontSave

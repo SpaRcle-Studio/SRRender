@@ -26,7 +26,7 @@ namespace SR_GTYPES_NS {
     }
 
     Framebuffer::Ptr Framebuffer::Create(uint32_t images, const SR_MATH_NS::IVector2 &size) {
-        std::list<ImageFormat> colors;
+        std::vector<ImageFormat> colors;
 
         for (uint32_t i = 0; i < images; ++i) {
             colors.emplace_back(ImageFormat::RGBA8_UNORM);
@@ -35,19 +35,19 @@ namespace SR_GTYPES_NS {
         return Create(colors, ImageFormat::Auto, size);
     }
 
-    Framebuffer::Ptr Framebuffer::Create(const std::list<ImageFormat> &colors, ImageFormat depth, const SR_MATH_NS::IVector2 &size) {
+    Framebuffer::Ptr Framebuffer::Create(const std::vector<ImageFormat> &colors, ImageFormat depth, const SR_MATH_NS::IVector2 &size) {
         return Create(colors, depth, size, 0);
     }
 
-    Framebuffer::Ptr Framebuffer::Create(const std::list<ImageFormat>& colors, ImageFormat depth, const SR_MATH_NS::IVector2& size, uint8_t samples) {
+    Framebuffer::Ptr Framebuffer::Create(const std::vector<ImageFormat>& colors, ImageFormat depth, const SR_MATH_NS::IVector2& size, uint8_t samples) {
         return Create(colors, depth, size, samples, 1);
     }
 
-    Framebuffer::Ptr Framebuffer::Create(const std::list<ImageFormat> &colors, ImageFormat depth, const SR_MATH_NS::IVector2 &size, uint8_t samples, uint32_t layersCount) {
+    Framebuffer::Ptr Framebuffer::Create(const std::vector<ImageFormat> &colors, ImageFormat depth, const SR_MATH_NS::IVector2 &size, uint8_t samples, uint32_t layersCount) {
         return Create(colors, depth, size, samples, 1, ImageAspect::DepthStencil);
     }
 
-    Framebuffer::Ptr Framebuffer::Create(const std::list<ImageFormat> &colors, ImageFormat depth, const SR_MATH_NS::IVector2 &size, uint8_t samples, uint32_t layersCount, ImageAspect depthAspect) {
+    Framebuffer::Ptr Framebuffer::Create(const std::vector<ImageFormat> &colors, ImageFormat depth, const SR_MATH_NS::IVector2 &size, uint8_t samples, uint32_t layersCount, ImageAspect depthAspect) {
         auto&& pFBO = Framebuffer::MakeShared<Framebuffer>();
 
         SRAssert(!size.HasZero() && !size.HasNegative());
@@ -72,7 +72,7 @@ namespace SR_GTYPES_NS {
         return pFBO;
     }
 
-    Framebuffer::Ptr Framebuffer::Create(const std::list<ImageFormat> &colors, ImageFormat depth) {
+    Framebuffer::Ptr Framebuffer::Create(const std::vector<ImageFormat> &colors, ImageFormat depth) {
         return Create(colors, depth, SR_MATH_NS::IVector2(0, 0));
     }
 

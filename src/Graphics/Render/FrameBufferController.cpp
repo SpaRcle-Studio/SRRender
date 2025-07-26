@@ -5,6 +5,8 @@
 #include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Types/Framebuffer.h>
 
+#include <Codegen/FrameBufferController.generated.hpp>
+
 namespace SR_GRAPH_NS {
     FrameBufferController::FrameBufferController()
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Manually)
@@ -66,7 +68,7 @@ namespace SR_GRAPH_NS {
     }
 
 
-    bool FrameBufferController::LoadFramebufferSettings(const SR_XML_NS::Node& settingsNode) {
+    /*bool FrameBufferController::LoadFramebufferSettings(const SR_XML_NS::Node& settingsNode) {
         m_dynamicResizing = settingsNode.TryGetAttribute("DynamicResizing").ToBool(true);
         m_depthEnabled = settingsNode.TryGetAttribute("DepthEnabled").ToBool(true);
         m_samples = settingsNode.TryGetAttribute("SmoothSamples").ToUInt(0);
@@ -112,5 +114,5 @@ namespace SR_GRAPH_NS {
         }
 
         return true;
-    }
+    }*/
 }

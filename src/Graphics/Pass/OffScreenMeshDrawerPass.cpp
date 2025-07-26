@@ -6,7 +6,7 @@
 #include <Graphics/Types/Framebuffer.h>
 
 namespace SR_GRAPH_NS {
-    bool OffScreenMeshDrawerPass::Load(const SR_XML_NS::Node& passNode) {
+    /*bool OffScreenMeshDrawerPass::Load(const SR_XML_NS::Node& passNode) {
         LoadFramebufferSettings(passNode);
         return MeshDrawerPass::Load(passNode);
     }
@@ -44,5 +44,5 @@ namespace SR_GRAPH_NS {
 
     void OffScreenMeshDrawerPass::UpdateFrameBufferInner() {
         MeshDrawerPass::Update();
-    }
+    }*/
 }

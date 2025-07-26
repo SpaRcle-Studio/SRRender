@@ -6,7 +6,7 @@
 #define SR_ENGINE_SHADER_OVERRIDE_PASS_H
 
 #include <Graphics/Pass/IMesh3DClusterPass.h>
-#include <Graphics/Pass/IFramebufferPass.h>
+//#include <Graphics/Pass/IFramebufferPass.h>
 #include <Graphics/Pipeline/PipelineType.h>
 
 namespace SR_GTYPES_NS {
@@ -16,10 +16,9 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
-    class MeshCluster;
+    //class MeshCluster;
 
-    class ShaderOverridePass : public IMesh3DClusterPass, public IFramebufferPass {
-        SR_REGISTER_LOGICAL_NODE(ShaderOverridePass, Shader Override Pass, { "Passes" })
+    /*class ShaderOverridePass : public IMesh3DClusterPass, public IFramebufferPass {
         using Super = IMesh3DClusterPass;
     public:
         ~ShaderOverridePass() override;
@@ -43,7 +42,7 @@ namespace SR_GRAPH_NS {
     private:
         std::vector<std::pair<SR_SRSL_NS::ShaderType, ShaderPtr>> m_shaders;
 
-    };
+    };*/
 }
 
 #endif //SR_ENGINE_SHADEROVERRIDEPASS_H

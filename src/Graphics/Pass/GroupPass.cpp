@@ -4,29 +4,14 @@
 
 #include <Graphics/Pass/GroupPass.h>
 
+#include <Codegen/GroupPass.generated.hpp>
+
 namespace SR_GRAPH_NS {
     GroupPass::~GroupPass() {
         for (auto&& pPass : m_passes) {
             pPass.AutoFree();
         }
         m_passes.clear();
-    }
-
-    bool GroupPass::Load(const SR_XML_NS::Node& passNode) {
-        for (auto&& subPassNode : passNode.TryGetNodes()) {
-            SR_TRACY_ZONE;
-            SR_TRACY_ZONE_TEXT(subPassNode.Name());
-
-            if (auto&& pPass = SR_ALLOCATE_RENDER_PASS(subPassNode, GetTechnique())) {
-                m_passes.emplace_back(pPass);
-                pPass->SetParent(this);
-            }
-            else {
-                SR_ERROR("GroupPass::Load() : failed to load \"" + subPassNode.Name() + "\" pass!");
-            }
-        }
-
-        return BasePass::Load(passNode);
     }
 
     bool GroupPass::Init() {
@@ -60,13 +45,11 @@ namespace SR_GRAPH_NS {
     }
 
     bool GroupPass::PreRender() {
-        SR_TRACY_ZONE;
-
         bool hasDrawData = false;
 
         for (auto&& pPass : m_passes) {
             if (pPass->HasPreRender()) {
-                SR_TRACY_ZONE_S(pPass->GetName().data());
+                SR_TRACY_ZONE_S(pPass->GetPassName().data());
                 pPass->Bind();
                 hasDrawData |= pPass->PreRender();
             }
@@ -76,12 +59,11 @@ namespace SR_GRAPH_NS {
     }
 
     bool GroupPass::Render() {
-        SR_TRACY_ZONE;
-
         bool hasDrawData = false;
+
         for (auto&& pPass : m_passes) {
             if (pPass->HasRender()) {
-                SR_TRACY_ZONE_S(pPass->GetName().data());
+                SR_TRACY_ZONE_S(pPass->GetPassName().data());
                 pPass->Bind();
                 hasDrawData |= pPass->Render();
             }
@@ -94,113 +76,62 @@ namespace SR_GRAPH_NS {
         bool hasDrawData = false;
         for (auto&& pPass : m_passes) {
             if (pPass->HasPostRender()) {
-                SR_TRACY_ZONE_S(pPass->GetName().data());
+                SR_TRACY_ZONE_S(pPass->GetPassName().data());
                 pPass->Bind();
                 hasDrawData |= pPass->PostRender();
             }
         }
-
         return hasDrawData;
     }
 
     void GroupPass::Update() {
         for (auto&& pPass : m_passes) {
             if (pPass->HasUpdate()) {
-                SR_TRACY_ZONE_S(pPass->GetName().data());
+                SR_TRACY_ZONE_S(pPass->GetPassName().data());
                 pPass->Bind();
                 pPass->Update();
             }
         }
-
-        BasePass::Update();
+        Super::Update();
     }
 
     bool GroupPass::Overlay() {
         bool hasDrawData = false;
         for (auto&& pPass : m_passes) {
-            SR_TRACY_ZONE_S(pPass->GetName().data());
+            SR_TRACY_ZONE_S(pPass->GetPassName().data());
             hasDrawData |= pPass->Overlay();
         }
-
         return hasDrawData;
     }
 
     void GroupPass::OnResize(const SR_MATH_NS::UVector2 &size) {
         for (auto&& pPass : m_passes) {
-            SR_TRACY_ZONE_S(pPass->GetName().data());
+            SR_TRACY_ZONE_S(pPass->GetPassName().data());
             pPass->OnResize(size);
         }
-
-        BasePass::OnResize(size);
-    }
-
-    void GroupPass::OnMeshAdded(SR_GTYPES_NS::Mesh *pMesh, bool transparent) {
-        for (auto&& pPass : m_passes) {
-            pPass->OnMeshAdded(pMesh, transparent);
-        }
-
-        BasePass::OnMeshAdded(pMesh, transparent);
-    }
-
-    void GroupPass::OnMeshRemoved(SR_GTYPES_NS::Mesh *pMesh, bool transparent) {
-        for (auto&& pPass : m_passes) {
-            pPass->OnMeshRemoved(pMesh, transparent);
-        }
-
-        BasePass::OnMeshRemoved(pMesh, transparent);
-    }
-
-    bool GroupPass::ForEachPass(const SR_HTYPES_NS::Function<bool(BasePass*)>& callback) const {
-        for (auto&& pPass : m_passes) {
-            if (!callback(const_cast<BasePass*>(pPass.Get()))) {
-                return false;
-            }
-
-            if (auto&& pGroupPass = pPass.DynamicCast<GroupPass>()) {
-                if (!pGroupPass->ForEachPass(callback)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    BasePass* GroupPass::FindPass(const SR_UTILS_NS::StringAtom& name) const {
-        for (auto&& pPass : m_passes) {
-            if (auto&& pGroupPass = pPass.DynamicCast<GroupPass>()) {
-                if (auto&& pFoundPass = pGroupPass->FindPass(name)) {
-                    return pFoundPass;
-                }
-            }
-
-            if (pPass->GetName() != name) {
-                continue;
-            }
-
-            return const_cast<BasePass*>(pPass.Get());
-        }
-
-        return nullptr;
+        Super::OnResize(size);
     }
 
     void GroupPass::OnMultisampleChanged() {
         for (auto&& pPass : m_passes) {
+            SR_TRACY_ZONE_S(pPass->GetPassName().data());
             pPass->OnMultisampleChanged();
         }
-        BasePass::OnMultisampleChanged();
+        Super::OnMultisampleChanged();
     }
 
     void GroupPass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
         for (auto&& pPass : m_passes) {
             pPass->SetRenderTechnique(pRenderTechnique);
         }
-        BasePass::SetRenderTechnique(pRenderTechnique);
+        Super::SetRenderTechnique(pRenderTechnique);
     }
 
     void GroupPass::PostUpdate() {
         for (auto&& pPass : m_passes) {
+            SR_TRACY_ZONE_S(pPass->GetPassName().data());
             pPass->PostUpdate();
         }
-        BasePass::PostUpdate();
+        Super::PostUpdate();
     }
 }

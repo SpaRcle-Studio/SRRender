@@ -4,6 +4,7 @@
 #include "../src/Graphics/Pipeline/Pipeline.cpp"
 #include "../src/Graphics/Pipeline/EmptyPipeline.cpp"
 #include "../src/Graphics/Pipeline/FrameBufferQueue.cpp"
+#include "../src/Graphics/Pipeline/FrameBufferFeatures.cpp"
 
 #include "../src/Graphics/Overlay/Overlay.cpp"
 

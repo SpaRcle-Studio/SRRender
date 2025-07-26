@@ -10,8 +10,7 @@
 #include <Utils/Math/Matrix4x4.h>
 
 namespace SR_GRAPH_NS {
-    class CascadedShadowMapPass : public OffScreenMeshDrawerPass {
-        SR_REGISTER_LOGICAL_NODE(CascadedShadowMapPass, Cascaded Shadow Map Pass, { "Passes" })
+    /*class CascadedShadowMapPass : public OffScreenMeshDrawerPass {
         using Super = OffScreenMeshDrawerPass;
     public:
         bool Load(const SR_XML_NS::Node& passNode) override;
@@ -43,7 +42,7 @@ namespace SR_GRAPH_NS {
         std::vector<SR_MATH_NS::Matrix4x4> m_cascadeMatrices;
         std::vector<float_t> m_cascadeSplitDepths;
 
-    };
+    };*/
 }
 
 #endif //SR_ENGINE_CASCADED_SHADOW_MAP_PASS_H

@@ -10,7 +10,6 @@
 
 namespace SR_GRAPH_NS {
     class DebugPass : public BasePass {
-        SR_REGISTER_LOGICAL_NODE(DebugPass, Debug Pass, { "Passes" })
         using Super = BasePass;
         struct ShaderInfo {
             SR_GTYPES_NS::Shader::Ptr pShader;

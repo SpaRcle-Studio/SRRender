@@ -134,18 +134,18 @@ namespace SR_GRAPH_NS {
         m_queues.clear();
 
         ForEachTechnique([&](IRenderTechnique* pTechnique) {
-            auto&& queues = pTechnique->GetQueues();
+            const PassQueues& queues = pTechnique->GetQueues();
             for (uint32_t depth = 0; depth < queues.size(); ++depth) {
                 if (m_queues.size() < depth + 1) {
                     m_queues.resize(depth + 1);
                 }
-                for (auto&& pPass : queues[depth]) {
-                    m_queues[depth].emplace_back(pPass);
+                for (auto&& pPass : queues[depth].passes) {
+                    m_queues[depth].passes.emplace_back(pPass);
                     for (auto&& pFrameBuffer : pPass->GetFrameBuffers()) {
                         GetPipeline()->GetQueue().AddQueue(pFrameBuffer, depth);
                     }
                 }
-                SRAssert(!m_queues[depth].empty());
+                SRAssert(!m_queues[depth].passes.empty());
             }
         });
 

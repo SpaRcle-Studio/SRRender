@@ -113,8 +113,6 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        ISamplersPass::LoadSamplersPass(passNode);
-
         return Super::Load(passNode);
     }
 
@@ -126,7 +124,8 @@ namespace SR_GRAPH_NS {
         m_dirtyShader = true;
 
         if (m_shader) {
-            RemoveDependency(m_shader.StaticCast<SR_UTILS_NS::ResourceContainer>());
+            m_onShaderReloaded.Reset();
+            m_shader->RemoveUsePoint();
             m_shader = nullptr;
         }
 
@@ -134,7 +133,11 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        AddDependency(m_shader.StaticCast<SR_UTILS_NS::ResourceContainer>());
+        m_shader->AddUsePoint();
+
+        m_onShaderReloaded = pShader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
+            m_dirtyShader = true;
+        });
     }
 
     void PostProcessPass::DeInit() {
@@ -148,14 +151,6 @@ namespace SR_GRAPH_NS {
         Super::DeInit();
     }
 
-    void PostProcessPass::OnResourceUpdated(SR_UTILS_NS::ResourceContainer *pContainer, int32_t depth) {
-        if (dynamic_cast<SR_GTYPES_NS::Shader*>(pContainer) == m_shader.Get() && m_shader) {
-            m_dirtyShader = true;
-        }
-
-        ResourceContainer::OnResourceUpdated(pContainer, depth);
-    }
-
     void PostProcessPass::OnResize(const SR_MATH_NS::UVector2& size) {
         m_dirtyShader = true;
         Super::OnResize(size);
@@ -164,15 +159,5 @@ namespace SR_GRAPH_NS {
     void PostProcessPass::OnMultisampleChanged() {
         m_dirtyShader = true;
         Super::OnMultisampleChanged();
-    }
-
-    void PostProcessPass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
-        ISamplersPass::SetISamplerRenderTechnique(pRenderTechnique);
-        Super::SetRenderTechnique(pRenderTechnique);
-    }
-
-    void PostProcessPass::Prepare() {
-        PrepareSamplers();
-        Super::Prepare();
     }
 }

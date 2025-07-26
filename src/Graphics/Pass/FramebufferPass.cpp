@@ -7,11 +7,11 @@
 #include <Graphics/Pipeline/Pipeline.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(FramebufferPass)
-    SR_REGISTER_RENDER_PASS(ClearBuffersPass)
+    //SR_REGISTER_RENDER_PASS(FramebufferPass)
+    //SR_REGISTER_RENDER_PASS(ClearBuffersPass)
 
     bool FramebufferPass::Load(const SR_XML_NS::Node &passNode) {
-        LoadFramebufferSettings(passNode);
+        //LoadFramebufferSettings(passNode);
 
         bool result = GroupPass::Load(passNode.TryGetNode("Passes"));
 
@@ -26,7 +26,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool FramebufferPass::Render() {
-        auto&& pFrameBuffer = GetFramebuffer();
+        /*auto&& pFrameBuffer = GetFramebuffer();
 
         if (!pFrameBuffer) {
             m_isFrameBufferRendered = false;
@@ -53,7 +53,7 @@ namespace SR_GRAPH_NS {
 
         GetPassPipeline()->SetCurrentFrameBuffer(nullptr);
 
-        m_isFrameBufferRendered = true;
+        m_isFrameBufferRendered = true;*/
 
         /// Независимо от того, отрисовали мы что-то в кадровый буффер или нет,
         /// все равно возвращаем false (hasDrawData), так как технически, кадровый буффер
@@ -75,7 +75,7 @@ namespace SR_GRAPH_NS {
     }
 
     void FramebufferPass::Update() {
-        auto&& pFrameBuffer = GetFramebuffer();
+        /*auto&& pFrameBuffer = GetFramebuffer();
         if (!pFrameBuffer || pFrameBuffer->IsDirty()) {
             return;
         }
@@ -88,24 +88,25 @@ namespace SR_GRAPH_NS {
 
         GroupPass::Update();
 
-        GetPassPipeline()->SetCurrentFrameBuffer(nullptr);
+        GetPassPipeline()->SetCurrentFrameBuffer(nullptr);*/
     }
 
     std::vector<SR_GTYPES_NS::Framebuffer*> FramebufferPass::GetFrameBuffers() const {
-        if (!GetFramebuffer()) {
-            return std::vector<SR_GTYPES_NS::Framebuffer*>(); /// NOLINT
-        }
-        return { GetFramebuffer().Get() };
+        //if (!GetFramebuffer()) {
+        //    return std::vector<SR_GTYPES_NS::Framebuffer*>(); /// NOLINT
+        //}
+        //return { GetFramebuffer().Get() };
+        return std::vector<SR_GTYPES_NS::Framebuffer*>();
     }
 
-    IRenderTechnique* FramebufferPass::GetFrameBufferRenderTechnique() const {
-        return GetTechnique();
-    }
+    //IRenderTechnique* FramebufferPass::GetFrameBufferRenderTechnique() const {
+    //    return GetTechnique();
+    //}
 
     /// ----------------------------------------------------------------------------------------------------------------
 
     bool ClearBuffersPass::Render() {
-        GetPassPipeline()->EndRender();
+        /*GetPassPipeline()->EndRender();
 
         auto&& pFrameBufferPass = dynamic_cast<FramebufferPass*>(GetParent());
 
@@ -117,7 +118,7 @@ namespace SR_GRAPH_NS {
             GetPassPipeline()->ClearDepthBuffer(1.f);
         }
 
-        GetPassPipeline()->BeginRender();
+        GetPassPipeline()->BeginRender();*/
         return Super::Render();
     }
 

@@ -4,21 +4,17 @@
 
 #include <Graphics/Pass/WidgetPass.h>
 
-namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(WidgetPass)
+#include <Codegen/WidgetPass.generated.hpp>
 
-    void WidgetPass::Prepare()
-    {
+namespace SR_GRAPH_NS {
+    void WidgetPass::Prepare() {
         Super::Prepare();
 
-        if (auto&& pPipeline = GetContext()->GetPipeline()) {
-            pPipeline->PrepareOverlay(OverlayType::ImGui);
-        }
+        GetPipeline()->PrepareOverlay(OverlayType::ImGui);
     }
 
     bool WidgetPass::Overlay() {
-        auto&& pPipeline = GetContext()->GetPipeline();
-
+        auto&& pPipeline = GetPipeline();
         auto&& widgetManagers = GetRenderScene()->GetWidgetManagers();
 
         if (widgetManagers.empty()) {

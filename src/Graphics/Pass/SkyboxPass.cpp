@@ -9,7 +9,7 @@
 #include <Graphics/Pipeline/IShaderProgram.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(SkyboxPass)
+    //SR_REGISTER_RENDER_PASS(SkyboxPass)
 
     SkyboxPass::~SkyboxPass() {
         if (m_skybox) {

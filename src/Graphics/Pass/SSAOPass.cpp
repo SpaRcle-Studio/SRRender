@@ -119,21 +119,21 @@ namespace SR_GRAPH_NS {
         return false;
     }
 
-    void SSAOPass::UseSamplers(ShaderUseInfo info) {
+    void SSAOPass::UseSamplers(const ShaderUseInfo& info) {
         if (m_shader && m_noise) {
             m_shader->SetSampler2D(SHADER_SSAO_NOISE, m_noise);
         }
 
-        PostProcessPass::UseSamplers(info);
+        Super::UseSamplers(info);
     }
 
     bool SSAOPass::Load(const SR_XML_NS::Node& passNode) {
         LoadFramebufferSettings(passNode.TryGetNode("FramebufferSettings"));
-        return PostProcessPass::Load(passNode);
+        return Super::Load(passNode);
     }
 
     void SSAOPass::OnResize(const SR_MATH_NS::UVector2 &size) {
-        PostProcessPass::OnResize(size);
+        Super::OnResize(size);
     }
 
     std::vector<SR_GTYPES_NS::Framebuffer*> SSAOPass::GetFrameBuffers() const {

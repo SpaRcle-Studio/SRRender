@@ -22,26 +22,35 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
+        if (pResource->GetData().name.Empty()) {
+            SR_ERROR("FileRenderTechnique::Load() : render technique resource name is not set!\n\tPath: {}", path);
+            return nullptr;
+        }
+
         auto&& pFileRenderTechnique = FileRenderTechnique::MakeShared<FileRenderTechnique>();
         pFileRenderTechnique->SetResource(pResource);
-        pFileRenderTechnique->SetDirty();
+
+        RenderTechniqueData clone;
+        pResource->GetData().CloneTo(clone);
+
+        pFileRenderTechnique->SetRenderTechniqueData(std::move(clone));
         return pFileRenderTechnique;
     }
 
     void FileRenderTechnique::SetResource(const SR_HTYPES_NS::SharedPtr<FileRenderTechniqueResource>& pResource) {
         if (m_resource) {
-            RemoveDependency(m_resource.StaticCast<SR_UTILS_NS::ResourceContainer>());
+            m_resource->RemoveUsePoint();
             m_resource = nullptr;
         }
 
         if (pResource) {
             m_resource = pResource;
-            AddDependency(pResource.StaticCast<SR_UTILS_NS::ResourceContainer>());
+            m_resource->AddUsePoint();
         }
     }
 
-    bool FileRenderTechnique::Build() {
-        SR_TRACY_ZONE;
+    //bool FileRenderTechnique::Build() {
+        /*SR_TRACY_ZONE;
 
         /// Метод выполняется в графическом контексте
 
@@ -93,22 +102,22 @@ namespace SR_GRAPH_NS {
         /// Инициализируем все успешно загруженнеы проходы
         IRenderTechnique::Init();
 
-        m_dirty = false;
+        m_dirty = false;*/
 
-        return true;
-    }
+   //    return true;
+   //}
 
-    void FileRenderTechnique::LoadPass(const SR_XML_NS::Node& node) {
-        if (auto&& pPass = SR_ALLOCATE_RENDER_PASS(node, this)) {
-            m_passes.emplace_back(pPass);
-        }
-        else {
-            SR_ERROR("FileRenderTechnique::LoadPass() : failed to load \"" + node.Name() + "\" pass!");
-        }
-    }
+    //void FileRenderTechnique::LoadPass(const SR_XML_NS::Node& node) {
+        // if (auto&& pPass = SR_ALLOCATE_RENDER_PASS(node, this)) {
+        //     m_passes.emplace_back(pPass);
+        // }
+        // else {
+        //     SR_ERROR("FileRenderTechnique::LoadPass() : failed to load \"" + node.Name() + "\" pass!");
+        // }
+    //}
 
-    void FileRenderTechnique::ProcessNode(const SR_XML_NS::Node& passNode) {
-        if (passNode.NameView() == "Include") {
+    //void FileRenderTechnique::ProcessNode(const SR_XML_NS::Node& passNode) {
+        /*if (passNode.NameView() == "Include") {
             auto&& path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(passNode.GetAttribute("Path").ToString());
             auto&& includeXml = SR_XML_NS::Document::Load(path);
             if (includeXml) {
@@ -148,29 +157,13 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        LoadPass(passNode);
-    }
+        LoadPass(passNode);*/
+    //}
 
     /// ================================================================================================================
 
     FileRenderTechniqueResource::Ptr FileRenderTechniqueResource::Load(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
-        return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<FileRenderTechniqueResource>(rawPath);
-    }
-
-    bool FileRenderTechniqueResource::Load() {
-        for (auto&& pRenderTechnique : m_renderTechniques) {
-            pRenderTechnique->SetDirty();
-        }
-
-        m_loadState = LoadState::Loading;
-
-        return true;
-    }
-
-    bool FileRenderTechniqueResource::Unload() {
-        m_loadState = LoadState::Unloading;
-
-        return Settings::Unload();
+        return SR_UTILS_NS::Asset::Load<FileRenderTechniqueResource>(rawPath);
     }
 }

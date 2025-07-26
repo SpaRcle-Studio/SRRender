@@ -63,6 +63,8 @@ namespace SR_GTYPES_NS {
         /// @virtualProperty(geometryName) @getter(GetGeometryName) @dontSave @readOnly
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(meshPath) @getter(GetMeshPath) @setter(SetRawMesh)
+        /// @customArgs(pick: enabled, filter name: Meshes)
+        /// @customArg(filter value: fbx,blend,obj,pmx,stl,dae)
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)
         SR_VIRTUAL_PROPERTY

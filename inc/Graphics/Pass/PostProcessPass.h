@@ -14,8 +14,7 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
-    class PostProcessPass : public BasePass, public ISamplersPass {
-        SR_REGISTER_LOGICAL_NODE(PostProcessPass, Post Process Pass, { "Passes" })
+    class PostProcessPass : public BasePass {
         struct Property {
             SR_UTILS_NS::StringAtom id;
             ShaderPropertyVariant data = {};
@@ -34,20 +33,17 @@ namespace SR_GRAPH_NS {
         void OnResize(const SR_MATH_NS::UVector2& size) override;
         void OnMultisampleChanged() override;
 
-        void Prepare() override;
         bool PreRender() override;
         bool Render() override;
         void Update() override;
 
-        void OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) override;
-
     protected:
         void SetShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& pShader);
-        void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
 
         void DeInit() override;
 
     protected:
+        SR_UTILS_NS::Subscription m_onShaderReloaded;
         int32_t m_virtualDescriptor = SR_ID_INVALID;
         int32_t m_virtualUBO = SR_ID_INVALID;
         bool m_dirtyShader = true;

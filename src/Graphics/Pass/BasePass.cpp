@@ -6,34 +6,48 @@
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Types/Camera.h>
+
+#include <Codegen/BasePass.generated.hpp>
 
 namespace SR_GRAPH_NS {
-    RenderPassMap& GetRenderPassMap() {
-        static RenderPassMap renderPassMap;
-        return renderPassMap;
-    }
+    //RenderPassMap& GetRenderPassMap() {
+    //    static RenderPassMap renderPassMap;
+    //    return renderPassMap;
+    //}
 
     BasePass::BasePass()
-        : Super()
+        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
         , m_uboManager(Memory::UBOManager::Instance())
         , m_descriptorManager(DescriptorManager::Instance())
     { }
 
-    bool BasePass::Load(const SR_XML_NS::Node &passNode) {
-        /// Некоторые проходы имеют свое уникальное имя, нужное для поиска.
-        SetName(passNode.TryGetAttribute("Name").ToString(passNode.Name()));
-        return true;
+    //bool BasePass::Load(const SR_XML_NS::Node &passNode) {
+    //    /// Некоторые проходы имеют свое уникальное имя, нужное для поиска.
+    //    SetName(passNode.TryGetAttribute("Name").ToString(passNode.Name()));
+    //    m_samplersPassData.LoadSamplersPass(passNode);
+    //    return true;
+    //}
+
+    void BasePass::OnMultisampleChanged() {
+        m_samplersPassData.MarkSamplersDirty();
+    }
+
+    void BasePass::OnResize(const SR_MATH_NS::UVector2& size) {
+        m_samplersPassData.MarkSamplersDirty();
     }
 
     bool BasePass::Init() {
         SRAssert2(!m_isInit, "Pass already initialized!");
 
-        SetContext(m_technique->GetContext());
-        m_camera = m_technique->GetCamera();
-
         m_isInit = true;
 
         return true;
+    }
+
+    void BasePass::Prepare() {
+        m_samplersPassData.PrepareSamplers();
     }
 
     void BasePass::DeInit() {
@@ -42,33 +56,46 @@ namespace SR_GRAPH_NS {
         m_isInit = false;
     }
 
-    BasePass::RenderScenePtr BasePass::GetRenderScene() const {
-        return m_technique->GetRenderScene();
+    const BasePass::RenderScenePtr& BasePass::GetRenderScene() const {
+        static RenderScenePtr nullScene = nullptr;
+        return m_technique ? m_technique->GetRenderScene() : nullScene;
     }
 
-    SR_UTILS_NS::StringAtom BasePass::GetName() const {
-        return m_name;
+
+    const BasePass::CameraPtr& BasePass::GetCamera() const {
+        static CameraPtr nullCamera = nullptr;
+        return m_technique ? m_technique->GetCamera() : nullCamera;
+    }
+
+    const BasePass::RenderContextPtr& BasePass::GetRenderContext() const {
+        static BasePass::RenderContextPtr nullContext = nullptr;
+        return m_technique ? m_technique->GetRenderContext() : nullContext;
+    }
+
+    const BasePass::PipelinePtr& BasePass::GetPipeline() const {
+        static PipelinePtr nullPipeline = nullptr;
+        return m_technique ? m_technique->GetPipeline() : nullPipeline;
     }
 
     void BasePass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
         SRAssert(pRenderTechnique);
         m_technique = pRenderTechnique;
-        if (!m_pipeline) {
-            m_pipeline = m_technique ? m_technique->GetPipeline() : nullptr;
-        }
+        m_samplersPassData.SetRenderTechnique(pRenderTechnique);
     }
 
-    void BasePass::SetName(SR_UTILS_NS::StringAtom name) {
-        m_name = name;
+    void BasePass::UseSamplers(const ShaderUseInfo& info) {
+        m_samplersPassData.UseSamplers(info);
     }
 
-    void BasePass::SetContext(BasePass::Context pContext) {
-        m_context = pContext;
-        m_pipeline = m_pipeline ? m_pipeline : m_context->GetPipeline();
+    bool BasePass::IsActive() const {
+        return !GetCamera() || GetCamera()->IsActive();
     }
 
-  //void StartPassNode::InitNode() {
-  //    IExecutableNode::InitNode();
-  //    AddOutputData<SR_SRLM_NS::DataTypeFlow>();
-  //}
+    SR_UTILS_NS::StringAtom BasePass::GetPassName() const {
+        return m_customName.Empty() ? GetMeta()->GetFactoryName() : m_customName;
+    }
+
+    BasePass* BasePass::FindPass(SR_UTILS_NS::StringAtom name) {
+        return GetPassName() == name ? this : nullptr;
+    }
 }

@@ -5,7 +5,6 @@
 #include <Graphics/Pass/MeshDrawerPass.h>
 #include <Graphics/Pass/CascadedShadowMapPass.h>
 #include <Graphics/Pass/ShadowMapPass.h>
-#include <Graphics/Pass/IFramebufferPass.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/RenderQueue.h>
@@ -20,7 +19,7 @@
 #include <Graphics/Types/Mesh.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(MeshDrawerPass)
+    /*SR_REGISTER_RENDER_PASS(MeshDrawerPass)
 
     MeshDrawerPass::MeshDrawerPass()
         : Super()
@@ -125,8 +124,6 @@ namespace SR_GRAPH_NS {
 
         m_useMaterials = passNode.TryGetAttribute("UseMaterials").ToBool(true);
 
-        ISamplersPass::LoadSamplersPass(passNode);
-
         return Super::Load(passNode);
     }
 
@@ -156,11 +153,6 @@ namespace SR_GRAPH_NS {
         }
 
         return m_renderQueues[layer]->Render();
-    }
-
-    void MeshDrawerPass::Prepare() {
-        PrepareSamplers();
-        Super::Prepare();
     }
 
     void MeshDrawerPass::Update() {
@@ -196,13 +188,13 @@ namespace SR_GRAPH_NS {
 
         pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition());
 
-        if (m_cascadedShadowMapPass) {
-            pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadedShadowMapPass->GetCascadeMatrices().data());
-            pShader->SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadedShadowMapPass->GetSplitDepths().data());
-        }
-        else if (m_shadowMapPass) {
-            pShader->SetMat4(SHADER_LIGHT_SPACE_MATRIX, m_shadowMapPass->GetLightSpaceMatrix());
-        }
+        //if (m_cascadedShadowMapPass) {
+        //    pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadedShadowMapPass->GetCascadeMatrices().data());
+        //    pShader->SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadedShadowMapPass->GetSplitDepths().data());
+        //}
+        //else if (m_shadowMapPass) {
+        //    pShader->SetMat4(SHADER_LIGHT_SPACE_MATRIX, m_shadowMapPass->GetLightSpaceMatrix());
+        //}
     }
 
     void MeshDrawerPass::UseConstants(ShaderUseInfo info) {
@@ -236,16 +228,6 @@ namespace SR_GRAPH_NS {
         return ShaderUseInfo(pShader);
     }
 
-    void MeshDrawerPass::OnResize(const SR_MATH_NS::UVector2& size) {
-        MarkSamplersDirty();
-        Super::OnResize(size);
-    }
-
-    void MeshDrawerPass::OnMultisampleChanged() {
-        MarkSamplersDirty();
-        Super::OnMultisampleChanged();
-    }
-
     void MeshDrawerPass::ClearOverrideShaders() {
         for (auto&& [type, replaceInfo] : m_shaderTypeReplacements) {
             if (replaceInfo.pShader) {
@@ -273,8 +255,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool MeshDrawerPass::Init() {
-        m_shadowMapPass = GetTechnique()->FindPass<ShadowMapPass>();
-        m_cascadedShadowMapPass = GetTechnique()->FindPass<CascadedShadowMapPass>();
+        //m_shadowMapPass = GetTechnique()->FindPass<ShadowMapPass>();
+        //m_cascadedShadowMapPass = GetTechnique()->FindPass<CascadedShadowMapPass>();
 
         const uint8_t layers = GetMeshDrawerFBOLayers();
         if (layers == 0) SR_UNLIKELY_ATTRIBUTE {
@@ -292,16 +274,7 @@ namespace SR_GRAPH_NS {
         return Super::Init();
     }
 
-    void MeshDrawerPass::OnSamplersChanged() {
-        ISamplersPass::OnSamplersChanged();
-    }
-
-    void MeshDrawerPass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
-        ISamplersPass::SetISamplerRenderTechnique(pRenderTechnique);
-        Super::SetRenderTechnique(pRenderTechnique);
-    }
-
     MeshDrawerPass::RenderQueuePtr MeshDrawerPass::AllocateRenderQueue() {
         return GetRenderStrategy()->BuildQueue(this);
-    }
+    }*/
 }
