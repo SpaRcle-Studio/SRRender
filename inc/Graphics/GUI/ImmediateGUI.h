@@ -307,6 +307,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_RENDERER_DLL_API extern void SameLine();
         SR_RENDERER_DLL_API extern bool Button(const char* label, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
         SR_RENDERER_DLL_API extern bool Checkbox(const char* label, bool* v);
+        SR_RENDERER_DLL_API extern bool IsCurrentlyDisabled();
         SR_RENDERER_DLL_API extern bool IsItemHovered();
         SR_RENDERER_DLL_API extern bool IsItemFocused();
         SR_RENDERER_DLL_API extern bool DragScalar(const char* label, ImmediateDataType type, void* pData, float_t vSpeed, const void* pMin = nullptr, const void* pMax = nullptr, const char* format = nullptr);

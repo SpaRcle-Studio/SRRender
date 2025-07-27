@@ -715,4 +715,21 @@ namespace SR_GRAPH_NS {
         msg.SetBool(ONLY_UNIFORMS_BOOL_ID, onlyUniforms);
         Broadcast(PROPERTY_CHANGED_EVENT, msg);
     }
+
+    void MaterialData::AddStage(SR_UTILS_NS::StringAtom stage) {
+        if (HasStage(stage)) {
+            SR_ERROR("MaterialData::AddStage() : stage already exists! Stage: {}", stage.ToString());
+            return;
+        }
+        SetShader(GetDefaultShaderData().pShader, stage);
+    }
+
+    bool MaterialData::HasStage(SR_UTILS_NS::StringAtom stage) const noexcept {
+        for (const auto& [s, data] : m_shaders) {
+            if (s == stage) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

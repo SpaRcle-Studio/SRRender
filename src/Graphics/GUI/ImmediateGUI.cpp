@@ -167,6 +167,11 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         ImGui::SameLine();
     }
 
+    bool IsCurrentlyDisabled() {
+        ImGuiContext* ctx = ImGui::GetCurrentContext();
+        return (ctx->CurrentItemFlags & ImGuiItemFlags_Disabled) != 0;
+    }
+
     bool Button(const char* label, const SR_MATH_NS::FVector2& size) {
         return ImGui::Button(label, F2ToImV2(size));
     }

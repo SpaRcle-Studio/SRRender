@@ -9,43 +9,33 @@
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Render/DebugRenderer.h>
 
+#include <Codegen/DebugPass.generated.hpp>
+
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(DebugPass)
+    DebugPassShaderInfo::~DebugPassShaderInfo() {
+        if (pShader) {
+            pShader->RemoveUsePoint();
+        }
+    }
 
-    bool DebugPass::Load(const SR_XML_NS::Node& passNode) {
-        if (auto&& shadersNode = passNode.TryGetNode("Shaders")) {
-            for (auto&& shaderNode : shadersNode.TryGetNodes("Shader")) {
-                auto&& id = shaderNode.GetAttribute("Id").ToString();
-                auto&& path = shaderNode.GetAttribute("Path").ToString();
-                m_shaders[id].pShader = SR_GTYPES_NS::Shader::Load(path);
+    void DebugPassShaderInfo::LoadShader() {
+        if (!shaderPath.empty()) {
+            if (pShader) {
+                pShader->RemoveUsePoint();
+            }
+
+            pShader = SR_GTYPES_NS::Shader::Load(shaderPath);
+            if (pShader) {
+                pShader->AddUsePoint();
+            }
+            else {
+                SR_ERROR("DebugPassShaderInfo::LoadShader() : failed to load shader from path \"{}\"!", shaderPath);
             }
         }
+    }
 
-        for (auto& [id, shaderInfo] : m_shaders) {
-            if (!shaderInfo.pShader) {
-                SR_ERROR("DebugRenderer::Load() : failed to load shader \"{}\"!", id);
-                continue;
-            }
-            shaderInfo.pShader->AddUsePoint();
-        }
-
-        static std::vector<std::string> requiredShaders = {
-            "line",
-            "mesh"
-        };
-
-        for (auto&& shader : requiredShaders) {
-            if (m_shaders.find(shader) == m_shaders.end()) {
-                SR_ERROR("DebugRenderer::Load() : shader \"{}\" not set, but required!", shader);
-                return false;
-            }
-        }
-
-        if (m_shaders["line"].drawQueues.empty()) {
-            m_shaders["line"].drawQueues.emplace_back();
-        }
-
-        return Super::Load(passNode);
+    void DebugPassShaderInfo::SetShader(const SR_UTILS_NS::Path& path) {
+        shaderPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
     }
 
     void DebugPass::Prepare() {
@@ -67,8 +57,12 @@ namespace SR_GRAPH_NS {
     bool DebugPass::Render() {
         SR_TRACY_ZONE;
 
+        if (!m_isValid) {
+            return false;
+        }
+
         auto&& pDebugRenderer = GetRenderScene()->GetRenderer<DebugRenderer>();
-        auto&& pPipeline = GetPassPipeline();
+        auto&& pPipeline = GetPipeline();
         if (!pDebugRenderer || !pPipeline) {
             return false;
         }
@@ -98,7 +92,7 @@ namespace SR_GRAPH_NS {
                 const auto meshId = static_cast<int32_t>(queue.back().type);
 
                 if (meshId == static_cast<int32_t>(DebugRenderer::DrawType::Line)) {
-                    DrawQueue(pPipeline.GetUncheckedRef(), queue, shaderInfo, 2);
+                    DrawQueue(const_cast<Pipeline&>(pPipeline.GetUncheckedRef()), queue, shaderInfo, 2);
                     continue;
                 }
 
@@ -116,7 +110,7 @@ namespace SR_GRAPH_NS {
                 pPipeline->BindVBO(mesh.GetVBO());
                 pPipeline->BindIBO(mesh.GetIBO());
 
-                DrawQueue(pPipeline.GetUncheckedRef(), queue, shaderInfo, mesh.GetCountIndices());
+                DrawQueue(const_cast<Pipeline&>(pPipeline.GetUncheckedRef()), queue, shaderInfo, mesh.GetCountIndices());
             }
 
             pShader->UnUse();
@@ -128,7 +122,7 @@ namespace SR_GRAPH_NS {
     void DebugPass::Update() {
         SR_TRACY_ZONE;
 
-        if (!m_hasRendered || !m_camera) {
+        if (!m_hasRendered || !GetCamera()) {
             return;
         }
 
@@ -139,14 +133,36 @@ namespace SR_GRAPH_NS {
     }
 
     bool DebugPass::Init() {
+        m_isValid = true;
+
+        for (auto& [id, shaderInfo] : m_shaders) {
+            shaderInfo.LoadShader();
+
+            if (!shaderInfo.pShader) {
+                SR_ERROR("DebugRenderer::Load() : failed to load shader \"{}\"!", id);
+                continue;
+            }
+        }
+
+        static std::vector<SR_UTILS_NS::StringAtom> requiredShaders = { "line", "mesh" };
+
+        for (auto&& shader : requiredShaders) {
+            if (m_shaders.find(shader) == m_shaders.end()) {
+                SR_ERROR("DebugRenderer::Init() : shader \"{}\" not set, but required!", shader);
+                m_isValid = false;
+            }
+        }
+
+        if (m_shaders["line"].drawQueues.empty()) {
+            m_shaders["line"].drawQueues.emplace_back();
+        }
+
         return Super::Init();
     }
 
     void DebugPass::DeInit() {
         for (auto& [id, shaderInfo] : m_shaders) {
-            shaderInfo.pShader->RemoveUsePoint();
-
-            for (ShaderInfo::MemInfo& UBO : shaderInfo.UBOs) {
+            for (DebugPassShaderInfo::MemInfo& UBO : shaderInfo.UBOs) {
                 m_uboManager.FreeUBO(&UBO.virtualUBO);
                 m_descriptorManager.FreeDescriptorSet(&UBO.virtualDescriptor);
             }
@@ -163,14 +179,18 @@ namespace SR_GRAPH_NS {
     void DebugPass::BuildQueues() {
         SR_TRACY_ZONE;
 
+        if (!m_isValid) {
+            return;
+        }
+
         auto&& pDebugRenderer = GetRenderScene()->GetRenderer<DebugRenderer>();
-        auto&& pPipeline = GetPassPipeline();
+        auto&& pPipeline = GetPipeline();
         if (!pDebugRenderer || !pPipeline) {
             return;
         }
 
-        ShaderInfo& lineShader = m_shaders["line"_atom];
-        ShaderInfo& meshShader = m_shaders["mesh"_atom];
+        DebugPassShaderInfo& lineShader = m_shaders["line"_atom];
+        DebugPassShaderInfo& meshShader = m_shaders["mesh"_atom];
 
         m_linesCountCache = { static_cast<uint32_t>(lineShader.drawQueues.back().size()), 0 };
         m_meshesCountCache.resize(meshShader.drawQueues.size());
@@ -227,12 +247,12 @@ namespace SR_GRAPH_NS {
         }
 
         if (changed) SR_UNLIKELY_ATTRIBUTE {
-            GetPassPipeline()->SetDirty(true);
+            GetPipeline()->SetDirty(true);
             m_hasRendered = false;
         }
     }
 
-    void DebugPass::DrawQueue(Pipeline& pipeline, const std::vector<DebugRenderer::DrawInfo>& queue, ShaderInfo& shaderInfo, uint32_t indicesCount) {
+    void DebugPass::DrawQueue(Pipeline& pipeline, const std::vector<DebugRenderer::DrawInfo>& queue, DebugPassShaderInfo& shaderInfo, uint32_t indicesCount) {
         SR_TRACY_ZONE;
 
         for (auto&& drawInfo : queue) {
@@ -281,16 +301,20 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void DebugPass::UpdateUBO(ShaderInfo& shaderInfo, DebugRenderer::DrawType type) {
+    void DebugPass::UpdateUBO(DebugPassShaderInfo& shaderInfo, DebugRenderer::DrawType type) {
+        if (!m_isValid) {
+            return;
+        }
+
         if (!shaderInfo.pShader || !shaderInfo.pShader->Ready()) {
             return;
         }
 
-        GetPassPipeline()->SetCurrentShader(shaderInfo.pShader.Get());
+        GetPipeline()->SetCurrentShader(shaderInfo.pShader.Get());
 
         if (shaderInfo.pShader->BeginSharedUBO()) {
-            shaderInfo.pShader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());
-            shaderInfo.pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
+            shaderInfo.pShader->SetMat4(SHADER_VIEW_MATRIX, GetCamera()->GetViewTranslate());
+            shaderInfo.pShader->SetMat4(SHADER_PROJECTION_MATRIX, GetCamera()->GetProjection());
             shaderInfo.pShader->EndSharedUBO();
         }
 

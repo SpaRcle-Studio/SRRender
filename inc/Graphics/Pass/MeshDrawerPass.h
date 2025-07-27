@@ -13,10 +13,11 @@
 namespace SR_GRAPH_NS {
     class RenderStrategy;
     class RenderQueue;
-    class CascadedShadowMapPass;
-    class ShadowMapPass;
+    // class CascadedShadowMapPass;
+    // class ShadowMapPass;
 
-    /*class MeshDrawerPass : public BasePass, public LayerFilterPredicate, public ShaderReplacePredicate, public PriorityFilterPredicate {
+    class MeshDrawerPass : public BasePass, public LayerFilterPredicate, public ShaderReplacePredicate, public PriorityFilterPredicate {
+        SR_CLASS()
         using Super = BasePass;
     public:
         using RenderQueuePtr = SR_HTYPES_NS::SharedPtr<RenderQueue>;
@@ -25,7 +26,7 @@ namespace SR_GRAPH_NS {
         MeshDrawerPass();
         ~MeshDrawerPass() override;
 
-        bool Load(const SR_XML_NS::Node& passNode) override;
+        //bool Load(const SR_XML_NS::Node& passNode) override;
 
         bool Init() override;
         void DeInit() override;
@@ -72,7 +73,7 @@ namespace SR_GRAPH_NS {
         std::set<SR_UTILS_NS::StringAtom> m_allowedLayers;
         std::set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
 
-    };*/
+    };
 }
 
 #endif //SR_ENGINE_MESH_DRAWER_PASS_H

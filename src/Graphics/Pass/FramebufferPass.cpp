@@ -14,61 +14,12 @@ namespace SR_GRAPH_NS {
             return true;
         }
         return false;
-
-        /*auto&& pFrameBuffer = GetFramebuffer();
-
-        if (!pFrameBuffer) {
-            m_isFrameBufferRendered = false;
-            return false;
-        }
-
-        if (!pFrameBuffer->Bind()) {
-            m_isFrameBufferRendered = false;
-            return false;
-        }
-
-        if (!pFrameBuffer->BeginCmdBuffer(GetClearColors(), GetClearDepth())) {
-            m_isFrameBufferRendered = false;
-            return false;
-        }
-
-        pFrameBuffer->SetViewportScissor();
-
-        if (pFrameBuffer->BeginRender()) {
-            GroupPass::Render();
-            pFrameBuffer->EndRender();
-            pFrameBuffer->EndCmdBuffer();
-        }
-
-        GetPipeline()->SetCurrentFrameBuffer(nullptr);
-
-        m_isFrameBufferRendered = true;*/
-
-        /// Независимо от того, отрисовали мы что-то в кадровый буффер или нет,
-        /// все равно возвращаем false (hasDrawData), так как технически, кадровый буффер
-        /// не несет данных для рендера на экран.
-        //return false;
     }
 
     void FrameBufferPass::Update() {
         m_data.UpdateFrameBuffer([this]() {
             GroupPass::Update();
         });
-
-        /*auto&& pFrameBuffer = GetFramebuffer();
-        if (!pFrameBuffer || pFrameBuffer->IsDirty()) {
-            return;
-        }
-
-        if (!m_isFrameBufferRendered) {
-            return;
-        }
-
-        GetPassPipeline()->SetCurrentFrameBuffer(pFrameBuffer.Get());
-
-        GroupPass::Update();
-
-        GetPassPipeline()->SetCurrentFrameBuffer(nullptr);*/
     }
 
     void FrameBufferPass::GetFrameBuffers(FrameBuffers& frameBuffers) const {

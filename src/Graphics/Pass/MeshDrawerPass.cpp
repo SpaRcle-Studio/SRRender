@@ -3,8 +3,8 @@
 //
 
 #include <Graphics/Pass/MeshDrawerPass.h>
-#include <Graphics/Pass/CascadedShadowMapPass.h>
-#include <Graphics/Pass/ShadowMapPass.h>
+//#include <Graphics/Pass/CascadedShadowMapPass.h>
+//#include <Graphics/Pass/ShadowMapPass.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/RenderQueue.h>
@@ -18,9 +18,9 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Mesh.h>
 
-namespace SR_GRAPH_NS {
-    /*SR_REGISTER_RENDER_PASS(MeshDrawerPass)
+#include <Codegen/MeshDrawerPass.generated.hpp>
 
+namespace SR_GRAPH_NS {
     MeshDrawerPass::MeshDrawerPass()
         : Super()
         , m_time(SR_HTYPES_NS::Time::Instance())
@@ -28,7 +28,7 @@ namespace SR_GRAPH_NS {
 
     MeshDrawerPass::~MeshDrawerPass() = default;
 
-    bool MeshDrawerPass::Load(const SR_XML_NS::Node& passNode) {
+    /*bool MeshDrawerPass::Load(const SR_XML_NS::Node& passNode) {
         m_allowedLayers.clear();
         m_disallowedLayers.clear();
 
@@ -125,7 +125,7 @@ namespace SR_GRAPH_NS {
         m_useMaterials = passNode.TryGetAttribute("UseMaterials").ToBool(true);
 
         return Super::Load(passNode);
-    }
+    }*/
 
     bool MeshDrawerPass::IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const {
         if (m_allowedLayers.empty()) {
@@ -146,7 +146,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool MeshDrawerPass::Render() {
-        const uint32_t layer = GetPassPipeline()->GetCurrentFrameBufferLayer();
+        const uint32_t layer = GetPipeline()->GetCurrentFrameBufferLayer();
         if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("MeshDrawerPass::Render() : out of bounds!");
             return false;
@@ -156,7 +156,7 @@ namespace SR_GRAPH_NS {
     }
 
     void MeshDrawerPass::Update() {
-        const uint32_t layer = GetPassPipeline()->GetCurrentFrameBufferLayer();
+        const uint32_t layer = GetPipeline()->GetCurrentFrameBufferLayer();
         if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("MeshDrawerPass::Update() : out of bounds!");
             return;
@@ -178,12 +178,12 @@ namespace SR_GRAPH_NS {
 
         pShader->SetFloat(SHADER_TIME, static_cast<float_t>(m_time.Clock()));
 
-        if (m_camera) SR_LIKELY_ATTRIBUTE {
-            pShader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());
-            pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
-            pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, m_camera->GetOrthogonal());
-            pShader->SetVec3(SHADER_VIEW_DIRECTION, m_camera->GetViewDirection());
-            pShader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
+        if (auto&& pCamera = GetCamera()) SR_LIKELY_ATTRIBUTE {
+            pShader->SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());
+            pShader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
+            pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, pCamera->GetOrthogonal());
+            pShader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
+            pShader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
         }
 
         pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition());
@@ -276,5 +276,5 @@ namespace SR_GRAPH_NS {
 
     MeshDrawerPass::RenderQueuePtr MeshDrawerPass::AllocateRenderQueue() {
         return GetRenderStrategy()->BuildQueue(this);
-    }*/
+    }
 }
