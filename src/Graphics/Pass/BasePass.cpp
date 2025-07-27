@@ -26,16 +26,16 @@ namespace SR_GRAPH_NS {
     //bool BasePass::Load(const SR_XML_NS::Node &passNode) {
     //    /// Некоторые проходы имеют свое уникальное имя, нужное для поиска.
     //    SetName(passNode.TryGetAttribute("Name").ToString(passNode.Name()));
-    //    m_samplersPassData.LoadSamplersPass(passNode);
+    //    m_samplers.LoadSamplersPass(passNode);
     //    return true;
     //}
 
     void BasePass::OnMultisampleChanged() {
-        m_samplersPassData.MarkSamplersDirty();
+        m_samplers.MarkSamplersDirty();
     }
 
     void BasePass::OnResize(const SR_MATH_NS::UVector2& size) {
-        m_samplersPassData.MarkSamplersDirty();
+        m_samplers.MarkSamplersDirty();
     }
 
     bool BasePass::Init() {
@@ -47,7 +47,7 @@ namespace SR_GRAPH_NS {
     }
 
     void BasePass::Prepare() {
-        m_samplersPassData.PrepareSamplers();
+        m_samplers.PrepareSamplers();
     }
 
     void BasePass::DeInit() {
@@ -80,11 +80,11 @@ namespace SR_GRAPH_NS {
     void BasePass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
         SRAssert(pRenderTechnique);
         m_technique = pRenderTechnique;
-        m_samplersPassData.SetRenderTechnique(pRenderTechnique);
+        m_samplers.SetRenderTechnique(pRenderTechnique);
     }
 
     void BasePass::UseSamplers(const ShaderUseInfo& info) {
-        m_samplersPassData.UseSamplers(info);
+        m_samplers.UseSamplers(info);
     }
 
     bool BasePass::IsActive() const {

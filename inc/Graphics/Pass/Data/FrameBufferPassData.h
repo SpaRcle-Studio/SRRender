@@ -6,6 +6,8 @@
 #define SR_ENGINE_IFRAME_BUFFER_PASS_H
 
 #include <Graphics/Pipeline/TextureHelper.h>
+#include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Memory/UBOManager.h>
 
 namespace SR_GTYPES_NS {
@@ -13,60 +15,51 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
-    class FrameBufferController;
-    class RenderContext;
     class IRenderTechnique;
-    class Pipeline;
 
-    class FrameBufferPassData final : public SR_HTYPES_NS::SharedPtr<FrameBufferPassData> {
-        using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
-        using Super = SR_HTYPES_NS::SharedPtr<FrameBufferPassData>;
+    class FrameBufferPassData final : public SR_UTILS_NS::Serializable {
+        SR_CLASS()
+        using Super = SR_UTILS_NS::Serializable;
     public:
-        using ColorFormats = std::list<ImageFormat>;
         using ClearColors = std::vector<SR_MATH_NS::FColor>;
-        using FramebufferPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>;
+        using FBRenderCallback = SR_HTYPES_NS::Function<bool()>;
+        using FBUpdateCallback = SR_HTYPES_NS::Function<void()>;
 
     public:
         FrameBufferPassData();
-        ~FrameBufferPassData() override;
 
     public:
-        SR_NODISCARD FramebufferPtr GetFramebuffer() const noexcept;
+        SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& GetFramebuffer() const noexcept;
         SR_NODISCARD bool IsFrameBufferRendered() const noexcept { return m_isFrameBufferRendered; }
         SR_NODISCARD bool IsDirectional() const noexcept { return m_isDirectional; }
-        SR_NODISCARD ClearColors GetClearColors() const noexcept { return m_clearColors; }
+        SR_NODISCARD const ClearColors& GetClearColors() const noexcept { return m_clearColors; }
         SR_NODISCARD std::optional<float_t> GetClearDepth() const noexcept { return m_depth; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept;
 
-    protected:
-        SR_NODISCARD virtual IRenderTechnique* GetFrameBufferRenderTechnique() const = 0;
+        bool RenderFrameBuffer(const FBRenderCallback& callback);
+        void UpdateFrameBuffer(const FBUpdateCallback& callback);
 
-        void LoadFramebufferSettings(const SR_XML_NS::Node& passNode);
+        void SetRenderTechnique(IRenderTechnique* pRenderTechnique) noexcept { m_renderTechnique = pRenderTechnique; }
 
-        bool RenderFrameBuffer(const PipelinePtr& pPipeline);
-        void UpdateFrameBuffer(const PipelinePtr& pPipeline);
+    private:
+        bool RenderFrameBuffer(const FBRenderCallback& callback, uint8_t layers);
 
-        virtual void RenderFrameBufferInner() { }
-        virtual void UpdateFrameBufferInner() { }
+        SR_NODISCARD const Pipeline::Ptr& GetPipeline() const noexcept;
+        SR_NODISCARD const FrameBufferController::Ptr& GetFrameBufferController() const noexcept;
 
-    protected:
+    private:
+        mutable FrameBufferController::Ptr m_frameBufferController;
+        IRenderTechnique* m_renderTechnique = nullptr;
         bool m_isFrameBufferRendered = false;
 
-    private:
-        bool RenderFrameBuffer(const PipelinePtr& pPipeline, uint8_t layers);
-
-    private:
-        SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::FrameBufferController> m_frameBufferController;
-
+        /// @property
         SR_UTILS_NS::StringAtom m_frameBufferName;
-
+        /// @property
         ClearColors m_clearColors;
+        /// @property
         std::optional<float_t> m_depth;
-
-        /// режим рендера без кадрового буффера, напрямую
+        /// @property @tooltip(Режим рендера без кадрового буффера, напрямую на экран)
         bool m_isDirectional = false;
-
-        SR_GRAPH_NS::Memory::UBOManager& m_frameBufferUboManager;
 
     };
 }

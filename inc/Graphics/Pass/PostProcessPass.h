@@ -10,11 +10,12 @@
 
 namespace SR_GTYPES_NS {
     class Shader;
-    class Framebuffer;
 }
 
 namespace SR_GRAPH_NS {
     class PostProcessPass : public BasePass {
+        SR_CLASS()
+
         struct Property {
             SR_UTILS_NS::StringAtom id;
             ShaderPropertyVariant data = {};
@@ -28,8 +29,6 @@ namespace SR_GRAPH_NS {
         ~PostProcessPass() override;
 
     public:
-        bool Load(const SR_XML_NS::Node& passNode) override;
-
         void OnResize(const SR_MATH_NS::UVector2& size) override;
         void OnMultisampleChanged() override;
 
@@ -38,8 +37,7 @@ namespace SR_GRAPH_NS {
         void Update() override;
 
     protected:
-        void SetShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& pShader);
-
+        void SetShader(const SR_UTILS_NS::Path& shaderPath);
         void DeInit() override;
 
     protected:
@@ -49,7 +47,13 @@ namespace SR_GRAPH_NS {
         bool m_dirtyShader = true;
         ShaderPtr m_shader = nullptr;
         Properties m_properties;
-        uint32_t m_vertices = 0;
+
+        /// @property
+        uint32_t m_vertices = 3;
+        /// @property @setter(SetShader)
+        /// @customArgs(pick: enabled, filter name: Shader)
+        /// @customArg(filter value: srsl)
+        SR_UTILS_NS::Path m_shaderPath;
 
     };
 }

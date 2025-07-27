@@ -147,6 +147,12 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        if (!Init()) {
+            SR_ERROR("IRenderTechnique::BuildTechnique() : failed to initialize technique \"{}\"!", m_data.name);
+            m_hasErrors = true;
+            return false;
+        }
+
         uint32_t countQueues = 0;
         for (auto&& queue : m_data.queues) {
             queue.passes.resize(queue.passNames.size());
@@ -227,18 +233,18 @@ namespace SR_GRAPH_NS {
     }
 
     bool IRenderTechnique::Init() {
-        /*for (auto&& [name, pController] : m_frameBufferControllers) {
+        for (auto&& pController : m_data.frameBuffers) {
             if (!pController->InitializeFramebuffer(GetRenderContext())) {
-                SR_ERROR("RenderTechnique::Init() : failed to initialize \"" + name.ToStringRef() + "\" framebuffer controller!");
+                SR_ERROR("RenderTechnique::Init() : failed to initialize \"{}\" framebuffer controller!", pController->GetName());
+                m_hasErrors = true;
+                return false;
             }
         }
 
-        for (auto&& pPass : m_passes) {
-            if (!pPass->Init()) {
-                SR_ERROR("RenderTechnique::Init() : failed to initialize \"" + pPass->GetName().ToStringRef() + "\" pass!");
-                return false;
-            }
-        }*/
+        if (m_data.pass && !m_data.pass->Init()) {
+            SR_ERROR("RenderTechnique::Init() : failed to initialize pass \"{}\"!", m_data.pass->GetPassName());
+            m_hasErrors = true;
+        }
 
         return true;
     }
@@ -262,6 +268,7 @@ namespace SR_GRAPH_NS {
 
         if (m_data.pass) {
             m_data.pass->SetRenderTechnique(this);
+            m_data.pass->SetParent(nullptr);
         }
     }
 }

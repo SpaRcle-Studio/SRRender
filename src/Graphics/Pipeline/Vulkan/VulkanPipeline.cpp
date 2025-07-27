@@ -848,8 +848,16 @@ namespace SR_GRAPH_NS {
             .oldColorAttachments = colorBuffers,
             .inputColorAttachments = formats,
             .pOutputColorAttachments = &colorBuffers,
-            .features = *reinterpret_cast<EvoVulkan::Complexes::FrameBufferFeatures*>((void*)&createInfo.features)
         };
+
+        info.features.depthLoad = createInfo.features.depthLoad;
+        info.features.colorLoad = createInfo.features.colorLoad;
+        info.features.depthTransferSrc = createInfo.features.depthTransferSrc;
+        info.features.colorTransferSrc = createInfo.features.colorTransferSrc;
+        info.features.depthTransferDst = createInfo.features.depthTransferDst;
+        info.features.colorTransferDst = createInfo.features.colorTransferDst;
+        info.features.depthShaderRead = createInfo.features.depthShaderRead;
+        info.features.colorShaderRead = createInfo.features.colorShaderRead;
 
         if (*createInfo.pFBO > 0) {
             if (!m_memory->ReAllocateFBO(info)) {
@@ -1087,6 +1095,11 @@ namespace SR_GRAPH_NS {
 
         for (uint8_t i = 0; i < colorCount; ++i) {
             m_clearValues[i] = { .color = {{ r, g, b, a }} };
+        }
+
+        if (depth < 0.0f || depth > 1.0f) {
+            SR_ERROR("VulkanPipeline::ClearDepthBuffer() : depth value must be in range [0.0, 1.0]!");
+            depth = std::clamp(depth, 0.0f, 1.0f);
         }
 
         m_clearValues[colorCount] = VkClearValue { .depthStencil = { depth, 0 } };
@@ -1717,6 +1730,11 @@ namespace SR_GRAPH_NS {
                 0, nullptr,
                 1, &barrier
         );
+
+        if (depth < 0.0f || depth > 1.0f) {
+            SR_ERROR("VulkanPipeline::ClearDepthBuffer() : depth value must be in range [0.0, 1.0]!");
+            depth = std::clamp(depth, 0.0f, 1.0f);
+        }
 
         VkClearDepthStencilValue depthStencilValue;
         depthStencilValue.depth = depth;

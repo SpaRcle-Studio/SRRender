@@ -8,38 +8,46 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 
-namespace SR_GRAPH_NS {
-    //SR_REGISTER_RENDER_PASS(SkyboxPass)
+#include <Codegen/SkyboxPass.generated.hpp>
 
+namespace SR_GRAPH_NS {
     SkyboxPass::~SkyboxPass() {
         if (m_skybox) {
             m_skybox->RemoveUsePoint();
         }
     }
 
-    bool SkyboxPass::Load(const SR_XML_NS::Node &passNode) {
+    void SkyboxPass::SetSkybox(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
 
-        auto&& path = passNode.GetAttribute<SR_UTILS_NS::Path>();
+        m_skyboxPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
 
         if (m_skybox) {
             m_skybox->RemoveUsePoint();
             m_skybox = nullptr;
         }
 
-        if (!(m_skybox = SR_GTYPES_NS::Skybox::Load(path))) {
-            SR_ERROR("SkyboxPass::Load() : failed to load skybox!\n\tPath: " + path.ToString());
-            return false;
+        if (!(m_skybox = SR_GTYPES_NS::Skybox::Load(m_skyboxPath))) {
+            SR_ERROR("SkyboxPass::Load() : failed to load skybox!\n\tPath: {}", m_skyboxPath);
+            return;
         }
         else {
             m_skybox->AddUsePoint();
         }
 
-        if (m_skybox) {
-            m_skybox->SetShader(SR_GTYPES_NS::Shader::Load(passNode.GetAttribute("Shader").ToString()));
+        if (m_skybox && !m_shaderPath.empty()) {
+            m_skybox->SetShader(SR_GTYPES_NS::Shader::Load(m_shaderPath));
         }
+    }
 
-        return Super::Load(passNode);
+    void SkyboxPass::SetShader(const SR_UTILS_NS::Path& path) {
+        SR_TRACY_ZONE;
+
+        m_shaderPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+
+        if (m_skybox) {
+            m_skybox->SetShader(SR_GTYPES_NS::Shader::Load(m_shaderPath));
+        }
     }
 
     bool SkyboxPass::Render() {
@@ -69,12 +77,13 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& pShader = m_skybox->GetShader();
+        auto&& pCamera = GetCamera();
 
-        if (!pShader || !pShader->Ready() || !m_camera) SR_UNLIKELY_ATTRIBUTE {
+        if (!pShader || !pShader->Ready() || !pCamera) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
-        GetPassPipeline()->SetCurrentShader(pShader.Get());
+        GetPipeline()->SetCurrentShader(pShader.Get());
 
         auto&& uboManager = SR_GRAPH_NS::Memory::UBOManager::Instance();
         if (uboManager.BindNoDublicateUBO(m_skybox->GetVirtualUBO()) != Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
@@ -85,12 +94,12 @@ namespace SR_GRAPH_NS {
         SR_UNUSED_VARIABLE(pShader->Flush());
 
         if (pShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
-            pShader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, m_camera->GetView());
-            pShader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
-            pShader->SetMat4(SHADER_PROJECTION_NO_FOV_MATRIX, m_camera->GetProjectionNoFOV());
+            pShader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, pCamera->GetView());
+            pShader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
+            pShader->SetMat4(SHADER_PROJECTION_NO_FOV_MATRIX, pCamera->GetProjectionNoFOV());
             pShader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
-            pShader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
-            pShader->SetVec3(SHADER_VIEW_DIRECTION, m_camera->GetViewDirection());
+            pShader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
+            pShader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
             pShader->EndSharedUBO();
         }
         else {
@@ -98,11 +107,6 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        BasePass::Update();
-    }
-
-    bool SkyboxPass::Init() {
-        bool result = Super::Init();
-        return result;
+        Super::Update();
     }
 }

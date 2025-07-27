@@ -4,6 +4,9 @@
 #include "../src/Graphics/Pass/GroupPass.cpp"
 #include "../src/Graphics/Pass/WidgetPass.cpp"
 #include "../src/Graphics/Pass/SwapchainPass.cpp"
+#include "../src/Graphics/Pass/FrameBufferPass.cpp"
+#include "../src/Graphics/Pass/PostProcessPass.cpp"
+#include "../src/Graphics/Pass/SkyboxPass.cpp"
 
 #include "../src/Graphics/Pass/IColorBufferPass.cpp"
 
@@ -11,11 +14,8 @@
 //#include "../src/Graphics/Pass/OffScreenMeshDrawerPass.cpp"
 //#include "../src/Graphics/Pass/MeshDrawerPass.cpp"
 //#include "../src/Graphics/Pass/FlatColorBufferPass.cpp"
-//#include "../src/Graphics/Pass/SkyboxPass.cpp"
-//#include "../src/Graphics/Pass/FramebufferPass.cpp"
 //#include "../src/Graphics/Pass/OpaquePass.cpp"
 //#include "../src/Graphics/Pass/TransparentPass.cpp"
-//#include "../src/Graphics/Pass/PostProcessPass.cpp"
 //#include "../src/Graphics/Pass/DebugPass.cpp"
 //#include "../src/Graphics/Pass/ColorBufferPass.cpp"
 //#include "../src/Graphics/Pass/DepthBufferPass.cpp"
@@ -28,7 +28,7 @@
 //#include "../src/Graphics/Pass/VarianceShadowMapPass.cpp"
 //#include "../src/Graphics/Pass/FlatClusterPass.cpp"
 
-//#include "../src/Graphics/Pass/Data/FrameBufferPassData.cpp"
+#include "../src/Graphics/Pass/Data/FrameBufferPassData.cpp"
 #include "../src/Graphics/Pass/Data/SamplersPassData.cpp"
 
 #include "../src/Graphics/Pass/PassQueue.cpp"

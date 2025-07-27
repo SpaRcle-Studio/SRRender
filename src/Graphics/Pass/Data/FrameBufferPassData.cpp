@@ -7,13 +7,14 @@
 #include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Types/Framebuffer.h>
 
+#include <Codegen/FrameBufferPassData.generated.hpp>
+
 namespace SR_GRAPH_NS {
     FrameBufferPassData::FrameBufferPassData()
-        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
-        , m_frameBufferUboManager(SR_GRAPH_NS::Memory::UBOManager::Instance())
+        : Super()
     { }
 
-    void FrameBufferPassData::LoadFramebufferSettings(const SR_XML_NS::Node& passNode) {
+    /*void FrameBufferPassData::LoadFramebufferSettings(const SR_XML_NS::Node& passNode) {
         auto&& settingsNode = passNode.TryGetNode("FramebufferSettings");
         if (!settingsNode) {
             return;
@@ -51,12 +52,29 @@ namespace SR_GRAPH_NS {
                 }
             }
         }
-    }
+    }*/
 
-    bool FrameBufferPassData::RenderFrameBuffer(const PipelinePtr& pPipeline) {
+    bool FrameBufferPassData::RenderFrameBuffer(const FBRenderCallback& callback) {
+        m_isFrameBufferRendered = false;
+
+        if (IsDirectional()) {
+            GetPipeline()->SetCurrentFrameBuffer(nullptr);
+            if (GetLayersCount() != 1) {
+                SR_ERROR("FrameBufferPassData::RenderFrameBuffer() : directional frame buffer must have only one layer!\n\tName: {}", m_frameBufferName);
+                return false;
+            }
+            m_isFrameBufferRendered = callback();
+            return m_isFrameBufferRendered;
+        }
+
         auto&& pFrameBuffer = GetFramebuffer();
+        if (!pFrameBuffer) {
+            SR_ERROR("FrameBufferPassData::RenderFrameBuffer() : frame buffer is not found!\n\tName: {}", m_frameBufferName);
+            return false;
+        }
 
-        if (!pFrameBuffer && !IsDirectional()) {
+        if (pFrameBuffer->IsDepthEnabled() && !m_depth.has_value()) {
+            SR_ERROR("FrameBufferPassData::RenderFrameBuffer() : depth is not set!\n\tName: {}", m_frameBufferName);
             return false;
         }
 
@@ -65,77 +83,104 @@ namespace SR_GRAPH_NS {
         }
 
         /// установим кадровый буфер, чтобы BeginCmdBuffer понимал какие значение для очистки ставить
-        pPipeline->SetCurrentFrameBuffer(pFrameBuffer.Get());
+        GetPipeline()->SetCurrentFrameBuffer(const_cast<Pipeline::FramebufferPtr>(pFrameBuffer.Get()));
 
         if (GetLayersCount() > 1) {
-            return RenderFrameBuffer(pPipeline, GetLayersCount());
+            return RenderFrameBuffer(callback, GetLayersCount());
         }
 
-        if (IsDirectional()) {
-            RenderFrameBufferInner();
-        }
-        else if (pFrameBuffer->Bind()) {
+        if (pFrameBuffer->Bind()) {
             pFrameBuffer->BeginCmdBuffer(m_clearColors, m_depth);
             {
                 pFrameBuffer->BeginRender();
                 pFrameBuffer->SetViewportScissor();
 
-                RenderFrameBufferInner();
+                callback();
+                m_isFrameBufferRendered = true;
 
                 pFrameBuffer->EndRender();
             }
             pFrameBuffer->EndCmdBuffer();
         }
 
-        pPipeline->SetCurrentFrameBuffer(nullptr);
+        GetPipeline()->SetCurrentFrameBuffer(nullptr);
 
         return IsDirectional();
     }
 
-    bool FrameBufferPassData::RenderFrameBuffer(const PipelinePtr& pPipeline, uint8_t layers) {
+    bool FrameBufferPassData::RenderFrameBuffer(const FBRenderCallback& callback, uint8_t layers) {
         auto&& pFrameBuffer = GetFramebuffer();
 
         pFrameBuffer->BeginCmdBuffer(m_clearColors, m_depth);
         pFrameBuffer->SetViewportScissor();
 
         for (uint32_t i = 0; i < layers; ++i) {
-            pPipeline->SetCurrentFrameBufferLayer(i);
+            GetPipeline()->SetCurrentFrameBufferLayer(i);
 
             if (pFrameBuffer->Bind()) {
                 pFrameBuffer->BeginRender();
-                RenderFrameBufferInner();
+
+                callback();
+                m_isFrameBufferRendered = true;
+
                 pFrameBuffer->EndRender();
             }
         }
 
         pFrameBuffer->EndCmdBuffer();
 
-        pPipeline->SetCurrentFrameBuffer(nullptr);
+        GetPipeline()->SetCurrentFrameBuffer(nullptr);
 
         return IsDirectional();
     }
 
-    void FrameBufferPassData::UpdateFrameBuffer(const PipelinePtr& pPipeline) {
+    void FrameBufferPassData::UpdateFrameBuffer(const FBUpdateCallback& callback) {
+        if (!m_isFrameBufferRendered) {
+            return;
+        }
+
         auto&& pFrameBuffer = GetFramebuffer();
+
         if (!IsDirectional() && (!pFrameBuffer || pFrameBuffer->IsDirty())) {
             return;
         }
 
-        pPipeline->SetCurrentFrameBuffer(pFrameBuffer.Get());
+        GetPipeline()->SetCurrentFrameBuffer(const_cast<Pipeline::FramebufferPtr>(pFrameBuffer.Get()));
 
         for (uint32_t i = 0; i < GetLayersCount(); ++i) {
-            pPipeline->SetCurrentFrameBufferLayer(i);
-            UpdateFrameBufferInner();
+            GetPipeline()->SetCurrentFrameBufferLayer(i);
+            callback();
         }
 
-        pPipeline->SetCurrentFrameBuffer(nullptr);
+        GetPipeline()->SetCurrentFrameBuffer(nullptr);
     }
 
-    FrameBufferPassData::FramebufferPtr FrameBufferPassData::GetFramebuffer() const noexcept {
-        return m_frameBufferController ? m_frameBufferController->GetFramebuffer() : nullptr;
+    const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& FrameBufferPassData::GetFramebuffer() const noexcept {
+        static SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer> nullValue;
+        auto&& pController = GetFrameBufferController();
+        return pController ? pController->GetFramebuffer() : nullValue;
     }
 
     uint8_t FrameBufferPassData::GetLayersCount() const noexcept {
-        return m_frameBufferController ? m_frameBufferController->GetLayersCount() : 1;
+        auto&& pController = GetFrameBufferController();
+        return pController ? pController->GetLayersCount() : 1;
+    }
+
+    const Pipeline::Ptr& FrameBufferPassData::GetPipeline() const noexcept {
+        static Pipeline::Ptr nullValue;
+        return m_renderTechnique ? m_renderTechnique->GetPipeline() : nullValue;
+    }
+
+    const FrameBufferController::Ptr& FrameBufferPassData::GetFrameBufferController() const noexcept {
+        if (m_frameBufferController) {
+            return m_frameBufferController;
+        }
+        if (m_renderTechnique) {
+            m_frameBufferController = m_renderTechnique->GetFrameBufferController(m_frameBufferName);
+        }
+        if (!m_frameBufferController) {
+            SR_ERROR("FrameBufferPassData::GetFrameBufferController() : failed to find frame buffer controller!\n\tName: {}", m_frameBufferName);
+        }
+        return m_frameBufferController;
     }
 }

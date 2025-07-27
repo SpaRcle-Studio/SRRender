@@ -9,7 +9,7 @@
 
 namespace SR_GRAPH_NS {
     FrameBufferController::FrameBufferController()
-        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Manually)
+        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
     { }
 
     FrameBufferController::~FrameBufferController() {

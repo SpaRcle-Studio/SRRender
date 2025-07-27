@@ -175,6 +175,11 @@ namespace SR_GTYPES_NS {
     }
 
     bool Framebuffer::BeginCmdBuffer(const ClearColors& clearColors, std::optional<float_t> depth) {
+        if (IsDepthEnabled() && !depth.has_value()) {
+            SR_ERROR("Framebuffer::BeginCmdBuffer() : depth is not set!");
+            depth = 1.0f;
+        }
+
         GetPipeline()->ClearBuffers(clearColors, depth);
 
         if (!GetPipeline()->BeginCmdBuffer()) {

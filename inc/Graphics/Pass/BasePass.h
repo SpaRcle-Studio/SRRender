@@ -31,9 +31,7 @@ namespace SR_GRAPH_NS {
     class Pipeline;
     class BasePass;
 
-    //typedef std::map<std::string, SR_HTYPES_NS::Function<BasePass*(const SR_XML_NS::Node&, IRenderTechnique*)>> RenderPassMap;
-    //RenderPassMap& GetRenderPassMap();
-
+    /// @abstract
     class BasePass : public SR_HTYPES_NS::SharedPtr<BasePass>, public SR_UTILS_NS::Serializable {
         SR_CLASS()
         using Super = SR_HTYPES_NS::SharedPtr<BasePass>;
@@ -44,6 +42,7 @@ namespace SR_GRAPH_NS {
         using RenderContextPtr = RenderContext*;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
+        using FrameBuffers = std::vector<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>>;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<BasePass>;
 
@@ -85,8 +84,8 @@ namespace SR_GRAPH_NS {
 
         virtual void UseSamplers(const ShaderUseInfo& info);
         virtual void SetRenderTechnique(IRenderTechnique* pRenderTechnique);
+        virtual void GetFrameBuffers(FrameBuffers& frameBuffers) const { }
 
-        SR_NODISCARD virtual std::vector<SR_GTYPES_NS::Framebuffer*> GetFrameBuffers() const { return { }; }
         SR_NODISCARD SR_UTILS_NS::StringAtom GetPassName() const;
         SR_NODISCARD bool IsActive() const;
         SR_NODISCARD const RenderScenePtr& GetRenderScene() const;
@@ -97,8 +96,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsInit() const { return m_isInit; }
         SR_NODISCARD BasePass* FindPass(SR_UTILS_NS::StringAtom name);
 
-        //SR_NODISCARD BasePass* GetParent() const { return m_parent; }
-        //void SetParent(BasePass* pParent) { m_parent = pParent; }
+        SR_NODISCARD BasePass* GetParent() const { return m_parent; }
+        virtual void SetParent(BasePass* pParent) { m_parent = pParent; }
 
     protected:
         Memory::UBOManager& m_uboManager;
@@ -108,10 +107,10 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom m_customName;
         /// @property
-        SamplersPassData m_samplersPassData;
+        SamplersPassData m_samplers;
 
     private:
-        //BasePass* m_parent = nullptr;
+        BasePass* m_parent = nullptr;
 
         IRenderTechnique* m_technique = nullptr;
         bool m_isInit = false;

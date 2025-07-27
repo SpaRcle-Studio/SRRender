@@ -2,47 +2,49 @@
 // Created by Monika on 22.07.2022.
 //
 
-#ifndef SR_ENGINE_FRAMEBUFFERPASS_H
-#define SR_ENGINE_FRAMEBUFFERPASS_H
+#ifndef SR_ENGINE_GRAPHICS_FRAME_BUFFER_PASS_H
+#define SR_ENGINE_GRAPHICS_FRAME_BUFFER_PASS_H
 
 #include <Graphics/Pass/GroupPass.h>
-//#include <Graphics/Pass/IFramebufferPass.h>
+#include <Graphics/Pass/Data/FrameBufferPassData.h>
 
 namespace SR_GTYPES_NS {
     class Framebuffer;
 }
 
 namespace SR_GRAPH_NS {
-    /*class FramebufferPass : public GroupPass { // , public IFramebufferPass
+    class FrameBufferPass : public GroupPass {
+        using Super = GroupPass;
+        SR_CLASS()
     public:
-        bool Load(const SR_XML_NS::Node& passNode) override;
-        void OnResize(const SR_MATH_NS::UVector2 &size) override;
-        bool Init() override;
-
-        bool PreRender() override;
         bool Render() override;
-        bool PostRender() override;
-
         void Update() override;
 
     public:
-        //SR_NODISCARD IRenderTechnique* GetFrameBufferRenderTechnique() const override;
-        SR_NODISCARD std::vector<SR_GTYPES_NS::Framebuffer*> GetFrameBuffers() const override;
+        SR_NODISCARD const FrameBufferPassData::ClearColors& GetClearColors() const noexcept;
+
+        void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
+        void GetFrameBuffers(FrameBuffers& frameBuffers) const override;
+
+    private:
+        /// @property @noHeader
+        FrameBufferPassData m_data;
 
     };
 
     class ClearBuffersPass : public BasePass {
+        SR_CLASS()
         using Super = BasePass;
     public:
-        bool Load(const SR_XML_NS::Node& passNode) override;
-
         bool Render() override;
 
     private:
+        /// @property
         bool m_clearDepth = true;
+        /// @property
         bool m_clearColor = true;
 
-    };*/
+    };
 }
 
-#endif //SR_ENGINE_FRAMEBUFFERPASS_H
+#endif //SR_ENGINE_GRAPHICS_FRAME_BUFFER_PASS_H

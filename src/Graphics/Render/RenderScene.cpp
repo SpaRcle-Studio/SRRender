@@ -133,6 +133,8 @@ namespace SR_GRAPH_NS {
     void RenderScene::BuildQueue() {
         m_queues.clear();
 
+        std::vector<SR_GTYPES_NS::Framebuffer::Ptr> frameBuffers;
+
         ForEachTechnique([&](IRenderTechnique* pTechnique) {
             const PassQueues& queues = pTechnique->GetQueues();
             for (uint32_t depth = 0; depth < queues.size(); ++depth) {
@@ -140,9 +142,15 @@ namespace SR_GRAPH_NS {
                     m_queues.resize(depth + 1);
                 }
                 for (auto&& pPass : queues[depth].passes) {
+                    if (!pPass) {
+                        SR_ERROR("RenderScene::BuildQueue() : pass in \"{}\" render technique is nullptr!", pTechnique->GetName());
+                        continue;
+                    }
                     m_queues[depth].passes.emplace_back(pPass);
-                    for (auto&& pFrameBuffer : pPass->GetFrameBuffers()) {
-                        GetPipeline()->GetQueue().AddQueue(pFrameBuffer, depth);
+                    frameBuffers.clear();
+                    pPass->GetFrameBuffers(frameBuffers);
+                    for (auto&& pFrameBuffer : frameBuffers) {
+                        GetPipeline()->GetQueue().AddQueue(pFrameBuffer.Get(), depth);
                     }
                 }
                 SRAssert(!m_queues[depth].passes.empty());

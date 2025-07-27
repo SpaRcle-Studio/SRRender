@@ -62,8 +62,6 @@ namespace SR_GRAPH_NS {
         void PostUpdate();
         void SetDirty();
 
-        bool Init();
-
         void KillTechnique() { SRAssert(!m_isDead); m_isDead = true; }
 
         void FreeVMemory() override;
@@ -76,6 +74,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const RenderScenePtr& GetRenderScene() const noexcept { return m_renderScene; }
         SR_NODISCARD bool IsEmpty() const;
         SR_NODISCARD bool IsTechniqueDead() const;
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const noexcept { return m_data.name; }
 
         void OnResize(const SR_MATH_NS::UVector2& size);
         void OnMultisampleChanged();
@@ -89,6 +88,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const PassQueues& GetQueues() const { return m_data.queues; }
 
     private:
+        bool Init();
         bool BuildTechnique();
         void DeInitPasses();
         void ReleaseFrameBuffers();

@@ -12,7 +12,7 @@
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Memory/SSBOManager.h>
 #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
-#include <Graphics/Pass/FramebufferPass.h>
+#include <Graphics/Pass/FrameBufferPass.h>
 
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/Shader.h>
@@ -346,16 +346,16 @@ namespace SR_GRAPH_NS {
     RenderContext::FramebufferPtr RenderContext::FindFramebuffer(SR_UTILS_NS::StringAtom name, CameraPtr pCamera) const {
         SR_TRACY_ZONE;
 
-        //for (auto&& pTechnique : m_techniques) {
-        //    if (pTechnique->GetCamera() != pCamera) {
-        //        continue;
-        //    }
+        for (auto&& pTechnique : m_techniques) {
+            if (pTechnique->GetCamera() != pCamera) {
+                continue;
+            }
 
-        //    auto&& pController = pTechnique->GetFrameBufferController(name);
-        //    if (pController) {
-        //        return pController->GetFramebuffer();
-        //    }
-        //}
+            auto&& pController = pTechnique->GetFrameBufferController(name);
+            if (pController) {
+                return pController->GetFramebuffer();
+            }
+        }
 
         return nullptr;
     }

@@ -256,7 +256,7 @@ namespace SR_GTYPES_NS {
         }
 
         m_hasErrors = false;
-        m_renderTechnique.path = path;
+        m_renderTechnique.path = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
     }
 
     void Camera::SetPriority(int32_t priority) {

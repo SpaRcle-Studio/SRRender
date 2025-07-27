@@ -3,12 +3,13 @@
 //
 
 #include <Graphics/Pass/PostProcessPass.h>
-#include <Graphics/Pass/FramebufferPass.h>
+#include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Types/Texture.h>
+#include <Graphics/Types/Shader.h>
+
+#include <Codegen/PostProcessPass.generated.hpp>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(PostProcessPass)
-
     PostProcessPass::~PostProcessPass() {
         SetShader(nullptr);
     }
@@ -38,16 +39,16 @@ namespace SR_GRAPH_NS {
 
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
-        if (GetPassPipeline()->GetCurrentBuildIteration() == 0) {
+        if (GetPipeline()->GetCurrentBuildIteration() == 0) {
             if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
                 UseSamplers(ShaderUseInfo(m_shader));
                 m_descriptorManager.Flush();
             }
-            GetPassPipeline()->GetCurrentShader()->FlushConstants();
+            GetPipeline()->GetCurrentShader()->FlushConstants();
         }
 
         if (result != DescriptorManager::BindResult::Failed) {
-            GetPassPipeline()->Draw(m_vertices);
+            GetPipeline()->Draw(m_vertices);
         }
 
         m_shader->UnUse();
@@ -62,7 +63,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        GetPassPipeline()->SetCurrentShader(m_shader.Get());
+        GetPipeline()->SetCurrentShader(m_shader.Get());
 
         if (m_shader && m_shader->BeginSharedUBO()) {
             SR_MATH_NS::FVector2 resolution;
@@ -77,12 +78,12 @@ namespace SR_GRAPH_NS {
 
             m_shader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
 
-            if (m_camera) {
-                m_shader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
-                m_shader->SetVec3(SHADER_VIEW_DIRECTION, m_camera->GetViewDirection());
-                m_shader->SetMat4(SHADER_PROJECTION_MATRIX, m_camera->GetProjection());
-                m_shader->SetMat4(SHADER_VIEW_MATRIX, m_camera->GetViewTranslate());
-                m_shader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, m_camera->GetView());
+            if (auto&& pCamera = GetCamera()) {
+                m_shader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
+                m_shader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
+                m_shader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
+                m_shader->SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());
+                m_shader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, pCamera->GetView());
             }
 
             m_shader->EndSharedUBO();
@@ -100,23 +101,13 @@ namespace SR_GRAPH_NS {
         Super::Update();
     }
 
-    bool PostProcessPass::Load(const SR_XML_NS::Node& passNode) {
-        auto&& path = passNode.GetAttribute("Shader").ToString();
-
-        m_vertices = passNode.TryGetAttribute("Vertices").ToUInt(3);
-
-        if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path)) {
-            SetShader(pShader);
-        }
-        else {
-            SR_ERROR("PostProcessPass::Load() : failed to load shader!\n\tPath: " + path);
-            return false;
+    void PostProcessPass::SetShader(const SR_UTILS_NS::Path& shaderPath) {
+        auto&& pShader = SR_GTYPES_NS::Shader::Load(shaderPath);
+        if (!pShader) {
+            SR_ERROR("PostProcessPass::SetShader() : failed to load shader: {}", shaderPath);
+            return;
         }
 
-        return Super::Load(passNode);
-    }
-
-    void PostProcessPass::SetShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& pShader) {
         if (m_shader == pShader) {
             return;
         }

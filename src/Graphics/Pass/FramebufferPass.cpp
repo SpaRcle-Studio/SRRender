@@ -2,30 +2,19 @@
 // Created by Monika on 22.07.2022.
 //
 
-#include <Graphics/Pass/FramebufferPass.h>
+#include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Codegen/FrameBufferPass.generated.hpp>
+
 namespace SR_GRAPH_NS {
-    //SR_REGISTER_RENDER_PASS(FramebufferPass)
-    //SR_REGISTER_RENDER_PASS(ClearBuffersPass)
-
-    bool FramebufferPass::Load(const SR_XML_NS::Node &passNode) {
-        //LoadFramebufferSettings(passNode);
-
-        bool result = GroupPass::Load(passNode.TryGetNode("Passes"));
-
-        SetName(passNode.TryGetAttribute("Name").ToString(passNode.Name()));
-
-        return result;
-    }
-
-    bool FramebufferPass::PreRender() {
-        GroupPass::PreRender();
+    bool FrameBufferPass::Render() {
+        if (m_data.RenderFrameBuffer([this]() { return GroupPass::Render(); })) {
+            return true;
+        }
         return false;
-    }
 
-    bool FramebufferPass::Render() {
         /*auto&& pFrameBuffer = GetFramebuffer();
 
         if (!pFrameBuffer) {
@@ -51,30 +40,21 @@ namespace SR_GRAPH_NS {
             pFrameBuffer->EndCmdBuffer();
         }
 
-        GetPassPipeline()->SetCurrentFrameBuffer(nullptr);
+        GetPipeline()->SetCurrentFrameBuffer(nullptr);
 
         m_isFrameBufferRendered = true;*/
 
         /// Независимо от того, отрисовали мы что-то в кадровый буффер или нет,
         /// все равно возвращаем false (hasDrawData), так как технически, кадровый буффер
-        /// не несет данных для рендера.
-        return false;
+        /// не несет данных для рендера на экран.
+        //return false;
     }
 
-    bool FramebufferPass::PostRender() {
-        GroupPass::PostRender();
-        return false;
-    }
+    void FrameBufferPass::Update() {
+        m_data.UpdateFrameBuffer([this]() {
+            GroupPass::Update();
+        });
 
-    void FramebufferPass::OnResize(const SR_MATH_NS::UVector2 &size) {
-        GroupPass::OnResize(size);
-    }
-
-    bool FramebufferPass::Init() {
-        return GroupPass::Init();
-    }
-
-    void FramebufferPass::Update() {
         /*auto&& pFrameBuffer = GetFramebuffer();
         if (!pFrameBuffer || pFrameBuffer->IsDirty()) {
             return;
@@ -91,40 +71,42 @@ namespace SR_GRAPH_NS {
         GetPassPipeline()->SetCurrentFrameBuffer(nullptr);*/
     }
 
-    std::vector<SR_GTYPES_NS::Framebuffer*> FramebufferPass::GetFrameBuffers() const {
-        //if (!GetFramebuffer()) {
-        //    return std::vector<SR_GTYPES_NS::Framebuffer*>(); /// NOLINT
-        //}
-        //return { GetFramebuffer().Get() };
-        return std::vector<SR_GTYPES_NS::Framebuffer*>();
+    void FrameBufferPass::GetFrameBuffers(FrameBuffers& frameBuffers) const {
+        if (auto&& pFrameBuffer = m_data.GetFramebuffer()) {
+            frameBuffers.emplace_back(pFrameBuffer);
+        }
     }
 
-    //IRenderTechnique* FramebufferPass::GetFrameBufferRenderTechnique() const {
-    //    return GetTechnique();
-    //}
+    const FrameBufferPassData::ClearColors& FrameBufferPass::GetClearColors() const noexcept {
+        return m_data.GetClearColors();
+    }
+
+    void FrameBufferPass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
+        m_data.SetRenderTechnique(pRenderTechnique);
+        Super::SetRenderTechnique(pRenderTechnique);
+    }
 
     /// ----------------------------------------------------------------------------------------------------------------
 
     bool ClearBuffersPass::Render() {
-        /*GetPassPipeline()->EndRender();
+        auto&& pFrameBufferPass = dynamic_cast<FrameBufferPass*>(GetParent());
+        if (!pFrameBufferPass) {
+            SR_WARN("ClearBuffersPass::Render() : parent is not FrameBufferPass!");
+            return false;
+        }
 
-        auto&& pFrameBufferPass = dynamic_cast<FramebufferPass*>(GetParent());
+        GetPipeline()->EndRender();
 
-        if (m_clearColor && pFrameBufferPass) {
-            GetPassPipeline()->ClearColorBuffer(pFrameBufferPass->GetClearColors());
+        if (m_clearColor) {
+            GetPipeline()->ClearColorBuffer(pFrameBufferPass->GetClearColors());
         }
 
         if (m_clearDepth) {
-            GetPassPipeline()->ClearDepthBuffer(1.f);
+            GetPipeline()->ClearDepthBuffer(1.f);
         }
 
-        GetPassPipeline()->BeginRender();*/
-        return Super::Render();
-    }
+        GetPipeline()->BeginRender();
 
-    bool ClearBuffersPass::Load(const SR_XML_NS::Node& passNode) {
-        m_clearDepth = passNode.TryGetAttribute("ClearDepth").ToBool(true);
-        m_clearColor = passNode.TryGetAttribute("ClearColor").ToBool(true);
-        return Super::Load(passNode);
+        return Super::Render();
     }
 }

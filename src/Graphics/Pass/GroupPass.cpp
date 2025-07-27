@@ -127,6 +127,13 @@ namespace SR_GRAPH_NS {
         Super::SetRenderTechnique(pRenderTechnique);
     }
 
+    void GroupPass::SetParent(BasePass* pParent) {
+        for (auto&& pPass : m_passes) {
+            pPass->SetParent(this);
+        }
+        Super::SetParent(pParent);
+    }
+
     void GroupPass::PostUpdate() {
         for (auto&& pPass : m_passes) {
             SR_TRACY_ZONE_S(pPass->GetPassName().data());

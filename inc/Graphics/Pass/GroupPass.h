@@ -33,6 +33,7 @@ namespace SR_GRAPH_NS {
         void OnMultisampleChanged() override;
 
         void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
+        void SetParent(BasePass* pParent) override;
 
     protected:
         /// @property
