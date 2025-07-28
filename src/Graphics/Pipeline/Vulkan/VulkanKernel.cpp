@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS {
     EvoVulkan::Core::RenderResult VulkanKernel::Render()  {
         SR_TRACY_ZONE;
 
-        if (!m_swapchain->SurfaceIsAvailable()) {
+        if (!SurfaceIsAvailable()) {
             return EvoVulkan::Core::RenderResult::Success;
         }
 
@@ -185,5 +185,10 @@ namespace SR_GRAPH_NS {
         if (auto&& pWindow = m_pipeline->GetWindow()) {
             pWindow->PollEvents();
         }
+    }
+
+    bool VulkanKernel::SurfaceIsAvailable() const {
+        SR_TRACY_ZONE;
+        return m_swapchain->SurfaceIsAvailable();
     }
 }

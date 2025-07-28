@@ -57,7 +57,6 @@ namespace SR_GRAPH_NS {
         void ClearOverrideShaders();
 
     private:
-        bool m_useMaterials = true;
         bool m_passWasRendered = false;
 
         std::vector<RenderQueuePtr> m_renderQueues;
@@ -67,10 +66,15 @@ namespace SR_GRAPH_NS {
 
         SR_HTYPES_NS::Time& m_time;
 
-        std::vector<SR_UTILS_NS::StringAtom> m_materialVariants;
         ska::flat_hash_map<ShaderPtr, ShaderUseInfo> m_shaderReplacements;
         ska::flat_hash_map<SR_SRSL_NS::ShaderType, ShaderUseInfo> m_shaderTypeReplacements;
+
+        /// @property
+        bool m_useMaterials = true;
+
+        /// @property
         std::set<SR_UTILS_NS::StringAtom> m_allowedLayers;
+        /// @property
         std::set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
 
     };

@@ -247,6 +247,14 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderScene::PrepareFrame() {
+        if (m_dirtyCameras) {
+            SortCameras();
+        }
+
+        GetPipeline()->SetCurrentRenderStrategy(m_renderStrategy.Get());
+
+        SR_RENDER_TECHNIQUES_CALL(PrepareFrame)
+
         if (auto&& pPipeline = GetPipeline()) {
             pPipeline->PrepareFrame();
         }
@@ -259,21 +267,15 @@ namespace SR_GRAPH_NS {
     void RenderScene::PrepareRender() {
         SR_TRACY_ZONE;
 
-        GetPipeline()->SetCurrentRenderStrategy(m_renderStrategy.Get());
-
         for (auto&& [name, pRenderer] : m_renderers) {
             pRenderer->Prepare();
-        }
-
-        if (m_dirtyCameras) {
-            SortCameras();
         }
 
         if (m_renderStrategy) {
             m_renderStrategy->Prepare();
         }
 
-        SR_RENDER_TECHNIQUES_CALL(Prepare)
+        SR_RENDER_TECHNIQUES_CALL(PrepareRender)
     }
 
     void RenderScene::Register(RenderScene::WidgetManagerPtr pWidgetManager) {

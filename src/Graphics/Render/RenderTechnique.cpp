@@ -41,124 +41,32 @@ namespace SR_GRAPH_NS {
         if (m_resource) {
             m_resource->RemoveUsePoint();
             m_resource = nullptr;
+            m_onResourceReloaded.Reset();
         }
 
         if (pResource) {
             m_resource = pResource;
             m_resource->AddUsePoint();
+
+            m_onResourceReloaded = pResource->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&& msg){
+                m_isResourceReloaded = true;
+            });
         }
     }
 
-    //bool FileRenderTechnique::Build() {
-        /*SR_TRACY_ZONE;
-
-        /// Метод выполняется в графическом контексте
-
-        if (m_hasErrors) {
-            return false;
-        }
-
-        if (!m_dirty) {
-            SRHalt("RenderTechnique::Build() : render technique isn't dirty!");
-            return false;
-        }
-
-        if (!m_resource) {
-            SR_ERROR("RenderTechnique::Build() : resource is nullptr!");
-            return false;
-        }
-
-        /// Очишаем старые данные, если они были
-        DeInitPasses();
-        m_queues.clear();
-        SetName(SR_UTILS_NS::StringAtom());
-
-        /// Загружаем новые данные
-        auto&& document = m_resource->LoadDocument();
-        if (!document.Valid()) {
-            SR_ERROR("RenderTechnique::Build() : failed to load xml document!");
-            return false;
-        }
-
-        if (auto&& settings = document.Root().GetNode("Technique")) {
-            SetName(settings.GetAttribute("Name").ToString());
-
-            for (auto&& passNode : settings.GetNodes()) {
-                ProcessNode(passNode);
-            }
-
-            if (!m_passes.empty() && m_queues.empty()) {
-                SR_ERROR("RenderTechnique::Build() : passes was loaded, but queue is empty!");
-                return false;
-            }
-        }
-        else {
-            SR_ERROR("RenderTechnique::Build() : \"Technique\" node not found!");
-            return false;
-        }
-
-        SR_GRAPH_LOG("RenderTechnique::Build() : building \"" + std::string(GetName()) + "\" render technique...");
-
-        /// Инициализируем все успешно загруженнеы проходы
-        IRenderTechnique::Init();
-
-        m_dirty = false;*/
-
-   //    return true;
-   //}
-
-    //void FileRenderTechnique::LoadPass(const SR_XML_NS::Node& node) {
-        // if (auto&& pPass = SR_ALLOCATE_RENDER_PASS(node, this)) {
-        //     m_passes.emplace_back(pPass);
-        // }
-        // else {
-        //     SR_ERROR("FileRenderTechnique::LoadPass() : failed to load \"" + node.Name() + "\" pass!");
-        // }
-    //}
-
-    //void FileRenderTechnique::ProcessNode(const SR_XML_NS::Node& passNode) {
-        /*if (passNode.NameView() == "Include") {
-            auto&& path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(passNode.GetAttribute("Path").ToString());
-            auto&& includeXml = SR_XML_NS::Document::Load(path);
-            if (includeXml) {
-                for (auto&& includePassNode : includeXml.Root().GetNode("Include").GetNodes()) {
-                    ProcessNode(includePassNode);
-                }
-            }
+    void FileRenderTechnique::UpdateDataIfNeeded() {
+        if (!m_resource || !m_isResourceReloaded) {
             return;
         }
 
-        if (passNode.NameView() == "FrameBufferController") {
-            auto&& name = passNode.GetAttribute("Name").ToString();
-            auto&& pFrameBufferController = FrameBufferController::MakeShared();
-            if (pFrameBufferController->LoadFramebufferSettings(passNode)) {
-                m_frameBufferControllers[name] = pFrameBufferController;
-            }
-            else {
-                SR_ERROR("FileRenderTechnique::ProcessNode() : failed to load \"" + name + "\" framebuffer controller!");
-                pFrameBufferController.AutoFree();
-            }
-            return;
-        }
+        SR_LOG("FileRenderTechnique::UpdateDataIfNeeded() : reloading render technique data from resource: {}", m_resource->GetResourcePath());
 
-        if (passNode.NameView() == "Queues") {
-            for (auto&& queueNode : passNode.GetNodes()) {
-                auto&& queue = m_queues.emplace_back();
-                for (auto&& queuePassNode : queueNode.GetNodes()) {
-                    auto&& name = queuePassNode.GetAttribute("Name").ToString();
-                    if (auto&& pPass = FindPass(name)) {
-                        queue.emplace_back(pPass);
-                    }
-                    else {
-                        SR_ERROR("FileRenderTechnique::ProcessNode() : pass \"" + name + "\" for queue not found!");
-                    }
-                }
-            }
-            return;
-        }
+        RenderTechniqueData clone;
+        m_resource->GetData().CloneTo(clone);
+        SetRenderTechniqueData(std::move(clone));
 
-        LoadPass(passNode);*/
-    //}
+        m_isResourceReloaded = false;
+    }
 
     /// ================================================================================================================
 

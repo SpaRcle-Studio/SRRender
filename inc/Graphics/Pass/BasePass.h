@@ -95,6 +95,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD IRenderTechnique* GetTechnique() const { return m_technique; }
         SR_NODISCARD bool IsInit() const { return m_isInit; }
         SR_NODISCARD BasePass* FindPass(SR_UTILS_NS::StringAtom name);
+        SR_NODISCARD virtual bool IsSupportSamples() const { return false; }
 
         SR_NODISCARD BasePass* GetParent() const { return m_parent; }
         virtual void SetParent(BasePass* pParent) { m_parent = pParent; }
@@ -107,6 +108,7 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom m_customName;
         /// @property
+        /// @propertyCondition(This.IsSupportSamples())
         SamplersPassData m_samplers;
 
     private:

@@ -102,9 +102,7 @@ namespace SR_GRAPH_NS {
         m_renderPassBI = EvoVulkan::Tools::Insert::RenderPassBeginInfo(0, 0, VK_NULL_HANDLE, VK_NULL_HANDLE, nullptr, 0);
 
         m_kernel->SetMultisampling(m_requiredSampleCount);
-
-        /// TODO: вынести в конфиг
-        m_kernel->SetSwapchainImagesCount(2);
+        m_kernel->SetSwapchainImagesCount(SR_UTILS_NS::StoreUtils::User::GetInt("SwapchainImages", 2));
 
         std::vector<const char*>&& validationLayers = { };
 
@@ -762,6 +760,10 @@ namespace SR_GRAPH_NS {
         Super::BindFrameBuffer(pFBO);
 
         if (!pFBO) {
+            if (m_kernel->m_frameBuffers.size() <= m_state.buildIteration) {
+                SRHalt("VulkanPipeline::BindFrameBuffer() : frame buffer index out of range! Current build iteration: {}", m_state.buildIteration);
+                return;
+            }
             m_renderPassBI.framebuffer = m_kernel->m_frameBuffers[m_state.buildIteration];
             m_renderPassBI.renderPass  = m_kernel->GetRenderPass();
             m_renderPassBI.renderArea  = m_kernel->GetRenderArea();
@@ -1899,6 +1901,10 @@ namespace SR_GRAPH_NS {
         Super::BindSSBO(SSBO);
     }
 
+    uint16_t VulkanPipeline::GetSwapchainImagesCount() const {
+        return m_kernel ? m_kernel->GetSwapchainImagesCount() : 0;
+    }
+
     void* VulkanPipeline::GetCurrentShaderHandle() const {
         ++m_state.operations;
 
@@ -1994,5 +2000,13 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         SRAssert2(SSBO != SR_ID_INVALID, "Invalid SSBO ID!");
         m_memory->GetSSBO(SSBO)->Unmap();
+    }
+
+    void VulkanPipeline::SetSwapchainImagesCount(uint16_t count) {
+        if (m_kernel) {
+            m_kernel->SetSwapchainImagesCount(count);
+        }
+
+        Super::SetSwapchainImagesCount(count);
     }
 }

@@ -36,7 +36,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint8_t GetLayersCount() const noexcept { return m_layersCount; }
         SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const noexcept { return m_name; }
 
-        //bool LoadFramebufferSettings(const SR_XML_NS::Node& settingsNode);
         bool InitializeFramebuffer(RenderContext* pContext);
 
         void OnResize(const SR_MATH_NS::UVector2& size);

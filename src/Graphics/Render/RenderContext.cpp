@@ -397,6 +397,7 @@ namespace SR_GRAPH_NS {
 
         for (auto&& pFrameBuffer : m_framebuffers) {
             pFrameBuffer->Update();
+            /// TODO: тут че-то не оптимальное, вызывает обновление всех мешей даже если не нужно
             m_hasChangedFrameBuffers = true;
         }
 

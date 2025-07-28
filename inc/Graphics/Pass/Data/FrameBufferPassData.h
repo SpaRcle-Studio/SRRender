@@ -53,9 +53,9 @@ namespace SR_GRAPH_NS {
         bool m_isFrameBufferRendered = false;
 
         /// @property
-        SR_UTILS_NS::StringAtom m_frameBufferName;
-        /// @property
         ClearColors m_clearColors;
+        /// @property
+        SR_UTILS_NS::StringAtom m_frameBufferName;
         /// @property
         std::optional<float_t> m_depth;
         /// @property @tooltip(Режим рендера без кадрового буффера, напрямую на экран)

@@ -25,9 +25,12 @@ namespace SR_GRAPH_NS {
 
     private:
         void SetResource(const SR_HTYPES_NS::SharedPtr<FileRenderTechniqueResource>& pResource);
+        void UpdateDataIfNeeded() override;
 
     private:
         SR_HTYPES_NS::SharedPtr<FileRenderTechniqueResource> m_resource;
+        SR_UTILS_NS::Subscription m_onResourceReloaded;
+        bool m_isResourceReloaded = false;
 
     };
 

@@ -37,8 +37,10 @@ namespace SR_GRAPH_NS {
         return hasDrawData;
     }
 
-    void IRenderTechnique::Prepare() {
+    void IRenderTechnique::PrepareFrame() {
         SR_TRACY_ZONE;
+
+        UpdateDataIfNeeded();
 
         if (!m_data.pass) {
             return;
@@ -47,6 +49,10 @@ namespace SR_GRAPH_NS {
         if (!BuildTechnique() || !m_data.pass->IsActive()) {
             return;
         }
+    }
+
+    void IRenderTechnique::PrepareRender() {
+        SR_TRACY_ZONE;
 
         m_data.pass->Prepare();
     }
@@ -207,6 +213,8 @@ namespace SR_GRAPH_NS {
     }
 
     void IRenderTechnique::OnResize(const SR_MATH_NS::UVector2& size) {
+        m_surfaceSize = size;
+
         for (auto&& pController : m_data.frameBuffers) {
             pController->OnResize(size);
         }
@@ -239,6 +247,10 @@ namespace SR_GRAPH_NS {
                 m_hasErrors = true;
                 return false;
             }
+
+            if (m_surfaceSize) {
+                pController->OnResize(*m_surfaceSize);
+            }
         }
 
         if (m_data.pass && !m_data.pass->Init()) {
@@ -265,6 +277,10 @@ namespace SR_GRAPH_NS {
         DeInitPasses();
         m_dirty = true;
         m_data = std::move(data);
+
+        if (auto&& pContext = GetRenderContext()) {
+            pContext->SetDirty();
+        }
 
         if (m_data.pass) {
             m_data.pass->SetRenderTechnique(this);

@@ -55,7 +55,8 @@ namespace SR_GRAPH_NS {
         ~IRenderTechnique() override;
 
     public:
-        void Prepare();
+        void PrepareFrame();
+        void PrepareRender();
         bool Overlay();
         bool Render();
         void Update();
@@ -93,7 +94,10 @@ namespace SR_GRAPH_NS {
         void DeInitPasses();
         void ReleaseFrameBuffers();
 
+        virtual void UpdateDataIfNeeded() { }
+
     protected:
+        std::optional<SR_MATH_NS::UVector2> m_surfaceSize;
         RenderTechniqueData m_data;
         RenderScenePtr m_renderScene;
         CameraPtr m_camera = nullptr;

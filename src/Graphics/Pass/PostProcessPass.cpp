@@ -11,7 +11,10 @@
 
 namespace SR_GRAPH_NS {
     PostProcessPass::~PostProcessPass() {
-        SetShader(nullptr);
+        if (m_shader) {
+            m_onShaderReloaded.Reset();
+            m_shader->RemoveUsePoint();
+        }
     }
 
     bool PostProcessPass::PreRender() {
@@ -102,7 +105,9 @@ namespace SR_GRAPH_NS {
     }
 
     void PostProcessPass::SetShader(const SR_UTILS_NS::Path& shaderPath) {
-        auto&& pShader = SR_GTYPES_NS::Shader::Load(shaderPath);
+        m_shaderPath = shaderPath.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+
+        auto&& pShader = SR_GTYPES_NS::Shader::Load(m_shaderPath);
         if (!pShader) {
             SR_ERROR("PostProcessPass::SetShader() : failed to load shader: {}", shaderPath);
             return;

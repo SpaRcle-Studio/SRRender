@@ -43,6 +43,9 @@ namespace SR_GRAPH_NS {
         }
 
     private:
+        SR_NODISCARD bool SurfaceIsAvailable() const;
+
+    private:
         EvoVulkan::Core::RenderResult Render() override;
         EvoVulkan::Core::FrameResult PrepareFrame() override;
         EvoVulkan::Core::FrameResult SubmitFrame() override;

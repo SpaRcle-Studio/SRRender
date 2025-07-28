@@ -290,6 +290,10 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImGui::InputFloat(label, v, step, stepFast, format, static_cast<ImGuiInputTextFlags>(flags));
     }
 
+    bool InputInt(const char* label, int* v, int step, int step_fast, InputTextFlags flags) {
+        return ImGui::InputInt(label, v, step, step_fast, static_cast<ImGuiInputTextFlags>(flags));
+    }
+
     bool Combo(const char* label, int* current_item, const char* items_separated_by_zeros) {
         return ImGui::Combo(label, current_item, items_separated_by_zeros);
     }

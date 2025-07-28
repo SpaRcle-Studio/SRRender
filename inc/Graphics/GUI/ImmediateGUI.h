@@ -336,6 +336,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_RENDERER_DLL_API extern uint32_t GetColorU32(StyleColor idx, float alpha_mul = 1.0f);
         SR_RENDERER_DLL_API extern void RenderArrow(void* pDrawList, const SR_MATH_NS::FVector2& pos, uint32_t color, Direction dir, float_t scale = 1.0f);
         SR_RENDERER_DLL_API extern bool InputFloat(const char* label, float_t* v, float_t step = 0.0f, float_t stepFast = 0.0f, const char* format = "%.3f", InputTextFlags flags = InputTextFlags::None);
+        SR_RENDERER_DLL_API extern bool InputInt(const char* label, int* v, int step = 1, int step_fast = 100, InputTextFlags flags = InputTextFlags::None);
         SR_RENDERER_DLL_API extern bool Combo(const char* label, int* current_item, const char* items_separated_by_zeros);
         SR_RENDERER_DLL_API extern bool Combo(const char* label, int* current_item, bool(*items_getter)(void* data, int idx, const char** out_text), void* data, int items_count, int popup_max_height_in_items = -1);
 
