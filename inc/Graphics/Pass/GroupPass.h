@@ -35,6 +35,10 @@ namespace SR_GRAPH_NS {
         void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
         void SetParent(BasePass* pParent) override;
 
+        void ForEachPass(const std::function<void(BasePass&)>& func) override;
+
+        SR_NODISCARD BasePass* FindPass(SR_UTILS_NS::StringAtom name) override;
+
     protected:
         /// @property
         std::vector<BasePass::Ptr> m_passes;

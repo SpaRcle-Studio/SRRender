@@ -80,7 +80,10 @@ namespace SR_GRAPH_NS {
         void OnResize(const SR_MATH_NS::UVector2& size);
         void OnMultisampleChanged();
 
+        void ForEachPass(const std::function<void(BasePass&)>& func);
+
         SR_NODISCARD const FrameBufferController::Ptr& GetFrameBufferController(SR_UTILS_NS::StringAtom name) const;
+        SR_NODISCARD const std::vector<FrameBufferController::Ptr>& GetFrameBufferControllers() const;
 
         SR_GTYPES_NS::Mesh* PickMeshAt(const SR_MATH_NS::FPoint& pos) const;
         SR_GTYPES_NS::Mesh* PickMeshAt(float_t x, float_t y) const;

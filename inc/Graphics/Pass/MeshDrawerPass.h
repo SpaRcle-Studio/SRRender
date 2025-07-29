@@ -26,8 +26,6 @@ namespace SR_GRAPH_NS {
         MeshDrawerPass();
         ~MeshDrawerPass() override;
 
-        //bool Load(const SR_XML_NS::Node& passNode) override;
-
         bool Init() override;
         void DeInit() override;
         bool Render() override;

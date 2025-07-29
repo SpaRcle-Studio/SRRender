@@ -28,6 +28,10 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& FrameBufferPass::GetFrameBuffer() const noexcept {
+        return m_data.GetFramebuffer();
+    }
+
     const FrameBufferPassData::ClearColors& FrameBufferPass::GetClearColors() const noexcept {
         return m_data.GetClearColors();
     }

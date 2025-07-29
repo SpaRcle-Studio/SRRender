@@ -141,4 +141,20 @@ namespace SR_GRAPH_NS {
         }
         Super::PostUpdate();
     }
+
+    void GroupPass::ForEachPass(const std::function<void(BasePass&)>& func) {
+        for (auto&& pPass : m_passes) {
+            pPass->ForEachPass(func);
+        }
+        Super::ForEachPass(func);
+    }
+
+    BasePass* GroupPass::FindPass(SR_UTILS_NS::StringAtom name) {
+        for (auto&& pPass : m_passes) {
+            if (auto&& pFound = pPass->FindPass(name)) {
+                return pFound;
+            }
+        }
+        return Super::FindPass(name);
+    }
 }

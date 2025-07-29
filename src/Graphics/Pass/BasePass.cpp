@@ -98,4 +98,8 @@ namespace SR_GRAPH_NS {
     BasePass* BasePass::FindPass(SR_UTILS_NS::StringAtom name) {
         return GetPassName() == name ? this : nullptr;
     }
+
+    void BasePass::ForEachPass(const std::function<void(BasePass&)>& func) {
+        func(*this);
+    }
 }

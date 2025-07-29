@@ -184,13 +184,18 @@ namespace SR_GRAPH_NS {
     }
 
     SR_GTYPES_NS::Mesh* IRenderTechnique::PickMeshAt(float_t x, float_t y, SR_UTILS_NS::StringAtom passName) const {
-        //SR_TRACY_ZONE;
-        //
-        //if (auto&& pPass = dynamic_cast<SR_GRAPH_NS::IColorBufferPass*>(FindPass(passName))) {
-        //    if (auto&& pMesh = pPass->GetMesh(x, y)) {
-        //        return pMesh;
-        //    }
-        //}
+        SR_TRACY_ZONE;
+
+        if (!m_data.pass) {
+            SR_ERROR("IRenderTechnique::PickMeshAt() : technique \"{}\" does not have a pass!", m_data.name);
+            return nullptr;
+        }
+
+        if (auto&& pPass = dynamic_cast<SR_GRAPH_NS::IColorBufferPass*>(m_data.pass->FindPass(passName))) {
+            if (auto&& pMesh = pPass->GetMesh(x, y)) {
+                return pMesh;
+            }
+        }
         return nullptr;
     }
 
@@ -228,6 +233,16 @@ namespace SR_GRAPH_NS {
         if (m_data.pass) {
             m_data.pass->OnMultisampleChanged();
         }
+    }
+
+    void IRenderTechnique::ForEachPass(const std::function<void(BasePass&)>& func) {
+        if (m_data.pass) {
+            m_data.pass->ForEachPass(func);
+        }
+    }
+
+    const std::vector<FrameBufferController::Ptr>& IRenderTechnique::GetFrameBufferControllers() const {
+        return m_data.frameBuffers;
     }
 
     const FrameBufferController::Ptr& IRenderTechnique::GetFrameBufferController(SR_UTILS_NS::StringAtom name) const {

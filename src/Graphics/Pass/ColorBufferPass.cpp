@@ -5,9 +5,9 @@
 #include <Graphics/Pass/ColorBufferPass.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
-namespace SR_GRAPH_NS {
-    /*SR_REGISTER_RENDER_PASS(ColorBufferPass)
+#include <Codegen/ColorBufferPass.generated.hpp>
 
+namespace SR_GRAPH_NS {
     ColorBufferRenderQueue::ColorBufferRenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer)
         : Super(pStrategy, pDrawer)
     {
@@ -33,8 +33,13 @@ namespace SR_GRAPH_NS {
         return GetRenderStrategy()->BuildQueue<ColorBufferRenderQueue, RenderQueue>(this);
     }
 
-    SR_GTYPES_NS::Framebuffer* ColorBufferPass::GetColorFrameBuffer() const noexcept {
-        return GetFramebuffer().Get();
+    const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& ColorBufferPass::GetColorFrameBuffer() const noexcept {
+        if (auto&& pParent = GetParent()) {
+            return dynamic_cast<FrameBufferPass*>(pParent)->GetFrameBuffer();
+        }
+        SR_WARN("ColorBufferPass::GetColorFrameBuffer() : parent is not FrameBufferPass!");
+        static SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer> nullValue;
+        return nullValue;
     }
 
     void ColorBufferPass::UseConstants(ShaderUseInfo info) {
@@ -45,11 +50,6 @@ namespace SR_GRAPH_NS {
     bool ColorBufferPass::Render() {
         ResetColorIndex();
         ClearTable();
-        return OffScreenMeshDrawerPass::Render();
+        return Super::Render();
     }
-
-    bool ColorBufferPass::Load(const SR_XML_NS::Node& passNode) {
-        SetColorMultiplier(passNode.TryGetAttribute("ColorMultiplier").ToInt(1));
-        return Super::Load(passNode);
-    }*/
 }

@@ -11,13 +11,13 @@
 #include "../src/Graphics/Pass/DebugPass.cpp"
 
 #include "../src/Graphics/Pass/IColorBufferPass.cpp"
+#include "../src/Graphics/Pass/ColorBufferPass.cpp"
 
 //#include "../src/Graphics/Pass/HTMLDrawerPass.cpp"
 //#include "../src/Graphics/Pass/OffScreenMeshDrawerPass.cpp"
 //#include "../src/Graphics/Pass/FlatColorBufferPass.cpp"
 //#include "../src/Graphics/Pass/OpaquePass.cpp"
 //#include "../src/Graphics/Pass/TransparentPass.cpp"
-//#include "../src/Graphics/Pass/ColorBufferPass.cpp"
 //#include "../src/Graphics/Pass/DepthBufferPass.cpp"
 //#include "../src/Graphics/Pass/ShaderOverridePass.cpp"
 //#include "../src/Graphics/Pass/SSAOPass.cpp"
