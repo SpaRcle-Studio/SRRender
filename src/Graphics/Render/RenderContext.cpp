@@ -155,6 +155,10 @@ namespace SR_GRAPH_NS {
     void RenderContext::Close() {
         SR_LOG("RenderContext::Close() : closing render context...");
 
+        if (m_pipeline) {
+            m_pipeline->WaitRenderIdle();
+        }
+
         SRAssert2(!m_isClosed, "Render context is already closed!");
         m_isClosed = true;
 

@@ -92,6 +92,7 @@ namespace SR_GRAPH_NS {
         virtual void SwitchWindow(const WindowPtr& pWindow);
 
         virtual void WaitComputeIdle();
+        virtual void WaitRenderIdle();
 
         /// ------------------------------------------ Работа с Overlay ------------------------------------------------
 
@@ -104,6 +105,7 @@ namespace SR_GRAPH_NS {
         virtual void PrepareOverlay(OverlayType overlayType);
         virtual bool BeginDrawOverlay(OverlayType overlayType);
         virtual void EndDrawOverlay(OverlayType overlayType);
+        virtual bool HasActiveOverlay() const;
 
         virtual void SetOverlayEnabled(OverlayType overlayType, bool enabled);
 

@@ -91,6 +91,7 @@ namespace SR_GRAPH_NS {
         void OnResize(const SR_MATH_NS::UVector2& size) override;
 
         void WaitComputeIdle() override;
+        void WaitRenderIdle() override;
 
         bool BeginCompute() override;
         void EndCompute() override;

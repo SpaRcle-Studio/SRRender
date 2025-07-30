@@ -82,25 +82,26 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        /// установим кадровый буфер, чтобы BeginCmdBuffer понимал какие значение для очистки ставить
-        GetPipeline()->SetCurrentFrameBuffer(const_cast<Pipeline::FramebufferPtr>(pFrameBuffer.Get()));
+        auto&& pPipeline = GetPipeline();
 
         if (GetLayersCount() > 1) {
             return RenderFrameBuffer(callback, GetLayersCount());
         }
 
         if (pFrameBuffer->Bind()) {
-            pFrameBuffer->BeginCmdBuffer(m_clearColors, m_depth);
-            {
-                pFrameBuffer->BeginRender();
-                pFrameBuffer->SetViewportScissor();
+            for (uint32_t frame = 0; frame < pPipeline->GetBuildIterationsCount(); ++frame) {
+                pFrameBuffer->BeginCmdBuffer(frame, m_clearColors, m_depth);
+                {
+                    pFrameBuffer->BeginRender();
+                    pFrameBuffer->SetViewportScissor();
 
-                callback();
-                m_isFrameBufferRendered = true;
+                    callback();
+                    m_isFrameBufferRendered = true;
 
-                pFrameBuffer->EndRender();
+                    pFrameBuffer->EndRender();
+                }
+                pFrameBuffer->EndCmdBuffer();
             }
-            pFrameBuffer->EndCmdBuffer();
         }
 
         GetPipeline()->SetCurrentFrameBuffer(nullptr);
@@ -110,24 +111,30 @@ namespace SR_GRAPH_NS {
 
     bool FrameBufferPassData::RenderFrameBuffer(const FBRenderCallback& callback, uint8_t layers) {
         auto&& pFrameBuffer = GetFramebuffer();
+        auto&& pPipeline = GetPipeline();
 
-        pFrameBuffer->BeginCmdBuffer(m_clearColors, m_depth);
-        pFrameBuffer->SetViewportScissor();
+        /// установим кадровый буфер, чтобы BeginCmdBuffer понимал какие значение для очистки ставить
+        pPipeline->SetCurrentFrameBuffer(const_cast<Pipeline::FramebufferPtr>(pFrameBuffer.Get()));
 
-        for (uint32_t i = 0; i < layers; ++i) {
-            GetPipeline()->SetCurrentFrameBufferLayer(i);
+        for (uint32_t frame = 0; frame < pPipeline->GetBuildIterationsCount(); ++frame) {
+            pFrameBuffer->BeginCmdBuffer(frame, m_clearColors, m_depth);
+            pFrameBuffer->SetViewportScissor();
 
-            if (pFrameBuffer->Bind()) {
-                pFrameBuffer->BeginRender();
+            for (uint32_t i = 0; i < layers; ++i) {
+                GetPipeline()->SetCurrentFrameBufferLayer(i);
 
-                callback();
-                m_isFrameBufferRendered = true;
+                if (pFrameBuffer->Bind()) {
+                    pFrameBuffer->BeginRender();
 
-                pFrameBuffer->EndRender();
+                    callback();
+                    m_isFrameBufferRendered = true;
+
+                    pFrameBuffer->EndRender();
+                }
             }
-        }
 
-        pFrameBuffer->EndCmdBuffer();
+            pFrameBuffer->EndCmdBuffer();
+        }
 
         GetPipeline()->SetCurrentFrameBuffer(nullptr);
 

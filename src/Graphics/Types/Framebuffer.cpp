@@ -174,7 +174,9 @@ namespace SR_GTYPES_NS {
         SetDirty();
     }
 
-    bool Framebuffer::BeginCmdBuffer(const ClearColors& clearColors, std::optional<float_t> depth) {
+    bool Framebuffer::BeginCmdBuffer(uint32_t frame, const ClearColors& clearColors, std::optional<float_t> depth) {
+        GetPipeline()->SetBuildIteration(frame);
+
         if (IsDepthEnabled() && !depth.has_value()) {
             SR_ERROR("Framebuffer::BeginCmdBuffer() : depth is not set!");
             depth = 1.0f;
@@ -191,7 +193,8 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    bool Framebuffer::BeginCmdBuffer() {
+    bool Framebuffer::BeginCmdBuffer(uint32_t frame) {
+        GetPipeline()->SetBuildIteration(frame);
         GetPipeline()->ClearBuffers();
 
         if (!GetPipeline()->BeginCmdBuffer()) {
@@ -251,8 +254,8 @@ namespace SR_GTYPES_NS {
         return m_colors.at(layer).texture;
     }
 
-    bool Framebuffer::BeginCmdBuffer(const SR_MATH_NS::FColor &clearColor, float_t depth) {
-        return BeginCmdBuffer(Framebuffer::ClearColors{ clearColor }, depth);
+    bool Framebuffer::BeginCmdBuffer(uint32_t frame, const SR_MATH_NS::FColor &clearColor, float_t depth) {
+        return BeginCmdBuffer(frame, Framebuffer::ClearColors{ clearColor }, depth);
     }
 
     uint32_t Framebuffer::GetWidth() const {

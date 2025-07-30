@@ -46,6 +46,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool SurfaceIsAvailable() const;
 
     private:
+        void WaitFences() override;
         EvoVulkan::Core::RenderResult Render() override;
         EvoVulkan::Core::FrameResult PrepareFrame() override;
         EvoVulkan::Core::FrameResult SubmitFrame() override;
@@ -53,6 +54,7 @@ namespace SR_GRAPH_NS {
         EvoVulkan::Core::FrameResult WaitIdle() override;
 
     private:
+        bool m_isSwapchainSuboptimal = false;
         PipelinePtr m_pipeline;
 
     };

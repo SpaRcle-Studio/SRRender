@@ -291,6 +291,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         DeInitPasses();
         m_dirty = true;
+        m_hasErrors = false;
         m_data = std::move(data);
 
         if (auto&& pContext = GetRenderContext()) {

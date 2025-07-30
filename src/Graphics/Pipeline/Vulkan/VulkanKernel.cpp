@@ -56,11 +56,16 @@ namespace SR_GRAPH_NS {
             return EvoVulkan::Core::RenderResult::Success;
         }
 
+        WaitFences();
+
         auto&& prepareResult = PrepareFrame();
         switch (prepareResult) {
-            case EvoVulkan::Core::FrameResult::OutOfDate:
+            case EvoVulkan::Core::FrameResult::Dirty:
             case EvoVulkan::Core::FrameResult::Suboptimal:
-            case EvoVulkan::Core::FrameResult::Dirty: {
+                SRAssert2(!m_isSwapchainSuboptimal, "SRVulkan::Render() : suboptimal swapchain already set!");
+                m_isSwapchainSuboptimal = true;
+                break;
+            case EvoVulkan::Core::FrameResult::OutOfDate: {
                 VK_LOG("SRVulkan::Render() : out of date...");
                 m_hasErrors |= !ReCreate(prepareResult);
 
@@ -79,7 +84,7 @@ namespace SR_GRAPH_NS {
                 return EvoVulkan::Core::RenderResult::Error;
         }
 
-        for (auto&& submitInfo : m_submitQueue) {
+        /*for (auto&& submitInfo : m_submitQueue) {
             SR_TRACY_ZONE_S("QueueSubmit");
 
             auto&& vkSubmitInfo = submitInfo.ToVk();
@@ -93,10 +98,36 @@ namespace SR_GRAPH_NS {
 
                 return EvoVulkan::Core::RenderResult::Error;
             }
-        }
+        }*/
 
         m_submitInfo.commandBuffers.clear();
-        m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_currentBuffer]);
+        m_submitInfo.waitSemaphores.clear();
+        m_submitInfo.signalSemaphores.clear();
+
+        auto&& pVulkanPipeline = m_pipeline.DynamicCast<VulkanPipeline>();
+
+        auto&& queues = m_pipeline->GetQueue().GetQueues();
+        for (auto&& queue : queues) {
+            for (auto&& pFrameBuffer : queue) {
+                if (!pFrameBuffer->IsValid()) {
+                    SR_WARN("VulkanKernel::Render() : frame buffer is not valid! Skipping...");
+                    continue;
+                }
+
+                auto&& pFBO = pVulkanPipeline->GetMemoryManager()->GetFBO(pFrameBuffer->GetId() - 1);
+
+                m_submitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(m_currentBuffer));
+            }
+        }
+
+        if (m_pipeline->GetBuildState().hasRenderData) {
+            m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_currentBuffer]);
+        }
+
+        m_submitInfo.waitSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_presentComplete);
+        m_submitInfo.signalSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_renderComplete);
+
+        m_submitInfo.SetWaitDstStageMask(GetSubmitPipelineStages());
 
         auto&& pImGuiOverlay = m_pipeline->GetOverlay(OverlayType::ImGui).DynamicCast<VulkanImGuiOverlay>();
 
@@ -111,7 +142,7 @@ namespace SR_GRAPH_NS {
             auto&& vkSubmitInfo = m_submitInfo.ToVk();
 
             /// Submit to queue
-            if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
+            if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, m_waitFences[m_currentBuffer]); result != VK_SUCCESS) {
                 VK_ERROR("renderFunction() : failed to queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
 
                 if (result == VK_ERROR_DEVICE_LOST) {
@@ -122,25 +153,33 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        switch (SubmitFrame()) {
+        EvoVulkan::Core::FrameResult presentResult = QueuePresent();
+
+        m_currentBuffer = (m_currentBuffer + 1) % GetSwapchainImagesCount();
+
+        if (presentResult == EvoVulkan::Core::FrameResult::DeviceLost) {
+            SR_PLATFORM_NS::Terminate();
+        }
+
+        if (m_isSwapchainSuboptimal || presentResult == EvoVulkan::Core::FrameResult::OutOfDate || presentResult == EvoVulkan::Core::FrameResult::Suboptimal) {
+            m_hasErrors |= !ReCreate(m_isSwapchainSuboptimal ? EvoVulkan::Core::FrameResult::Suboptimal : presentResult);
+            m_isSwapchainSuboptimal = false;
+
+            if (m_hasErrors) {
+                return EvoVulkan::Core::RenderResult::Fatal;
+            }
+        }
+
+        switch (presentResult) {
             case EvoVulkan::Core::FrameResult::Success:
                 return EvoVulkan::Core::RenderResult::Success;
 
             case EvoVulkan::Core::FrameResult::Error:
                 return EvoVulkan::Core::RenderResult::Error;
 
-            case EvoVulkan::Core::FrameResult::OutOfDate: {
-                m_hasErrors |= !ReCreate(EvoVulkan::Core::FrameResult::OutOfDate);
-
-                if (m_hasErrors) {
-                    return EvoVulkan::Core::RenderResult::Fatal;
-                }
-                else {
-                    return EvoVulkan::Core::RenderResult::Success;
-                }
-            }
-            case EvoVulkan::Core::FrameResult::DeviceLost:
-                SR_PLATFORM_NS::Terminate();
+            case EvoVulkan::Core::FrameResult::OutOfDate:
+            case EvoVulkan::Core::FrameResult::Suboptimal:
+                return EvoVulkan::Core::RenderResult::Success;
 
             default: {
                 SRAssertOnce(false);
@@ -189,6 +228,12 @@ namespace SR_GRAPH_NS {
 
     bool VulkanKernel::SurfaceIsAvailable() const {
         SR_TRACY_ZONE;
-        return m_swapchain->SurfaceIsAvailable();
+        //return m_swapchain->SurfaceIsAvailable();
+        return m_swapchain->GetSurfaceHeight() > 0 && m_swapchain->GetSurfaceWidth() > 0;
+    }
+
+    void VulkanKernel::WaitFences() {
+        SR_TRACY_ZONE;
+        Super::WaitFences();
     }
 }

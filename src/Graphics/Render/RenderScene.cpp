@@ -77,6 +77,8 @@ namespace SR_GRAPH_NS {
 
         PrepareRender();
 
+        m_hasDrawData = false;
+
         /// ImGui будет нарисован поверх независимо от порядка отрисовки.
         /// Однако, если его нарисовать в конце, то пользователь может
         /// изменить данные отрисовки сцены и сломать уже нарисованную сцену
@@ -85,22 +87,19 @@ namespace SR_GRAPH_NS {
         auto&& pPipeline = GetPipeline();
 
         if (IsDirty() || pPipeline->IsDirty()) {
+            pPipeline->WaitRenderIdle();
+
             Build();
-            if (pPipeline->IsFBOQueueValid()) {
-                pPipeline->SetDirty(false);
+
+            if (!m_hasDrawData) {
+                RenderBlackScreen();
             }
-            else {
-                pPipeline->ResetSubmitQueue();
-                m_hasDrawData = false;
-            }
+
+            pPipeline->SetDirty(false);
         }
 
         Update();
         PostUpdate();
-
-        if (!m_hasDrawData) {
-            RenderBlackScreen();
-        }
     }
 
     void RenderScene::SetDirty() {
@@ -178,8 +177,6 @@ namespace SR_GRAPH_NS {
         }
 
         GetPipeline()->ClearFrameBuffersQueue();
-
-        m_hasDrawData = false;
 
         SR_RENDER_TECHNIQUES_RETURN_CALL(Render)
 
@@ -456,6 +453,7 @@ namespace SR_GRAPH_NS {
             pPipeline->SetBuildIteration(i);
 
             pPipeline->BindFrameBuffer(nullptr);
+
             pPipeline->ClearBuffers(0.5f, 0.5f, 0.5f, 1.f, 1.f, 1);
 
             pPipeline->BeginCmdBuffer();

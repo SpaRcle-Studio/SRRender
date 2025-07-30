@@ -546,7 +546,20 @@ namespace SR_GRAPH_NS {
         m_state.operations++;
     }
 
+    void Pipeline::WaitRenderIdle() {
+        m_state.operations++;
+    }
+
     void Pipeline::FlushSSBO(uint32_t SSBO, uint64_t offset, uint64_t size) {
         m_state.operations++;
+    }
+
+    bool Pipeline::HasActiveOverlay() const {
+        for (auto&& pOverlay : m_overlays) {
+            if (pOverlay.second && pOverlay.second->IsEnabled()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

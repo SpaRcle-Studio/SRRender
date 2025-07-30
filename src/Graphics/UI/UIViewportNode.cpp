@@ -12,12 +12,12 @@ namespace SR_GRAPH_UI_NS {
     UIViewportNode::UIViewportNode()
         : Super()
     {
-        m_onEngineUpdate = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_ENGINE_UPDATE_ID, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
-            uint64_t priority = 0;
-            Prepare(priority);
-            Layout(SR_MATH_NS::FRect());
-            Compile();
-        });
+        //m_onEngineUpdate = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_ENGINE_UPDATE_ID, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+        //    uint64_t priority = 0;
+        //    Prepare(priority);
+        //    Layout(SR_MATH_NS::FRect());
+        //    Compile();
+        //});
 
         m_keyDown = SR_UTILS_NS::Input::Instance().Subscribe("Down", [&](const SR_UTILS_NS::SubscriptionMessage& msg) {
             if (static_cast<SR_UTILS_NS::KeyCode>(msg.GetInt("KeyCode"_atom)) == SR_UTILS_NS::KeyCode::J) {
