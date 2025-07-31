@@ -570,6 +570,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Shader::IsSamplersValid() const {
+        SR_TRACY_ZONE;
         for (auto&& [hashName, samplerInfo] : m_samplers) {
             if (!samplerInfo.isArray && !samplerInfo.isAttachment) {
                 continue;

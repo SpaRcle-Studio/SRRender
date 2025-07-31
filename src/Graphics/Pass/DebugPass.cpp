@@ -279,13 +279,15 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            if (m_descriptorManager.Bind(shaderInfo.UBOs[shaderInfo.uboUsed].virtualDescriptor) == DescriptorManager::BindResult::Failed) {
+            const auto bindResult = m_descriptorManager.Bind(shaderInfo.UBOs[shaderInfo.uboUsed].virtualDescriptor);
+            if (bindResult == DescriptorManager::BindResult::Failed) {
                 SR_ERROR("DebugPass::DrawQueue() : failed to bind descriptor set!");
                 continue;
             }
 
-            if (pipeline.GetCurrentBuildIteration() == 0) {
+            if (shaderInfo.UBOs[shaderInfo.uboUsed].isDirty || bindResult == DescriptorManager::BindResult::Duplicated) {
                 m_descriptorManager.Flush();
+                shaderInfo.UBOs[shaderInfo.uboUsed].isDirty = false;
             }
 
             if (drawInfo.type == DebugRenderer::DrawType::Line) {

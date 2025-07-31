@@ -23,7 +23,9 @@ namespace SR_GRAPH_NS {
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
         , m_scene(scene)
         , m_context(pContext)
-    { }
+    {
+        m_dirtyFrames.set();
+    }
 
     RenderScene::~RenderScene() {
         SRAssert(!m_lightSystem && !m_technique && m_renderers.empty());
@@ -85,17 +87,23 @@ namespace SR_GRAPH_NS {
         Overlay();
 
         auto&& pPipeline = GetPipeline();
+        if (pPipeline->IsDirty()) {
+            pPipeline->SetDirty(false);
+            m_dirtyFrames.set();
+        }
 
-        if (IsDirty() || pPipeline->IsDirty()) {
-            pPipeline->WaitRenderIdle();
+        const uint8_t frameIndex = pPipeline->GetCurrentFrameIndex();
 
+        if (m_dirtyFrames[frameIndex]) {
             Build();
 
             if (!m_hasDrawData) {
                 RenderBlackScreen();
             }
 
-            pPipeline->SetDirty(false);
+            m_dirtyFrames.reset(frameIndex);
+
+            pPipeline->OnFrameBuildEnd();
         }
 
         Update();
@@ -103,12 +111,12 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderScene::SetDirty() {
-        m_dirty.Increment();
+        m_dirtyFrames.set();
         GetPipeline()->SetDirty(true);
     }
 
     bool RenderScene::IsDirty() const noexcept {
-        return m_dirty.Get() > 0;
+        return m_dirtyFrames.any();
     }
 
     void RenderScene::SetDirtyCameras() {
@@ -181,10 +189,6 @@ namespace SR_GRAPH_NS {
         SR_RENDER_TECHNIQUES_RETURN_CALL(Render)
 
         BuildQueue();
-
-        m_dirty.Do([](uint32_t& data) {
-            data = data > 1 ? 1 : 0;
-        });
     }
 
     void RenderScene::Update() {
@@ -448,23 +452,18 @@ namespace SR_GRAPH_NS {
         auto&& pPipeline = GetPipeline();
 
         pPipeline->SetCurrentFrameBuffer(nullptr);
+        pPipeline->BindFrameBuffer(nullptr);
 
-        for (uint8_t i = 0; i < pPipeline->GetBuildIterationsCount(); ++i) {
-            pPipeline->SetBuildIteration(i);
+        pPipeline->ClearBuffers(0.5f, 0.5f, 0.5f, 1.f, 1.f, 1);
 
-            pPipeline->BindFrameBuffer(nullptr);
-
-            pPipeline->ClearBuffers(0.5f, 0.5f, 0.5f, 1.f, 1.f, 1);
-
-            pPipeline->BeginCmdBuffer();
-            {
-                pPipeline->BeginRender();
-                pPipeline->SetViewport();
-                pPipeline->SetScissor();
-                pPipeline->EndRender();
-            }
-            pPipeline->EndCmdBuffer();
+        pPipeline->BeginCmdBuffer();
+        {
+            pPipeline->BeginRender();
+            pPipeline->SetViewport();
+            pPipeline->SetScissor();
+            pPipeline->EndRender();
         }
+        pPipeline->EndCmdBuffer();
     }
 
     bool RenderScene::IsOverlayEnabled() const {

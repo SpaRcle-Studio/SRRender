@@ -21,6 +21,7 @@ namespace SR_GRAPH_NS {
         struct MemInfo {
             Memory::UBOManager::VirtualUBO virtualUBO;
             DescriptorManager::VirtualDescriptorSet virtualDescriptor;
+            bool isDirty = true;
         };
 
         SR_GTYPES_NS::Shader::Ptr pShader;

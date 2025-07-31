@@ -299,7 +299,7 @@ namespace SR_GRAPH_NS {
     int32_t VulkanPipeline::AllocDescriptorSet(const std::vector<DescriptorType>& types) {
         SR_TRACY_ZONE;
 
-        if (!m_isComputeState && (!m_isRenderState || m_state.buildIteration > 0)) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_isComputeState && !m_isRenderState) SR_UNLIKELY_ATTRIBUTE {
             PipelineError("VulkanPipeline::AllocDescriptorSet() : render state isn't active or isn't in first build iteration!");
             SRHaltOnce0();
             return SR_ID_INVALID;
@@ -627,7 +627,7 @@ namespace SR_GRAPH_NS {
 
         Super::UpdateDescriptorSets(descriptorSet, updateInfo);
 
-        if (!m_isComputeState && (!m_isRenderState || m_state.buildIteration > 0)) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_isComputeState && !m_isRenderState) SR_UNLIKELY_ATTRIBUTE {
             PipelineError("VulkanPipeline::UpdateDescriptorSets() : render state isn't active or not in first build iteration!");
             SRHaltOnce0();
             return;
@@ -760,12 +760,14 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::BindFrameBuffer(Pipeline::FramebufferPtr pFBO) {
         Super::BindFrameBuffer(pFBO);
 
+        const auto frameIndex = GetCurrentFrameIndex();
+
         if (!pFBO) {
-            if (m_kernel->m_frameBuffers.size() <= m_state.buildIteration) {
-                SRHalt("VulkanPipeline::BindFrameBuffer() : frame buffer index out of range! Current build iteration: {}", m_state.buildIteration);
+            if (m_kernel->m_frameBuffers.size() <= frameIndex) {
+                SRHalt("VulkanPipeline::BindFrameBuffer() : frame buffer index out of range! Current build iteration: {}", frameIndex);
                 return;
             }
-            m_renderPassBI.framebuffer = m_kernel->m_frameBuffers[m_state.buildIteration];
+            m_renderPassBI.framebuffer = m_kernel->m_frameBuffers[frameIndex];
             m_renderPassBI.renderPass  = m_kernel->GetRenderPass();
             m_renderPassBI.renderArea  = m_kernel->GetRenderArea();
 
@@ -799,7 +801,7 @@ namespace SR_GRAPH_NS {
             m_renderPassBI.framebuffer = vkFrameBuffer;
             m_renderPassBI.renderPass  = pFrameBuffer->GetRenderPass();
             m_renderPassBI.renderArea  = pFrameBuffer->GetRenderPassArea();
-            m_currentCmd               = pFrameBuffer->GetCommandBuffer(m_state.buildIteration);
+            m_currentCmd               = pFrameBuffer->GetCommandBuffer(frameIndex);
 
             m_currentVkFrameBuffer = pFrameBuffer;
             m_state.frameBufferId = FBO;
@@ -813,6 +815,8 @@ namespace SR_GRAPH_NS {
             SR_ERROR("VulkanPipeline::AllocateFrameBuffer() : memory manager is nullptr!");
             return SR_ID_INVALID;
         }
+
+        WaitRenderIdle();
 
         ++m_state.allocations;
         ++m_state.operations;
@@ -1001,12 +1005,14 @@ namespace SR_GRAPH_NS {
     bool VulkanPipeline::BeginCmdBuffer() {
         SR_TRACY_ZONE;
 
+        const auto frameIndex = GetCurrentFrameIndex();
+
         if (!m_isComputeState) {
             if (m_currentVkFrameBuffer) {
-                m_currentCmd = m_currentVkFrameBuffer->GetCommandBuffer(m_state.buildIteration);
+                m_currentCmd = m_currentVkFrameBuffer->GetCommandBuffer(frameIndex);
             }
             else {
-                m_currentCmd = m_kernel->m_drawCmdBuffs[m_state.buildIteration];
+                m_currentCmd = m_kernel->m_drawCmdBuffs[frameIndex];
             }
         }
 
@@ -1539,9 +1545,16 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::PrepareFrame() {
+        SR_TRACY_ZONE;
+
         Super::PrepareFrame();
 
-        if (m_kernel && m_kernel->IsDirty()) {
+        if (m_kernel) {
+            m_kernel->WaitFences();
+        }
+
+        if (m_kernel && (m_kernel->IsDirty() || m_kernel->GetSwapchain()->IsDirty())) {
+            m_kernel->WaitAllFences();
             m_kernel->ReCreate(EvoVulkan::Core::FrameResult::Dirty);
         }
 
@@ -1586,8 +1599,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (!m_isComputeState && (!m_isRenderState || m_state.buildIteration > 0)) SR_UNLIKELY_ATTRIBUTE {
-            PipelineError("VulkanPipeline::BindAttachment() : render state isn't active or not in first build iteration!");
+        if (!m_isComputeState && !m_isRenderState) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::BindAttachment() : render state isn't active!");
             SRHaltOnce0();
             return;
         }
@@ -1636,7 +1649,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (!m_isRenderState || m_state.buildIteration > 0) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_isRenderState) SR_UNLIKELY_ATTRIBUTE {
             PipelineError("VulkanPipeline::UpdateDescriptorSets() : render state isn't active or not in first build iteration!");
             SRHaltOnce0();
             return;
@@ -1700,6 +1713,8 @@ namespace SR_GRAPH_NS {
         if (!m_kernel) {
             return;
         }
+
+        SR_LOG("VulkanPipeline::SetVSyncEnabled() : setting VSync to {}", enabled ? "enabled" : "disabled");
 
         auto&& pSwapChain = m_kernel->GetSwapchain();
         if (!pSwapChain) {
@@ -1940,6 +1955,10 @@ namespace SR_GRAPH_NS {
 
     uint16_t VulkanPipeline::GetSwapchainImagesCount() const {
         return m_kernel ? m_kernel->GetSwapchainImagesCount() : 0;
+    }
+
+    uint8_t VulkanPipeline::GetCurrentFrameIndex() const {
+        return m_kernel ? m_kernel->GetCurrentFrameIndex() : 0;
     }
 
     void* VulkanPipeline::GetCurrentShaderHandle() const {

@@ -56,11 +56,8 @@ namespace SR_GRAPH_NS {
             return EvoVulkan::Core::RenderResult::Success;
         }
 
-        WaitFences();
-
         auto&& prepareResult = PrepareFrame();
         switch (prepareResult) {
-            case EvoVulkan::Core::FrameResult::Dirty:
             case EvoVulkan::Core::FrameResult::Suboptimal:
                 SRAssert2(!m_isSwapchainSuboptimal, "SRVulkan::Render() : suboptimal swapchain already set!");
                 m_isSwapchainSuboptimal = true;
@@ -84,22 +81,6 @@ namespace SR_GRAPH_NS {
                 return EvoVulkan::Core::RenderResult::Error;
         }
 
-        /*for (auto&& submitInfo : m_submitQueue) {
-            SR_TRACY_ZONE_S("QueueSubmit");
-
-            auto&& vkSubmitInfo = submitInfo.ToVk();
-
-            if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
-                VK_ERROR("renderFunction() : failed to queue submit (frame buffer)! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
-
-                if (result == VK_ERROR_DEVICE_LOST) {
-                    return EvoVulkan::Core::RenderResult::DeviceLost;
-                }
-
-                return EvoVulkan::Core::RenderResult::Error;
-            }
-        }*/
-
         m_submitInfo.commandBuffers.clear();
         m_submitInfo.waitSemaphores.clear();
         m_submitInfo.signalSemaphores.clear();
@@ -120,10 +101,6 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        if (m_pipeline->GetBuildState().hasRenderData) {
-            m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_currentBuffer]);
-        }
-
         m_submitInfo.waitSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_presentComplete);
         m_submitInfo.signalSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_renderComplete);
 
@@ -135,6 +112,11 @@ namespace SR_GRAPH_NS {
             auto&& submitInfo = pImGuiOverlay->Render(m_currentBuffer);
             m_submitInfo.commandBuffers.emplace_back(submitInfo.commandBuffers.front());
         }
+        else {
+            if (m_pipeline->GetBuildState(m_currentBuffer).hasRenderData) {
+                m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_currentBuffer]);
+            }
+        }
 
         {
             SR_TRACY_ZONE_S("GraphicsQueueSubmit");
@@ -142,6 +124,9 @@ namespace SR_GRAPH_NS {
             auto&& vkSubmitInfo = m_submitInfo.ToVk();
 
             /// Submit to queue
+
+            vkResetFences(*m_device, 1, &m_waitFences[m_currentBuffer]);
+
             if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, m_waitFences[m_currentBuffer]); result != VK_SUCCESS) {
                 VK_ERROR("renderFunction() : failed to queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
 
@@ -208,6 +193,7 @@ namespace SR_GRAPH_NS {
 
     EvoVulkan::Core::FrameResult VulkanKernel::QueuePresent() {
         SR_TRACY_ZONE;
+        SR_TRACY_ZONE_COLOR(0x008800);
         return Super::QueuePresent();
     }
 
@@ -234,6 +220,13 @@ namespace SR_GRAPH_NS {
 
     void VulkanKernel::WaitFences() {
         SR_TRACY_ZONE;
+        SR_TRACY_ZONE_COLOR(0x0000FF);
         Super::WaitFences();
+    }
+
+    void VulkanKernel::WaitAllFences() {
+        SR_TRACY_ZONE;
+        SR_TRACY_ZONE_COLOR(0xFF0000);
+        Super::WaitAllFences();
     }
 }

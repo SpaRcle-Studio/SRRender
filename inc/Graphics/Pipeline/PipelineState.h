@@ -88,8 +88,6 @@ namespace SR_GRAPH_NS {
 
         bool hasRenderData = false;
 
-        int32_t buildIteration = 0;
-
         int32_t UBOId = SR_ID_INVALID;
         int32_t FBOId = SR_ID_INVALID;
         int32_t SSBOId = SR_ID_INVALID;

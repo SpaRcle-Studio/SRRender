@@ -321,6 +321,9 @@ namespace SR_GRAPH_NS {
         }
 
         if (!pShader->IsSamplersValid()) {
+            SR_TRACY_ZONE_S("Shader error");
+            SR_TRACY_ZONE_COLOR(0xFF0000);
+
             std::string message = "Shader samplers is not valid!\n\tPath: " + pShader->GetResourcePath().ToStringRef();
             for (auto&& [name, sampler] : pShader->GetSamplers()) {
                 if (m_pipeline->IsSamplerValid(sampler.samplerId)) {

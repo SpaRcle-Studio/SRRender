@@ -42,13 +42,11 @@ namespace SR_GRAPH_NS {
 
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
-        if (GetPipeline()->GetCurrentBuildIteration() == 0) {
-            if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
-                UseSamplers(ShaderUseInfo(m_shader));
-                m_descriptorManager.Flush();
-            }
-            GetPipeline()->GetCurrentShader()->FlushConstants();
+        if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
+            UseSamplers(ShaderUseInfo(m_shader));
+            m_descriptorManager.Flush();
         }
+        GetPipeline()->GetCurrentShader()->FlushConstants();
 
         if (result != DescriptorManager::BindResult::Failed) {
             GetPipeline()->Draw(m_vertices);

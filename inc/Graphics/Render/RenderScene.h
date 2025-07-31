@@ -161,7 +161,7 @@ namespace SR_GRAPH_NS {
 
         SR_MATH_NS::UVector2 m_surfaceSize;
 
-        SR_HTYPES_NS::SafeVar<uint32_t> m_dirty = 0;
+        std::bitset<8> m_dirtyFrames;
 
         bool m_dirtyCameras = true;
         bool m_hasDrawData  = false;

@@ -203,7 +203,7 @@ namespace SR_GRAPH_UI_NS {
             m_activeOperation = GizmoOperation::None;
         }
 
-        auto&& mousePos = GetCamera()->GetMousePos();
+        auto&& mousePos = pCamera->GetMousePos();
         if (!m_lastMousePos.IsFinite()) {
             m_lastMousePos = mousePos;
         }

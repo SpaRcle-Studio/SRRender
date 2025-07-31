@@ -14,26 +14,22 @@ namespace SR_GRAPH_NS {
         auto&& pPipeline = GetPipeline();
 
         pPipeline->SetCurrentFrameBuffer(nullptr);
+        pPipeline->BindFrameBuffer(nullptr);
 
-        for (uint8_t i = 0; i < pPipeline->GetBuildIterationsCount(); ++i) {
-            pPipeline->SetBuildIteration(i);
+        pPipeline->ClearBuffers(m_color.r, m_color.g, m_color.b, m_color.a, m_depth, 1);
 
-            pPipeline->BindFrameBuffer(nullptr);
-            pPipeline->ClearBuffers(m_color.r, m_color.g, m_color.b, m_color.a, m_depth, 1);
+        pPipeline->BeginCmdBuffer();
+        {
+            pPipeline->BeginRender();
 
-            pPipeline->BeginCmdBuffer();
-            {
-                pPipeline->BeginRender();
+            pPipeline->SetViewport();
+            pPipeline->SetScissor();
 
-                pPipeline->SetViewport();
-                pPipeline->SetScissor();
+            GroupPass::Render();
 
-                GroupPass::Render();
-
-                pPipeline->EndRender();
-            }
-            pPipeline->EndCmdBuffer();
+            pPipeline->EndRender();
         }
+        pPipeline->EndCmdBuffer();
 
         return true;
     }

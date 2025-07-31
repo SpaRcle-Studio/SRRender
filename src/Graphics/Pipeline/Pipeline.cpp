@@ -292,11 +292,6 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void Pipeline::SetBuildIteration(uint8_t iteration) {
-        ++m_state.operations;
-        m_state.buildIteration = iteration;
-    }
-
     bool Pipeline::BeginDrawOverlay(OverlayType overlayType) {
         ++m_state.operations;
 
@@ -344,11 +339,8 @@ namespace SR_GRAPH_NS {
     }
 
     void Pipeline::SetDirty(bool dirty) {
+        ++m_state.operations;
         m_dirty = dirty;
-
-        if (!m_dirty) {
-            m_buildState = m_state;
-        }
     }
 
     bool Pipeline::PreInit(const PipelinePreInitInfo& info) {
@@ -561,5 +553,24 @@ namespace SR_GRAPH_NS {
             }
         }
         return false;
+    }
+
+    const PipelineState& Pipeline::GetBuildState(uint8_t frameIndex) const {
+        static PipelineState emptyState;
+        if (frameIndex >= m_buildStates.size()) {
+            SRHalt("Pipeline::GetBuildState() : frame index out of range! Index: {}, Size: {}", frameIndex, m_buildStates.size());
+            return emptyState;
+        }
+        return m_buildStates[frameIndex];
+    }
+
+    void Pipeline::OnFrameBuildEnd() {
+        m_buildStates.resize(GetSwapchainImagesCount());
+        const uint8_t frameIndex = GetCurrentFrameIndex();
+        if (frameIndex >= m_buildStates.size()) {
+            SRHalt("Pipeline::OnFrameBuildEnd() : frame index out of range! Index: {}, Size: {}", frameIndex, m_buildStates.size());
+            return;
+        }
+        m_buildStates[frameIndex] = m_state;
     }
 }

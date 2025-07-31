@@ -237,15 +237,13 @@ namespace SR_GTYPES_NS {
 
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
-        if (GetPipeline()->GetCurrentBuildIteration() == 0) {
-            if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-                UseSamplers();
-                UseSSBO();
-                MarkUniformsDirty(true);
-                m_descriptorManager.Flush();
-            }
-            GetPipeline()->GetCurrentShader()->FlushConstants();
+        if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
+            UseSamplers();
+            UseSSBO();
+            MarkUniformsDirty(true);
+            m_descriptorManager.Flush();
         }
+        GetPipeline()->GetCurrentShader()->FlushConstants();
 
         if (result != DescriptorManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
             if (IsSupportVBO()) {

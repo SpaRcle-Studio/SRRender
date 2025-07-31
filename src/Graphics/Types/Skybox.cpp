@@ -209,13 +209,11 @@ namespace SR_GTYPES_NS {
 
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
-        if (GetPipeline()->GetCurrentBuildIteration() == 0) {
-            if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
-                m_shader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
-                m_descriptorManager.Flush();
-            }
-            GetPipeline()->GetCurrentShader()->FlushConstants();
+        if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
+            m_shader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
+            m_descriptorManager.Flush();
         }
+        GetPipeline()->GetCurrentShader()->FlushConstants();
 
         GetPipeline()->BindVBO(m_VBO);
         GetPipeline()->BindIBO(m_IBO);

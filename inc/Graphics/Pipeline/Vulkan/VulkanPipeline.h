@@ -54,6 +54,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_MATH_NS::FColor GetPixelColor(uint32_t textureId, uint32_t x, uint32_t y) override;
         SR_NODISCARD void* GetCurrentShaderHandle() const override;
         SR_NODISCARD uint16_t GetSwapchainImagesCount() const override;
+        SR_NODISCARD uint8_t GetCurrentFrameIndex() const override;
 
         SR_NODISCARD EvoVulkan::Core::VulkanKernel* GetKernel() const noexcept { return m_kernel; }
         SR_NODISCARD VulkanTools::MemoryManager* GetMemoryManager() const noexcept { return m_memory; }

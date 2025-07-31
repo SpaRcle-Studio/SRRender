@@ -94,6 +94,8 @@ namespace SR_GRAPH_NS {
         virtual void WaitComputeIdle();
         virtual void WaitRenderIdle();
 
+        void OnFrameBuildEnd();
+
         /// ------------------------------------------ Работа с Overlay ------------------------------------------------
 
         virtual bool InitOverlay();
@@ -126,9 +128,9 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetCurrentFrameBufferLayer() const noexcept { ++m_state.operations; return m_state.frameBufferLayer; }
         SR_NODISCARD bool IsDirty() const noexcept { ++m_state.operations; return m_dirty; }
         SR_NODISCARD FrameBufferQueue& GetQueue() noexcept { ++m_state.operations; return m_fboQueue; }
-        SR_NODISCARD uint8_t GetCurrentBuildIteration() const noexcept { ++m_state.operations; return m_state.buildIteration; }
         SR_NODISCARD RenderStrategy* GetCurrentRenderStrategy() const noexcept { ++m_state.operations; return m_state.pRenderStrategy; }
 
+        SR_NODISCARD virtual uint8_t GetCurrentFrameIndex() const { return 0; }
         SR_NODISCARD virtual void* GetCurrentShaderHandle() const { return nullptr; }
         SR_NODISCARD virtual void* GetCurrentFBOHandle() const { return nullptr; }
         SR_NODISCARD virtual std::set<void*> GetFBOHandles() const { return std::set<void*>(); /** NOLINT */ }
@@ -168,7 +170,6 @@ namespace SR_GRAPH_NS {
         /// Если грязный, то будет перестроена сцена
         /// Если чистый, то считаем, что постороение сцены завершено
         virtual void SetDirty(bool dirty);
-        virtual void SetBuildIteration(uint8_t iteration);
 
         virtual uint64_t GetUsedMemory() const { return 0; }
 
@@ -182,7 +183,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD uint32_t GetFramesPerSecond() const noexcept { return m_framesPerSecond; }
         SR_NODISCARD const PipelineState& GetPreviousState() const { return m_previousState; }
-        SR_NODISCARD const PipelineState& GetBuildState() const { return m_buildState; }
+        SR_NODISCARD const PipelineState& GetBuildState(uint8_t frameIndex) const;
         SR_NODISCARD const PipelineState& GetState() const { return m_state; }
         SR_NODISCARD uint8_t GetSamplesCount() const;
         SR_NODISCARD bool IsMultiSamplingSupported() const noexcept;
@@ -304,7 +305,7 @@ namespace SR_GRAPH_NS {
         PipelineState m_state;
         PipelineState m_previousState;
         /// Состояние, которое было на момент постоения сцены рендера
-        PipelineState m_buildState;
+        std::vector<PipelineState> m_buildStates;
 
         /// Все параметры, относящиется к мультисемплингу
         std::optional<uint8_t> m_newSampleCount;

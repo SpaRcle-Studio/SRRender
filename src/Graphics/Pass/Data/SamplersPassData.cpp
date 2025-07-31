@@ -105,6 +105,8 @@ namespace SR_GRAPH_NS {
     }
 
     void SamplersPassData::UseSamplers(ShaderUseInfo info) {
+        SR_TRACY_ZONE;
+
         for (auto&& sampler : m_samplers) {
             if (sampler.pTexture) {
                 const uint32_t id = sampler.pTexture->GetId();

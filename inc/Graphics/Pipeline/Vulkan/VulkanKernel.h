@@ -47,6 +47,8 @@ namespace SR_GRAPH_NS {
 
     private:
         void WaitFences() override;
+        void WaitAllFences() override;
+
         EvoVulkan::Core::RenderResult Render() override;
         EvoVulkan::Core::FrameResult PrepareFrame() override;
         EvoVulkan::Core::FrameResult SubmitFrame() override;
