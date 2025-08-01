@@ -2,10 +2,13 @@
 // Created by Monika on 02.06.2024.
 //
 
+#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Pass/MeshDrawerPass.h>
 #include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Types/Mesh.h>
+#include <Graphics/Material/BaseMaterial.h>
 
 #include <Utils/ECS/LayerManager.h>
 
@@ -17,6 +20,7 @@ namespace SR_GRAPH_NS {
         , m_renderStrategy(pStrategy)
     {
         SRAssert(pStrategy && pDrawer);
+        m_renderStageId = pDrawer->GetRenderStageId();
         m_renderContext = pStrategy->GetRenderContext();
         m_renderScene = pStrategy->GetRenderScene();
         m_pipeline = m_renderContext->GetPipeline().Get();
@@ -30,7 +34,7 @@ namespace SR_GRAPH_NS {
 
         for (auto&& [layer, queue] : m_queues) {
             for (auto&& meshInfo : queue) {
-                meshInfo.pMesh->GetRenderQueues().Remove({ this, meshInfo.shaderUseInfo });
+                meshInfo.pMesh->GetRenderQueues().Remove(RenderQueueInfo { .pRenderQueue = this, .pShader = nullptr });
                 if (meshInfo.pMesh->GetRenderQueues().empty()) {
                     meshInfo.pMesh->SetUniformsClean();
                 }
@@ -49,14 +53,11 @@ namespace SR_GRAPH_NS {
 
         MeshInfo meshInfo;
         meshInfo.pMesh = info.pMesh;
-        meshInfo.shaderUseInfo = GetShaderUseInfo(info);
+        meshInfo.pShader = info.pMaterial->GetShader(m_renderStageId);
         meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
 
-        ShaderInfo shaderInfo;
-        shaderInfo.info = meshInfo.shaderUseInfo;
-
-        info.pMesh->GetRenderQueues().Add({ this, meshInfo.shaderUseInfo });
+        info.pMesh->GetRenderQueues().Add(RenderQueueInfo { .pRenderQueue = this, .pShader = meshInfo.pShader });
 
         for (auto&& [layer, queue] : m_queues) {
             if (layer == info.layer) {
@@ -88,12 +89,19 @@ namespace SR_GRAPH_NS {
 
         MeshInfo meshInfo;
         meshInfo.pMesh = info.pMesh;
-        meshInfo.shaderUseInfo = GetShaderUseInfo(info);
         meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
 
         auto&& queues = info.pMesh->GetRenderQueues();
-        queues.Remove({ this, meshInfo.shaderUseInfo });
+        auto&& pIt = queues.LowerBound(RenderQueueInfo { .pRenderQueue = this, .pShader = nullptr });
+
+        if (pIt == queues.end()) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("RenderQueue::UnRegister() : queue not found!");
+            return;
+        }
+
+        meshInfo.pShader = pIt->pShader;
+        queues.Erase(pIt);
 
         if (!pQueue->Remove(meshInfo)) {
             SRHalt("RenderQueue::UnRegister() : mesh not found!");
@@ -111,8 +119,9 @@ namespace SR_GRAPH_NS {
 
     bool RenderQueue::Render() {
         SR_TRACY_ZONE;
-
         SRAssert(m_isInitialized);
+
+        m_pipeline->SetRenderStageId(m_renderStageId);
 
         PrepareLayers();
 
@@ -134,12 +143,14 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        m_pipeline->SetRenderStageId(m_renderStageId);
+
         UpdateShaders();
         UpdateMeshes();
     }
 
-    void RenderQueue::OnMeshDirty(MeshPtr pMesh, ShaderUseInfo info) {
-        m_meshes.emplace_back(pMesh, info);
+    void RenderQueue::OnMeshDirty(SR_GTYPES_NS::Mesh* pMesh, SR_GTYPES_NS::Shader* pShader) {
+        m_meshes.emplace_back(MeshShaderPair { .pMesh = pMesh, .pShader = pShader });
     }
 
     void RenderQueue::UpdateShaders() {
@@ -149,9 +160,9 @@ namespace SR_GRAPH_NS {
         auto pEnd = pStart + m_shaders.size();
 
         for (auto* pElement = pStart; pElement < pEnd; ++pElement) {
-            if (pElement->pShader->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
+            if ((*pElement)->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
                 m_meshDrawerPass->UseSharedUniforms(*pElement);
-                pElement->pShader->EndSharedUBO();
+                (*pElement)->EndSharedUBO();
             }
         }
     }
@@ -163,8 +174,8 @@ namespace SR_GRAPH_NS {
         auto pEnd = pStart + m_meshes.size();
 
         for (auto* pElement = pStart; pElement < pEnd; ++pElement) {
-            const auto pMesh = pElement->first;
-            auto& info = pElement->second;
+            const auto pMesh = pElement->pMesh;
+            const auto pShader = pElement->pShader;
 
             pMesh->SetUniformsClean();
 
@@ -173,12 +184,12 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            m_pipeline->SetCurrentShader(info.pShader.Get());
+            m_pipeline->SetCurrentShader(pShader);
 
             /// Если меш не был отрисован, то бинд не пройдет
             if (m_uboManager.BindNoDublicateUBO(virtualUbo) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
-                m_meshDrawerPass->UseUniforms(info, pMesh);
-                SR_MAYBE_UNUSED_VAR info.pShader->Flush();
+                m_meshDrawerPass->UseUniforms(pShader, pMesh);
+                SR_MAYBE_UNUSED_VAR pShader->Flush();
             }
         }
 
@@ -202,7 +213,7 @@ namespace SR_GRAPH_NS {
     void RenderQueue::Render(const SR_UTILS_NS::StringAtom& layer, RenderQueue::Queue& queue) {
         SR_TRACY_ZONE_S(layer.c_str());
 
-        ShaderPtr pCurrentShader = nullptr;
+        SR_GTYPES_NS::Shader* pCurrentShader = nullptr;
         VBO currentVBO = 0;
 
         MeshInfo* pStart = queue.data();
@@ -219,15 +230,15 @@ namespace SR_GRAPH_NS {
             }
 
             const bool invalidVBO = info.vbo == SR_INVALID_VBO && info.pMesh->IsSupportVBO();
-            if (!info.shaderUseInfo.pShader || invalidVBO) SR_UNLIKELY_ATTRIBUTE {
+            if (!info.pShader || invalidVBO) SR_UNLIKELY_ATTRIBUTE {
                 pElement->state = QUEUE_STATE_ERROR;
                 ++pElement;
                 continue;
             }
 
-            if (info.shaderUseInfo.pShader != pCurrentShader) SR_UNLIKELY_ATTRIBUTE {
-                pCurrentShader = info.shaderUseInfo.pShader;
-                shaderOk = UseShader(info.shaderUseInfo);
+            if (info.pShader != pCurrentShader) SR_UNLIKELY_ATTRIBUTE {
+                pCurrentShader = info.pShader;
+                shaderOk = UseShader(pCurrentShader);
                 currentVBO = SR_ID_INVALID;
                 if (!shaderOk) SR_UNLIKELY_ATTRIBUTE {
                     pElement->state = QUEUE_STATE_SHADER_ERROR;
@@ -235,9 +246,9 @@ namespace SR_GRAPH_NS {
                     continue;
                 }
 
-                const auto pIt = m_shaders.LowerBound(info.shaderUseInfo);
-                if (pIt == m_shaders.end() || pIt->pShader != info.shaderUseInfo.pShader) {
-                    m_shaders.Insert(pIt, info.shaderUseInfo);
+                const auto pIt = m_shaders.LowerBound(pCurrentShader);
+                if (pIt == m_shaders.end() || *pIt != pCurrentShader) {
+                    m_shaders.Insert(pIt, pCurrentShader);
                 }
             }
 
@@ -271,12 +282,12 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         auto pEnd = queue.data() + queue.size();
-        auto pShader = pElement->shaderUseInfo.pShader;
+        auto pShader = pElement->pShader;
 
         ++pElement;
 
         while (pElement != pEnd) SR_UNLIKELY_ATTRIBUTE {
-            if (pElement->shaderUseInfo.pShader != pShader) SR_UNLIKELY_ATTRIBUTE {
+            if (pElement->pShader != pShader) SR_UNLIKELY_ATTRIBUTE {
                 return pElement;
             }
             ++pElement;
@@ -304,20 +315,18 @@ namespace SR_GRAPH_NS {
         //return queue.UpperBound(pElement, queue.data() + queue.size(), *pElement, predicate);
     }
 
-    bool RenderQueue::UseShader(ShaderUseInfo info) {
+    bool RenderQueue::UseShader(SR_GTYPES_NS::Shader* pShader) {
         SR_TRACY_ZONE;
-
-        auto pShader = info.pShader;
 
         if (pShader->Use() == ShaderBindResult::Failed) {
             return false;
         }
 
-        m_renderContext->SetCurrentShader(pShader.Get());
+        m_renderContext->SetCurrentShader(pShader);
 
         if (m_pipeline->IsShaderChanged()) {
-            m_meshDrawerPass->UseConstants(info);
-            m_meshDrawerPass->UseSamplers(info);
+            m_meshDrawerPass->UseConstants(pShader);
+            m_meshDrawerPass->UseSamplers(pShader);
         }
 
         if (!pShader->IsSamplersValid()) {
@@ -372,12 +381,23 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    SR_GRAPH_NS::ShaderUseInfo RenderQueue::GetShaderUseInfo(const MeshRegistrationInfo& info) const {
-        if (!info.pShader) SR_UNLIKELY_ATTRIBUTE {
+    /*SR_GRAPH_NS::ShaderUseInfo RenderQueue::GetShaderUseInfo(const MeshRegistrationInfo& info) const {
+        SR_TRACY_ZONE;
+
+        if (!info.pMaterial) SR_UNLIKELY_ATTRIBUTE {
             return SR_GRAPH_NS::ShaderUseInfo(nullptr);
         }
 
-        return m_meshDrawerPass->ReplaceShader(info.pShader);
-        return SR_GRAPH_NS::ShaderUseInfo();
-    }
+        auto&& pMaterialData = info.pMaterial->GetMaterialData();
+        if (!pMaterialData) SR_UNLIKELY_ATTRIBUTE {
+            return SR_GRAPH_NS::ShaderUseInfo(nullptr);
+        }
+
+        auto&& pStageData = pMaterialData->GetShaderData(m_renderStageId);
+        if (!pStageData) SR_LIKELY_ATTRIBUTE {
+            return SR_GRAPH_NS::ShaderUseInfo(nullptr);
+        }
+
+        return SR_GRAPH_NS::ShaderUseInfo(pStageData->pShader.Get());
+    }*/
 }

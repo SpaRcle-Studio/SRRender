@@ -104,7 +104,7 @@ namespace SR_GRAPH_NS {
         m_samplers.clear();
     }
 
-    void SamplersPassData::UseSamplers(ShaderUseInfo info) {
+    void SamplersPassData::UseSamplers(SR_GTYPES_NS::Shader* pShader) {
         SR_TRACY_ZONE;
 
         for (auto&& sampler : m_samplers) {
@@ -113,7 +113,7 @@ namespace SR_GRAPH_NS {
                 if (id == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                     continue;
                 }
-                info.pShader->SetSampler2D(sampler.id, static_cast<int32_t>(id));
+                pShader->SetSampler2D(sampler.id, static_cast<int32_t>(id));
                 continue;
             }
 
@@ -121,7 +121,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            info.pShader->SetSampler2D(sampler.id, static_cast<int32_t>(sampler.textureId));
+            pShader->SetSampler2D(sampler.id, static_cast<int32_t>(sampler.textureId));
         }
     }
 

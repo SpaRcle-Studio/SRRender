@@ -44,7 +44,7 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         if (rawPath.IsEmpty()) {
-            SR_ERROR("Texture::Load() : path is empty!");
+            SRHalt("Texture::Load() : path is empty!");
             return nullptr;
         }
 

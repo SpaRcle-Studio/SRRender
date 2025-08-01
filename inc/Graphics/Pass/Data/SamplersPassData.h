@@ -48,7 +48,7 @@ namespace SR_GRAPH_NS {
     public:
         //void LoadSamplersPass(const SR_XML_NS::Node& passNode);
 
-        void UseSamplers(ShaderUseInfo info);
+        void UseSamplers(SR_GTYPES_NS::Shader* pShader);
 
         SR_NODISCARD bool HasSamplers() const noexcept { return !m_samplers.empty(); }
         SR_NODISCARD bool IsSamplersDirty() const noexcept { return m_dirtySamplers; }

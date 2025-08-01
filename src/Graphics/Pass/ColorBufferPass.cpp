@@ -18,14 +18,12 @@ namespace SR_GRAPH_NS {
         auto pColorBuffer = static_cast<ColorBufferPass*>(GetMeshDrawerPass());
         pColorBuffer->IncrementColorIndex();
         pColorBuffer->SetMeshIndex(info.pMesh);
-        info.shaderUseInfo.pShader->SetConstVec3(SHADER_PC_COLOR_BUFFER_VALUE, pColorBuffer->GetMeshColor());
+        info.pShader->SetConstVec3(SHADER_PC_COLOR_BUFFER_VALUE, pColorBuffer->GetMeshColor());
         info.pMesh->Draw();
     }
 
-    void ColorBufferPass::UseUniforms(ShaderUseInfo info, MeshPtr pMesh) {
-        if (info.useMaterialUniforms) {
-            pMesh->UseMaterial();
-        }
+    void ColorBufferPass::UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) {
+        Super::UseUniforms(pShader, pMesh);
         pMesh->UseModelMatrix();
     }
 
@@ -42,9 +40,9 @@ namespace SR_GRAPH_NS {
         return nullValue;
     }
 
-    void ColorBufferPass::UseConstants(ShaderUseInfo info) {
-        Super::UseConstants(info);
-        info.pShader->SetConstInt(SHADER_PC_COLOR_BUFFER_MODE, 1);
+    void ColorBufferPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
+        Super::UseConstants(pShader);
+        pShader->SetConstInt(SHADER_PC_COLOR_BUFFER_MODE, 1);
     }
 
     bool ColorBufferPass::Render() {

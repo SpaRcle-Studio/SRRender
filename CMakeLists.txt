@@ -70,7 +70,7 @@ if (NOT SR_EMSCRIPTEN)
     add_subdirectory(libs/cmp_core)
 endif()
 
-set(SR_GRAPHICS_SOURCES cxx/Graphics.cxx cxx/ImGUI.cxx cxx/SRSL.cxx cxx/Pass.cxx cxx/GUI.cxx cxx/Animations.cxx cxx/UI.cxx)
+set(SR_GRAPHICS_SOURCES cxx/Graphics.cxx cxx/ImGUI.cxx cxx/SRSL.cxx cxx/Pass.cxx cxx/GUI.cxx cxx/Animations.cxx cxx/UI.cxx cxx/Render.cxx)
 
 if (SR_GRAPHICS_STATIC_LIBRARY)
     add_library(Graphics STATIC ${SR_GRAPHICS_SOURCES})

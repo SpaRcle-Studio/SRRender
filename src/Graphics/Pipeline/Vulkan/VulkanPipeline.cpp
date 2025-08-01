@@ -19,8 +19,6 @@
     //#include <Graphics/Pipeline/Vulkan/X11SurfaceInit.h>
 #endif
 
-#include <EvoVulkan/Types/VmaBuffer.h>
-
 namespace SR_GRAPH_NS {
     std::string VulkanPipeline::GetVendor() const {
         if (m_kernel && m_kernel->GetDevice()) {

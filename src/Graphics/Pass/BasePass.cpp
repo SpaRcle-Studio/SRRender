@@ -83,8 +83,8 @@ namespace SR_GRAPH_NS {
         m_samplers.SetRenderTechnique(pRenderTechnique);
     }
 
-    void BasePass::UseSamplers(const ShaderUseInfo& info) {
-        m_samplers.UseSamplers(info);
+    void BasePass::UseSamplers(SR_GTYPES_NS::Shader* pShader) {
+        m_samplers.UseSamplers(pShader);
     }
 
     bool BasePass::IsActive() const {

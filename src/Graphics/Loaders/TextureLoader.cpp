@@ -4,12 +4,13 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 
+#include <Graphics/Loaders/TextureLoader.h>
+#include <Graphics/Types/Texture.h>
+
 #include <Utils/Common/StringUtils.h>
 #include <Utils/Common/ToString.h>
 #include <Utils/Debug.h>
-
-#include <Graphics/Loaders/TextureLoader.h>
-#include <Graphics/Types/Texture.h>
+#include <Utils/Common/Features.h>
 
 #include <stbi/stb_image.c> /// NOLINT
 #include <stbi/stbi_image_write.c> /// NOLINT

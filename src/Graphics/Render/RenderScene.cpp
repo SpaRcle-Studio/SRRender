@@ -11,6 +11,7 @@
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Memory/CameraManager.h>
 #include <Graphics/Types/Camera.h>
+#include <Graphics/Font/Text.h>
 #include <Graphics/Types/Geometry/DebugLine.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Material/FileMaterial.h>
@@ -304,13 +305,13 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (auto&& pText = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh); pText && !pText->GetFont()) {
-            pText->SetFont("Engine/Fonts/CalibriL.ttf");
+        if (!pMesh->GetMaterial()->IsValid()) {
+            SR_ERROR("RenderScene::Register() : mesh have invalid material! Mesh: " + pMesh->GetMeshIdentifier());
+            return;
         }
 
-        if (!pMesh->GetMaterial()->GetShader()) {
-            SR_ERROR("RenderScene::Register() : mesh have not shader! Mesh: " + pMesh->GetMeshIdentifier());
-            return;
+        if (auto&& pText = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh); pText && !pText->GetFont()) {
+            pText->SetFont("Engine/Fonts/CalibriL.ttf");
         }
 
         /// Меш мог быть зарегистрирован при инициализации дефолтных материалов

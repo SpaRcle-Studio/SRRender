@@ -57,6 +57,8 @@ namespace SR_GRAPH_NS {
         std::vector<MaterialShaderProperty> uniforms;
         /// @property
         std::vector<MaterialShaderProperty> samplers;
+        /// @property
+        MaterialStageUseType useType = MaterialStageUseType::Full;
 
         void OnPreLoad() override;
         void OnPostLoad() override;
@@ -88,8 +90,6 @@ namespace SR_GRAPH_NS {
 
         void Save(SR_UTILS_NS::ISerializer& serializer) const override;
         bool Load(SR_UTILS_NS::IDeserializer& deserializer) override;
-
-        SR_NODISCARD SR_GTYPES_NS::Shader::Ptr GetShader(const Pipeline* pPipeline) const noexcept;
 
         void Finalize();
 

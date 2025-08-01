@@ -50,11 +50,12 @@ namespace SR_GRAPH_NS {
         void SR_FASTCALL SetBool(SR_UTILS_NS::StringAtom id, bool v) noexcept;
         void SR_FASTCALL SetTexture(SR_UTILS_NS::StringAtom id, const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>& pTexture) noexcept;
 
+        SR_NODISCARD bool IsValid() const;
         SR_NODISCARD SR_UTILS_NS::StringAtom GetRenderStageId() const noexcept;
-        SR_NODISCARD bool IsTransparent() const;
-        SR_NODISCARD ShaderPtr GetShader() const;
         SR_NODISCARD RenderContextPtr GetContext() const { return m_context; }
         SR_NODISCARD virtual const MaterialData::Ptr& GetMaterialData() const noexcept = 0;
+        SR_NODISCARD SR_GTYPES_NS::Shader* GetDefaultShader() const noexcept;
+        SR_NODISCARD SR_GTYPES_NS::Shader* GetShader(SR_UTILS_NS::StringAtom id) const noexcept;
 
         SR_NODISCARD virtual MaterialType GetMaterialType() const noexcept = 0;
 

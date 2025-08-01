@@ -15,15 +15,17 @@ namespace SR_GTYPES_NS {
     void DebugLine::UseMaterial() {
         SR_TRACY_ZONE;
 
-        if (auto&& pShader = GetShader()) {
-            pShader->SetVec3(SHADER_LINE_START_POINT, m_startPoint.Cast<float_t>());
-            pShader->SetVec3(SHADER_LINE_END_POINT, m_endPoint.Cast<float_t>());
-            pShader->SetVec4(SHADER_LINE_COLOR, SR_MATH_NS::Vector4<float_t>(
-                m_color.r / 255,
-                m_color.g / 255,
-                m_color.b / 255,
-                m_color.a / 255
-            ));
+        if (auto&& pMaterial = GetMaterial()) {
+            if (auto&& pShader = pMaterial->GetDefaultShader()) {
+                pShader->SetVec3(SHADER_LINE_START_POINT, m_startPoint.Cast<float_t>());
+                pShader->SetVec3(SHADER_LINE_END_POINT, m_endPoint.Cast<float_t>());
+                pShader->SetVec4(SHADER_LINE_COLOR, SR_MATH_NS::Vector4<float_t>(
+                    m_color.r / 255,
+                    m_color.g / 255,
+                    m_color.b / 255,
+                    m_color.a / 255
+                ));
+            }
         }
 
         Super::UseMaterial();

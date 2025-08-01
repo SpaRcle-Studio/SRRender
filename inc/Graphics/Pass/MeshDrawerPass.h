@@ -16,7 +16,7 @@ namespace SR_GRAPH_NS {
     // class CascadedShadowMapPass;
     // class ShadowMapPass;
 
-    class MeshDrawerPass : public BasePass, public LayerFilterPredicate, public ShaderReplacePredicate, public PriorityFilterPredicate {
+    class MeshDrawerPass : public BasePass, public LayerFilterPredicate, public PriorityFilterPredicate { // , public ShaderReplacePredicate
         SR_CLASS()
         using Super = BasePass;
     public:
@@ -34,46 +34,39 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool HasPreRender() const noexcept override { return false; }
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
         SR_NODISCARD virtual bool IsNeedUpdate() const noexcept { return false; }
-        SR_NODISCARD virtual bool IsNeedUseMaterials() const noexcept { return m_useMaterials; }
         SR_NODISCARD virtual uint8_t GetMeshDrawerFBOLayers() const noexcept { return 1; }
 
-        virtual void UseUniforms(ShaderUseInfo info, MeshPtr pMesh);
-        virtual void UseSharedUniforms(ShaderUseInfo info);
-        virtual void UseConstants(ShaderUseInfo info);
+        virtual void UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh);
+        virtual void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader);
+        virtual void UseConstants(SR_GTYPES_NS::Shader* pShader);
 
-        SR_NODISCARD ShaderUseInfo ReplaceShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& pShader) const override;
+        //SR_NODISCARD ShaderUseInfo ReplaceShader(SR_GTYPES_NS::Shader* pShader) const override;
         SR_NODISCARD bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const override;
         SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const override { return true; }
 
         SR_NODISCARD const std::vector<RenderQueuePtr>& GetRenderQueues() const noexcept { return m_renderQueues; }
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetRenderStageId() const noexcept { return m_renderStageId; }
 
     protected:
         SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
         SR_NODISCARD virtual RenderQueuePtr AllocateRenderQueue();
 
-    private:
-        void ClearOverrideShaders();
+    //private:
+        //void ClearOverrideShaders();
 
     private:
-        bool m_passWasRendered = false;
-
         std::vector<RenderQueuePtr> m_renderQueues;
+        SR_HTYPES_NS::Time& m_time;
 
         //ShadowMapPass* m_shadowMapPass = nullptr;
         //CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;
-
-        SR_HTYPES_NS::Time& m_time;
-
-        ska::flat_hash_map<ShaderPtr, ShaderUseInfo> m_shaderReplacements;
-        ska::flat_hash_map<SR_SRSL_NS::ShaderType, ShaderUseInfo> m_shaderTypeReplacements;
-
-        /// @property
-        bool m_useMaterials = true;
 
         /// @property
         std::set<SR_UTILS_NS::StringAtom> m_allowedLayers;
         /// @property
         std::set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
+        /// @property
+        SR_UTILS_NS::StringAtom m_renderStageId;
 
     };
 }

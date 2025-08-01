@@ -53,28 +53,27 @@ namespace SR_GRAPH_NS {
     void BaseMaterial::Use() {
         SR_TRACY_ZONE;
 
-        InitContext();
-
         if (auto&& pData = GetMaterialData()) {
+            InitContext();
             pData->UseUniforms(m_context->GetPipeline().Get());
         }
     }
 
-    bool BaseMaterial::IsTransparent() const {
-        if (auto&& pShader = GetShader()) {
-            return pShader->IsBlendEnabled();
-        }
-        SRHalt("BaseMaterial::IsTransparent() : shader is nullptr!");
-        return false;
-    }
+    //bool BaseMaterial::IsTransparent() const {
+    //    if (auto&& pShader = GetShader()) {
+    //        return pShader->IsBlendEnabled();
+    //    }
+    //    SRHalt("BaseMaterial::IsTransparent() : shader is nullptr!");
+    //    return false;
+    //}
 
-    BaseMaterial::ShaderPtr BaseMaterial::GetShader() const {
-        InitContext();
-        if (auto&& pData = GetMaterialData()) {
-            return pData->GetShader(m_context->GetPipeline().Get());
-        }
-        return nullptr;
-    }
+    //BaseMaterial::ShaderPtr BaseMaterial::GetShader() const {
+    //    InitContext();
+    //    if (auto&& pData = GetMaterialData()) {
+    //        return pData->GetShader(m_context->GetPipeline().Get());
+    //    }
+    //    return nullptr;
+    //}
 
     uint32_t BaseMaterial::RegisterMesh(MeshPtr pMesh) {
         SRAssert(pMesh);
@@ -134,9 +133,8 @@ namespace SR_GRAPH_NS {
     void BaseMaterial::UseSamplers() {
         SR_TRACY_ZONE;
 
-        InitContext();
-
         if (auto&& pData = GetMaterialData()) {
+            InitContext();
             pData->UseSamplers(m_context->GetPipeline().Get());
         }
     }
@@ -167,5 +165,35 @@ namespace SR_GRAPH_NS {
     void BaseMaterial::DeInitMaterialDataSubscriptions() const {
         m_shaderChangedSubscription.Reset();
         m_propertyChangedSubscription.Reset();
+    }
+
+    bool BaseMaterial::IsValid() const {
+        auto&& pData = GetMaterialData();
+        if (!pData) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
+        return pData->GetDefaultShaderData().pShader;
+    }
+
+    SR_GTYPES_NS::Shader* BaseMaterial::GetDefaultShader() const noexcept {
+        auto&& pData = GetMaterialData();
+        if (!pData) SR_UNLIKELY_ATTRIBUTE {
+            return nullptr;
+        }
+        return pData->GetDefaultShaderData().pShader.Get();
+    }
+
+    SR_GTYPES_NS::Shader* BaseMaterial::GetShader(SR_UTILS_NS::StringAtom id) const noexcept {
+        auto&& pData = GetMaterialData();
+        if (!pData) SR_UNLIKELY_ATTRIBUTE {
+            return nullptr;
+        }
+        if (id.empty()) {
+            return pData->GetDefaultShaderData().pShader.Get();
+        }
+        if (auto&& pShaderData = pData->GetShaderData(id)) {
+            return pShaderData->pShader.Get();
+        }
+        return nullptr;
     }
 }

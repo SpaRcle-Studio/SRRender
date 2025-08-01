@@ -218,6 +218,8 @@ namespace SR_GRAPH_NS {
     }
 
     void IRenderTechnique::OnResize(const SR_MATH_NS::UVector2& size) {
+        SR_LOG("IRenderTechnique::OnResize() : resizing technique \"{}\" to {}x{}", m_data.name, size.x, size.y);
+
         m_surfaceSize = size;
 
         for (auto&& pController : m_data.frameBuffers) {

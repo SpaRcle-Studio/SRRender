@@ -409,15 +409,6 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    SR_GTYPES_NS::Shader::Ptr MaterialData::GetShader(const Pipeline* pPipeline) const noexcept {
-        SR_TRACY_ZONE;
-
-        if (auto&& pIt = m_shaders.find(pPipeline->GetRenderStageId()); pIt != m_shaders.end()) {
-            return pIt->second.pShader;
-        }
-        return m_defaultShader.pShader;
-    }
-
     void MaterialData::Finalize() {
         SR_TRACY_ZONE;
 
@@ -461,12 +452,16 @@ namespace SR_GRAPH_NS {
         const SR_UTILS_NS::StringAtom renderStageId = pPipeline->GetRenderStageId();
         SR_GTYPES_NS::Shader* pShader = pPipeline->GetCurrentShader();
 
-        MaterialShaderData* pShaderData = &m_defaultShader;
-        if (auto&& pIt = m_shaders.find(renderStageId); pIt != m_shaders.end()) {
-            pShaderData = &pIt->second;
+        const MaterialShaderData* pShaderData = GetShaderData(renderStageId);
+        if (!pShaderData) {
+            return;
         }
 
-        for (MaterialShaderProperty& uniform : pShaderData->uniforms) {
+        if (pShaderData->useType != MaterialStageUseType::Uniforms && pShaderData->useType != MaterialStageUseType::Full) {
+            return;
+        }
+
+        for (const MaterialShaderProperty& uniform : pShaderData->uniforms) {
             switch (uniform.type) {
                 case ShaderVarType::Int:
                 case ShaderVarType::Bool:
@@ -500,12 +495,16 @@ namespace SR_GRAPH_NS {
         const SR_UTILS_NS::StringAtom renderStageId = pPipeline->GetRenderStageId();
         SR_GTYPES_NS::Shader* pShader = pPipeline->GetCurrentShader();
 
-        MaterialShaderData* pShaderData = &m_defaultShader;
-        if (auto&& pIt = m_shaders.find(renderStageId); pIt != m_shaders.end()) {
-            pShaderData = &pIt->second;
+        const MaterialShaderData* pShaderData = GetShaderData(renderStageId);
+        if (!pShaderData) {
+            return;
         }
 
-        for (MaterialShaderProperty& sampler : pShaderData->samplers) {
+        if (pShaderData->useType != MaterialStageUseType::Samplers && pShaderData->useType != MaterialStageUseType::Full) {
+            return;
+        }
+
+        for (const MaterialShaderProperty& sampler : pShaderData->samplers) {
             if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data)) {
                 pShader->SetSampler2D(sampler.id, pTexture);
             }
@@ -516,17 +515,19 @@ namespace SR_GRAPH_NS {
     }
 
     MaterialShaderData* MaterialData::GetShaderData(SR_UTILS_NS::StringAtom id) noexcept {
+        if (id.empty()) {
+            return &m_defaultShader;
+        }
+
         if (auto&& pIt = m_shaders.find(id); pIt != m_shaders.end()) {
             return &pIt->second;
         }
+
         return nullptr;
     }
 
     const MaterialShaderData* MaterialData::GetShaderData(SR_UTILS_NS::StringAtom id) const noexcept {
-        if (auto&& pIt = m_shaders.find(id); pIt != m_shaders.end()) {
-            return &pIt->second;
-        }
-        return nullptr;
+        return const_cast<MaterialData*>(this)->GetShaderData(id);
     }
 
     void MaterialData::SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept {
@@ -717,6 +718,9 @@ namespace SR_GRAPH_NS {
     }
 
     void MaterialData::AddStage(SR_UTILS_NS::StringAtom stage) {
+        SRAssert2(!stage.empty(), "MaterialData::AddStage() : stage cannot be empty!");
+        SRAssert2(stage != "Default", "MaterialData::AddStage() : stage cannot be 'Default'!");
+
         if (HasStage(stage)) {
             SR_ERROR("MaterialData::AddStage() : stage already exists! Stage: {}", stage.ToString());
             return;

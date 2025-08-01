@@ -180,9 +180,9 @@ namespace SR_GTYPES_NS {
         }
     }
 
-    Mesh::ShaderPtr Mesh::GetShader() const {
-        return m_material ? m_material->GetShader() : nullptr;
-    }
+    //Mesh::ShaderPtr Mesh::GetShader() const {
+    //    return m_material ? m_material->GetShader() : nullptr;
+    //}
 
     void Mesh::UseMaterial() {
         SR_TRACY_ZONE;
@@ -408,7 +408,7 @@ namespace SR_GTYPES_NS {
         auto pStart = m_renderQueues.data();
         auto pEnd = pStart + m_renderQueues.size();
         for (auto pElement = pStart; pElement != pEnd; ++pElement) {
-            pElement->pRenderQueue->OnMeshDirty(this, pElement->shaderUseInfo);
+            pElement->pRenderQueue->OnMeshDirty(this, pElement->pShader);
         }
     }
 }

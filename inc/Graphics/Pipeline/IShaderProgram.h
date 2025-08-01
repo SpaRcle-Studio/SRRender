@@ -21,20 +21,35 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
-    struct ShaderUseInfo {
-        ShaderUseInfo() = default;
-        explicit ShaderUseInfo(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& pShader)
-            : pShader(pShader)
-            , ignoreReplace(false)
-            , useMaterialUniforms(true)
-            , useMaterialSamplers(true)
-        { }
+    SR_ENUM_NS_CLASS_T(MaterialStageUseType, uint8_t,
+        Full,
+        None,
+        Uniforms,
+        Samplers
+    );
 
-        SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader> pShader;
-        bool ignoreReplace       : 4;
-        bool useMaterialUniforms : 2;
-        bool useMaterialSamplers : 2;
-    };
+    //struct ShaderUseInfo {
+    //    ShaderUseInfo() = default;
+//
+    //    explicit ShaderUseInfo(SR_GTYPES_NS::Shader* pShader)
+     //       : pShader(pShader)
+            //, ignoreReplace(false)
+            //, useMaterialUniforms(true)
+            //, useMaterialSamplers(true)
+    //    { }
+
+        //ShaderUseInfo(SR_GTYPES_NS::Shader* pShader, MaterialStageUseType useType)
+        //    : pShader(pShader)
+            //, useType(useType)
+            //, ignoreReplace(false)
+            //, useMaterialUniforms(true)
+            //, useMaterialSamplers(true)
+        //{ }
+
+   //     SR_GTYPES_NS::Shader* pShader = nullptr;
+        //MaterialStageUseType useType = MaterialStageUseType::Full;
+        //bool ignoreReplace       : 4; /// возможно лишнее
+  //  };
 
     SR_ENUM_NS_CLASS_T(ShaderBindResult, uint8_t,
         Failed = 0,  /// false

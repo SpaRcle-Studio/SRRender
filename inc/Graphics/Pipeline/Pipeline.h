@@ -5,14 +5,15 @@
 #ifndef SR_ENGINE_PIPELINE_H
 #define SR_ENGINE_PIPELINE_H
 
-#include <Utils/Math/Vector3.h>
-#include <Utils/Types/SafePointer.h>
-#include <Utils/Types/PoolSet.h>
-
 #include <Graphics/Pipeline/PipelineState.h>
 #include <Graphics/Pipeline/FrameBufferQueue.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Overlay/OverlayType.h>
+#include <Graphics/Pipeline/TextureHelper.h>
+
+#include <Utils/Math/Vector3.h>
+#include <Utils/Types/SafePointer.h>
+#include <Utils/Types/PoolSet.h>
 
 namespace SR_GTYPES_NS {
     class Shader;
@@ -129,6 +130,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsDirty() const noexcept { ++m_state.operations; return m_dirty; }
         SR_NODISCARD FrameBufferQueue& GetQueue() noexcept { ++m_state.operations; return m_fboQueue; }
         SR_NODISCARD RenderStrategy* GetCurrentRenderStrategy() const noexcept { ++m_state.operations; return m_state.pRenderStrategy; }
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetRenderStageId() const { return m_renderStageId; }
 
         SR_NODISCARD virtual uint8_t GetCurrentFrameIndex() const { return 0; }
         SR_NODISCARD virtual void* GetCurrentShaderHandle() const { return nullptr; }
@@ -140,7 +142,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual uint8_t GetSupportedSamples() const noexcept { return m_supportedSampleCount; }
         SR_NODISCARD virtual bool IsShaderConstantSupport() const { ++m_state.operations; return false; }
         SR_NODISCARD virtual SR_MATH_NS::FColor GetPixelColor(uint32_t textureId, uint32_t x, uint32_t y) { return SR_MATH_NS::FColor(0.f); }
-        SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetRenderStageId() const { return m_renderStageId; }
         SR_NODISCARD virtual uint16_t GetSwapchainImagesCount() const { return 0; }
 
         virtual void SetSwapchainImagesCount(uint16_t count) { }

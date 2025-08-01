@@ -51,10 +51,10 @@ namespace SR_GRAPH_NS {
     bool MeshCluster::Add(Types::Mesh* pMesh) noexcept {
         SR_TRACY_ZONE;
 
-        const auto&& pShader = pMesh->GetShader();
+        //const auto&& pShader = pMesh->GetShader();
 
-        SRAssert(pMesh->GetPipeline());
-        SRAssert(pShader);
+        //SRAssert(pMesh->GetPipeline());
+        //SRAssert(pShader);
 
     // if (auto&& subClusterIt = m_subClusters.find(pShader); subClusterIt == m_subClusters.end()) {
     //     auto&& [subCluster, _] = m_subClusters.insert(std::make_pair(
@@ -122,20 +122,20 @@ namespace SR_GRAPH_NS {
                     }
 
                     /// Если изменил свой кластер (прозрачность), то убираем его из текущего
-                    if (ChangeCluster(pMesh)) {
-                        pMeshIt = group.erase(pMeshIt);
-                        dirty = true;
-                    }
-                    /// Мигрируем меш в другой саб кластер
-                    else if (pMesh->GetVBO() != vbo || pMaterial->GetShader() != pShader) {
-                        pMeshIt = group.erase(pMeshIt);
-                        Add(pMesh);
-                        dirty = true;
-                        goto repeat;
-                    }
-                    else {
-                        ++pMeshIt;
-                    }
+                    //if (ChangeCluster(pMesh)) {
+                    //    pMeshIt = group.erase(pMeshIt);
+                    //    dirty = true;
+                    //}
+                    ///// Мигрируем меш в другой саб кластер
+                    //else if (pMesh->GetVBO() != vbo || pMaterial->GetShader() != pShader) {
+                    //    pMeshIt = group.erase(pMeshIt);
+                    //    Add(pMesh);
+                    //    dirty = true;
+                    //    goto repeat;
+                    //}
+                    //else {
+                    //    ++pMeshIt;
+                    //}
                 }
 
                 if (group.empty()) {
@@ -166,11 +166,11 @@ namespace SR_GRAPH_NS {
     bool OpaqueMeshCluster::ChangeCluster(MeshCluster::MeshPtr pMesh) {
         SR_TRACY_ZONE;
 
-        if (pMesh->GetMaterial()->IsTransparent()) {
-            SR_LOG("OpaqueMeshCluster::ChangeCluster() : change the cluster \"opaque -> transparent\"");
-            m_transparent->Add(pMesh);
-            return true;
-        }
+        //if (pMesh->GetMaterial()->IsTransparent()) {
+        //    SR_LOG("OpaqueMeshCluster::ChangeCluster() : change the cluster \"opaque -> transparent\"");
+        //    m_transparent->Add(pMesh);
+        //    return true;
+        //}
 
         return false;
     }
@@ -178,11 +178,11 @@ namespace SR_GRAPH_NS {
     bool TransparentMeshCluster::ChangeCluster(MeshCluster::MeshPtr pMesh) {
         SR_TRACY_ZONE;
 
-        if (!pMesh->GetMaterial()->IsTransparent()) {
-            SR_LOG("TransparentMeshCluster::ChangeCluster() : change the cluster \"transparent -> opaque\"");
-            m_opaque->Add(pMesh);
-            return true;
-        }
+        //if (!pMesh->GetMaterial()->IsTransparent()) {
+        //    SR_LOG("TransparentMeshCluster::ChangeCluster() : change the cluster \"transparent -> opaque\"");
+        //    m_opaque->Add(pMesh);
+        //    return true;
+        //}
 
         return false;
     }

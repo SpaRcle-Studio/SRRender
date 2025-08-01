@@ -43,7 +43,7 @@ namespace SR_GRAPH_NS {
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
-            UseSamplers(ShaderUseInfo(m_shader));
+            UseSamplers(m_shader.Get());
             m_descriptorManager.Flush();
         }
         GetPipeline()->GetCurrentShader()->FlushConstants();

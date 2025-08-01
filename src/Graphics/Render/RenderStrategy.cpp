@@ -183,8 +183,7 @@ namespace SR_GRAPH_NS {
         MeshRegistrationInfo info = { };
 
         info.pMesh = pMesh;
-        info.pMaterial = pMesh->GetMaterial().Get(); /// Maybe need to use shared ptr instead of raw ptr
-        info.pShader = pMesh->GetShader();
+        info.pMaterial = pMesh->GetMaterial().Get();
         info.layer = pMesh->GetMeshLayer();
         info.pScene = GetRenderScene();
         info.poolId = m_meshPool.Add(pMesh);

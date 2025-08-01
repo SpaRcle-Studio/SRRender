@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_MESH_RENDER_QUEUE_H
 #define SR_ENGINE_GRAPHICS_MESH_RENDER_QUEUE_H
 
-#include <Graphics/macros.h>
+#include <Graphics/Utils/MeshUtils.h>
 
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/SortedVector.h>
@@ -27,8 +27,11 @@ namespace SR_GRAPH_NS {
         using ShaderPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>;
         using VBO = uint32_t;
         using Layer = SR_UTILS_NS::StringAtom;
-        using MeshPtr = SR_GTYPES_NS::Mesh*;
 
+        struct MeshShaderPair {
+            SR_GTYPES_NS::Mesh* pMesh;
+            SR_GTYPES_NS::Shader* pShader;
+        };
     public:
         enum QueueState : uint8_t {
             QUEUE_STATE_OK = 0,
@@ -40,16 +43,15 @@ namespace SR_GRAPH_NS {
         typedef uint8_t QueueStateFlags;
 
         struct MeshInfo {
-            ShaderUseInfo shaderUseInfo = {};
             VBO vbo = 0;
-            MeshPtr pMesh = nullptr;
+            SR_GTYPES_NS::Mesh* pMesh = nullptr;
+            SR_GTYPES_NS::Shader* pShader = nullptr;
             int64_t priority = 0;
             QueueStateFlags state = QUEUE_STATE_ERROR;
-            bool hasVBO = false;
 
             bool operator==(const MeshInfo& other) const noexcept {
                 return
-                    shaderUseInfo.pShader.Get() == other.shaderUseInfo.pShader.Get() &&
+                    pShader == other.pShader &&
                     vbo == other.vbo &&
                     pMesh == other.pMesh &&
                     priority == other.priority;
@@ -64,8 +66,8 @@ namespace SR_GRAPH_NS {
                 }
 
                 /// Сравниваем указатели на шейдеры
-                if (left.shaderUseInfo.pShader.Get() != right.shaderUseInfo.pShader.Get()) SR_LIKELY_ATTRIBUTE {
-                    return left.shaderUseInfo.pShader.Get() < right.shaderUseInfo.pShader.Get();
+                if (left.pShader != right.pShader) SR_LIKELY_ATTRIBUTE {
+                    return left.pShader < right.pShader;
                 }
 
                 /// Если шейдеры одинаковые, сравниваем VBO
@@ -78,18 +80,18 @@ namespace SR_GRAPH_NS {
             }
         };
 
-        struct ShaderInfo {
-            ShaderInfo() = default;
-            ShaderInfo(ShaderPtr pShader) : info(pShader) { }
-            ShaderUseInfo info = {};
-            uint32_t count = 0;
-        };
+       // struct ShaderInfo {
+      //      ShaderInfo() = default;
+      //      ShaderInfo(SR_GTYPES_NS::Shader* pShader) : info(pShader) { }
+      //      ShaderUseInfo info = {};
+      //      uint32_t count = 0;
+      //  };
 
-        struct ShaderQueueLessPredicate {
-            SR_NODISCARD bool operator()(const ShaderUseInfo& left, const ShaderUseInfo& right) const noexcept {
-                return left.pShader.Get() < right.pShader.Get();
-            }
-        };
+       // struct ShaderQueueLessPredicate {
+       //     SR_NODISCARD bool operator()(const ShaderUseInfo& left, const ShaderUseInfo& right) const noexcept {
+       //         return left.pShader < right.pShader;
+       //     }
+       // };
 
         using Queue = SR_HTYPES_NS::SortedVector<MeshInfo, RenderQueueLessPredicate>;
 
@@ -105,7 +107,7 @@ namespace SR_GRAPH_NS {
         bool Render();
         void Update();
 
-        void OnMeshDirty(MeshPtr pMesh, ShaderUseInfo info);
+        void OnMeshDirty(SR_GTYPES_NS::Mesh* pMesh, SR_GTYPES_NS::Shader* pShader);
 
         SR_NODISCARD const std::vector<std::pair<Layer, Queue>>& GetQueues() const noexcept { return m_queues; }
 
@@ -125,11 +127,11 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD MeshInfo* SR_FASTCALL FindNextShader(Queue& queue, MeshInfo* pElement);
         SR_NODISCARD MeshInfo* SR_FASTCALL FindNextVBO(Queue& queue, MeshInfo* pElement);
 
-        bool SR_FASTCALL UseShader(ShaderUseInfo info);
+        bool SR_FASTCALL UseShader(SR_GTYPES_NS::Shader* pShader);
 
         void PrepareLayers();
 
-        SR_NODISCARD SR_GRAPH_NS::ShaderUseInfo GetShaderUseInfo(const MeshRegistrationInfo& info) const;
+        //SR_NODISCARD SR_GRAPH_NS::ShaderUseInfo GetShaderUseInfo(const MeshRegistrationInfo& info) const;
 
     protected:
         bool m_customMeshDraw = false;
@@ -142,10 +144,12 @@ namespace SR_GRAPH_NS {
 
         Memory::UBOManager& m_uboManager;
 
+        SR_UTILS_NS::StringAtom m_renderStageId;
+
         std::vector<std::pair<Layer, Queue>> m_queues;
 
-        SR_HTYPES_NS::SortedVector<ShaderUseInfo, ShaderQueueLessPredicate> m_shaders;
-        std::vector<std::pair<MeshPtr, ShaderUseInfo>> m_meshes;
+        SR_HTYPES_NS::SortedVector<SR_GTYPES_NS::Shader*> m_shaders;
+        std::vector<MeshShaderPair> m_meshes;
 
         MeshDrawerPass* m_meshDrawerPass = nullptr;
         RenderContext* m_renderContext = nullptr;
@@ -156,14 +160,9 @@ namespace SR_GRAPH_NS {
     };
 
     struct RenderQueueInfo {
-        RenderQueueInfo() = default;
-        RenderQueueInfo(RenderQueue* pRenderQueue, const ShaderUseInfo& shaderUseInfo)
-            : pRenderQueue(pRenderQueue)
-            , shaderUseInfo(shaderUseInfo)
-        { }
-
         RenderQueue* pRenderQueue;
-        ShaderUseInfo shaderUseInfo;
+        SR_GTYPES_NS::Shader* pShader;
+
         bool operator==(const RenderQueueInfo& other) const {
             return pRenderQueue == other.pRenderQueue;
         }

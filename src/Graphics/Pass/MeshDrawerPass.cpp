@@ -165,16 +165,12 @@ namespace SR_GRAPH_NS {
         m_renderQueues[layer]->Update();
     }
 
-    void MeshDrawerPass::UseUniforms(ShaderUseInfo info, MeshPtr pMesh) {
-        if (IsNeedUseMaterials()) {
-            pMesh->UseMaterial();
-        }
+    void MeshDrawerPass::UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) {
+        pMesh->UseMaterial();
     }
 
-    void MeshDrawerPass::UseSharedUniforms(ShaderUseInfo info) {
+    void MeshDrawerPass::UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) {
         SR_TRACY_ZONE;
-
-        const auto pShader = info.pShader;
 
         pShader->SetFloat(SHADER_TIME, static_cast<float_t>(m_time.Clock()));
 
@@ -197,15 +193,15 @@ namespace SR_GRAPH_NS {
         //}
     }
 
-    void MeshDrawerPass::UseConstants(ShaderUseInfo info) {
-        info.pShader->SetConstInt(SHADER_PC_COLOR_BUFFER_MODE, 0);
+    void MeshDrawerPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
+        pShader->SetConstInt(SHADER_PC_COLOR_BUFFER_MODE, 0);
     }
 
     RenderStrategy* MeshDrawerPass::GetRenderStrategy() const {
         return GetRenderScene()->GetRenderStrategy();
     }
 
-    ShaderUseInfo MeshDrawerPass::ReplaceShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& pShader) const {
+    /*ShaderUseInfo MeshDrawerPass::ReplaceShader(SR_GTYPES_NS::Shader* pShader) const {
         if (!pShader) SR_UNLIKELY_ATTRIBUTE {
             return ShaderUseInfo(pShader);
         }
@@ -226,9 +222,9 @@ namespace SR_GRAPH_NS {
         }
 
         return ShaderUseInfo(pShader);
-    }
+    }*/
 
-    void MeshDrawerPass::ClearOverrideShaders() {
+    /*void MeshDrawerPass::ClearOverrideShaders() {
         for (auto&& [type, replaceInfo] : m_shaderTypeReplacements) {
             if (replaceInfo.pShader) {
                 replaceInfo.pShader->RemoveUsePoint();
@@ -243,10 +239,10 @@ namespace SR_GRAPH_NS {
             }
         }
         m_shaderReplacements.clear();
-    }
+    }*/
 
     void MeshDrawerPass::DeInit() {
-        ClearOverrideShaders();
+        //ClearOverrideShaders();
         for (auto&& pRenderQueue : m_renderQueues) {
             pRenderQueue.AutoFree();
         }

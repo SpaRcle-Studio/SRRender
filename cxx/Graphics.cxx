@@ -1,12 +1,8 @@
 #include <Utils/macros.h>
 
-#include "../src/Graphics/Pipeline/TextureHelper.cpp"
-#include "../src/Graphics/Pipeline/Pipeline.cpp"
-#include "../src/Graphics/Pipeline/EmptyPipeline.cpp"
-#include "../src/Graphics/Pipeline/FrameBufferQueue.cpp"
-#include "../src/Graphics/Pipeline/FrameBufferFeatures.cpp"
-
 #include "../src/Graphics/Overlay/Overlay.cpp"
+
+#include "../src/Graphics/Settings/RenderContextSettings.cpp"
 
 #include "../src/Graphics/Lighting/DirectionalLight.cpp"
 #include "../src/Graphics/Lighting/ILightComponent.cpp"
@@ -49,24 +45,6 @@
 #include "../src/Graphics/UI/UIWindowNode.cpp"
 #include "../src/Graphics/UI/UICanvasComponent.cpp"
 #include "../src/Graphics/UI/UISizeComponent.cpp"
-
-#include "../src/Graphics/Render/RenderQueue.cpp"
-#include "../src/Graphics/Render/HTMLRenderer.cpp"
-#include "../src/Graphics/Render/ScriptableRenderTechnique.cpp"
-#include "../src/Graphics/Render/IRenderTechnique.cpp"
-#include "../src/Graphics/Render/FlatCluster.cpp"
-#include "../src/Graphics/Render/RenderScene.cpp"
-#include "../src/Graphics/Render/RenderTechnique.cpp"
-#include "../src/Graphics/Render/MeshCluster.cpp"
-#include "../src/Graphics/Render/RenderContext.cpp"
-#include "../src/Graphics/Render/SortedMeshQueue.cpp"
-#include "../src/Graphics/Render/DebugRenderer.cpp"
-#include "../src/Graphics/Render/RenderSettings.cpp"
-#include "../src/Graphics/Render/RenderStrategy.cpp"
-#include "../src/Graphics/Render/FrameBufferController.cpp"
-#include "../src/Graphics/Render/FrustumCulling.cpp"
-#include "../src/Graphics/Render/IRenderer.cpp"
-#include "../src/Graphics/Render/HTML/HTMLDrawableElement.cpp"
 
 #include "../src/Graphics/Types/Geometry/DebugWireframeMesh.cpp"
 #include "../src/Graphics/Types/Geometry/DebugLine.cpp"

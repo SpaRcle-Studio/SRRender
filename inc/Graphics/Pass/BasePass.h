@@ -82,7 +82,7 @@ namespace SR_GRAPH_NS {
         virtual void OnResize(const SR_MATH_NS::UVector2& size);
         virtual void OnMultisampleChanged();
 
-        virtual void UseSamplers(const ShaderUseInfo& info);
+        virtual void UseSamplers(SR_GTYPES_NS::Shader* pShader);
         virtual void SetRenderTechnique(IRenderTechnique* pRenderTechnique);
         virtual void GetFrameBuffers(FrameBuffers& frameBuffers) const { }
 

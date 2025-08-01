@@ -48,8 +48,9 @@ namespace SR_GTYPES_NS {
     void DebugWireframeMesh::UseMaterial() {
         Mesh::UseMaterial();
         static const uint64_t colorHashName = SR_UTILS_NS::StringAtom("color").GetHash();
-        GetShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-        GetShader()->SetVec4(colorHashName, m_color.Cast<float_t>().ToGLM());
+        auto&& pShader = GetMaterial()->GetDefaultShader();
+        pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+        pShader->SetVec4(colorHashName, m_color.Cast<float_t>().ToGLM());
     }
 
     void DebugWireframeMesh::SetColor(const SR_MATH_NS::FVector4& color) {

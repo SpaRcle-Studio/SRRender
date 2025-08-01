@@ -28,12 +28,11 @@ namespace SR_GRAPH_NS {
         bool Render() override;
 
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>&  GetColorFrameBuffer() const noexcept override;
-        SR_NODISCARD bool IsNeedUseMaterials() const noexcept override { return false; }
 
-        void UseConstants(ShaderUseInfo info) override;
+        void UseConstants(SR_GTYPES_NS::Shader* pShader) override;
 
     protected:
-        void UseUniforms(ShaderUseInfo info, MeshPtr pMesh) override;
+        void UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) override;
 
         SR_NODISCARD RenderQueuePtr AllocateRenderQueue() override;
 
