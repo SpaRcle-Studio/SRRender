@@ -5,15 +5,15 @@
 #ifndef SR_ENGINE_GRAPHICS_I_SHADER_PROGRAM_H
 #define SR_ENGINE_GRAPHICS_I_SHADER_PROGRAM_H
 
+#include <Graphics/Types/Uniforms.h>
+#include <Graphics/Types/Vertices.h>
+#include <Graphics/SRSL/ShaderType.h>
+
 #include <Utils/FileSystem/FileSystem.h>
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Common/StringUtils.h>
 #include <Utils/Common/Hashes.h>
 #include <Utils/Common/Enumerations.h>
-
-#include <Graphics/Types/Uniforms.h>
-#include <Graphics/Types/Vertices.h>
-#include <Graphics/SRSL/ShaderType.h>
 
 namespace SR_GTYPES_NS {
     class Texture;
@@ -93,6 +93,7 @@ namespace SR_GRAPH_NS {
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_DIRECTIONAL_LIGHT_POSITION = "DIRECTIONAL_LIGHT_POSITION";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_PC_SHADOW_CASCADE_INDEX = "PC_SHADOW_CASCADE_INDEX";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_CASCADE_LIGHT_SPACE_MATRICES = "CASCADE_LIGHT_SPACE_MATRICES";
+    SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_RENDER_PASS_TYPE = "RENDER_PASS_TYPE";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_CASCADE_SPLITS = "CASCADE_SPLITS";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_PC_COLOR_BUFFER_MODE = "PC_COLOR_BUFFER_MODE";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_PC_COLOR_BUFFER_VALUE = "PC_COLOR_BUFFER_VALUE";
@@ -121,6 +122,11 @@ namespace SR_GRAPH_NS {
         MissPrimary,
         MissSecondary
     );
+
+    SR_INLINE_STATIC std::map<ShaderStage, std::set<SR_UTILS_NS::StringAtom>> SR_SHADER_ALWAYS_USED_VARIABLES = {
+        { ShaderStage::Fragment, { SHADER_RGBA_VALUE, SHADER_RENDER_PASS_TYPE } },
+        { ShaderStage::Vertex, { SHADER_RENDER_PASS_TYPE } }
+    };
 
     SR_ENUM_NS_CLASS(LayoutBinding, Unknown = 0, Uniform, Sampler2D, Attachhment, SSBO)
     SR_ENUM_NS_CLASS(PolygonMode, Unknown, Fill, Line, Point)

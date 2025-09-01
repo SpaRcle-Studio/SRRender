@@ -992,12 +992,16 @@ namespace SR_GRAPH_NS {
 
     void VulkanPipeline::WaitComputeIdle() {
         SR_TRACY_ZONE;
-        m_kernel->WaitComputeIdle();
+        if (m_kernel) {
+            m_kernel->WaitComputeIdle();
+        }
     }
 
     void VulkanPipeline::WaitRenderIdle() {
         SR_TRACY_ZONE;
-        m_kernel->WaitAllFences();
+        if (m_kernel) {
+            m_kernel->WaitAllFences();
+        }
     }
 
     bool VulkanPipeline::BeginCmdBuffer() {

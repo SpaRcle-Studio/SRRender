@@ -2,7 +2,8 @@
 
 #include "../src/Graphics/Overlay/Overlay.cpp"
 
-#include "../src/Graphics/Settings/RenderContextSettings.cpp"
+#include "../src/Graphics/Settings/RenderStagesSettings.cpp"
+#include "../src/Graphics/Settings/RenderSettings.cpp"
 
 #include "../src/Graphics/Lighting/DirectionalLight.cpp"
 #include "../src/Graphics/Lighting/ILightComponent.cpp"

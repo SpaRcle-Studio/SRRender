@@ -15,6 +15,7 @@
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Render/IRenderTechnique.h>
 #include <Graphics/Pipeline/PipelineType.h>
+#include <Graphics/Settings/RenderSettings.h>
 
 namespace SR_GTYPES_NS {
     class Framebuffer;
@@ -130,6 +131,8 @@ namespace SR_GRAPH_NS {
         RenderScenes m_scenes;
 
         WindowPtr m_window;
+
+        RenderSettings::Ptr m_settings;
 
         MaterialPtr m_defaultUIMaterial = nullptr;
         MaterialPtr m_defaultMaterial = nullptr;

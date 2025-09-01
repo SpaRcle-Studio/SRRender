@@ -139,43 +139,22 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderScene::BuildQueue() {
-        m_queues.clear();
-
-        std::vector<SR_GTYPES_NS::Framebuffer::Ptr> frameBuffers;
+        GetPipeline()->ClearFrameBuffersQueue();
 
         ForEachTechnique([&](IRenderTechnique* pTechnique) {
-            const PassQueues& queues = pTechnique->GetQueues();
+            const RenderTechniqueQueues& queues = pTechnique->GetQueues();
             for (uint32_t depth = 0; depth < queues.size(); ++depth) {
-                if (m_queues.size() < depth + 1) {
-                    m_queues.resize(depth + 1);
-                }
-                for (auto&& pPass : queues[depth].passes) {
-                    if (!pPass) {
-                        SR_ERROR("RenderScene::BuildQueue() : pass in \"{}\" render technique is nullptr!", pTechnique->GetName());
+                for (auto&& frameBufferName : queues[depth].frameBuffers) {
+                    auto&& pController = pTechnique->GetFrameBufferController(frameBufferName);
+                    if (!pController) {
+                        SR_ERROR("RenderScene::BuildQueue() : frame buffer controller for \"{}\" in technique \"{}\" not found!", frameBufferName, pTechnique->GetName());
                         continue;
                     }
-                    m_queues[depth].passes.emplace_back(pPass);
-                    frameBuffers.clear();
-                    pPass->GetFrameBuffers(frameBuffers);
-                    for (auto&& pFrameBuffer : frameBuffers) {
-                        GetPipeline()->GetQueue().AddQueue(pFrameBuffer.Get(), depth);
-                    }
+
+                    GetPipeline()->GetQueue().AddQueue(pController->GetFramebuffer().Get(), depth);
                 }
-                SRAssert(!m_queues[depth].passes.empty());
             }
         });
-
-        /// if (!m_queues.empty()) {
-        ///     std::string log = "RenderScene::BuildQueue() : \n";
-        ///     for (auto&& queue : m_queues) {
-        ///         log += "============================================\n";
-        ///         for (auto&& pPass : queue) {
-        ///             log += "\t" + std::string(pPass->GetName()) + "\n";
-        ///         }
-        ///     }
-        ///     log += "============================================\n";
-        ///     SR_LOG(log);
-        /// }
     }
 
     void RenderScene::Build() {
@@ -184,8 +163,6 @@ namespace SR_GRAPH_NS {
         if (m_renderStrategy) {
             m_renderStrategy->ClearErrors();
         }
-
-        GetPipeline()->ClearFrameBuffersQueue();
 
         SR_RENDER_TECHNIQUES_RETURN_CALL(Render)
 

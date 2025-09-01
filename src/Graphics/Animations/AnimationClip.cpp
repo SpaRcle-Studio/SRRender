@@ -25,43 +25,10 @@ namespace SR_ANIMATIONS_NS {
     }
 
     AnimationClip::Ptr AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton, SR_UTILS_NS::StringAtom name) {
-        SR_GLOBAL_LOCK
-
-        auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
-        auto&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(resourceManager.GetResPath());
-
-        if (!resourceManager.GetResPath().Concat(path).Exists(SR_UTILS_NS::Path::Type::File)) {
-            SR_ERROR("AnimationClip::Load() : animation \"{}\" isn't exists!", rawPath.ToStringRef());
-            return nullptr;
-        }
-
-        AnimationClip::Ptr pAnimationClip = nullptr;
-
-        resourceManager.Execute([&]() {
-            auto&& resourceId = path.GetExtensionView() == "animation" ? path.ToString() :
-                name.ToStringRef() + SR_UTILS_NS::RESOURCE_ID_SEPARATOR.ToStringRef() + path.ToString();
-
-            if (auto&& pResource = SR_UTILS_NS::ResourceManager::Instance().Find<AnimationClip>(path)) {
-                pAnimationClip = pResource;
-                return;
-            }
-
-            pAnimationClip = AnimationClip::MakeShared<AnimationClip>();
-            pAnimationClip->SetId(resourceId, false /** auto register */);
-            pAnimationClip->m_skeletonPath = SR_UTILS_NS::Path(skeleton).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
-
-            if (!pAnimationClip->Reload()) {
-                SR_ERROR("AnimationClip::Load() : failed to load animation clip! \n\tPath: " + path.ToString());
-                pAnimationClip->DeleteResource();
-                pAnimationClip = nullptr;
-                return;
-            }
-
-            /// отложенная ручная регистрация
-            SR_UTILS_NS::ResourceManager::Instance().RegisterResource(pAnimationClip.StaticCast<SR_UTILS_NS::IResource>());
-        });
-
-        return pAnimationClip;
+        return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<AnimationClip>(rawPath,
+            [&skeleton](AnimationClip& clip) { clip.m_skeletonPath = SR_UTILS_NS::Path(skeleton).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath()); },
+            [&rawPath, name]() { return rawPath.GetExtensionView() == "animation" ? std::string() : name.ToStringRef(); }
+        );
     }
 
     std::vector<AnimationClip::Ptr> AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton) {
@@ -196,14 +163,6 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return Super::Load();
-    }
-
-    SR_UTILS_NS::Path AnimationClip::InitializeResourcePath() const {
-        return SR_UTILS_NS::Path(SR_UTILS_NS::StringUtils::SubstringView(
-            GetResourceId(),
-            SR_UTILS_NS::RESOURCE_ID_SEPARATOR,
-            SR_UTILS_NS::RESOURCE_ID_SEPARATOR.size()
-        ));
     }
 
     SR_UTILS_NS::StringAtom AnimationClip::GetClipName() const noexcept {

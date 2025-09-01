@@ -16,7 +16,7 @@
 #include <Graphics/Render/FlatCluster.h>
 #include <Graphics/Render/SortedMeshQueue.h>
 #include <Graphics/GUI/WidgetManager.h>
-#include <Graphics/Pass/PassQueue.h>
+#include <Graphics/Pass/RenderTechniqueQueue.h>
 
 namespace SR_WORLD_NS {
     class Scene;
@@ -156,8 +156,6 @@ namespace SR_GRAPH_NS {
         std::map<SR_UTILS_NS::StringAtom, SR_HTYPES_NS::SharedPtr<IRenderer>> m_renderers;
         SR_HTYPES_NS::SharedPtr<IRenderTechnique> m_technique;
         RenderContext* m_context = nullptr;
-
-        PassQueues m_queues;
 
         SR_MATH_NS::UVector2 m_surfaceSize;
 

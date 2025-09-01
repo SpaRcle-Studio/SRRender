@@ -40,12 +40,14 @@ namespace SR_GRAPH_NS {
         virtual void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader);
         virtual void UseConstants(SR_GTYPES_NS::Shader* pShader);
 
+        virtual void OnUniformsUpdated() { }
+
         //SR_NODISCARD ShaderUseInfo ReplaceShader(SR_GTYPES_NS::Shader* pShader) const override;
         SR_NODISCARD bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const override;
         SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const override { return true; }
 
         SR_NODISCARD const std::vector<RenderQueuePtr>& GetRenderQueues() const noexcept { return m_renderQueues; }
-        SR_NODISCARD SR_UTILS_NS::StringAtom GetRenderStageId() const noexcept { return m_renderStageId; }
+        SR_NODISCARD const SR_SRSL_NS::ShaderMacrosParams& GetShaderMacros() const noexcept { return m_shaderMacros; }
 
     protected:
         SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
@@ -57,6 +59,7 @@ namespace SR_GRAPH_NS {
     private:
         std::vector<RenderQueuePtr> m_renderQueues;
         SR_HTYPES_NS::Time& m_time;
+        SR_SRSL_NS::ShaderMacrosParams m_shaderMacros;
 
         //ShadowMapPass* m_shadowMapPass = nullptr;
         //CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;
@@ -66,7 +69,7 @@ namespace SR_GRAPH_NS {
         /// @property
         std::set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
         /// @property
-        SR_UTILS_NS::StringAtom m_renderStageId;
+        std::set<std::string> m_shaderDefines;
 
     };
 }

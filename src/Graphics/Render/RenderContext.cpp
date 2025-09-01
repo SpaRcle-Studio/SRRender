@@ -99,6 +99,13 @@ namespace SR_GRAPH_NS {
 
         m_isOptimizedUpdateEnabled = SR_UTILS_NS::Features::Instance().Enabled("OptimizedRenderUpdate", true);
 
+        m_settings = RenderSettings::LoadOrCreate<RenderSettings>("Engine/Configs/RenderSettings.sras");
+        if (!m_settings) {
+            SR_ERROR("RenderContext::Init() : failed to load render settings!");
+            return false;
+        }
+        m_settings->AddUsePoint();
+
         if (!InitPipeline()) {
             SR_ERROR("RenderContext::Init() : failed to initialize pipeline!");
             return false;
@@ -174,6 +181,11 @@ namespace SR_GRAPH_NS {
 
         m_defaultMaterial.Reset();
         m_defaultUIMaterial.Reset();
+
+        if (m_settings) {
+            m_settings->RemoveUsePoint();
+            m_settings.Reset();
+        }
 
         uint32_t syncStep = 0;
         const uint32_t maxErrStep = 50;
@@ -278,7 +290,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderContext::IsEmpty() const {
-        if (m_defaultTexture || m_noneTexture || m_defaultMaterial || m_defaultUIMaterial) {
+        if (m_defaultTexture || m_noneTexture || m_defaultMaterial || m_defaultUIMaterial || m_settings) {
             return false;
         }
 
@@ -521,10 +533,11 @@ namespace SR_GRAPH_NS {
         SR_GRAPH("RenderContext::InitPipeline() : initializing the render pipeline...");
 
         PipelinePreInitInfo pipelinePreInitInfo;
-        pipelinePreInitInfo.appName = "SpaRcle Engine";
-        pipelinePreInitInfo.engineName = "SREngine";
+        pipelinePreInitInfo.appName = m_settings->appName;
+        pipelinePreInitInfo.engineName = m_settings->engineName;
         pipelinePreInitInfo.samplesCount = 64;
         pipelinePreInitInfo.vsync = false;
+
     #if defined(SR_WIN32)
         pipelinePreInitInfo.GLSLCompilerPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Utilities/glslc.exe");
     #elif defined(SR_LINUX)

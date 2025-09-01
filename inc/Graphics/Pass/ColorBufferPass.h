@@ -30,6 +30,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>&  GetColorFrameBuffer() const noexcept override;
 
         void UseConstants(SR_GTYPES_NS::Shader* pShader) override;
+        void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) override;
 
     protected:
         void UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) override;

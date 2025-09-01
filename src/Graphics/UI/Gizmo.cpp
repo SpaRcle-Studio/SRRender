@@ -56,8 +56,14 @@ namespace SR_GRAPH_UI_NS {
         /////////////////////////////////////////////////////////////////////////////////pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
 
         const BaseMaterial::Ptr pMaterial = SRNew<SR_GRAPH_NS::UniqueMaterial>();
-        pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
-        pMaterial->SetColor("color", GetColorByOperation(operation));
+
+        if (mode == GizmoMeshLoadMode::Selection) {
+            pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo-selection.srsl");
+        }
+        else {
+            pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
+            pMaterial->SetColor("color", GetColorByOperation(operation));
+        }
 
         pMesh->SetMaterial(pMaterial);
 

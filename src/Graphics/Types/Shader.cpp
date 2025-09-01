@@ -155,7 +155,7 @@ namespace SR_GRAPH_NS::Types {
         IGraphicsResource::FreeVMemory();
     }
 
-    Shader::Ptr Shader::Load(const SR_UTILS_NS::Path& rawPath) {
+    Shader::Ptr Shader::Load(const SR_UTILS_NS::Path& rawPath, const SR_SRSL_NS::ShaderMacrosParams& macros) {
         SR_TRACY_ZONE;
         if (rawPath.GetExtensionView() != "srsl") {
             SR_ERROR("Shader::Load() : unknown extension!");
@@ -163,10 +163,6 @@ namespace SR_GRAPH_NS::Types {
         }
 
        return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<Shader>(rawPath);
-    }
-
-    int32_t Shader::GetID() {
-        return GetId();
     }
 
     int32_t Shader::GetId() noexcept {
@@ -260,31 +256,6 @@ namespace SR_GRAPH_NS::Types {
     uint64_t Shader::GetUBOBlockSize() const {
         return m_uniformBlock.m_size;
     }
-
-    /*bool Shader::InitUBOBlock() {
-        if (m_uniformBlock.m_memory) SR_LIKELY_ATTRIBUTE {
-            memset(m_uniformBlock.m_memory, 1, m_uniformBlock.m_size);
-        }
-        else {
-            return false;
-        }
-
-        auto&& ubo = GetPipeline()->GetCurrentUBO();
-        auto&& descriptorSet = GetPipeline()->GetCurrentDescriptorSet();
-
-        if (ubo != SR_ID_INVALID && descriptorSet != SR_ID_INVALID && m_uniformBlock.Valid()) SR_LIKELY_ATTRIBUTE {
-            SRDescriptorUpdateInfo updateInfo;
-            updateInfo.binding = m_uniformBlock.m_binding;
-            updateInfo.ubo = ubo;
-            updateInfo.descriptorType = DescriptorType::Uniform;
-
-            GetPipeline()->UpdateDescriptorSets(descriptorSet, { updateInfo });
-
-            return true;
-        }
-
-        return false;
-    }*/
 
     bool Shader::Flush() const {
         if (!m_uniformBlock.m_memory) SR_UNLIKELY_ATTRIBUTE {

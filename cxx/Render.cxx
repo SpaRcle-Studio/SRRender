@@ -17,7 +17,6 @@
 #include "../src/Graphics/Render/RenderContext.cpp"
 #include "../src/Graphics/Render/SortedMeshQueue.cpp"
 #include "../src/Graphics/Render/DebugRenderer.cpp"
-#include "../src/Graphics/Render/RenderSettings.cpp"
 #include "../src/Graphics/Render/RenderStrategy.cpp"
 #include "../src/Graphics/Render/FrameBufferController.cpp"
 #include "../src/Graphics/Render/FrustumCulling.cpp"

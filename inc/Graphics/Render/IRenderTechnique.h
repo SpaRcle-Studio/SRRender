@@ -16,7 +16,7 @@
 #include <Graphics/Render/FrameBufferController.h>
 
 #include <Graphics/Pass/GroupPass.h>
-#include <Graphics/Pass/PassQueue.h>
+#include <Graphics/Pass/RenderTechniqueQueue.h>
 
 namespace SR_GTYPES_NS {
     class Camera;
@@ -31,14 +31,21 @@ namespace SR_GRAPH_NS {
     struct RenderTechniqueData : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
+        void SetRenderStagesSettingsPath(const SR_UTILS_NS::Path& path);
+
         /// @property
         SR_UTILS_NS::StringAtom name;
+        /// @property @setter(SetRenderStagesSettingsPath)
+        /// @customArgs(pick: enabled, filter name: Render stages settings)
+        /// @customArg(filter value: sra)
+        SR_UTILS_NS::Path renderStagesSettings;
         /// @property @notNull
         BasePass::Ptr pass;
         /// @property
         std::vector<FrameBufferController::Ptr> frameBuffers;
         /// @property
-        PassQueues queues;
+        RenderTechniqueQueues queues;
+
     };
 
     class IRenderTechnique : public Memory::IGraphicsResource, public SR_HTYPES_NS::SharedPtr<IRenderTechnique> {
@@ -89,7 +96,7 @@ namespace SR_GRAPH_NS {
         SR_GTYPES_NS::Mesh* PickMeshAt(float_t x, float_t y) const;
         SR_GTYPES_NS::Mesh* PickMeshAt(float_t x, float_t y, SR_UTILS_NS::StringAtom passName) const;
         SR_GTYPES_NS::Mesh* PickMeshAt(float_t x, float_t y, const std::vector<SR_UTILS_NS::StringAtom>& passFilter) const;
-        SR_NODISCARD const PassQueues& GetQueues() const { return m_data.queues; }
+        SR_NODISCARD const RenderTechniqueQueues& GetQueues() const { return m_data.queues; }
 
     private:
         bool Init();

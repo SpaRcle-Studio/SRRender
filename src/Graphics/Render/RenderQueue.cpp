@@ -20,7 +20,6 @@ namespace SR_GRAPH_NS {
         , m_renderStrategy(pStrategy)
     {
         SRAssert(pStrategy && pDrawer);
-        m_renderStageId = pDrawer->GetRenderStageId();
         m_renderContext = pStrategy->GetRenderContext();
         m_renderScene = pStrategy->GetRenderScene();
         m_pipeline = m_renderContext->GetPipeline().Get();
@@ -53,7 +52,7 @@ namespace SR_GRAPH_NS {
 
         MeshInfo meshInfo;
         meshInfo.pMesh = info.pMesh;
-        meshInfo.pShader = info.pMaterial->GetShader(m_renderStageId);
+        meshInfo.pShader = info.pMaterial->GetDefaultShader();
         meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
 
@@ -193,6 +192,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        m_meshDrawerPass->OnUniformsUpdated();
+
         m_meshes.clear();
     }
 
@@ -224,14 +225,20 @@ namespace SR_GRAPH_NS {
             const MeshInfo info = *pElement;
 
             if (info.pMesh->IsWaitReRegister()) SR_UNLIKELY_ATTRIBUTE {
-                pElement->state = QUEUE_STATE_ERROR;
+                pElement->state = QUEUE_STATE_WAIT_REGISTER;
+                ++pElement;
+                continue;
+            }
+
+            if (!info.pShader) SR_UNLIKELY_ATTRIBUTE {
+                pElement->state = QUEUE_STATE_MISSING_SHADER;
                 ++pElement;
                 continue;
             }
 
             const bool invalidVBO = info.vbo == SR_INVALID_VBO && info.pMesh->IsSupportVBO();
-            if (!info.pShader || invalidVBO) SR_UNLIKELY_ATTRIBUTE {
-                pElement->state = QUEUE_STATE_ERROR;
+            if (invalidVBO) SR_UNLIKELY_ATTRIBUTE {
+                pElement->state = QUEUE_STATE_VBO_ERROR;
                 ++pElement;
                 continue;
             }

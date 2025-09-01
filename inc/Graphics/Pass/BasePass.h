@@ -84,7 +84,6 @@ namespace SR_GRAPH_NS {
 
         virtual void UseSamplers(SR_GTYPES_NS::Shader* pShader);
         virtual void SetRenderTechnique(IRenderTechnique* pRenderTechnique);
-        virtual void GetFrameBuffers(FrameBuffers& frameBuffers) const { }
 
         SR_NODISCARD SR_UTILS_NS::StringAtom GetPassName() const;
         SR_NODISCARD bool IsActive() const;

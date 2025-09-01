@@ -519,9 +519,9 @@ namespace SR_GRAPH_NS {
             return &m_defaultShader;
         }
 
-        if (auto&& pIt = m_shaders.find(id); pIt != m_shaders.end()) {
-            return &pIt->second;
-        }
+        //if (auto&& pIt = m_shaders.find(id); pIt != m_shaders.end()) {
+        //    return &pIt->second;
+        //}
 
         return nullptr;
     }

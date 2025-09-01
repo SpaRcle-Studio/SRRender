@@ -12,6 +12,10 @@
 #include <Codegen/IRenderTechnique.generated.hpp>
 
 namespace SR_GRAPH_NS {
+    void RenderTechniqueData::SetRenderStagesSettingsPath(const SR_UTILS_NS::Path& path) {
+        renderStagesSettings = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+    }
+
     IRenderTechnique::IRenderTechnique()
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
     { }
@@ -155,26 +159,6 @@ namespace SR_GRAPH_NS {
 
         if (!Init()) {
             SR_ERROR("IRenderTechnique::BuildTechnique() : failed to initialize technique \"{}\"!", m_data.name);
-            m_hasErrors = true;
-            return false;
-        }
-
-        uint32_t countQueues = 0;
-        for (auto&& queue : m_data.queues) {
-            queue.passes.resize(queue.passNames.size());
-            for (uint32_t i = 0; i < queue.passNames.size(); ++i) {
-                queue.passes[i] = m_data.pass->FindPass(queue.passNames[i]);
-                if (!queue.passes[i]) {
-                    SR_ERROR("IRenderTechnique::BuildTechnique() : pass with name \"{}\" not found in \"{}\" technique!", queue.passNames[i], m_data.name);
-                    m_hasErrors = true;
-                    return false;
-                }
-                ++countQueues;
-            }
-        }
-
-        if (countQueues == 0) {
-            SR_WARN("IRenderTechnique::BuildTechnique() : technique \"{}\" does not have any queues!", m_data.name);
             m_hasErrors = true;
             return false;
         }

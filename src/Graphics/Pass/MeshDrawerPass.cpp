@@ -3,8 +3,6 @@
 //
 
 #include <Graphics/Pass/MeshDrawerPass.h>
-//#include <Graphics/Pass/CascadedShadowMapPass.h>
-//#include <Graphics/Pass/ShadowMapPass.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/RenderQueue.h>
@@ -17,6 +15,7 @@
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Mesh.h>
+#include <Graphics/SRSL/ShaderVariables.h>
 
 #include <Codegen/MeshDrawerPass.generated.hpp>
 
@@ -172,6 +171,8 @@ namespace SR_GRAPH_NS {
     void MeshDrawerPass::UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) {
         SR_TRACY_ZONE;
 
+        pShader->SetInt(SHADER_RENDER_PASS_TYPE, SR_UTILS_NS::EnumReflector::AsInt(ShaderRenderPassType::Main));
+
         pShader->SetFloat(SHADER_TIME, static_cast<float_t>(m_time.Clock()));
 
         if (auto&& pCamera = GetCamera()) SR_LIKELY_ATTRIBUTE {
@@ -183,7 +184,6 @@ namespace SR_GRAPH_NS {
         }
 
         pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition());
-
         //if (m_cascadedShadowMapPass) {
         //    pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadedShadowMapPass->GetCascadeMatrices().data());
         //    pShader->SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadedShadowMapPass->GetSplitDepths().data());
@@ -194,7 +194,6 @@ namespace SR_GRAPH_NS {
     }
 
     void MeshDrawerPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
-        pShader->SetConstInt(SHADER_PC_COLOR_BUFFER_MODE, 0);
     }
 
     RenderStrategy* MeshDrawerPass::GetRenderStrategy() const {
@@ -251,8 +250,16 @@ namespace SR_GRAPH_NS {
     }
 
     bool MeshDrawerPass::Init() {
+        SR_TRACY_ZONE;
+
         //m_shadowMapPass = GetTechnique()->FindPass<ShadowMapPass>();
         //m_cascadedShadowMapPass = GetTechnique()->FindPass<CascadedShadowMapPass>();
+
+        m_shaderMacros.Clear();
+        for (auto&& definition : m_shaderDefines) {
+            m_shaderMacros.AddDefine(definition);
+        }
+        m_shaderMacros.InitHash();
 
         const uint8_t layers = GetMeshDrawerFBOLayers();
         if (layers == 0) SR_UNLIKELY_ATTRIBUTE {

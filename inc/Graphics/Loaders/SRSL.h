@@ -10,6 +10,38 @@
 #include <Graphics/Loaders/SRSLParser.h>
 #include <Graphics/SRSL/ShaderType.h>
 
+namespace SR_SRSL_NS {
+    struct ShaderMacrosParams {
+        void InitHash();
+
+        static const ShaderMacrosParams& GetDefault();
+
+        SR_NODISCARD SR_UTILS_NS::SRHashType GetHash() const;
+
+        void Clear() {
+            m_params.clear();
+            m_hash = 0;
+            m_initialized = false;
+        }
+
+        void SetParam(const std::string& key, const std::string& value) {
+            m_params[key] = value;
+            m_initialized = false;
+        }
+
+        void AddDefine(const std::string& define) {
+            m_params[define];
+            m_initialized = false;
+        }
+
+    private:
+        std::map<std::string, std::string> m_params;
+        SR_UTILS_NS::SRHashType m_hash = 0;
+        bool m_initialized = false;
+
+    };
+}
+
 namespace SR_GRAPH_NS::SRSL {
     typedef uint32_t RequireBits;
     typedef uint32_t VertexAttributeBits;

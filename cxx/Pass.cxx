@@ -31,4 +31,4 @@
 #include "../src/Graphics/Pass/Data/FrameBufferPassData.cpp"
 #include "../src/Graphics/Pass/Data/SamplersPassData.cpp"
 
-#include "../src/Graphics/Pass/PassQueue.cpp"
+#include "../src/Graphics/Pass/RenderTechniqueQueue.cpp"

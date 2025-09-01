@@ -36,9 +36,12 @@ namespace SR_GRAPH_NS {
         enum QueueState : uint8_t {
             QUEUE_STATE_OK = 0,
 
-            QUEUE_STATE_ERROR         = 1 << 1,
-            QUEUE_STATE_VBO_ERROR     = QUEUE_STATE_ERROR | 1 << 2,
-            QUEUE_STATE_SHADER_ERROR  = QUEUE_STATE_ERROR | 1 << 3,
+            QUEUE_STATE_ERROR          = 1 << 1,
+            QUEUE_STATE_VBO_ERROR      = QUEUE_STATE_ERROR | 1 << 2,
+            QUEUE_STATE_SHADER_ERROR   = QUEUE_STATE_ERROR | 1 << 3,
+            QUEUE_STATE_NOT_RENDERED   = QUEUE_STATE_ERROR | 1 << 4,
+            QUEUE_STATE_WAIT_REGISTER  = QUEUE_STATE_ERROR | 1 << 5,
+            QUEUE_STATE_MISSING_SHADER = QUEUE_STATE_ERROR | 1 << 6,
         };
         typedef uint8_t QueueStateFlags;
 
@@ -47,7 +50,7 @@ namespace SR_GRAPH_NS {
             SR_GTYPES_NS::Mesh* pMesh = nullptr;
             SR_GTYPES_NS::Shader* pShader = nullptr;
             int64_t priority = 0;
-            QueueStateFlags state = QUEUE_STATE_ERROR;
+            QueueStateFlags state = QUEUE_STATE_NOT_RENDERED;
 
             bool operator==(const MeshInfo& other) const noexcept {
                 return

@@ -392,7 +392,8 @@ namespace SR_SRSL_NS {
         }
 
         for (auto&& [defaultUniform, type] : SR_SRSL_DEFAULT_SHARED_UNIFORMS) {
-            auto&& usedStages = m_useStack->IsVariableUsedInEntryPointsExt(defaultUniform);
+            std::set<ShaderStage> usedStages = m_useStack->IsVariableUsedInEntryPointsExt(defaultUniform);
+
             if (!usedStages.empty()) {
                 SRSLUniformBlock::Field field;
 

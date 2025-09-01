@@ -25,7 +25,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& GetFrameBuffer() const noexcept;
 
         void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
-        void GetFrameBuffers(FrameBuffers& frameBuffers) const override;
 
     private:
         /// @property @noHeader

@@ -829,3 +829,30 @@ std::map<std::string, SR_GRAPH_NS::SRSL::SRSLVariable> SR_GRAPH_NS::SRSL::SRSLUn
 
     return samplers;
 }
+
+namespace SR_SRSL_NS {
+    void ShaderMacrosParams::InitHash() {
+        SR_TRACY_ZONE;
+
+        m_hash = 0;
+        m_initialized = true;
+
+        for (const auto& [key, value] : m_params) {
+            m_hash = SR_COMBINE_HASHES(m_hash, SR_HASH_STR_VIEW(key));
+            m_hash = SR_COMBINE_HASHES(m_hash, SR_HASH_STR_VIEW(value));
+        }
+    }
+
+    SR_UTILS_NS::SRHashType ShaderMacrosParams::GetHash() const {
+        if (m_initialized) {
+            return m_hash;
+        }
+        const_cast<ShaderMacrosParams*>(this)->InitHash();
+        return m_hash;
+    }
+
+    const ShaderMacrosParams& ShaderMacrosParams::GetDefault() {
+        static ShaderMacrosParams params;
+        return params;
+    }
+}

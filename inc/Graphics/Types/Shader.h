@@ -5,11 +5,6 @@
 #ifndef SR_ENGINE_GRAPHICS_SHADER_H
 #define SR_ENGINE_GRAPHICS_SHADER_H
 
-#include <Utils/Common/NonCopyable.h>
-#include <Utils/Common/Hashes.h>
-#include <Utils/Resources/IResource.h>
-#include <Utils/Math/Rect.h>
-
 #include <Graphics/Types/Vertices.h>
 #include <Graphics/Types/Uniforms.h>
 #include <Graphics/Memory/ShaderUBOBlock.h>
@@ -17,6 +12,11 @@
 #include <Graphics/Memory/ShaderProgramManager.h>
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Memory/UBOManager.h>
+
+#include <Utils/Common/NonCopyable.h>
+#include <Utils/Common/Hashes.h>
+#include <Utils/Resources/IResource.h>
+#include <Utils/Math/Rect.h>
 
 namespace SR_GTYPES_NS {
     class Texture;
@@ -41,7 +41,7 @@ namespace SR_GTYPES_NS {
         ~Shader() override;
 
     public:
-        static Shader::Ptr Load(const SR_UTILS_NS::Path& rawPath);
+        static Shader::Ptr Load(const SR_UTILS_NS::Path& rawPath, const SR_SRSL_NS::ShaderMacrosParams& macros = SR_SRSL_NS::ShaderMacrosParams::GetDefault());
 
         ShaderBindResult Use() noexcept;
 
@@ -66,7 +66,6 @@ namespace SR_GTYPES_NS {
 
     public:
         SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
-        SR_DEPRECATED SR_NODISCARD int32_t GetID();
         SR_NODISCARD int32_t GetId() noexcept;
         SR_NODISCARD ShaderProgram GetVirtualProgram() const noexcept { return m_shaderProgram; }
         SR_NODISCARD bool Ready() const;

@@ -26,6 +26,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetIndex(float_t x, float_t y) const;
         SR_NODISCARD uint32_t GetColorIndex() const noexcept;
         SR_NODISCARD SR_MATH_NS::FVector3 GetMeshColor() const noexcept;
+        SR_NODISCARD SR_MATH_NS::FVector3 GetMeshColor(SR_GTYPES_NS::Mesh* pMesh) const noexcept;
         SR_NODISCARD uint32_t GetColorMultiplier() const noexcept { return m_multiplier; }
 
         void SetColorMultiplier(uint32_t multiplier) { m_multiplier = SR_MAX(1, multiplier); }
@@ -38,6 +39,7 @@ namespace SR_GRAPH_NS {
 
     private:
         std::vector<SR_GTYPES_NS::Mesh*> m_table;
+        ska::flat_hash_map<SR_GTYPES_NS::Mesh*, uint32_t> m_meshToColorIndex;
         uint32_t m_colorId = 0;
         uint32_t m_multiplier = 1;
 

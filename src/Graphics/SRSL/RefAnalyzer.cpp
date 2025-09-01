@@ -38,7 +38,7 @@ namespace SR_SRSL_NS {
         return str;
     }
 
-    bool SRSLUseStack::IsVariableUsed(const std::string &name) const {
+    bool SRSLUseStack::IsVariableUsed(const std::string& name) const {
         for (auto&& variable : variables) {
             if (variable == name) {
                 return true;
@@ -98,8 +98,14 @@ namespace SR_SRSL_NS {
         return false;
     }
 
-    std::set<ShaderStage> SRSLUseStack::IsVariableUsedInEntryPointsExt(const std::string &name) const {
+    std::set<ShaderStage> SRSLUseStack::IsVariableUsedInEntryPointsExt(const std::string& name) const {
         std::set<ShaderStage> stages;
+
+        for (auto&& [stage, vars] : SR_SHADER_ALWAYS_USED_VARIABLES) {
+            if (vars.find(name) != vars.end()) {
+                stages.insert(stage);
+            }
+        }
 
         for (auto&& [stage, entryPoint] : SR_SRSL_ENTRY_POINTS) {
             if (auto&& pFunction = FindFunction(entryPoint); pFunction && pFunction->IsVariableUsed(name)) {
