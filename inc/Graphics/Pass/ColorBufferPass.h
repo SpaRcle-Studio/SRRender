@@ -5,7 +5,8 @@
 #ifndef SR_ENGINE_COLOR_BUFFER_PASS_H
 #define SR_ENGINE_COLOR_BUFFER_PASS_H
 
-#include <Graphics/Pass/OffScreenMeshDrawerPass.h>
+#include <Graphics/Pass/Data/FrameBufferPassData.h>
+#include <Graphics/Pass/MeshDrawerPass.h>
 #include <Graphics/Pass/IColorBufferPass.h>
 
 namespace SR_GRAPH_NS {
@@ -18,7 +19,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    class ColorBufferPass : public IColorBufferPass, public MeshDrawerPass { /// public OffScreenMeshDrawerPass,
+    class ColorBufferPass : public IColorBufferPass, public MeshDrawerPass {
         SR_CLASS()
         using ShaderPtr = SR_GTYPES_NS::Shader*;
         using MeshPtr = SR_GTYPES_NS::Mesh*;
@@ -27,7 +28,7 @@ namespace SR_GRAPH_NS {
     public:
         bool Render() override;
 
-        SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>&  GetColorFrameBuffer() const noexcept override;
+        SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& GetColorFrameBuffer() const noexcept override;
 
         void UseConstants(SR_GTYPES_NS::Shader* pShader) override;
         void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) override;

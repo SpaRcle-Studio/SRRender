@@ -12,6 +12,7 @@
 
 #include "../src/Graphics/Pass/IColorBufferPass.cpp"
 #include "../src/Graphics/Pass/ColorBufferPass.cpp"
+#include "../src/Graphics/Pass/CascadedShadowMapPass.cpp"
 
 //#include "../src/Graphics/Pass/HTMLDrawerPass.cpp"
 //#include "../src/Graphics/Pass/OffScreenMeshDrawerPass.cpp"
@@ -22,7 +23,6 @@
 //#include "../src/Graphics/Pass/ShaderOverridePass.cpp"
 //#include "../src/Graphics/Pass/SSAOPass.cpp"
 //#include "../src/Graphics/Pass/ShadowMapPass.cpp"
-//#include "../src/Graphics/Pass/CascadedShadowMapPass.cpp"
 //#include "../src/Graphics/Pass/IMeshClusterPass.cpp"
 //#include "../src/Graphics/Pass/IMesh3DClusterPass.cpp"
 //#include "../src/Graphics/Pass/VarianceShadowMapPass.cpp"

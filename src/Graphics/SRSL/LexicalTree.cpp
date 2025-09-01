@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/SRSL/LexicalTree.h>
+#include <Graphics/SRSL/ShaderVariables.h>
 
 namespace SR_SRSL_NS {
     std::string SRSLExpr::ToString(uint32_t deep) const {
@@ -227,5 +228,24 @@ namespace SR_SRSL_NS {
     SRSLWhileStatement::~SRSLWhileStatement() {
         SR_SAFE_DELETE_PTR(pCondition);
         SR_SAFE_DELETE_PTR(pLexicalTree);
+    }
+
+    void SRSLAnalyzedTree::PostProcess(const ShaderMacrosParams& macros) {
+        SR_TRACY_ZONE;
+
+        const bool isColorPassDefined = macros.IsDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+        const bool isCascadedMapPassDefined = macros.IsDefined(SHADER_MACRO_SR_DEFINE_CASCADED_SHADOW_MAP_PASS);
+
+        const bool isNeedRemoveFragmentEntryPoint = isColorPassDefined || isCascadedMapPassDefined;
+
+        for (auto&& pUnit : pLexicalTree->lexicalTree) {
+            if (auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit)) {
+                if (isNeedRemoveFragmentEntryPoint && pFunction->pName->GetAsName() == SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment)) {
+                    if (pFunction->pLexicalTree) {
+                        pFunction->pLexicalTree->Clear();
+                    }
+                }
+            }
+        }
     }
 }

@@ -31,7 +31,6 @@ namespace SR_GRAPH_NS {
     public:
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& GetFramebuffer() const noexcept;
         SR_NODISCARD bool IsFrameBufferRendered() const noexcept { return m_isFrameBufferRendered; }
-        SR_NODISCARD bool IsDirectional() const noexcept { return m_isDirectional; }
         SR_NODISCARD const ClearColors& GetClearColors() const noexcept { return m_clearColors; }
         SR_NODISCARD std::optional<float_t> GetClearDepth() const noexcept { return m_depth; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept;
@@ -58,8 +57,6 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom m_frameBufferName;
         /// @property
         std::optional<float_t> m_depth;
-        /// @property @tooltip(Режим рендера без кадрового буффера, напрямую на экран)
-        bool m_isDirectional = false;
 
     };
 }

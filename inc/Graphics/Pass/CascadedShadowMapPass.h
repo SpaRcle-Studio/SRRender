@@ -5,24 +5,24 @@
 #ifndef SR_ENGINE_CASCADED_SHADOW_MAP_PASS_H
 #define SR_ENGINE_CASCADED_SHADOW_MAP_PASS_H
 
-#include <Graphics/Pass/OffScreenMeshDrawerPass.h>
+#include <Graphics/Pass/MeshDrawerPass.h>
 
 #include <Utils/Math/Matrix4x4.h>
 
 namespace SR_GRAPH_NS {
-    /*class CascadedShadowMapPass : public OffScreenMeshDrawerPass {
-        using Super = OffScreenMeshDrawerPass;
+    class CascadedShadowMapPass : public MeshDrawerPass {
+        SR_CLASS()
+        using Super = MeshDrawerPass;
     public:
-        bool Load(const SR_XML_NS::Node& passNode) override;
-
         SR_NODISCARD const std::vector<SR_MATH_NS::Matrix4x4>& GetCascadeMatrices() const { return m_cascadeMatrices; }
         SR_NODISCARD const std::vector<float_t>& GetSplitDepths() const { return m_cascadeSplitDepths; }
 
-    protected:
-        void UseConstants(ShaderUseInfo info) override;
-        void UseUniforms(ShaderUseInfo info, MeshPtr pMesh) override;
-        void UseSharedUniforms(ShaderUseInfo info) override;
+    public:
+        void UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) override;
+        void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) override;
+        void UseConstants(SR_GTYPES_NS::Shader* pShader) override;
 
+    protected:
         bool CheckCamera();
         void UpdateCascades();
 
@@ -32,17 +32,19 @@ namespace SR_GRAPH_NS {
         SR_MATH_NS::Quaternion m_cameraRotation;
         SR_MATH_NS::UVector2 m_screenSize;
 
-        float_t m_near = 0.f;
-        float_t m_far = 0.f;
-
+        /// @property
+        float_t m_near = 0.1f;
+        /// @property
+        float_t m_far = 100.f;
+        /// @property
         float_t m_cascadeSplitLambda = 0.95f;
-
+        /// @property
         bool m_usePerspective = false;
 
         std::vector<SR_MATH_NS::Matrix4x4> m_cascadeMatrices;
         std::vector<float_t> m_cascadeSplitDepths;
 
-    };*/
+    };
 }
 
 #endif //SR_ENGINE_CASCADED_SHADOW_MAP_PASS_H

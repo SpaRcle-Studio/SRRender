@@ -157,12 +157,18 @@ namespace SR_GRAPH_NS::Types {
 
     Shader::Ptr Shader::Load(const SR_UTILS_NS::Path& rawPath, const SR_SRSL_NS::ShaderMacrosParams& macros) {
         SR_TRACY_ZONE;
+
         if (rawPath.GetExtensionView() != "srsl") {
             SR_ERROR("Shader::Load() : unknown extension!");
             return nullptr;
         }
 
-       return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<Shader>(rawPath);
+       return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<Shader>(rawPath,
+            [&macros](Shader& shader) { shader.m_macros = macros; },
+            [&macros]() {
+                return macros.GetHash() != 0 ? macros.GetHashStr() : std::string();
+            }
+       );
     }
 
     int32_t Shader::GetId() noexcept {
@@ -332,14 +338,14 @@ namespace SR_GRAPH_NS::Types {
 
         m_isDirty = true;
 
-        SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(GetResourceId());
+        SR_UTILS_NS::Path&& path = GetResourcePath();
 
         if (path.IsAbs()) {
             SR_ERROR("Shader::Load() : absolute path is not allowed!");
             return false;
         }
 
-        auto&& pShader = SR_SRSL_NS::SRSLShader::Load(path);
+        auto&& pShader = SR_SRSL_NS::SRSLShader::Load(path, m_macros);
         if (!pShader) {
             SR_ERROR("Shader::Load() : failed to load srsl shader!\n\tPath: " + path.ToString());
             return false;
@@ -468,6 +474,11 @@ namespace SR_GRAPH_NS::Types {
 
     bool Shader::Unload() {
         bool hasErrors = !IResource::Unload();
+
+        for (auto&& pVariant : m_variants | std::views::values) {
+            pVariant->RemoveUsePoint();
+        }
+        m_variants.clear();
 
         m_hasErrors = false;
         m_isDirty = true;
@@ -679,10 +690,34 @@ namespace SR_GRAPH_NS::Types {
         GetPipeline()->Dispatch(m_computeWorkGroupSize.x, m_computeWorkGroupSize.y, m_computeWorkGroupSize.z);
     }
 
-    Utils::IResource::RemoveUPResult Shader::RemoveUsePoint() {
+    SR_UTILS_NS::IResource::RemoveUPResult Shader::RemoveUsePoint() {
         if (GetCountUses() == 1 && IsGraphicsResourceRegistered()) {
             SRAssert(m_shaderProgram != SR_ID_INVALID);
         }
         return IResource::RemoveUsePoint();
+    }
+
+    Shader::Ptr Shader::GetShaderVariant(const SR_SRSL_NS::ShaderMacrosParams& macros) {
+        if (m_macros.GetHash() != 0) {
+            SRHalt("Only base shader can have variants!");
+            return nullptr;
+        }
+
+        const auto hash = macros.GetHash();
+        if (hash == 0) {
+            return GetThis().StaticCast<Shader>();
+        }
+
+        auto&& pIt = m_variants.find(hash);
+        if (pIt != m_variants.end()) {
+            return pIt->second;
+        }
+
+        auto&& pShader = Shader::Load(GetResourcePath(), macros);
+        if (pShader) {
+            m_variants[hash] = pShader;
+            pShader->AddUsePoint();
+        }
+        return pShader;
     }
 }

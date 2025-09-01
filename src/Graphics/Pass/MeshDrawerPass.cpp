@@ -147,7 +147,7 @@ namespace SR_GRAPH_NS {
     bool MeshDrawerPass::Render() {
         const uint32_t layer = GetPipeline()->GetCurrentFrameBufferLayer();
         if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("MeshDrawerPass::Render() : out of bounds!");
+            SR_ERROR("MeshDrawerPass::Render() : out of bounds! Layer: {}, Queues: {}", layer, m_renderQueues.size());
             return false;
         }
 
@@ -157,7 +157,7 @@ namespace SR_GRAPH_NS {
     void MeshDrawerPass::Update() {
         const uint32_t layer = GetPipeline()->GetCurrentFrameBufferLayer();
         if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("MeshDrawerPass::Update() : out of bounds!");
+            SR_ERROR("MeshDrawerPass::Update() : out of bounds! Layer: {}, Queues: {}", layer, m_renderQueues.size());
             return;
         }
 
@@ -170,8 +170,6 @@ namespace SR_GRAPH_NS {
 
     void MeshDrawerPass::UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) {
         SR_TRACY_ZONE;
-
-        pShader->SetInt(SHADER_RENDER_PASS_TYPE, SR_UTILS_NS::EnumReflector::AsInt(ShaderRenderPassType::Main));
 
         pShader->SetFloat(SHADER_TIME, static_cast<float_t>(m_time.Clock()));
 
@@ -259,18 +257,16 @@ namespace SR_GRAPH_NS {
         for (auto&& definition : m_shaderDefines) {
             m_shaderMacros.AddDefine(definition);
         }
-        m_shaderMacros.InitHash();
 
-        const uint8_t layers = GetMeshDrawerFBOLayers();
-        if (layers == 0) SR_UNLIKELY_ATTRIBUTE {
+        if (m_renderLayers == 0) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("MeshDrawerPass::Init() : layers count is 0!");
             return false;
         }
 
         SRAssert(m_renderQueues.empty());
 
-        m_renderQueues.resize(layers);
-        for (uint8_t i = 0; i < layers; ++i) {
+        m_renderQueues.resize(m_renderLayers);
+        for (uint8_t i = 0; i < m_renderLayers; ++i) {
             m_renderQueues[i] = AllocateRenderQueue();
         }
 

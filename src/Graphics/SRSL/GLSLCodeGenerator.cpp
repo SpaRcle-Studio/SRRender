@@ -172,7 +172,8 @@ namespace SR_SRSL_NS {
             return std::optional<std::string>();
         }
 
-        const bool isColorUsed = true; /// pUseStackFunction->IsVariableUsed("COLOR");
+        const bool isColorPassDefined = m_shader->IsMacroDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+        const bool isColorUsed = isColorPassDefined || pUseStackFunction->IsVariableUsed("COLOR");
         const bool isFragCoordUsed = pUseStackFunction->IsVariableUsed("FRAG_COORD");
 
         std::string variablesCode;
@@ -209,18 +210,15 @@ namespace SR_SRSL_NS {
             preCode += GenerateTab(1) + "FRAG_COORD = gl_FragCoord;\n\n";
         }
 
-        std::string postCode = GenerateTab(1) + "}\n";
+        std::string postCode;
 
         if (isColorUsed) {
             postCode += GenerateTab(1) + SR_SRSL_MAIN_OUT_LAYER + " = COLOR;\n";
         }
 
-
         /// color buffer pass code
-        {
-            preCode += GenerateTab(1) + "if ({} == {}) "_format(SHADER_RENDER_PASS_TYPE, SR_UTILS_NS::EnumReflector::AsInt(ShaderRenderPassType::ColorBuffer)) + "{\n";
-            preCode += GenerateTab(2) + "COLOR = {};\n"_format(SHADER_RGBA_VALUE);
-            preCode += GenerateTab(1) + "} else {\n";
+        if (isColorPassDefined) {
+            preCode += GenerateTab(1) + "COLOR = vec4({}, 1.0);\n"_format(SHADER_PC_COLOR_BUFFER_VALUE);
         }
 
         code += GenerateFunction(pStageFunction, 0, preCode, postCode);
@@ -679,7 +677,6 @@ namespace SR_SRSL_NS {
             bool hasUsage = false;
 
             for (auto&& field : uniformBlock.fields) {
-                hasUsage |= SR_SHADER_ALWAYS_USED_VARIABLES[stage].count(field.name) > 0;
                 hasUsage |= pFunction->IsVariableUsed(field.name);
 
                 auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));

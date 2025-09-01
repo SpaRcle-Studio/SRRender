@@ -63,7 +63,6 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         uint64_t colorIndex = m_colorId / m_multiplier;
-        m_meshToColorIndex[pMesh] = m_colorId;
 
         if (colorIndex - 1 >= m_table.size()) {
             if (m_table.empty()) {
@@ -81,15 +80,6 @@ namespace SR_GRAPH_NS {
         return SR_MATH_NS::HEXToBGR(GetColorIndex()).Cast<SR_MATH_NS::Unit>() / 255.f;
     }
 
-    SR_MATH_NS::FVector3 IColorBufferPass::GetMeshColor(SR_GTYPES_NS::Mesh* pMesh) const noexcept {
-        SR_TRACY_ZONE;
-        auto&& pIt = m_meshToColorIndex.find(pMesh);
-        if (pIt == m_meshToColorIndex.end()) {
-            return SR_MATH_NS::FVector3(0.f);
-        }
-        return SR_MATH_NS::HEXToBGR(pIt->second).Cast<SR_MATH_NS::Unit>() / 255.f;
-    }
-
     SR_GTYPES_NS::Mesh* IColorBufferPass::GetMesh(SR_MATH_NS::FVector2 pos) const {
         return GetMesh(pos.x, pos.y);
     }
@@ -98,7 +88,6 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         memset(m_table.data(), 0, m_table.size() * sizeof(SR_GTYPES_NS::Mesh*));
-        m_meshToColorIndex.clear();
     }
 
     void IColorBufferPass::IncrementColorIndex() noexcept {

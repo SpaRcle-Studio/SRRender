@@ -4,29 +4,18 @@
 
 #include <Graphics/Pass/CascadedShadowMapPass.h>
 
+#include <Codegen/CascadedShadowMapPass.generated.hpp>
+
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(CascadedShadowMapPass);
-
-    bool CascadedShadowMapPass::Load(const SR_XML_NS::Node& passNode) {
-        m_cascadeSplitLambda = passNode.TryGetAttribute("SplitLambda").ToFloat(0.95);
-        m_usePerspective = passNode.TryGetAttribute("UsePerspective").ToBool(false);
-        m_near = passNode.TryGetAttribute("Near").ToFloat(0.1f);
-        m_far = passNode.TryGetAttribute("Far").ToFloat(100.f);
-        return Super::Load(passNode);
-    }
-
-    void CascadedShadowMapPass::UseUniforms(ShaderUseInfo info, IMeshClusterPass::MeshPtr pMesh) {
+    void CascadedShadowMapPass::UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) {
         SR_TRACY_ZONE;
-
-        pMesh->UseModelMatrix();
-
-        info.pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
-
-        const auto lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
-        info.pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
+        Super::UseUniforms(pShader, pMesh);
     }
 
     void CascadedShadowMapPass::UpdateCascades() {
+        SR_TRACY_ZONE;
+
+        auto&& pCamera = GetCamera();
         const auto lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
 
         std::vector<float_t> cascadeSplits;
@@ -67,7 +56,7 @@ namespace SR_GRAPH_NS {
                 SR_MATH_NS::FVector3(-1.0f, -1.0f,  1.0f),
             };
 
-            auto&& invCamera = (m_camera->GetProjection() * m_camera->GetViewTranslate()).Inverse();
+            auto&& invCamera = (pCamera->GetProjection() * pCamera->GetViewTranslate()).Inverse();
 
             for (auto&& frustumCorner : frustumCorners) {
                 SR_MATH_NS::FVector4 invCorner = invCamera * SR_MATH_NS::FVector4(frustumCorner, 1.0f);
@@ -104,7 +93,7 @@ namespace SR_GRAPH_NS {
 
             if (m_usePerspective) {
                 /// TODO: not works
-                m_cascadeMatrices[i] = m_camera->GetProjection() * lightViewMatrix;
+                m_cascadeMatrices[i] = pCamera->GetProjection() * lightViewMatrix;
             }
             else {
                 auto&& lightOrthoMatrix = SR_MATH_NS::Matrix4x4::Ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
@@ -115,13 +104,15 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void CascadedShadowMapPass::UseConstants(ShaderUseInfo info) {
-        info.pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, GetPassPipeline()->GetCurrentFrameBufferLayer());
-        Super::UseConstants(info);
+    void CascadedShadowMapPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
+        Super::UseConstants(pShader);
+
+        //pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, GetPipeline()->GetCurrentFrameBufferLayer());
     }
 
     bool CascadedShadowMapPass::CheckCamera() {
-        if (!m_camera) SR_UNLIKELY_ATTRIBUTE {
+        auto&& pCamera = GetCamera();
+        if (!pCamera) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
@@ -129,32 +120,40 @@ namespace SR_GRAPH_NS {
             goto dirty;
         }
 
-        if (m_cameraPosition.Distance(m_camera->GetPosition()) > 1.0) SR_UNLIKELY_ATTRIBUTE {
+        if (m_cameraPosition.Distance(pCamera->GetPosition()) > 1.0) SR_UNLIKELY_ATTRIBUTE {
             goto dirty;
         }
 
-        if (m_cameraRotation != m_camera->GetRotation()) SR_UNLIKELY_ATTRIBUTE {
+        if (m_cameraRotation != pCamera->GetRotation()) SR_UNLIKELY_ATTRIBUTE {
             goto dirty;
         }
 
-        if (m_screenSize != m_camera->GetSize()) SR_UNLIKELY_ATTRIBUTE {
+        if (m_screenSize != pCamera->GetSize()) SR_UNLIKELY_ATTRIBUTE {
             goto dirty;
         }
 
         return false;
 
     dirty:
-        m_cameraPosition = m_camera->GetPosition();
-        m_cameraRotation = m_camera->GetRotation();
-        m_screenSize = m_camera->GetSize();
+        m_cameraPosition = pCamera->GetPosition();
+        m_cameraRotation = pCamera->GetRotation();
+        m_screenSize = pCamera->GetSize();
 
         return true;
     }
 
-    void CascadedShadowMapPass::UseSharedUniforms(ShaderUseInfo info) {
-        if (CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
-            UpdateCascades();
-        }
-        Super::UseSharedUniforms(info);
+    void CascadedShadowMapPass::UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) {
+        SR_TRACY_ZONE;
+
+        Super::UseSharedUniforms(pShader);
+
+        //if (CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
+        //    UpdateCascades();
+        //}
+
+        //pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
+
+        //const auto lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
+        //pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
     }
 }

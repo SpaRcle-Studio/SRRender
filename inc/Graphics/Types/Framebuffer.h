@@ -78,6 +78,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsDepthEnabled() const { return m_depthEnabled; }
         SR_NODISCARD bool IsDirty() const { return m_dirty; }
         SR_NODISCARD bool IsValid() const { return m_frameBuffer != SR_ID_INVALID && !m_hasErrors && !IsDirty(); }
+        SR_NODISCARD bool IsWasRendered() const { return m_wasRendered; }
         SR_NODISCARD const FrameBufferFeatures& GetFeatures() const { return m_features; }
 
         SR_NODISCARD int32_t GetId() const;
@@ -96,6 +97,7 @@ namespace SR_GTYPES_NS {
 
         std::atomic<bool> m_dirty = true;
         std::atomic<bool> m_hasErrors = false;
+        bool m_wasRendered = false;
 
         std::vector<ColorLayer> m_colors = { };
         DepthLayer m_depth = { };

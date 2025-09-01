@@ -5,6 +5,7 @@
 #ifndef SR_ENGINE_SRSL_SHADER_H
 #define SR_ENGINE_SRSL_SHADER_H
 
+#include <Graphics/Loaders/SRSL.h>
 #include <Graphics/SRSL/RefAnalyzer.h>
 #include <Graphics/SRSL/ICodeGenerator.h>
 #include <Graphics/SRSL/ShaderType.h>
@@ -63,7 +64,7 @@ namespace SR_SRSL_NS {
         explicit SRSLShader(SR_UTILS_NS::Path path);
 
     public:
-        SR_NODISCARD static SRSLShader::Ptr Load(SR_UTILS_NS::Path path);
+        SR_NODISCARD static SRSLShader::Ptr Load(const SR_UTILS_NS::Path& path, const ShaderMacrosParams& macros);
         static void ClearShadersCache();
 
     public:
@@ -90,6 +91,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, SRSLVariable*>& GetConstants() const { return m_constants; }
         SR_NODISCARD const std::vector<SR_UTILS_NS::StringAtom>& GetIncludes() const { return m_includes; }
         SR_NODISCARD const SR_MATH_NS::UVector3& GetComputeWorkGroupSize() const { return m_computeWorkGroupSize; }
+        SR_NODISCARD bool IsMacroDefined(const SR_UTILS_NS::StringAtom& name) const;
 
     private:
         SR_NODISCARD float_t EvalExpressionFloat(SRSLExpr* pExpression) const;
@@ -114,6 +116,7 @@ namespace SR_SRSL_NS {
     private:
         SR_UTILS_NS::Path m_path;
 
+        ShaderMacrosParams m_macros;
         std::vector<SR_UTILS_NS::StringAtom> m_includes;
         std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_shared;
         std::map<SR_UTILS_NS::StringAtom, SRSLVariable*> m_constants;

@@ -17,11 +17,21 @@ namespace SR_SRSL_NS {
         static const ShaderMacrosParams& GetDefault();
 
         SR_NODISCARD SR_UTILS_NS::SRHashType GetHash() const;
+        SR_NODISCARD std::string GetHashStr() const;
 
         void Clear() {
             m_params.clear();
             m_hash = 0;
             m_initialized = false;
+        }
+
+        bool IsDefined(const std::string_view& key) const {
+            for (const auto& [k, v] : m_params) {
+                if (k == key) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         void SetParam(const std::string& key, const std::string& value) {
@@ -43,6 +53,7 @@ namespace SR_SRSL_NS {
 }
 
 namespace SR_GRAPH_NS::SRSL {
+    /*
     typedef uint32_t RequireBits;
     typedef uint32_t VertexAttributeBits;
     typedef std::vector<std::string>::const_iterator CodeIter;
@@ -100,7 +111,7 @@ namespace SR_GRAPH_NS::SRSL {
         bool CreateVertex(SRSLUnit& unit, SRSLParseData& parseData, const std::string& code, SR_UTILS_NS::Path&& path);
         std::string MakeVertexCode(const SRSLUnit &unit, const SRSLParseData& parseData);
 
-    };
+    };*/
 }
 
 #endif //SR_ENGINE_SRSL_H

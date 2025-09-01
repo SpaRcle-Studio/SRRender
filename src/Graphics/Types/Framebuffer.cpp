@@ -96,6 +96,8 @@ namespace SR_GTYPES_NS {
             return true;
         }
 
+        m_wasRendered = false;
+
         if (m_size.HasZero() || m_size.HasNegative()) {
             SR_ERROR("FrameBuffer::Update() : incorrect framebuffer size!");
             m_hasErrors = true;
@@ -208,7 +210,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        SR_NOOP;
+        m_wasRendered = true;
 
         return true;
     }

@@ -4,6 +4,8 @@
 
 #include <Graphics/Loaders/SRSL.h>
 
+/*
+
 const std::unordered_map<std::string, SR_GRAPH_NS::ShaderVarType> SR_GRAPH_NS::SRSL::SRSLLoader::STANDARD_VARIABLES = {
         { "HALF_SIZE_NEAR_PLANE", ShaderVarType::Vec2 },
         { "ASPECT", ShaderVarType::Vec2 },
@@ -828,7 +830,7 @@ std::map<std::string, SR_GRAPH_NS::SRSL::SRSLVariable> SR_GRAPH_NS::SRSL::SRSLUn
     }
 
     return samplers;
-}
+}*/
 
 namespace SR_SRSL_NS {
     void ShaderMacrosParams::InitHash() {
@@ -838,8 +840,8 @@ namespace SR_SRSL_NS {
         m_initialized = true;
 
         for (const auto& [key, value] : m_params) {
-            m_hash = SR_COMBINE_HASHES(m_hash, SR_HASH_STR_VIEW(key));
-            m_hash = SR_COMBINE_HASHES(m_hash, SR_HASH_STR_VIEW(value));
+            m_hash = SR_COMBINE_HASHES(m_hash, SR_HASH_STR(key));
+            m_hash = SR_COMBINE_HASHES(m_hash, SR_HASH_STR(value));
         }
     }
 
@@ -854,5 +856,10 @@ namespace SR_SRSL_NS {
     const ShaderMacrosParams& ShaderMacrosParams::GetDefault() {
         static ShaderMacrosParams params;
         return params;
+    }
+
+    std::string ShaderMacrosParams::GetHashStr() const {
+        std::string hashStr = SR_UTILS_NS::ToString(GetHash());
+        return hashStr;
     }
 }

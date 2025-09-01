@@ -39,6 +39,12 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLUseStack::IsVariableUsed(const std::string& name) const {
+        for (auto&& nameInForce : forceUsed) {
+            if (nameInForce == name) {
+                return true;
+            }
+        }
+
         for (auto&& variable : variables) {
             if (variable == name) {
                 return true;
@@ -55,6 +61,12 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLUseStack::IsFunctionUsed(const std::string &name) const {
+        for (auto&& nameInForce : forceUsed) {
+            if (nameInForce == name) {
+                return true;
+            }
+        }
+
         for (auto&& function : functions) {
             if (function.first == name) {
                 return true;
@@ -101,12 +113,6 @@ namespace SR_SRSL_NS {
     std::set<ShaderStage> SRSLUseStack::IsVariableUsedInEntryPointsExt(const std::string& name) const {
         std::set<ShaderStage> stages;
 
-        for (auto&& [stage, vars] : SR_SHADER_ALWAYS_USED_VARIABLES) {
-            if (vars.find(name) != vars.end()) {
-                stages.insert(stage);
-            }
-        }
-
         for (auto&& [stage, entryPoint] : SR_SRSL_ENTRY_POINTS) {
             if (auto&& pFunction = FindFunction(entryPoint); pFunction && pFunction->IsVariableUsed(name)) {
                 stages.insert(stage);
@@ -118,11 +124,23 @@ namespace SR_SRSL_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    SRSLUseStack::Ptr SRSLRefAnalyzer::Analyze(const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {
+    SRSLUseStack::Ptr SRSLRefAnalyzer::Analyze(const SRSLAnalyzedTree::Ptr& pAnalyzedTree, const SR_SRSL_NS::ShaderMacrosParams& macros) {
         SR_GLOBAL_LOCK
         m_analyzedTree = pAnalyzedTree;
         std::list<std::string> stack;
-        return AnalyzeTree(stack, pAnalyzedTree->pLexicalTree);
+        auto&& pUseStack = AnalyzeTree(stack, pAnalyzedTree->pLexicalTree);
+        if (pUseStack) {
+            PreprocessUseStack(pUseStack, macros);
+        }
+        return pUseStack;
+    }
+
+    void SRSLRefAnalyzer::PreprocessUseStack(SRSLUseStack::Ptr& pUseStack, const SR_SRSL_NS::ShaderMacrosParams& macros) {
+        const bool isColorPassDefined = macros.IsDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+
+        if (isColorPassDefined) {
+            pUseStack->FindFunction(SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment))->forceUsed.insert(SHADER_PC_COLOR_BUFFER_VALUE);
+        }
     }
 
     SRSLUseStack::Ptr SRSLRefAnalyzer::AnalyzeTree(std::list<std::string>& stack, SRSLLexicalTree* pTree) {

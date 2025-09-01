@@ -17,16 +17,6 @@ namespace SR_GRAPH_NS {
     bool FrameBufferPassData::RenderFrameBuffer(const FBRenderCallback& callback) {
         m_isFrameBufferRendered = false;
 
-        if (IsDirectional()) {
-            GetPipeline()->SetCurrentFrameBuffer(nullptr);
-            if (GetLayersCount() != 1) {
-                SR_ERROR("FrameBufferPassData::RenderFrameBuffer() : directional frame buffer must have only one layer!\n\tName: {}", m_frameBufferName);
-                return false;
-            }
-            m_isFrameBufferRendered = callback();
-            return m_isFrameBufferRendered;
-        }
-
         auto&& pFrameBuffer = GetFramebuffer();
         if (!pFrameBuffer) {
             SR_ERROR("FrameBufferPassData::RenderFrameBuffer() : frame buffer is not found!\n\tName: {}", m_frameBufferName);
@@ -64,7 +54,7 @@ namespace SR_GRAPH_NS {
 
         GetPipeline()->SetCurrentFrameBuffer(nullptr);
 
-        return IsDirectional();
+        return false;
     }
 
     bool FrameBufferPassData::RenderFrameBuffer(const FBRenderCallback& callback, uint8_t layers) {
@@ -94,7 +84,7 @@ namespace SR_GRAPH_NS {
 
         GetPipeline()->SetCurrentFrameBuffer(nullptr);
 
-        return IsDirectional();
+        return false;
     }
 
     void FrameBufferPassData::UpdateFrameBuffer(const FBUpdateCallback& callback) {
@@ -104,7 +94,7 @@ namespace SR_GRAPH_NS {
 
         auto&& pFrameBuffer = GetFramebuffer();
 
-        if (!IsDirectional() && (!pFrameBuffer || pFrameBuffer->IsDirty())) {
+        if (!pFrameBuffer || pFrameBuffer->IsDirty()) {
             return;
         }
 
@@ -135,6 +125,11 @@ namespace SR_GRAPH_NS {
     }
 
     const FrameBufferController::Ptr& FrameBufferPassData::GetFrameBufferController() const noexcept {
+        if (m_frameBufferName.Empty()) {
+            SR_ERROR("FrameBufferPassData::GetFrameBufferController() : frame buffer name is empty!");
+            return m_frameBufferController;
+        }
+
         if (m_frameBufferController) {
             return m_frameBufferController;
         }

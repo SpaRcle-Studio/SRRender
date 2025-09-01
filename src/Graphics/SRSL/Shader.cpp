@@ -39,7 +39,7 @@ namespace SR_SRSL_NS {
         , m_path(std::move(path))
     { }
 
-    SRSLShader::Ptr SRSLShader::Load(SR_UTILS_NS::Path path) {
+    SRSLShader::Ptr SRSLShader::Load(const SR_UTILS_NS::Path& path, const ShaderMacrosParams& macros) {
         auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
 
         if (!absPath.Exists()) {
@@ -48,6 +48,7 @@ namespace SR_SRSL_NS {
         }
 
         auto&& pShader = SRSLShader::Ptr(new SRSLShader(path));
+        pShader->m_macros = macros;
 
         auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(absPath, 0);
         if (lexems.empty()) {
@@ -57,21 +58,13 @@ namespace SR_SRSL_NS {
 
         SRSLPreProcessor::Includes includes = { path.ToStringRef() };
 
-        auto&& [preProcessedLexems, preProcessResult] = SRSLPreProcessor::Instance().Process(std::move(lexems), includes);
+        auto&& [preProcessedLexems, preProcessResult] = SRSLPreProcessor::Instance().Process(std::move(lexems), includes, pShader->m_macros);
         if (preProcessResult.HasErrors()) {
             SR_ERROR("SRSLShader::Load() : failed to pre-process shader!" + preProcessResult.ToString(includes));
             return nullptr;
         }
 
         lexems = std::move(preProcessedLexems);
-
-        /*auto&& [expandedLexems, expandResult] = SR_SRSL_NS::SRSLAssignExpander::Instance().Expand(std::move(lexems));
-        if (expandResult.HasErrors()) {
-            SR_ERROR("SRSLShader::Load() : failed to expand assign shader!" + expandResult.ToString(includes));
-            return nullptr;
-        }
-
-        lexems = std::move(expandedLexems);*/
 
         auto&& [pAnalyzedTree, analyzeResult] = SR_SRSL_NS::SRSLLexicalAnalyzer::Instance().Analyze(std::move(lexems));
 
@@ -82,6 +75,10 @@ namespace SR_SRSL_NS {
 
         pShader->m_analyzedTree = std::move(pAnalyzedTree);
         pShader->m_includes = std::move(includes);
+
+        if (pShader->m_analyzedTree) {
+            pShader->m_analyzedTree->PostProcess(macros);
+        }
 
         if (!pShader->Prepare()) {
             SR_ERROR("SRSLShader::Load() : failed to prepare shader!\n\tPath: " + path.ToString());
@@ -149,7 +146,7 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLShader::Prepare() {
-        m_useStack = SRSLRefAnalyzer::Instance().Analyze(m_analyzedTree);
+        m_useStack = SRSLRefAnalyzer::Instance().Analyze(m_analyzedTree, m_macros);
         if (!m_useStack) {
             SR_ERROR("SRSLShader::Prepare() : failed to analyze shader refs!");
             return false;
@@ -584,7 +581,7 @@ namespace SR_SRSL_NS {
                 }
             }
 
-            m_createInfo.stages[stage].path = m_path.ToString() + "/shader." + SR_SRSL_STAGE_EXTENSIONS.at(stage);
+            m_createInfo.stages[stage].path = m_path.ToString() + "/" + m_macros.GetHashStr() + "/shader." + SR_SRSL_STAGE_EXTENSIONS.at(stage);
 
             /// блоки юниформ
 
@@ -839,5 +836,9 @@ namespace SR_SRSL_NS {
             }
         }
         return nullptr;
+    }
+
+    bool SRSLShader::IsMacroDefined(const SR_UTILS_NS::StringAtom& name) const {
+        return m_macros.IsDefined(name);
     }
 }

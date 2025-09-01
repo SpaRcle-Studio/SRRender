@@ -5,11 +5,12 @@
 #include <Graphics/SRSL/PreProcessor.h>
 
 namespace SR_SRSL_NS {
-    SRSLPreProcessor::OutResult SRSLPreProcessor::Process(std::vector<Lexem>&& lexems, Includes& includes) {
+    SRSLPreProcessor::OutResult SRSLPreProcessor::Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderMacrosParams& macros) {
         Clear();
 
         m_lexems = SR_UTILS_NS::Exchange(lexems, { });
         m_includes = std::move(includes);
+        m_macros = &macros;
 
         while (InBounds() && !IsHasErrors()) {
             ProcessMain();
@@ -25,6 +26,8 @@ namespace SR_SRSL_NS {
         m_lexems.clear();
         m_result = SRSLResult();
         m_state = PPState::Idle;
+        m_ifStack = {};
+        m_ifStack.push(true);
         m_includes.clear();
         m_include.clear();
     }
@@ -50,6 +53,13 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLPreProcessor::ProcessMain() {
+        if (m_lexems[m_currentLexem].kind != LexemKind::Macro && m_state == PPState::Idle) {
+            if (!m_ifStack.top()) {
+                m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                return;
+            }
+        }
+
         switch (m_lexems[m_currentLexem].kind) {
             case LexemKind::Macro:
                 if (m_state != PPState::Idle) {
@@ -96,8 +106,50 @@ namespace SR_SRSL_NS {
                 break;
             case LexemKind::Identifier:
                 if (m_state == PPState::MacroName) {
-                    if (GetCurrentLexem()->value == "include") {
-                        m_state = PPState::IncludeOpen;
+                    std::string value = GetCurrentLexem()->value;
+
+                    if (value == "include") {
+                        if (m_ifStack.top()) {
+                            m_state = PPState::IncludeOpen;
+                        }
+                        m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                    }
+                    else if (value == "if" || value == "ifdef" || value == "ifndef")
+                    {
+                        m_state = PPState::Idle;
+                        m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                        if (value == "ifdef") {
+                            std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
+                            m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                            m_ifStack.push(m_macros->IsDefined(macroName) && m_ifStack.top());
+                        }
+                        else if (value == "ifndef") {
+                            std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
+                            m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                            m_ifStack.push(!m_macros->IsDefined(macroName) && m_ifStack.top());
+                        }
+                        else {
+                            SRHalt("Not implemented!");
+                        }
+                    }
+                    else if (value == "else") {
+                        m_state = PPState::Idle;
+                        if (m_ifStack.size() <= 1) {
+                            m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()));
+                            return;
+                        }
+                        bool top = m_ifStack.top();
+                        m_ifStack.pop();
+                        m_ifStack.push(!top && m_ifStack.top());
+                        m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                    }
+                    else if (value == "endif") {
+                        m_state = PPState::Idle;
+                        if (m_ifStack.size() <= 1) {
+                            m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()));
+                            return;
+                        }
+                        m_ifStack.pop();
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
                     else {
@@ -124,9 +176,14 @@ namespace SR_SRSL_NS {
             case LexemKind::Percent:
             case LexemKind::Divide:
                 switch (m_state) {
-                    case PPState::Idle:
+                    case PPState::Idle: {
+                        if (!m_ifStack.top()) {
+                            m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                            break;
+                        }
                         ++m_currentLexem;
                         break;
+                    }
                     case PPState::IncludePath:
                         m_include += GetCurrentLexem()->value;
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);

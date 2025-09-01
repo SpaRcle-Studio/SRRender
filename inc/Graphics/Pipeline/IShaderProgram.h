@@ -102,6 +102,9 @@ namespace SR_GRAPH_NS {
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_TEXT_ATLAS_TEXTURE = "TEXT_ATLAS_TEXTURE";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_NDC_RECT = "NDC_RECT";
 
+    SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_MACRO_SR_DEFINE_COLOR_PASS = "SR_DEFINE_COLOR_PASS";
+    SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_MACRO_SR_DEFINE_CASCADED_SHADOW_MAP_PASS = "SR_DEFINE_CASCADED_SHADOW_MAP_PASS";
+
     typedef std::vector<std::pair<Vertices::Attribute, size_t>> VertexAttributes;
     typedef std::vector<SR_VERTEX_DESCRIPTION> VertexDescriptions;
 
@@ -123,10 +126,10 @@ namespace SR_GRAPH_NS {
         MissSecondary
     );
 
-    SR_INLINE_STATIC std::map<ShaderStage, std::set<SR_UTILS_NS::StringAtom>> SR_SHADER_ALWAYS_USED_VARIABLES = {
-        { ShaderStage::Fragment, { SHADER_RGBA_VALUE, SHADER_RENDER_PASS_TYPE } },
-        { ShaderStage::Vertex, { SHADER_RENDER_PASS_TYPE } }
-    };
+    //SR_INLINE_STATIC std::map<ShaderStage, std::set<SR_UTILS_NS::StringAtom>> SR_SHADER_ALWAYS_USED_VARIABLES = {
+    //    { ShaderStage::Fragment, { SHADER_RGBA_VALUE, SHADER_RENDER_PASS_TYPE } },
+    //    { ShaderStage::Vertex, { SHADER_RENDER_PASS_TYPE } }
+    //};
 
     SR_ENUM_NS_CLASS(LayoutBinding, Unknown = 0, Uniform, Sampler2D, Attachhment, SSBO)
     SR_ENUM_NS_CLASS(PolygonMode, Unknown, Fill, Line, Point)

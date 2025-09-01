@@ -64,6 +64,8 @@ namespace SR_GTYPES_NS {
 
         RemoveUPResult RemoveUsePoint() override;
 
+        SR_NODISCARD Shader::Ptr GetShaderVariant(const SR_SRSL_NS::ShaderMacrosParams& macros);
+
     public:
         SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
         SR_NODISCARD int32_t GetId() noexcept;
@@ -157,6 +159,9 @@ namespace SR_GTYPES_NS {
         std::pair<int32_t, bool> m_virtualUBO = { SR_ID_INVALID, true };
 
         SR_MATH_NS::UVector3 m_computeWorkGroupSize = { 1, 1, 1 };
+
+        SR_SRSL_NS::ShaderMacrosParams m_macros;
+        std::map<SR_UTILS_NS::SRHashType, SR_GTYPES_NS::Shader::Ptr> m_variants;
 
         std::vector<SR_UTILS_NS::StringAtom> m_includes;
         Memory::ShaderUBOBlock m_uniformBlock;

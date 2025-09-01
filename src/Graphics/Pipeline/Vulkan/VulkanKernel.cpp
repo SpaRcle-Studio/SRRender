@@ -90,6 +90,10 @@ namespace SR_GRAPH_NS {
         auto&& queues = m_pipeline->GetQueue().GetQueues();
         for (auto&& queue : queues) {
             for (auto&& pFrameBuffer : queue) {
+                if (!pFrameBuffer->IsWasRendered()) {
+                    continue;
+                }
+
                 if (!pFrameBuffer->IsValid()) {
                     SR_WARN("VulkanKernel::Render() : frame buffer is not valid! Skipping...");
                     continue;

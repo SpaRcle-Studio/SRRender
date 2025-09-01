@@ -5,6 +5,7 @@
 #ifndef SR_ENGINE_SRSL_LEXICALTREE_H
 #define SR_ENGINE_SRSL_LEXICALTREE_H
 
+#include <Graphics/Loaders/SRSL.h>
 #include <Graphics/SRSL/LexerUtils.h>
 
 namespace SR_SRSL_NS {
@@ -285,9 +286,7 @@ namespace SR_SRSL_NS {
         SRSLLexicalTree() = default;
 
         ~SRSLLexicalTree() override {
-            for (auto&& pUnit : lexicalTree) {
-                delete pUnit;
-            }
+            Clear();
         }
 
         SRSLLexicalTree(SRSLLexicalTree&& other) noexcept
@@ -304,6 +303,13 @@ namespace SR_SRSL_NS {
         SR_NODISCARD SRSLFunction* FindFunction(const std::string& name) const;
         SR_NODISCARD SRSLExpr* AsExpression() const;
 
+        void Clear() {
+            for (auto&& pUnit : lexicalTree) {
+                delete pUnit;
+            }
+            lexicalTree.clear();
+        }
+
         std::vector<SRSLLexicalUnit*> lexicalTree;
     };
 
@@ -318,6 +324,8 @@ namespace SR_SRSL_NS {
         ~SRSLAnalyzedTree() override {
             SR_SAFE_DELETE_PTR(pLexicalTree);
         }
+
+        void PostProcess(const ShaderMacrosParams& macros);
 
         SRSLLexicalTree* pLexicalTree = nullptr;
     };

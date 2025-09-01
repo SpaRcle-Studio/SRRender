@@ -34,7 +34,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool HasPreRender() const noexcept override { return false; }
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
         SR_NODISCARD virtual bool IsNeedUpdate() const noexcept { return false; }
-        SR_NODISCARD virtual uint8_t GetMeshDrawerFBOLayers() const noexcept { return 1; }
 
         virtual void UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh);
         virtual void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader);
@@ -48,13 +47,11 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD const std::vector<RenderQueuePtr>& GetRenderQueues() const noexcept { return m_renderQueues; }
         SR_NODISCARD const SR_SRSL_NS::ShaderMacrosParams& GetShaderMacros() const noexcept { return m_shaderMacros; }
+        SR_NODISCARD uint8_t GetLayersCount() const noexcept { return m_renderLayers; }
 
     protected:
         SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
         SR_NODISCARD virtual RenderQueuePtr AllocateRenderQueue();
-
-    //private:
-        //void ClearOverrideShaders();
 
     private:
         std::vector<RenderQueuePtr> m_renderQueues;
@@ -64,6 +61,8 @@ namespace SR_GRAPH_NS {
         //ShadowMapPass* m_shadowMapPass = nullptr;
         //CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;
 
+        /// @property
+        uint8_t m_renderLayers = 1;
         /// @property
         std::set<SR_UTILS_NS::StringAtom> m_allowedLayers;
         /// @property
