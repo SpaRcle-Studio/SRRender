@@ -19,6 +19,10 @@
     //#include <Graphics/Pipeline/Vulkan/X11SurfaceInit.h>
 #endif
 
+#ifdef SR_RENDER_USE_GLSL_LANG_LIB
+    #include <Graphics/Pipeline/GLSLDefaultTBuiltInResource.h>
+#endif
+
 namespace SR_GRAPH_NS {
     std::string VulkanPipeline::GetVendor() const {
         if (m_kernel && m_kernel->GetDevice()) {
@@ -51,6 +55,10 @@ namespace SR_GRAPH_NS {
     bool VulkanPipeline::Destroy() {
         SR_INFO("VulkanPipeline::Destroy() : destroying vulkan pipeline...");
 
+    #ifdef SR_RENDER_USE_GLSL_LANG_LIB
+        glslang::FinalizeProcess();
+    #endif
+
         SR_TRACY_DESTROY(SR_UTILS_NS::TracyType::Vulkan);
 
         DestroyOverlay();
@@ -71,6 +79,10 @@ namespace SR_GRAPH_NS {
 
     bool VulkanPipeline::PreInit(const PipelinePreInitInfo& info) {
         SR_TRACY_ZONE;
+
+    #ifdef SR_RENDER_USE_GLSL_LANG_LIB
+        glslang::InitializeProcess();
+    #endif
 
         if (!Pipeline::PreInit(info)) {
             PipelineError("VulkanPipeline::PreInit() : failed to pre-initialize pipeline!");
@@ -468,22 +480,28 @@ namespace SR_GRAPH_NS {
 
         EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
 
-        if (!pShaderProgram->Load(
+        {
+            SR_TRACY_ZONE_N("Load Evo Vulkan shader");
+
+            if (!pShaderProgram->Load(
                 SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("/Cache/Shaders"),
                 vkModules,
                 descriptorLayoutBindings.value(),
                 pushConstants
-        )) {
-            EVK_POP_LOG_LEVEL();
-            FreeShader(&shaderProgram);
-            PipelineError("VulkanPipeline::CompileShader() : failed to load Evo Vulkan shader!");
-            return SR_ID_INVALID;
+            )) {
+                EVK_POP_LOG_LEVEL();
+                FreeShader(&shaderProgram);
+                PipelineError("VulkanPipeline::CompileShader() : failed to load Evo Vulkan shader!");
+                return SR_ID_INVALID;
+            }
         }
 
         EVK_POP_LOG_LEVEL();
 
         if (createInfo.shaderType == SR_SRSL_NS::ShaderType::Compute) {
             EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
+
+            SR_TRACY_ZONE_N("Compile Evo Vulkan compute shader");
 
             if (!pShaderProgram->CompileCompute()) {
                 EVK_POP_LOG_LEVEL();
@@ -516,20 +534,24 @@ namespace SR_GRAPH_NS {
 
             EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
 
-            if (!pShaderProgram->Compile(
-                VulkanTools::AbstractPolygonModeToVk(createInfo.polygonMode),
-                VulkanTools::AbstractCullModeToVk(cullMode),
-                VulkanTools::AbstractDepthOpToVk(createInfo.depthCompare),
-                createInfo.blendEnabled && depthEnabled,
-                createInfo.depthWrite,
-                createInfo.depthTest,
-                VulkanTools::AbstractPrimitiveTopologyToVk(createInfo.primitiveTopology),
-                vkSampleCount
-            )) {
-                EVK_POP_LOG_LEVEL();
-                PipelineError("VulkanPipeline::LinkShader() : failed to compile Evo Vulkan shader!");
-                FreeShader(&shaderProgram);
-                return SR_ID_INVALID;
+            {
+                SR_TRACY_ZONE_N("Compile Evo Vulkan shader");
+
+                if (!pShaderProgram->Compile(
+                    VulkanTools::AbstractPolygonModeToVk(createInfo.polygonMode),
+                    VulkanTools::AbstractCullModeToVk(cullMode),
+                    VulkanTools::AbstractDepthOpToVk(createInfo.depthCompare),
+                    createInfo.blendEnabled && depthEnabled,
+                    createInfo.depthWrite,
+                    createInfo.depthTest,
+                    VulkanTools::AbstractPrimitiveTopologyToVk(createInfo.primitiveTopology),
+                    vkSampleCount
+                )) {
+                    EVK_POP_LOG_LEVEL();
+                    PipelineError("VulkanPipeline::LinkShader() : failed to compile Evo Vulkan shader!");
+                    FreeShader(&shaderProgram);
+                    return SR_ID_INVALID;
+                }
             }
 
             EVK_POP_LOG_LEVEL();
@@ -904,6 +926,27 @@ namespace SR_GRAPH_NS {
         );
     }
 
+#ifdef SR_RENDER_USE_GLSL_LANG_LIB
+    EShLanguage GetShaderStageFromFileExtension(const std::string& filename) {
+        if (filename.ends_with(".vert")) return EShLangVertex;
+        if (filename.ends_with(".frag")) return EShLangFragment;
+        if (filename.ends_with(".comp")) return EShLangCompute;
+        if (filename.ends_with(".geom")) return EShLangGeometry;
+        if (filename.ends_with(".tesc")) return EShLangTessControl;
+        if (filename.ends_with(".tese")) return EShLangTessEvaluation;
+        if (filename.ends_with(".mesh")) return EShLangMesh;
+        if (filename.ends_with(".task")) return EShLangTask;
+        if (filename.ends_with(".rgen")) return EShLangRayGen;
+        if (filename.ends_with(".rint")) return EShLangIntersect;
+        if (filename.ends_with(".rahit")) return EShLangAnyHit;
+        if (filename.ends_with(".rchit")) return EShLangClosestHit;
+        if (filename.ends_with(".rmiss")) return EShLangMiss;
+        if (filename.ends_with(".rcall")) return EShLangCallable;
+        SRHalt("Unknown shader file extension: " + filename);
+        return EShLangCount;
+    }
+#endif
+
     bool VulkanPipeline::InitEvoVulkanHooks() {
         SR_TRACY_ZONE;
         SR_GRAPH("VulkanPipeline::InitEvoVulkanHooks() : initializing evo vulkan hooks...");
@@ -937,6 +980,100 @@ namespace SR_GRAPH_NS {
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().CreateFolder = [](const std::string& path) -> bool {
             return SR_PLATFORM_NS::CreateFolder(path);
+        };
+
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().IsSupportGLSLang = []() -> bool {
+            #ifdef SR_RENDER_USE_GLSL_LANG_LIB
+                return SR_UTILS_NS::Features::Instance().Enabled("UseGLSLangCompiler", true);
+            #else
+                return false;
+            #endif
+        };
+
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().ReadSPIRV = [](const std::string& path) -> std::vector<uint32_t> {
+            SR_TRACY_ZONE_N("Read SPIR-V");
+            SR_TRACY_ZONE_TEXT(path);
+
+            std::ifstream file(path, std::ios::ate | std::ios::binary);
+            if (!file.is_open()) {
+                return {};
+            }
+
+            size_t fileSize = static_cast<size_t>(file.tellg());
+            if (fileSize % sizeof(uint32_t) != 0) {
+                // невалидный бинарь
+                return {};
+            }
+
+            std::vector<uint32_t> buffer(fileSize / sizeof(uint32_t));
+            file.seekg(0);
+            file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
+            return buffer;
+        };
+
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().WriteSPIRV = [](const std::string& path, const std::vector<uint32_t>& spirv) -> bool {
+            SR_TRACY_ZONE_N("Write SPIR-V");
+            SR_TRACY_ZONE_TEXT(path);
+
+            std::ofstream file(path, std::ios::binary | std::ios::trunc);
+            if (!file.is_open()) {
+                return false;
+            }
+
+            file.write(reinterpret_cast<const char*>(spirv.data()), spirv.size() * sizeof(uint32_t));
+            return true;
+        };
+
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().CompileGLSLtoSPIRV = [](const std::string& input) -> std::vector<uint32_t> {
+            SR_TRACY_ZONE_N("Compile GLSL to SPIR-V");
+            SR_TRACY_ZONE_TEXT(input);
+
+            #ifdef SR_RENDER_USE_GLSL_LANG_LIB
+                EShLanguage stage = GetShaderStageFromFileExtension(input);
+                glslang::TShader shader(stage);
+                glslang::TProgram program;
+
+                // Compile the shader
+                std::string shaderSourceStr = SR_UTILS_NS::FileSystem::ReadAllText(input);
+                const char* shaderStrings = shaderSourceStr.c_str();
+                shader.setStrings(&shaderStrings, 1);
+
+                shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, 450);
+                shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_3);
+                shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
+
+                if (!shader.parse(&DefaultTBuiltInResource, 450, false, EShMsgDefault)) {
+                    SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to parse shader: {}\n{}", input, shader.getInfoLog());
+                    return {};
+                }
+
+                program.addShader(&shader);
+                if (!program.link(EShMsgDefault)) {
+                    SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to link shader program: {}\n{}", input, program.getInfoLog());
+                    return {};
+                }
+
+                // Generate SPIR-V.
+                std::vector<uint32_t> spirv;
+
+                auto* intermediate = program.getIntermediate(stage);
+                if (!intermediate) {
+                    SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to get intermediate representation for shader: {}", input);
+                    return {};
+                }
+                glslang::GlslangToSpv(*intermediate, spirv);
+
+                return spirv;
+            #else
+                SRHalt("GLSLang lib is not supported!");
+                return false;
+            #endif
+        };
+
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().ExecuteCommand = [](const std::string& command) {
+            SR_TRACY_ZONE_N("Execute command");
+            SR_TRACY_ZONE_TEXT(command);
+            system(command.c_str());
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().Delete = [](const std::string& path) -> bool {

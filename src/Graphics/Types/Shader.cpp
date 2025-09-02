@@ -698,13 +698,8 @@ namespace SR_GRAPH_NS::Types {
     }
 
     Shader::Ptr Shader::GetShaderVariant(const SR_SRSL_NS::ShaderMacrosParams& macros) {
-        if (m_macros.GetHash() != 0) {
-            SRHalt("Only base shader can have variants!");
-            return nullptr;
-        }
-
         const auto hash = macros.GetHash();
-        if (hash == 0) {
+        if (hash == m_macros.GetHash()) {
             return GetThis().StaticCast<Shader>();
         }
 

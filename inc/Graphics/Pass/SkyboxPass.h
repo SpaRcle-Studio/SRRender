@@ -31,7 +31,7 @@ namespace SR_GRAPH_NS {
         /// @property @setter(SetSkybox)
         SR_UTILS_NS::Path m_skyboxPath;
         /// @property @setter(SetShader)
-        /// @customArgs(pick: enabled, filter name: Shader)
+        /// @customArgs(pick: enabled, filter name: Shader, relative: resources)
         /// @customArg(filter value: srsl)
         SR_UTILS_NS::Path m_shaderPath;
 

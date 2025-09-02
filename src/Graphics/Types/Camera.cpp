@@ -56,7 +56,11 @@ namespace SR_GTYPES_NS {
             return m_renderTechnique.pTechnique.Get();
         }
 
-        auto&& path = GetRenderTechniquePath();
+        SR_UTILS_NS::Path path = GetRenderTechniquePath();
+
+        if (path.IsEmpty()) {
+            path = GetRenderScene()->GetContext()->GetSettingsPreset().mainCameraRenderTechnique;
+        }
 
         m_renderTechnique.pTechnique.AutoFree();
         m_renderTechnique.pTechnique = FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>();
@@ -73,11 +77,6 @@ namespace SR_GTYPES_NS {
     }
 
     const SR_UTILS_NS::Path& Camera::GetRenderTechniquePath() {
-        /// default technique
-        if (m_renderTechnique.path.IsEmpty()) {
-            m_renderTechnique.path = FileRenderTechnique::DEFAULT_RENDER_TECHNIQUE;
-        }
-
         return m_renderTechnique.path;
     }
 

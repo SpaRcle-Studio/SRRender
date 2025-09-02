@@ -580,4 +580,9 @@ namespace SR_GRAPH_NS {
         m_window = std::move(pWindow);
         m_pipeline->SwitchWindow(m_window);
     }
+
+    const RenderSettingsPreset& RenderContext::GetSettingsPreset() const noexcept {
+        SRAssert(m_settings);
+        return m_settings->GetPreset(SR_UTILS_NS::StringAtom());
+    }
 }

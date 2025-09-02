@@ -246,6 +246,8 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     int32_t MemoryManager::AllocateShaderProgram(EvoVulkan::Types::RenderPass renderPass)  {
+        SR_TRACY_ZONE;
+
         auto&& pShaderProgram = new EvoVulkan::Complexes::Shader(
             m_kernel->GetDevice(),
             renderPass,

@@ -51,7 +51,7 @@ namespace SR_GRAPH_NS {
         /// @property
         uint32_t m_vertices = 3;
         /// @property @setter(SetShader)
-        /// @customArgs(pick: enabled, filter name: Shader)
+        /// @customArgs(pick: enabled, filter name: Shader, relative: resources)
         /// @customArg(filter value: srsl)
         SR_UTILS_NS::Path m_shaderPath;
 

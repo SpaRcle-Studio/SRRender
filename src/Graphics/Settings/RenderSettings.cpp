@@ -7,7 +7,7 @@
 #include <Codegen/RenderSettings.generated.hpp>
 
 namespace SR_GRAPH_NS {
-    RenderSettingsPreset RenderSettings::GetPreset(SR_UTILS_NS::StringAtom name) const {
+    const RenderSettingsPreset& RenderSettings::GetPreset(SR_UTILS_NS::StringAtom name) const {
         if (name.empty() || name == defaultPreset.name) {
             return defaultPreset;
         }

@@ -36,7 +36,7 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom name;
         /// @property @setter(SetRenderStagesSettingsPath)
-        /// @customArgs(pick: enabled, filter name: Render stages settings)
+        /// @customArgs(pick: enabled, filter name: Render stages settings, relative: resources)
         /// @customArg(filter value: sra)
         SR_UTILS_NS::Path renderStagesSettings;
         /// @property @notNull
@@ -53,7 +53,6 @@ namespace SR_GRAPH_NS {
         using CameraPtr = Types::Camera*;
         using Super = SR_HTYPES_NS::SharedPtr<IRenderTechnique>;
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
-        SR_INLINE static const std::string DEFAULT_RENDER_TECHNIQUE = "Engine/Configs/MainRenderTechnique.xml";
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<IRenderTechnique>;
 

@@ -71,7 +71,7 @@ namespace SR_GTYPES_NS {
         /// @customArg(text-box: enabled)
         SR_HTYPES_NS::UnicodeString m_text;
         /// @virtualProperty(font) @setter(SetFont) @getter(GetFontPath)
-        /// @customArgs(pick: enabled, filter name: Fonts)
+        /// @customArgs(pick: enabled, filter name: Fonts, relative: resources)
         /// @customArg(filter value: ttf)
         SR_VIRTUAL_PROPERTY
         /// @property @readOnly @dontSave

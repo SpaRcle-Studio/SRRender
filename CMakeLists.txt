@@ -15,6 +15,7 @@ set(FT_CONFIG_OPTION_USE_ZLIdB OFF)
 set(FT_DISABLE_HARFBUZZ ON)
 
 option(SR_GRAPHICS_DLL_EXPORTS "" ON)
+option(SR_RENDER_USE_GLSL_LANG_LIB "" ON)
 
 option(SR_RENDER_GLFW "" OFF)
 option(SR_RENDER_USE_YOGA "" ON)
@@ -109,6 +110,20 @@ endif()
 if (SR_GRAPHICS_DLL_EXPORTS)
     message("Graphics will be using DLL exports")
     target_compile_definitions(Graphics PUBLIC SR_GRAPHICS_DLL_EXPORTS)
+endif()
+
+if (SR_RENDER_USE_GLSL_LANG_LIB)
+    message("Graphics will be using GLSL lang lib")
+    target_compile_definitions(Graphics PUBLIC SR_RENDER_USE_GLSL_LANG_LIB)
+
+    set(ENABLE_HLSL OFF CACHE BOOL "" FORCE)
+    set(ENABLE_OPT OFF CACHE BOOL "" FORCE)
+    set(ENABLE_RTTI ON CACHE BOOL "" FORCE)
+
+    add_subdirectory(libs/glslang)
+    target_link_libraries(Graphics PUBLIC glslang SPIRV)
+    target_include_directories(Graphics PUBLIC libs/glslang/glslang/Public)
+    target_include_directories(Graphics PUBLIC libs/glslang/SPIRV)
 endif()
 
 if (NOT ANDROID_NDK)

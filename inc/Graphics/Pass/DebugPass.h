@@ -30,7 +30,7 @@ namespace SR_GRAPH_NS {
         std::vector<std::vector<DebugRenderer::DrawInfo>> drawQueues;
 
         /// @property
-        /// @customArgs(pick: enabled, filter name: Shader)
+        /// @customArgs(pick: enabled, filter name: Shader, relative: resources)
         /// @customArg(filter value: srsl)
         SR_UTILS_NS::Path shaderPath;
     };

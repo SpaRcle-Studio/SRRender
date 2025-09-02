@@ -26,7 +26,19 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom name;
         /// @property
-        std::set<ShaderRenderPassType> supportedRenderPasses;
+        std::set<SR_UTILS_NS::StringAtom> shaderDefines;
+        /// @property
+        /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
+        /// @customArg(filter value: srtech)
+        SR_UTILS_NS::Path mainCameraRenderTechnique;
+        /// @property
+        /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
+        /// @customArg(filter value: srtech)
+        SR_UTILS_NS::Path editorCameraRenderTechnique;
+        /// @property
+        /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
+        /// @customArg(filter value: srtech)
+        SR_UTILS_NS::Path prefabCameraRenderTechnique;
 
     };
 
@@ -36,7 +48,7 @@ namespace SR_GRAPH_NS {
         using Ptr = SR_HTYPES_NS::SharedPtr<RenderSettings>;
 
     public:
-        SR_NODISCARD RenderSettingsPreset GetPreset(SR_UTILS_NS::StringAtom name) const;
+        SR_NODISCARD const RenderSettingsPreset& GetPreset(SR_UTILS_NS::StringAtom name) const;
 
     public:
         /// @property

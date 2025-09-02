@@ -108,6 +108,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::vector<RenderTechniquePtr>& GetRenderTechniques() const noexcept;
         SR_NODISCARD const std::vector<SkyboxPtr>& GetSkyboxes() const noexcept;
         SR_NODISCARD const RenderScenes& GetScenes() const noexcept { return m_scenes; }
+        SR_NODISCARD const RenderSettingsPreset& GetSettingsPreset() const noexcept;
 
         void SetOptimizedRenderUpdateEnabled(bool enabled) noexcept { m_isOptimizedUpdateEnabled = enabled; }
         bool SetCurrentShader(ShaderPtr pShader);
