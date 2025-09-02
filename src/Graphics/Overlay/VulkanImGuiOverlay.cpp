@@ -192,17 +192,19 @@ namespace SR_GRAPH_NS {
     };
 
     bool VulkanImGuiOverlay::Init() {
-        if (!Super::Init()) {
-            return false;
-        }
-
-        SR_GRAPH_LOG("VulkanImGuiOverlay::Init() : initialization vulkan ImGui overlay...");
-
         auto&& pKernel = m_pipeline.DynamicCast<VulkanPipeline>()->GetKernel();
         if (!pKernel->GetDevice() || !pKernel->GetDevice()->IsReady()) {
             SR_ERROR("VulkanImGuiOverlay::Init() : device is nullptr or not ready!");
             return false;
         }
+
+        m_dynamicRendering = pKernel->GetDevice()->IsDynamicRenderingSupported();
+
+        if (!Super::Init()) {
+            return false;
+        }
+
+        SR_GRAPH_LOG("VulkanImGuiOverlay::Init() : initialization vulkan ImGui overlay...");
 
     #if defined(SR_WIN32)
         auto&& pWindow = m_pipeline->GetWindow();
@@ -219,7 +221,7 @@ namespace SR_GRAPH_NS {
 
         m_pipeline->UpdateMultiSampling();
 
-        m_tracyEnabled = SR_UTILS_NS::Features::Instance().Enabled("Tracy", false);
+        m_tracyEnabled = SR_UTILS_NS::Features::Instance().Enabled("VulkanTracy", false);
 
         m_device = pKernel->GetDevice();
         m_swapChain = pKernel->GetSwapchain();
@@ -371,6 +373,29 @@ namespace SR_GRAPH_NS {
 
         const VkSampleCountFlagBits countMSAASamples = EvoVulkan::Tools::Convert::IntToSampleCount(1);
 
+        if (m_dynamicRendering) {
+            m_pVkCmdBeginRendering = (PFN_vkCmdBeginRendering)vkGetDeviceProcAddr(*m_device, "vkCmdBeginRendering");
+            m_pVkCmdEndRendering   = (PFN_vkCmdEndRendering)vkGetDeviceProcAddr(*m_device, "vkCmdEndRendering");
+
+            if (!m_pVkCmdBeginRendering) {
+                m_pVkCmdBeginRendering = (PFN_vkCmdBeginRendering)vkGetDeviceProcAddr(*m_device, "vkCmdBeginRenderingKHR");
+            }
+
+            if (!m_pVkCmdEndRendering) {
+                m_pVkCmdEndRendering = (PFN_vkCmdEndRendering)vkGetDeviceProcAddr(*m_device, "vkCmdEndRenderingKHR");
+            }
+
+            if (!m_pVkCmdBeginRendering || !m_pVkCmdEndRendering) {
+                SR_ERROR("VulkanImGuiOverlay::InitializeRenderer() : failed to get dynamic rendering functions! Disabling dynamic rendering...");
+                m_dynamicRendering = false;
+            }
+        }
+
+        if (!m_dynamicRendering && IsViewportsEnabled()) {
+            SRHalt("Undocking requires dynamic rendering support!");
+            return false;
+        }
+
         m_renderPass = EvoVulkan::Types::CreateRenderPass(
             m_device, m_swapChain,
             {
@@ -402,7 +427,7 @@ namespace SR_GRAPH_NS {
         platform_io.Platform_CreateVkSurface = CreatePlatformSurface;
 
     #ifdef SR_WIN32
-        //ImGui_Platform_CreateWindow = ImGui_ImplWin32_CreateWindow;
+        ImGui_Platform_CreateWindow = ImGui_ImplWin32_CreateWindow;
     #elif defined(SR_LINUX)
         //SRHalt("Not yet implemented!");
     #else
@@ -433,6 +458,22 @@ namespace SR_GRAPH_NS {
             .CheckVkResultFn             = CheckVulkanResult,
             .MinAllocationSize           = 0,
         };
+
+        VkFormat swapchainFormat = pKernel->GetSwapchain()->GetColorFormat();
+
+        if (m_dynamicRendering) {
+            // init_info.RenderPass = VK_NULL_HANDLE;
+
+            init_info.UseDynamicRendering = true;
+            init_info.PipelineRenderingCreateInfo = {
+                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                .pNext                   = nullptr,
+                .colorAttachmentCount    = 1,
+                .pColorAttachmentFormats = &swapchainFormat,
+                .depthAttachmentFormat   = VK_FORMAT_UNDEFINED,
+                .stencilAttachmentFormat = VK_FORMAT_UNDEFINED
+            };
+        }
 
         if (!ImGui_ImplVulkan_Init(&init_info)) {
             SR_ERROR("VulkanImGuiOverlay::InitializeRenderer() : failed to init vulkan imgui implementation!");
@@ -494,7 +535,7 @@ namespace SR_GRAPH_NS {
         m_frameBuffs.resize(GetCountImages());
 
         auto&& fbInfo = EvoVulkan::Tools::Initializers::FrameBufferCI(m_renderPass, surfaceSize.x, surfaceSize.y);
-        auto&& attaches = std::vector<VkImageView>(1);
+        auto&& attaches = std::vector<VkImageView>(1); /// тут так и должно быть, не относится к буферизации кадров
         fbInfo.attachmentCount = attaches.size();
 
         for (uint32_t i = 0; i < m_frameBuffs.size(); i++) {
@@ -541,6 +582,25 @@ namespace SR_GRAPH_NS {
 
         static bool hasWarn = false;
 
+        auto&& surfaceSize = SR_MATH_NS::UVector2(m_swapChain->GetSurfaceWidth(), m_swapChain->GetSurfaceHeight());
+
+        VkRenderingAttachmentInfoKHR colorAttachmentInfo{
+            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+            .imageView   = m_swapChain->GetBuffers()[frame].m_view, // view swapchain image/framebuffer image
+            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue  = { .color = {{0.f, 0.f, 0.f, 1.f}} }
+        };
+
+        VkRenderingInfoKHR renderingInfo{
+            .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+            .renderArea           = { {0, 0}, {surfaceSize.x, surfaceSize.y} },
+            .layerCount           = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &colorAttachmentInfo
+        };
+
         if (m_tracyEnabled) {
             vkBeginCommandBuffer(buffer, &m_cmdBuffBI);
             {
@@ -564,8 +624,13 @@ namespace SR_GRAPH_NS {
         else {
             vkBeginCommandBuffer(buffer, &m_cmdBuffBI);
             {
-                m_renderPassBI.framebuffer = m_frameBuffs[frame];
-                vkCmdBeginRenderPass(m_cmdBuffs[frame], &m_renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
+                if (m_dynamicRendering) {
+                    m_pVkCmdBeginRendering(m_cmdBuffs[frame], &renderingInfo);
+                }
+                else {
+                    m_renderPassBI.framebuffer = m_frameBuffs[frame];
+                    vkCmdBeginRenderPass(m_cmdBuffs[frame], &m_renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
+                }
 
                 if (auto&& drawData = ImGui::GetDrawData()) {
                     ImGui_ImplVulkan_RenderDrawData(drawData, m_cmdBuffs[frame]);
@@ -575,7 +640,12 @@ namespace SR_GRAPH_NS {
                     VK_WARN("VkImGUI::Render() : imgui draw data is nullptr!");
                 }
 
-                vkCmdEndRenderPass(m_cmdBuffs[frame]);
+                if (m_dynamicRendering) {
+                    m_pVkCmdEndRendering(m_cmdBuffs[frame]);
+                }
+                else {
+                    vkCmdEndRenderPass(m_cmdBuffs[frame]);
+                }
             }
         }
 

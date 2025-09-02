@@ -32,6 +32,7 @@ namespace SR_GRAPH_NS {
     public:
         SR_NODISCARD virtual bool Init() = 0;
         SR_NODISCARD virtual bool IsUndockingActive() const = 0;
+        SR_NODISCARD virtual bool IsDynamicRenderingEnabled() const = 0;
         SR_NODISCARD virtual bool ReCreate() = 0;
         SR_NODISCARD bool IsSurfaceDirty() const noexcept { return m_surfaceDirty; }
         SR_NODISCARD bool IsEnabled() const noexcept { return m_enabled; }

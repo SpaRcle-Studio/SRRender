@@ -29,7 +29,12 @@ namespace SR_GRAPH_NS {
         io.ConfigWindowsMoveFromTitleBarOnly = true;
 
         if (SR_UTILS_NS::Features::Instance().Enabled("Undocking", false)) {
-            io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+            if (IsDynamicRenderingEnabled()) {
+                io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+            }
+            else {
+                SR_WARN("ImGuiOverlay::Init() : dynamic rendering is disabled! Undocking is not available!");
+            }
         }
 
         if (auto&& pTheme = SR_GRAPH_GUI_NS::Theme::Load("Engine/Configs/Themes/Dark.xml")) {
@@ -147,7 +152,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool ImGuiOverlay::IsUndockingActive() const {
-        if (m_context && ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+        if (m_context && IsViewportsEnabled()) {
             return ((ImGuiContext*)m_context)->Viewports.size() > 1;
         }
 

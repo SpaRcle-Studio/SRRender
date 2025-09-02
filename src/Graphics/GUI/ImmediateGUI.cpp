@@ -873,8 +873,8 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImGui::IsAnyItemHovered();
     }
 
-    bool IsWindowHovered() {
-        return ImGui::IsWindowHovered();
+    bool IsWindowHovered(HoveredFlags flags) {
+        return ImGui::IsWindowHovered(static_cast<ImGuiHoveredFlags>(flags));
     }
 
     bool IsMouseDoubleClicked(MouseButton button) {

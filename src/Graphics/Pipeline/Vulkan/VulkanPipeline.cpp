@@ -254,12 +254,14 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        static const std::vector<const char*> deviceExtensions = {
+        std::vector<const char*> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             //VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME,
         };
 
-        if (!m_kernel->Init(createSurfaceFn, m_window ? m_window->GetHandle() : nullptr, deviceExtensions, true, m_preInitInfo.vsync)) {
+        const bool dynamicRenderingRequire = SR_UTILS_NS::Features::Instance().Enabled("VulkanDynamicRendering", false);
+
+        if (!m_kernel->Init(createSurfaceFn, m_window ? m_window->GetHandle() : nullptr, deviceExtensions, true, dynamicRenderingRequire, m_preInitInfo.vsync)) {
             PipelineError("VulkanPipeline::Init() : failed to initialize Evo Vulkan kernel!");
             return false;
         }
@@ -1115,7 +1117,7 @@ namespace SR_GRAPH_NS {
         }
 
     #ifdef SR_TRACY_ENABLE
-        if (SR_UTILS_NS::Features::Instance().Enabled("Tracy", false)) {
+        if (SR_UTILS_NS::Features::Instance().Enabled("VulkanTracy", false)) {
             if (auto&& pSingleTimeCmd = m_kernel->CreateCmd()) {
                 SR_GRAPH_LOG("VulkanPipeline::PostInit() : initializing tracy...");
                 SR_TRACY_VK_CREATE(*pSingleTimeCmd, m_kernel, "EvoVulkan");
