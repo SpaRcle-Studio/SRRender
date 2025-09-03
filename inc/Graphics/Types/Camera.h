@@ -19,6 +19,13 @@ namespace SR_GRAPH_NS {
 }
 
 namespace SR_GTYPES_NS {
+    SR_ENUM_NS_CLASS_T(CameraType, uint8_t,
+        Main,
+        Offscreen,
+        Editor,
+        EditorPrefab
+    );
+
     /// @category(Render)
     class Camera : public SR_UTILS_NS::Component {
         SR_CLASS()
@@ -87,6 +94,7 @@ namespace SR_GTYPES_NS {
         void SetNear(float_t value);
         void SetFOV(float_t value);
         void SetPriority(int32_t priority);
+        void SetCameraType(CameraType type);
 
         void SetRenderTechnique(const SR_UTILS_NS::Path& path);
 
@@ -98,6 +106,9 @@ namespace SR_GTYPES_NS {
         void OnDestroy() override;
         void OnEnable() override;
         void OnDisable() override;
+
+    private:
+        void RemoveTechnique();
 
     private:
         /** >= 0 - одна главная камера, < 0 - закадровые камеры, которые рендерятся в RenderTexture.
@@ -123,6 +134,10 @@ namespace SR_GTYPES_NS {
         bool m_hasErrors = false;
         /// @property @readOnly @dontSave
         bool m_isRegistered = false;
+        /// @property
+        CameraType m_type = CameraType::Main;
+
+        SR_UTILS_NS::Subscription m_onRenderSettingsChanged;
 
         SR_MATH_NS::Matrix4x4 m_projection;
         SR_MATH_NS::Matrix4x4 m_projectionNoFOV;

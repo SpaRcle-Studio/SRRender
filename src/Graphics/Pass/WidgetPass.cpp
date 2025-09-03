@@ -9,7 +9,6 @@
 namespace SR_GRAPH_NS {
     void WidgetPass::Prepare() {
         Super::Prepare();
-
         GetPipeline()->PrepareOverlay(OverlayType::ImGui);
     }
 

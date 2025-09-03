@@ -20,9 +20,6 @@ namespace SR_ANIMATIONS_NS {
 
     void Skeleton::OnDestroy() {
         Super::OnDestroy();
-        GetThis().AutoFree([](auto&& pData) {
-            delete pData;
-        });
     }
 
     Bone* Skeleton::AddBone(Bone* pParent, const SR_UTILS_NS::StringAtom name, bool recalculate) {

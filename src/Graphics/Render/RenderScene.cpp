@@ -151,7 +151,9 @@ namespace SR_GRAPH_NS {
                         continue;
                     }
 
-                    GetPipeline()->GetQueue().AddQueue(pController->GetFramebuffer().Get(), depth);
+                    if (auto&& pFrameBuffer = pController->GetFramebuffer()) {
+                        GetPipeline()->GetQueue().AddQueue(pFrameBuffer.Get(), depth);
+                    }
                 }
             }
         });
@@ -206,6 +208,10 @@ namespace SR_GRAPH_NS {
 
     void RenderScene::SetTechnique(const SR_UTILS_NS::Path &path) {
         SRAssert2(GetContext()->GetPipeline(), "RenderScene::SetTechnique() : pipeline is nullptr!");
+        if (path.empty()) {
+            SetTechnique(IRenderTechnique::Ptr());
+            return;
+        }
         SetTechnique(FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>());
     }
 

@@ -308,8 +308,8 @@ namespace SR_GTYPES_NS {
     }
 
     void Mesh::OnDestroy() {
-        Super::OnDestroy();
         DestroyMesh();
+        Super::OnDestroy();
     }
 
     void Mesh::OnMatrixDirty() {
@@ -382,8 +382,6 @@ namespace SR_GTYPES_NS {
 
         FreeVMemory();
         SetMaterial(MaterialPtr());
-
-        GetThis().AutoFree();
 
         return isRegistered;
     }

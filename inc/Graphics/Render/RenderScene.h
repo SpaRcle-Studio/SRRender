@@ -97,10 +97,12 @@ namespace SR_GRAPH_NS {
         void ForEachTechnique(const SR_HTYPES_NS::Function<void(IRenderTechnique*)>& callback);
 
         template<typename T> SR_HTYPES_NS::SharedPtr<T> AddRenderer() {
+            SR_TRACY_ZONE;
             return AddRenderer(T::GetClassStaticName()).template DynamicCast<T>();
         }
 
         template<typename T> SR_HTYPES_NS::SharedPtr<T> GetRenderer() const {
+            SR_TRACY_ZONE;
             return GetRenderer(T::GetClassStaticName()).template DynamicCast<T>();
         }
 

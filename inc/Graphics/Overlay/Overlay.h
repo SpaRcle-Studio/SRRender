@@ -5,8 +5,6 @@
 #ifndef SR_ENGINE_GRAPHICS_OVERLAY_H
 #define SR_ENGINE_GRAPHICS_OVERLAY_H
 
-#include <Graphics/macros.h>
-
 #include <Graphics/Overlay/OverlayType.h>
 
 namespace SR_GRAPH_NS {

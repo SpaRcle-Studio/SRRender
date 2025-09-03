@@ -69,7 +69,7 @@ namespace SR_GRAPH_NS {
         void PostUpdate();
         void SetDirty();
 
-        void KillTechnique() { SRAssert(!m_isDead); m_isDead = true; }
+        void KillTechnique();
 
         void FreeVMemory() override;
 

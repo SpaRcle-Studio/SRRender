@@ -8,7 +8,10 @@
 
 namespace SR_GRAPH_NS {
     const RenderSettingsPreset& RenderSettings::GetPreset(SR_UTILS_NS::StringAtom name) const {
-        if (name.empty() || name == defaultPreset.name) {
+        SR_TRACY_ZONE;
+
+        static SR_UTILS_NS::StringAtom defaultPresetName = "Default";
+        if (name.empty() || name == defaultPreset.name || name == defaultPresetName) {
             return defaultPreset;
         }
 

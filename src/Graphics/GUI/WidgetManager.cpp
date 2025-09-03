@@ -136,11 +136,7 @@ namespace SR_GRAPH_NS::GUI {
     }
 
     WidgetManager::ContextPtr WidgetManager::GetContext() const {
-        if (!m_renderScene) {
-            return ContextPtr();
-        }
-
-        return m_renderScene->GetContext();
+        return m_renderContext;
     }
 
     void WidgetManager::SetScene(const WidgetManager::ScenePtr &scene) {
@@ -165,6 +161,10 @@ namespace SR_GRAPH_NS::GUI {
             ShowWindow((HWND)((ImGuiViewport*)widget.first)->PlatformHandle, SW_SHOW);
         }
     #endif
+    }
+
+    void WidgetManager::SetRenderContext(WidgetManager::ContextPtr pContext) {
+        m_renderContext = pContext;
     }
 
     Widget* ViewportsTableManager::GetWidgetByViewport(void *viewport) const {

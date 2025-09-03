@@ -70,6 +70,10 @@ namespace SR_GRAPH_NS {
 
         Super::Prepare();
 
+        if (!IsEnabled()) {
+            return;
+        }
+
         const bool isFontChanged =
             m_fontSize != SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiFontSize", m_fontSize) ||
             m_iconFontSize != SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiIconFontSize", m_iconFontSize);

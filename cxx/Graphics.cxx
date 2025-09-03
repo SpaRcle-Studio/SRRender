@@ -67,6 +67,7 @@
 #include "../src/Graphics/Types/Camera.cpp"
 #include "../src/Graphics/Types/Shader.cpp"
 #include "../src/Graphics/Types/RenderTexture.cpp"
+#include "../src/Graphics/Types/RenderTechniqueComponent.cpp"
 
 #include "../src/Graphics/Material/MaterialProperty.cpp"
 #include "../src/Graphics/Material/MeshMaterialProperty.cpp"

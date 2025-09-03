@@ -65,6 +65,8 @@ namespace SR_GRAPH_NS {
     }
 
     void DebugRenderer::Prepare() {
+        SR_TRACY_ZONE;
+
         /// INFO: Меняем тут, иначе будет дедлок
         SR_UTILS_NS::DebugDraw::Instance().SwitchCallbacks(this);
 

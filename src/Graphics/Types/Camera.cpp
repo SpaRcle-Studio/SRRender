@@ -2,24 +2,32 @@
 // Created by Nikita on 18.11.2020.
 //
 
-#include <Utils/Types/DataStorage.h>
-#include <Utils/Types/SafePtrLockGuard.h>
-#include <Utils/Platform/Platform.h>
-
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Memory/CameraManager.h>
 #include <Graphics/Render/RenderTechnique.h>
-
 #include <Graphics/Window/Window.h>
+
+#include <Utils/Types/DataStorage.h>
+#include <Utils/Types/SafePtrLockGuard.h>
+#include <Utils/Platform/Platform.h>
+#include <Utils/Events/Broadcaster.h>
 
 #include <Codegen/Camera.generated.hpp>
 
 namespace SR_GTYPES_NS {
     Camera::Camera()
         : Super()
-    { }
+    {
+        m_onRenderSettingsChanged = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID, [this](auto&&) {
+            m_hasErrors = false;
+            if (m_renderTechnique.path.empty()) {
+                RemoveTechnique();
+            }
+        });
+    }
 
     Camera::~Camera() {
+        m_onRenderSettingsChanged.Reset();
         SetRenderTechnique(SR_UTILS_NS::Path());
     }
 
@@ -39,16 +47,12 @@ namespace SR_GTYPES_NS {
     void Camera::OnDestroy() {
         RenderScene::Ptr pRenderScene = TryGetRenderScene();
 
-        Super::OnDestroy();
-
         if (m_isRegistered && pRenderScene.RecursiveLockIfValid()) {
             pRenderScene->Remove(GetThis().DynamicCast<Camera>());
             pRenderScene.Unlock();
         }
 
-        GetThis().AutoFree([](auto&& pData) {
-            delete pData;
-        });
+        Super::OnDestroy();
     }
 
     IRenderTechnique* Camera::GetRenderTechnique() {
@@ -56,13 +60,33 @@ namespace SR_GTYPES_NS {
             return m_renderTechnique.pTechnique.Get();
         }
 
+        SR_TRACY_ZONE;
+
         SR_UTILS_NS::Path path = GetRenderTechniquePath();
 
         if (path.IsEmpty()) {
-            path = GetRenderScene()->GetContext()->GetSettingsPreset().mainCameraRenderTechnique;
+            switch (m_type) {
+                case CameraType::Main:
+                    path = GetRenderScene()->GetContext()->GetSettingsPreset().mainCameraRenderTechnique;
+                    break;
+                case CameraType::Editor:
+                    path = GetRenderScene()->GetContext()->GetSettingsPreset().editorCameraRenderTechnique;
+                    break;
+                case CameraType::EditorPrefab:
+                    path = GetRenderScene()->GetContext()->GetSettingsPreset().prefabCameraRenderTechnique;
+                    break;
+                default:
+                    break;
+            }
         }
 
-        m_renderTechnique.pTechnique.AutoFree();
+        RemoveTechnique();
+
+        if (path.IsEmpty()) {
+            m_hasErrors = true;
+            return nullptr;
+        }
+
         m_renderTechnique.pTechnique = FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>();
 
         if (m_renderTechnique.pTechnique) {
@@ -235,6 +259,13 @@ namespace SR_GTYPES_NS {
         Super::OnDisable();
     }
 
+    void Camera::RemoveTechnique() {
+        if (m_renderTechnique.pTechnique) {
+            m_renderTechnique.pTechnique->KillTechnique();
+            m_renderTechnique.pTechnique = nullptr;
+        }
+    }
+
     void Camera::OnMatrixDirty() {
         auto&& pTransform = GetTransform();
         if (!pTransform) {
@@ -249,13 +280,20 @@ namespace SR_GTYPES_NS {
     }
 
     void Camera::SetRenderTechnique(const SR_UTILS_NS::Path& path) {
-        if (m_renderTechnique.pTechnique) {
-            m_renderTechnique.pTechnique->KillTechnique();
-            m_renderTechnique.pTechnique = nullptr;
-        }
-
+        RemoveTechnique();
         m_hasErrors = false;
         m_renderTechnique.path = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+    }
+
+    void Camera::SetCameraType(CameraType type) {
+        if (m_type == type) {
+            return;
+        }
+        m_type = type;
+        m_hasErrors = false;
+        if (m_renderTechnique.path.empty()) {
+            RemoveTechnique();
+        }
     }
 
     void Camera::SetPriority(int32_t priority) {

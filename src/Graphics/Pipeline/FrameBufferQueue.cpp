@@ -45,6 +45,11 @@ namespace SR_GRAPH_NS {
     }
 
     void FrameBufferQueue::AddQueue(FrameBufferQueue::FrameBuffer pFrameBuffer, uint32_t queueIndex) {
+        if (!pFrameBuffer) {
+            SRHalt("FrameBufferQueue::AddQueue() : invalid framebuffer!");
+            return;
+        }
+
         if (m_levels.size() <= queueIndex) {
             m_levels.resize(queueIndex + 1);
         }

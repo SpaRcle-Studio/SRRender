@@ -91,6 +91,16 @@ namespace SR_GRAPH_NS {
         return m_data.pass->Overlay();
     }
 
+    void IRenderTechnique::KillTechnique() {
+        SRAssert(!m_isDead);
+        m_isDead = true;
+
+        if (!IsGraphicsResourceRegistered()) {
+            AutoFree();
+            return;
+        }
+    }
+
     void IRenderTechnique::SetDirty() {
         m_dirty = true;
 

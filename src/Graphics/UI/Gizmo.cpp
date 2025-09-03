@@ -22,12 +22,7 @@ namespace SR_GRAPH_UI_NS {
 
     void Gizmo::OnDestroy() {
         ReleaseGizmo();
-
         Super::OnDestroy();
-
-        GetThis().AutoFree([](auto&& pData) {
-            delete pData;
-        });
     }
 
     void Gizmo::LoadMesh(GizmoOperation operation, SR_UTILS_NS::StringAtom path, SR_UTILS_NS::StringAtom name, GizmoMeshLoadMode mode) { /// NOLINT

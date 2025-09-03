@@ -20,6 +20,9 @@
 #include <Graphics/Types/RenderTexture.h>
 #include <Graphics/Types/Skybox.h>
 
+#include <Utils/Common/StoreUtils.h>
+#include <Utils/Events/Broadcaster.h>
+
 namespace SR_GRAPH_NS {
     RenderContext::RenderContext()
         : Super(this)
@@ -97,6 +100,8 @@ namespace SR_GRAPH_NS {
 
         SR_INFO("RenderContext::Init() : initializing render context...");
 
+        m_activePreset = SR_UTILS_NS::StoreUtils::User::GetString("RenderPreset", "Default");
+
         m_isOptimizedUpdateEnabled = SR_UTILS_NS::Features::Instance().Enabled("OptimizedRenderUpdate", true);
 
         m_settings = RenderSettings::LoadOrCreate<RenderSettings>("Engine/Configs/RenderSettings.sras");
@@ -105,6 +110,11 @@ namespace SR_GRAPH_NS {
             return false;
         }
         m_settings->AddUsePoint();
+
+        m_onSettingsReloaded = m_settings->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
+            SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
+            SetDirty();
+        });
 
         if (!InitPipeline()) {
             SR_ERROR("RenderContext::Init() : failed to initialize pipeline!");
@@ -183,6 +193,7 @@ namespace SR_GRAPH_NS {
         m_defaultUIMaterial.Reset();
 
         if (m_settings) {
+            m_onSettingsReloaded.Reset();
             m_settings->RemoveUsePoint();
             m_settings.Reset();
         }
@@ -583,6 +594,20 @@ namespace SR_GRAPH_NS {
 
     const RenderSettingsPreset& RenderContext::GetSettingsPreset() const noexcept {
         SRAssert(m_settings);
-        return m_settings->GetPreset(SR_UTILS_NS::StringAtom());
+        return m_settings->GetPreset(m_activePreset);
+    }
+
+    const RenderSettings& RenderContext::GetSettings() const noexcept {
+        SRAssert(m_settings);
+        return *m_settings;
+    }
+
+    void RenderContext::SetActivePreset(SR_UTILS_NS::StringAtom name) {
+        if (m_activePreset == name) {
+            return;
+        }
+        m_activePreset = name;
+        SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
+        SetDirty();
     }
 }

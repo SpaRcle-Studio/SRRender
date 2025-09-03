@@ -55,6 +55,10 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom appName = "SpaRcle Engine";
         /// @property
         SR_UTILS_NS::StringAtom engineName = "SREngine";
+        /// @property
+        /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
+        /// @customArg(filter value: srtech)
+        SR_UTILS_NS::Path overlayRenderTechnique = "Editor/Render/Overlay.srtech";
 
         /// @property
         std::vector<RenderSettingsPreset> presets;

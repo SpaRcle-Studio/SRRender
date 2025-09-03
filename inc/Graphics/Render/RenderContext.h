@@ -109,6 +109,10 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::vector<SkyboxPtr>& GetSkyboxes() const noexcept;
         SR_NODISCARD const RenderScenes& GetScenes() const noexcept { return m_scenes; }
         SR_NODISCARD const RenderSettingsPreset& GetSettingsPreset() const noexcept;
+        SR_NODISCARD const RenderSettings& GetSettings() const noexcept;
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetActivePreset() const noexcept { return m_activePreset; }
+
+        void SetActivePreset(SR_UTILS_NS::StringAtom name);
 
         void SetOptimizedRenderUpdateEnabled(bool enabled) noexcept { m_isOptimizedUpdateEnabled = enabled; }
         bool SetCurrentShader(ShaderPtr pShader);
@@ -122,6 +126,7 @@ namespace SR_GRAPH_NS {
 
     private:
         RCUpdateQueueState m_updateState = RCUpdateQueueState::Begin;
+        SR_UTILS_NS::StringAtom m_activePreset;
 
         std::vector<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>> m_framebuffers;
         std::vector<SR_HTYPES_NS::SharedPtr<IRenderTechnique>> m_techniques;
@@ -134,6 +139,7 @@ namespace SR_GRAPH_NS {
         WindowPtr m_window;
 
         RenderSettings::Ptr m_settings;
+        SR_UTILS_NS::Subscription m_onSettingsReloaded;
 
         MaterialPtr m_defaultUIMaterial = nullptr;
         MaterialPtr m_defaultMaterial = nullptr;

@@ -17,10 +17,10 @@ namespace SR_GRAPH_NS {
     void ILightComponent::OnDestroy() {
         RenderScene* pRenderScene = TryGetRenderScene();
 
-        Component::OnDestroy();
-
         if (pRenderScene) {
             pRenderScene->GetLightSystem()->Remove(this);
         }
+
+        Component::OnDestroy();
     }
 }
