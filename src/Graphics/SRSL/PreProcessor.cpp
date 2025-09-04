@@ -6,6 +6,8 @@
 
 namespace SR_SRSL_NS {
     SRSLPreProcessor::OutResult SRSLPreProcessor::Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderMacrosParams& macros) {
+        SR_TRACY_ZONE;
+
         Clear();
 
         m_lexems = SR_UTILS_NS::Exchange(lexems, { });
@@ -53,6 +55,8 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLPreProcessor::ProcessMain() {
+        SR_TRACY_ZONE;
+
         if (m_lexems[m_currentLexem].kind != LexemKind::Macro && m_state == PPState::Idle) {
             if (!m_ifStack.top()) {
                 m_lexems.erase(m_lexems.begin() + m_currentLexem);

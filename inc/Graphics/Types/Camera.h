@@ -69,6 +69,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD SR_FORCE_INLINE float_t GetFOV() const { return m_FOV; }
         SR_NODISCARD SR_FORCE_INLINE float_t GetAspect() const { return m_aspect; }
         SR_NODISCARD SR_FORCE_INLINE int32_t GetPriority() const { return m_priority; }
+        SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::UVector2& GetViewportSize() const { return m_viewportSize; }
 
         SR_NODISCARD SR_MATH_NS::Matrix4x4 GetImGuizmoView() const noexcept;
         SR_NODISCARD const SR_MATH_NS::FVector3& GetViewDirection() const;

@@ -125,6 +125,7 @@ namespace SR_SRSL_NS {
     /// ----------------------------------------------------------------------------------------------------------------
 
     SRSLUseStack::Ptr SRSLRefAnalyzer::Analyze(const SRSLAnalyzedTree::Ptr& pAnalyzedTree, const SR_SRSL_NS::ShaderMacrosParams& macros) {
+        SR_TRACY_ZONE;
         SR_GLOBAL_LOCK
         m_analyzedTree = pAnalyzedTree;
         std::list<std::string> stack;

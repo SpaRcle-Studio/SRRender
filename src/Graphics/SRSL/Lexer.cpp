@@ -11,6 +11,8 @@ namespace SR_SRSL_NS {
     }
 
     SRSLLexer::Lexems SRSLLexer::Parse(const SR_UTILS_NS::Path& path, uint16_t fileIndex) {
+        SR_TRACY_ZONE;
+
         auto&& text = SR_UTILS_NS::FileSystem::ReadAllText(path.ToString());
 
         if (text.empty()) {
@@ -29,6 +31,8 @@ namespace SR_SRSL_NS {
     }
 
     SRSLLexer::Lexems SRSLLexer::ParseInternal(std::string&& code, uint16_t fileIndex) {
+        SR_TRACY_ZONE;
+
         Clear();
 
         m_source = std::move(code);
@@ -38,7 +42,7 @@ namespace SR_SRSL_NS {
         {
             SkipSpaces();
 
-            if(!InBounds()) {
+            if (!InBounds()) {
                 break;
             }
 
@@ -51,6 +55,8 @@ namespace SR_SRSL_NS {
     }
 
     SRSLLexer::ProcessedLexem SRSLLexer::ProcessLexem() {
+        SR_TRACY_ZONE;
+
         switch (m_source[m_offset]) {
             case '[': return Lexem(m_offset++, 1, LexemKind::OpeningSquareBracket, "[", m_fileIndex, m_line, m_position++);
             case ']': return Lexem(m_offset++, 1, LexemKind::ClosingSquareBracket, "]", m_fileIndex, m_line, m_position++);
@@ -149,6 +155,8 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLLexer::SkipSpaces() {
+        SR_TRACY_ZONE;
+
     retry:
         while (InBounds()) {
             for (auto&& spaceChar : SRSL_SPACE_CHARS) {
@@ -204,6 +212,8 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLLexer::Clear() {
+        SR_TRACY_ZONE;
+
         m_source.clear();
         m_fileIndex = 0;
         m_offset = 0;

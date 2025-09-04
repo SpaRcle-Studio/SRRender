@@ -119,6 +119,7 @@ namespace SR_GRAPH_NS {
         }
 
         m_camera = pCamera;
+        OnResize(m_camera->GetViewportSize());
         SetRenderScene(m_camera->GetRenderScene());
     }
 

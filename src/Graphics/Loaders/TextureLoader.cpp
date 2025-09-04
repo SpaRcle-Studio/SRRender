@@ -60,6 +60,8 @@ namespace SR_GRAPH_NS {
     }
 
     TextureData::Ptr TextureData::Create(uint32_t width, uint32_t height, uint8_t* pData, DeleterFn&& deleter, ImageLoadFormat format) {
+        SR_TRACY_ZONE;
+
         uint8_t channels = 0;
         switch(format) {
             case ImageLoadFormat::Grey: channels = 1; break;
@@ -92,6 +94,7 @@ namespace SR_GRAPH_NS {
 
     TextureData::Ptr TextureLoader::Load(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
+        SR_TRACY_ZONE_TEXT(path);
 
         const bool cacheEnabled = SR_UTILS_NS::Features::Instance().Enabled("TextureCaching", true);
         auto&& cache = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Textures");
@@ -163,6 +166,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool TextureLoader::Free(unsigned char *data) {
+        SR_TRACY_ZONE;
+
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
             SR_LOG("TextureLoader::Free() : free source image data...");
         }
@@ -179,6 +184,8 @@ namespace SR_GRAPH_NS {
     }
 
     TextureData::Ptr TextureLoader::LoadFromMemory(const std::string& data, const Memory::TextureConfig &config) {
+        SR_TRACY_ZONE;
+
         int32_t width = 0, height = 0, numComponents = 0;
 
         const uint8_t requireComponents = GetChannelCount(config.m_format);
@@ -211,6 +218,7 @@ namespace SR_GRAPH_NS {
 
     TextureData::Ptr TextureLoader::LoadFromCache(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
+        SR_TRACY_ZONE_TEXT(path);
 
         auto&& marshal = SR_HTYPES_NS::Marshal::Load(path);
         if (!marshal) {

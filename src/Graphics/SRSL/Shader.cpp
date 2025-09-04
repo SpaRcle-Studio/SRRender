@@ -40,6 +40,8 @@ namespace SR_SRSL_NS {
     { }
 
     SRSLShader::Ptr SRSLShader::Load(const SR_UTILS_NS::Path& path, const ShaderMacrosParams& macros) {
+        SR_TRACY_ZONE;
+
         auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
 
         if (!absPath.Exists()) {
@@ -105,6 +107,8 @@ namespace SR_SRSL_NS {
     }
 
     uint64_t SRSLShader::GetHash() const {
+        SR_TRACY_ZONE;
+
         uint64_t hash = 0;
 
         for (auto&& include : m_includes) {
@@ -116,6 +120,8 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLShader::SaveCache() const {
+        SR_TRACY_ZONE;
+
         auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(m_path);
         SR_UTILS_NS::FileSystem::WriteHashToFile(cachedPath.ConcatExt("hash"), GetHash());
         return true;
@@ -146,6 +152,8 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLShader::Prepare() {
+        SR_TRACY_ZONE;
+
         m_useStack = SRSLRefAnalyzer::Instance().Analyze(m_analyzedTree, m_macros);
         if (!m_useStack) {
             SR_ERROR("SRSLShader::Prepare() : failed to analyze shader refs!");
@@ -207,6 +215,8 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLShader::PrepareSettings() {
+        SR_TRACY_ZONE;
+
         for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
             if (auto&& pVariable = dynamic_cast<SRSLVariable*>(pUnit)) {
                 std::string& varName = pVariable->pType->token;
@@ -248,6 +258,8 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLShader::PrepareUniformBlocks() {
+        SR_TRACY_ZONE;
+
         for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
             auto&& pVariable = dynamic_cast<SRSLVariable*>(pUnit);
             if (!pVariable || !pVariable->pDecorators) {
@@ -436,6 +448,8 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLShader::PrepareSamplers() {
+        SR_TRACY_ZONE;
+
         for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
             auto&& pVariable = dynamic_cast<SRSLVariable*>(pUnit);
             if (!pVariable || !pVariable->pDecorators) {
@@ -531,6 +545,8 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLShader::PrepareStages() {
+        SR_TRACY_ZONE;
+
         /// расставляем биндинги всем данным в шейдере
         {
             uint64_t binding = 0;

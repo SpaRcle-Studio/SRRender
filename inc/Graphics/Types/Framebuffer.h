@@ -68,6 +68,7 @@ namespace SR_GTYPES_NS {
         void SetLayersCount(uint32_t layersCount);
         void SetDepthAspect(ImageAspect depthAspect);
         void SetFeatures(const FrameBufferFeatures& features);
+        void SetName(SR_UTILS_NS::StringAtom name) { m_name = name; }
 
         SR_NODISCARD bool IsFileResource() const noexcept override { return false; }
         SR_NODISCARD bool IsAllowedMultiInstance() const override { return true; }
@@ -85,6 +86,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD int32_t GetColorTexture(uint32_t layer);
         SR_NODISCARD int32_t GetDepthTexture(int32_t layer = -1);
 
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const { return m_name; }
         SR_NODISCARD uint32_t GetWidth() const;
         SR_NODISCARD uint32_t GetHeight() const;
         SR_NODISCARD SR_MATH_NS::IVector2 GetSize() const { return m_size; }
@@ -95,6 +97,7 @@ namespace SR_GTYPES_NS {
     private:
         FrameBufferFeatures m_features;
 
+        SR_UTILS_NS::StringAtom m_name;
         std::atomic<bool> m_dirty = true;
         std::atomic<bool> m_hasErrors = false;
         bool m_wasRendered = false;

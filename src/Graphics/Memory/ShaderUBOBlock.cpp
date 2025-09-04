@@ -73,6 +73,8 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     void ShaderUBOBlock::Init() {
+        SR_TRACY_ZONE;
+
         SRAssert2(!m_initialized, "Double initialization!");
         m_size = TopAlign(m_size);
         FreeMemory(m_memory);
@@ -237,6 +239,8 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     void ShaderUBOBlock::ResetDefaultValues() {
+        SR_TRACY_ZONE;
+
         if (!m_memory || m_size == 0) SR_UNLIKELY_ATTRIBUTE {
             return;
         }

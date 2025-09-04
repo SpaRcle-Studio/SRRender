@@ -112,6 +112,7 @@ namespace SR_GRAPH_NS {
         m_settings->AddUsePoint();
 
         m_onSettingsReloaded = m_settings->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
+            SR_UTILS_NS::ResourceManager::Instance().ReloadAll(SR_GTYPES_NS::Shader::GetClassStaticName());
             SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
             SetDirty();
         });
@@ -607,6 +608,7 @@ namespace SR_GRAPH_NS {
             return;
         }
         m_activePreset = name;
+        SR_UTILS_NS::ResourceManager::Instance().ReloadAll(SR_GTYPES_NS::Shader::GetClassStaticName());
         SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
         SetDirty();
     }

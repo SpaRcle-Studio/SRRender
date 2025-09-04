@@ -48,6 +48,7 @@ namespace SR_GRAPH_NS {
 
         /// initialize framebuffer
         if ((m_framebuffer = SR_GTYPES_NS::Framebuffer::Create(m_colorFormats, m_depthFormat, size))) {
+            m_framebuffer->SetName(m_name);
             m_framebuffer->SetLayersCount(m_layersCount);
             m_framebuffer->SetSampleCount(m_samples);
             m_framebuffer->SetDepthEnabled(m_depthEnabled);

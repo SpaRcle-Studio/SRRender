@@ -538,6 +538,8 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Shader::StartWatch() {
+        SR_TRACY_ZONE;
+
         auto&& resourcesManager = SR_UTILS_NS::ResourceManager::Instance();
 
         for (auto&& path : m_includes) {

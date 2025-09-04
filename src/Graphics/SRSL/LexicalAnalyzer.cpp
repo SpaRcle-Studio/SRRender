@@ -6,6 +6,7 @@
 
 namespace SR_SRSL_NS {
     std::pair<SRSLAnalyzedTree::Ptr, SRSLResult> SRSLLexicalAnalyzer::Analyze(std::vector<Lexem>&& lexems) {
+        SR_TRACY_ZONE;
         SR_GLOBAL_LOCK
 
         Clear();
@@ -30,6 +31,8 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLLexicalAnalyzer::Clear() {
+        SR_TRACY_ZONE;
+
         for (auto&& pLexicalTree : m_lexicalTree) {
             delete pLexicalTree;
         }
@@ -58,6 +61,8 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLLexicalAnalyzer::ProcessMain() {
+        SR_TRACY_ZONE;
+
         m_lexicalTree.emplace_back(new SRSLLexicalTree());
 
         while (InBounds() && !IsHasErrors()) {
