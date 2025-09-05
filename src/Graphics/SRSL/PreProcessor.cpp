@@ -25,6 +25,7 @@ namespace SR_SRSL_NS {
 
     void SRSLPreProcessor::Clear() {
         m_currentLexem = 0;
+        m_deadBranches = 0;
         m_lexems.clear();
         m_result = SRSLResult();
         m_state = PPState::Idle;
@@ -67,7 +68,7 @@ namespace SR_SRSL_NS {
         switch (m_lexems[m_currentLexem].kind) {
             case LexemKind::Macro:
                 if (m_state != PPState::Idle) {
-                    m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()));
+                    m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected macro!"));
                     return;
                 }
                 m_state = PPState::MacroName;
@@ -112,14 +113,18 @@ namespace SR_SRSL_NS {
                 if (m_state == PPState::MacroName) {
                     std::string value = GetCurrentLexem()->value;
 
-                    if (value == "include") {
-                        if (m_ifStack.top()) {
-                            m_state = PPState::IncludeOpen;
-                        }
+                    if (m_ifStack.top() && value == "include") {
+                        m_state = PPState::IncludeOpen;
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
                     else if (value == "if" || value == "ifdef" || value == "ifndef")
                     {
+                        if (!m_ifStack.top()) {
+                            m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                            m_state = PPState::Idle;
+                            ++m_deadBranches;
+                            break;
+                        }
                         m_state = PPState::Idle;
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                         if (value == "ifdef") {
@@ -136,10 +141,10 @@ namespace SR_SRSL_NS {
                             SRHalt("Not implemented!");
                         }
                     }
-                    else if (value == "else") {
+                    else if (value == "else" && m_deadBranches == 0) {
                         m_state = PPState::Idle;
                         if (m_ifStack.size() <= 1) {
-                            m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()));
+                            m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected else!"));
                             return;
                         }
                         bool top = m_ifStack.top();
@@ -148,16 +153,27 @@ namespace SR_SRSL_NS {
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
                     else if (value == "endif") {
+                        if (m_deadBranches > 0) {
+                            --m_deadBranches;
+                            m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                            m_state = PPState::Idle;
+                            break;
+                        }
+
                         m_state = PPState::Idle;
                         if (m_ifStack.size() <= 1) {
-                            m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()));
+                            m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected endif!"));
                             return;
                         }
                         m_ifStack.pop();
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
+                    else if (m_ifStack.top()) {
+                        m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unknown macro!"));
+                    }
                     else {
-                        m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()));
+                        m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                        m_state = PPState::Idle;
                     }
                     break;
                 }

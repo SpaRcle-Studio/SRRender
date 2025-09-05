@@ -79,6 +79,8 @@ namespace SR_GRAPH_NS::Types {
     ShaderBindResult Shader::Use() noexcept {
         SR_TRACY_ZONE;
 
+        SRAssert2(GetCountUses() > 0, "Shader is not valid!");
+
         if (m_hasErrors) {
             return ShaderBindResult::Failed;
         }
@@ -87,6 +89,8 @@ namespace SR_GRAPH_NS::Types {
             SR_ERROR("Shader::Use() : failed to initialize shader!");
             return ShaderBindResult::Failed;
         }
+
+        SRAssert(m_shaderProgram != SR_ID_INVALID);
 
         if (!SRVerify2(GetRenderContext(), "Render context is nullptr!")) {
             return ShaderBindResult::Failed;
@@ -475,11 +479,6 @@ namespace SR_GRAPH_NS::Types {
     bool Shader::Unload() {
         bool hasErrors = !IResource::Unload();
 
-        for (auto&& pVariant : m_variants | std::views::values) {
-            pVariant->RemoveUsePoint();
-        }
-        m_variants.clear();
-
         m_hasErrors = false;
         m_isDirty = true;
 
@@ -697,24 +696,5 @@ namespace SR_GRAPH_NS::Types {
             SRAssert(m_shaderProgram != SR_ID_INVALID);
         }
         return IResource::RemoveUsePoint();
-    }
-
-    Shader::Ptr Shader::GetShaderVariant(const SR_SRSL_NS::ShaderMacrosParams& macros) {
-        const auto hash = macros.GetHash();
-        if (hash == m_macros.GetHash()) {
-            return GetThis().StaticCast<Shader>();
-        }
-
-        auto&& pIt = m_variants.find(hash);
-        if (pIt != m_variants.end()) {
-            return pIt->second;
-        }
-
-        auto&& pShader = Shader::Load(GetResourcePath(), macros);
-        if (pShader) {
-            m_variants[hash] = pShader;
-            pShader->AddUsePoint();
-        }
-        return pShader;
     }
 }

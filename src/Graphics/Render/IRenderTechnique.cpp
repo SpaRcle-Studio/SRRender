@@ -300,4 +300,9 @@ namespace SR_GRAPH_NS {
             m_data.pass->SetParent(nullptr);
         }
     }
+
+    BasePass* IRenderTechnique::FindPass(SR_UTILS_NS::StringAtom name) const {
+        SR_TRACY_ZONE;
+        return m_data.pass ? m_data.pass->FindPass(name) : nullptr;
+    }
 }

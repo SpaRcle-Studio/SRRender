@@ -13,6 +13,12 @@
 namespace SR_GRAPH_NS {
     class IRenderTechnique;
 
+    SR_ENUM_NS_CLASS_T(SamplerDataUsageType, uint8_t,
+        Texture,
+        FrameBufferDepth,
+        FrameBufferColor
+    );
+
     struct SamplerData : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
@@ -24,19 +30,37 @@ namespace SR_GRAPH_NS {
         SamplerData& operator=(SamplerData&& other) noexcept;
         SamplerData& operator=(const SamplerData& other);
 
+        void OnPostLoad() override;
+
         uint32_t textureId = SR_ID_INVALID;
         uint32_t fboId = SR_ID_INVALID;
         SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture> pTexture;
 
+        SR_NODISCARD bool IsFrameBufferUsage() const noexcept {
+            return usageType == SamplerDataUsageType::FrameBufferColor || usageType == SamplerDataUsageType::FrameBufferDepth;
+        }
+
+        SR_NODISCARD bool IsTextureUsage() const noexcept { return usageType == SamplerDataUsageType::Texture; }
+        SR_NODISCARD bool IsFrameBufferColorUsage() const noexcept { return usageType == SamplerDataUsageType::FrameBufferColor; }
+        SR_NODISCARD bool IsFrameBufferDepthUsage() const noexcept { return usageType == SamplerDataUsageType::FrameBufferDepth; }
+
         /// @property
         SR_UTILS_NS::StringAtom id;
         /// @property
+        SamplerDataUsageType usageType = SamplerDataUsageType::Texture;
+
+        /// @property
+        /// @propertyCondition(This.IsFrameBufferUsage())
         SR_UTILS_NS::StringAtom fboName;
         /// @property
+        /// @propertyCondition(This.IsFrameBufferUsage())
+        bool global = false;
+        /// @property
+        /// @propertyCondition(This.IsFrameBufferColorUsage())
         uint64_t index = 0;
+
         /// @property
-        bool depth = false;
-        /// @property
+        /// @propertyCondition(This.IsTextureUsage())
         SR_UTILS_NS::Path texturePath;
     };
 
@@ -46,8 +70,6 @@ namespace SR_GRAPH_NS {
         ~SamplersPassData() override;
 
     public:
-        //void LoadSamplersPass(const SR_XML_NS::Node& passNode);
-
         void UseSamplers(SR_GTYPES_NS::Shader* pShader);
 
         SR_NODISCARD bool HasSamplers() const noexcept { return !m_samplers.empty(); }

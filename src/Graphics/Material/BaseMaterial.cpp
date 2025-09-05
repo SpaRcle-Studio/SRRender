@@ -15,6 +15,11 @@ namespace SR_GRAPH_NS {
 
     BaseMaterial::~BaseMaterial() {
         SRAssert2(m_meshes.IsEmpty(), "Material is not unregistered from all meshes!");
+
+        for (auto&& pVariant : m_variants | std::views::values) {
+            pVariant->RemoveUsePoint();
+        }
+        m_variants.clear();
     }
 
     void BaseMaterial::SetVec4(const SR_UTILS_NS::StringAtom id, const SR_MATH_NS::FVector4& v) noexcept {
@@ -103,8 +108,13 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void BaseMaterial::OnShaderChanged() const {
+    void BaseMaterial::OnShaderChanged() {
         SR_TRACY_ZONE;
+
+        for (auto&& pVariant : m_variants | std::views::values) {
+            pVariant->RemoveUsePoint();
+        }
+        m_variants.clear();
 
         m_meshes.ForEach([](uint32_t, auto&& pMesh) {
             pMesh->ReRegisterMesh();
@@ -148,7 +158,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void BaseMaterial::InitMaterialDataSubscriptions() const {
+    void BaseMaterial::InitMaterialDataSubscriptions() {
         m_shaderChangedSubscription = GetMaterialData()->Subscribe(MaterialData::SHADER_CHANGED_EVENT,
             [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
                 OnShaderChanged();
@@ -162,7 +172,7 @@ namespace SR_GRAPH_NS {
         );
     }
 
-    void BaseMaterial::DeInitMaterialDataSubscriptions() const {
+    void BaseMaterial::DeInitMaterialDataSubscriptions() {
         m_shaderChangedSubscription.Reset();
         m_propertyChangedSubscription.Reset();
     }
@@ -195,5 +205,37 @@ namespace SR_GRAPH_NS {
             return pShaderData->pShader.Get();
         }
         return nullptr;
+    }
+
+    SR_GTYPES_NS::Shader* BaseMaterial::GetShader(const SR_SRSL_NS::ShaderMacrosParams& macros) const noexcept {
+        SR_TRACY_ZONE;
+
+        auto&& pData = GetMaterialData();
+        if (!pData) SR_UNLIKELY_ATTRIBUTE {
+            return nullptr;
+        }
+
+        auto&& pDefaultShader = pData->GetDefaultShaderData().pShader.Get();
+        if (!pDefaultShader) {
+            return nullptr;
+        }
+
+        const auto hash = macros.GetHash();
+        if (hash == pDefaultShader->GetMacros().GetHash()) {
+            return pDefaultShader;
+        }
+
+        auto&& pIt = m_variants.find(hash);
+        if (pIt != m_variants.end()) {
+            return pIt->second.Get();
+        }
+
+        auto&& pShader = SR_GTYPES_NS::Shader::Load(pDefaultShader->GetResourcePath(), macros);
+        if (pShader) {
+            m_variants[hash] = pShader;
+            pShader->AddUsePoint();
+        }
+
+        return pShader.Get();
     }
 }

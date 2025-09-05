@@ -43,6 +43,7 @@ namespace SR_SRSL_NS {
         Includes m_includes;
 
         std::stack<bool> m_ifStack;
+        int m_deadBranches = 0;
         PPState m_state = PPState::Idle;
 
     };

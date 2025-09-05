@@ -104,10 +104,21 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void CascadedShadowMapPass::UseUniformsFromAnotherPass(SR_GTYPES_NS::Shader* pShader) {
+        Super::UseUniformsFromAnotherPass(pShader);
+
+        pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
+        pShader->SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadeSplitDepths.data());
+
+        //else if (m_shadowMapPass) {
+        //    pShader->SetMat4(SHADER_LIGHT_SPACE_MATRIX, m_shadowMapPass->GetLightSpaceMatrix());
+        //}
+    }
+
     void CascadedShadowMapPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
         Super::UseConstants(pShader);
 
-        //pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, GetPipeline()->GetCurrentFrameBufferLayer());
+        pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, GetPipeline()->GetCurrentFrameBufferLayer());
     }
 
     bool CascadedShadowMapPass::CheckCamera() {
@@ -148,12 +159,12 @@ namespace SR_GRAPH_NS {
         Super::UseSharedUniforms(pShader);
 
         //if (CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
-        //    UpdateCascades();
+        UpdateCascades();
         //}
 
-        //pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
+        pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
 
-        //const auto lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
-        //pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
+        const auto lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
+        pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
     }
 }

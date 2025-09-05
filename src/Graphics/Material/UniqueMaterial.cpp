@@ -24,7 +24,7 @@ namespace SR_GRAPH_NS {
     const MaterialData::Ptr& UniqueMaterial::GetMaterialData() const noexcept {
         if (!m_data) {
             m_data = SRNew<MaterialData>();
-            InitMaterialDataSubscriptions();
+            const_cast<UniqueMaterial&>(*this).InitMaterialDataSubscriptions();
         }
 
         return m_data;

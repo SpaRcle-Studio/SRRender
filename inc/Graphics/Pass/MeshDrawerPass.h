@@ -13,10 +13,43 @@
 namespace SR_GRAPH_NS {
     class RenderStrategy;
     class RenderQueue;
-    // class CascadedShadowMapPass;
-    // class ShadowMapPass;
 
-    class MeshDrawerPass : public BasePass, public LayerFilterPredicate, public PriorityFilterPredicate { // , public ShaderReplacePredicate
+    struct MeshDrawerSharedUniforms : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+
+        /// @property
+        bool camera = true;
+        /// @property
+        bool time = true;
+        /// @property
+        bool light = true;
+        /// @property
+        std::set<SR_UTILS_NS::StringAtom> useFromPass;
+
+    };
+
+    struct MeshDrawerMaterialUniforms : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+
+        /// @property
+        bool useMaterial = true;
+        /// @property
+        /// @propertyCondition(This.useMaterial == false)
+        bool modelMatrix = true;
+
+    };
+
+    struct MeshDrawerUniforms : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+
+        /// @property
+        MeshDrawerSharedUniforms shared;
+        /// @property
+        MeshDrawerMaterialUniforms material;
+
+    };
+
+    class MeshDrawerPass : public BasePass, public LayerFilterPredicate, public PriorityFilterPredicate {
         SR_CLASS()
         using Super = BasePass;
     public:
@@ -28,6 +61,7 @@ namespace SR_GRAPH_NS {
 
         bool Init() override;
         void DeInit() override;
+        void Prepare() override;
         bool Render() override;
         void Update() override;
 
@@ -35,13 +69,18 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
         SR_NODISCARD virtual bool IsNeedUpdate() const noexcept { return false; }
 
+        void SetRenderTechnique(SR_GRAPH_NS::IRenderTechnique* pRenderTechnique) override;
+
         virtual void UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh);
         virtual void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader);
         virtual void UseConstants(SR_GTYPES_NS::Shader* pShader);
+        void UseSamplers(SR_GTYPES_NS::Shader* pShader) override;
 
         virtual void OnUniformsUpdated() { }
 
-        //SR_NODISCARD ShaderUseInfo ReplaceShader(SR_GTYPES_NS::Shader* pShader) const override;
+        void OnMultisampleChanged() override;
+        void OnResize(const SR_MATH_NS::UVector2& size) override;
+
         SR_NODISCARD bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const override;
         SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const override { return true; }
 
@@ -58,9 +97,6 @@ namespace SR_GRAPH_NS {
         SR_HTYPES_NS::Time& m_time;
         SR_SRSL_NS::ShaderMacrosParams m_shaderMacros;
 
-        //ShadowMapPass* m_shadowMapPass = nullptr;
-        //CascadedShadowMapPass* m_cascadedShadowMapPass = nullptr;
-
         /// @property
         uint8_t m_renderLayers = 1;
         /// @property
@@ -69,6 +105,10 @@ namespace SR_GRAPH_NS {
         std::set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
         /// @property
         std::set<std::string> m_shaderDefines;
+        /// @property
+        SamplersPassData m_samplers;
+        /// @property
+        MeshDrawerUniforms m_uniforms;
 
     };
 }

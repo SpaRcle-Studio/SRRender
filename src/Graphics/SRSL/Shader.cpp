@@ -42,6 +42,10 @@ namespace SR_SRSL_NS {
     SRSLShader::Ptr SRSLShader::Load(const SR_UTILS_NS::Path& path, const ShaderMacrosParams& macros) {
         SR_TRACY_ZONE;
 
+        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Full) {
+            SR_LOG("SRSLShader::Load() : loading shader \"{}\"...", path);
+        }
+
         auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
 
         if (!absPath.Exists()) {

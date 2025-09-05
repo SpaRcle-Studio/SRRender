@@ -21,6 +21,7 @@ namespace SR_GRAPH_NS {
         void UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) override;
         void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) override;
         void UseConstants(SR_GTYPES_NS::Shader* pShader) override;
+        void UseUniformsFromAnotherPass(SR_GTYPES_NS::Shader* pShader) override;
 
     protected:
         bool CheckCamera();

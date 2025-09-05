@@ -18,6 +18,8 @@ namespace SR_SRSL_NS {
 
         SR_NODISCARD SR_UTILS_NS::SRHashType GetHash() const;
         SR_NODISCARD std::string GetHashStr() const;
+        SR_NODISCARD bool empty() const { return m_params.empty(); }
+        SR_NODISCARD const std::map<std::string, std::string>& GetParams() const { return m_params; }
 
         void Clear() {
             m_params.clear();

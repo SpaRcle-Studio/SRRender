@@ -82,6 +82,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool HasSSBOBindings() const noexcept { return !m_ssboBindings.empty(); }
         SR_NODISCARD SR_SRSL_NS::ShaderType GetType() const noexcept;
         SR_NODISCARD const SR_MATH_NS::UVector3& GetComputeWorkGroupSize() const noexcept { return m_computeWorkGroupSize; }
+        SR_NODISCARD const SR_SRSL_NS::ShaderMacrosParams& GetMacros() const noexcept { return m_macros; }
 
     public:
         template<bool constant, typename T> void SetValue(uint64_t hashId, const T* v) noexcept {
@@ -161,7 +162,6 @@ namespace SR_GTYPES_NS {
         SR_MATH_NS::UVector3 m_computeWorkGroupSize = { 1, 1, 1 };
 
         SR_SRSL_NS::ShaderMacrosParams m_macros;
-        std::map<SR_UTILS_NS::SRHashType, SR_GTYPES_NS::Shader::Ptr> m_variants;
 
         std::vector<SR_UTILS_NS::StringAtom> m_includes;
         Memory::ShaderUBOBlock m_uniformBlock;

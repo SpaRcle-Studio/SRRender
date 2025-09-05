@@ -27,7 +27,8 @@ namespace SR_GRAPH_NS {
         , fboName(SR_UTILS_NS::Exchange(other.fboName, { }))
         , pTexture(SR_UTILS_NS::Exchange(other.pTexture, { }))
         , index(SR_UTILS_NS::Exchange(other.index, { }))
-        , depth(SR_UTILS_NS::Exchange(other.depth, { }))
+        , global(SR_UTILS_NS::Exchange(other.global, { }))
+        , usageType(SR_UTILS_NS::Exchange(other.usageType, { }))
         , texturePath(SR_UTILS_NS::Exchange(other.texturePath, { }))
     { }
 
@@ -50,7 +51,8 @@ namespace SR_GRAPH_NS {
         }
 
         index = other.index;
-        depth = other.depth;
+        global = other.global;
+        usageType = other.usageType;
         texturePath = other.texturePath;
     }
 
@@ -65,7 +67,8 @@ namespace SR_GRAPH_NS {
         fboName = SR_UTILS_NS::Exchange(other.fboName, { });
         pTexture = SR_UTILS_NS::Exchange(other.pTexture, { });
         index = SR_UTILS_NS::Exchange(other.index, { });
-        depth = SR_UTILS_NS::Exchange(other.depth, { });
+        global = SR_UTILS_NS::Exchange(other.global, { });
+        usageType = SR_UTILS_NS::Exchange(other.usageType, { });
         texturePath = SR_UTILS_NS::Exchange(other.texturePath, { });
 
         return *this;
@@ -94,10 +97,28 @@ namespace SR_GRAPH_NS {
         }
 
         index = other.index;
-        depth = other.depth;
+        global = other.global;
+        usageType = other.usageType;
         texturePath = other.texturePath;
 
         return *this;
+    }
+
+    void SamplerData::OnPostLoad() {
+        if (pTexture) {
+            pTexture->RemoveUsePoint();
+            pTexture = nullptr;
+        }
+
+        if (IsTextureUsage() && !texturePath.empty()) {
+            pTexture = SR_GTYPES_NS::Texture::Load(texturePath);
+            if (pTexture) {
+                pTexture->AddUsePoint();
+            }
+            else {
+                SR_ERROR("SamplerData::OnPostLoad() : failed to load texture!\n\tPath: " + texturePath.ToString());
+            }
+        }
     }
 
     SamplersPassData::~SamplersPassData() {
@@ -136,10 +157,9 @@ namespace SR_GRAPH_NS {
 
         for (auto&& sampler : m_samplers) {
             int32_t textureId = SR_ID_INVALID;
-
             sampler.fboId = SR_ID_INVALID;
 
-            if (!sampler.fboName.Empty()) {
+            if (sampler.IsFrameBufferUsage() && !sampler.fboName.Empty()) {
                 auto&& pFrameBufferController = m_pTechnique->GetFrameBufferController(sampler.fboName);
                 if (pFrameBufferController) {
                     auto&& pFBO = pFrameBufferController->GetFramebuffer();
@@ -152,7 +172,7 @@ namespace SR_GRAPH_NS {
                     sampler.fboId = pFBO->GetId();
 
                     if (sampler.fboId != SR_ID_INVALID) {
-                        if (sampler.depth) {
+                        if (sampler.IsFrameBufferDepthUsage()) {
                             textureId = pFBO->GetDepthTexture();
                         }
                         else {
@@ -169,7 +189,7 @@ namespace SR_GRAPH_NS {
                 }
             }
 
-            if (textureId == SR_ID_INVALID && !sampler.depth) {
+            if (!sampler.IsFrameBufferDepthUsage() && textureId == SR_ID_INVALID) {
                 textureId = m_pTechnique->GetRenderContext()->GetDefaultTexture()->GetId();
             }
 
@@ -178,50 +198,4 @@ namespace SR_GRAPH_NS {
             }
         }
     }
-
-    /*void SamplersPassData::LoadSamplersPass(const SR_XML_NS::Node& passNode) {
-        m_samplers.clear();
-
-        for (auto&& samplerNode : passNode.TryGetNodes("Sampler")) {
-            Sampler sampler = Sampler();
-
-            if (auto&& idNode = samplerNode.TryGetAttribute("Id")) {
-                sampler.id = idNode.ToString();
-            }
-            else {
-                continue;
-            }
-
-            if (auto&& textureNode = samplerNode.TryGetAttribute("Texture")) {
-                auto&& pTexture = SR_GTYPES_NS::Texture::Load(textureNode.ToString());
-                if (!pTexture) {
-                    SR_ERROR("ISamplersPass::LoadSamplersPass() : failed to load texture!\n\tPath: " + textureNode.ToString());
-                    continue;
-                }
-                pTexture->AddUsePoint();
-                sampler.pTexture = pTexture;
-            }
-            else if (auto&& fboNameNode = samplerNode.TryGetAttribute("FBO")) {
-                sampler.fboName = fboNameNode.ToString();
-
-                auto&& pFrameBufferController = m_pTechnique->GetFrameBufferController(sampler.fboName);
-                if (!pFrameBufferController) {
-                    if (!samplerNode.TryGetAttribute("Optional").ToBool(false)) {
-                        SR_ERROR("MeshDrawerPass::Load() : failed to find frame buffer controller!\n\tName: " + sampler.fboName.ToStringRef());
-                    }
-                    continue;
-                }
-
-                if (auto&& depthAttribute = samplerNode.TryGetAttribute("Depth")) {
-                    sampler.depth = depthAttribute.ToBool();
-                }
-
-                if (!sampler.depth) {
-                    sampler.index = samplerNode.TryGetAttribute("Index").ToUInt64(-1);
-                }
-            }
-
-            m_samplers.emplace_back(std::move(sampler));
-        }
-    }*/
 }

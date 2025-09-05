@@ -52,12 +52,7 @@ namespace SR_GRAPH_NS {
 
         MeshInfo meshInfo;
         meshInfo.pMesh = info.pMesh;
-        meshInfo.pShader = info.pMaterial->GetDefaultShader();
-
-        if (meshInfo.pShader && m_meshDrawerPass) {
-            meshInfo.pShader = meshInfo.pShader->GetShaderVariant(m_meshDrawerPass->GetShaderMacros()).Get();
-        }
-
+        meshInfo.pShader = info.pMaterial->GetShader(m_meshDrawerPass->GetShaderMacros());
         meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
 
@@ -336,8 +331,9 @@ namespace SR_GRAPH_NS {
 
         m_renderContext->SetCurrentShader(pShader);
 
+        m_meshDrawerPass->UseConstants(pShader);
+
         if (m_pipeline->IsShaderChanged()) {
-            m_meshDrawerPass->UseConstants(pShader);
             m_meshDrawerPass->UseSamplers(pShader);
         }
 

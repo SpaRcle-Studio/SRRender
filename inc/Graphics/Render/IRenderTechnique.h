@@ -88,6 +88,8 @@ namespace SR_GRAPH_NS {
 
         void ForEachPass(const std::function<void(BasePass&)>& func);
 
+        SR_NODISCARD BasePass* FindPass(SR_UTILS_NS::StringAtom name) const;
+
         SR_NODISCARD const FrameBufferController::Ptr& GetFrameBufferController(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD const std::vector<FrameBufferController::Ptr>& GetFrameBufferControllers() const;
 
