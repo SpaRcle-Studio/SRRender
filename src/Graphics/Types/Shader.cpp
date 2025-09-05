@@ -14,6 +14,7 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/SRSL/Shader.h>
 #include <Graphics/SRSL/TypeInfo.h>
+#include <Graphics/SRSL/Cache.h>
 
 #include <Codegen/Shader.generated.hpp>
 
@@ -349,6 +350,13 @@ namespace SR_GRAPH_NS::Types {
             return false;
         }
 
+        auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(path).Concat(m_macros.GetHashStr());
+        if (ShaderCache::LoadShaderFromCache(cachedPath, this)) {
+            StopWatch();
+            StartWatch();
+            return IResource::Load();
+        }
+
         auto&& pShader = SR_SRSL_NS::SRSLShader::Load(path, m_macros);
         if (!pShader) {
             SR_ERROR("Shader::Load() : failed to load srsl shader!\n\tPath: " + path.ToString());
@@ -472,6 +480,8 @@ namespace SR_GRAPH_NS::Types {
 
         m_uniformBlock.ResetDefaultValues();
         m_constBlock.ResetDefaultValues();
+
+        SR_GRAPH_NS::ShaderCache::SaveShaderToCache(cachedPath, this);
 
         return IResource::Load();
     }

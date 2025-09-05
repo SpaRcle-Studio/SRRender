@@ -25,14 +25,14 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class Render;
     class RenderContext;
+    class ShaderCache;
 }
 
 namespace SR_GTYPES_NS {
-    class Shader;
-
     class Shader : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         SR_CLASS()
         using ShaderProgram = int32_t;
+        friend class ShaderCache;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<Shader>;
 

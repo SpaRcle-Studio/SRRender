@@ -98,14 +98,17 @@ namespace SR_SRSL_NS {
         return pShader;
     }
 
-    bool SRSLShader::IsCacheActual() const {
+    SR_UTILS_NS::Path SRSLShader::GetCachePath() const {
         auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(m_path);
-        return GetHash() == SR_UTILS_NS::FileSystem::ReadHashFromFile(cachedPath.ConcatExt("hash"));
+        return cachedPath.Concat(m_macros.GetHashStr());
+    }
+
+    bool SRSLShader::IsCacheActual() const {
+        return GetHash() == SR_UTILS_NS::FileSystem::ReadHashFromFile(GetCachePath().ConcatExt("hash"));
     }
 
     bool SRSLShader::IsCacheActual(ShaderLanguage shaderLanguage) const {
-        auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(m_path);
-        auto&& cachedHash = SR_UTILS_NS::FileSystem::ReadHashFromFile(cachedPath.ConcatExt("hash").ConcatExt(
+        auto&& cachedHash = SR_UTILS_NS::FileSystem::ReadHashFromFile(GetCachePath().ConcatExt("hash").ConcatExt(
                 SR_UTILS_NS::EnumReflector::ToStringAtom(shaderLanguage)));
         return GetHash() == cachedHash;
     }
@@ -125,9 +128,7 @@ namespace SR_SRSL_NS {
 
     bool SRSLShader::SaveCache() const {
         SR_TRACY_ZONE;
-
-        auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(m_path);
-        SR_UTILS_NS::FileSystem::WriteHashToFile(cachedPath.ConcatExt("hash"), GetHash());
+        //SR_UTILS_NS::FileSystem::WriteHashToFile(GetCachePath().ConcatExt("hash"), GetHash());
         return true;
     }
 
@@ -512,9 +513,11 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLShader::Export(ShaderLanguage shaderLanguage) const {
-        if (IsCacheActual(shaderLanguage)) {
-            return true;
-        }
+        SR_TRACY_ZONE;
+
+        //if (IsCacheActual(shaderLanguage)) {
+        //    return true;
+        //}
 
         auto&& [result, stages] = GenerateStages(shaderLanguage);
 
@@ -537,13 +540,7 @@ namespace SR_SRSL_NS {
             }
         }
 
-        auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(m_path);
-        auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(m_path);
-
-        SR_UTILS_NS::FileSystem::WriteHashToFile(
-                cachedPath.ConcatExt("hash").ConcatExt(SR_UTILS_NS::EnumReflector::ToStringAtom(shaderLanguage)),
-                absPath.GetFileHash()
-        );
+        //SR_UTILS_NS::FileSystem::WriteHashToFile(GetCachePath().ConcatExt("hash").ConcatExt(SR_UTILS_NS::EnumReflector::ToStringAtom(shaderLanguage)), GetHash());
 
         return true;
     }

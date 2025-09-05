@@ -80,4 +80,8 @@ namespace SR_GRAPH_NS {
             pMesh->MarkUniformsDirty();
         });
     }
+
+    SR_MATH_NS::FVector3 LightSystem::GetDirectionalLightDirection() const noexcept {
+        return -m_position.Normalize();
+    }
 }

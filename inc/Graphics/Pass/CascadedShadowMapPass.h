@@ -26,6 +26,8 @@ namespace SR_GRAPH_NS {
     protected:
         bool CheckCamera();
         void UpdateCascades();
+        void UpdateCascades2();
+        void ResetViewFrustumCorners();
 
     protected:
         SR_MATH_NS::FVector3 m_directionalLightPosition;
@@ -41,9 +43,16 @@ namespace SR_GRAPH_NS {
         float_t m_cascadeSplitLambda = 0.95f;
         /// @property
         bool m_usePerspective = false;
+        /// @property
+        bool m_stabilizeShadowCascades = true;
+        /// @property
+        bool m_useOtherAlgorithm = false;
+
+        SR_MATH_NS::FVector3 m_frustumCorners[8];
 
         std::vector<SR_MATH_NS::Matrix4x4> m_cascadeMatrices;
         std::vector<float_t> m_cascadeSplitDepths;
+        std::vector<float_t> m_cascadeRadii;
 
     };
 }

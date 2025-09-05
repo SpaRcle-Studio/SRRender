@@ -53,13 +53,15 @@ namespace SR_SRSL_NS {
         std::set<ShaderStage> stages;
     };
 
+    class SRSLShaderCache;
+
     /** Это не шейдер в привычном понимании, это набор всех данных для генерирования любого
      * шейдерного кода и для последующей его экспортации. */
     class SRSLShader : public SR_UTILS_NS::NonCopyable {
         using Ptr = std::shared_ptr<SRSLShader>;
         using Super = SR_UTILS_NS::NonCopyable;
         using UniformBlocks = std::map<SR_UTILS_NS::StringAtom, SRSLUniformBlock>;
-        uint64_t VERSION = 1000;
+        friend SRSLShaderCache;
     private:
         explicit SRSLShader(SR_UTILS_NS::Path path);
 
@@ -94,6 +96,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD bool IsMacroDefined(const SR_UTILS_NS::StringAtom& name) const;
 
     private:
+        SR_NODISCARD SR_UTILS_NS::Path GetCachePath() const;
         SR_NODISCARD float_t EvalExpressionFloat(SRSLExpr* pExpression) const;
         SR_NODISCARD int32_t EvalExpressionInt(SRSLExpr* pExpression) const;
         SR_NODISCARD SR_MATH_NS::FVector2 EvalExpressionVec2(SRSLExpr* pExpression) const;

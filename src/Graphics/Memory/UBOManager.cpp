@@ -110,6 +110,10 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     UBOManager::BindResult UBOManager::BindUBO(VirtualUBO virtualUbo) noexcept {
+        if (!m_pipeline->GetCurrentShader()) SR_UNLIKELY_ATTRIBUTE {
+            SRHaltOnce("Current shader is nullptr!");
+            return BindResult::Failed;
+        }
         auto&& uboSize = m_pipeline->GetCurrentShader()->GetUBOBlockSize();
         return BindUBO(virtualUbo, uboSize);
     }

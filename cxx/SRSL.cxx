@@ -1,5 +1,6 @@
 #include <Utils/macros.h>
 
+#include "../src/Graphics/SRSL/Cache.cpp"
 #include "../src/Graphics/SRSL/Lexer.cpp"
 #include "../src/Graphics/SRSL/LexicalTree.cpp"
 #include "../src/Graphics/SRSL/MathExpression.cpp"

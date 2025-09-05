@@ -198,7 +198,7 @@ namespace SR_SRSL_NS {
     }
 
     SRSLIfStatement::SRSLIfStatement(bool isElse)
-        : SRSLLexicalUnit()
+        : SRSLLexicalUnit(LexicalUnitType::IfStatement)
         , isElse(isElse)
     { }
 
