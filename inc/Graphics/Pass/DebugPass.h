@@ -58,6 +58,7 @@ namespace SR_GRAPH_NS {
         bool m_hasRendered = false;
         bool m_isNeedUpdate = false;
         bool m_isValid = false;
+        bool m_updateMeshesOnDemand = false;
 
         /// @property
         std::map<SR_UTILS_NS::StringAtom, DebugPassShaderInfo> m_shaders;

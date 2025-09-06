@@ -112,8 +112,7 @@ namespace SR_GRAPH_NS {
         m_renderPassBI = EvoVulkan::Tools::Insert::RenderPassBeginInfo(0, 0, VK_NULL_HANDLE, VK_NULL_HANDLE, nullptr, 0);
 
         m_kernel->SetMultisampling(m_requiredSampleCount);
-        //m_kernel->SetSwapchainImagesCount(SR_UTILS_NS::StoreUtils::User::GetInt("SwapchainImages", 2));
-        m_kernel->SetSwapchainImagesCount(3);
+        m_kernel->SetSwapchainImagesCount(SR_UTILS_NS::StoreUtils::User::GetInt("SwapchainImages", 3));
 
         std::vector<const char*>&& validationLayers = { };
 
@@ -350,6 +349,9 @@ namespace SR_GRAPH_NS {
                 return nullptr;
             }
 
+            if (m_FBOForEachSwapchainImage) {
+                FBO += GetCurrentFrameIndex();
+            }
             auto&& framebuffer = m_memory->GetFBO(FBO - 1);
 
             if (auto&& layers = framebuffer->GetLayers(); !layers.empty()) SR_LIKELY_ATTRIBUTE {
@@ -438,6 +440,9 @@ namespace SR_GRAPH_NS {
 
         EvoVulkan::Types::RenderPass renderPass = m_kernel->GetRenderPass();
         if (fbo > 0) {
+            if (m_FBOForEachSwapchainImage) {
+                fbo += GetCurrentFrameIndex();
+            }
             renderPass = m_memory->GetFBO(fbo - 1)->GetRenderPass();
         }
 
@@ -801,6 +806,10 @@ namespace SR_GRAPH_NS {
             if (FBO == UINT32_MAX) {
                 PipelineError("VulkanPipeline::BindFrameBuffer() : frame buffer index equals UINT32_MAX! Something went wrong...");
                 return;
+            }
+
+            if (m_FBOForEachSwapchainImage) {
+                FBO += frameIndex;
             }
 
             auto&& pFrameBuffer = m_memory->GetFBO(FBO - 1);
@@ -1247,8 +1256,14 @@ namespace SR_GRAPH_NS {
             return;
         }
         else if (m_state.frameBufferId > 0) {
-            m_renderPassBI.clearValueCount = m_memory->GetFBO(m_state.frameBufferId - 1)->GetCountClearValues();
-            m_renderPassBI.pClearValues = m_memory->GetFBO(m_state.frameBufferId - 1)->GetClearValues();
+            int32_t fbo = m_state.frameBufferId - 1;
+
+            if (m_FBOForEachSwapchainImage) {
+                fbo += GetCurrentFrameIndex();
+            }
+
+            m_renderPassBI.clearValueCount = m_memory->GetFBO(fbo)->GetCountClearValues();
+            m_renderPassBI.pClearValues = m_memory->GetFBO(fbo)->GetClearValues();
         }
         else {
             /// в какой ситуации это может случиться?
@@ -1341,7 +1356,11 @@ namespace SR_GRAPH_NS {
         Super::SetCurrentFrameBuffer(pFrameBuffer);
 
         if (pFrameBuffer && pFrameBuffer->GetId() != SR_ID_INVALID) {
-            m_currentVkFrameBuffer = m_memory->GetFBO(pFrameBuffer->GetId() - 1);
+            int32_t id = pFrameBuffer->GetId() - 1;
+            if (m_FBOForEachSwapchainImage) {
+                id += GetCurrentFrameIndex();
+            }
+            m_currentVkFrameBuffer = m_memory->GetFBO(id);
         }
         else {
             m_currentVkFrameBuffer = nullptr;
@@ -1356,9 +1375,18 @@ namespace SR_GRAPH_NS {
 
         WaitRenderIdle();
 
-        const bool result = m_memory->FreeFBO(*id - 1);
+        bool hasErrors = false;
+
+        if (m_FBOForEachSwapchainImage) {
+            for (uint16_t i = 0; i < GetSwapchainImagesCount(); ++i) {
+                hasErrors |= !m_memory->FreeFBO(*id - 1 + i);
+            }
+        }
+        else {
+            hasErrors |= !m_memory->FreeFBO(*id - 1);
+        }
         *id = SR_ID_INVALID;
-        return result;
+        return !hasErrors;
     }
 
     bool VulkanPipeline::FreeShader(int32_t* id) {

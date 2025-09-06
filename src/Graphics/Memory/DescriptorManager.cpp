@@ -26,6 +26,7 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
+        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
 
         if (reallocation != SR_ID_INVALID) {
             auto&& descriptors = m_descriptorPool.At(reallocation);
@@ -40,12 +41,13 @@ namespace SR_GRAPH_NS {
 
             DescriptorSetInfo& info = descriptors.emplace_back();
             info.pShaderHandle = pShaderHandle;
+            info.frameIndex = frameIndex;
             info.descriptorSet = descriptorSet;
 
             return reallocation;
         }
 
-        return m_descriptorPool.Add({ DescriptorSetInfo{ pShaderHandle, descriptorSet } });
+        return m_descriptorPool.Add({ DescriptorSetInfo{ pShaderHandle, frameIndex, descriptorSet } });
     }
 
     DescriptorManager::BindResult DescriptorManager::Bind(DescriptorManager::VirtualDescriptorSet virtualDescriptorSet) {
@@ -56,6 +58,7 @@ namespace SR_GRAPH_NS {
 
         auto&& info = m_descriptorPool.At(virtualDescriptorSet);
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
+        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
 
         DescriptorSet descriptorSet;
         bool hasDescriptorSet = false;
@@ -63,6 +66,10 @@ namespace SR_GRAPH_NS {
         const DescriptorSetInfo* pElement = info.data();
         const DescriptorSetInfo* pEnd = pElement + info.size();
         for (; pElement != pEnd; ++pElement) {
+            if (m_multiFrameMode && pElement->frameIndex != frameIndex) {
+                continue;
+            }
+
             if (pElement->pShaderHandle == pShaderHandle) SR_LIKELY_ATTRIBUTE {
                 descriptorSet = pElement->descriptorSet;
                 hasDescriptorSet = true;
@@ -82,6 +89,7 @@ namespace SR_GRAPH_NS {
 
             DescriptorSetInfo& descriptorSetInfo = info.emplace_back();
             descriptorSetInfo.pShaderHandle = pShaderHandle;
+            descriptorSetInfo.frameIndex = frameIndex;
             descriptorSetInfo.descriptorSet = descriptorSet;
 
             result = BindResult::Duplicated;
@@ -185,5 +193,10 @@ namespace SR_GRAPH_NS {
         if (count > 0) {
             SR_LOG("DescriptorManager::CollectUnused() : collected {} unused descriptors.", count);
         }
+    }
+
+    void DescriptorManager::InitSingleton() {
+        Super::InitSingleton();
+        m_multiFrameMode = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameResources", true);
     }
 }

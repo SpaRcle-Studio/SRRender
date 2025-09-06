@@ -9,6 +9,8 @@
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Render/DebugRenderer.h>
 
+#include <Utils/Common/Features.h>
+
 #include <Codegen/DebugPass.generated.hpp>
 
 namespace SR_GRAPH_NS {
@@ -134,6 +136,7 @@ namespace SR_GRAPH_NS {
 
     bool DebugPass::Init() {
         m_isValid = true;
+        m_updateMeshesOnDemand = SR_UTILS_NS::Features::Instance().Enabled("UpdateMeshesOnDemand", false);
 
         for (auto& [id, shaderInfo] : m_shaders) {
             shaderInfo.LoadShader();
@@ -320,7 +323,7 @@ namespace SR_GRAPH_NS {
             shaderInfo.pShader->EndSharedUBO();
         }
 
-        if (!m_isNeedUpdate) {
+        if (!m_isNeedUpdate && m_updateMeshesOnDemand) {
             return;
         }
 

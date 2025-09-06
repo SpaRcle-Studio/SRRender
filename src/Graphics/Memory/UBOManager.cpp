@@ -36,6 +36,7 @@ namespace SR_GRAPH_NS::Memory {
         SR_TRACY_ZONE;
 
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
+        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
 
         if (!pShaderHandle) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("UBOManager::AllocateUBO() : shader program do not set!");
@@ -56,6 +57,7 @@ namespace SR_GRAPH_NS::Memory {
 
         VirtualUBOInfo::Data& data = virtualUboInfo.data.emplace_back();
         data.ubo = ubo;
+        data.frameIndex = frameIndex;
         data.pShaderHandle = pShaderHandle;
         data.uboSize = uboSize;
 
@@ -125,6 +127,8 @@ namespace SR_GRAPH_NS::Memory {
             return BindResult::Failed;
         }
 
+        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
+
         auto&& info = m_uboPool.At(virtualUbo);
         BindResult result = BindResult::Success;
 
@@ -132,6 +136,10 @@ namespace SR_GRAPH_NS::Memory {
         bool isFound = false;
 
         for (auto&& data : info.data) {
+            if (m_multiFrameMode && data.frameIndex != frameIndex) {
+                continue;
+            }
+
             if (data.pShaderHandle == pShaderHandle || info.shared) SR_LIKELY_ATTRIBUTE {
                 ubo = data.ubo;
                 isFound = true;
@@ -140,7 +148,9 @@ namespace SR_GRAPH_NS::Memory {
         }
 
         if (!isFound) SR_UNLIKELY_ATTRIBUTE {
-            SRAssert2(!info.shared, "Something went wrong! UBO not found in shared mode!");
+            if (!m_multiFrameMode) {
+                SRAssert2(!info.shared, "Something went wrong! UBO not found in shared mode!");
+            }
 
             if (uboSize > 0) SR_LIKELY_ATTRIBUTE {
                 if (!AllocMemory(&ubo, uboSize)) SR_UNLIKELY_ATTRIBUTE {
@@ -151,6 +161,7 @@ namespace SR_GRAPH_NS::Memory {
 
             VirtualUBOInfo::Data& data = info.data.emplace_back();
             data.ubo = ubo;
+            data.frameIndex = frameIndex;
             data.pShaderHandle = pShaderHandle;
             data.uboSize = uboSize;
 
@@ -169,9 +180,15 @@ namespace SR_GRAPH_NS::Memory {
             return BindResult::Failed;
         }
 
+        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
+
         auto&& info = m_uboPool.At(virtualUbo);
 
         for (auto&& data : info.data) {
+            if (m_multiFrameMode && data.frameIndex != frameIndex) {
+                continue;
+            }
+
             if (data.pShaderHandle == pShaderHandle || info.shared) SR_LIKELY_ATTRIBUTE {
                 /// SR_ID_INVALID is allowed
                 m_pipeline->BindUBO(data.ubo);
@@ -190,9 +207,14 @@ namespace SR_GRAPH_NS::Memory {
         SR_TRACY_ZONE;
 
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
+        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
 
         auto&& info = m_uboPool.At(virtualUbo);
         for (auto&& data : info.data) {
+            if (m_multiFrameMode && data.frameIndex != frameIndex) {
+                continue;
+            }
+
             if (data.pShaderHandle == pShaderHandle || info.shared) SR_LIKELY_ATTRIBUTE {
                 return data.ubo;
             }
@@ -232,5 +254,10 @@ namespace SR_GRAPH_NS::Memory {
         if (count > 0) {
             SR_LOG("UBOManager::CollectUnused() : collected {} unused UBO.", count);
         }
+    }
+
+    void UBOManager::InitSingleton() {
+        Super::InitSingleton();
+        m_multiFrameMode = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameResources", true);
     }
 }
