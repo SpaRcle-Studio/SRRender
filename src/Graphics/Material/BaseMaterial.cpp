@@ -7,6 +7,7 @@
 #include <Graphics/Pipeline/Pipeline.h>
 
 #include <Codegen/BaseMaterial.generated.hpp>
+#include <utility>
 
 namespace SR_GRAPH_NS {
     BaseMaterial::BaseMaterial()
@@ -121,15 +122,15 @@ namespace SR_GRAPH_NS {
         });
     }
 
-    void BaseMaterial::SetShader(ShaderPtr pShader, SR_UTILS_NS::StringAtom stage) {
+    void BaseMaterial::SetShader(ShaderPtr pShader) {
         SR_TRACY_ZONE;
 
         if (auto&& pData = GetMaterialData()) {
-            pData->SetShader(pShader, stage);
+            pData->SetShader(std::move(pShader));
         }
     }
 
-    void BaseMaterial::SetShader(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom stage) {
+    void BaseMaterial::SetShader(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
 
         auto&& pShader = SR_GTYPES_NS::Shader::Load(path);
@@ -137,7 +138,7 @@ namespace SR_GRAPH_NS {
             SR_ERROR("BaseMaterial::SetShader() : shader is nullptr!");
             return;
         }
-        SetShader(pShader, stage);
+        SetShader(pShader);
     }
 
     void BaseMaterial::UseSamplers() {
@@ -193,20 +194,6 @@ namespace SR_GRAPH_NS {
         return pData->GetDefaultShaderData().pShader.Get();
     }
 
-    SR_GTYPES_NS::Shader* BaseMaterial::GetShader(SR_UTILS_NS::StringAtom id) const noexcept {
-        auto&& pData = GetMaterialData();
-        if (!pData) SR_UNLIKELY_ATTRIBUTE {
-            return nullptr;
-        }
-        if (id.empty()) {
-            return pData->GetDefaultShaderData().pShader.Get();
-        }
-        if (auto&& pShaderData = pData->GetShaderData(id)) {
-            return pShaderData->pShader.Get();
-        }
-        return nullptr;
-    }
-
     SR_GTYPES_NS::Shader* BaseMaterial::GetShader(const SR_SRSL_NS::ShaderMacrosParams& macros) const noexcept {
         SR_TRACY_ZONE;
 
@@ -220,7 +207,26 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        const auto hash = macros.GetHash();
+        const SR_SRSL_NS::ShaderMacrosParams* pMacros = &macros;
+
+        if (!pData->GetShaderDefines().empty()) {
+            const auto baseHash = macros.GetHash();
+            auto&& pBaseIt = m_hashRedirect.find(baseHash);
+
+            if (pBaseIt == m_hashRedirect.end()) {
+                SR_SRSL_NS::ShaderMacrosParams clone = macros;
+                for (auto&& [key, value] : pData->GetShaderDefines()) {
+                    clone.SetParam(key, value);
+                }
+                m_hashRedirect.insert({ baseHash, clone });
+                pMacros = &m_hashRedirect.at(baseHash);
+            }
+            else {
+                pMacros = &pBaseIt->second;
+            }
+        }
+
+        const auto hash = pMacros->GetHash();
         if (hash == pDefaultShader->GetMacros().GetHash()) {
             return pDefaultShader;
         }
@@ -230,7 +236,7 @@ namespace SR_GRAPH_NS {
             return pIt->second.Get();
         }
 
-        auto&& pShader = SR_GTYPES_NS::Shader::Load(pDefaultShader->GetResourcePath(), macros);
+        auto&& pShader = SR_GTYPES_NS::Shader::Load(pDefaultShader->GetResourcePath(), *pMacros);
         if (pShader) {
             m_variants[hash] = pShader;
             pShader->AddUsePoint();

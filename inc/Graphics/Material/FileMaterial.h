@@ -49,13 +49,15 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const MaterialData::Ptr& GetMaterialData() const noexcept override;
 
         SR_NODISCARD SR_UTILS_NS::Path GetMaterialPath() const noexcept { return m_pResource ? m_pResource->GetResourcePath() : SR_UTILS_NS::Path(); }
-        SR_NODISCARD void SetMaterialPath(const SR_UTILS_NS::Path& path) noexcept;
+        void SetMaterialPath(const SR_UTILS_NS::Path& path) noexcept;
 
     private:
         void Init();
 
     private:
         /// @virtualProperty(materialPath) @getter(GetMaterialPath) @setter(SetMaterialPath)
+        /// @customArgs(pick: enabled, filter name: Material, relative: resources)
+        /// @customArg(filter value: mat)
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(materialData) @getter(GetMaterialData) @dontSave @readOnly @noHeader
         SR_VIRTUAL_PROPERTY

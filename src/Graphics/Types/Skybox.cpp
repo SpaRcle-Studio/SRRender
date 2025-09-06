@@ -192,6 +192,11 @@ namespace SR_GTYPES_NS {
             return;
         }
 
+        if (!GetPipeline()->GetCurrentShader()) {
+            SR_ERROR("Skybox::Draw() : current shader is null!");
+            return;
+        }
+
         auto&& uboManager = Memory::UBOManager::Instance();
         auto&& descriptorManager = SR_GRAPH_NS::DescriptorManager::Instance();
 

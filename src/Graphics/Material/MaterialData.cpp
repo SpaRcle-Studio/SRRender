@@ -328,6 +328,8 @@ namespace SR_GRAPH_NS {
     void MaterialData::Save(SR_UTILS_NS::ISerializer& serializer) const {
         SR_TRACY_ZONE;
 
+        Super::Save(serializer);
+
         /// default shader
         {
             serializer.BeginObject(SR_UTILS_NS::SerializationId::Create("default"));
@@ -336,23 +338,6 @@ namespace SR_GRAPH_NS {
             SR_UTILS_NS::Serialization::Save(serializer, m_defaultShader, SR_UTILS_NS::SerializationId::Create("data"));
             serializer.EndObject();
         }
-
-        serializer.BeginArray(m_shaders.size(), SR_UTILS_NS::SerializationId::Create("stages"));
-
-        for (const auto& [stage, shaderData] : m_shaders) {
-            SRAssert(shaderData.pShader);
-
-            serializer.BeginItem(SR_UTILS_NS::SerializationId::Create("stage"));
-
-            const SR_UTILS_NS::Path path = shaderData.pShader ? shaderData.pShader->GetResourcePath() : SR_UTILS_NS::Path();
-            SR_UTILS_NS::Serialization::Save(serializer, stage, SR_UTILS_NS::SerializationId::Create("id"));
-            SR_UTILS_NS::Serialization::Save(serializer, path, SR_UTILS_NS::SerializationId::Create("shader"));
-            SR_UTILS_NS::Serialization::Save(serializer, shaderData, SR_UTILS_NS::SerializationId::Create("data"));
-
-            serializer.EndItem();
-        }
-
-        serializer.EndArray();
     }
 
     bool MaterialData::Load(SR_UTILS_NS::IDeserializer& deserializer) {
@@ -368,42 +353,17 @@ namespace SR_GRAPH_NS {
             deserializer.BeginObject(SR_UTILS_NS::SerializationId::Create("default"));
             SR_UTILS_NS::Path path;
             SR_UTILS_NS::Serialization::Load(deserializer, path, SR_UTILS_NS::SerializationId::Create("shader"));
-            if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path)) {
-                SetShader(pShader);
-                SR_UTILS_NS::Serialization::Load(deserializer, m_defaultShader, SR_UTILS_NS::SerializationId::Create("data"));
-                m_defaultShader.UpdateProperties();
-            }
-            else {
-                SR_ERROR("MaterialData::Load() : failed to load default shader! Path: {}", path.ToString());
-            }
-            deserializer.EndObject();
-        }
-
-        const uint64_t size = deserializer.BeginArray(SR_UTILS_NS::SerializationId::Create("stages"));
-        if (size > 0) {
-            uint64_t index = 0;
-
-            while (deserializer.BeginItem(SR_UTILS_NS::SerializationId::Create("stage"), index)) {
-                SR_UTILS_NS::StringAtom stage;
-                SR_UTILS_NS::Path path;
-
-                SR_UTILS_NS::Serialization::Load(deserializer, stage, SR_UTILS_NS::SerializationId::Create("id"));
-                SR_UTILS_NS::Serialization::Load(deserializer, path, SR_UTILS_NS::SerializationId::Create("shader"));
-
+            if (!path.empty()) {
                 if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path)) {
-                    SetShader(pShader, stage);
-                    SR_UTILS_NS::Serialization::Load(deserializer, m_shaders[stage], SR_UTILS_NS::SerializationId::Create("data"));
-                    m_shaders[stage].UpdateProperties();
+                    SetShader(pShader);
+                    SR_UTILS_NS::Serialization::Load(deserializer, m_defaultShader, SR_UTILS_NS::SerializationId::Create("data"));
+                    m_defaultShader.UpdateProperties();
                 }
                 else {
-                    SR_ERROR("MaterialData::Load() : failed to load shader! Path: {}", path.ToString());
+                    SR_ERROR("MaterialData::Load() : failed to load default shader! Path: {}", path.ToString());
                 }
-
-                deserializer.EndItem();
-                index++;
             }
-
-            deserializer.EndArray();
+            deserializer.EndObject();
         }
 
         return true;
@@ -416,22 +376,6 @@ namespace SR_GRAPH_NS {
             m_defaultShader.pShader->RemoveUsePoint();
             m_defaultShader.pShader = nullptr;
         }
-
-        for (auto&& [stage, data] : m_shaders) {
-            if (data.pShader) {
-                data.pShader->RemoveUsePoint();
-                data.pShader = nullptr;
-            }
-            for (MaterialShaderProperty& sampler : data.samplers) {
-                if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&sampler.data)) {
-                    if (*pTextureRef) {
-                        (*pTextureRef)->RemoveUsePoint();
-                    }
-                }
-            }
-            data.samplers.clear();
-        }
-        m_shaders.clear();
 
         for (MaterialShaderProperty& sampler : m_defaultShader.samplers) {
             if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&sampler.data)) {
@@ -541,23 +485,18 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialData::SetShader(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom stage) {
+    void MaterialData::SetShader(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
 
-        static const SR_UTILS_NS::StringAtom defaultStage = "Default";
-        if (stage == defaultStage) {
-            stage = SR_UTILS_NS::StringAtom();
-        }
-
         if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path)) {
-            SetShader(pShader, stage);
+            SetShader(pShader);
         }
         else {
             SR_ERROR("MaterialData::SetShader() : failed to load shader! \n\tPath: " + path.ToString());
         }
     }
 
-    void MaterialData::SetShader(SR_GTYPES_NS::Shader::Ptr pShader, const SR_UTILS_NS::StringAtom stage) {
+    void MaterialData::SetShader(SR_GTYPES_NS::Shader::Ptr pShader) {
         SR_TRACY_ZONE;
 
         if (!pShader) {
@@ -566,16 +505,6 @@ namespace SR_GRAPH_NS {
         }
 
         MaterialShaderData* pShaderData = &m_defaultShader;
-        if (!stage.Empty()) {
-            if (auto&& pIt = m_shaders.find(stage); pIt != m_shaders.end()) {
-                pShaderData = &pIt->second;
-            }
-            else {
-                pShaderData = &m_shaders[stage];
-                pShaderData->pOwnedMaterialData = this;
-            }
-        }
-
         if (pShaderData->pShader == pShader) {
             return;
         }
@@ -614,18 +543,12 @@ namespace SR_GRAPH_NS {
         if (pShaderData->pOwnedMaterialData) {
             pShaderData->pOwnedMaterialData->OnShaderChanged();
         }
-
-        SRAssert(stage.Empty() || (m_shaders[stage].pShader == pShader && pShader));
     }
 
     void MaterialData::SetData(const SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, const ShaderVarType type) noexcept {
         SR_TRACY_ZONE;
 
         uint8_t changeResult = std::max(static_cast<uint8_t>(0), static_cast<uint8_t>(m_defaultShader.SetData(id, v, type)));
-
-        for (auto&& [stage, data] : m_shaders) {
-            changeResult = std::max(changeResult, static_cast<uint8_t>(data.SetData(id, v, type)));
-        }
 
         if (changeResult == static_cast<uint8_t>(MaterialPropertyChangeResult::ReDraw)) {
             OnPropertyChanged(false);
@@ -667,44 +590,6 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialData::RemoveStage(const SR_UTILS_NS::StringAtom stage) {
-        auto&& pStageIt = m_shaders.find(stage);
-        if (pStageIt == m_shaders.end()) {
-            return;
-        }
-
-        if (auto&& pIt = m_shaderSubscriptions.find(pStageIt->second.pShader); pIt != m_shaderSubscriptions.end()) {
-            SRAssert(pIt->second.second > 0);
-            --pIt->second.second;
-            if (pIt->second.second == 0) {
-                m_shaderSubscriptions.erase(pIt);
-            }
-        }
-
-        pStageIt->second.pShader->RemoveUsePoint();
-        pStageIt->second.pShader = nullptr;
-
-        for (MaterialShaderProperty& sampler : pStageIt->second.samplers) {
-            if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&sampler.data)) {
-                if (*pTextureRef) {
-                    (*pTextureRef)->RemoveUsePoint();
-
-                    if (auto&& pIt = m_textureSubscriptions.find(*pTextureRef); pIt != m_textureSubscriptions.end()) {
-                        SRAssert(pIt->second.second > 0);
-                        --pIt->second.second;
-                        if (pIt->second.second == 0) {
-                            m_textureSubscriptions.erase(pIt);
-                        }
-                    }
-                }
-            }
-        }
-
-        m_shaders.erase(pStageIt);
-
-        OnShaderChanged();
-    }
-
     void MaterialData::OnShaderChanged() {
         SR_TRACY_ZONE;
         Broadcast(SHADER_CHANGED_EVENT);
@@ -715,25 +600,5 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::SubscriptionMessage msg;
         msg.SetBool(ONLY_UNIFORMS_BOOL_ID, onlyUniforms);
         Broadcast(PROPERTY_CHANGED_EVENT, msg);
-    }
-
-    void MaterialData::AddStage(SR_UTILS_NS::StringAtom stage) {
-        SRAssert2(!stage.empty(), "MaterialData::AddStage() : stage cannot be empty!");
-        SRAssert2(stage != "Default", "MaterialData::AddStage() : stage cannot be 'Default'!");
-
-        if (HasStage(stage)) {
-            SR_ERROR("MaterialData::AddStage() : stage already exists! Stage: {}", stage.ToString());
-            return;
-        }
-        SetShader(GetDefaultShaderData().pShader, stage);
-    }
-
-    bool MaterialData::HasStage(SR_UTILS_NS::StringAtom stage) const noexcept {
-        for (const auto& [s, data] : m_shaders) {
-            if (s == stage) {
-                return true;
-            }
-        }
-        return false;
     }
 }

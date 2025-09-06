@@ -29,8 +29,6 @@ namespace SR_GRAPH_NS {
         MaterialData::Ptr pData = SRNew<MaterialData>();
         {
             pData->SetShader("Engine/Shaders/SSAO/ssao_geometry.srsl");
-            pData->SetShader("Engine/Shaders/CascadedShadowMap/spatial.srsl", "Shadow");
-
             pData->SetSampler("diffuse", "Engine/Textures/default_improved.png");
             pData->SetData("color", SR_MATH_NS::FVector4(1.f, 1.f, 1.f, 1.f), ShaderVarType::Vec4);
         }
@@ -86,16 +84,6 @@ namespace SR_GRAPH_NS {
             defaultData.ForEachProperty([&](const SR_GRAPH_NS::MaterialShaderProperty& property) {
                 pUniqueMaterialData->GetDefaultShaderData().SetData(property.id, property.data, property.type);
             });
-        }
-
-        for (auto&& [stage, data] : pFileMaterialData->GetShadersData()) {
-            if (auto&& pShader = data.pShader) {
-                pUniqueMaterialData->SetShader(pShader, stage);
-                SR_UTILS_NS::StringAtom stageName = stage;
-                data.ForEachProperty([&](const SR_GRAPH_NS::MaterialShaderProperty& property) {
-                    pUniqueMaterialData->GetShaderData(stageName)->SetData(property.id, property.data, property.type);
-                });
-            }
         }
 
         return pUniqueMaterial.StaticCast<BaseMaterial>();

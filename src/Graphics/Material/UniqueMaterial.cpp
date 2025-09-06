@@ -10,6 +10,7 @@ namespace SR_GRAPH_NS {
     UniqueMaterial::UniqueMaterial() = default;
 
     UniqueMaterial::~UniqueMaterial() {
+        SR_TRACY_ZONE;
         DeInitMaterialDataSubscriptions();
         m_data.Reset();
     }

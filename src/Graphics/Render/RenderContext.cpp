@@ -511,7 +511,7 @@ namespace SR_GRAPH_NS {
 
         /// ----------------------------------------------------------------------------
 
-        if (!((m_defaultMaterial = FileMaterial::Load("Engine/Materials/default.mat")))) {
+        if (!((m_defaultMaterial = FileMaterial::Load(GetSettings().defaultMaterial)))) {
             SR_ERROR("RenderContext::LoadDefaultResources() : failed to load default material!");
         }
 

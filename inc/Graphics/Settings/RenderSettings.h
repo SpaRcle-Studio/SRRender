@@ -35,10 +35,6 @@ namespace SR_GRAPH_NS {
         /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
         /// @customArg(filter value: srtech)
         SR_UTILS_NS::Path editorCameraRenderTechnique;
-        /// @property
-        /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
-        /// @customArg(filter value: srtech)
-        SR_UTILS_NS::Path prefabCameraRenderTechnique;
 
     };
 
@@ -59,6 +55,17 @@ namespace SR_GRAPH_NS {
         /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
         /// @customArg(filter value: srtech)
         SR_UTILS_NS::Path overlayRenderTechnique = "Editor/Render/Overlay.srtech";
+        /// @property
+        /// @customArgs(pick: enabled, filter name: Folder with skybox, relative: resources)
+        SR_UTILS_NS::Path editorPrefabSkybox = "Engine/Skyboxes/Gray.png";
+        /// @property
+        /// @customArgs(pick: enabled, filter name: Shader, relative: resources)
+        /// @customArg(filter value: srsl)
+        SR_UTILS_NS::Path defaultShader = "Engine/Shaders/standard.srsl";
+        /// @property
+        /// @customArgs(pick: enabled, filter name: Material, relative: resources)
+        /// @customArg(filter value: mat)
+        SR_UTILS_NS::Path defaultMaterial = "Engine/Materials/default.mat";
 
         /// @property
         std::vector<RenderSettingsPreset> presets;

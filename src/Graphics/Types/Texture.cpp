@@ -152,7 +152,6 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         if (!m_isDirty) {
-            SRHalt("Texture::Calculate() : the texture \"{}\" is not dirty!", GetResourceId());
             return true;
         }
 
@@ -217,6 +216,9 @@ namespace SR_GTYPES_NS {
             SR_ERROR("Texture::FreeVMemory() : failed to free texture!");
         }
 
+        m_isDirty = true;
+        m_hasErrors = false;
+
         IGraphicsResource::FreeVMemory();
     }
 
@@ -239,7 +241,7 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        if (m_isDirty && !Calculate()) {
+        if (!Calculate()) {
             SR_ERROR("Texture::GetId() : failed to calculate the texture!");
             m_hasErrors = true;
             return SR_ID_INVALID;
