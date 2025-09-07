@@ -349,9 +349,6 @@ namespace SR_GRAPH_NS {
                 return nullptr;
             }
 
-            if (m_FBOForEachSwapchainImage) {
-                FBO += GetCurrentFrameIndex();
-            }
             auto&& framebuffer = m_memory->GetFBO(FBO - 1);
 
             if (auto&& layers = framebuffer->GetLayers(); !layers.empty()) SR_LIKELY_ATTRIBUTE {
@@ -440,9 +437,6 @@ namespace SR_GRAPH_NS {
 
         EvoVulkan::Types::RenderPass renderPass = m_kernel->GetRenderPass();
         if (fbo > 0) {
-            if (m_FBOForEachSwapchainImage) {
-                fbo += GetCurrentFrameIndex();
-            }
             renderPass = m_memory->GetFBO(fbo - 1)->GetRenderPass();
         }
 
@@ -808,10 +802,6 @@ namespace SR_GRAPH_NS {
                 return;
             }
 
-            if (m_FBOForEachSwapchainImage) {
-                FBO += frameIndex;
-            }
-
             auto&& pFrameBuffer = m_memory->GetFBO(FBO - 1);
             auto&& layers = pFrameBuffer->GetLayers();
 
@@ -852,71 +842,77 @@ namespace SR_GRAPH_NS {
         ++m_state.allocations;
         ++m_state.operations;
 
-        std::vector<int32_t> colorBuffers;
-        colorBuffers.reserve((*createInfo.colors).size());
+        const uint8_t maxFrames = createInfo.pFBO->size();
+        for (uint8_t frame = 0; frame < maxFrames; ++frame) {
+            std::vector<int32_t> colorBuffers;
+            colorBuffers.reserve((*createInfo.colors).size());
 
-        std::vector<VkFormat> formats;
-        formats.reserve((*createInfo.colors).size());
+            std::vector<VkFormat> formats;
+            formats.reserve((*createInfo.colors).size());
 
-        for (auto&& color : (*createInfo.colors)) {
-            colorBuffers.emplace_back(color.texture);
-            formats.emplace_back(VulkanTools::AbstractTextureFormatToVkFormat(color.format));
-        }
-
-        if (createInfo.size.x == 0 || createInfo.size.y == 0) {
-            PipelineError("VulkanPipeline::AllocateFrameBuffer() : width or height equals zero!");
-            return false;
-        }
-
-        if (*createInfo.pFBO == 0) {
-            PipelineError("VulkanPipeline::AllocateFrameBuffer() : zero frame buffer are default frame buffer!");
-            return false;
-        }
-
-        EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
-
-        VulkanTools::VulkanFrameBufferAllocInfo info = {
-            .FBO = *createInfo.pFBO - 1,
-            .width = static_cast<uint32_t>(createInfo.size.x),
-            .height = static_cast<uint32_t>(createInfo.size.y),
-            .pDepth = createInfo.pDepth,
-            .sampleCount = createInfo.sampleCount,
-            .layersCount = createInfo.layersCount,
-            .oldColorAttachments = colorBuffers,
-            .inputColorAttachments = formats,
-            .pOutputColorAttachments = &colorBuffers,
-        };
-
-        info.features.depthLoad = createInfo.features.depthLoad;
-        info.features.colorLoad = createInfo.features.colorLoad;
-        info.features.depthTransferSrc = createInfo.features.depthTransferSrc;
-        info.features.colorTransferSrc = createInfo.features.colorTransferSrc;
-        info.features.depthTransferDst = createInfo.features.depthTransferDst;
-        info.features.colorTransferDst = createInfo.features.colorTransferDst;
-        info.features.depthShaderRead = createInfo.features.depthShaderRead;
-        info.features.colorShaderRead = createInfo.features.colorShaderRead;
-
-        if (*createInfo.pFBO > 0) {
-            if (!m_memory->ReAllocateFBO(info)) {
-                PipelineError("VulkanPipeline::AllocateFrameBuffer() : failed to re-allocate frame buffer object!");
+            for (auto&& color : (*createInfo.colors)) {
+                color.texture.resize(maxFrames);
+                colorBuffers.emplace_back(color.texture[frame]);
+                formats.emplace_back(VulkanTools::AbstractTextureFormatToVkFormat(color.format));
             }
+
+            if (createInfo.size.x == 0 || createInfo.size.y == 0) {
+                PipelineError("VulkanPipeline::AllocateFrameBuffer() : width or height equals zero!");
+                return false;
+            }
+
+            if ((*createInfo.pFBO)[frame] == 0) {
+                PipelineError("VulkanPipeline::AllocateFrameBuffer() : zero frame buffer are default frame buffer!");
+                return false;
+            }
+
+            EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
+
+            VulkanTools::VulkanFrameBufferAllocInfo info = {
+                .FBO = ((*createInfo.pFBO)[frame] - 1),
+                .frame = frame,
+                .maxFrames = maxFrames,
+                .width = static_cast<uint32_t>(createInfo.size.x),
+                .height = static_cast<uint32_t>(createInfo.size.y),
+                .pDepth = createInfo.pDepth,
+                .sampleCount = createInfo.sampleCount,
+                .layersCount = createInfo.layersCount,
+                .oldColorAttachments = colorBuffers,
+                .inputColorAttachments = formats,
+                .pOutputColorAttachments = &colorBuffers,
+            };
+
+            info.features.depthLoad = createInfo.features.depthLoad;
+            info.features.colorLoad = createInfo.features.colorLoad;
+            info.features.depthTransferSrc = createInfo.features.depthTransferSrc;
+            info.features.colorTransferSrc = createInfo.features.colorTransferSrc;
+            info.features.depthTransferDst = createInfo.features.depthTransferDst;
+            info.features.colorTransferDst = createInfo.features.colorTransferDst;
+            info.features.depthShaderRead = createInfo.features.depthShaderRead;
+            info.features.colorShaderRead = createInfo.features.colorShaderRead;
+
+            if ((*createInfo.pFBO)[frame] > 0) {
+                if (!m_memory->ReAllocateFBO(info)) {
+                    PipelineError("VulkanPipeline::AllocateFrameBuffer() : failed to re-allocate frame buffer object!");
+                }
+                EVK_POP_LOG_LEVEL();
+                goto success;
+            }
+
+            (*createInfo.pFBO)[frame] = m_memory->AllocateFBO(info) + 1;
+            if ((*createInfo.pFBO)[frame] <= 0) {
+                (*createInfo.pFBO)[frame] = SR_ID_INVALID;
+                PipelineError("VulkanPipeline::AllocateFrameBuffer() : failed to allocate FBO!");
+                EVK_POP_LOG_LEVEL();
+                return false;
+            }
+
             EVK_POP_LOG_LEVEL();
-            goto success;
-        }
 
-        *createInfo.pFBO = m_memory->AllocateFBO(info) + 1;
-        if (*createInfo.pFBO <= 0) {
-            *createInfo.pFBO = SR_ID_INVALID;
-            PipelineError("VulkanPipeline::AllocateFrameBuffer() : failed to allocate FBO!");
-            EVK_POP_LOG_LEVEL();
-            return false;
-        }
-
-        EVK_POP_LOG_LEVEL();
-
-    success:
-        for (uint32_t i = 0; i < static_cast<uint32_t>((*createInfo.colors).size()); ++i) {
-            (*createInfo.colors)[i].texture = colorBuffers[i];
+        success:
+            for (uint32_t i = 0; i < static_cast<uint32_t>((*createInfo.colors).size()); ++i) {
+                (*createInfo.colors)[i].texture[frame] = colorBuffers[i];
+            }
         }
 
         return true;
@@ -1257,11 +1253,6 @@ namespace SR_GRAPH_NS {
         }
         else if (m_state.frameBufferId > 0) {
             int32_t fbo = m_state.frameBufferId - 1;
-
-            if (m_FBOForEachSwapchainImage) {
-                fbo += GetCurrentFrameIndex();
-            }
-
             m_renderPassBI.clearValueCount = m_memory->GetFBO(fbo)->GetCountClearValues();
             m_renderPassBI.pClearValues = m_memory->GetFBO(fbo)->GetClearValues();
         }
@@ -1357,9 +1348,6 @@ namespace SR_GRAPH_NS {
 
         if (pFrameBuffer && pFrameBuffer->GetId() != SR_ID_INVALID) {
             int32_t id = pFrameBuffer->GetId() - 1;
-            if (m_FBOForEachSwapchainImage) {
-                id += GetCurrentFrameIndex();
-            }
             m_currentVkFrameBuffer = m_memory->GetFBO(id);
         }
         else {
@@ -1375,16 +1363,7 @@ namespace SR_GRAPH_NS {
 
         WaitRenderIdle();
 
-        bool hasErrors = false;
-
-        if (m_FBOForEachSwapchainImage) {
-            for (uint16_t i = 0; i < GetSwapchainImagesCount(); ++i) {
-                hasErrors |= !m_memory->FreeFBO(*id - 1 + i);
-            }
-        }
-        else {
-            hasErrors |= !m_memory->FreeFBO(*id - 1);
-        }
+        bool hasErrors = !m_memory->FreeFBO(*id - 1);
         *id = SR_ID_INVALID;
         return !hasErrors;
     }
@@ -2000,7 +1979,7 @@ namespace SR_GRAPH_NS {
             }
 
             if (!(image.GetInfo().usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
-                SR_ERROR("VulkanPipeline::ClearColorBuffer() : image usage don't contain VK_IMAGE_USAGE_TRANSFER_DST_BIT!");
+                SRHalt("VulkanPipeline::ClearColorBuffer() : image usage don't contain VK_IMAGE_USAGE_TRANSFER_DST_BIT!");
                 return;
             }
 

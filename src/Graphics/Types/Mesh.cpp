@@ -26,7 +26,7 @@ namespace SR_GTYPES_NS {
         SRAssert(m_isDestroyingState);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
         SRAssert(!m_registrationInfo.has_value());
-        SRAssert2(!m_isUniformsDirty, "Application will crash if you delete mesh with dirty uniforms!");
+        //SRAssert2(!m_isUniformsDirty, "Application will crash if you delete mesh with dirty uniforms!");
         SRAssert2(!m_isWaitReRegister, "Application may will crash if you delete mesh with waiting re-register!");
     }
 
@@ -377,6 +377,9 @@ namespace SR_GTYPES_NS {
 
         const bool isRegistered = IsMeshRegistered();
         if (isRegistered) {
+            //for (auto& renderQueue : m_renderQueues) {
+            //    renderQueue.inUpdateQueue = false;
+            //}
             m_registrationInfo.value().pScene->Remove(this);
         }
 
@@ -391,7 +394,28 @@ namespace SR_GTYPES_NS {
     }
 
     void Mesh::MarkUniformsDirty(bool force) {
-        if (m_isUniformsDirty && !force) SR_LIKELY_ATTRIBUTE {
+        SR_TRACY_ZONE;
+
+        if (!IsActive()) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
+        auto pStart = m_renderQueues.data();
+        auto pEnd = pStart + m_renderQueues.size();
+        for (auto pElement = pStart; pElement != pEnd; ++pElement) {
+            if (!pElement->pRenderQueue) SR_LIKELY_ATTRIBUTE {
+                continue;
+            }
+
+            std::memset(pElement->dirtyUniformsFrames, 1, sizeof(pElement->dirtyUniformsFrames));
+            if (pElement->inUpdateQueue) {
+                continue;
+            }
+            pElement->inUpdateQueue = true;
+            pElement->pRenderQueue->OnMeshDirty(this, pElement);
+        }
+
+        /*if (m_isUniformsDirty && !force) SR_LIKELY_ATTRIBUTE {
             return;
         }
 
@@ -407,7 +431,7 @@ namespace SR_GTYPES_NS {
         auto pEnd = pStart + m_renderQueues.size();
         for (auto pElement = pStart; pElement != pEnd; ++pElement) {
             pElement->pRenderQueue->OnMeshDirty(this, pElement->pShader);
-        }
+        }*/
     }
 }
 

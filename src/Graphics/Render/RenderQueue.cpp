@@ -33,10 +33,11 @@ namespace SR_GRAPH_NS {
 
         for (auto&& [layer, queue] : m_queues) {
             for (auto&& meshInfo : queue) {
-                meshInfo.pMesh->GetRenderQueues().Remove(RenderQueueInfo { .pRenderQueue = this, .pShader = nullptr });
-                if (meshInfo.pMesh->GetRenderQueues().empty()) {
-                    meshInfo.pMesh->SetUniformsClean();
-                }
+                meshInfo.pMesh->GetRenderQueues().Remove(this);
+                //meshInfo.pMesh->GetRenderQueues().Remove(RenderQueueInfo { .pRenderQueue = this, .pShader = nullptr });
+                //if (meshInfo.pMesh->GetRenderQueues().empty()) {
+                //    meshInfo.pMesh->SetUniformsClean();
+                //}
             }
         }
     }
@@ -56,7 +57,16 @@ namespace SR_GRAPH_NS {
         meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
 
-        info.pMesh->GetRenderQueues().Add(RenderQueueInfo { .pRenderQueue = this, .pShader = meshInfo.pShader });
+        //for (auto&& queue : info.pMesh->GetRenderQueues()) {
+        //    if (queue.inUpdateQueue) {
+        //        SRHalt("RenderQueue::Register() : can't register mesh while it's in update queue!");
+        //    }
+        //}
+
+        //info.pMesh->GetRenderQueues().Add(RenderQueueInfo { .pRenderQueue = this, .pShader = meshInfo.pShader });
+
+        auto&& pNewQueue = info.pMesh->GetRenderQueues().Add(this);
+        pNewQueue->pShader = meshInfo.pShader;
 
         for (auto&& [layer, queue] : m_queues) {
             if (layer == info.layer) {
@@ -92,7 +102,30 @@ namespace SR_GRAPH_NS {
         meshInfo.priority = info.priority.value_or(0);
 
         auto&& queues = info.pMesh->GetRenderQueues();
-        auto&& pIt = queues.LowerBound(RenderQueueInfo { .pRenderQueue = this, .pShader = nullptr });
+        //for (auto&& queue : queues) {
+        //    if (queue.inUpdateQueue) {
+        //        SRHalt("RenderQueue::UnRegister() : can't unregister mesh while it's in update queue!");
+        //    }
+        //}
+
+        auto removedInfo = queues.Remove(this);
+        meshInfo.pShader = removedInfo.pShader;
+
+        if (!pQueue->Remove(meshInfo)) {
+            SRHalt("RenderQueue::UnRegister() : mesh not found!");
+        }
+
+        if (removedInfo.inUpdateQueue) {
+            for (auto it = m_meshes.begin(); it != m_meshes.end();) {
+                if (it->pMesh == meshInfo.pMesh) {
+                    it = m_meshes.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+
+        /*auto&& pIt = queues.LowerBound(RenderQueueInfo { .pRenderQueue = this, .pShader = nullptr });
 
         if (pIt == queues.end()) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("RenderQueue::UnRegister() : queue not found!");
@@ -107,7 +140,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (queues.empty()) {
-            meshInfo.pMesh->SetUniformsClean();
+            //meshInfo.pMesh->SetUniformsClean();
 
             for (auto it = m_meshes.begin(); it != m_meshes.end(); ) {
                 if (it->pMesh == meshInfo.pMesh) {
@@ -117,7 +150,7 @@ namespace SR_GRAPH_NS {
                     ++it;
                 }
             }
-        }
+        }*/
     }
 
     void RenderQueue::Init() {
@@ -163,8 +196,8 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void RenderQueue::OnMeshDirty(SR_GTYPES_NS::Mesh* pMesh, SR_GTYPES_NS::Shader* pShader) {
-        m_meshes.emplace_back(MeshShaderPair { .pMesh = pMesh, .pShader = pShader });
+    void RenderQueue::OnMeshDirty(SR_GTYPES_NS::Mesh* pMesh, RenderQueueInfo* pInfo) {
+        m_meshes.emplace_back(MeshShaderPair { .pMesh = pMesh, .pInfo = pInfo });
     }
 
     void RenderQueue::UpdateShaders() {
@@ -194,14 +227,14 @@ namespace SR_GRAPH_NS {
 
         for (auto* pElement = pStart; pElement < pEnd; ++pElement) {
             const auto pMesh = pElement->pMesh;
-            const auto pShader = pElement->pShader;
-
-            pElement->updatedFrames[frameIndex] = true;
 
             bool isNeedReUpdate = false;
+
             if (m_multiFrameMode) {
+                pElement->pInfo->dirtyUniformsFrames[frameIndex] = false;
+
                 for (uint8_t i = 0; i < maxFrames; ++i) {
-                    if (!pElement->updatedFrames[i]) SR_UNLIKELY_ATTRIBUTE {
+                    if (pElement->pInfo->dirtyUniformsFrames[i]) SR_UNLIKELY_ATTRIBUTE {
                         isNeedReUpdate = true;
                         break;
                     }
@@ -209,7 +242,7 @@ namespace SR_GRAPH_NS {
             }
 
             if (!isNeedReUpdate) {
-                pMesh->SetUniformsClean();
+                pElement->pInfo->inUpdateQueue = false;
             }
             else {
                 m_tempMeshes.emplace_back(*pElement);
@@ -220,6 +253,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
+            const auto pShader = pElement->pInfo->pShader;
             m_pipeline->SetCurrentShader(pShader);
 
             /// Если меш не был отрисован, то бинд не пройдет
@@ -232,7 +266,7 @@ namespace SR_GRAPH_NS {
         m_meshes.clear();
 
         if (m_multiFrameMode) {
-            m_meshes = m_tempMeshes;
+            std::swap(m_tempMeshes, m_meshes);
         }
     }
 

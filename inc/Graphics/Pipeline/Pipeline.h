@@ -310,11 +310,10 @@ namespace SR_GRAPH_NS {
 
         /// Все параметры, относящиется к мультисемплингу
         std::optional<uint8_t> m_newSampleCount;
-        uint8_t m_currentSampleCount = 0;
-        uint8_t m_requiredSampleCount = 0;
+        uint8_t m_currentSampleCount = 1;
+        uint8_t m_requiredSampleCount = 1;
         uint8_t m_supportedSampleCount = 0;
         bool m_isMultiSampleSupported = false;
-        bool m_FBOForEachSwapchainImage = false;
 
         uint32_t m_frames = 0;
         uint32_t m_framesPerSecond = 0;

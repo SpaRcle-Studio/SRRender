@@ -185,16 +185,21 @@ namespace SR_GTYPES_NS {
         IGraphicsResource::FreeVMemory();
     }
 
-    void Skybox::Draw() {
+    bool Skybox::Draw() {
         SR_TRACY_ZONE;
 
         if (m_idDirty && (m_hasErrors || !Calculate())) {
-            return;
+            return false;
+        }
+
+        if (!GetPipeline()) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("Skybox::Draw() : pipeline is null!");
+            return false;
         }
 
         if (!GetPipeline()->GetCurrentShader()) {
             SR_ERROR("Skybox::Draw() : current shader is null!");
-            return;
+            return false;
         }
 
         auto&& uboManager = Memory::UBOManager::Instance();
@@ -204,7 +209,7 @@ namespace SR_GTYPES_NS {
             m_virtualUBO = uboManager.AllocateUBO(m_virtualUBO);
             if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 m_hasErrors = true;
-                return;
+                return false;
             }
 
             m_virtualDescriptor = descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
@@ -224,10 +229,12 @@ namespace SR_GTYPES_NS {
         GetPipeline()->BindIBO(m_IBO);
 
         if (result != DescriptorManager::BindResult::Failed) {
+            m_dirtyShader = false;
             GetPipeline()->DrawIndices(36);
+            return true;
         }
 
-        m_dirtyShader = false;
+        return false;
     }
 
     void Skybox::OnResourceUpdated(SR_UTILS_NS::ResourceContainer* pContainer, int32_t depth) {

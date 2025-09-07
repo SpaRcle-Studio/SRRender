@@ -49,13 +49,20 @@ namespace SR_GRAPH_NS::VulkanTools {
 
         if (info.pDepth->format != ImageFormat::None && info.pDepth->aspect != ImageAspect::None) {
             if (auto&& depthTexture = pFBO->AllocateDepthTextureReference(-1)) {
-                info.pDepth->texture = m_texturePool.Add(depthTexture);
+                info.pDepth->texture.resize(info.maxFrames);
+                info.pDepth->texture[info.frame] = m_texturePool.Add(depthTexture);
             }
         }
 
-        for (auto&& pTexture : pFBO->AllocateDepthTextureReferences()) {
-            info.pDepth->subLayers.emplace_back(m_texturePool.Add(pTexture));
+        info.pDepth->subLayers.resize(pFBO->AllocateDepthTextureReferences().size());
+        for (uint32_t i = 0; i < info.pDepth->subLayers.size(); ++i) {
+            info.pDepth->subLayers[i].resize(info.maxFrames, SR_ID_INVALID);
+            info.pDepth->subLayers[i][info.frame] = m_texturePool.Add(pFBO->AllocateDepthTextureReferences()[i]);
         }
+
+        //for (auto&& pTexture : pFBO->AllocateDepthTextureReferences()) {
+        //    info.pDepth->subLayers.emplace_back(m_texturePool.Add(pTexture));
+        //}
 
         return m_fboPool.Add(pFBO);
     }
@@ -99,15 +106,18 @@ namespace SR_GRAPH_NS::VulkanTools {
         }
 
         for (uint32_t i = 0; i < depthTextures.size(); ++i) {
-            EvoVulkan::Types::Texture*& pTextureRef = m_texturePool.At(info.pDepth->subLayers[i]);
+            if (info.pDepth->subLayers[i][info.frame] == SR_ID_INVALID) {
+                continue;
+            }
+            EvoVulkan::Types::Texture*& pTextureRef = m_texturePool.At(info.pDepth->subLayers[i][info.frame]);
             delete pTextureRef;
             pTextureRef = depthTextures[i];
         }
 
         /// Depth attachment
 
-        if (info.pDepth->texture != SR_ID_INVALID) {
-            EvoVulkan::Types::Texture*& pTextureRef = m_texturePool.At(info.pDepth->texture);
+        if (info.pDepth->texture[info.frame] != SR_ID_INVALID) {
+            EvoVulkan::Types::Texture*& pTextureRef = m_texturePool.At(info.pDepth->texture[info.frame]);
             delete pTextureRef;
             pTextureRef = pFBO->AllocateDepthTextureReference(-1);
         }

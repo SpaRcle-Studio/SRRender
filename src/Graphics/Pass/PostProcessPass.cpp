@@ -105,8 +105,8 @@ namespace SR_GRAPH_NS {
     void PostProcessPass::SetShader(const SR_UTILS_NS::Path& shaderPath) {
         m_shaderPath = shaderPath.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
 
-        auto&& pShader = SR_GTYPES_NS::Shader::Load(m_shaderPath);
-        if (!pShader) {
+        SR_GTYPES_NS::Shader::Ptr pShader = m_shaderPath.empty() ? nullptr : SR_GTYPES_NS::Shader::Load(m_shaderPath);
+        if (!pShader && !m_shaderPath.empty()) {
             SR_ERROR("PostProcessPass::SetShader() : failed to load shader: {}", shaderPath);
             return;
         }
@@ -145,13 +145,31 @@ namespace SR_GRAPH_NS {
         Super::DeInit();
     }
 
+    void PostProcessPass::UseSamplers(SR_GTYPES_NS::Shader* pShader) {
+        Super::UseSamplers(pShader);
+        m_samplers.UseSamplers(pShader);
+    }
+
     void PostProcessPass::OnResize(const SR_MATH_NS::UVector2& size) {
         m_dirtyShader = true;
+        m_samplers.MarkSamplersDirty();
+
         Super::OnResize(size);
     }
 
     void PostProcessPass::OnMultisampleChanged() {
         m_dirtyShader = true;
+        m_samplers.MarkSamplersDirty();
         Super::OnMultisampleChanged();
+    }
+
+    void PostProcessPass::SetRenderTechnique(SR_GRAPH_NS::IRenderTechnique* pRenderTechnique) {
+        BasePass::SetRenderTechnique(pRenderTechnique);
+        m_samplers.SetRenderTechnique(pRenderTechnique);
+    }
+
+    void PostProcessPass::Prepare() {
+        Super::Prepare();
+        m_samplers.PrepareSamplers();
     }
 }

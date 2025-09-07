@@ -13,16 +13,22 @@ namespace SR_GTYPES_NS {
     }
 
     Framebuffer::~Framebuffer() {
-        SRAssert(m_frameBuffer == SR_ID_INVALID);
+        for (auto&& frameBuffer : m_frameBuffer) {
+            SRAssert(frameBuffer == SR_ID_INVALID);
+        }
 
     #ifdef SR_DEBUG
-        for (auto&& [texture, format] : m_colors) {
-            SRAssert(texture == SR_ID_INVALID);
+        for (auto&& [textures, format] : m_colors) {
+            for (auto&& texture : textures) {
+                SRAssert(texture == SR_ID_INVALID);
+            }
             SR_UNUSED_VARIABLE(format);
         }
-    #endif
 
-        SRAssert(m_depth.texture == SR_ID_INVALID);
+        for (auto&& texture : m_depth.texture) {
+            SRAssert(texture == SR_ID_INVALID);
+        }
+    #endif
     }
 
     Framebuffer::Ptr Framebuffer::Create(uint32_t images, const SR_MATH_NS::IVector2 &size) {
@@ -62,6 +68,7 @@ namespace SR_GTYPES_NS {
         pFBO->m_depth.aspect = depthAspect;
         pFBO->m_sampleCount = samples;
         pFBO->m_layersCount = layersCount;
+        pFBO->m_forEachSwapchainImage = SR_UTILS_NS::Features::Instance().Enabled("FBOForEachSwapchainImage", true);
 
         for (auto&& color : colors) {
             ColorLayer layer;
@@ -119,6 +126,16 @@ namespace SR_GTYPES_NS {
             m_currentSampleCount = SR_MIN(m_currentSampleCount, GetPipeline()->GetSupportedSamples());
         }
 
+        if (m_frameBuffer.empty()) {
+            if (m_forEachSwapchainImage) {
+                m_frameBuffer.resize(GetPipeline()->GetSwapchainImagesCount());
+            }
+            else {
+                m_frameBuffer.resize(1);
+            }
+            std::ranges::fill(m_frameBuffer, SR_ID_INVALID);
+        }
+
         SRFrameBufferCreateInfo createInfo;
         createInfo.size = m_size;
         createInfo.pFBO = &m_frameBuffer;
@@ -143,29 +160,33 @@ namespace SR_GTYPES_NS {
     }
 
     void Framebuffer::FreeVMemory() {
-        if (m_frameBuffer != SR_ID_INVALID) {
-            SRVerifyFalse(!GetPipeline()->FreeFBO(&m_frameBuffer));
-            m_frameBuffer = SR_ID_INVALID;
-        }
-
-        if (m_depth.texture != SR_ID_INVALID) {
-            SRVerifyFalse(!GetPipeline()->FreeTexture(&m_depth.texture));
-        }
-
-        for (auto&& texture : m_depth.subLayers) {
-            if (texture == SR_ID_INVALID) {
-                continue;
+        for (int32_t& frameBuffer : m_frameBuffer) {
+            if (frameBuffer != SR_ID_INVALID) {
+                SRVerifyFalse(!GetPipeline()->FreeFBO(&frameBuffer));
+                frameBuffer = SR_ID_INVALID;
             }
-
-            SRVerifyFalse(!GetPipeline()->FreeTexture(&texture));
         }
 
-        for (auto&& [texture, format] : m_colors) {
-            if (texture == SR_ID_INVALID) {
-                continue;
+        for (auto&& texture : m_depth.texture) {
+            if (texture != SR_ID_INVALID) {
+                SRVerifyFalse(!GetPipeline()->FreeTexture(&texture));
             }
+        }
 
-            SRVerifyFalse(!GetPipeline()->FreeTexture(&texture));
+        for (auto&& textures : m_depth.subLayers) {
+            for (auto&& texture : textures) {
+                if (texture != SR_ID_INVALID) {
+                    SRVerifyFalse(!GetPipeline()->FreeTexture(&texture));
+                }
+            }
+        }
+
+        for (auto&& [textures, format] : m_colors) {
+            for (auto&& texture : textures) {
+                if (texture != SR_ID_INVALID) {
+                    SRVerifyFalse(!GetPipeline()->FreeTexture(&texture));
+                }
+            }
         }
 
         IGraphicsResource::FreeVMemory();
@@ -223,6 +244,10 @@ namespace SR_GTYPES_NS {
         GetPipeline()->EndCmdBuffer();
     }
 
+    bool Framebuffer::IsValid() const {
+        return !m_hasErrors && !IsDirty() && GetId() != SR_ID_INVALID;
+    }
+
     int32_t Framebuffer::GetId() const {
         if (m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
             return SR_ID_INVALID;
@@ -232,14 +257,18 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        return m_frameBuffer;
+        if (m_frameBuffer.empty()) {
+            return SR_ID_INVALID;
+        }
+
+        return m_frameBuffer[SR_MIN(GetPipeline()->GetCurrentFrameIndex(), static_cast<uint32_t>(m_frameBuffer.size() - 1))];
     }
 
     uint64_t Framebuffer::GetFileHash() const {
         return 0;
     }
 
-    int32_t Framebuffer::GetColorTexture(uint32_t layer) {
+    int32_t Framebuffer::GetColorTexture(uint32_t layer, uint8_t frame) {
         SR_TRACY_ZONE;
 
         if (m_dirty) {
@@ -250,7 +279,12 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        return m_colors.at(layer).texture;
+        auto&& frames = m_colors.at(layer).texture;
+        if (frames.empty()) {
+            return SR_ID_INVALID;
+        }
+
+        return frames[SR_MIN(frame, static_cast<uint8_t>(frames.size() - 1))];
     }
 
     bool Framebuffer::BeginCmdBuffer(uint32_t frame, const SR_MATH_NS::FColor &clearColor, float_t depth) {
@@ -275,7 +309,7 @@ namespace SR_GTYPES_NS {
         m_dirty = true;
     }
 
-    int32_t Framebuffer::GetDepthTexture(int32_t layer) {
+    int32_t Framebuffer::GetDepthTexture(int32_t layer, uint8_t frame) {
         if (!m_depthEnabled) {
             return SR_ID_INVALID;
         }
@@ -285,7 +319,10 @@ namespace SR_GTYPES_NS {
         }
 
         if (layer < 0) {
-            return m_depth.texture;
+            if (m_depth.texture.empty()) {
+                return SR_ID_INVALID;
+            }
+            return m_depth.texture[SR_MIN(frame, static_cast<uint8_t>(m_depth.texture.size() - 1))];
         }
 
         if (layer >= m_depth.subLayers.size()) {
@@ -293,7 +330,11 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        return m_depth.subLayers[layer];
+        auto&& frames = m_depth.subLayers[layer];
+        if (frames.empty()) {
+            return SR_ID_INVALID;
+        }
+        return frames[SR_MIN(frame, static_cast<uint8_t>(frames.size() - 1))];
     }
 
     uint8_t Framebuffer::GetSamplesCount() const {

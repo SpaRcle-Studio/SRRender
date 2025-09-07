@@ -355,6 +355,7 @@ namespace SR_GRAPH_NS {
         return false;
 
     dirty:
+        m_directionalLightPosition = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
         m_cameraPosition = pCamera->GetPosition();
         m_cameraRotation = pCamera->GetRotation();
         m_screenSize = pCamera->GetSize();
@@ -372,7 +373,9 @@ namespace SR_GRAPH_NS {
             UpdateCascades2();
         }
         else {
-            UpdateCascades();
+            if (CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
+                UpdateCascades();
+            }
         }
         //
         //}

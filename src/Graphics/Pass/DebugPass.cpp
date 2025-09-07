@@ -136,7 +136,7 @@ namespace SR_GRAPH_NS {
 
     bool DebugPass::Init() {
         m_isValid = true;
-        m_updateMeshesOnDemand = SR_UTILS_NS::Features::Instance().Enabled("UpdateMeshesOnDemand", false);
+        m_updateMeshesOnDemand = SR_UTILS_NS::Features::Instance().Enabled("UpdateDebugMeshesOnDemand", false);
 
         for (auto& [id, shaderInfo] : m_shaders) {
             shaderInfo.LoadShader();

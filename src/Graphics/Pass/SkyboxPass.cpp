@@ -51,6 +51,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool SkyboxPass::Render() {
+        m_isRendered = false;
+
         if (!m_skybox) {
             return false;
         }
@@ -64,7 +66,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_skybox->Draw();
+        m_isRendered = m_skybox->Draw();
 
         pShader->UnUse();
 
@@ -72,7 +74,7 @@ namespace SR_GRAPH_NS {
     }
 
     void SkyboxPass::Update() {
-        if (!m_skybox) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_skybox || !m_isRendered) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 

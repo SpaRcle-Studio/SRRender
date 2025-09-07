@@ -22,7 +22,6 @@ namespace SR_GRAPH_NS {
 
     SamplerData::SamplerData(SamplerData&& other) noexcept
         : textureId(SR_UTILS_NS::Exchange(other.textureId, { }))
-        , fboId(SR_UTILS_NS::Exchange(other.fboId, { }))
         , id(SR_UTILS_NS::Exchange(other.id, { }))
         , fboName(SR_UTILS_NS::Exchange(other.fboName, { }))
         , pTexture(SR_UTILS_NS::Exchange(other.pTexture, { }))
@@ -34,7 +33,6 @@ namespace SR_GRAPH_NS {
 
     SamplerData::SamplerData(const SamplerData& other) {
         textureId = other.textureId;
-        fboId = other.fboId;
         id = other.id;
         fboName = other.fboName;
 
@@ -62,7 +60,6 @@ namespace SR_GRAPH_NS {
         }
 
         textureId = SR_UTILS_NS::Exchange(other.textureId, { });
-        fboId = SR_UTILS_NS::Exchange(other.fboId, { });
         id = SR_UTILS_NS::Exchange(other.id, { });
         fboName = SR_UTILS_NS::Exchange(other.fboName, { });
         pTexture = SR_UTILS_NS::Exchange(other.pTexture, { });
@@ -80,7 +77,6 @@ namespace SR_GRAPH_NS {
         }
 
         textureId = other.textureId;
-        fboId = other.fboId;
         id = other.id;
         fboName = other.fboName;
 
@@ -102,6 +98,13 @@ namespace SR_GRAPH_NS {
         texturePath = other.texturePath;
 
         return *this;
+    }
+
+    SR_NODISCARD uint32_t SamplerData::GetTextureId(uint8_t frame) const noexcept {
+        if (textureId.empty()) {
+            return SR_ID_INVALID;
+        }
+        return textureId[SR_MIN(frame, static_cast<uint8_t>(textureId.size() - 1))];
     }
 
     void SamplerData::OnPostLoad() {
@@ -138,11 +141,12 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            if (sampler.textureId == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            const uint32_t textureId = sampler.GetTextureId(m_pTechnique->GetPipeline()->GetCurrentFrameIndex());
+            if (textureId == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
 
-            pShader->SetSampler2D(sampler.id, static_cast<int32_t>(sampler.textureId));
+            pShader->SetSampler2D(sampler.id, static_cast<int32_t>(textureId));
         }
     }
 
@@ -156,8 +160,8 @@ namespace SR_GRAPH_NS {
         m_dirtySamplers = false;
 
         for (auto&& sampler : m_samplers) {
-            int32_t textureId = SR_ID_INVALID;
-            sampler.fboId = SR_ID_INVALID;
+            std::vector<uint32_t> textureIds;
+            textureIds.resize(m_pTechnique->GetPipeline()->GetSwapchainImagesCount());
 
             if (sampler.IsFrameBufferUsage() && !sampler.fboName.Empty()) {
                 auto&& pFrameBufferController = m_pTechnique->GetFrameBufferController(sampler.fboName);
@@ -169,18 +173,21 @@ namespace SR_GRAPH_NS {
                         continue;
                     }
 
-                    sampler.fboId = pFBO->GetId();
+                    if (pFBO->GetId() != SR_ID_INVALID) {
+                        uint32_t frame = 0;
+                        for (uint32_t& textureId : textureIds) {
+                            if (sampler.IsFrameBufferDepthUsage()) {
+                                textureId = pFBO->GetDepthTexture(-1, frame);
+                            }
+                            else {
+                                textureId = pFBO->GetColorTexture(sampler.index, frame);
+                            }
 
-                    if (sampler.fboId != SR_ID_INVALID) {
-                        if (sampler.IsFrameBufferDepthUsage()) {
-                            textureId = pFBO->GetDepthTexture();
-                        }
-                        else {
-                            textureId = pFBO->GetColorTexture(sampler.index);
-                        }
+                            if (textureId == SR_ID_INVALID) {
+                                m_dirtySamplers = true;
+                            }
 
-                        if (textureId == SR_ID_INVALID) {
-                            m_dirtySamplers = true;
+                            ++frame;
                         }
                     }
                     else {
@@ -189,13 +196,15 @@ namespace SR_GRAPH_NS {
                 }
             }
 
-            if (!sampler.IsFrameBufferDepthUsage() && textureId == SR_ID_INVALID) {
-                textureId = m_pTechnique->GetRenderContext()->GetDefaultTexture()->GetId();
+            if (!sampler.IsFrameBufferDepthUsage()) {
+                for (uint32_t& textureId : textureIds) {
+                    if (textureId == SR_ID_INVALID) {
+                        textureId = m_pTechnique->GetRenderContext()->GetDefaultTexture()->GetId();
+                    }
+                }
             }
 
-            if (textureId != sampler.textureId) {
-                sampler.textureId = textureId;
-            }
+            sampler.textureId = textureIds;
         }
     }
 }

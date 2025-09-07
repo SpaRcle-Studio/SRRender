@@ -547,8 +547,13 @@ namespace SR_GRAPH_NS {
         PipelinePreInitInfo pipelinePreInitInfo;
         pipelinePreInitInfo.appName = m_settings->appName;
         pipelinePreInitInfo.engineName = m_settings->engineName;
-        pipelinePreInitInfo.samplesCount = 64;
+        pipelinePreInitInfo.samplesCount = SR_UTILS_NS::StoreUtils::User::GetInt("MultiSampling", 64);
         pipelinePreInitInfo.vsync = false;
+
+        if (pipelinePreInitInfo.samplesCount < 1) {
+            SR_WARN("Engine::InitPipeline() : invalid multisampling count: {}. Set to 1.", pipelinePreInitInfo.samplesCount);
+            pipelinePreInitInfo.samplesCount = 1;
+        }
 
     #if defined(SR_WIN32)
         pipelinePreInitInfo.GLSLCompilerPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Utilities/glslc.exe");
@@ -608,6 +613,7 @@ namespace SR_GRAPH_NS {
             return;
         }
         m_activePreset = name;
+        SR_UTILS_NS::StoreUtils::User::SetString("RenderPreset", m_activePreset.ToString());
         SR_UTILS_NS::ResourceManager::Instance().ReloadAll(SR_GTYPES_NS::Shader::GetClassStaticName());
         SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
         SetDirty();

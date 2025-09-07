@@ -27,6 +27,7 @@ namespace SR_GRAPH_NS {
 
     private:
         SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Skybox> m_skybox;
+        bool m_isRendered = false;
 
         /// @property @setter(SetSkybox)
         SR_UTILS_NS::Path m_skyboxPath;
