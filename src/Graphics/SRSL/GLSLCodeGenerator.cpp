@@ -266,6 +266,19 @@ namespace SR_SRSL_NS {
         return "450";
     }
 
+    uint32_t GLSLCodeGenerator::GetLocationMultiplier(const std::string& type) const {
+        if (type == "mat4") {
+            return 4;
+        }
+        else if (type == "mat3") {
+            return 3;
+        }
+        else if (type == "mat2") {
+            return 2;
+        }
+        return 1;
+    }
+
     std::string GLSLCodeGenerator::GenerateInputLocations(ShaderStage stage) const {
         std::string code;
 
@@ -279,26 +292,32 @@ namespace SR_SRSL_NS {
             }
         }
 
+        auto&& pVertexFunction = m_shader->GetUseStack()->FindFunction(SR_SRSL_ENTRY_POINTS.at(ShaderStage::Vertex));
+
         uint32_t location = 0;
+        uint32_t vertexInputIndex = 0;
+
         for (auto&& vertexAttribute : vertexInfo.m_names) {
             const bool isUsed = pFunction->IsVariableUsed(vertexAttribute);
-            std::string type = VertexAttributeToString(vertexInfo.m_types[location].first);
-            std::string arraySize = vertexInfo.m_types[location].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[location].second) : std::string();
+            std::string type = VertexAttributeToString(vertexInfo.m_types[vertexInputIndex].first);
+            std::string arraySize = vertexInfo.m_types[vertexInputIndex].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[vertexInputIndex].second) : std::string();
 
             if (isUsed && stage != ShaderStage::Vertex) {
                 code += SR_FORMAT("layout (location = {}) in {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
             }
-
-            if (stage == ShaderStage::Vertex) {
+            else if (stage == ShaderStage::Vertex) {
                 code += SR_FORMAT("layout (location = {}) in {} {}_INPUT{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
             }
+            else {
+                ++vertexInputIndex;
+                continue;
+            }
 
-            location += vertexInfo.m_types[location].second;
+            location += vertexInfo.m_types[vertexInputIndex].second * GetLocationMultiplier(type);
+            ++vertexInputIndex;
         }
 
         if (stage != ShaderStage::Vertex) {
-            auto&& pVertexFunction = m_shader->GetUseStack()->FindFunction(SR_SRSL_ENTRY_POINTS.at(ShaderStage::Vertex));
-
             for (auto&& [name, pVariable] : m_shader->GetShared()) {
                 /// если переменную не передали, значит ее нет
                 if (pVertexFunction && !pVertexFunction->IsVariableUsed(name)) {
@@ -308,14 +327,13 @@ namespace SR_SRSL_NS {
                 if (pFunction->IsVariableUsed(name)) {
                     auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
                     code += SR_FORMAT("layout (location = {}) in {} {};\n", location, type.c_str(), name.c_str());
+                    location += GetLocationMultiplier(type);
                 }
-                ++location;
             }
 
             if (pFunction->IsVariableUsed("VERTEX_INDEX")) {
                 code += SR_FORMAT("layout (location = {}) in int VERTEX_INDEX;\n", location);
             }
-            ++location;
         }
 
         if (stage == ShaderStage::Compute) {
@@ -349,38 +367,35 @@ namespace SR_SRSL_NS {
         auto&& pFunction = m_shader->GetUseStack()->FindFunction(SR_SRSL_ENTRY_POINTS.at(stage));
 
         uint32_t location = 0;
+        uint32_t vertexInputIndex = 0;
 
         if (stage == ShaderStage::Vertex) {
             for (auto&& vertexAttribute : vertexInfo.m_names) {
-                std::string type = VertexAttributeToString(vertexInfo.m_types[location].first);
-                std::string arraySize = vertexInfo.m_types[location].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[location].second) : std::string();
+                std::string type = VertexAttributeToString(vertexInfo.m_types[vertexInputIndex].first);
+                std::string arraySize = vertexInfo.m_types[vertexInputIndex].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[vertexInputIndex].second) : std::string();
 
-                code += SR_FORMAT("layout (location = {}) out {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
-                location += vertexInfo.m_types[location].second;
+                if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, vertexAttribute)) {
+                    code += SR_FORMAT("layout (location = {}) out {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                    location += vertexInfo.m_types[vertexInputIndex].second * GetLocationMultiplier(type);
+                }
+                else {
+                    code += SR_FORMAT("{} {}{};\n",type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                }
+
+                ++vertexInputIndex;
             }
-
-            //if (std::find(vertexInfo.m_names.begin(), vertexInfo.m_names.end(), "VERTEX") == vertexInfo.m_names.end()) {
-            //    code += SR_UTILS_NS::Format("layout (location = %i) out vec3 VERTEX;\n", location);
-            //    ++location;
-            //}
-
-            //if (std::find(vertexInfo.m_names.begin(), vertexInfo.m_names.end(), "UV") == vertexInfo.m_names.end()) {
-            //    code += SR_UTILS_NS::Format("layout (location = %i) out vec2 UV;\n", location);
-            //    ++location;
-            //}
 
             for (auto&& [name, pVariable] : m_shader->GetShared()) {
-                if (pFunction->IsVariableUsed(name)) {
+                if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, name)) {
                     auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
                     code += SR_FORMAT("layout (location = {}) out {} {};\n", location, type.c_str(), name.c_str());
-                    ++location;
+                    location += GetLocationMultiplier(type);
+                }
+                else if (pFunction->IsVariableUsed(name)) {
+                    auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
+                    code += SR_FORMAT("{} {};\n", type.c_str(), name.c_str());
                 }
             }
-
-            //if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("VERTEX_INDEX")) {
-            //    code += SR_FORMAT("layout (location = {}) out int VERTEX_INDEX;\n", location);
-            //}
-            ++location;
         }
 
         SR_UNUSED_VARIABLE(location);

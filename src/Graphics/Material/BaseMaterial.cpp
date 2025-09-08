@@ -65,22 +65,6 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    //bool BaseMaterial::IsTransparent() const {
-    //    if (auto&& pShader = GetShader()) {
-    //        return pShader->IsBlendEnabled();
-    //    }
-    //    SRHalt("BaseMaterial::IsTransparent() : shader is nullptr!");
-    //    return false;
-    //}
-
-    //BaseMaterial::ShaderPtr BaseMaterial::GetShader() const {
-    //    InitContext();
-    //    if (auto&& pData = GetMaterialData()) {
-    //        return pData->GetShader(m_context->GetPipeline().Get());
-    //    }
-    //    return nullptr;
-    //}
-
     uint32_t BaseMaterial::RegisterMesh(MeshPtr pMesh) {
         SRAssert(pMesh);
         return m_meshes.Add(pMesh);
@@ -116,6 +100,8 @@ namespace SR_GRAPH_NS {
             pVariant->RemoveUsePoint();
         }
         m_variants.clear();
+
+        m_hashRedirect.clear();
 
         m_meshes.ForEach([](uint32_t, auto&& pMesh) {
             pMesh->ReRegisterMesh();

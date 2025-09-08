@@ -277,6 +277,10 @@ namespace SR_SRSL_NS {
 
             bool isUsed = m_useStack->IsVariableUsedInEntryPoints(pVariable->GetName());
 
+            //if (pVariable->pDecorators->Find("noopt")) { /// not works
+            //    isUsed = true;
+            //}
+
             if (auto&& pDecorator = pVariable->pDecorators->Find("ssbo")) {
                 SRSLUniformBlock::Field field;
 

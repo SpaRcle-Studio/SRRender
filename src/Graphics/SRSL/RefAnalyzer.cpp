@@ -100,6 +100,15 @@ namespace SR_SRSL_NS {
         return nullptr;
     }
 
+    bool SRSLUseStack::IsVariableUsedInEntryPoint(SR_GRAPH_NS::ShaderStage stage, const std::string& name) const {
+        if (auto&& it = SR_SRSL_ENTRY_POINTS.find(stage); it != SR_SRSL_ENTRY_POINTS.end()) {
+            if (auto&& pFunction = FindFunction(it->second); pFunction && pFunction->IsVariableUsed(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool SRSLUseStack::IsVariableUsedInEntryPoints(const std::string &name) const {
         for (auto&& [stage, entryPoint] : SR_SRSL_ENTRY_POINTS) {
             if (auto&& pFunction = FindFunction(entryPoint); pFunction && pFunction->IsVariableUsed(name)) {

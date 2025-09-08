@@ -180,10 +180,6 @@ namespace SR_GTYPES_NS {
         }
     }
 
-    //Mesh::ShaderPtr Mesh::GetShader() const {
-    //    return m_material ? m_material->GetShader() : nullptr;
-    //}
-
     void Mesh::UseMaterial() {
         SR_TRACY_ZONE;
 

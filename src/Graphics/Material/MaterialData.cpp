@@ -56,7 +56,7 @@ namespace SR_GRAPH_NS {
             SR_UTILS_NS::Path path;
             SR_UTILS_NS::Serialization::Load(deserializer, path, SR_UTILS_NS::SerializationId::Create("value"));
 
-            auto&& pTexture = SR_GTYPES_NS::Texture::Load(path);
+            SR_GTYPES_NS::Texture::Ptr pTexture = path.empty() ? nullptr : SR_GTYPES_NS::Texture::Load(path);
 
             if (auto&& pOldTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&data)) {
                 if (*pOldTextureRef) {
@@ -349,12 +349,17 @@ namespace SR_GRAPH_NS {
 
         Finalize();
 
+        SR_SRSL_NS::ShaderMacrosParams macros;
+        for (auto&& [key, value] : m_shaderDefines) {
+            macros.SetParam(key, value);
+        }
+
         {
             deserializer.BeginObject(SR_UTILS_NS::SerializationId::Create("default"));
             SR_UTILS_NS::Path path;
             SR_UTILS_NS::Serialization::Load(deserializer, path, SR_UTILS_NS::SerializationId::Create("shader"));
             if (!path.empty()) {
-                if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path)) {
+                if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path, macros)) {
                     SetShader(pShader);
                     SR_UTILS_NS::Serialization::Load(deserializer, m_defaultShader, SR_UTILS_NS::SerializationId::Create("data"));
                     m_defaultShader.UpdateProperties();
@@ -534,6 +539,7 @@ namespace SR_GRAPH_NS {
             subscription.first = pShader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT,
                 [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
                     OnPropertyChanged(false);
+                    m_defaultShader.UpdateProperties();
                 }
             );
         }
@@ -587,6 +593,25 @@ namespace SR_GRAPH_NS {
                     }
                 );
             }
+        }
+    }
+
+    void MaterialData::OnShaderDefinesChanged() {
+        SR_TRACY_ZONE;
+        if (!GetDefaultShaderData().pShader) {
+            return;
+        }
+
+        SR_SRSL_NS::ShaderMacrosParams macros;
+        for (auto&& [key, value] : m_shaderDefines) {
+            macros.SetParam(key, value);
+        }
+
+        if (auto&& pShader = SR_GTYPES_NS::Shader::Load(GetDefaultShaderData().pShader->GetResourcePath(), macros)) {
+            SetShader(pShader);
+        }
+        else {
+            SR_ERROR("MaterialData::OnShaderDefinesChanged() : failed to load shader! \n\tPath: " + GetDefaultShaderData().pShader->GetResourcePath().ToString());
         }
     }
 
