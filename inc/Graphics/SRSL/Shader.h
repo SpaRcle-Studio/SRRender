@@ -53,7 +53,7 @@ namespace SR_SRSL_NS {
         std::set<ShaderStage> stages;
     };
 
-    class SRSLShaderCache;
+    class ShaderCache;
 
     /** Это не шейдер в привычном понимании, это набор всех данных для генерирования любого
      * шейдерного кода и для последующей его экспортации. */
@@ -61,7 +61,7 @@ namespace SR_SRSL_NS {
         using Ptr = std::shared_ptr<SRSLShader>;
         using Super = SR_UTILS_NS::NonCopyable;
         using UniformBlocks = std::map<SR_UTILS_NS::StringAtom, SRSLUniformBlock>;
-        friend SRSLShaderCache;
+        friend ShaderCache;
     private:
         explicit SRSLShader(SR_UTILS_NS::Path path);
 

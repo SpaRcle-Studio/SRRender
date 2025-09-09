@@ -351,7 +351,7 @@ namespace SR_GRAPH_NS::Types {
         }
 
         auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(path).Concat(m_macros.GetHashStr());
-        if (ShaderCache::LoadShaderFromCache(cachedPath, this)) {
+        if (ShaderCache::Instance().LoadShaderFromCache(cachedPath, this)) {
             StopWatch();
             StartWatch();
             return IResource::Load();
@@ -481,7 +481,7 @@ namespace SR_GRAPH_NS::Types {
         m_uniformBlock.ResetDefaultValues();
         m_constBlock.ResetDefaultValues();
 
-        SR_GRAPH_NS::ShaderCache::SaveShaderToCache(cachedPath, this);
+        SR_GRAPH_NS::ShaderCache::Instance().SaveShaderToCache(cachedPath, this);
 
         return IResource::Load();
     }

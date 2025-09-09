@@ -368,12 +368,21 @@ namespace SR_GRAPH_NS {
 
         Super::UseSharedUniforms(pShader);
 
+        static auto lastCheck = std::chrono::high_resolution_clock::now();
+        const auto now = std::chrono::high_resolution_clock::now();
+        bool passed = false;
+        //if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCheck).count() > 1000) {
+        //    lastCheck = now;
+        //    passed = true;
+        //}
+        passed = true;
+
         //if (CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
         if (m_useOtherAlgorithm) {
             UpdateCascades2();
         }
         else {
-            if (CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
+            if (passed && CheckCamera()) SR_UNLIKELY_ATTRIBUTE {
                 UpdateCascades();
             }
         }

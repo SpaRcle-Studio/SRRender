@@ -233,4 +233,10 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE_COLOR(0xFF0000);
         Super::WaitAllFences();
     }
+
+    void VulkanKernel::WaitDeviceIdle() {
+        SR_TRACY_ZONE;
+        SR_TRACY_ZONE_COLOR(0xFF0000);
+        Super::WaitDeviceIdle();
+    }
 }

@@ -425,7 +425,7 @@ namespace SR_SRSL_NS {
         }
     }
 
-    void SRSLShaderCache::SaveShaderToCache(const SR_UTILS_NS::Path& cachePath, const SR_SRSL_NS::SRSLShader* pShader) {
+    /*void SRSLShaderCache::SaveShaderToCache(const SR_UTILS_NS::Path& cachePath, const SR_SRSL_NS::SRSLShader* pShader) {
         SR_TRACY_ZONE;
 
         SR_HTYPES_NS::Marshal marshal;
@@ -472,7 +472,7 @@ namespace SR_SRSL_NS {
 
     bool SRSLShaderCache::LoadShaderFromCache(const SR_UTILS_NS::Path& cachePath, SR_SRSL_NS::SRSLShader* pShader) {
         return false;
-    }
+    }*/
 }
 
 namespace SR_GRAPH_NS {

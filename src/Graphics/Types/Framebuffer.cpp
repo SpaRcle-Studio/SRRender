@@ -68,7 +68,6 @@ namespace SR_GTYPES_NS {
         pFBO->m_depth.aspect = depthAspect;
         pFBO->m_sampleCount = samples;
         pFBO->m_layersCount = layersCount;
-        pFBO->m_forEachSwapchainImage = SR_UTILS_NS::Features::Instance().Enabled("FBOForEachSwapchainImage", true);
 
         for (auto&& color : colors) {
             ColorLayer layer;

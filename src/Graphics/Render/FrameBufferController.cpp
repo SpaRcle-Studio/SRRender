@@ -46,6 +46,8 @@ namespace SR_GRAPH_NS {
 
         SRAssert(!m_framebuffer);
 
+        const bool forEachSwapchainImage = SR_UTILS_NS::Features::Instance().Enabled("FBOForEachSwapchainImage", false);
+
         /// initialize framebuffer
         if ((m_framebuffer = SR_GTYPES_NS::Framebuffer::Create(m_colorFormats, m_depthFormat, size))) {
             m_framebuffer->SetName(m_name);
@@ -54,6 +56,7 @@ namespace SR_GRAPH_NS {
             m_framebuffer->SetDepthEnabled(m_depthEnabled);
             m_framebuffer->SetDepthAspect(m_depthAspect);
             m_framebuffer->SetFeatures(m_features);
+            m_framebuffer->SetInstanceForEachFram(m_instanceForEachFrame && forEachSwapchainImage);
             m_framebuffer->AddUsePoint();
         }
         else {

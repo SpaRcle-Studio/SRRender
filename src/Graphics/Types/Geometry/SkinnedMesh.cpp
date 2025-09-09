@@ -31,22 +31,23 @@ namespace SR_GTYPES_NS {
         }
 
         const uint32_t sizeBones = GetRawMesh()->GetOptimizedBones().size() * sizeof(SR_MATH_NS::Matrix4x4);
-        //const uint32_t sizeOffsets = GetRawMesh()->GetBoneOffsets().size() * sizeof(SR_MATH_NS::Matrix4x4);
+        const uint8_t maxFrames = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameSSBOResources", true) ? GetPipeline()->GetSwapchainImagesCount() : 1;
 
-        m_ssboBones = GetPipeline()->AllocateSSBO(sizeBones, SSBOUsage::CPUToGPU);
-        //m_ssboOffsets = GetPipeline()->AllocateSSBO(sizeOffsets, SSBOUsage::CPUToGPU);
+        m_ssboBones.resize(maxFrames, SR_ID_INVALID);
+        for (uint8_t frame = 0; frame < maxFrames; ++frame) {
+            m_ssboBones[frame] = GetPipeline()->AllocateSSBO(sizeBones, SSBOUsage::CPUToGPU);
+        }
 
         return IndexedMesh::Calculate();
     }
 
     void SkinnedMesh::FreeSSBO() {
-        if (m_ssboBones != SR_ID_INVALID) {
-            GetPipeline()->FreeSSBO(&m_ssboBones);
+        for (auto& ssbo : m_ssboBones) {
+            if (ssbo != SR_ID_INVALID) {
+                GetPipeline()->FreeSSBO(&ssbo);
+            }
         }
-
-        //if (m_ssboOffsets != SR_ID_INVALID) {
-        //    GetPipeline()->FreeSSBO(&m_ssboOffsets);
-        //}
+        m_ssboBones.clear();
     }
 
     const SR_HTYPES_NS::FastMemoryArray<uint32_t>& SkinnedMesh::GetIndices() const {
@@ -66,19 +67,16 @@ namespace SR_GTYPES_NS {
             return Super::LateUpdate();
         }
 
-        if (!m_skeletonIsBroken && pSkeleton) {
-            if (m_ssboBones == SR_ID_INVALID) { ///  || m_ssboOffsets == SR_ID_INVALID
+        if (!m_skeletonIsBroken && pSkeleton && !m_ssboBones.empty()) {
+            const uint8_t frame = GetPipeline()->GetCurrentFrameIndex();
+            const auto ssbo = m_ssboBones[SR_MIN(frame, m_ssboBones.size() - 1)];
+            if (ssbo == SR_ID_INVALID) {
                 return Super::LateUpdate();
             }
 
             if (auto&& matrices = pSkeleton->GetMatrices(); !matrices.empty()) {
-                GetPipeline()->UpdateSSBO(m_ssboBones, (void*)matrices.data(), matrices.size() * sizeof(SR_MATH_NS::Matrix4x4));
+                GetPipeline()->UpdateSSBO(ssbo, (void*)matrices.data(), matrices.size() * sizeof(SR_MATH_NS::Matrix4x4));
             }
-
-            /// TODO: не обновлять каждый кадр, шарить между мешами
-            //if (auto&& offsets = pSkeleton->GetOffsets(); !offsets.empty()) {
-            //    GetPipeline()->UpdateSSBO(m_ssboOffsets, (void*)offsets.data(), offsets.size() * sizeof(SR_MATH_NS::Matrix4x4));
-            //}
 
             return Super::LateUpdate();
         }
@@ -134,8 +132,14 @@ namespace SR_GTYPES_NS {
     void SkinnedMesh::UseSSBO() {
         SR_TRACY_ZONE;
 
-        //GetPipeline()->GetCurrentShader()->BindSSBO("offsets", m_ssboOffsets);
-        GetPipeline()->GetCurrentShader()->BindSSBO("bones", m_ssboBones);
+        if (m_ssboBones.empty()) {
+            return Super::UseSSBO();
+        }
+
+        const uint8_t frame = GetPipeline()->GetCurrentFrameIndex();
+        const auto ssbo = m_ssboBones[SR_MIN(frame, m_ssboBones.size() - 1)];
+
+        GetPipeline()->GetCurrentShader()->BindSSBO("bones", ssbo);
 
         auto&& pSkeleton = m_skeleton.Get();
         const int32_t offsetsSSBO = pSkeleton ? pSkeleton->GetOffsetsSSBO() : SR_ID_INVALID;
@@ -144,7 +148,7 @@ namespace SR_GTYPES_NS {
             GetPipeline()->GetCurrentShader()->BindSSBO("offsets", offsetsSSBO);
         }
         else {
-            GetPipeline()->GetCurrentShader()->BindSSBO("offsets", m_ssboBones);
+            GetPipeline()->GetCurrentShader()->BindSSBO("offsets", ssbo);
         }
 
         Super::UseSSBO();

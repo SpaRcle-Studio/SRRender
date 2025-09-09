@@ -626,4 +626,13 @@ namespace SR_GRAPH_NS {
         msg.SetBool(ONLY_UNIFORMS_BOOL_ID, onlyUniforms);
         Broadcast(PROPERTY_CHANGED_EVENT, msg);
     }
+
+    void MaterialData::SwitchShaderDefine(SR_UTILS_NS::StringAtom define, bool enabled) {
+        if (enabled) {
+            AddShaderDefine(define);
+        }
+        else {
+            RemoveShaderDefine(define);
+        }
+    }
 }
