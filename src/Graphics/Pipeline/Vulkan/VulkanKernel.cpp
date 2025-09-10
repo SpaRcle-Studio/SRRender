@@ -81,9 +81,11 @@ namespace SR_GRAPH_NS {
                 return EvoVulkan::Core::RenderResult::Error;
         }
 
-        m_submitInfo.commandBuffers.clear();
-        m_submitInfo.waitSemaphores.clear();
-        m_submitInfo.signalSemaphores.clear();
+        m_submitInfo.Clear();
+        m_offscreenSubmitInfo.Clear();
+
+        m_submitInfo.SetWaitDstStageMask(GetSubmitPipelineStages());
+        m_offscreenSubmitInfo.SetWaitDstStageMask(GetSubmitPipelineStages());
 
         auto&& pVulkanPipeline = m_pipeline.DynamicCast<VulkanPipeline>();
 
@@ -101,14 +103,17 @@ namespace SR_GRAPH_NS {
 
                 auto&& pFBO = pVulkanPipeline->GetMemoryManager()->GetFBO(pFrameBuffer->GetId() - 1);
 
-                m_submitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(m_currentBuffer));
+                if (pFrameBuffer->GetFeatures().offscreen) {
+                    m_offscreenSubmitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(0));
+                }
+                else {
+                    m_submitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(m_currentBuffer));
+                }
             }
         }
 
         m_submitInfo.waitSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_presentComplete);
         m_submitInfo.signalSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_renderComplete);
-
-        m_submitInfo.SetWaitDstStageMask(GetSubmitPipelineStages());
 
         auto&& pImGuiOverlay = m_pipeline->GetOverlay(OverlayType::ImGui).DynamicCast<VulkanImGuiOverlay>();
 
@@ -122,22 +127,37 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        if (!m_offscreenSubmitInfo.commandBuffers.empty())
+        {
+            SR_TRACY_ZONE_S("OffscreenGraphicsQueueSubmit");
+
+            m_submitInfo.waitSemaphores.emplace_back(m_offscreenSemaphore);
+            m_offscreenSubmitInfo.signalSemaphores.emplace_back(m_offscreenSemaphore);
+
+            auto&& vkSubmitInfo = m_offscreenSubmitInfo.ToVk();
+
+            if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
+                VK_ERROR("VulkanKernel::Render() : failed to offscreen queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
+                if (result == VK_ERROR_DEVICE_LOST) {
+                    SR_PLATFORM_NS::Terminate();
+                }
+                return EvoVulkan::Core::RenderResult::Error;
+            }
+
+            WaitIdle();
+        }
+
         {
             SR_TRACY_ZONE_S("GraphicsQueueSubmit");
 
             auto&& vkSubmitInfo = m_submitInfo.ToVk();
-
-            /// Submit to queue
-
             vkResetFences(*m_device, 1, &m_waitFences[m_currentBuffer]);
 
             if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, m_waitFences[m_currentBuffer]); result != VK_SUCCESS) {
-                VK_ERROR("renderFunction() : failed to queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
-
+                VK_ERROR("VulkanKernel::Render() : failed to queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
                 if (result == VK_ERROR_DEVICE_LOST) {
                     SR_PLATFORM_NS::Terminate();
                 }
-
                 return EvoVulkan::Core::RenderResult::Error;
             }
         }

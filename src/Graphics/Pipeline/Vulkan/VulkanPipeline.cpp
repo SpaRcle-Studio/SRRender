@@ -890,6 +890,7 @@ namespace SR_GRAPH_NS {
             info.features.colorTransferDst = createInfo.features.colorTransferDst;
             info.features.depthShaderRead = createInfo.features.depthShaderRead;
             info.features.colorShaderRead = createInfo.features.colorShaderRead;
+            info.features.offscreen = createInfo.features.offscreen;
 
             if ((*createInfo.pFBO)[frame] > 0) {
                 if (!m_memory->ReAllocateFBO(info)) {
@@ -1812,6 +1813,20 @@ namespace SR_GRAPH_NS {
         auto&& pTexture = m_memory->GetTexture(textureId);
 
         auto&& imageDescriptorRef = pTexture->GetDescriptorRef();
+
+        static std::set<VkImageLayout> allowedLayouts = {
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+        };
+
+        if (allowedLayouts.count(imageDescriptorRef->imageLayout) == 0) {
+            PipelineError("VulkanPipeline::BindTexture() : texture has invalid layout! Id: " + SR_UTILS_NS::ToString(textureId) +
+                "\n\tCheck \"Depth read\" option in your framebuffer if you are trying to use depth texture as sampler.");
+            SRHaltOnce0();
+            return;
+        }
+
         const auto&& descriptorSetWrite = EvoVulkan::Tools::Initializers::WriteDescriptorSet(
                 descriptorSet.descriptorSet,
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, activeTexture,
