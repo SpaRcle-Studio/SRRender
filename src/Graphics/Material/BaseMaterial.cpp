@@ -112,7 +112,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         if (auto&& pData = GetMaterialData()) {
-            pData->SetShader(std::move(pShader));
+            pData->GetDefaultShaderData().SetShader(std::move(pShader));
         }
     }
 

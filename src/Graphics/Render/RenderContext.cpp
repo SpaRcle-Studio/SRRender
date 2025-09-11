@@ -112,9 +112,7 @@ namespace SR_GRAPH_NS {
         m_settings->AddUsePoint();
 
         m_onSettingsReloaded = m_settings->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
-            SR_UTILS_NS::ResourceManager::Instance().ReloadAll(SR_GTYPES_NS::Shader::GetClassStaticName());
-            SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
-            SetDirty();
+            ReloadShaders();
         });
 
         if (!InitPipeline()) {
@@ -603,6 +601,15 @@ namespace SR_GRAPH_NS {
         return m_settings->GetPreset(m_activePreset);
     }
 
+    RenderContext::Definitions RenderContext::GetShaderMacros() const {
+        Definitions macros = m_definitions;
+        const auto& preset = GetSettingsPreset();
+        for (const auto define : preset.shaderDefines) {
+            macros[define];
+        }
+        return macros;
+    }
+
     const RenderSettings& RenderContext::GetSettings() const noexcept {
         SRAssert(m_settings);
         return *m_settings;
@@ -614,6 +621,25 @@ namespace SR_GRAPH_NS {
         }
         m_activePreset = name;
         SR_UTILS_NS::StoreUtils::User::SetString("RenderPreset", m_activePreset.ToString());
+        ReloadShaders();
+    }
+
+    void RenderContext::SetMacro(SR_UTILS_NS::StringAtom define, std::optional<std::string> value) {
+        if (value) {
+            m_definitions[define] = *value;
+        }
+        else {
+            m_definitions[define];
+        }
+    }
+
+    void RenderContext::RemoveMacro(SR_UTILS_NS::StringAtom define) {
+        if (auto it = m_definitions.find(define); it != m_definitions.end()) {
+            m_definitions.erase(it);
+        }
+    }
+
+    void RenderContext::ReloadShaders() {
         SR_UTILS_NS::ResourceManager::Instance().ReloadAll(SR_GTYPES_NS::Shader::GetClassStaticName());
         SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
         SetDirty();

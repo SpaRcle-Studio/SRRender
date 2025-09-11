@@ -7,13 +7,18 @@
 #include <Enum/ShaderVarType.hpp>
 
 #include <Codegen/MaterialData.generated.hpp>
+#include <utility>
 
 namespace SR_GRAPH_NS {
     void MaterialShaderProperty::Save(SR_UTILS_NS::ISerializer& serializer) const {
         Super::Save(serializer);
 
+        if (!data) {
+            return;
+        }
+
         if (IsSamplerType(type)) {
-            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(data)) {
+            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(*data)) {
                 SR_UTILS_NS::Serialization::Save(serializer, pTexture->GetResourcePath(), SR_UTILS_NS::SerializationId::Create("value"));
             }
             return;
@@ -21,25 +26,25 @@ namespace SR_GRAPH_NS {
 
         switch (type) {
             case ShaderVarType::Int:
-                SR_UTILS_NS::Serialization::Save(serializer, std::get<int32_t>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Save(serializer, std::get<int32_t>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Bool:
-                SR_UTILS_NS::Serialization::Save(serializer, std::get<int32_t>(data) != 0, SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Save(serializer, std::get<int32_t>(*data) != 0, SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Float:
-                SR_UTILS_NS::Serialization::Save(serializer, std::get<float_t>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Save(serializer, std::get<float_t>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Vec2:
-                SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::FVector2>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::FVector2>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Vec3:
-                SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::FVector3>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::FVector3>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::IVec3:
-                SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::IVector3>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::IVector3>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Vec4:
-                SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::FVector4>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Save(serializer, std::get<SR_MATH_NS::FVector4>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             default:
                 SRHalt("MaterialShaderProperty::Save() : unknown property type! Property id: {}, Type: {}", id, type);
@@ -58,9 +63,11 @@ namespace SR_GRAPH_NS {
 
             SR_GTYPES_NS::Texture::Ptr pTexture = path.empty() ? nullptr : SR_GTYPES_NS::Texture::Load(path);
 
-            if (auto&& pOldTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&data)) {
-                if (*pOldTextureRef) {
-                    (*pOldTextureRef)->RemoveUsePoint();
+            if (data) {
+                if (auto&& pOldTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&(*data))) {
+                    if (*pOldTextureRef) {
+                        (*pOldTextureRef)->RemoveUsePoint();
+                    }
                 }
             }
 
@@ -77,28 +84,28 @@ namespace SR_GRAPH_NS {
 
         switch (type) {
             case ShaderVarType::Int:
-                SR_UTILS_NS::Serialization::Load(deserializer, std::get<int32_t>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Load(deserializer, std::get<int32_t>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Bool: {
                 bool boolean = false;
                 SR_UTILS_NS::Serialization::Load(deserializer, boolean, SR_UTILS_NS::SerializationId::Create("value"));
-                std::get<int32_t>(data) = boolean ? 1 : 0;
+                std::get<int32_t>(*data) = boolean ? 1 : 0;
                 break;
             }
             case ShaderVarType::Float:
-                SR_UTILS_NS::Serialization::Load(deserializer, std::get<float_t>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Load(deserializer, std::get<float_t>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Vec2:
-                SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::FVector2>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::FVector2>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Vec3:
-                SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::FVector3>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::FVector3>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::IVec3:
-                SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::IVector3>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::IVector3>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             case ShaderVarType::Vec4:
-                SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::FVector4>(data), SR_UTILS_NS::SerializationId::Create("value"));
+                SR_UTILS_NS::Serialization::Load(deserializer, std::get<SR_MATH_NS::FVector4>(*data), SR_UTILS_NS::SerializationId::Create("value"));
                 break;
             default:
                 SRHalt("MaterialShaderProperty::Load() : unknown property type! Property id: {}, Type: {}", id, type);
@@ -108,18 +115,51 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    void MaterialShaderData::OnPreLoad() {
-        for (MaterialShaderProperty& sampler : samplers) {
-            pOwnedMaterialData->OnSamplerChanged(std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data), nullptr);
+    MaterialShaderData::~MaterialShaderData() {
+        SR_SAFE_DELETE_PTR(m_shaderSubscription);
+
+        for (auto&& subscription : m_textureSubscriptions | std::views::values) {
+            SR_SAFE_DELETE_PTR(subscription.first);
         }
-        Serializable::OnPreLoad();
+        m_textureSubscriptions.clear();
+
+        if (pShader) {
+            pShader->RemoveUsePoint();
+            pShader = nullptr;
+        }
+
+        for (MaterialShaderProperty& sampler : samplers) {
+            if (sampler.data) {
+                if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&(*sampler.data))) {
+                    if (*pTextureRef) {
+                        (*pTextureRef)->RemoveUsePoint();
+                    }
+                }
+            }
+        }
+        samplers.clear();
+    }
+
+    void MaterialShaderData::OnPreLoad() {
+        Super::OnPreLoad();
     }
 
     void MaterialShaderData::OnPostLoad() {
+        SR_TRACY_ZONE;
+
         for (MaterialShaderProperty& sampler : samplers) {
-            pOwnedMaterialData->OnSamplerChanged(nullptr, std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data));
+            if (sampler.data) {
+                if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&(*sampler.data))) {
+                    if (*pTextureRef) {
+                        OnSamplerChanged(nullptr, *pTextureRef);
+                    }
+                }
+            }
         }
-        Serializable::OnPostLoad();
+
+        Init();
+
+        Super::OnPostLoad();
     }
 
     void MaterialShaderData::ForEachProperty(const SR_HTYPES_NS::Function<void(MaterialShaderProperty&)>& func) {
@@ -129,6 +169,96 @@ namespace SR_GRAPH_NS {
         for (MaterialShaderProperty& sampler : samplers) {
             func(sampler);
         }
+    }
+
+    void MaterialShaderData::ForEachProperty(const SR_HTYPES_NS::Function<void(const MaterialShaderProperty&)>& func) const {
+        for (const MaterialShaderProperty& uniform : uniforms) {
+            func(uniform);
+        }
+        for (const MaterialShaderProperty& sampler : samplers) {
+            func(sampler);
+        }
+    }
+
+    void MaterialShaderData::SetShader(const SR_UTILS_NS::Path& path) {
+        SR_TRACY_ZONE;
+
+        if (path.empty()) {
+            SetShader(SR_GTYPES_NS::Shader::Ptr());
+            return;
+        }
+
+        SR_SRSL_NS::ShaderMacrosParams macros;
+        for (auto&& [key, value] : pOwnedMaterialData->GetShaderDefines()) {
+            macros.SetParam(key, value);
+        }
+
+        if (auto&& pNewShader = SR_GTYPES_NS::Shader::Load(path, macros)) {
+            SetShader(pNewShader);
+        }
+        else {
+            SR_ERROR("MaterialShaderData::SetShader() : failed to load shader! \n\tPath: " + path.ToString());
+        }
+    }
+
+    void MaterialShaderData::SetShader(SR_GTYPES_NS::Shader::Ptr pNewShader) {
+        SR_TRACY_ZONE;
+
+        shaderPath = pNewShader ? pNewShader->GetResourcePath() : SR_UTILS_NS::Path();
+
+        if (pShader) {
+            SR_SAFE_DELETE_PTR(m_shaderSubscription);
+            pShader->RemoveUsePoint();
+        }
+
+        pShader = std::move(pNewShader);
+        if (pShader) {
+            pShader->AddUsePoint();
+
+            m_shaderSubscription = pShader->SubscribeDynamic(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                pOwnedMaterialData->OnPropertyChanged(false);
+                UpdateProperties();
+            });
+        }
+
+        UpdateProperties();
+
+        if (pOwnedMaterialData) {
+            pOwnedMaterialData->OnShaderChanged();
+        }
+    }
+
+    void MaterialShaderData::OnSamplerChanged(SR_GTYPES_NS::Texture::Ptr pOldTexture, SR_GTYPES_NS::Texture::Ptr pNewTexture) noexcept {
+        if (pOldTexture == pNewTexture) {
+            return;
+        }
+
+        if (pOldTexture) {
+            if (auto&& pIt = m_textureSubscriptions.find(pOldTexture); pIt != m_textureSubscriptions.end()) {
+                SRAssert(pIt->second.second > 0);
+                --pIt->second.second;
+                if (pIt->second.second == 0) {
+                    SR_SAFE_DELETE_PTR(pIt->second.first);
+                    m_textureSubscriptions.erase(pIt);
+                }
+            }
+            else {
+                SRHalt("MaterialShaderData::OnSamplerChanged() : texture subscription not found!");
+            }
+        }
+
+        if (pNewTexture) {
+            std::pair<SR_UTILS_NS::Subscription*, uint32_t>& subscription = m_textureSubscriptions[pNewTexture];
+            ++subscription.second;
+
+            if (subscription.second == 1) {
+                subscription.first = pNewTexture->SubscribeDynamic(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                    pOwnedMaterialData->OnPropertyChanged(false);
+                });
+            }
+        }
+
+        pOwnedMaterialData->OnPropertyChanged(false);
     }
 
     MaterialPropertyChangeResult MaterialShaderData::SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept {
@@ -142,24 +272,22 @@ namespace SR_GRAPH_NS {
                         return MaterialPropertyChangeResult::Error;
                     }
 
-                    if (std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data) == std::get<SR_GTYPES_NS::Texture::Ptr>(v)) {
-                        return MaterialPropertyChangeResult::None;
-                    }
+                    if (sampler.data) {
+                        if (std::get<SR_GTYPES_NS::Texture::Ptr>(*sampler.data) == std::get<SR_GTYPES_NS::Texture::Ptr>(v)) {
+                            return MaterialPropertyChangeResult::None;
+                        }
 
-                    if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data)) {
-                        pTexture->RemoveUsePoint();
-                        if (SRVerify(pOwnedMaterialData)) {
-                            pOwnedMaterialData->OnSamplerChanged(pTexture, nullptr);
+                        if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(*sampler.data)) {
+                            pTexture->RemoveUsePoint();
+                            OnSamplerChanged(pTexture, nullptr);
                         }
                     }
 
                     sampler.data = v;
 
-                    if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data)) {
+                    if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(*sampler.data)) {
                         pTexture->AddUsePoint();
-                        if (SRVerify(pOwnedMaterialData)) {
-                            pOwnedMaterialData->OnSamplerChanged(nullptr, pTexture);
-                        }
+                        OnSamplerChanged(nullptr, pTexture);
                     }
                     return MaterialPropertyChangeResult::ReDraw;
                 }
@@ -173,35 +301,40 @@ namespace SR_GRAPH_NS {
                         return MaterialPropertyChangeResult::Error;
                     }
 
+                    if (!uniform.data) {
+                        SRHalt("MaterialShaderData::SetData() : property data is null! Property id: {}, Type: {}", id, type);
+                        return MaterialPropertyChangeResult::Error;
+                    }
+
                     switch (type) {
                         case ShaderVarType::Int:
                         case ShaderVarType::Bool:
-                            if (std::get<int32_t>(uniform.data) == std::get<int32_t>(v)) {
+                            if (std::get<int32_t>(*uniform.data) == std::get<int32_t>(v)) {
                                 return MaterialPropertyChangeResult::None;
                             }
                             break;
                         case ShaderVarType::Float:
-                            if (std::get<float_t>(uniform.data) == std::get<float_t>(v)) {
+                            if (std::get<float_t>(*uniform.data) == std::get<float_t>(v)) {
                                 return MaterialPropertyChangeResult::None;
                             }
                             break;
                         case ShaderVarType::Vec2:
-                            if (std::get<SR_MATH_NS::FVector2>(uniform.data) == std::get<SR_MATH_NS::FVector2>(v)) {
+                            if (std::get<SR_MATH_NS::FVector2>(*uniform.data) == std::get<SR_MATH_NS::FVector2>(v)) {
                                 return MaterialPropertyChangeResult::None;
                             }
                             break;
                         case ShaderVarType::Vec3:
-                            if (std::get<SR_MATH_NS::FVector3>(uniform.data) == std::get<SR_MATH_NS::FVector3>(v)) {
+                            if (std::get<SR_MATH_NS::FVector3>(*uniform.data) == std::get<SR_MATH_NS::FVector3>(v)) {
                                 return MaterialPropertyChangeResult::None;
                             }
                             break;
                         case ShaderVarType::IVec3:
-                            if (std::get<SR_MATH_NS::IVector3>(uniform.data) == std::get<SR_MATH_NS::IVector3>(v)) {
+                            if (std::get<SR_MATH_NS::IVector3>(*uniform.data) == std::get<SR_MATH_NS::IVector3>(v)) {
                                 return MaterialPropertyChangeResult::None;
                             }
                             break;
                         case ShaderVarType::Vec4:
-                            if (std::get<SR_MATH_NS::FVector4>(uniform.data) == std::get<SR_MATH_NS::FVector4>(v)) {
+                            if (std::get<SR_MATH_NS::FVector4>(*uniform.data) == std::get<SR_MATH_NS::FVector4>(v)) {
                                 return MaterialPropertyChangeResult::None;
                             }
                             break;
@@ -219,9 +352,16 @@ namespace SR_GRAPH_NS {
         return MaterialPropertyChangeResult::None;
     }
 
+    void MaterialShaderData::Init() {
+        SR_TRACY_ZONE;
+        SetShader(shaderPath);
+    }
+
     void MaterialShaderData::UpdateProperties() {
         SR_TRACY_ZONE;
-        const ShaderProperties& properties = pShader->GetProperties();
+
+        static ShaderProperties empty;
+        const ShaderProperties& properties = pShader ? pShader->GetProperties() : empty;
 
         samplers.reserve(16);
         uniforms.reserve(16);
@@ -242,8 +382,9 @@ namespace SR_GRAPH_NS {
                         found = true;
                         sampler.editorOrder = order;
                         sampler.displayName = SR_UTILS_NS::Reflection::MakeDisplayName(property.id);
-                        if (sampler.type != property.type) {
+                        if (sampler.type != property.type || !sampler.data) {
                             sampler.type = property.type;
+                            sampler.data = property.GetData();
                         }
                         break;
                     }
@@ -255,6 +396,7 @@ namespace SR_GRAPH_NS {
                     sampler.id = property.id;
                     sampler.type = property.type;
                     sampler.pushConstant = property.pushConstant;
+                    sampler.data = property.GetData();
                     sampler.displayName = SR_UTILS_NS::Reflection::MakeDisplayName(property.id);
                 }
             }
@@ -266,7 +408,7 @@ namespace SR_GRAPH_NS {
                         found = true;
                         uniform.editorOrder = order;
                         uniform.displayName = SR_UTILS_NS::Reflection::MakeDisplayName(property.id);
-                        if (uniform.type != property.type) {
+                        if (uniform.type != property.type || !uniform.data) {
                             uniform.type = property.type;
                             uniform.data = property.GetData();
                         }
@@ -299,10 +441,10 @@ namespace SR_GRAPH_NS {
 
         for (auto it = samplers.begin(); it != samplers.end();) {
             if (samplersIds.find(it->id) == samplersIds.end()) {
-                if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(it->data)) {
-                    pTexture->RemoveUsePoint();
-                    if (SRVerify(pOwnedMaterialData)) {
-                        pOwnedMaterialData->OnSamplerChanged(pTexture, nullptr);
+                if (it->data) {
+                    if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(*it->data)) {
+                        pTexture->RemoveUsePoint();
+                        OnSamplerChanged(pTexture, nullptr);
                     }
                 }
                 it = samplers.erase(it);
@@ -311,6 +453,17 @@ namespace SR_GRAPH_NS {
                 ++it;
             }
         }
+    }
+
+    void MaterialShaderData::CloneTo(SR_UTILS_NS::SRClass& clone) const {
+        SR_TRACY_ZONE;
+        Super::CloneTo(clone);
+
+        static_cast<MaterialShaderData&>(clone).Init();
+        ForEachProperty([&clone](const MaterialShaderProperty& property) {
+            SRAssert(property.data);
+            static_cast<MaterialShaderData&>(clone).SetData(property.id, *property.data, property.type);
+        });
     }
 
     /// ----------------------------------------------------------------------------------------------------------------
@@ -322,77 +475,6 @@ namespace SR_GRAPH_NS {
     }
 
     MaterialData::~MaterialData() {
-        Finalize();
-    }
-
-    void MaterialData::Save(SR_UTILS_NS::ISerializer& serializer) const {
-        SR_TRACY_ZONE;
-
-        Super::Save(serializer);
-
-        /// default shader
-        {
-            serializer.BeginObject(SR_UTILS_NS::SerializationId::Create("default"));
-            const SR_UTILS_NS::Path path = m_defaultShader.pShader ? m_defaultShader.pShader->GetResourcePath() : SR_UTILS_NS::Path();
-            SR_UTILS_NS::Serialization::Save(serializer, path, SR_UTILS_NS::SerializationId::Create("shader"));
-            SR_UTILS_NS::Serialization::Save(serializer, m_defaultShader, SR_UTILS_NS::SerializationId::Create("data"));
-            serializer.EndObject();
-        }
-    }
-
-    bool MaterialData::Load(SR_UTILS_NS::IDeserializer& deserializer) {
-        SR_TRACY_ZONE;
-
-        if (!Super::Load(deserializer)) {
-            return false;
-        }
-
-        Finalize();
-
-        SR_SRSL_NS::ShaderMacrosParams macros;
-        for (auto&& [key, value] : m_shaderDefines) {
-            macros.SetParam(key, value);
-        }
-
-        {
-            deserializer.BeginObject(SR_UTILS_NS::SerializationId::Create("default"));
-            SR_UTILS_NS::Path path;
-            SR_UTILS_NS::Serialization::Load(deserializer, path, SR_UTILS_NS::SerializationId::Create("shader"));
-            if (!path.empty()) {
-                if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path, macros)) {
-                    SetShader(pShader);
-                    SR_UTILS_NS::Serialization::Load(deserializer, m_defaultShader, SR_UTILS_NS::SerializationId::Create("data"));
-                    m_defaultShader.UpdateProperties();
-                }
-                else {
-                    SR_ERROR("MaterialData::Load() : failed to load default shader! Path: {}", path.ToString());
-                }
-            }
-            deserializer.EndObject();
-        }
-
-        return true;
-    }
-
-    void MaterialData::Finalize() {
-        SR_TRACY_ZONE;
-
-        if (m_defaultShader.pShader) {
-            m_defaultShader.pShader->RemoveUsePoint();
-            m_defaultShader.pShader = nullptr;
-        }
-
-        for (MaterialShaderProperty& sampler : m_defaultShader.samplers) {
-            if (auto&& pTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&sampler.data)) {
-                if (*pTextureRef) {
-                    (*pTextureRef)->RemoveUsePoint();
-                }
-            }
-        }
-        m_defaultShader.samplers.clear();
-
-        m_shaderSubscriptions.clear();
-        m_textureSubscriptions.clear();
     }
 
     void MaterialData::UseUniforms(const Pipeline* pPipeline) {
@@ -411,25 +493,30 @@ namespace SR_GRAPH_NS {
         }
 
         for (const MaterialShaderProperty& uniform : pShaderData->uniforms) {
+            if (!uniform.data) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("MaterialData::UseUniforms() : property data is null! Property id: {}, Type: {}", uniform.id, uniform.type);
+                continue;
+            }
+
             switch (uniform.type) {
                 case ShaderVarType::Int:
                 case ShaderVarType::Bool:
-                    pShader->SetInt(uniform.id, std::get<int32_t>(uniform.data));
+                    pShader->SetInt(uniform.id, std::get<int32_t>(*uniform.data));
                     break;
                 case ShaderVarType::Float:
-                    pShader->SetFloat(uniform.id, std::get<float_t>(uniform.data));
+                    pShader->SetFloat(uniform.id, std::get<float_t>(*uniform.data));
                     break;
                 case ShaderVarType::Vec2:
-                    pShader->SetVec2(uniform.id, std::get<SR_MATH_NS::FVector2>(uniform.data).template Cast<float_t>());
+                    pShader->SetVec2(uniform.id, std::get<SR_MATH_NS::FVector2>(*uniform.data).template Cast<float_t>());
                     break;
                 case ShaderVarType::Vec3:
-                    pShader->SetVec3(uniform.id, std::get<SR_MATH_NS::FVector3>(uniform.data).template Cast<float_t>());
+                    pShader->SetVec3(uniform.id, std::get<SR_MATH_NS::FVector3>(*uniform.data).template Cast<float_t>());
                     break;
                 case ShaderVarType::IVec3:
-                    pShader->SetIVec3(uniform.id, std::get<SR_MATH_NS::IVector3>(uniform.data).template Cast<int32_t>());
+                    pShader->SetIVec3(uniform.id, std::get<SR_MATH_NS::IVector3>(*uniform.data).template Cast<int32_t>());
                     break;
                 case ShaderVarType::Vec4:
-                    pShader->SetVec4(uniform.id, std::get<SR_MATH_NS::FVector4>(uniform.data).template Cast<float_t>());
+                    pShader->SetVec4(uniform.id, std::get<SR_MATH_NS::FVector4>(*uniform.data).template Cast<float_t>());
                     break;
                 default:
                     SR_ERROR("MaterialData::UseUniforms() : unknown property type! Property id: {}, Type: {}", uniform.id, uniform.type);
@@ -454,7 +541,12 @@ namespace SR_GRAPH_NS {
         }
 
         for (const MaterialShaderProperty& sampler : pShaderData->samplers) {
-            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(sampler.data)) {
+            if (!sampler.data) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("MaterialData::UseSamplers() : property data is null! Property id: {}, Type: {}", sampler.id, sampler.type);
+                continue;
+            }
+
+            if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(*sampler.data)) {
                 pShader->SetSampler2D(sampler.id, pTexture);
             }
             else {
@@ -467,10 +559,6 @@ namespace SR_GRAPH_NS {
         if (id.empty()) {
             return &m_defaultShader;
         }
-
-        //if (auto&& pIt = m_shaders.find(id); pIt != m_shaders.end()) {
-        //    return &pIt->second;
-        //}
 
         return nullptr;
     }
@@ -490,67 +578,6 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialData::SetShader(const SR_UTILS_NS::Path& path) {
-        SR_TRACY_ZONE;
-
-        if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path)) {
-            SetShader(pShader);
-        }
-        else {
-            SR_ERROR("MaterialData::SetShader() : failed to load shader! \n\tPath: " + path.ToString());
-        }
-    }
-
-    void MaterialData::SetShader(SR_GTYPES_NS::Shader::Ptr pShader) {
-        SR_TRACY_ZONE;
-
-        if (!pShader) {
-            SR_ERROR("MaterialData::SetShader() : shader is nullptr!");
-            return;
-        }
-
-        MaterialShaderData* pShaderData = &m_defaultShader;
-        if (pShaderData->pShader == pShader) {
-            return;
-        }
-
-        if (pShaderData->pShader) {
-            pShaderData->pShader->RemoveUsePoint();
-
-            if (auto&& pIt = m_shaderSubscriptions.find(pShaderData->pShader); pIt != m_shaderSubscriptions.end()) {
-                SRAssert(pIt->second.second > 0);
-                --pIt->second.second;
-                if (pIt->second.second == 0) {
-                    m_shaderSubscriptions.erase(pIt);
-                }
-            }
-            else {
-                SRHalt("MaterialData::SetShader() : shader subscription not found!");
-            }
-        }
-
-        pShaderData->pShader = pShader;
-        pShader->AddUsePoint();
-
-        std::pair<SR_UTILS_NS::Subscription, uint32_t>& subscription = m_shaderSubscriptions[pShader];
-        ++subscription.second;
-
-        if (subscription.second == 1) {
-            subscription.first = pShader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT,
-                [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
-                    OnPropertyChanged(false);
-                    m_defaultShader.UpdateProperties();
-                }
-            );
-        }
-
-        pShaderData->UpdateProperties();
-
-        if (pShaderData->pOwnedMaterialData) {
-            pShaderData->pOwnedMaterialData->OnShaderChanged();
-        }
-    }
-
     void MaterialData::SetData(const SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, const ShaderVarType type) noexcept {
         SR_TRACY_ZONE;
 
@@ -564,55 +591,13 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialData::OnSamplerChanged(SR_GTYPES_NS::Texture::Ptr pOldTexture, SR_GTYPES_NS::Texture::Ptr pNewTexture) noexcept {
-        if (pOldTexture == pNewTexture) {
-            return;
-        }
-
-        if (pOldTexture) {
-            if (auto&& pIt = m_textureSubscriptions.find(pOldTexture); pIt != m_textureSubscriptions.end()) {
-                SRAssert(pIt->second.second > 0);
-                --pIt->second.second;
-                if (pIt->second.second == 0) {
-                    m_textureSubscriptions.erase(pIt);
-                }
-            }
-            else {
-                SRHalt("MaterialData::OnSamplerChanged() : texture subscription not found!");
-            }
-        }
-
-        if (pNewTexture) {
-            std::pair<SR_UTILS_NS::Subscription, uint32_t>& subscription = m_textureSubscriptions[pNewTexture];
-            ++subscription.second;
-
-            if (subscription.second == 1) {
-                subscription.first = pNewTexture->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT,
-                    [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
-                        OnPropertyChanged(false);
-                    }
-                );
-            }
-        }
-    }
-
     void MaterialData::OnShaderDefinesChanged() {
         SR_TRACY_ZONE;
         if (!GetDefaultShaderData().pShader) {
             return;
         }
 
-        SR_SRSL_NS::ShaderMacrosParams macros;
-        for (auto&& [key, value] : m_shaderDefines) {
-            macros.SetParam(key, value);
-        }
-
-        if (auto&& pShader = SR_GTYPES_NS::Shader::Load(GetDefaultShaderData().pShader->GetResourcePath(), macros)) {
-            SetShader(pShader);
-        }
-        else {
-            SR_ERROR("MaterialData::OnShaderDefinesChanged() : failed to load shader! \n\tPath: " + GetDefaultShaderData().pShader->GetResourcePath().ToString());
-        }
+        GetDefaultShaderData().SetShader(GetDefaultShaderData().shaderPath);
     }
 
     void MaterialData::OnShaderChanged() {

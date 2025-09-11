@@ -56,6 +56,10 @@ namespace SR_GTYPES_NS {
         Super::OnDestroy();
     }
 
+    bool Camera::IsEditorCamera() const {
+        return m_type == CameraType::Editor || m_type == CameraType::EditorPrefab;
+    }
+
     IRenderTechnique* Camera::GetRenderTechnique() {
         if (m_renderTechnique.pTechnique || m_hasErrors) {
             return m_renderTechnique.pTechnique.Get();

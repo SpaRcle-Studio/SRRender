@@ -52,6 +52,10 @@ namespace SR_GRAPH_NS::Types {
             }
         }
 
+        if (m_shaderCreateInfo.shaderType != SRSL2::ShaderType::PostProcessing && GetRenderContext()->IsMacroDefined("SR_DEFINE_WIREFRAME")) {
+            m_shaderCreateInfo.polygonMode = PolygonMode::Line;
+        }
+
         if (!m_shaderCreateInfo.Validate()) {
             SR_ERROR("Shader::Init() : failed to validate shader!\n\tPath: " + GetResourcePath().ToString());
             m_hasErrors = true;
@@ -369,6 +373,7 @@ namespace SR_GRAPH_NS::Types {
         }
 
         m_shaderCreateInfo = pShader->GetCreateInfo();
+
         m_type = pShader->GetType();
         m_includes = pShader->GetIncludes();
 

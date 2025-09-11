@@ -2,10 +2,6 @@
 // Created by Monika on 16.05.2022.
 //
 
-#include <Utils/DebugDraw.h>
-#include <Utils/Types/SafePtrLockGuard.h>
-#include <Utils/Resources/Yaml.h>
-
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderStrategy.h>
@@ -18,6 +14,11 @@
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Lighting/LightSystem.h>
 #include <Graphics/Window/Window.h>
+
+#include <Utils/DebugDraw.h>
+#include <Utils/Types/SafePtrLockGuard.h>
+#include <Utils/Resources/Yaml.h>
+#include <Utils/ECS/GameObject.h>
 
 namespace SR_GRAPH_NS {
     RenderScene::RenderScene(const ScenePtr& scene, RenderContext* pContext)
@@ -289,7 +290,8 @@ namespace SR_GRAPH_NS {
         }
 
         if (!pMesh->GetMaterial()->IsValid()) {
-            SR_ERROR("RenderScene::Register() : mesh have invalid material! Mesh: " + pMesh->GetMeshIdentifier());
+            SR_ERROR("RenderScene::Register() : mesh have invalid material! Mesh: " + pMesh->GetMeshIdentifier()
+                + "\n\tGameObject: " + (pMesh->GetGameObject() ? pMesh->GetGameObject()->GetName().ToString() : "nullptr"));
             return;
         }
 

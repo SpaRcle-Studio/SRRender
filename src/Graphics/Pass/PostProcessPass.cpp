@@ -11,10 +11,17 @@
 
 namespace SR_GRAPH_NS {
     PostProcessPass::~PostProcessPass() {
-        if (m_shader) {
-            m_onShaderReloaded.Reset();
-            m_shader->RemoveUsePoint();
+        m_onShaderReloaded.Reset();
+        m_material.Reset();
+    }
+
+    bool PostProcessPass::Init() {
+        if (auto&& pShader = m_material ? m_material->GetShader(SR_SRSL_NS::ShaderMacrosParams()) : nullptr) {
+            m_onShaderReloaded = pShader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto &&) {
+                m_dirtyShader = true;
+            });
         }
+        return Super::Init();
     }
 
     bool PostProcessPass::PreRender() {
@@ -24,14 +31,19 @@ namespace SR_GRAPH_NS {
     bool PostProcessPass::Render() {
         SR_TRACY_ZONE;
 
-        if (!m_shader || m_shader->Use() == ShaderBindResult::Failed) {
+        if (!m_material) {
+            return false;
+        }
+
+        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(SR_SRSL_NS::ShaderMacrosParams());
+        if (!pShader || pShader->Use() == ShaderBindResult::Failed) {
             return false;
         }
 
         if (m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
             m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
             if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-                m_shader->UnUse();
+                pShader->UnUse();
                 return false;
             }
 
@@ -43,7 +55,7 @@ namespace SR_GRAPH_NS {
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
-            UseSamplers(m_shader.Get());
+            UseSamplers(pShader);
             m_descriptorManager.Flush();
         }
         GetPipeline()->GetCurrentShader()->FlushConstants();
@@ -52,7 +64,7 @@ namespace SR_GRAPH_NS {
             GetPipeline()->Draw(m_vertices);
         }
 
-        m_shader->UnUse();
+        pShader->UnUse();
 
         m_dirtyShader = false;
 
@@ -60,13 +72,15 @@ namespace SR_GRAPH_NS {
     }
 
     void PostProcessPass::Update() {
-        if (m_virtualUBO == SR_ID_INVALID) {
+        if (m_virtualUBO == SR_ID_INVALID || !m_material) {
             return;
         }
 
-        GetPipeline()->SetCurrentShader(m_shader.Get());
+        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(SR_SRSL_NS::ShaderMacrosParams());
 
-        if (m_shader && m_shader->BeginSharedUBO()) {
+        GetPipeline()->SetCurrentShader(pShader);
+
+        if (pShader && pShader->BeginSharedUBO()) {
             SR_MATH_NS::FVector2 resolution;
             if (auto&& pCamera = GetRenderScene()->GetMainCamera()) {
                 resolution = pCamera->GetSize().Cast<float_t>();
@@ -75,19 +89,21 @@ namespace SR_GRAPH_NS {
                 resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();
             }
 
-            m_shader->SetVec2(SHADER_RESOLUTION, resolution);
+            pShader->SetVec2(SHADER_RESOLUTION, resolution);
 
-            m_shader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
+            pShader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
 
             if (auto&& pCamera = GetCamera()) {
-                m_shader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
-                m_shader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
-                m_shader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
-                m_shader->SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());
-                m_shader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, pCamera->GetView());
+                pShader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
+                pShader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
+                pShader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
+                pShader->SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());
+                pShader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, pCamera->GetView());
             }
 
-            m_shader->EndSharedUBO();
+            m_material->Use();
+
+            pShader->EndSharedUBO();
         }
         else {
             return;
@@ -97,41 +113,9 @@ namespace SR_GRAPH_NS {
             SR_ERROR("PostProcessPass::Update() : memory has been duplicated!");
         }
 
-        SR_UNUSED_VARIABLE(m_shader->Flush());
+        SR_UNUSED_VARIABLE(pShader->Flush());
 
         Super::Update();
-    }
-
-    void PostProcessPass::SetShader(const SR_UTILS_NS::Path& shaderPath) {
-        m_shaderPath = shaderPath.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
-
-        SR_GTYPES_NS::Shader::Ptr pShader = m_shaderPath.empty() ? nullptr : SR_GTYPES_NS::Shader::Load(m_shaderPath);
-        if (!pShader && !m_shaderPath.empty()) {
-            SR_ERROR("PostProcessPass::SetShader() : failed to load shader: {}", shaderPath);
-            return;
-        }
-
-        if (m_shader == pShader) {
-            return;
-        }
-
-        m_dirtyShader = true;
-
-        if (m_shader) {
-            m_onShaderReloaded.Reset();
-            m_shader->RemoveUsePoint();
-            m_shader = nullptr;
-        }
-
-        if (!(m_shader = pShader)) {
-            return;
-        }
-
-        m_shader->AddUsePoint();
-
-        m_onShaderReloaded = pShader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
-            m_dirtyShader = true;
-        });
     }
 
     void PostProcessPass::DeInit() {
@@ -148,6 +132,7 @@ namespace SR_GRAPH_NS {
     void PostProcessPass::UseSamplers(SR_GTYPES_NS::Shader* pShader) {
         Super::UseSamplers(pShader);
         m_samplers.UseSamplers(pShader);
+        m_material->UseSamplers();
     }
 
     void PostProcessPass::OnResize(const SR_MATH_NS::UVector2& size) {

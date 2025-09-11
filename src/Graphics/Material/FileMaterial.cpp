@@ -28,7 +28,7 @@ namespace SR_GRAPH_NS {
 
         MaterialData::Ptr pData = SRNew<MaterialData>();
         {
-            pData->SetShader("Engine/Shaders/SSAO/ssao_geometry.srsl");
+            pData->GetDefaultShaderData().SetShader("Engine/Shaders/SSAO/ssao_geometry.srsl");
             pData->SetSampler("diffuse", "Engine/Textures/default_improved.png");
             pData->SetData("color", SR_MATH_NS::FVector4(1.f, 1.f, 1.f, 1.f), ShaderVarType::Vec4);
         }
@@ -73,18 +73,11 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        auto&& pFileMaterialData = pFileMaterial->GetMaterialData();
-
         UniqueMaterial::Ptr pUniqueMaterial = SRNew<UniqueMaterial>();
-        auto&& pUniqueMaterialData = pUniqueMaterial->GetMaterialData();
 
-        auto&& defaultData = pFileMaterialData->GetDefaultShaderData();
-        if (auto&& pDefaultShader = defaultData.pShader) {
-            pUniqueMaterialData->SetShader(pDefaultShader);
-            defaultData.ForEachProperty([&](const SR_GRAPH_NS::MaterialShaderProperty& property) {
-                pUniqueMaterialData->GetDefaultShaderData().SetData(property.id, property.data, property.type);
-            });
-        }
+        pFileMaterial->GetMaterialData()->GetDefaultShaderData().CloneTo(
+            pUniqueMaterial->GetMaterialData()->GetDefaultShaderData()
+        );
 
         return pUniqueMaterial.StaticCast<BaseMaterial>();
     }

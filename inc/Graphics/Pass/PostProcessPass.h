@@ -7,6 +7,8 @@
 
 #include <Graphics/Pass/BasePass.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Material/MaterialData.h>
+#include <Graphics/Material/UniqueMaterial.h>
 
 namespace SR_GTYPES_NS {
     class Shader;
@@ -29,6 +31,7 @@ namespace SR_GRAPH_NS {
         ~PostProcessPass() override;
 
     public:
+        bool Init() override;
         void OnResize(const SR_MATH_NS::UVector2& size) override;
         void OnMultisampleChanged() override;
 
@@ -40,7 +43,6 @@ namespace SR_GRAPH_NS {
     protected:
         void UseSamplers(SR_GTYPES_NS::Shader* pShader) override;
         void SetRenderTechnique(SR_GRAPH_NS::IRenderTechnique* pRenderTechnique) override;
-        void SetShader(const SR_UTILS_NS::Path& shaderPath);
         void DeInit() override;
 
     protected:
@@ -48,17 +50,14 @@ namespace SR_GRAPH_NS {
         int32_t m_virtualDescriptor = SR_ID_INVALID;
         int32_t m_virtualUBO = SR_ID_INVALID;
         bool m_dirtyShader = true;
-        ShaderPtr m_shader = nullptr;
         Properties m_properties;
 
         /// @property
         uint32_t m_vertices = 3;
-        /// @property @setter(SetShader)
-        /// @customArgs(pick: enabled, filter name: Shader, relative: resources)
-        /// @customArg(filter value: srsl)
-        SR_UTILS_NS::Path m_shaderPath;
         /// @property
         SamplersPassData m_samplers;
+        /// @property
+        BaseMaterial::Ptr m_material;
 
     };
 }

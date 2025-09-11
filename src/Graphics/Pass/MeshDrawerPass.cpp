@@ -131,9 +131,9 @@ namespace SR_GRAPH_NS {
             m_shaderMacros.AddDefine(definition);
         }
 
-        auto&& presetSettings = GetRenderContext()->GetSettingsPreset();
-        for (auto&& definition : presetSettings.shaderDefines) {
-            m_shaderMacros.AddDefine(definition);
+        auto&& macros = GetRenderContext()->GetShaderMacros();
+        for (auto&& [key, value] : macros) {
+            m_shaderMacros.SetParam(key, value);
         }
 
         if (m_renderLayers == 0) SR_UNLIKELY_ATTRIBUTE {

@@ -37,7 +37,7 @@ namespace SR_GRAPH_NS {
     public:
         uint32_t editorOrder = 0;
         SR_UTILS_NS::StringAtom displayName;
-        ShaderPropertyVariant data;
+        std::optional<ShaderPropertyVariant> data;
 
         /// @property
         SR_UTILS_NS::StringAtom id;
@@ -48,10 +48,14 @@ namespace SR_GRAPH_NS {
     };
 
     struct MaterialShaderData : public SR_UTILS_NS::Serializable {
+        using Super = SR_UTILS_NS::Serializable;
+
         SR_STRUCT()
 
-        MaterialData* pOwnedMaterialData = nullptr;
-        SR_GTYPES_NS::Shader::Ptr pShader = nullptr;
+        ~MaterialShaderData() override;
+
+        /// @property
+        SR_UTILS_NS::Path shaderPath;
 
         /// @property
         std::vector<MaterialShaderProperty> uniforms;
@@ -63,10 +67,26 @@ namespace SR_GRAPH_NS {
         void OnPreLoad() override;
         void OnPostLoad() override;
 
+        void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
+
+        void SetShader(const SR_UTILS_NS::Path& path);
+        void SetShader(SR_GTYPES_NS::Shader::Ptr pShader);
+
         void ForEachProperty(const SR_HTYPES_NS::Function<void(MaterialShaderProperty&)>& func);
+        void ForEachProperty(const SR_HTYPES_NS::Function<void(const MaterialShaderProperty&)>& func) const;
 
         MaterialPropertyChangeResult SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
+
         void UpdateProperties();
+        void Init();
+
+        void SR_FASTCALL OnSamplerChanged(SR_GTYPES_NS::Texture::Ptr pOldTexture, SR_GTYPES_NS::Texture::Ptr pNewTexture) noexcept;
+
+        MaterialData* pOwnedMaterialData = nullptr;
+        SR_GTYPES_NS::Shader::Ptr pShader = nullptr;
+
+        SR_UTILS_NS::Subscription* m_shaderSubscription = nullptr;
+        std::map<SR_GTYPES_NS::Texture::Ptr, std::pair<SR_UTILS_NS::Subscription*, uint32_t>> m_textureSubscriptions;
 
     };
 
@@ -88,11 +108,6 @@ namespace SR_GRAPH_NS {
         MaterialData();
         ~MaterialData() override;
 
-        void Save(SR_UTILS_NS::ISerializer& serializer) const override;
-        bool Load(SR_UTILS_NS::IDeserializer& deserializer) override;
-
-        void Finalize();
-
         void UseUniforms(const Pipeline* pPipeline);
         void UseSamplers(const Pipeline* pPipeline);
 
@@ -103,18 +118,16 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, std::string>& GetShaderDefines() const noexcept { return m_shaderDefines; }
 
         void SR_FASTCALL SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept;
-        void SR_FASTCALL SetShader(const SR_UTILS_NS::Path& path);
-        void SR_FASTCALL SetShader(SR_GTYPES_NS::Shader::Ptr pShader);
         void SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
-        void SR_FASTCALL OnSamplerChanged(SR_GTYPES_NS::Texture::Ptr pOldTexture, SR_GTYPES_NS::Texture::Ptr pNewTexture) noexcept;
 
         void OnPropertyChanged(bool onlyUniforms);
         void AddShaderDefine(SR_UTILS_NS::StringAtom define, const std::string& value = "") { m_shaderDefines[define] = value; OnShaderDefinesChanged(); }
         void RemoveShaderDefine(SR_UTILS_NS::StringAtom define) { m_shaderDefines.erase(define); OnShaderDefinesChanged(); }
         void SwitchShaderDefine(SR_UTILS_NS::StringAtom define, bool enabled);
 
-    private:
         void OnShaderChanged();
+
+    private:
         void OnShaderDefinesChanged();
 
         SR_NODISCARD bool IsNormalMappingEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_NORMAL) == 1; }
@@ -126,12 +139,11 @@ namespace SR_GRAPH_NS {
         void SetAlphaEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ALPHA, enabled); }
 
     private:
-        std::map<SR_GTYPES_NS::Shader::Ptr, std::pair<SR_UTILS_NS::Subscription, uint32_t>> m_shaderSubscriptions;
-        std::map<SR_GTYPES_NS::Texture::Ptr, std::pair<SR_UTILS_NS::Subscription, uint32_t>> m_textureSubscriptions;
-        MaterialShaderData m_defaultShader;
-
         /// @property @onChanged(OnShaderDefinesChanged)
         std::map<SR_UTILS_NS::StringAtom, std::string> m_shaderDefines;
+
+        /// @property @hidden
+        MaterialShaderData m_defaultShader;
 
         /// @virtualProperty(hasSkeleton) @getter(IsSkeletalAnimationEnabled) @setter(SetSkeletalAnimationEnabled) @dontSave
         SR_VIRTUAL_PROPERTY
