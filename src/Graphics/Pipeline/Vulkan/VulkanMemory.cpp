@@ -43,7 +43,11 @@ namespace SR_GRAPH_NS::VulkanTools {
             return SR_ID_INVALID;
         }
 
-        for (auto&& pTexture : pFBO->AllocateColorTextureReferences()) {
+        //for (auto&& pTexture : pFBO->AllocateColorTextureReferences()) {
+        //    info.pOutputColorAttachments->emplace_back(m_texturePool.Add(pTexture));
+        //}
+
+        for (auto&& pTexture : pFBO->AllocateResolveTextureReferences()) {
             info.pOutputColorAttachments->emplace_back(m_texturePool.Add(pTexture));
         }
 
@@ -85,7 +89,13 @@ namespace SR_GRAPH_NS::VulkanTools {
 
         /// Texture attachments
 
-        auto&& textures = pFBO->AllocateColorTextureReferences();
+        //auto&& textures = pFBO->AllocateColorTextureReferences();
+        //if (textures.size() != info.oldColorAttachments.size()) {
+        //    SR_ERROR("MemoryManager::ReAllocateFBO() : incorrect old color attachments!");
+        //    return false;
+        //}
+
+        auto&& textures = pFBO->AllocateResolveTextureReferences();
         if (textures.size() != info.oldColorAttachments.size()) {
             SR_ERROR("MemoryManager::ReAllocateFBO() : incorrect old color attachments!");
             return false;

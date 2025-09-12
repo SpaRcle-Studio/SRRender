@@ -258,7 +258,7 @@ namespace SR_GRAPH_NS {
 
         m_isMultiSampleSupported = true;
 
-        if (m_supportedSampleCount <= 1) {
+        if (!m_preInitInfo.multisampling) {
             m_isMultiSampleSupported = false;
         }
 
@@ -443,10 +443,6 @@ namespace SR_GRAPH_NS {
     }
 
     bool Pipeline::IsMultiSamplingSupported() const noexcept {
-        if (!SR_UTILS_NS::Features::Instance().Enabled("Multisampling", true)) {
-            return false;
-        }
-
         return m_isMultiSampleSupported;
     }
 

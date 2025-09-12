@@ -56,6 +56,26 @@ namespace SR_GTYPES_NS {
         Super::OnDestroy();
     }
 
+    const SR_MATH_NS::Matrix4x4& Camera::GetInverseProjection() const {
+        if (m_isInverseDirty) {
+            SR_TRACY_ZONE;
+            m_isInverseDirty = false;
+            m_inverseProjection = m_projection.Inverse();
+            m_inverseViewTranslate = m_viewTranslateMat.Inverse();
+        }
+        return m_inverseProjection;
+    }
+
+    const SR_MATH_NS::Matrix4x4& Camera::GetInverseViewTranslate() const {
+        if (m_isInverseDirty) {
+            SR_TRACY_ZONE;
+            m_isInverseDirty = false;
+            m_inverseProjection = m_projection.Inverse();
+            m_inverseViewTranslate = m_viewTranslateMat.Inverse();
+        }
+        return m_inverseViewTranslate;
+    }
+
     bool Camera::IsEditorCamera() const {
         return m_type == CameraType::Editor || m_type == CameraType::EditorPrefab;
     }
@@ -139,6 +159,7 @@ namespace SR_GTYPES_NS {
     }
 
     void Camera::UpdateView() noexcept {
+        m_isInverseDirty = true;
         m_viewMat = m_rotation.RotateX(SR_DEG(SR_PI)).Inverse().ToMat4x4();
 
         /*auto&& euler = m_rotation.RotateX(SR_DEG(SR_PI)).Inverse().EulerAngle();
@@ -164,6 +185,8 @@ namespace SR_GTYPES_NS {
     }
 
     void Camera::UpdateProjection() {
+        m_isInverseDirty = true;
+
         if (m_viewportSize.HasZero()) {
             SRHalt("Camera::UpdateProjection() : viewport size has zero!");
             m_aspect = 0.f;

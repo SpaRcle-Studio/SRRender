@@ -99,6 +99,10 @@ namespace SR_GRAPH_NS {
                 pShader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
                 pShader->SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());
                 pShader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, pCamera->GetView());
+                pShader->SetMat4(SHADER_CAMERA_FAR, pCamera->GetFar());
+                pShader->SetMat4(SHADER_CAMERA_NEAR, pCamera->GetNear());
+                pShader->SetMat4(SHADER_INVERSE_PROJECTION_MATRIX, pCamera->GetInverseProjection());
+                pShader->SetMat4(SHADER_INVERSE_VIEW_MATRIX, pCamera->GetInverseViewTranslate());
             }
 
             m_material->Use();

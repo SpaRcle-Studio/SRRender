@@ -546,6 +546,7 @@ namespace SR_GRAPH_NS {
         pipelinePreInitInfo.appName = m_settings->appName;
         pipelinePreInitInfo.engineName = m_settings->engineName;
         pipelinePreInitInfo.samplesCount = SR_UTILS_NS::StoreUtils::User::GetInt("MultiSampling", 64);
+        pipelinePreInitInfo.multisampling = SR_UTILS_NS::Features::Instance().Enabled("Multisampling", true);
         pipelinePreInitInfo.vsync = false;
 
         if (pipelinePreInitInfo.samplesCount < 1) {

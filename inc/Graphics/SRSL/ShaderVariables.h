@@ -19,13 +19,17 @@ namespace SR_SRSL_NS {
 
     SR_INLINE_STATIC const std::map<std::string, std::string> SR_SRSL_DEFAULT_SHARED_UNIFORMS = { /** NOLINT */
             { "VIEW_MATRIX",                    "mat4"          },
+            { "INVERSE_VIEW_MATRIX",            "mat4"          },
             { "PROJECTION_MATRIX",              "mat4"          },
+            { "INVERSE_PROJECTION_MATRIX",      "mat4"          },
             { "PROJECTION_NO_FOV_MATRIX",       "mat4"          },
             { "ORTHOGONAL_MATRIX",              "mat4"          },
             { "VIEW_NO_TRANSLATE_MATRIX",       "mat4"          },
             { "LIGHT_SPACE_MATRIX",             "mat4"          },
 
             { "TIME",                           "float"         },
+            { "CAMERA_FAR",                     "float"         },
+            { "CAMERA_NEAR",                    "float"         },
 
             { "RENDER_PASS_TYPE",               "int"           },
 
@@ -133,6 +137,7 @@ namespace SR_SRSL_NS {
 
             { "sampler1D",          ShaderVarType::Sampler1D        },
             { "sampler2D",          ShaderVarType::Sampler2D        },
+            { "sampler2DMS",        ShaderVarType::Sampler2D        },
             { "sampler3D",          ShaderVarType::Sampler3D        },
             { "sampler1DShadow",    ShaderVarType::Sampler1DShadow  },
             { "sampler2DShadow",    ShaderVarType::Sampler2DShadow  },

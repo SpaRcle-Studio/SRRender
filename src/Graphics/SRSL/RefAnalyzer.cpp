@@ -155,6 +155,9 @@ namespace SR_SRSL_NS {
 
     SRSLUseStack::Ptr SRSLRefAnalyzer::AnalyzeTree(std::list<std::string>& stack, SRSLLexicalTree* pTree) {
         auto&& pUseStack = SRSLUseStack::Ptr(new SRSLUseStack());
+        if (!pTree) {
+            return pUseStack;
+        }
 
         for (auto&& pUnit : pTree->lexicalTree) {
             /// Выражения в декораторах не учитываем, так как они не могут использовать переменные

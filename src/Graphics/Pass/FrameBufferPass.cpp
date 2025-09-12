@@ -44,13 +44,18 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        auto&& pFBO = pFrameBufferPass->GetFrameBuffer();
+        if (!pFBO) {
+            return false;
+        }
+
         GetPipeline()->EndRender();
 
-        if (m_clearColor) {
+        if (m_clearColor && pFBO->GetFeatures().colorTransferDst) {
             GetPipeline()->ClearColorBuffer(pFrameBufferPass->GetClearColors());
         }
 
-        if (m_clearDepth) {
+        if (m_clearDepth && pFBO->GetFeatures().depthTransferDst) {
             GetPipeline()->ClearDepthBuffer(1.f);
         }
 

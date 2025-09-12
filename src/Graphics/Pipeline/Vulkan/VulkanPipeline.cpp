@@ -255,12 +255,13 @@ namespace SR_GRAPH_NS {
 
         std::vector<const char*> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME
             //VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME,
         };
 
         const bool dynamicRenderingRequire = SR_UTILS_NS::Features::Instance().Enabled("VulkanDynamicRendering", false);
 
-        if (!m_kernel->Init(createSurfaceFn, m_window ? m_window->GetHandle() : nullptr, deviceExtensions, true, dynamicRenderingRequire, m_preInitInfo.vsync)) {
+        if (!m_kernel->Init(createSurfaceFn, m_window ? m_window->GetHandle() : nullptr, deviceExtensions, true, dynamicRenderingRequire, m_preInitInfo.multisampling, m_preInitInfo.vsync)) {
             PipelineError("VulkanPipeline::Init() : failed to initialize Evo Vulkan kernel!");
             return false;
         }
@@ -1277,7 +1278,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (depth < 0.0f || depth > 1.0f) {
-            SR_ERROR("VulkanPipeline::ClearDepthBuffer() : depth value must be in range [0.0, 1.0]!");
+            SR_ERROR("VulkanPipeline::ClearBuffers() : depth value must be in range [0.0, 1.0]!");
             depth = std::clamp(depth, 0.0f, 1.0f);
         }
 
@@ -1812,6 +1813,12 @@ namespace SR_GRAPH_NS {
         auto&& descriptorSet = m_memory->GetDescriptorSet(m_state.descriptorSetId);
         auto&& pTexture = m_memory->GetTexture(textureId);
 
+        // if (pTexture->GetImage().GetAspect() == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) SR_UNLIKELY_ATTRIBUTE {
+        //     SRHalt("You are trying to use depth and stencil texture as sampler! Id: " + SR_UTILS_NS::ToString(textureId) +
+        //         "\n\tOnly one of these aspects can be used as sampler!");
+        //     return;
+        // }
+
         auto&& imageDescriptorRef = pTexture->GetDescriptorRef();
 
         static std::set<VkImageLayout> allowedLayouts = {
@@ -1937,9 +1944,28 @@ namespace SR_GRAPH_NS {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
+        // --- determine proper srcAccessMask & srcStage depending on oldLayout ---
+        VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        VkAccessFlags srcAccess = 0;
+
+        if (barrier.oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+            srcAccess = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+            srcStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        } else if (barrier.oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+            srcAccess = VK_ACCESS_SHADER_READ_BIT;
+            srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; // or relevant shader stage
+        } else {
+            srcAccess = 0;
+            srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        }
+
+        barrier.srcAccessMask = srcAccess;
+
         vkCmdPipelineBarrier(
                 m_currentCmd,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                //VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                srcStage,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
                 0,
                 0, nullptr,
                 0, nullptr,
@@ -1966,12 +1992,23 @@ namespace SR_GRAPH_NS {
 
         barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         barrier.newLayout = image.GetLayout();
+        //barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        //barrier.dstAccessMask = 0;
+
+
+        //barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        //barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = 0;
+        barrier.dstAccessMask = srcAccess;// VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        //barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
         vkCmdPipelineBarrier(
                 m_currentCmd,
-                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                //VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+
                 0,
                 0, nullptr,
                 0, nullptr,
@@ -2048,6 +2085,11 @@ namespace SR_GRAPH_NS {
 
         for (uint32_t i = 0; i < clearColors.size(); ++i) {
             auto&& color = clearColors[i];
+
+            if (i >= pLayer->GetColorAttachments().size()) {
+                PipelineError("VulkanPipeline::ClearColorBuffer() : color attachment index is out of range!");
+                continue;
+            }
 
             auto&& pColorAttachment = pLayer->GetColorAttachments()[i];
             if (!pColorAttachment) {
