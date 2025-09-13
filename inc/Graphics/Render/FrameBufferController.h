@@ -69,6 +69,8 @@ namespace SR_GRAPH_NS {
         /// @property
         uint32_t m_layersCount = 1;
         /// @property
+        uint32_t m_arrayLayersCount = 1;
+        /// @property
         ImageFormat m_depthFormat = ImageFormat::Auto;
         /// @property
         ImageAspect m_depthAspect = ImageAspect::DepthStencil;

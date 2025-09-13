@@ -34,7 +34,7 @@ namespace SR_GRAPH_NS {
 
         auto&& pPipeline = GetPipeline();
 
-        if (GetLayersCount() > 1) {
+        if (!pFrameBuffer->IsRenderAsSingleLayer() && GetLayersCount() > 1) {
             return RenderFrameBuffer(callback, GetLayersCount());
         }
 
@@ -93,14 +93,14 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& pFrameBuffer = GetFramebuffer();
-
         if (!pFrameBuffer || pFrameBuffer->IsDirty()) {
             return;
         }
 
         GetPipeline()->SetCurrentFrameBuffer(const_cast<Pipeline::FramebufferPtr>(pFrameBuffer.Get()));
 
-        for (uint32_t i = 0; i < GetLayersCount(); ++i) {
+        const uint32_t layersCount = pFrameBuffer->IsRenderAsSingleLayer() ? 1 : GetLayersCount();
+        for (uint32_t i = 0; i < layersCount; ++i) {
             GetPipeline()->SetCurrentFrameBufferLayer(i);
             callback();
         }

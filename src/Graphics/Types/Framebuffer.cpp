@@ -142,6 +142,7 @@ namespace SR_GTYPES_NS {
         createInfo.colors = &m_colors;
         createInfo.sampleCount = m_currentSampleCount;
         createInfo.layersCount = m_layersCount;
+        createInfo.arrayLayersCount = m_arrayLayersCount;
         createInfo.features = m_features;
 
         if (!GetPipeline()->AllocateFrameBuffer(createInfo)) {
@@ -351,6 +352,11 @@ namespace SR_GTYPES_NS {
 
     void Framebuffer::SetLayersCount(uint32_t layersCount) {
         m_layersCount = layersCount;
+        m_dirty = true;
+    }
+
+    void Framebuffer::SetArrayLayersCount(uint32_t arrayLayersCount) {
+        m_arrayLayersCount = arrayLayersCount;
         m_dirty = true;
     }
 

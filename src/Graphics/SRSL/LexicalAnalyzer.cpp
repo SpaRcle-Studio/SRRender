@@ -338,6 +338,11 @@ namespace SR_SRSL_NS {
                 if (!m_states.empty() && m_states.back() == LXAState::FunctionBody) {
                     m_states.pop_back();
 
+                    if (m_lexicalTree.back()->lexicalTree.empty()) {
+                        m_result = SRSLResult(SRSLReturnCode::InvalidFunction, GetCurrentLexem());
+                        return;
+                    }
+
                     auto&& pFunction = dynamic_cast<SRSLFunction*>(m_lexicalTree.back()->lexicalTree.back());
                     if (!pFunction) {
                         m_result = SRSLResult(SRSLReturnCode::InvalidFunction, GetCurrentLexem());

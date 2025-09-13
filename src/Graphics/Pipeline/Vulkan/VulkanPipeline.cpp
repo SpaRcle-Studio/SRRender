@@ -255,7 +255,7 @@ namespace SR_GRAPH_NS {
 
         std::vector<const char*> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-            VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME
+            //VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME
             //VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME,
         };
 
@@ -878,6 +878,7 @@ namespace SR_GRAPH_NS {
                 .pDepth = createInfo.pDepth,
                 .sampleCount = createInfo.sampleCount,
                 .layersCount = createInfo.layersCount,
+                .arrayLayersCount = createInfo.arrayLayersCount,
                 .oldColorAttachments = colorBuffers,
                 .inputColorAttachments = formats,
                 .pOutputColorAttachments = &colorBuffers,
@@ -1051,13 +1052,14 @@ namespace SR_GRAPH_NS {
                 shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_3);
                 shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
 
-                if (!shader.parse(&DefaultTBuiltInResource, 450, false, EShMsgDefault)) {
+                EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+                if (!shader.parse(&DefaultTBuiltInResource, 450, false, messages)) {
                     SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to parse shader: {}\n{}", input, shader.getInfoLog());
                     return {};
                 }
 
                 program.addShader(&shader);
-                if (!program.link(EShMsgDefault)) {
+                if (!program.link(messages)) {
                     SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to link shader program: {}\n{}", input, program.getInfoLog());
                     return {};
                 }
@@ -1851,7 +1853,7 @@ namespace SR_GRAPH_NS {
             vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
         }
 
-        vkCmdDraw(m_currentCmd, count, 1, 0, 0);
+        vkCmdDraw(m_currentCmd, count, m_drawInstancesCount, 0, 0);
     }
 
     void VulkanPipeline::DrawIndices(uint32_t count) {
@@ -1876,7 +1878,7 @@ namespace SR_GRAPH_NS {
             vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
         }
 
-        vkCmdDrawIndexed(m_currentCmd, count, 1, 0, 0, 0);
+        vkCmdDrawIndexed(m_currentCmd, count, m_drawInstancesCount, 0, 0, 0);
     }
 
     void VulkanPipeline::SetVSyncEnabled(bool enabled) {

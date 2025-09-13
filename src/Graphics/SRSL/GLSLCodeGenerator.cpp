@@ -76,6 +76,11 @@ namespace SR_SRSL_NS {
         /// code += "#extension GL_EXT_shader_atomic_float : enable\n\n";
         /// code += "#extension GL_ARB_shader_image_load_store : enable\n\n";
 
+        if (m_shader->GetUseStack()->IsVariableUsed("gl_Layer")) {
+            code += "#extension GL_ARB_shader_viewport_layer_array : enable\n\n";
+            code += "#extension GL_NV_viewport_array2 : enable\n\n";
+        }
+
         if (auto&& vertexLocations = GenerateInputLocations(stage); !vertexLocations.empty()) {
             code += vertexLocations + "\n";
         }

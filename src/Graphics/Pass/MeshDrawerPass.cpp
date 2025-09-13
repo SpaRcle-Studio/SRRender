@@ -136,6 +136,8 @@ namespace SR_GRAPH_NS {
             m_shaderMacros.SetParam(key, value);
         }
 
+        UpdateShaderDefines(m_shaderMacros);
+
         if (m_renderLayers == 0) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("MeshDrawerPass::Init() : layers count is 0!");
             return false;

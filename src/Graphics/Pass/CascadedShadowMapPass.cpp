@@ -23,6 +23,27 @@ namespace SR_GRAPH_NS {
         Super::PostUpdate();
     }
 
+    void CascadedShadowMapPass::UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const {
+        if (m_instancing) {
+            defines.AddDefine("CASCADES_INSTANCING");
+        }
+        Super::UpdateShaderDefines(defines);
+    }
+
+    bool CascadedShadowMapPass::Render() {
+        SR_TRACY_ZONE;
+
+        auto&& pPipeline = GetPipeline();
+        auto&& pFrameBuffer = pPipeline->GetCurrentFrameBuffer();
+        const uint32_t layersCount = pFrameBuffer && m_instancing ? pFrameBuffer->GetArrayLayersCount() : 1;
+
+        pPipeline->SetDrawInstancesCount(layersCount);
+        const bool result = Super::Render();
+        pPipeline->ResetDrawInstancesCount();
+
+        return result;
+    }
+
     void CascadedShadowMapPass::Prepare() {
         SR_TRACY_ZONE;
         Super::Prepare();
@@ -32,9 +53,15 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         auto&& pCamera = GetCamera();
+        auto&& pFrameBuffer = GetPipeline()->GetCurrentFrameBuffer();
+        if (!pCamera || !pFrameBuffer) {
+            return;
+
+        }
+        const uint32_t layersCount = m_instancing ? pFrameBuffer->GetArrayLayersCount() : GetLayersCount();
 
         std::vector<float_t> cascadeSplits;
-        cascadeSplits.resize(GetLayersCount());
+        cascadeSplits.resize(layersCount);
 
         m_cascadeMatrices.resize(4);
         m_cascadeSplitDepths.resize(4);
@@ -47,8 +74,8 @@ namespace SR_GRAPH_NS {
         const float_t range = maxZ - minZ;
         const float_t ratio = maxZ / minZ;
 
-        for (uint32_t i = 0; i < GetLayersCount(); i++) {
-            const float_t p = static_cast<float_t>(i + 1) / static_cast<float_t>(GetLayersCount());
+        for (uint32_t i = 0; i < layersCount; i++) {
+            const float_t p = static_cast<float_t>(i + 1) / static_cast<float_t>(layersCount);
             const float_t log = minZ * std::pow(ratio, p);
             const float_t uniform = minZ + range * p;
             const float_t d = m_cascadeSplitLambda * (log - uniform) + uniform;
@@ -57,7 +84,7 @@ namespace SR_GRAPH_NS {
 
         float_t lastSplitDist = 0.0;
 
-        for (uint32_t i = 0; i < GetLayersCount(); i++) {
+        for (uint32_t i = 0; i < layersCount; i++) {
             const float_t splitDist = cascadeSplits[i];
 
             SR_MATH_NS::FVector3 frustumCorners[8] = {

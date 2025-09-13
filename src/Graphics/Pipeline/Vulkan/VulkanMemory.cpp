@@ -32,6 +32,7 @@ namespace SR_GRAPH_NS::VulkanTools {
             info.inputColorAttachments,
             info.width, info.height,
             info.layersCount,
+            info.arrayLayersCount,
             1.f /** scale */,
             info.sampleCount,
             vkImageAspect,
@@ -58,10 +59,11 @@ namespace SR_GRAPH_NS::VulkanTools {
             }
         }
 
-        info.pDepth->subLayers.resize(pFBO->AllocateDepthTextureReferences().size());
+        auto&& depthTextures = pFBO->AllocateDepthTextureReferences();
+        info.pDepth->subLayers.resize(depthTextures.size());
         for (uint32_t i = 0; i < info.pDepth->subLayers.size(); ++i) {
             info.pDepth->subLayers[i].resize(info.maxFrames, SR_ID_INVALID);
-            info.pDepth->subLayers[i][info.frame] = m_texturePool.Add(pFBO->AllocateDepthTextureReferences()[i]);
+            info.pDepth->subLayers[i][info.frame] = m_texturePool.Add(depthTextures[i]);
         }
 
         //for (auto&& pTexture : pFBO->AllocateDepthTextureReferences()) {
@@ -79,6 +81,7 @@ namespace SR_GRAPH_NS::VulkanTools {
 
         pFBO->SetSampleCount(info.sampleCount);
         pFBO->SetLayersCount(info.layersCount);
+        pFBO->SetArrayLayersCount(info.arrayLayersCount);
         pFBO->SetDepthAspect(vkImageAspect);
         pFBO->SetFeatures(info.features);
 
