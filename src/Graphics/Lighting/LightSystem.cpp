@@ -8,80 +8,79 @@
 
 namespace SR_GRAPH_NS {
     LightSystem::LightSystem(RenderScenePtr pRenderScene)
-        : SR_UTILS_NS::NonCopyable()
+        : Super()
         , m_renderScene(pRenderScene)
     {
-        // float angle = glm::radians(3.f * 360.0f);
-        // float radius = 20.0f;
-        // m_position = glm::vec3(cos(angle) * radius, -radius, sin(angle) * radius);
+        m_directionalLightDir = SR_MATH_NS::FVector3(20, 60, 5).Normalize();
     }
 
     LightSystem::~LightSystem() {
-        SRAssert(m_directionalLights.empty());
-        SRAssert(m_pointLights.empty());
+        for (auto& lightSet : m_lights) {
+            SRAssert(lightSet.empty());
+        }
     }
 
     void LightSystem::Register(ILightComponent* pLightComponent) {
-        if (!pLightComponent) {
-            SRHalt("LightSystem::Register() : PointLight is nullptr!");
+        if (!SRVerify(pLightComponent)) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
-        switch (pLightComponent->GetLightType()) {
-            case LightType::Directional:
-                m_directionalLights.insert(dynamic_cast<DirectionalLight*>(pLightComponent));
-                break;
-            case LightType::Point:
-                m_pointLights.insert(dynamic_cast<PointLight*>(pLightComponent));
-                break;
-            case LightType::Area:
-                m_areaLights.insert(dynamic_cast<AreaLight*>(pLightComponent));
-                break;
-            case LightType::Spot:
-                m_spotLights.insert(dynamic_cast<SpotLight*>(pLightComponent));
-                break;
-            case LightType::Probe:
-                m_probeLights.insert(dynamic_cast<ProbeLight*>(pLightComponent));
-                break;
-            default:
-                SRHalt0();
-                break;
+        const uint32_t index = SR_UTILS_NS::EnumReflector::AsInt(pLightComponent->GetLightType());
+
+        if (m_lights[index].find(pLightComponent) != m_lights[index].end()) {
+            SRHalt("LightSystem::Register() : light component is already registered!");
+            return;
         }
 
+        m_lights[index].insert(pLightComponent);
         m_renderScene->SetDirty();
+
+        OnLightTransformChanged(pLightComponent);
     }
 
     void LightSystem::Remove(ILightComponent* pLightComponent) {
-        switch (pLightComponent->GetLightType()) {
-            case LightType::Directional:
-                m_directionalLights.erase(dynamic_cast<DirectionalLight*>(pLightComponent));
-                break;
-            case LightType::Point:
-                m_pointLights.erase(dynamic_cast<PointLight*>(pLightComponent));
-                break;
-            case LightType::Area:
-                m_areaLights.erase(dynamic_cast<AreaLight*>(pLightComponent));
-                break;
-            case LightType::Spot:
-                m_spotLights.erase(dynamic_cast<SpotLight*>(pLightComponent));
-                break;
-            case LightType::Probe:
-                m_probeLights.erase(dynamic_cast<ProbeLight*>(pLightComponent));
-                break;
-            default:
-                SRHalt0();
-                break;
+        if (!SRVerify(pLightComponent)) SR_UNLIKELY_ATTRIBUTE {
+            return;
         }
+
+        const uint32_t index = SR_UTILS_NS::EnumReflector::AsInt(pLightComponent->GetLightType());
+
+        auto&& pIt = m_lights[index].find(pLightComponent);
+        if (pIt == m_lights[index].end()) {
+            SRHalt("LightSystem::Remove() : light component is not registered!");
+            return;
+        }
+
+        m_lights[index].erase(pIt);
+        m_renderScene->SetDirty();
     }
 
-    void LightSystem::SetDirectionalLightPosition(const SR_MATH_NS::FVector3& position) noexcept {
-        m_position = position;
+    void LightSystem::OnLightTransformChanged(ILightComponent* pLightComponent) {
+        SR_TRACY_ZONE;
+
+        if (!SRVerify(pLightComponent)) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
+        const auto type = pLightComponent->GetLightType();
+        const uint32_t index = SR_UTILS_NS::EnumReflector::AsInt(type);
+        auto&& pIt = m_lights[index].find(pLightComponent);
+        if (pIt == m_lights[index].end()) {
+            SRHalt("LightSystem::OnLightTransformChanged() : light component is not registered!");
+            return;
+        }
+
+        if (type == LightType::Directional) {
+            m_directionalLightDir = -pLightComponent->GetTransform()->Forward().Normalize();
+        }
+
+        m_renderScene->SetDirty();
         m_renderScene->GetRenderStrategy()->ForEachMesh([](SR_GTYPES_NS::Mesh* pMesh) {
             pMesh->MarkUniformsDirty();
         });
     }
 
     SR_MATH_NS::FVector3 LightSystem::GetDirectionalLightDirection() const noexcept {
-        return -m_position.Normalize();
+        return m_directionalLightDir;
     }
 }

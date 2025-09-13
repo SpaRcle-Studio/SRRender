@@ -4,6 +4,8 @@
 
 #include <Graphics/Lighting/ProbeLight.h>
 
+#include <Codegen/ProbeLight.generated.hpp>
+
 namespace SR_GRAPH_NS {
 
 }

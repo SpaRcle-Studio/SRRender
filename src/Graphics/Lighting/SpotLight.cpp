@@ -4,6 +4,8 @@
 
 #include <Graphics/Lighting/SpotLight.h>
 
+#include <Codegen/SpotLight.generated.hpp>
+
 namespace SR_GRAPH_NS {
 
 }

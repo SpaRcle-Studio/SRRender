@@ -52,13 +52,8 @@ namespace SR_GRAPH_UI_NS {
 
         const BaseMaterial::Ptr pMaterial = SRNew<SR_GRAPH_NS::UniqueMaterial>();
 
-        //if (mode == GizmoMeshLoadMode::Selection) {
-        //    pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo-selection.srsl");
-        //}
-        //else {
         pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
         pMaterial->SetColor("color", GetColorByOperation(operation));
-        //}
 
         pMesh->SetMaterial(pMaterial);
 

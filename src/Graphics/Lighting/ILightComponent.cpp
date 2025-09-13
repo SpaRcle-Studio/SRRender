@@ -4,23 +4,35 @@
 
 #include <Graphics/Lighting/LightSystem.h>
 #include <Graphics/Lighting/ILightComponent.h>
+#include <Graphics/Render/RenderScene.h>
+
+#include <Codegen/ILightComponent.generated.hpp>
 
 namespace SR_GRAPH_NS {
-
     void ILightComponent::OnAttached() {
         if (auto&& pRenderScene = GetRenderScene()) {
             pRenderScene->GetLightSystem()->Register(this);
+            m_isLightRegistered = true;
         }
-        Component::OnAttached();
+        Super::OnAttached();
     }
 
     void ILightComponent::OnDestroy() {
-        RenderScene* pRenderScene = TryGetRenderScene();
-
-        if (pRenderScene) {
+        if (auto&& pRenderScene = TryGetRenderScene()) {
             pRenderScene->GetLightSystem()->Remove(this);
+            m_isLightRegistered = false;
         }
 
-        Component::OnDestroy();
+        Super::OnDestroy();
+    }
+
+    void ILightComponent::OnMatrixDirty() {
+        if (!m_isLightRegistered) {
+            return;
+        }
+
+        if (auto&& pRenderScene = TryGetRenderScene()) {
+            pRenderScene->GetLightSystem()->OnLightTransformChanged(this);
+        }
     }
 }

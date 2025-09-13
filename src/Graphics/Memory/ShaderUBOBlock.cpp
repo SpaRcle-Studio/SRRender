@@ -5,13 +5,21 @@
 #include <Graphics/Memory/ShaderUBOBlock.h>
 
 namespace SR_GRAPH_NS::Memory {
+    ShaderUBOBlock::ShaderUBOBlock() {
+        m_defaultValues.reserve(32);
+    }
+
     ShaderUBOBlock::~ShaderUBOBlock() {
         DeInit();
     }
 
     void ShaderUBOBlock::Append(uint64_t hashId, uint64_t size, uint64_t alignedSize, bool hidden) {
+        SR_TRACY_ZONE;
+
         SRAssert2(size > 1, "Size must be greater than 1!");
         SRAssert2(alignedSize > 1, "Aligned size must be greater than 1!");
+        SRAssert2(size < std::numeric_limits<uint32_t>::max(), "Size is too large!");
+        SRAssert2(alignedSize < std::numeric_limits<uint32_t>::max(), "Aligned size is too large!");
 
         ++m_dataCount;
 
@@ -23,6 +31,8 @@ namespace SR_GRAPH_NS::Memory {
             .offset = static_cast<uint64_t>(m_size + offset),
             .hidden = hidden,
         };
+
+        SRAssert2(subBlock.offset < std::numeric_limits<uint32_t>::max(), "Offset is too large!");
 
         /// Reallocation
         {
@@ -85,18 +95,20 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     void ShaderUBOBlock::DeInit() {
+        FreeMemory(m_memory);
+
         if (m_data) {
             delete[] m_data;
             m_data = nullptr;
         }
-
-        FreeMemory(m_memory);
 
         m_size = 0;
         m_binding = SR_ID_INVALID;
 
         m_dataCount = 0;
         m_alignedBlock = 0;
+
+        m_defaultValues.clear();
 
         m_initialized = false;
     }
@@ -108,9 +120,13 @@ namespace SR_GRAPH_NS::Memory {
 
         SRAssert(m_initialized);
 
-        for (uint8_t i = 0; i < m_dataCount; ++i) {
+        for (uint32_t i = 0; i < m_dataCount; ++i) {
             SubBlock& pSubBlock = m_data[i];
             if (pSubBlock.hashId == hashId) SR_UNLIKELY_ATTRIBUTE {
+                if (pSubBlock.offset + pSubBlock.size > m_size) SR_UNLIKELY_ATTRIBUTE {
+                    SRHalt("Sub block is out of range!");
+                    return;
+                }
                 memcpy(m_memory + pSubBlock.offset, pData, pSubBlock.size);
                 return;
             }
@@ -150,7 +166,7 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     bool ShaderUBOBlock::HasField(uint64_t hashId) const noexcept {
-        for (uint8_t i = 0; i < m_dataCount; ++i) {
+        for (uint32_t i = 0; i < m_dataCount; ++i) {
             if (m_data[i].hashId == hashId) {
                 return true;
             }
@@ -225,12 +241,13 @@ namespace SR_GRAPH_NS::Memory {
     void ShaderUBOBlock::SetDefault(const SR_UTILS_NS::StringAtom& name, const ShaderPropertyVariant& value) {
         SR_TRACY_ZONE;
         SetField(name.GetHash(), value);
-        for (uint8_t i = 0; i < m_dataCount; ++i) {
+
+        for (uint32_t i = 0; i < m_dataCount; ++i) {
             if (m_data[i].hashId == name.GetHash()) {
                 m_defaultValues.push_back(DefaultValue {
                     .name = name,
-                    .size = static_cast<uint16_t>(m_data[i].size),
-                    .offset = static_cast<uint16_t>(m_data[i].offset),
+                    .size = static_cast<uint32_t>(m_data[i].size),
+                    .offset = static_cast<uint32_t>(m_data[i].offset),
                     .value = value,
                 });
                 return;
@@ -246,6 +263,11 @@ namespace SR_GRAPH_NS::Memory {
         }
         memset(m_memory, 0, m_size);
         for (auto&& defaultValue : m_defaultValues) {
+            if (defaultValue.offset + defaultValue.size > m_size) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("Default value is out of range!");
+                continue;
+            }
+
             std::visit([this, &defaultValue](ShaderPropertyVariant&& arg) {
                 if (std::holds_alternative<int32_t>(arg)) {
                     const auto v = std::get<int32_t>(arg);

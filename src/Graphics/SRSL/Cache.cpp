@@ -661,15 +661,15 @@ namespace SR_GRAPH_NS {
         for (size_t i = 0; i < defaultValuesSize; ++i) {
             Memory::ShaderUBOBlock::DefaultValue defaultValue;
             defaultValue.name = SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal);
-            defaultValue.size = SR_UTILS_NS::MarshalUtils::LoadValue<uint16_t>(marshal);
-            defaultValue.offset = SR_UTILS_NS::MarshalUtils::LoadValue<uint16_t>(marshal);
+            defaultValue.size = SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal);
+            defaultValue.offset = SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal);
             defaultValue.value = SR_SRSL_NS::Details::LoadShaderPropertyVariant(marshal);
             block.m_defaultValues.push_back(defaultValue);
         }
 
         SRAssert(!block.m_data);
 
-        block.m_dataCount = SR_UTILS_NS::MarshalUtils::LoadValue<uint8_t>(marshal);
+        block.m_dataCount = SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal);
         if (block.m_dataCount > 0) {
             block.m_data = new Memory::ShaderUBOBlock::SubBlock[block.m_dataCount];
             marshal.ReadBlock(block.m_data);

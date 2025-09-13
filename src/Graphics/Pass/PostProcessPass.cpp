@@ -6,6 +6,7 @@
 #include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Lighting/LightSystem.h>
 
 #include <Codegen/PostProcessPass.generated.hpp>
 
@@ -89,6 +90,8 @@ namespace SR_GRAPH_NS {
                 resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();
             }
 
+            auto&& pLightSystem = GetRenderScene()->GetLightSystem();
+
             pShader->SetVec2(SHADER_RESOLUTION, resolution);
 
             pShader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
@@ -103,6 +106,7 @@ namespace SR_GRAPH_NS {
                 pShader->SetMat4(SHADER_CAMERA_NEAR, pCamera->GetNear());
                 pShader->SetMat4(SHADER_INVERSE_PROJECTION_MATRIX, pCamera->GetInverseProjection());
                 pShader->SetMat4(SHADER_INVERSE_VIEW_MATRIX, pCamera->GetInverseViewTranslate());
+                pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, pLightSystem->GetDirectionalLightDirection());
             }
 
             m_material->Use();

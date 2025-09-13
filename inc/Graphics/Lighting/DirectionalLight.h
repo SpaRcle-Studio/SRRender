@@ -9,9 +9,11 @@
 
 namespace SR_GRAPH_NS {
     class DirectionalLight : public ILightComponent {
+        using Super = ILightComponent;
+        SR_CLASS()
     public:
         SR_NODISCARD LightType GetLightType() const override { return LightType::Directional; };
-        void OnAttached() override;
+
     };
 }
 

@@ -4,6 +4,8 @@
 
 #include <Graphics/Lighting/AreaLight.h>
 
+#include <Codegen/AreaLight.generated.hpp>
+
 namespace SR_GRAPH_NS {
 
 }

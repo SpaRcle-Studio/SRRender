@@ -12,7 +12,7 @@ namespace SR_GRAPH_NS {
 
         if (auto&& pCamera = GetCamera(); pCamera && !pCamera->IsEditorCamera()) {
             if (CheckCamera()) {
-                m_directionalLightPosition = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
+                m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection();
                 m_cameraPosition = pCamera->GetPosition();
                 m_cameraRotation = pCamera->GetRotation();
                 m_screenSize = pCamera->GetSize();
@@ -32,7 +32,6 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         auto&& pCamera = GetCamera();
-        const auto lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
 
         std::vector<float_t> cascadeSplits;
         cascadeSplits.resize(GetLayersCount());
@@ -101,9 +100,7 @@ namespace SR_GRAPH_NS {
             auto&& maxExtents = SR_MATH_NS::FVector3(radius);
             SR_MATH_NS::FVector3 minExtents = -maxExtents;
 
-            SR_MATH_NS::FVector3 lightDir = (-lightPos).Normalize();
-
-            SR_MATH_NS::Matrix4x4 lightViewMatrix = SR_MATH_NS::Matrix4x4::LookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, SR_MATH_NS::FVector3(0.0f, 1.0f, 0.0f));
+            SR_MATH_NS::Matrix4x4 lightViewMatrix = SR_MATH_NS::Matrix4x4::LookAt(frustumCenter + m_directionalLightDirection * -minExtents.z, frustumCenter, SR_MATH_NS::FVector3(0.0f, 1.0f, 0.0f));
             auto&& lightOrthoMatrix = SR_MATH_NS::Matrix4x4::Ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
 
             m_cascadeMatrices[i] = lightOrthoMatrix * lightViewMatrix;
@@ -134,7 +131,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        if (m_directionalLightPosition != GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition()) SR_UNLIKELY_ATTRIBUTE {
+        if (m_directionalLightDirection != GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection()) SR_UNLIKELY_ATTRIBUTE {
             goto dirty;
         }
 
@@ -153,7 +150,7 @@ namespace SR_GRAPH_NS {
         return false;
 
     dirty:
-        m_directionalLightPosition = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
+        m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection();
         m_cameraPosition = pCamera->GetPosition();
         m_cameraRotation = pCamera->GetRotation();
         m_screenSize = pCamera->GetSize();
@@ -173,7 +170,7 @@ namespace SR_GRAPH_NS {
         /// Если обновлять только в этом месте, то уже в игровом режиме будут артефакты.
         if (auto&& pCamera = GetCamera(); pCamera && pCamera->IsEditorCamera()) {
             if (CheckCamera()) {
-                m_directionalLightPosition = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
+                m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection();
                 m_cameraPosition = pCamera->GetPosition();
                 m_cameraRotation = pCamera->GetRotation();
                 m_screenSize = pCamera->GetSize();
@@ -183,7 +180,6 @@ namespace SR_GRAPH_NS {
 
         pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
 
-        const auto lightPos = GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition();
-        pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, lightPos);
+        pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, m_directionalLightDirection);
     }
 }

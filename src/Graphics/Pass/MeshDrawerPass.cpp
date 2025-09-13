@@ -92,7 +92,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_uniforms.shared.light) {
-            pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_POSITION, GetRenderScene()->GetLightSystem()->GetDirectionalLightPosition());
+            pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection());
         }
 
         for (SR_UTILS_NS::StringAtom anotherPass : m_uniforms.shared.useFromPass) {

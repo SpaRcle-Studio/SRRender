@@ -9,9 +9,12 @@
 
 namespace SR_GRAPH_NS {
     class PointLight : public ILightComponent {
+        SR_CLASS()
     public:
+        SR_NODISCARD LightType GetLightType() const override { return LightType::Point; };
 
     protected:
+        /// @property
         float_t m_radius = 1.f;
 
     };
