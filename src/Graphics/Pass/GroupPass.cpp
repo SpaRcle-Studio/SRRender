@@ -45,11 +45,11 @@ namespace SR_GRAPH_NS {
     }
 
     bool GroupPass::PreRender() {
+        SR_TRACY_ZONE;
         bool hasDrawData = false;
 
         for (auto&& pPass : m_passes) {
             if (pPass->HasPreRender()) {
-                SR_TRACY_ZONE_S(pPass->GetPassName().data());
                 pPass->Bind();
                 hasDrawData |= pPass->PreRender();
             }
@@ -59,11 +59,11 @@ namespace SR_GRAPH_NS {
     }
 
     bool GroupPass::Render() {
+        SR_TRACY_ZONE;
         bool hasDrawData = false;
 
         for (auto&& pPass : m_passes) {
             if (pPass->HasRender()) {
-                SR_TRACY_ZONE_S(pPass->GetPassName().data());
                 pPass->Bind();
                 hasDrawData |= pPass->Render();
             }
@@ -73,10 +73,10 @@ namespace SR_GRAPH_NS {
     }
 
     bool GroupPass::PostRender() {
+        SR_TRACY_ZONE;
         bool hasDrawData = false;
         for (auto&& pPass : m_passes) {
             if (pPass->HasPostRender()) {
-                SR_TRACY_ZONE_S(pPass->GetPassName().data());
                 pPass->Bind();
                 hasDrawData |= pPass->PostRender();
             }
@@ -85,9 +85,9 @@ namespace SR_GRAPH_NS {
     }
 
     void GroupPass::Update() {
+        SR_TRACY_ZONE;
         for (auto&& pPass : m_passes) {
             if (pPass->HasUpdate()) {
-                SR_TRACY_ZONE_S(pPass->GetPassName().data());
                 pPass->Bind();
                 pPass->Update();
             }
@@ -97,24 +97,24 @@ namespace SR_GRAPH_NS {
 
     bool GroupPass::Overlay() {
         bool hasDrawData = false;
+        SR_TRACY_ZONE;
         for (auto&& pPass : m_passes) {
-            SR_TRACY_ZONE_S(pPass->GetPassName().data());
             hasDrawData |= pPass->Overlay();
         }
         return hasDrawData;
     }
 
     void GroupPass::OnResize(const SR_MATH_NS::UVector2 &size) {
+        SR_TRACY_ZONE;
         for (auto&& pPass : m_passes) {
-            SR_TRACY_ZONE_S(pPass->GetPassName().data());
             pPass->OnResize(size);
         }
         Super::OnResize(size);
     }
 
     void GroupPass::OnMultisampleChanged() {
+        SR_TRACY_ZONE;
         for (auto&& pPass : m_passes) {
-            SR_TRACY_ZONE_S(pPass->GetPassName().data());
             pPass->OnMultisampleChanged();
         }
         Super::OnMultisampleChanged();
@@ -135,8 +135,8 @@ namespace SR_GRAPH_NS {
     }
 
     void GroupPass::PostUpdate() {
+        SR_TRACY_ZONE;
         for (auto&& pPass : m_passes) {
-            SR_TRACY_ZONE_S(pPass->GetPassName().data());
             pPass->PostUpdate();
         }
         Super::PostUpdate();

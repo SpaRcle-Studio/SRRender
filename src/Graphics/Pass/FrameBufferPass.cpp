@@ -17,6 +17,8 @@ namespace SR_GRAPH_NS {
     }
 
     void FrameBufferPass::Update() {
+        SR_TRACY_ZONE;
+
         m_data.UpdateFrameBuffer([this]() {
             GroupPass::Update();
         });

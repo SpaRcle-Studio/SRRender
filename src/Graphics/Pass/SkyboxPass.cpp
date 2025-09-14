@@ -78,6 +78,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        SR_TRACY_ZONE;
+
         auto&& pShader = m_skybox->GetShader();
         auto&& pCamera = GetCamera();
 

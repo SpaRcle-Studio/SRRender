@@ -6,7 +6,7 @@
 #include <Graphics/Memory/CameraManager.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Window/Window.h>
-#include <Graphics/Pass/SkyboxPass.h>
+#include <Graphics/Loaders/RenderTechniquePostProcess.h>
 
 #include <Utils/Types/DataStorage.h>
 #include <Utils/Types/SafePtrLockGuard.h>
@@ -112,13 +112,8 @@ namespace SR_GTYPES_NS {
 
         m_renderTechnique.pTechnique = FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>();
 
-        if (m_type == CameraType::EditorPrefab && m_renderTechnique.pTechnique) {
-            if (auto&& pSkyboxPass = dynamic_cast<SkyboxPass*>(m_renderTechnique.pTechnique->FindPass(SkyboxPass::GetClassStaticName()))) {
-                pSkyboxPass->SetSkybox(GetRenderScene()->GetContext()->GetSettings().editorPrefabSkybox);
-            }
-        }
-
         if (m_renderTechnique.pTechnique) {
+            SR_GRAPH_NS::Details::PostProcessRenderTechnique(m_renderTechnique.pTechnique.Get(), GetRenderScene()->GetContext(), m_type);
             m_renderTechnique.pTechnique->SetCamera(this);
         }
         else {

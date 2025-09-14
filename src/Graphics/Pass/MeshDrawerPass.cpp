@@ -46,6 +46,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool MeshDrawerPass::Render() {
+        SR_TRACY_ZONE;
+
         const uint32_t layer = GetPipeline()->GetCurrentFrameBufferLayer();
         if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("MeshDrawerPass::Render() : out of bounds! Layer: {}, Queues: {}", layer, m_renderQueues.size());
@@ -56,6 +58,8 @@ namespace SR_GRAPH_NS {
     }
 
     void MeshDrawerPass::Update() {
+        SR_TRACY_ZONE;
+
         const uint32_t layer = GetPipeline()->GetCurrentFrameBufferLayer();
         if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("MeshDrawerPass::Update() : out of bounds! Layer: {}, Queues: {}", layer, m_renderQueues.size());
@@ -95,10 +99,8 @@ namespace SR_GRAPH_NS {
             pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection());
         }
 
-        for (SR_UTILS_NS::StringAtom anotherPass : m_uniforms.shared.useFromPass) {
-            if (auto&& pAnotherPass = GetTechnique()->FindPass(anotherPass)) {
-                pAnotherPass->UseUniformsFromAnotherPass(pShader);
-            }
+        for (auto&& pAnotherPass : m_useSharedFromPass) {
+            pAnotherPass->UseUniformsFromAnotherPass(pShader);
         }
     }
 
@@ -148,6 +150,13 @@ namespace SR_GRAPH_NS {
         m_renderQueues.resize(m_renderLayers);
         for (uint8_t i = 0; i < m_renderLayers; ++i) {
             m_renderQueues[i] = AllocateRenderQueue();
+        }
+
+        m_useSharedFromPass.clear();
+        for (SR_UTILS_NS::StringAtom anotherPass : m_uniforms.shared.useFromPass) {
+            if (auto&& pAnotherPass = GetTechnique()->FindPass(anotherPass)) {
+                m_useSharedFromPass.emplace_back(pAnotherPass);
+            }
         }
 
         return Super::Init();

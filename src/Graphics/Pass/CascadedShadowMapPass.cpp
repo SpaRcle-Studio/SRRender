@@ -10,7 +10,8 @@ namespace SR_GRAPH_NS {
     void CascadedShadowMapPass::PostUpdate() {
         SR_TRACY_ZONE;
 
-        if (auto&& pCamera = GetCamera(); pCamera && !pCamera->IsEditorCamera()) {
+        /// обновляем строго в конце, чтобы не дергались тени
+        if (auto&& pCamera = GetCamera()) {
             if (CheckCamera()) {
                 m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection();
                 m_cameraPosition = pCamera->GetPosition();
@@ -34,10 +35,12 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         auto&& pPipeline = GetPipeline();
-        auto&& pFrameBuffer = pPipeline->GetCurrentFrameBuffer();
-        const uint32_t layersCount = pFrameBuffer && m_instancing ? pFrameBuffer->GetArrayLayersCount() : 1;
 
-        pPipeline->SetDrawInstancesCount(layersCount);
+        if (auto&& pFrameBuffer = pPipeline->GetCurrentFrameBuffer()) {
+            m_cascadeCount = m_instancing ? pFrameBuffer->GetArrayLayersCount() : pFrameBuffer->GetLayersCount();
+        }
+
+        pPipeline->SetDrawInstancesCount(m_instancing ? m_cascadeCount : 1);
         const bool result = Super::Render();
         pPipeline->ResetDrawInstancesCount();
 
@@ -53,15 +56,13 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         auto&& pCamera = GetCamera();
-        auto&& pFrameBuffer = GetPipeline()->GetCurrentFrameBuffer();
-        if (!pCamera || !pFrameBuffer) {
+        if (!pCamera) {
             return;
 
         }
-        const uint32_t layersCount = m_instancing ? pFrameBuffer->GetArrayLayersCount() : GetLayersCount();
 
         std::vector<float_t> cascadeSplits;
-        cascadeSplits.resize(layersCount);
+        cascadeSplits.resize(m_cascadeCount);
 
         m_cascadeMatrices.resize(4);
         m_cascadeSplitDepths.resize(4);
@@ -74,8 +75,8 @@ namespace SR_GRAPH_NS {
         const float_t range = maxZ - minZ;
         const float_t ratio = maxZ / minZ;
 
-        for (uint32_t i = 0; i < layersCount; i++) {
-            const float_t p = static_cast<float_t>(i + 1) / static_cast<float_t>(layersCount);
+        for (uint32_t i = 0; i < m_cascadeCount; i++) {
+            const float_t p = static_cast<float_t>(i + 1) / static_cast<float_t>(m_cascadeCount);
             const float_t log = minZ * std::pow(ratio, p);
             const float_t uniform = minZ + range * p;
             const float_t d = m_cascadeSplitLambda * (log - uniform) + uniform;
@@ -84,7 +85,7 @@ namespace SR_GRAPH_NS {
 
         float_t lastSplitDist = 0.0;
 
-        for (uint32_t i = 0; i < layersCount; i++) {
+        for (uint32_t i = 0; i < m_cascadeCount; i++) {
             const float_t splitDist = cascadeSplits[i];
 
             SR_MATH_NS::FVector3 frustumCorners[8] = {
@@ -189,21 +190,6 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         Super::UseSharedUniforms(pShader);
-
-        /// Это полное дерьмо. Я не имею ни малейшего понятия, почему в редакторе надо обновлять каскады тут,
-        /// а в игровой сцене - в PostUpdate()...
-        /// но при всем этом это работает, возможно на других видеокартах будет иной результат...
-        /// Если этого не делать, каскады будут дергаться, и такое воспроизводится только с ними.
-        /// Если обновлять только в этом месте, то уже в игровом режиме будут артефакты.
-        if (auto&& pCamera = GetCamera(); pCamera && pCamera->IsEditorCamera()) {
-            if (CheckCamera()) {
-                m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection();
-                m_cameraPosition = pCamera->GetPosition();
-                m_cameraRotation = pCamera->GetRotation();
-                m_screenSize = pCamera->GetSize();
-                UpdateCascades();
-            }
-        }
 
         pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
 

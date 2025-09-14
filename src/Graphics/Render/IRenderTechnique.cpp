@@ -284,13 +284,7 @@ namespace SR_GRAPH_NS {
         return m_isDead;
     }
 
-    void IRenderTechnique::SetRenderTechniqueData(RenderTechniqueData&& data) {
-        SR_TRACY_ZONE;
-        DeInitPasses();
-        m_dirty = true;
-        m_hasErrors = false;
-        m_data = std::move(data);
-
+    void IRenderTechnique::OnHierarchyChanged() {
         if (auto&& pContext = GetRenderContext()) {
             pContext->SetDirty();
         }
@@ -299,6 +293,16 @@ namespace SR_GRAPH_NS {
             m_data.pass->SetRenderTechnique(this);
             m_data.pass->SetParent(nullptr);
         }
+
+        m_dirty = true;
+    }
+
+    void IRenderTechnique::SetRenderTechniqueData(RenderTechniqueData&& data) {
+        SR_TRACY_ZONE;
+        DeInitPasses();
+        m_hasErrors = false;
+        m_data = std::move(data);
+        OnHierarchyChanged();
     }
 
     BasePass* IRenderTechnique::FindPass(SR_UTILS_NS::StringAtom name) const {

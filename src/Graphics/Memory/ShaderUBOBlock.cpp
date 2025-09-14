@@ -256,11 +256,12 @@ namespace SR_GRAPH_NS::Memory {
     }
 
     void ShaderUBOBlock::ResetDefaultValues() {
-        SR_TRACY_ZONE;
-
         if (!m_memory || m_size == 0) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
+
+        SR_TRACY_ZONE;
+
         memset(m_memory, 0, m_size);
         for (auto&& defaultValue : m_defaultValues) {
             if (defaultValue.offset + defaultValue.size > m_size) SR_UNLIKELY_ATTRIBUTE {

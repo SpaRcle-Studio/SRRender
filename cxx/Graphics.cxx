@@ -20,6 +20,7 @@
 #include "../src/Graphics/Loaders/SRSLParser.cpp"
 #include "../src/Graphics/Loaders/TextureLoader.cpp"
 #include "../src/Graphics/Loaders/ShaderProperties.cpp"
+#include "../src/Graphics/Loaders/RenderTechniquePostProcess.cpp"
 
 #include "../src/Graphics/Memory/SSBO.cpp"
 #include "../src/Graphics/Memory/DescriptorManager.cpp"

@@ -66,6 +66,8 @@ namespace SR_GRAPH_NS {
         /// @customArgs(pick: enabled, filter name: Material, relative: resources)
         /// @customArg(filter value: mat)
         SR_UTILS_NS::Path defaultMaterial = "Engine/Materials/default.mat";
+        /// @property
+        SR_UTILS_NS::StringAtom editorSceneImageName = "SceneView";
 
         /// @property
         std::vector<RenderSettingsPreset> presets;
