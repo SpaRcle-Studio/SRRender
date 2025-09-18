@@ -20,6 +20,10 @@
     #include <imgui/backends/imgui_impl_win32.cpp>
 #endif
 
+#ifdef SR_ANDROID
+    #include <imgui/backends/imgui_impl_android.cpp>
+#endif
+
 #ifdef SR_LINUX
     #include <imgui/backends/imgui_impl_glfw.cpp>
 #endif

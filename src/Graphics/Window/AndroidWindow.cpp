@@ -14,9 +14,20 @@ namespace SR_GRAPH_NS {
     ) {
         auto&& pAndroidApp = (android_app*)SR_PLATFORM_NS::GetInstance();
 
+        SR_LOG("AndroidWindow::Initialize() : Initializing Android window...\n\tName: {}\n\tSize: {}x{}\n\tFullScreen: {}\n\tResizable: {}",
+            name,
+            size.x, size.y,
+            fullScreen ? "true" : "false",
+            resizable ? "true" : "false"
+        );
+
+        m_isValid = true;
+
         pAndroidApp->userData = (void*)this;
         pAndroidApp->onAppCmd = HandleCmd;
         pAndroidApp->onInputEvent = HandleInput;
+
+        m_surfaceSize = size;
 
         return true;
     }

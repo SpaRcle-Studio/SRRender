@@ -114,14 +114,24 @@ namespace SR_GRAPH_NS {
             0,
         };
 
+
         SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: " + fontPath.ToString());
         if (fontPath.Exists()) {
             ImFontConfig font_config;
             font_config.OversampleH = 1; /// Or 2 is the same
             font_config.OversampleV = 1;
             font_config.PixelSnapH = true;
-            m_mainFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), m_fontSize, nullptr, ranges);
-            m_smallFont = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), m_fontSize * 0.75f, nullptr, ranges);
+
+            if (auto&& fontData = SR_PLATFORM_NS::ReadFile(fontPath)) {
+                ImFontConfig config;
+                config.FontDataOwnedByAtlas = false;
+
+                m_mainFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData->c_str(), fontData->size(), m_fontSize, &config, ranges);
+                m_smallFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData->c_str(), fontData->size(), m_fontSize * 0.75f, &config, ranges);
+            }
+            else {
+                SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to read font data!\n\tPath: " + fontPath.ToString());
+            }
         }
         else {
             SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found!\n\tPath: " + fontPath.ToString());
@@ -134,8 +144,11 @@ namespace SR_GRAPH_NS {
             ImFontConfig config;
             config.MergeMode = false;
             config.GlyphMinAdvanceX = 13.0f;
+            config.FontDataOwnedByAtlas = false;
             static const ImWchar icon_ranges[] = { SR_ICON_MIN, SR_ICON_MAX, 0 };
-            m_iconFont = ImGui::GetIO().Fonts->AddFontFromFileTTF(iconsFont.CStr(), m_iconFontSize, &config, icon_ranges);
+            if (auto&& fontData = SR_PLATFORM_NS::ReadFile(iconsFont)) {
+                m_iconFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData->c_str(), fontData->size(), m_iconFontSize, &config, icon_ranges);
+            }
         }
         else {
             SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found! \n\tPath: " + iconsFont.ToString());

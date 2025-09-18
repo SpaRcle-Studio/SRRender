@@ -18,6 +18,10 @@
     #include <imgui/backends/imgui_impl_glfw.h>
 #endif
 
+#ifdef SR_ANDROID
+    #include <imgui/backends/imgui_impl_android.h>
+#endif
+
 namespace SR_GRAPH_NS {
 #ifdef SR_WIN32
     static LRESULT ImGui_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -216,6 +220,9 @@ namespace SR_GRAPH_NS {
         // TODO: check what 'instant callbacks' argument does.
         ImGui_ImplGlfw_InitForVulkan(pWindow->GetImplementation<GLFWWindow>()->GetWindow(), true);
         //ImGui_ImplGlfw_InitForVulkan()
+    #elif defined(SR_ANDROID)
+        auto&& pWindow = m_pipeline->GetWindow();
+        ImGui_ImplAndroid_Init(pWindow->GetImplementation<AndroidWindow>()->GetNativeWindow());
     #else
     #endif
 
@@ -337,6 +344,8 @@ namespace SR_GRAPH_NS {
         #elif defined(SR_LINUX)
             //ImGui_ImplX11_NewFrame();
             ImGui_ImplGlfw_NewFrame();
+        #elif defined(SR_ANDROID)
+            ImGui_ImplAndroid_NewFrame();
         #endif
 
         ImGui::NewFrame();
@@ -443,7 +452,7 @@ namespace SR_GRAPH_NS {
             .Instance                    = pKernel->GetInstance(),
             .PhysicalDevice              = *pKernel->GetDevice(),
             .Device                      = *pKernel->GetDevice(),
-            .QueueFamily                 = pKernel->GetDevice()->GetQueues()->GetGraphicsIndex(),
+            .QueueFamily                 = static_cast<uint32_t>(pKernel->GetDevice()->GetQueues()->GetGraphicsIndex()),
             .Queue                       = pKernel->GetDevice()->GetQueues()->GetGraphicsQueue(),
             .DescriptorPool              = *m_pool,
             .RenderPass                  = m_renderPass,

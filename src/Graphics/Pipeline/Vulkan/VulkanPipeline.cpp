@@ -56,7 +56,10 @@ namespace SR_GRAPH_NS {
         SR_INFO("VulkanPipeline::Destroy() : destroying vulkan pipeline...");
 
     #ifdef SR_RENDER_USE_GLSL_LANG_LIB
-        glslang::FinalizeProcess();
+        if (m_isGlslLangInit) {
+            m_isGlslLangInit = false;
+            glslang::FinalizeProcess();
+        }
     #endif
 
         SR_TRACY_DESTROY(SR_UTILS_NS::TracyType::Vulkan);
@@ -81,7 +84,10 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
     #ifdef SR_RENDER_USE_GLSL_LANG_LIB
-        glslang::InitializeProcess();
+        if (!m_isGlslLangInit) {
+            m_isGlslLangInit = true;
+            glslang::InitializeProcess();
+        }
     #endif
 
         if (!Pipeline::PreInit(info)) {
@@ -94,16 +100,22 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        m_enableValidationDebug = SR_UTILS_NS::Features::Instance().Enabled("VulkanValidation", false);
+
     #ifdef SR_ANDROID
         m_enableValidationLayers = false;
     #else
-        m_enableValidationLayers = SR_UTILS_NS::Features::Instance().Enabled("VulkanValidation", false);
+        m_enableValidationLayers = m_enableValidationDebug;
     #endif
 
         m_kernel = new SR_GRAPH_NS::VulkanKernel(GetThis());
 
         if (m_enableValidationLayers) {
             m_kernel->SetValidationLayersEnabled(true);
+        }
+
+        if (m_enableValidationDebug) {
+            m_kernel->SetValidationDebugEnabled(true);
         }
 
         m_viewport = EvoVulkan::Tools::Initializers::Viewport(1, 1, 0, 0);
@@ -254,7 +266,6 @@ namespace SR_GRAPH_NS {
         }
 
         std::vector<const char*> deviceExtensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             //VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME
             //VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME,
         };

@@ -102,6 +102,10 @@ namespace SR_GTYPES_NS {
             return true;
         }
 
+        if (m_hasErrors) {
+            return false;
+        }
+
         m_wasRendered = false;
 
         if (m_size.HasZero() || m_size.HasNegative()) {

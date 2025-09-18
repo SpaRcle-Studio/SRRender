@@ -382,7 +382,7 @@ namespace SR_SRSL_NS {
         }
 
         /// remove unused ssbo blocks
-        std::erase_if(m_ssboBlocks, [this](const auto& pair) -> bool {
+        std::erase_if(m_ssboBlocks, [](const auto& pair) -> bool {
             return !pair.second.hasUsage;
         });
 
