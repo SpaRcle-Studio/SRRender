@@ -497,7 +497,7 @@ namespace SR_GRAPH_NS {
             SR_TRACY_ZONE_N("Load Evo Vulkan shader");
 
             if (!pShaderProgram->Load(
-                SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("/Cache/Shaders"),
+                SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders"),
                 vkModules,
                 descriptorLayoutBindings.value(),
                 pushConstants

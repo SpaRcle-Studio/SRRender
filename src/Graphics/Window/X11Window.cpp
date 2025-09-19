@@ -68,6 +68,8 @@ namespace SR_GRAPH_NS {
         xcb_flush(m_connection);
 
         m_isValid = true;
+        m_isInitialized = true;
+
         return true;
     }
 

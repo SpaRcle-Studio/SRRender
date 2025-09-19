@@ -437,7 +437,7 @@ namespace SR_GRAPH_NS {
 
     #ifdef SR_WIN32
         ImGui_Platform_CreateWindow = ImGui_ImplWin32_CreateWindow;
-    #elif defined(SR_LINUX)
+    #elif defined(SR_LINUX) || defined(SR_ANDROID)
         //SRHalt("Not yet implemented!");
     #else
         SRHalt("Unsupported platform!");

@@ -96,7 +96,9 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         SR_TRACY_ZONE_TEXT(path);
 
-        const bool cacheEnabled = SR_UTILS_NS::Features::Instance().Enabled("TextureCaching", true);
+        bool cacheEnabled = SR_UTILS_NS::Features::Instance().Enabled("TextureCaching", true);
+        cacheEnabled &= !SR_PLATFORM_NS::IsMobilePlatform(); /// временно отключено
+
         auto&& cache = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Textures");
 
         const uint64_t hashName = cacheEnabled ? SR_HASH(path.ConvertToFileName()) : 0;
@@ -117,8 +119,14 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        auto&& buffer = SR_PLATFORM_NS::ReadFile(path);
+        if (!buffer) {
+            SR_ERROR("TextureLoader::Load() : can not read \"" + path.ToStringRef() + "\" file!");
+            return nullptr;
+        }
+
         int32_t width = 0, height = 0, numComponents = 0;
-        uint8_t* pImgData = stbi_load(path.c_str(), &width, &height, &numComponents, STBI_rgb_alpha);
+        uint8_t* pImgData = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(buffer->data()), static_cast<int32_t>(buffer->size()), &width, &height, &numComponents, STBI_rgb_alpha);
 
         if (!pImgData) {
             std::string reason = stbi_failure_reason() ? stbi_failure_reason() : std::string();

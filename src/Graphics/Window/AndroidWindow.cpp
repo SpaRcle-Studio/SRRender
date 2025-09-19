@@ -5,6 +5,9 @@
 #include <Graphics/Window/AndroidWindow.h>
 
 #include <Utils/Platform/Platform.h>
+#include <Utils/Platform/AndroidEvent.h>
+
+#include <android/input.h>
 
 namespace SR_GRAPH_NS {
     bool AndroidWindow::Initialize(const std::string& name,
@@ -12,8 +15,6 @@ namespace SR_GRAPH_NS {
         const SR_MATH_NS::UVector2& size,
         bool fullScreen, bool resizable
     ) {
-        auto&& pAndroidApp = (android_app*)SR_PLATFORM_NS::GetInstance();
-
         SR_LOG("AndroidWindow::Initialize() : Initializing Android window...\n\tName: {}\n\tSize: {}x{}\n\tFullScreen: {}\n\tResizable: {}",
             name,
             size.x, size.y,
@@ -22,18 +23,11 @@ namespace SR_GRAPH_NS {
         );
 
         m_isValid = true;
+        m_isInitialized = true;
 
-        pAndroidApp->userData = (void*)this;
-        pAndroidApp->onAppCmd = HandleCmd;
-        pAndroidApp->onInputEvent = HandleInput;
-
-        m_surfaceSize = size;
+        m_surfaceSize = m_size = size;
 
         return true;
-    }
-
-    int32_t AndroidWindow::HandleInput(android_app* app, AInputEvent* event) {
-        return 0;
     }
 
     ANativeWindow* AndroidWindow::GetNativeWindow() const {
@@ -41,45 +35,94 @@ namespace SR_GRAPH_NS {
         return pAndroidApp->window;
     }
 
-    void AndroidWindow::HandleCmd(android_app* pAndroidApp, int32_t cmd) {
-        switch (cmd) {
-        case APP_CMD_SAVE_STATE:
-            break;
-        case APP_CMD_INIT_WINDOW:
-            break;
-        case APP_CMD_TERM_WINDOW:
-            break;
-        case APP_CMD_GAINED_FOCUS:
-            break;
-        case APP_CMD_LOST_FOCUS:
-            break;
-        default:
-            break;
+    void AndroidWindow::PollEvents() {
+        ImGuiIO& io = ImGui::GetIO();
+        SR_UTILS_NS::AndroidEvent event;
+
+        while (SR_UTILS_NS::AndroidEventQueue::Instance().PopEvent(event)) {
+            switch (event.type) {
+                // --- Тач (тапы, свайпы, мультитач) ---
+                case SR_UTILS_NS::AndroidEvent::Motion: {
+                    int32_t action = event.motion.action & AMOTION_EVENT_ACTION_MASK;
+                    int32_t pointerIndex = (event.motion.action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK)
+                            >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+
+                    float x = event.motion.x;
+                    float y = event.motion.y;
+
+                    switch (action) {
+                        case AMOTION_EVENT_ACTION_DOWN:
+                        case AMOTION_EVENT_ACTION_POINTER_DOWN:
+                            if (pointerIndex < IM_ARRAYSIZE(io.MouseDown)) {
+                                io.MouseDown[pointerIndex] = true;
+                                io.MousePos = ImVec2(x, y);
+                            }
+                            break;
+
+                        case AMOTION_EVENT_ACTION_UP:
+                        case AMOTION_EVENT_ACTION_POINTER_UP:
+                            if (pointerIndex < IM_ARRAYSIZE(io.MouseDown)) {
+                                io.MouseDown[pointerIndex] = false;
+                            }
+                            break;
+
+                        case AMOTION_EVENT_ACTION_MOVE:
+                            io.MousePos = ImVec2(x, y);
+                            break;
+
+                        case AMOTION_EVENT_ACTION_CANCEL:
+                            for (int i = 0; i < IM_ARRAYSIZE(io.MouseDown); i++) {
+                                io.MouseDown[i] = false;
+                            }
+                            break;
+
+                        case AMOTION_EVENT_ACTION_SCROLL:
+                            // На Android скролл приходит отдельным событием
+                            //io.MouseWheel += event.motion.scrollDeltaY;
+                            //io.MouseWheelH += event.motion.scrollDeltaX;
+                            break;
+                    }
+                    break;
+                }
+
+                    // --- Клавиатура ---
+                case SR_UTILS_NS::AndroidEvent::Key: {
+                    //int keycode = event.key.keycode;
+
+                    //if (event.key.action == AKEY_EVENT_ACTION_DOWN) {
+                    //    if (keycode < IM_ARRAYSIZE(io.KeysDown))
+                    //        io.KeysDown[keycode] = true;
+                    //    if (event.key.character != 0)
+                    //        io.AddInputCharacter((unsigned int)event.key.character);
+                    //}
+                    //else if (event.key.action == AKEY_EVENT_ACTION_UP) {
+                    //    if (keycode < IM_ARRAYSIZE(io.KeysDown))
+                    //        io.KeysDown[keycode] = false;
+                    //}
+                    break;
+                }
+
+                    // --- Сенсоры (акселерометр, гироскоп) ---
+                case SR_UTILS_NS::AndroidEvent::Sensor: {
+                    // Пример: акселерометр влево/вправо как навигация в ImGui
+                    //io.NavInputs[ImGuiNavInput_LStickLeft]  = std::max(0.0f, -event.sensorEvent.sensor.accelX);
+                    //io.NavInputs[ImGuiNavInput_LStickRight] = std::max(0.0f,  event.sensorEvent.sensor.accelX);
+                    //io.NavInputs[ImGuiNavInput_LStickUp]    = std::max(0.0f, -event.sensorEvent.sensor.accelY);
+                    //io.NavInputs[ImGuiNavInput_LStickDown]  = std::max(0.0f,  event.sensorEvent.sensor.accelY);
+                    break;
+                }
+
+                    // --- Жизненный цикл ---
+                case SR_UTILS_NS::AndroidEvent::Lifecycle: {
+                    // Можно реагировать на паузу/возврат
+                    // io.AddFocusEvent(event.lifecycle.hasFocus);
+                    break;
+                }
+
+                default:
+                    break;
+            }
         }
     }
 
-    void AndroidWindow::PollEvents() {
-        /*auto&& pAndroidApp = (android_app*)SR_PLATFORM_NS::GetInstance();
-
-        int ident;
-        int events;
-        struct android_poll_source* source;
-
-        while ((ident = ALooper_pollAll(0, nullptr, &events, (void**)&source)) >= 0) {
-            // Process this event.
-            if (source != nullptr) {
-                source->process(pAndroidApp, source);
-            }
-
-            // If a sensor has data, process it now.
-            //if (ident == LOOPER_ID_USER) {
-
-            //}
-
-            // Check if we are exiting.
-            if (pAndroidApp->destroyRequested != 0) {
-                return;
-            }
-        }*/
-    }
 }

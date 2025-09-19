@@ -87,6 +87,7 @@ namespace SR_GRAPH_NS {
         });
 
         m_isValid = true;
+        m_isInitialized = true;
         glfwRequestWindowAttention(m_window);
 
         return true;

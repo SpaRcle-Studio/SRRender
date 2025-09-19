@@ -410,8 +410,10 @@ namespace SR_GRAPH_NS {
 
         Resize(m_size.x, m_size.y);
 
-        m_isValid = true;
         m_hDC = GetDC(m_hWnd);
+
+        m_isValid = true;
+        m_isInitialized = true;
 
         return true;
     }
