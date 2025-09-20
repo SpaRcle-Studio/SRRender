@@ -24,6 +24,7 @@ namespace SR_GRAPH_NS {
 
         m_isValid = true;
         m_isInitialized = true;
+        m_isFocused = true;
 
         m_surfaceSize = m_size = size;
 
