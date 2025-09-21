@@ -31,6 +31,24 @@ namespace SR_GRAPH_NS {
         Super::UpdateShaderDefines(defines);
     }
 
+    bool CascadedShadowMapPass::Init() {
+        if (m_instancing && !GetPipeline()->IsShaderViewportIndexLayerSupported()) {
+            SR_LOG("CascadedShadowMapPass::Init() : instancing is not supported! Falling back to non-instancing mode...");
+            m_instancing = false;
+            auto&& pFrameBufferController = GetTechnique()->GetFrameBufferController(GetPassName());
+            if (pFrameBufferController) {
+                pFrameBufferController->SetLayersCount(m_cascadeCount);
+                pFrameBufferController->SetArrayLayersCount(1);
+                SetRenderLayers(m_cascadeCount);
+            }
+            else {
+                SR_ERROR("CascadedShadowMapPass::Init() : failed to find framebuffer controller \"{}\"!", GetPassName());
+            }
+        }
+
+        return Super::Init();
+    }
+
     bool CascadedShadowMapPass::Render() {
         SR_TRACY_ZONE;
 
@@ -64,8 +82,8 @@ namespace SR_GRAPH_NS {
         std::vector<float_t> cascadeSplits;
         cascadeSplits.resize(m_cascadeCount);
 
-        m_cascadeMatrices.resize(4);
-        m_cascadeSplitDepths.resize(4);
+        m_cascadeMatrices.resize(m_cascadeCount);
+        m_cascadeSplitDepths.resize(m_cascadeCount);
 
         const float_t clipRange = m_far - m_near;
 

@@ -222,6 +222,8 @@ namespace SR_SRSL_NS {
     bool SRSLShader::PrepareSettings() {
         SR_TRACY_ZONE;
 
+        m_gLayerUsed = GetUseStack()->IsVariableUsed("gl_Layer");
+
         for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
             if (auto&& pVariable = dynamic_cast<SRSLVariable*>(pUnit)) {
                 std::string& varName = pVariable->pType->token;

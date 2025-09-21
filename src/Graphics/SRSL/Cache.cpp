@@ -529,6 +529,8 @@ namespace SR_GRAPH_NS {
         SR_SRSL_NS::Details::SaveSamplers(marshal, pShader->m_samplers);
         SR_SRSL_NS::Details::SaveSSBO(marshal, pShader->m_ssboBindings);
 
+        marshal.Write<bool>(pShader->m_isGLayerUsed);
+
         auto&& cacheFile = cachePath.ConcatExt("cache");
 
         if (cacheFile.IsFile()) {
@@ -607,6 +609,8 @@ namespace SR_GRAPH_NS {
         pShader->m_shaderCreateInfo = SR_SRSL_NS::Details::LoadCreateInfo(marshal);
         pShader->m_samplers = SR_SRSL_NS::Details::LoadSamplers(marshal);
         pShader->m_ssboBindings = SR_SRSL_NS::Details::LoadSSBO(marshal);
+
+        pShader->m_isGLayerUsed = marshal.Read<bool>();
 
         return true;
     }

@@ -38,6 +38,12 @@ namespace SR_GRAPH_NS::Types {
 
         RegisterGraphicsResource();
 
+        if (m_isGLayerUsed && !GetPipeline()->IsShaderViewportIndexLayerSupported()) {
+            SR_ERROR("Shader::Init() : shader uses gl_Layer but current pipeline does not support it!\n\tPath: {}", GetResourcePath());
+            m_hasErrors = true;
+            return false;
+        }
+
         for (auto&& [hashName, sampler] : m_samplers) {
             if (sampler.isAttachment || sampler.isArray) {
                 continue;
@@ -376,6 +382,7 @@ namespace SR_GRAPH_NS::Types {
 
         m_type = pShader->GetType();
         m_includes = pShader->GetIncludes();
+        m_isGLayerUsed = pShader->IsGLayerUsed();
 
         if (m_includes.empty()) {
             SR_ERROR("Shader::Load() : failed to extract includes!\n\tPath: " + path.ToString());

@@ -28,6 +28,20 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void FrameBufferController::SetLayersCount(uint32_t count) {
+        m_layersCount = count;
+        if (m_framebuffer) {
+            m_framebuffer->SetLayersCount(count);
+        }
+    }
+
+    void FrameBufferController::SetArrayLayersCount(uint32_t count) {
+        m_arrayLayersCount = count;
+        if (m_framebuffer) {
+            m_framebuffer->SetArrayLayersCount(count);
+        }
+    }
+
     bool FrameBufferController::InitializeFramebuffer(RenderContext* pContext) {
         /// fix zero size
         if (m_size.x == 0) {
