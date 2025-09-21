@@ -2283,4 +2283,9 @@ namespace SR_GRAPH_NS {
 
         Super::SetSwapchainImagesCount(count);
     }
+
+    bool VulkanPipeline::IsShaderViewportIndexLayerSupported() const noexcept {
+        ++m_state.operations;
+        return m_kernel && m_kernel->GetDevice() && m_kernel->GetDevice()->IsShaderViewportIndexLayerSupported();
+    }
 }

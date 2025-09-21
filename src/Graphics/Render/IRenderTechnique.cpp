@@ -8,6 +8,7 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Pass/GroupPass.h>
 #include <Graphics/Pass/IColorBufferPass.h>
+#include <Graphics/Loaders/RenderTechniquePostProcess.h>
 
 #include <Codegen/IRenderTechnique.generated.hpp>
 
@@ -253,6 +254,13 @@ namespace SR_GRAPH_NS {
     }
 
     bool IRenderTechnique::Init() {
+        SR_TRACY_ZONE;
+
+        if (!m_modulesApplied && m_camera && GetRenderScene()) {
+            SR_GRAPH_NS::Details::PostProcessRenderTechnique(this, GetRenderScene()->GetContext(), m_camera->GetCameraType());
+            m_modulesApplied = true;
+        }
+
         for (auto&& pController : m_data.frameBuffers) {
             if (!pController->InitializeFramebuffer(GetRenderContext())) {
                 SR_ERROR("RenderTechnique::Init() : failed to initialize \"{}\" framebuffer controller!", pController->GetName());
@@ -302,6 +310,8 @@ namespace SR_GRAPH_NS {
         DeInitPasses();
         m_hasErrors = false;
         m_data = std::move(data);
+        m_modulesApplied = false;
+
         OnHierarchyChanged();
     }
 
