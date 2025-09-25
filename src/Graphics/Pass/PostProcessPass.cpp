@@ -119,11 +119,12 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (m_uboManager.BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Duplicated) {
-            SR_ERROR("PostProcessPass::Update() : memory has been duplicated!");
+        if (m_uboManager.BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Failed) {
+            SR_ERROR("PostProcessPass::Update() : failed to bind UBO!");
         }
-
-        SR_UNUSED_VARIABLE(pShader->Flush());
+        else {
+            SR_UNUSED_VARIABLE(pShader->Flush());
+        }
 
         Super::Update();
     }

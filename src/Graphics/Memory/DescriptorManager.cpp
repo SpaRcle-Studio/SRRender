@@ -26,28 +26,35 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
-        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
 
         if (reallocation != SR_ID_INVALID) {
             auto&& descriptors = m_descriptorPool.At(reallocation);
             for (auto&& descriptor : descriptors) {
-                if (descriptor.descriptorSet == SR_ID_INVALID) {
-                    continue;
+                const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
+                for (uint8_t i = 0; i < maxFramesInFlight; ++i) {
+                    if (descriptor.descriptorSets[i] != SR_ID_INVALID) {
+                        m_pipeline->FreeDescriptorSet(&descriptor.descriptorSets[i]);
+                    }
                 }
-                m_pipeline->FreeDescriptorSet(&descriptor.descriptorSet);
             }
 
             descriptors.clear();
 
             DescriptorSetInfo& info = descriptors.emplace_back();
+            std::ranges::fill(info.descriptorSets, SR_ID_INVALID);
             info.pShaderHandle = pShaderHandle;
-            info.frameIndex = frameIndex;
-            info.descriptorSet = descriptorSet;
+            info.descriptorSets[frameIndex] = descriptorSet;
 
             return reallocation;
         }
 
-        return m_descriptorPool.Add({ DescriptorSetInfo{ pShaderHandle, frameIndex, descriptorSet } });
+        DescriptorSetInfo info;
+        std::ranges::fill(info.descriptorSets, SR_ID_INVALID);
+        info.pShaderHandle = pShaderHandle;
+        info.descriptorSets[frameIndex] = descriptorSet;
+
+        return m_descriptorPool.Add({ info });
     }
 
     DescriptorManager::BindResult DescriptorManager::Bind(DescriptorManager::VirtualDescriptorSet virtualDescriptorSet) {
@@ -58,26 +65,31 @@ namespace SR_GRAPH_NS {
 
         auto&& info = m_descriptorPool.At(virtualDescriptorSet);
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
-        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
 
-        DescriptorSet descriptorSet;
+        DescriptorSet descriptorSet = SR_ID_INVALID;
         bool hasDescriptorSet = false;
 
-        const DescriptorSetInfo* pElement = info.data();
+        BindResult result = BindResult::Success;
+
+        DescriptorSetInfo* pElement = info.data();
         const DescriptorSetInfo* pEnd = pElement + info.size();
         for (; pElement != pEnd; ++pElement) {
-            if (m_multiFrameMode && pElement->frameIndex != frameIndex) {
-                continue;
-            }
-
             if (pElement->pShaderHandle == pShaderHandle) SR_LIKELY_ATTRIBUTE {
-                descriptorSet = pElement->descriptorSet;
+                if (pElement->descriptorSets[frameIndex] == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                    pElement->descriptorSets[frameIndex] = AllocateMemory(m_pipeline->GetCurrentShader());
+
+                    if (pElement->descriptorSets[frameIndex] == SR_ID_INVALID && !m_allocationTypesCache.empty()) SR_UNLIKELY_ATTRIBUTE {
+                        SRHalt("DescriptorManager::Bind() : failed to allocate descriptor set!");
+                        return BindResult::Failed;
+                    }
+                    result = BindResult::Duplicated;
+                }
+                descriptorSet = pElement->descriptorSets[frameIndex];
                 hasDescriptorSet = true;
                 break;
             }
         }
-
-        BindResult result = BindResult::Success;
 
         if (!hasDescriptorSet) SR_UNLIKELY_ATTRIBUTE {
             descriptorSet = AllocateMemory(m_pipeline->GetCurrentShader());
@@ -88,9 +100,9 @@ namespace SR_GRAPH_NS {
             }
 
             DescriptorSetInfo& descriptorSetInfo = info.emplace_back();
+            std::ranges::fill(descriptorSetInfo.descriptorSets, SR_ID_INVALID);
             descriptorSetInfo.pShaderHandle = pShaderHandle;
-            descriptorSetInfo.frameIndex = frameIndex;
-            descriptorSetInfo.descriptorSet = descriptorSet;
+            descriptorSetInfo.descriptorSets[frameIndex] = descriptorSet;
 
             result = BindResult::Duplicated;
         }
@@ -150,12 +162,15 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
+
         auto&& info = m_descriptorPool.RemoveByIndex(*pVirtualDescriptorSet);
         for (auto&& descriptor : info) {
-            if (descriptor.descriptorSet == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-                continue;
+            for (uint8_t i = 0; i < maxFramesInFlight; ++i) {
+                if (descriptor.descriptorSets[i] != SR_ID_INVALID) {
+                    m_pipeline->FreeDescriptorSet(&descriptor.descriptorSets[i]);
+                }
             }
-            m_pipeline->FreeDescriptorSet(&descriptor.descriptorSet);
         }
 
         *pVirtualDescriptorSet = SR_ID_INVALID;
@@ -169,6 +184,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
+
         m_pipeline->GetShaderHandles(m_handles);
 
         uint32_t count = 0;
@@ -178,9 +195,12 @@ namespace SR_GRAPH_NS {
                 DescriptorSetInfo& data = *pIt;
 
                 if (!std::ranges::binary_search(m_handles, data.pShaderHandle)) SR_UNLIKELY_ATTRIBUTE {
-                    if (data.descriptorSet != SR_ID_INVALID) {
-                        m_pipeline->FreeDescriptorSet(&data.descriptorSet);
+                    for (uint8_t i = 0; i < maxFramesInFlight; ++i) {
+                        if (data.descriptorSets[i] != SR_ID_INVALID) {
+                            m_pipeline->FreeDescriptorSet(&data.descriptorSets[i]);
+                        }
                     }
+
                     pIt = descriptorSetInfos.erase(pIt);
                     ++count;
                 }

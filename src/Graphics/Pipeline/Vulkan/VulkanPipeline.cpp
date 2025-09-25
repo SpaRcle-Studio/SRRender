@@ -289,8 +289,22 @@ namespace SR_GRAPH_NS {
         return Super::Init();
     }
 
-    uint64_t VulkanPipeline::GetUsedMemory() const {
-        return m_kernel->GetAllocator() ? m_kernel->GetAllocator()->GetGPUMemoryUsage() : 0;
+    UsedVideoMemoryInfo VulkanPipeline::GetUsedVideoMemoryInfo() const {
+        SR_TRACY_ZONE;
+
+        UsedVideoMemoryInfo info = { };
+
+        info.videoMemoryUsed = m_kernel->GetAllocator() ? m_kernel->GetAllocator()->GetGPUMemoryUsage() : 0;
+        info.descriptorSetsCount = m_memory ? m_memory->GetDescriptorSetsCount() : 0;
+        info.shaderProgramsCount = m_memory ? m_memory->GetShaderProgramsCount() : 0;
+        info.UBOsCount = m_memory ? m_memory->GetUBOsCount() : 0;
+        info.VBOsCount = m_memory ? m_memory->GetVBOsCount() : 0;
+        info.IBOsCount = m_memory ? m_memory->GetIBOsCount() : 0;
+        info.SSBOsCount = m_memory ? m_memory->GetSSBOsCount() : 0;
+        info.FBOsCount = m_memory ? m_memory->GetFBOsCount() : 0;
+        info.texturesCount = m_memory ? m_memory->GetTexturesCount() : 0;
+
+        return info;
     }
 
     int32_t VulkanPipeline::AllocateUBO(uint32_t uboSize) {
@@ -981,7 +995,7 @@ namespace SR_GRAPH_NS {
         SR_GRAPH("VulkanPipeline::InitEvoVulkanHooks() : initializing evo vulkan hooks...");
 
         auto&& GetUsedMemoryFn = [pPipeline = GetThis()]() -> uint32_t {
-            return pPipeline ? pPipeline->GetUsedMemory() / 1024 / 1024 : 0;
+            return pPipeline ? pPipeline->GetUsedVideoMemoryInfo().videoMemoryUsed / 1024 / 1024 : 0;
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationErrorAsAssert = SR_UTILS_NS::Features::Instance().Enabled("VulkanValidationErrorAsAssert", false) &&

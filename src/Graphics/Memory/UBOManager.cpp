@@ -36,7 +36,8 @@ namespace SR_GRAPH_NS::Memory {
         SR_TRACY_ZONE;
 
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
-        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
+        const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
 
         if (!pShaderHandle) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("UBOManager::AllocateUBO() : shader program do not set!");
@@ -56,8 +57,8 @@ namespace SR_GRAPH_NS::Memory {
         virtualUboInfo.shared = shared;
 
         VirtualUBOInfo::Data& data = virtualUboInfo.data.emplace_back();
-        data.ubo = ubo;
-        data.frameIndex = frameIndex;
+        std::ranges::fill(data.ubos, SR_ID_INVALID);
+        data.ubos[frameIndex] = ubo;
         data.pShaderHandle = pShaderHandle;
         data.uboSize = uboSize;
 
@@ -75,7 +76,12 @@ namespace SR_GRAPH_NS::Memory {
             if (dataToFree.uboSize <= 0) {
                 continue;
             }
-            m_pipeline->FreeUBO(&dataToFree.ubo);
+
+            for (uint8_t i = 0; i < maxFramesInFlight; ++i) {
+                if (dataToFree.ubos[i] != SR_ID_INVALID) {
+                    m_pipeline->FreeUBO(&dataToFree.ubos[i]);
+                }
+            }
         }
         info = std::move(virtualUboInfo);
         return virtualUbo;
@@ -86,13 +92,19 @@ namespace SR_GRAPH_NS::Memory {
 
         SRAssert(virtualUbo != nullptr);
 
+        const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
+
         auto&& info = m_uboPool.RemoveByIndex(*virtualUbo);
         for (auto&& data : info.data) {
             if (data.uboSize <= 0) {
-                SRAssert(data.ubo == SR_ID_INVALID);
                 continue;
             }
-            m_pipeline->FreeUBO(&data.ubo);
+
+            for (uint8_t i = 0; i < maxFramesInFlight; ++i) {
+                if (data.ubos[i] != SR_ID_INVALID) {
+                    m_pipeline->FreeUBO(&data.ubos[i]);
+                }
+            }
         }
 
         *virtualUbo = SR_ID_INVALID;
@@ -127,7 +139,7 @@ namespace SR_GRAPH_NS::Memory {
             return BindResult::Failed;
         }
 
-        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
 
         auto&& info = m_uboPool.At(virtualUbo);
         BindResult result = BindResult::Success;
@@ -136,21 +148,22 @@ namespace SR_GRAPH_NS::Memory {
         bool isFound = false;
 
         for (auto&& data : info.data) {
-            if (m_multiFrameMode && data.frameIndex != frameIndex) {
-                continue;
-            }
-
             if (data.pShaderHandle == pShaderHandle || info.shared) SR_LIKELY_ATTRIBUTE {
-                ubo = data.ubo;
+                if (data.ubos[frameIndex] == SR_ID_INVALID && data.uboSize > 0) SR_UNLIKELY_ATTRIBUTE {
+                    if (!AllocMemory(&data.ubos[frameIndex], data.uboSize)) SR_UNLIKELY_ATTRIBUTE {
+                        SR_ERROR("UBOManager::BindUBO() : failed to allocate memory!");
+                        return BindResult::Failed;
+                    }
+                }
+
+                ubo = data.ubos[frameIndex];
                 isFound = true;
                 break;
             }
         }
 
         if (!isFound) SR_UNLIKELY_ATTRIBUTE {
-            if (!m_multiFrameMode) {
-                SRAssert2(!info.shared, "Something went wrong! UBO not found in shared mode!");
-            }
+            SRAssert2(!info.shared, "Something went wrong! UBO not found in shared mode!");
 
             if (uboSize > 0) SR_LIKELY_ATTRIBUTE {
                 if (!AllocMemory(&ubo, uboSize)) SR_UNLIKELY_ATTRIBUTE {
@@ -160,8 +173,8 @@ namespace SR_GRAPH_NS::Memory {
             }
 
             VirtualUBOInfo::Data& data = info.data.emplace_back();
-            data.ubo = ubo;
-            data.frameIndex = frameIndex;
+            std::ranges::fill(data.ubos, SR_ID_INVALID);
+            data.ubos[frameIndex] = ubo;
             data.pShaderHandle = pShaderHandle;
             data.uboSize = uboSize;
 
@@ -180,18 +193,14 @@ namespace SR_GRAPH_NS::Memory {
             return BindResult::Failed;
         }
 
-        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
 
         auto&& info = m_uboPool.At(virtualUbo);
 
         for (auto&& data : info.data) {
-            if (m_multiFrameMode && data.frameIndex != frameIndex) {
-                continue;
-            }
-
             if (data.pShaderHandle == pShaderHandle || info.shared) SR_LIKELY_ATTRIBUTE {
                 /// SR_ID_INVALID is allowed
-                m_pipeline->BindUBO(data.ubo);
+                m_pipeline->BindUBO(data.ubos[frameIndex]);
                 return BindResult::Success;
             }
         }
@@ -207,16 +216,12 @@ namespace SR_GRAPH_NS::Memory {
         SR_TRACY_ZONE;
 
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
-        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
 
         auto&& info = m_uboPool.At(virtualUbo);
         for (auto&& data : info.data) {
-            if (m_multiFrameMode && data.frameIndex != frameIndex) {
-                continue;
-            }
-
             if (data.pShaderHandle == pShaderHandle || info.shared) SR_LIKELY_ATTRIBUTE {
-                return data.ubo;
+                return data.ubos[frameIndex];
             }
         }
 
@@ -240,7 +245,12 @@ namespace SR_GRAPH_NS::Memory {
 
                 if (!std::ranges::binary_search(m_handles, data.pShaderHandle)) SR_UNLIKELY_ATTRIBUTE {
                     if (data.uboSize > 0) {
-                        m_pipeline->FreeUBO(&data.ubo);
+                        const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
+                        for (uint8_t i = 0; i < maxFramesInFlight; ++i) {
+                            if (data.ubos[i] != SR_ID_INVALID) {
+                                m_pipeline->FreeUBO(&data.ubos[i]);
+                            }
+                        }
                     }
                     pIt = virtualUboInfo.data.erase(pIt);
                     ++count;
