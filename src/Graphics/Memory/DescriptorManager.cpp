@@ -169,15 +169,15 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        auto&& handles = m_pipeline->GetShaderHandles();
+        m_pipeline->GetShaderHandles(m_handles);
 
         uint32_t count = 0;
 
-        m_descriptorPool.ForEach([&](VirtualDescriptorSet , std::vector<DescriptorSetInfo>& descriptorSetInfos) {
+        m_descriptorPool.ForEach([&](VirtualDescriptorSet, std::vector<DescriptorSetInfo>& descriptorSetInfos) {
             for (auto pIt = descriptorSetInfos.begin(); pIt != descriptorSetInfos.end(); ) {
                 DescriptorSetInfo& data = *pIt;
 
-                if (handles.count(data.pShaderHandle) == 0) {
+                if (!std::ranges::binary_search(m_handles, data.pShaderHandle)) SR_UNLIKELY_ATTRIBUTE {
                     if (data.descriptorSet != SR_ID_INVALID) {
                         m_pipeline->FreeDescriptorSet(&data.descriptorSet);
                     }

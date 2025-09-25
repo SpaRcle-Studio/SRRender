@@ -253,7 +253,7 @@ namespace SR_GRAPH_NS::Memory {
             return;
         }
 
-        auto&& handles = m_pipeline->GetFBOHandles();
+        m_pipeline->GetFBOHandles(m_handles);
 
         uint32_t count = 0;
 
@@ -261,7 +261,7 @@ namespace SR_GRAPH_NS::Memory {
             for (auto pIt = virtualProgramInfo.m_data.begin(); pIt != virtualProgramInfo.m_data.end(); ) {
                 auto&& [identifier, program] = *pIt;
 
-                if (handles.count(reinterpret_cast<void*>(identifier)) == 0) {
+                if (!std::ranges::binary_search(m_handles, reinterpret_cast<void*>(identifier))) SR_UNLIKELY_ATTRIBUTE {
                     m_pipeline->FreeShader(&program.id);
                     pIt = virtualProgramInfo.m_data.erase(pIt);
                     ++count;

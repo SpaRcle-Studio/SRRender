@@ -137,7 +137,8 @@ namespace SR_GRAPH_NS {
         const ImageLoadFormat format = numComponents == 4 ? ImageLoadFormat::RGBA : ImageLoadFormat::RGB;
 
         if (cacheEnabled) {
-            SR_LOG("TextureLoader::Load() : save texture to cache...");
+            SRAssert2(!path.empty(), "TextureLoader::Load() : path is empty!");
+            SR_LOG("TextureLoader::Load() : save texture to cache...\n\tPath: ", path);
 
             auto&& stringHash = SR_UTILS_NS::ToString(hashName);
             auto&& cachePath = cache.Concat(path.GetBaseNameAndExt() + "." + stringHash);

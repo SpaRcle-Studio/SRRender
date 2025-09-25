@@ -230,7 +230,7 @@ namespace SR_GRAPH_NS::Memory {
             return;
         }
 
-        auto&& handles = m_pipeline->GetShaderHandles();
+        m_pipeline->GetShaderHandles(m_handles);
 
         uint32_t count = 0;
 
@@ -238,7 +238,7 @@ namespace SR_GRAPH_NS::Memory {
             for (auto pIt = virtualUboInfo.data.begin(); pIt != virtualUboInfo.data.end(); ) {
                 VirtualUBOInfo::Data& data = *pIt;
 
-                if (handles.count(data.pShaderHandle) == 0) {
+                if (!std::ranges::binary_search(m_handles, data.pShaderHandle)) SR_UNLIKELY_ATTRIBUTE {
                     if (data.uboSize > 0) {
                         m_pipeline->FreeUBO(&data.ubo);
                     }

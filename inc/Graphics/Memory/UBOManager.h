@@ -112,6 +112,7 @@ namespace SR_GRAPH_NS::Memory {
     private:
         PipelinePtr m_pipeline;
         SR_HTYPES_NS::ObjectPool<VirtualUBOInfo, VirtualUBO> m_uboPool;
+        std::vector<void*> m_handles;
         bool m_multiFrameMode = false;
 
     };

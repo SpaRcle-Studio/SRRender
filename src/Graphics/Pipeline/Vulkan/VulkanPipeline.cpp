@@ -374,32 +374,40 @@ namespace SR_GRAPH_NS {
         return (void*)(VkRenderPass)m_kernel->GetRenderPass(); /// Ну типо кадровый буфер
     }
 
-    std::set<void*> VulkanPipeline::GetFBOHandles() const {
+    void VulkanPipeline::GetFBOHandles(std::vector<void*>& handles) const {
         SR_TRACY_ZONE;
 
-        std::set<void*> handles;
+        handles.reserve(m_memory->GetFBOsCount() + 1);
+        handles.clear();
 
         if (void* pHandle = (void*)(VkRenderPass)m_kernel->GetRenderPass()) {
-            handles.insert(pHandle);
+            handles.emplace_back(pHandle);
         }
 
         m_memory->ForEachFBO([&handles](int32_t index, auto&& pFBO) {
-            handles.insert((void*)pFBO->GetRenderPass());
+            handles.emplace_back((void*)pFBO->GetRenderPass());
         });
 
-        return handles;
+        {
+            SR_TRACY_ZONE_N("Sort");
+            std::sort(handles.begin(), handles.end());
+        }
     }
 
-    std::set<void*> VulkanPipeline::GetShaderHandles() const {
+    void VulkanPipeline::GetShaderHandles(std::vector<void*>& handles) const {
         SR_TRACY_ZONE;
 
-        std::set<void*> handles;
+        handles.reserve(m_memory->GetShaderProgramsCount() + 1);
+        handles.clear();
 
         m_memory->ForEachShader([&handles](int32_t index, auto&& pShader) {
-            handles.insert((void*)pShader->GetPipeline());
+            handles.emplace_back((void*)pShader->GetPipeline());
         });
 
-        return handles;
+        {
+            SR_TRACY_ZONE_N("Sort");
+            std::sort(handles.begin(), handles.end());
+        }
     }
 
     void VulkanPipeline::UseShader(uint32_t shaderProgram) {
