@@ -107,6 +107,7 @@ namespace SR_GRAPH_NS {
         bool BuildTechnique();
         void DeInitPasses();
         void ReleaseFrameBuffers();
+        void UpdateFrustumCulling();
 
         virtual void UpdateDataIfNeeded() { }
 

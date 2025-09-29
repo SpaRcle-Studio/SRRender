@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_CAMERA_H
 #define SR_ENGINE_CAMERA_H
 
-#include <Graphics/macros.h>
+#include <Graphics/Utils/Frustum.h>
 
 #include <Utils/ECS/Component.h>
 #include <Utils/ECS/ComponentManager.h>
@@ -93,6 +93,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD SR_MATH_NS::FVector3 ScreenToWorldPoint(const SR_MATH_NS::FVector3& screenPos) const;
         SR_NODISCARD SR_MATH_NS::FVector3 ScreenToWorldPoint(const SR_MATH_NS::FVector2& screenPos) const;
         SR_NODISCARD SR_MATH_NS::FVector3 ScreenToWorldPoint(const SR_MATH_NS::FVector2& screenPos, float_t depth) const;
+        SR_NODISCARD const Frustum& GetFrustum() const { return m_frustum; }
 
         void SetFar(float_t value);
         void SetNear(float_t value);
@@ -152,6 +153,8 @@ namespace SR_GTYPES_NS {
         mutable bool m_isInverseDirty = true;
         mutable SR_MATH_NS::Matrix4x4 m_inverseProjection;
         mutable SR_MATH_NS::Matrix4x4 m_inverseViewTranslate;
+
+        Frustum m_frustum;
 
         SR_MATH_NS::Quaternion m_rotation;
 

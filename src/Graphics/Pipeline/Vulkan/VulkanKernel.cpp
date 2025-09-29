@@ -164,7 +164,8 @@ namespace SR_GRAPH_NS {
 
         EvoVulkan::Core::FrameResult presentResult = QueuePresent();
 
-        m_currentBuffer = (m_currentBuffer + 1) % GetSwapchainImagesCount();
+        //m_currentBuffer = (m_currentBuffer + 1) % GetSwapchainImagesCount();
+        m_currentBuffer = (m_currentImage + 1) % GetSwapchainImagesCount();
 
         if (presentResult == EvoVulkan::Core::FrameResult::DeviceLost) {
             SR_PLATFORM_NS::Terminate();

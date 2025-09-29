@@ -5,12 +5,6 @@
 #ifndef SR_ENGINE_GRAPHICS_MESH_H
 #define SR_ENGINE_GRAPHICS_MESH_H
 
-#include <Utils/Math/Matrix4x4.h>
-#include <Utils/Common/Enumerations.h>
-#include <Utils/Types/SafePointer.h>
-#include <Utils/Types/Function.h>
-#include <Utils/Types/SortedVector.h>
-
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Memory/IGraphicsResource.h>
@@ -20,6 +14,13 @@
 #include <Graphics/Material/MeshMaterialProperty.h>
 #include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Types/IRenderComponent.h>
+
+#include <Utils/Math/Matrix4x4.h>
+#include <Utils/Math/AABB.h>
+#include <Utils/Common/Enumerations.h>
+#include <Utils/Types/SafePointer.h>
+#include <Utils/Types/Function.h>
+#include <Utils/Types/SortedVector.h>
 
 namespace SR_UTILS_NS {
     class IResource;
@@ -50,7 +51,6 @@ namespace SR_GTYPES_NS {
         using MaterialPtr = SR_HTYPES_NS::SharedPtr<BaseMaterial>;
         using Ptr = SR_HTYPES_NS::SharedPtr<Mesh>;
 
-        //using RenderQueues = SR_HTYPES_NS::SortedVector<RenderQueueInfo, RenderQueuePredicate>;
         using RenderQueues = MeshRenderQueues;
 
     public:
@@ -100,6 +100,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD RenderQueues& GetRenderQueues() noexcept { return m_renderQueues; }
         SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const noexcept { return m_frustumCullingType; }
         SR_NODISCARD bool IsCalculated() const noexcept { return m_isCalculated; }
+        SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
         void SetPipeline(Pipeline* pPipeline) { m_pipeline = pPipeline; }
@@ -119,7 +120,7 @@ namespace SR_GTYPES_NS {
         virtual void UseSSBO() { }
 
         void OnReRegistered();
-        void MarkUniformsDirty(bool force = false);
+        void MarkUniformsDirty();
         void MarkMaterialDirty();
         bool DestroyMesh();
         void ReRegisterMesh();
@@ -129,7 +130,6 @@ namespace SR_GTYPES_NS {
         void SetMaterial(const SR_UTILS_NS::Path& path);
 
         void SetErrorsClean() { m_hasErrors = false; }
-        //void SetUniformsClean();
 
     protected:
         virtual void FreeVMemory();
@@ -168,6 +168,8 @@ namespace SR_GTYPES_NS {
         bool m_dirtyMaterial = false;
 
     private:
+        mutable SR_MATH_NS::AABB m_aabb;
+        mutable bool m_isAABBDirty = true;
         bool m_isDestroyingState = false;
         std::optional<MeshRegistrationInfo> m_registrationInfo;
         uint32_t m_materialRegisterId = SR_ID_INVALID;

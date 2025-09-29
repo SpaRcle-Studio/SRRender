@@ -590,6 +590,8 @@ namespace SR_GRAPH_NS::Types {
     }
 
     bool Shader::BeginSharedUBO() {
+        SR_TRACY_ZONE;
+
         if (m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
@@ -599,9 +601,9 @@ namespace SR_GRAPH_NS::Types {
             return false;
         }
 
-        if (m_uniformSharedBlock.m_memory) SR_LIKELY_ATTRIBUTE {
-            m_uniformSharedBlock.ResetDefaultValues();
-        }
+        //if (m_uniformSharedBlock.m_memory) SR_LIKELY_ATTRIBUTE {
+        //    m_uniformSharedBlock.ResetDefaultValues();
+        //}
 
         GetPipeline()->SetCurrentShader(this);
 
@@ -634,6 +636,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Shader::EndSharedUBO() {
+        SR_TRACY_ZONE;
         if (!m_sharedUBOMode) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("Shared UBO mode is not enabled!");
             return;
@@ -642,7 +645,7 @@ namespace SR_GRAPH_NS::Types {
         m_sharedUBOMode = false;
 
         if (m_uniformSharedBlock.Valid()) SR_LIKELY_ATTRIBUTE {
-            GetPipeline()->UpdateUBO(GetPipeline()->GetCurrentUBO(), m_uniformSharedBlock.m_memory, m_uniformSharedBlock.m_size);
+            GetPipeline()->UpdateCurrentUBO(m_uniformSharedBlock.m_memory, m_uniformSharedBlock.m_size);
         }
     }
 

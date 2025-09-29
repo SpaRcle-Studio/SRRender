@@ -152,6 +152,8 @@ namespace SR_GTYPES_NS {
     }
 
     void Camera::UpdateView() noexcept {
+        SR_TRACY_ZONE;
+
         m_isInverseDirty = true;
         m_viewMat = m_rotation.RotateX(SR_DEG(SR_PI)).Inverse().ToMat4x4();
 
@@ -175,6 +177,8 @@ namespace SR_GTYPES_NS {
 
         m_viewTranslateMat = m_viewMat.Translate(m_position.Inverse());
         m_viewDirection = m_rotation * SR_MATH_NS::FVector3(0, 0, 1);
+        m_frustum = ExtractFrustum(m_projection * m_viewTranslateMat);
+        //m_frustum = ExtractFrustum(*this);
     }
 
     void Camera::UpdateProjection() {

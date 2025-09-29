@@ -6,6 +6,7 @@
 #define SR_ENGINE_GRAPHICS_MESH_RENDER_QUEUE_H
 
 #include <Graphics/Utils/MeshUtils.h>
+#include <Graphics/Utils/Frustum.h>
 
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/SortedVector.h>
@@ -44,65 +45,30 @@ namespace SR_GRAPH_NS {
             QUEUE_STATE_NOT_RENDERED   = QUEUE_STATE_ERROR | 1 << 4,
             QUEUE_STATE_WAIT_REGISTER  = QUEUE_STATE_ERROR | 1 << 5,
             QUEUE_STATE_MISSING_SHADER = QUEUE_STATE_ERROR | 1 << 6,
+            QUEUE_STATE_INVISIBLE      = QUEUE_STATE_ERROR | 1 << 7,
         };
         typedef uint8_t QueueStateFlags;
 
         struct MeshInfo {
+            RenderQueueInfo* pInfo = nullptr;
             VBO vbo = 0;
             SR_GTYPES_NS::Mesh* pMesh = nullptr;
             SR_GTYPES_NS::Shader* pShader = nullptr;
             int64_t priority = 0;
             QueueStateFlags state = QUEUE_STATE_NOT_RENDERED;
 
-            bool operator==(const MeshInfo& other) const noexcept {
-                return
-                    pShader == other.pShader &&
-                    vbo == other.vbo &&
-                    pMesh == other.pMesh &&
-                    priority == other.priority;
-            }
+            bool operator==(const MeshInfo& other) const noexcept;
         };
 
         struct RenderQueueLessPredicate {
-            SR_NODISCARD bool operator()(const MeshInfo& left, const MeshInfo& right) const noexcept {
-                /// Сравниваем приоритеты
-                if (left.priority != right.priority) SR_UNLIKELY_ATTRIBUTE {
-                    return left.priority < right.priority;
-                }
-
-                /// Сравниваем указатели на шейдеры
-                if (left.pShader != right.pShader) SR_LIKELY_ATTRIBUTE {
-                    return left.pShader < right.pShader;
-                }
-
-                /// Если шейдеры одинаковые, сравниваем VBO
-                if (left.vbo != right.vbo) SR_UNLIKELY_ATTRIBUTE {
-                    return left.vbo < right.vbo;
-                }
-
-                /// Если и VBO одинаковые, сравниваем указатели на меши
-                return left.pMesh < right.pMesh;
-            }
+            SR_NODISCARD bool operator()(const MeshInfo& left, const MeshInfo& right) const noexcept;
         };
-
-       // struct ShaderInfo {
-      //      ShaderInfo() = default;
-      //      ShaderInfo(SR_GTYPES_NS::Shader* pShader) : info(pShader) { }
-      //      ShaderUseInfo info = {};
-      //      uint32_t count = 0;
-      //  };
-
-       // struct ShaderQueueLessPredicate {
-       //     SR_NODISCARD bool operator()(const ShaderUseInfo& left, const ShaderUseInfo& right) const noexcept {
-       //         return left.pShader < right.pShader;
-       //     }
-       // };
 
         using Queue = SR_HTYPES_NS::SortedVector<MeshInfo, RenderQueueLessPredicate>;
 
     public:
         RenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer);
-        virtual ~RenderQueue();
+        ~RenderQueue() override;
 
         void Register(const MeshRegistrationInfo& info);
         void UnRegister(const MeshRegistrationInfo& info);
@@ -111,6 +77,8 @@ namespace SR_GRAPH_NS {
 
         bool Render();
         void Update();
+
+        bool UpdateFrustumCulling(const Frustum& frustum);
 
         void OnMeshDirty(SR_GTYPES_NS::Mesh* pMesh, RenderQueueInfo* pInfo);
 
@@ -136,8 +104,6 @@ namespace SR_GRAPH_NS {
         bool SR_FASTCALL UseShader(SR_GTYPES_NS::Shader* pShader);
 
         void PrepareLayers();
-
-        //SR_NODISCARD SR_GRAPH_NS::ShaderUseInfo GetShaderUseInfo(const MeshRegistrationInfo& info) const;
 
     protected:
         bool m_customMeshDraw = false;
@@ -171,8 +137,9 @@ namespace SR_GRAPH_NS {
     struct RenderQueueInfo {
         RenderQueue* pRenderQueue;
         SR_GTYPES_NS::Shader* pShader;
-        bool dirtyUniformsFrames[16];
-        bool inUpdateQueue = false;
+        std::bitset<16> dirtyUniformsFrames;
+        bool inUpdateQueue : 1 = false;
+        bool isVisible : 1 = true;
 
         bool operator==(const RenderQueueInfo& other) const {
             return pRenderQueue == other.pRenderQueue;

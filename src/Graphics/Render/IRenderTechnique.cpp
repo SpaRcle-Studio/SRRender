@@ -6,9 +6,12 @@
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Render/RenderContext.h>
+#include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Pass/GroupPass.h>
+#include <Graphics/Pass/MeshDrawerPass.h>
 #include <Graphics/Pass/IColorBufferPass.h>
 #include <Graphics/Loaders/RenderTechniquePostProcess.h>
+#include <Graphics/Types/Camera.h>
 
 #include <Codegen/IRenderTechnique.generated.hpp>
 
@@ -60,6 +63,8 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         m_data.pass->Prepare();
+
+        UpdateFrustumCulling();
     }
 
     void IRenderTechnique::Update() {
@@ -279,6 +284,37 @@ namespace SR_GRAPH_NS {
         }
 
         return true;
+    }
+
+    void IRenderTechnique::UpdateFrustumCulling() {
+        SR_TRACY_ZONE;
+
+        if (!m_camera) {
+            return;
+        }
+
+        if (!SR_UTILS_NS::Features::Instance().Enabled("FrustumCulling")) {
+            return;
+        }
+
+        const Frustum& frustum = m_camera->GetFrustum();
+        bool changed = false;
+
+        ForEachPass([&frustum, &changed](BasePass& pass) {
+            if (!pass.HasRenderQueues()) {
+                return;
+            }
+
+            auto&& meshDrawer = static_cast<MeshDrawerPass&>(pass);
+
+            for (auto&& queueInfo : meshDrawer.GetRenderQueues()) {
+                changed |= queueInfo->UpdateFrustumCulling(frustum);
+            }
+        });
+
+        if (changed) {
+            GetPipeline()->SetDirty(true);
+        }
     }
 
     void IRenderTechnique::ReleaseFrameBuffers() {

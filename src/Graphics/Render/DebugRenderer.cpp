@@ -200,6 +200,11 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        if (!m_timedObjects.IsAlive(id)) {
+            SRHalt("DebugRenderer::Remove() : object with id \"{}\" is not alive!", id);
+            return;
+        }
+
         DebugTimedObject& timed = m_timedObjects.At(id);
         if (timed.drawInfo.type >= DrawType::Mesh) {
             m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]->RemoveUsePoint();

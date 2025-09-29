@@ -97,6 +97,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD IRenderTechnique* GetTechnique() const { return m_technique; }
         SR_NODISCARD bool IsInit() const { return m_isInit; }
         SR_NODISCARD virtual BasePass* FindPass(SR_UTILS_NS::StringAtom name);
+        SR_NODISCARD virtual bool HasRenderQueues() const { return false; }
 
         SR_NODISCARD BasePass* GetParent() const { return m_parent; }
         virtual void SetParent(BasePass* pParent) { m_parent = pParent; }

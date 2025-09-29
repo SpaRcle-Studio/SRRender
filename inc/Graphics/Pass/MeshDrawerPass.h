@@ -67,6 +67,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD bool HasPreRender() const noexcept override { return false; }
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
+        SR_NODISCARD bool HasRenderQueues() const noexcept override { return !m_renderQueues.empty(); }
         SR_NODISCARD virtual bool IsNeedUpdate() const noexcept { return false; }
 
         void SetRenderTechnique(SR_GRAPH_NS::IRenderTechnique* pRenderTechnique) override;

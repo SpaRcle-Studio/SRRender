@@ -2202,6 +2202,7 @@ namespace SR_GRAPH_NS {
     }
 
     void* VulkanPipeline::GetCurrentShaderHandle() const {
+        SR_TRACY_ZONE;
         ++m_state.operations;
 
         if (!m_state.pShader) SR_UNLIKELY_ATTRIBUTE {

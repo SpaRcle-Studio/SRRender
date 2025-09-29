@@ -271,6 +271,7 @@ namespace SR_GRAPH_NS {
 
         /// Обеспечивает обновление данных в шейдере
         virtual void UpdateUBO(uint32_t UBO, void* pData, uint64_t size);
+        void UpdateCurrentUBO(void* pData, uint64_t size);
 
         /// Обеспечивает обновление данных в шейдере
         virtual void UpdateSSBO(uint32_t SSBO, void* pData, uint64_t size);

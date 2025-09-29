@@ -76,7 +76,6 @@ namespace SR_GRAPH_NS {
         auto&& pCamera = GetCamera();
         if (!pCamera) {
             return;
-
         }
 
         std::vector<float_t> cascadeSplits;

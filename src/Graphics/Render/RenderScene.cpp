@@ -188,12 +188,6 @@ namespace SR_GRAPH_NS {
         SR_RENDER_TECHNIQUES_CALL(PostUpdate)
     }
 
-    void RenderScene::Submit() {
-        SR_TRACY_ZONE_N("Submit frame");
-
-        GetPipeline()->DrawFrame();
-    }
-
     void RenderScene::SetTechnique(const IRenderTechnique::Ptr& pTechnique) {
         if (m_technique) {
             m_technique->KillTechnique();

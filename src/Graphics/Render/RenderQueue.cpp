@@ -8,6 +8,7 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Types/Mesh.h>
+#include <Graphics/Utils/Frustum.h>
 #include <Graphics/Material/BaseMaterial.h>
 
 #include <Utils/ECS/LayerManager.h>
@@ -34,10 +35,6 @@ namespace SR_GRAPH_NS {
         for (auto&& [layer, queue] : m_queues) {
             for (auto&& meshInfo : queue) {
                 meshInfo.pMesh->GetRenderQueues().Remove(this);
-                //meshInfo.pMesh->GetRenderQueues().Remove(RenderQueueInfo { .pRenderQueue = this, .pShader = nullptr });
-                //if (meshInfo.pMesh->GetRenderQueues().empty()) {
-                //    meshInfo.pMesh->SetUniformsClean();
-                //}
             }
         }
     }
@@ -51,22 +48,15 @@ namespace SR_GRAPH_NS {
 
         PrepareLayers();
 
+        auto&& pNewQueue = info.pMesh->GetRenderQueues().Add(this);
+        pNewQueue->pShader = info.pMaterial ? info.pMaterial->GetShader(m_meshDrawerPass->GetShaderMacros()) : nullptr;
+
         MeshInfo meshInfo;
         meshInfo.pMesh = info.pMesh;
-        meshInfo.pShader = info.pMaterial ? info.pMaterial->GetShader(m_meshDrawerPass->GetShaderMacros()) : nullptr;
+        meshInfo.pShader = pNewQueue->pShader;
+        meshInfo.pInfo = pNewQueue;
         meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
-
-        //for (auto&& queue : info.pMesh->GetRenderQueues()) {
-        //    if (queue.inUpdateQueue) {
-        //        SRHalt("RenderQueue::Register() : can't register mesh while it's in update queue!");
-        //    }
-        //}
-
-        //info.pMesh->GetRenderQueues().Add(RenderQueueInfo { .pRenderQueue = this, .pShader = meshInfo.pShader });
-
-        auto&& pNewQueue = info.pMesh->GetRenderQueues().Add(this);
-        pNewQueue->pShader = meshInfo.pShader;
 
         for (auto&& [layer, queue] : m_queues) {
             if (layer == info.layer) {
@@ -96,19 +86,14 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        auto&& queues = info.pMesh->GetRenderQueues();
+
+        auto removedInfo = queues.Remove(this);
+
         MeshInfo meshInfo;
         meshInfo.pMesh = info.pMesh;
         meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
         meshInfo.priority = info.priority.value_or(0);
-
-        auto&& queues = info.pMesh->GetRenderQueues();
-        //for (auto&& queue : queues) {
-        //    if (queue.inUpdateQueue) {
-        //        SRHalt("RenderQueue::UnRegister() : can't unregister mesh while it's in update queue!");
-        //    }
-        //}
-
-        auto removedInfo = queues.Remove(this);
         meshInfo.pShader = removedInfo.pShader;
 
         if (!pQueue->Remove(meshInfo)) {
@@ -124,33 +109,6 @@ namespace SR_GRAPH_NS {
                 }
             }
         }
-
-        /*auto&& pIt = queues.LowerBound(RenderQueueInfo { .pRenderQueue = this, .pShader = nullptr });
-
-        if (pIt == queues.end()) SR_UNLIKELY_ATTRIBUTE {
-            SRHalt("RenderQueue::UnRegister() : queue not found!");
-            return;
-        }
-
-        meshInfo.pShader = pIt->pShader;
-        queues.Erase(pIt);
-
-        if (!pQueue->Remove(meshInfo)) {
-            SRHalt("RenderQueue::UnRegister() : mesh not found!");
-        }
-
-        if (queues.empty()) {
-            //meshInfo.pMesh->SetUniformsClean();
-
-            for (auto it = m_meshes.begin(); it != m_meshes.end(); ) {
-                if (it->pMesh == meshInfo.pMesh) {
-                    it = m_meshes.erase(it);
-                }
-                else {
-                    ++it;
-                }
-            }
-        }*/
     }
 
     void RenderQueue::Init() {
@@ -226,15 +184,19 @@ namespace SR_GRAPH_NS {
         auto pEnd = pStart + m_meshes.size();
 
         for (auto* pElement = pStart; pElement < pEnd; ++pElement) {
+            if (!pElement->pInfo->isVisible) SR_UNLIKELY_ATTRIBUTE {
+                pElement->pInfo->inUpdateQueue = false;
+                continue;
+            }
+
             const auto pMesh = pElement->pMesh;
 
             bool isNeedReUpdate = false;
 
             if (m_multiFrameMode) {
                 pElement->pInfo->dirtyUniformsFrames[frameIndex] = false;
-
                 for (uint8_t i = 0; i < maxFrames; ++i) {
-                    if (pElement->pInfo->dirtyUniformsFrames[i]) SR_UNLIKELY_ATTRIBUTE {
+                    if (pElement->pInfo->dirtyUniformsFrames[i]) {
                         isNeedReUpdate = true;
                         break;
                     }
@@ -296,6 +258,12 @@ namespace SR_GRAPH_NS {
 
         for (MeshInfo* pElement = pStart; pElement < pEnd; ) {
             const MeshInfo info = *pElement;
+
+            if (!info.pInfo->isVisible) SR_UNLIKELY_ATTRIBUTE {
+                pElement->state = QUEUE_STATE_INVISIBLE;
+                ++pElement;
+                continue;
+            }
 
             if (info.pMesh->IsWaitReRegister()) SR_UNLIKELY_ATTRIBUTE {
                 pElement->state = QUEUE_STATE_WAIT_REGISTER;
@@ -480,5 +448,50 @@ namespace SR_GRAPH_NS {
                 }
             }
         }
+    }
+
+    bool RenderQueue::UpdateFrustumCulling(const Frustum& frustum) {
+        SR_TRACY_ZONE;
+
+        bool changed = false;
+
+        for (auto&& queue : m_queues | std::views::values) {
+            for (auto&& meshInfo : queue) {
+                const bool isVisible = frustum.IsAABBVisible(meshInfo.pMesh->GetAABB());
+                if (meshInfo.pInfo->isVisible != isVisible) {
+                    meshInfo.pInfo->isVisible = isVisible;
+                    changed = true;
+                }
+            }
+        }
+        return changed;
+    }
+
+    bool RenderQueue::MeshInfo::operator==(const RenderQueue::MeshInfo &other) const noexcept {
+        return
+            pShader == other.pShader &&
+            vbo == other.vbo &&
+            pMesh == other.pMesh &&
+            priority == other.priority;
+    }
+
+    bool RenderQueue::RenderQueueLessPredicate::operator()(const RenderQueue::MeshInfo& left, const RenderQueue::MeshInfo& right) const noexcept {
+        /// Сравниваем приоритеты
+        if (left.priority != right.priority) SR_UNLIKELY_ATTRIBUTE {
+            return left.priority < right.priority;
+        }
+
+        /// Сравниваем указатели на шейдеры
+        if (left.pShader != right.pShader) SR_LIKELY_ATTRIBUTE {
+            return left.pShader < right.pShader;
+        }
+
+        /// Если шейдеры одинаковые, сравниваем VBO
+        if (left.vbo != right.vbo) SR_UNLIKELY_ATTRIBUTE {
+            return left.vbo < right.vbo;
+        }
+
+        /// Если и VBO одинаковые, сравниваем указатели на меши
+        return left.pMesh < right.pMesh;
     }
 }

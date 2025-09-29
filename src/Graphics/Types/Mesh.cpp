@@ -26,7 +26,6 @@ namespace SR_GTYPES_NS {
         SRAssert(m_isDestroyingState);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
         SRAssert(!m_registrationInfo.has_value());
-        //SRAssert2(!m_isUniformsDirty, "Application will crash if you delete mesh with dirty uniforms!");
         SRAssert2(!m_isWaitReRegister, "Application may will crash if you delete mesh with waiting re-register!");
     }
 
@@ -236,7 +235,7 @@ namespace SR_GTYPES_NS {
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
             UseSamplers();
             UseSSBO();
-            MarkUniformsDirty(true);
+            MarkUniformsDirty();
             m_descriptorManager.Flush();
         }
         GetPipeline()->GetCurrentShader()->FlushConstants();
@@ -311,6 +310,7 @@ namespace SR_GTYPES_NS {
     void Mesh::OnMatrixDirty() {
         MarkUniformsDirty();
         Super::OnMatrixDirty();
+        m_isAABBDirty = true;
     }
 
     void Mesh::OnLayerChanged() {
@@ -334,6 +334,16 @@ namespace SR_GTYPES_NS {
     void Mesh::OnDisable() {
         Super::OnDisable();
         UnRegisterMesh();
+    }
+
+    const SR_MATH_NS::AABB& Mesh::GetAABB() const {
+        if (m_isAABBDirty) {
+            if (auto&& pTransform = GetTransform()) {
+                m_aabb = pTransform->GetAABB();
+                m_isAABBDirty = false;
+            }
+        }
+        return m_aabb;
     }
 
     void Mesh::UnRegisterMesh() {
@@ -389,7 +399,7 @@ namespace SR_GTYPES_NS {
         m_isWaitReRegister = false;
     }
 
-    void Mesh::MarkUniformsDirty(bool force) {
+    void Mesh::MarkUniformsDirty() {
         SR_TRACY_ZONE;
 
         if (!IsActive()) SR_UNLIKELY_ATTRIBUTE {
@@ -403,31 +413,17 @@ namespace SR_GTYPES_NS {
                 continue;
             }
 
-            std::memset(pElement->dirtyUniformsFrames, 1, sizeof(pElement->dirtyUniformsFrames));
+            if (!pElement->isVisible) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
+
+            pElement->dirtyUniformsFrames.set();
             if (pElement->inUpdateQueue) {
                 continue;
             }
             pElement->inUpdateQueue = true;
             pElement->pRenderQueue->OnMeshDirty(this, pElement);
         }
-
-        /*if (m_isUniformsDirty && !force) SR_LIKELY_ATTRIBUTE {
-            return;
-        }
-
-        SR_TRACY_ZONE;
-
-        if (!IsActive()) SR_UNLIKELY_ATTRIBUTE {
-            return;
-        }
-
-        m_isUniformsDirty = !m_renderQueues.empty();
-
-        auto pStart = m_renderQueues.data();
-        auto pEnd = pStart + m_renderQueues.size();
-        for (auto pElement = pStart; pElement != pEnd; ++pElement) {
-            pElement->pRenderQueue->OnMeshDirty(this, pElement->pShader);
-        }*/
     }
 }
 

@@ -78,6 +78,7 @@
 #include "../src/Graphics/Material/MaterialData.cpp"
 
 #include "../src/Graphics/Utils/MeshUtils.cpp"
+#include "../src/Graphics/Utils/Frustum.cpp"
 #include "../src/Graphics/Utils/AtlasBuilder.cpp"
 
 #include "../src/Graphics/Window/Window.cpp"

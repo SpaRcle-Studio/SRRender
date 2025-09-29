@@ -568,4 +568,8 @@ namespace SR_GRAPH_NS {
         }
         m_buildStates[frameIndex] = m_state;
     }
+
+    void Pipeline::UpdateCurrentUBO(void* pData, uint64_t size) {
+        UpdateUBO(m_state.UBOId, pData, size);
+    }
 }

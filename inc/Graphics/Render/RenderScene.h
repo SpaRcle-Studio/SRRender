@@ -66,7 +66,6 @@ namespace SR_GRAPH_NS {
         void DeInit();
 
         void Render();
-        void Submit();
 
         void Synchronize();
 
