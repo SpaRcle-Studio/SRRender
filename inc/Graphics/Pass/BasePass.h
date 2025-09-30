@@ -51,6 +51,7 @@ namespace SR_GRAPH_NS {
         ~BasePass() override = default;
 
     public:
+        virtual bool PreInit();
         virtual bool Init();
         virtual void DeInit();
 
@@ -97,12 +98,12 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD IRenderTechnique* GetTechnique() const { return m_technique; }
         SR_NODISCARD bool IsInit() const { return m_isInit; }
         SR_NODISCARD virtual BasePass* FindPass(SR_UTILS_NS::StringAtom name);
-        SR_NODISCARD virtual bool HasRenderQueues() const { return false; }
 
         SR_NODISCARD BasePass* GetParent() const { return m_parent; }
         virtual void SetParent(BasePass* pParent) { m_parent = pParent; }
 
         virtual void ForEachPass(const std::function<void(BasePass&)>& func);
+        virtual bool UpdateFrustum() { return false; }
 
     protected:
         Memory::UBOManager& m_uboManager;

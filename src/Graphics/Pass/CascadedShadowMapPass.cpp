@@ -24,27 +24,58 @@ namespace SR_GRAPH_NS {
         Super::PostUpdate();
     }
 
+    SR_NODISCARD CascadedShadowMapPass::RenderQueuePtr CascadedShadowMapPass::AllocateRenderQueue(uint32_t index) {
+        auto&& pQueue = Super::AllocateRenderQueue(index);
+        //if (pQueue) {
+        //    pQueue->SetFrustumCullingAllowed(index >= 2);
+        //}
+        return pQueue;
+    }
+
     void CascadedShadowMapPass::UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const {
         if (m_instancing) {
             defines.AddDefine("CASCADES_INSTANCING");
+            if (IsFrustumCullingEnabled()) {
+                defines.AddDefine("CASCADES_FRUSTUM_CULLING");
+            }
         }
         Super::UpdateShaderDefines(defines);
     }
 
     bool CascadedShadowMapPass::Init() {
-        if (m_instancing && !GetPipeline()->IsShaderViewportIndexLayerSupported()) {
-            SR_LOG("CascadedShadowMapPass::Init() : instancing is not supported! Falling back to non-instancing mode...");
-            m_instancing = false;
-            auto&& pFrameBufferController = GetTechnique()->GetFrameBufferController(GetPassName());
-            if (pFrameBufferController) {
-                pFrameBufferController->SetLayersCount(m_cascadeCount);
-                pFrameBufferController->SetArrayLayersCount(1);
-                SetRenderLayers(m_cascadeCount);
+        m_instancing &= GetPipeline()->IsShaderViewportIndexLayerSupported();
+
+        uint32_t renderLayers = 0;
+
+        if (auto&& pController = GetTechnique()->GetFrameBufferController(GetPassName())) {
+            if (m_instancing) {
+                pController->SetLayersCount(1);
+                pController->SetArrayLayersCount(m_cascadeCount);
+
+                if (IsFrustumCullingEnabled()) {
+                    if (m_lightFrustumCount > m_cascadeCount) {
+                        SR_WARN("CascadedShadowMapPass::Init() : light frustum count ({}) is greater than cascade count ({}). Setting light frustum count to cascade count.", m_lightFrustumCount, m_cascadeCount);
+                        m_lightFrustumCount = m_cascadeCount;
+                    }
+                }
+                else {
+                    m_lightFrustumCount = 0;
+                }
+
+                renderLayers = SR_CLAMP(m_lightFrustumCount + 1, 1, m_cascadeCount);
             }
             else {
-                SR_ERROR("CascadedShadowMapPass::Init() : failed to find framebuffer controller \"{}\"!", GetPassName());
+                pController->SetLayersCount(m_cascadeCount);
+                pController->SetArrayLayersCount(1);
+                renderLayers = m_cascadeCount;
             }
         }
+        else {
+            SR_ERROR("CascadedShadowMapPass::Init() : failed to find framebuffer controller \"{}\"!", GetPassName());
+            return false;
+        }
+
+        SetRenderLayers(renderLayers);
 
         return Super::Init();
     }
@@ -54,20 +85,56 @@ namespace SR_GRAPH_NS {
 
         auto&& pPipeline = GetPipeline();
 
-        if (auto&& pFrameBuffer = pPipeline->GetCurrentFrameBuffer()) {
-            m_cascadeCount = m_instancing ? pFrameBuffer->GetArrayLayersCount() : pFrameBuffer->GetLayersCount();
+        bool result = false;
+
+        if (m_instancing) {
+            const uint8_t renderLayers = GetLayersCount();
+            for (uint8_t renderLayer = 0; renderLayer < renderLayers; ++renderLayer) {
+                if (renderLayer >= m_lightFrustumCount) {
+                    pPipeline->SetDrawInstancesCount(m_cascadeCount - (renderLayers - 1), renderLayers - 1);
+                    m_drawCascadeIndex = -1;
+                }
+                else {
+                    m_drawCascadeIndex = renderLayer;
+                    pPipeline->ResetDrawInstancesCount();
+                }
+
+                auto&& pQueue = GetRenderQueue(renderLayer);
+                result |= pQueue && pQueue->Render();
+
+                pPipeline->ResetDrawInstancesCount();
+            }
+        }
+        else {
+            result = Super::Render();
         }
 
-        pPipeline->SetDrawInstancesCount(m_instancing ? m_cascadeCount : 1);
-        const bool result = Super::Render();
-        pPipeline->ResetDrawInstancesCount();
-
         return result;
+    }
+
+    void CascadedShadowMapPass::Update() {
+        SR_TRACY_ZONE;
+
+        if (m_instancing) {
+            for (auto&& pQueue : GetRenderQueues()) {
+                pQueue->Update();
+            }
+        }
+        else {
+            Super::Update();
+        }
     }
 
     void CascadedShadowMapPass::Prepare() {
         SR_TRACY_ZONE;
         Super::Prepare();
+    }
+
+    const Frustum& CascadedShadowMapPass::GetFrustum(uint32_t renderLayer) const {
+        if (renderLayer < m_lightFrustumCount && !m_lightFrustums.empty()) {
+            return m_lightFrustums[renderLayer];
+        }
+        return Super::GetFrustum(renderLayer);
     }
 
     void CascadedShadowMapPass::UpdateCascades() {
@@ -82,6 +149,7 @@ namespace SR_GRAPH_NS {
         cascadeSplits.resize(m_cascadeCount);
 
         m_cascadeMatrices.resize(m_cascadeCount);
+        m_lightFrustums.resize(m_cascadeCount);
         m_cascadeSplitDepths.resize(m_cascadeCount);
 
         const float_t clipRange = m_far - m_near;
@@ -151,6 +219,10 @@ namespace SR_GRAPH_NS {
             m_cascadeMatrices[i] = lightOrthoMatrix * lightViewMatrix;
             m_cascadeSplitDepths[i] = (m_near + splitDist * clipRange) * -1.0f;
 
+            if (i < m_lightFrustumCount) {
+                m_lightFrustums[i] = ExtractFrustum(m_cascadeMatrices[i]);
+            }
+
             lastSplitDist = cascadeSplits[i];
         }
     }
@@ -165,7 +237,12 @@ namespace SR_GRAPH_NS {
     void CascadedShadowMapPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
         Super::UseConstants(pShader);
 
-        pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, GetPipeline()->GetCurrentFrameBufferLayer());
+        if (m_instancing) {
+            pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, m_drawCascadeIndex);
+        }
+        else {
+            pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, GetPipeline()->GetCurrentFrameBufferLayer());
+        }
     }
 
     bool CascadedShadowMapPass::CheckCamera() {

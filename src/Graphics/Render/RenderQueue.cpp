@@ -453,11 +453,27 @@ namespace SR_GRAPH_NS {
     bool RenderQueue::UpdateFrustumCulling(const Frustum& frustum) {
         SR_TRACY_ZONE;
 
+        if (!m_isFrustumAllowed) {
+            return false;
+        }
+
         bool changed = false;
 
         for (auto&& queue : m_queues | std::views::values) {
             for (auto&& meshInfo : queue) {
-                const bool isVisible = frustum.IsAABBVisible(meshInfo.pMesh->GetAABB());
+                bool isVisible = true;
+
+                if (meshInfo.pMesh->IsFrustumCullingSupported()) {
+                    const FrustumCullingType type = meshInfo.pMesh->GetFrustumCullingType();
+
+                    if (type == FrustumCullingType::None) {
+                        /// nothing
+                    }
+                    else { /// TODO: support other types of frustum culling
+                        isVisible = frustum.IsAABBVisible(meshInfo.pMesh->GetAABB());
+                    }
+                }
+
                 if (meshInfo.pInfo->isVisible != isVisible) {
                     meshInfo.pInfo->isVisible = isVisible;
                     changed = true;

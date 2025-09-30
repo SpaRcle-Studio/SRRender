@@ -20,11 +20,14 @@ namespace SR_GRAPH_NS {
     public:
         bool Init() override;
         bool Render() override;
+        void Update() override;
         void Prepare() override;
         void PostUpdate() override;
         void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) override;
         void UseConstants(SR_GTYPES_NS::Shader* pShader) override;
         void UseUniformsFromAnotherPass(SR_GTYPES_NS::Shader* pShader) override;
+
+        SR_NODISCARD RenderQueuePtr AllocateRenderQueue(uint32_t index) override;
 
     protected:
         bool CheckCamera();
@@ -32,11 +35,13 @@ namespace SR_GRAPH_NS {
 
         void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const override;
 
+        SR_NODISCARD const Frustum& GetFrustum(uint32_t renderLayer) const override;
+
     protected:
         SR_MATH_NS::FVector3 m_directionalLightDirection;
         SR_MATH_NS::FVector3 m_cameraPosition;
-        SR_MATH_NS::Quaternion m_cameraRotation;
         SR_MATH_NS::UVector2 m_screenSize;
+        SR_MATH_NS::Quaternion m_cameraRotation;
 
         /// @property
         float_t m_near = 0.1f;
@@ -46,11 +51,16 @@ namespace SR_GRAPH_NS {
         float_t m_cascadeSplitLambda = 0.95f;
         /// @property
         bool m_instancing = false;
+        /// @property
+        uint32_t m_lightFrustumCount = 2;
+        /// @property
+        uint32_t m_cascadeCount = 4;
 
+        int32_t m_drawCascadeIndex = -1;
         std::vector<SR_MATH_NS::Matrix4x4> m_cascadeMatrices;
+        std::vector<Frustum> m_lightFrustums;
         std::vector<float_t> m_cascadeSplitDepths;
         std::vector<float_t> m_cascadeRadii;
-        uint32_t m_cascadeCount = 4;
 
     };
 }

@@ -1886,7 +1886,7 @@ namespace SR_GRAPH_NS {
             vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
         }
 
-        vkCmdDraw(m_currentCmd, count, m_drawInstancesCount, 0, 0);
+        vkCmdDraw(m_currentCmd, count, m_drawInstancesCount, 0, m_drawInstancesStart);
     }
 
     void VulkanPipeline::DrawIndices(uint32_t count) {
@@ -1894,6 +1894,7 @@ namespace SR_GRAPH_NS {
 
         Super::DrawIndices(count);
 
+    #ifdef SR_RENDER_VALIDATION
         if (m_state.IBOId != SR_ID_INVALID) {
             auto&& pIBO = m_memory->GetIBO(m_state.IBOId);
             if (!pIBO) SR_UNLIKELY_ATTRIBUTE {
@@ -1906,12 +1907,13 @@ namespace SR_GRAPH_NS {
                 return;
             }
         }
+    #endif
 
         if (m_currentDescriptorSet) {
             vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
         }
 
-        vkCmdDrawIndexed(m_currentCmd, count, m_drawInstancesCount, 0, 0, 0);
+        vkCmdDrawIndexed(m_currentCmd, count, m_drawInstancesCount, 0, 0, m_drawInstancesStart);
     }
 
     void VulkanPipeline::SetVSyncEnabled(bool enabled) {

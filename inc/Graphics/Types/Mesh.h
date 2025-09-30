@@ -98,8 +98,9 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
         SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
         SR_NODISCARD RenderQueues& GetRenderQueues() noexcept { return m_renderQueues; }
-        SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const noexcept { return m_frustumCullingType; }
+        SR_NODISCARD FrustumCullingType GetFrustumCullingType() const noexcept;
         SR_NODISCARD bool IsCalculated() const noexcept { return m_isCalculated; }
+        SR_NODISCARD bool IsFrustumCullingSupported() const noexcept;
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
@@ -154,8 +155,8 @@ namespace SR_GTYPES_NS {
         SR_VIRTUAL_PROPERTY
         /// @property @setter(SetMaterial) @getter(GetMaterial) @inspector(MaterialPropertyDrawer)
         MaterialPtr m_material;
-        /// @property
-        FrustumCullingType m_frustumCullingType = FrustumCullingType::Sphere;
+        /// @property @propertyCondition(This.IsFrustumCullingSupported())
+        FrustumCullingType m_frustumCullingType = FrustumCullingType::AABB;
         /// @property @readOnly @dontSave
         bool m_isWaitReRegister = false;
         /// @virtualProperty(isRegistered) @getter(IsMeshRegistered) @readOnly @dontSave

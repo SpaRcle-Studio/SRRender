@@ -425,5 +425,19 @@ namespace SR_GTYPES_NS {
             pElement->pRenderQueue->OnMeshDirty(this, pElement);
         }
     }
+
+    bool Mesh::IsFrustumCullingSupported() const noexcept {
+        switch (GetMeshType()) {
+            case MeshType::Text:
+            case MeshType::Sprite:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    FrustumCullingType Mesh::GetFrustumCullingType() const noexcept {
+        return m_frustumCullingType;
+    }
 }
 

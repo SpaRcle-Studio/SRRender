@@ -36,7 +36,7 @@ namespace SR_GRAPH_NS {
     protected:
         void UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) override;
 
-        SR_NODISCARD RenderQueuePtr AllocateRenderQueue() override;
+        SR_NODISCARD RenderQueuePtr AllocateRenderQueue(uint32_t index) override;
 
         /// @virtualProperty(colorMultiplier) @getter(GetColorMultiplier) @setter(SetColorMultiplier)
         SR_VIRTUAL_PROPERTY

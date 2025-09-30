@@ -14,14 +14,30 @@ namespace SR_GRAPH_NS {
         m_passes.clear();
     }
 
+    bool GroupPass::PreInit() {
+        SR_TRACY_ZONE;
+
+        for (auto&& pPass : m_passes) {
+            if (!pPass->PreInit()) {
+                SR_ERROR("GroupPass::PreInit() : failed to pre-initialize pass \"{}\"!", pPass->GetPassName());
+                return false;
+            }
+        }
+
+        return Super::PreInit();
+    }
+
     bool GroupPass::Init() {
         SR_TRACY_ZONE;
 
         for (auto&& pPass : m_passes) {
-            pPass->Init();
+            if (!pPass->Init()) {
+                SR_ERROR("GroupPass::Init() : failed to initialize pass \"{}\"!", pPass->GetPassName());
+                return false;
+            }
         }
 
-        return BasePass::Init();
+        return Super::Init();
     }
 
     void GroupPass::DeInit() {
@@ -140,6 +156,14 @@ namespace SR_GRAPH_NS {
             pPass->PostUpdate();
         }
         Super::PostUpdate();
+    }
+
+    bool GroupPass::UpdateFrustum() {
+        bool changed = Super::UpdateFrustum();
+        for (auto&& pPass : m_passes) {
+            changed |= pPass->UpdateFrustum();
+        }
+        return changed;
     }
 
     void GroupPass::ForEachPass(const std::function<void(BasePass&)>& func) {

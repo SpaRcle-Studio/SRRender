@@ -9,8 +9,11 @@
 #include <Graphics/Render/RenderPredicates.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/SRSL/ShaderType.h>
+#include <Graphics/Loaders/SRSL.h>
 
 namespace SR_GRAPH_NS {
+    struct Frustum;
+
     class RenderStrategy;
     class RenderQueue;
 
@@ -57,17 +60,19 @@ namespace SR_GRAPH_NS {
 
     public:
         MeshDrawerPass();
-        ~MeshDrawerPass() override;
 
+        bool PreInit() override;
         bool Init() override;
         void DeInit() override;
         void Prepare() override;
         bool Render() override;
         void Update() override;
 
+        bool UpdateFrustum() override;
+
         SR_NODISCARD bool HasPreRender() const noexcept override { return false; }
         SR_NODISCARD bool HasPostRender() const noexcept override { return false; }
-        SR_NODISCARD bool HasRenderQueues() const noexcept override { return !m_renderQueues.empty(); }
+        SR_NODISCARD bool IsFrustumCullingEnabled() const noexcept { return m_frustumCulling; }
         SR_NODISCARD virtual bool IsNeedUpdate() const noexcept { return false; }
 
         void SetRenderTechnique(SR_GRAPH_NS::IRenderTechnique* pRenderTechnique) override;
@@ -87,10 +92,12 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::vector<RenderQueuePtr>& GetRenderQueues() const noexcept { return m_renderQueues; }
         SR_NODISCARD const SR_SRSL_NS::ShaderMacrosParams& GetShaderMacros() const noexcept { return m_shaderMacros; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept { return m_renderLayers; }
+        SR_NODISCARD const RenderQueuePtr& GetRenderQueue(uint32_t index) const;
 
     protected:
+        SR_NODISCARD virtual const Frustum& GetFrustum(uint32_t renderLayer) const;
         SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
-        SR_NODISCARD virtual RenderQueuePtr AllocateRenderQueue();
+        SR_NODISCARD virtual RenderQueuePtr AllocateRenderQueue(uint32_t index);
         virtual void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const { }
 
     protected:
@@ -101,6 +108,8 @@ namespace SR_GRAPH_NS {
         SR_HTYPES_NS::Time& m_time;
         std::vector<BasePass*> m_useSharedFromPass;
 
+        /// @property
+        bool m_frustumCulling = true;
         /// @property
         uint8_t m_renderLayers = 1;
         /// @property

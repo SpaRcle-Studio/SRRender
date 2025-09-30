@@ -115,6 +115,8 @@ namespace SR_GRAPH_NS {
             ReloadShaders();
         });
 
+        m_isFrustumCullingEnabled = SR_UTILS_NS::Features::Instance().Enabled("FrustumCulling");
+
         if (!InitPipeline()) {
             SR_ERROR("RenderContext::Init() : failed to initialize pipeline!");
             return false;

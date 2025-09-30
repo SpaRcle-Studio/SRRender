@@ -89,6 +89,7 @@ namespace SR_GRAPH_NS {
         void Register(Memory::IGraphicsResource* pResource, SR_UTILS_NS::PassKey<Memory::IGraphicsResource>);
 
         SR_NODISCARD bool IsOptimizedRenderUpdateEnabled() const noexcept { return m_isOptimizedUpdateEnabled; }
+        SR_NODISCARD bool IsFrustumCullingEnabled() const noexcept { return m_isFrustumCullingEnabled; }
         SR_NODISCARD bool IsEmpty() const;
         SR_NODISCARD bool IsDirty() const;
         SR_NODISCARD const RenderContext::PipelinePtr& GetPipeline() const;
@@ -162,6 +163,7 @@ namespace SR_GRAPH_NS {
         bool m_isClosed = false;
         bool m_hasChangedFrameBuffers = false;
 
+        bool m_isFrustumCullingEnabled = true;
         bool m_isNeedGarbageCollection = false;
         bool m_isOptimizedUpdateEnabled = false;
 

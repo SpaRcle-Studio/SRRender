@@ -278,9 +278,16 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        if (m_data.pass && !m_data.pass->PreInit()) {
+            SR_ERROR("RenderTechnique::Init() : failed to pre-initialize pass \"{}\"!", m_data.pass->GetPassName());
+            m_hasErrors = true;
+            return false;
+        }
+
         if (m_data.pass && !m_data.pass->Init()) {
             SR_ERROR("RenderTechnique::Init() : failed to initialize pass \"{}\"!", m_data.pass->GetPassName());
             m_hasErrors = true;
+            return false;
         }
 
         return true;
@@ -289,30 +296,11 @@ namespace SR_GRAPH_NS {
     void IRenderTechnique::UpdateFrustumCulling() {
         SR_TRACY_ZONE;
 
-        if (!m_camera) {
+        if (!m_camera || !GetRenderContext()->IsFrustumCullingEnabled()) {
             return;
         }
 
-        if (!SR_UTILS_NS::Features::Instance().Enabled("FrustumCulling")) {
-            return;
-        }
-
-        const Frustum& frustum = m_camera->GetFrustum();
-        bool changed = false;
-
-        ForEachPass([&frustum, &changed](BasePass& pass) {
-            if (!pass.HasRenderQueues()) {
-                return;
-            }
-
-            auto&& meshDrawer = static_cast<MeshDrawerPass&>(pass);
-
-            for (auto&& queueInfo : meshDrawer.GetRenderQueues()) {
-                changed |= queueInfo->UpdateFrustumCulling(frustum);
-            }
-        });
-
-        if (changed) {
+        if (m_data.pass && m_data.pass->UpdateFrustum()) {
             GetPipeline()->SetDirty(true);
         }
     }

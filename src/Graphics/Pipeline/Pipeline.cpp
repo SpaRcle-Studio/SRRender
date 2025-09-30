@@ -13,7 +13,7 @@
 
 #include <Enum/VertexType.hpp>
 
-#ifdef SR_DEBUG
+#if defined(SR_DEBUG) && defined(SR_RENDER_VALIDATION)
     #define SR_PIPELINE_RENDER_GUARD(ret)                   \
         if (!m_isRenderState) SR_UNLIKELY_ATTRIBUTE {       \
             SRHaltOnce("Missing call \"BeginRender()\"!");  \
@@ -210,8 +210,9 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
 
         if (m_bindedDescriptors.Get(descriptorSet, false)) {
-            PipelineError("Pipeline::BindDescriptorSet() : descriptor set already binded!");
-            return false;
+            //PipelineError("Pipeline::BindDescriptorSet() : descriptor set already binded!");
+            //return false;
+            return true;
         }
 
         m_bindedDescriptors.Set(descriptorSet, true);
@@ -571,5 +572,17 @@ namespace SR_GRAPH_NS {
 
     void Pipeline::UpdateCurrentUBO(void* pData, uint64_t size) {
         UpdateUBO(m_state.UBOId, pData, size);
+    }
+
+    void Pipeline::SetDrawInstancesCount(uint32_t count, uint32_t start) {
+        ++m_state.operations;
+        m_drawInstancesCount = count;
+        m_drawInstancesStart = start;
+    }
+
+    void Pipeline::ResetDrawInstancesCount() {
+        ++m_state.operations;
+        m_drawInstancesCount = 1;
+        m_drawInstancesStart = 0;
     }
 }

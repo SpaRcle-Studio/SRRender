@@ -25,8 +25,6 @@ namespace SR_GRAPH_NS {
         , m_time(SR_HTYPES_NS::Time::Instance())
     { }
 
-    MeshDrawerPass::~MeshDrawerPass() = default;
-
     bool MeshDrawerPass::IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const {
         if (m_allowedLayers.empty()) {
             if (m_disallowedLayers.empty()) {
@@ -67,6 +65,23 @@ namespace SR_GRAPH_NS {
         }
 
         m_renderQueues[layer]->Update();
+    }
+
+    bool MeshDrawerPass::UpdateFrustum() {
+        SR_TRACY_ZONE;
+
+        if (!m_frustumCulling) {
+            return false;
+        }
+
+        bool changed = false;
+
+        for (uint32_t i = 0; i < m_renderQueues.size(); ++i) {
+            const auto& frustum = GetFrustum(i);
+            changed |= m_renderQueues[i]->UpdateFrustumCulling(frustum);
+        }
+
+        return changed;
     }
 
     void MeshDrawerPass::UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) {
@@ -116,12 +131,26 @@ namespace SR_GRAPH_NS {
         return GetRenderScene()->GetRenderStrategy();
     }
 
+    const MeshDrawerPass::RenderQueuePtr& MeshDrawerPass::GetRenderQueue(uint32_t index) const {
+        if (index >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
+            static RenderQueuePtr nullPtr = nullptr;
+            return nullPtr;
+        }
+        return m_renderQueues[index];
+    }
+
     void MeshDrawerPass::DeInit() {
         for (auto&& pRenderQueue : m_renderQueues) {
             pRenderQueue.AutoFree();
         }
         m_renderQueues.clear();
         Super::DeInit();
+    }
+
+    bool MeshDrawerPass::PreInit() {
+        SR_TRACY_ZONE;
+        m_frustumCulling &= GetRenderContext()->IsFrustumCullingEnabled();
+        return true;
     }
 
     bool MeshDrawerPass::Init() {
@@ -149,7 +178,7 @@ namespace SR_GRAPH_NS {
 
         m_renderQueues.resize(m_renderLayers);
         for (uint8_t i = 0; i < m_renderLayers; ++i) {
-            m_renderQueues[i] = AllocateRenderQueue();
+            m_renderQueues[i] = AllocateRenderQueue(i);
         }
 
         m_useSharedFromPass.clear();
@@ -162,7 +191,7 @@ namespace SR_GRAPH_NS {
         return Super::Init();
     }
 
-    MeshDrawerPass::RenderQueuePtr MeshDrawerPass::AllocateRenderQueue() {
+    MeshDrawerPass::RenderQueuePtr MeshDrawerPass::AllocateRenderQueue(uint32_t index) {
         return GetRenderStrategy()->BuildQueue(this);
     }
 
@@ -184,5 +213,9 @@ namespace SR_GRAPH_NS {
     void MeshDrawerPass::Prepare() {
         Super::Prepare();
         m_samplers.PrepareSamplers();
+    }
+
+    const Frustum& MeshDrawerPass::GetFrustum(uint32_t renderLayer) const {
+        return GetCamera()->GetFrustum();
     }
 }

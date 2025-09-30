@@ -27,7 +27,7 @@ namespace SR_GRAPH_NS {
         Super::UseUniforms(pShader, pMesh);
     }
 
-    MeshDrawerPass::RenderQueuePtr ColorBufferPass::AllocateRenderQueue() {
+    MeshDrawerPass::RenderQueuePtr ColorBufferPass::AllocateRenderQueue(uint32_t index) {
         return GetRenderStrategy()->BuildQueue<ColorBufferRenderQueue, RenderQueue>(this);
     }
 

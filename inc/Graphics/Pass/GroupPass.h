@@ -15,6 +15,7 @@ namespace SR_GRAPH_NS {
         ~GroupPass() override;
 
     public:
+        bool PreInit() override;
         bool Init() override;
         void DeInit() override;
 
@@ -41,6 +42,7 @@ namespace SR_GRAPH_NS {
         void SetPasses(const std::vector<BasePass::Ptr>& passes) { m_passes = passes; }
 
         void ForEachPass(const std::function<void(BasePass&)>& func) override;
+        bool UpdateFrustum() override;
 
         SR_NODISCARD BasePass* FindPass(SR_UTILS_NS::StringAtom name) override;
 

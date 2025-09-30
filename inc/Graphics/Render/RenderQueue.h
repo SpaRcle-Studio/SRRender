@@ -79,6 +79,7 @@ namespace SR_GRAPH_NS {
         void Update();
 
         bool UpdateFrustumCulling(const Frustum& frustum);
+        void SetFrustumCullingAllowed(bool allowed) { m_isFrustumAllowed = allowed; }
 
         void OnMeshDirty(SR_GTYPES_NS::Mesh* pMesh, RenderQueueInfo* pInfo);
 
@@ -113,6 +114,7 @@ namespace SR_GRAPH_NS {
         bool m_updateMeshesOnDemand = false;
         bool m_rendered = false;
         bool m_isInitialized = false;
+        bool m_isFrustumAllowed = true;
 
         uint64_t m_layersStateHash = 0;
 

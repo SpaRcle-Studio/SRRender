@@ -26,6 +26,10 @@ namespace SR_GRAPH_NS {
 
     }
 
+    bool BasePass::PreInit() {
+        return true;
+    }
+
     bool BasePass::Init() {
         SRAssert2(!m_isInit, "Pass already initialized!");
 
