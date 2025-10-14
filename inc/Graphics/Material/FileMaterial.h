@@ -10,6 +10,7 @@
 #include <Utils/Resources/Asset.h>
 
 namespace SR_GRAPH_NS {
+    /// @extension(mat)
     class FileMaterialResource final : public SR_UTILS_NS::Asset {
         SR_CLASS()
         using Super = SR_UTILS_NS::Asset;

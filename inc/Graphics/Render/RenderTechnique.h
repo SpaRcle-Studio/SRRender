@@ -34,6 +34,7 @@ namespace SR_GRAPH_NS {
 
     };
 
+    /// @extension(srtech)
     class FileRenderTechniqueResource : public SR_UTILS_NS::Asset {
         SR_CLASS()
     public:
