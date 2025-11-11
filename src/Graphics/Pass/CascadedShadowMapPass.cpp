@@ -3,6 +3,13 @@
 //
 
 #include <Graphics/Pass/CascadedShadowMapPass.h>
+#include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Types/Camera.h>
+#include <Graphics/Types/Shader.h>
+#include <Graphics/Render/RenderScene.h>
+#include <Graphics/Render/RenderTechnique.h>
+#include <Graphics/Render/RenderQueue.h>
+#include <Graphics/Lighting/LightSystem.h>
 
 #include <Codegen/CascadedShadowMapPass.generated.hpp>
 

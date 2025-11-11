@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/Animations/AnimationStateCondition.h>
+#include <Graphics/Animations/AnimationState.h>
+#include <Graphics/Animations/AnimationStateMachine.h>
 
 namespace SR_ANIMATIONS_NS {
     bool AnimationStateConditionAnd::IsSuitable(const StateConditionContext& context) const noexcept {

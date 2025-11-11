@@ -3,7 +3,10 @@
 //
 
 #include <Graphics/Render/FrameBufferController.h>
+#include <Graphics/Render/RenderContext.h>
 #include <Graphics/Types/Framebuffer.h>
+
+#include <Utils/Common/Features.h>
 
 #include <Codegen/FrameBufferController.generated.hpp>
 

@@ -6,7 +6,9 @@
 #define SR_ENGINE_ANIMATION_CONTEXT_H
 
 #include <Graphics/Animations/AnimationData.h>
+
 #include <Utils/Types/SortedVector.h>
+#include <Utils/ECS/GameObject.h>
 
 namespace SpaRcle::Graphics::Animations {
     class AnimationGraph;
@@ -14,6 +16,7 @@ namespace SpaRcle::Graphics::Animations {
 
 namespace SR_ANIMATIONS_NS {
     class AnimationPose;
+    class Skeleton;
 
     //using AnimationDataPair = std::pair<SR_UTILS_NS::StringAtom, AnimationData>;
 

@@ -7,8 +7,11 @@
 
 #include <Graphics/SRSL/ICodeGenerator.h>
 #include <Graphics/SRSL/ShaderType.h>
+#include <Graphics/SRSL/RefAnalyzer.h>
 
 namespace SR_SRSL_NS {
+    class SRSLUniformBlock;
+
     class GLSLCodeGenerator : public ISRSLCodeGenerator, public SR_UTILS_NS::Singleton<GLSLCodeGenerator> {
         SR_REGISTER_SINGLETON(GLSLCodeGenerator)
     private:

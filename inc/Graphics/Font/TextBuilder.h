@@ -5,9 +5,11 @@
 #ifndef SR_ENGINE_TEXTBUILDER_H
 #define SR_ENGINE_TEXTBUILDER_H
 
-#include <Utils/Common/NonCopyable.h>
 #include <Graphics/Font/FreeType.h>
 #include <Graphics/Font/Glyph.h>
+
+#include <Utils/Common/NonCopyable.h>
+#include <Utils/Common/Enumerations.h>
 
 namespace SR_GTYPES_NS {
     class Font;

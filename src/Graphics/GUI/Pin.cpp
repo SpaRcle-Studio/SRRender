@@ -4,6 +4,10 @@
 
 #include <Graphics/GUI/Pin.h>
 #include <Graphics/GUI/Utils.h>
+#include <Graphics/GUI/ImGUI.h>
+#include <Graphics/GUI/Link.h>
+#include <Graphics/GUI/Node.h>
+
 #include <Utils/SRLM/DataType.h>
 #include <Utils/Platform/Platform.h>
 

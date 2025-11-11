@@ -6,7 +6,7 @@
 #include <Graphics/Lighting/LightSystem.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(ShadowMapPass);
+    /*SR_REGISTER_RENDER_PASS(ShadowMapPass);
 
     bool ShadowMapPass::Init() {
         return Super::Init();
@@ -50,5 +50,5 @@ namespace SR_GRAPH_NS {
 
     bool ShadowMapPass::Render() {
         return Super::Render();
-    }
+    }*/
 }

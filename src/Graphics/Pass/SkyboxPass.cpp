@@ -7,6 +7,7 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Codegen/SkyboxPass.generated.hpp>
 

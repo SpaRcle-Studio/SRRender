@@ -2,15 +2,15 @@
 // Created by Monika on 08.01.2023.
 //
 
-#ifdef SR_UTILS_ASSIMP
-    #include <assimp/Importer.hpp>
-    #include <assimp/scene.h>
-#endif
-
 #include <Graphics/Animations/AnimationClip.h>
 #include <Graphics/Animations/AnimationChannel.h>
 
 #include <Utils/Types/RawMesh.h>
+
+#ifdef SR_UTILS_ASSIMP
+    #include <assimp/Importer.hpp>
+    #include <assimp/scene.h>
+#endif
 
 #include <Codegen/AnimationClip.generated.hpp>
 

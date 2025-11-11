@@ -7,6 +7,8 @@
 
 #include <Graphics/macros.h>
 
+#include <Utils/Common/Enumerations.h>
+
 #define SR_ICON_MIN 0xe005
 #define SR_ICON_MAX 0xf8ff
 

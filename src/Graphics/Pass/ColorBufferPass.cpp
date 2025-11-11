@@ -3,6 +3,10 @@
 //
 
 #include <Graphics/Pass/ColorBufferPass.h>
+#include <Graphics/Pass/FrameBufferPass.h>
+#include <Graphics/Types/Shader.h>
+#include <Graphics/Types/Mesh.h>
+#include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
 #include <Codegen/ColorBufferPass.generated.hpp>

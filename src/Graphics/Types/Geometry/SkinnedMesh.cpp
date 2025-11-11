@@ -3,6 +3,10 @@
 //
 
 #include <Graphics/Types/Geometry/SkinnedMesh.h>
+#include <Graphics/Types/Shader.h>
+#include <Graphics/Render/RenderScene.h>
+
+#include <Utils/Common/Features.h>
 
 #include <Codegen/SkinnedMesh.generated.hpp>
 

@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/SRSL/PreProcessor.h>
+#include <Graphics/SRSL/Lexer.h>
 
 namespace SR_SRSL_NS {
     SRSLPreProcessor::OutResult SRSLPreProcessor::Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderMacrosParams& macros) {

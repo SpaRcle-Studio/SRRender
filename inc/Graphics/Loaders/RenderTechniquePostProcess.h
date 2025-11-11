@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_RENDER_TECHNIQUE_POST_PROCESS_H
 #define SR_ENGINE_GRAPHICS_RENDER_TECHNIQUE_POST_PROCESS_H
 
-#include <Graphics/macros.h>
+#include <Graphics/stdInclude.h>
 
 namespace SR_GRAPH_NS {
     class IRenderTechnique;

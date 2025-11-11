@@ -5,9 +5,9 @@
 #include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Types/Mesh.h>
 
 #include <Codegen/BaseMaterial.generated.hpp>
-#include <utility>
 
 namespace SR_GRAPH_NS {
     BaseMaterial::BaseMaterial()

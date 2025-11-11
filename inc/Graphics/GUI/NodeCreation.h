@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_NODECREATION_H
 #define SR_ENGINE_NODECREATION_H
 
+#include <Graphics/macros.h>
+
 #include <Utils/Math/Vector2.h>
 #include <Utils/Common/Hashes.h>
 

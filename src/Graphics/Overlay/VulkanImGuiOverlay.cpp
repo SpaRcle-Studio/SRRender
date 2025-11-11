@@ -3,12 +3,19 @@
 //
 
 #include <Graphics/Overlay/VulkanImGuiOverlay.h>
+#include <Graphics/Pipeline/Vulkan/VulkanTracy.h>
 #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
+#include <Graphics/Pipeline/Vulkan/VulkanKernel.h>
+#include <Graphics/Pipeline/Vulkan/VulkanMemory.h>
+#include <Graphics/Window/Window.h>
+#include <Graphics/GUI/WidgetManager.h>
+#include <Graphics/GUI/Widget.h>
+#include <Graphics/GUI/ImGUI.h>
 
 #include <EvoVulkan/Types/DescriptorPool.h>
 #include <EvoVulkan/DescriptorManager.h>
 
-#include <Graphics/GUI/ImGUI.h>
+#include <Utils/Common/Features.h>
 
 #ifdef SR_WIN32
     extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

@@ -4,12 +4,19 @@
 
 #include <Graphics/UI/UIControlNode.h>
 
+#ifdef SR_RENDER_USE_YOGA
+    #include <yoga/YGEnums.h>
+    #include <yoga/YGNodeLayout.h>
+    #include <yoga/YGNodeStyle.h>
+#endif
+
 #include <Codegen/UIControlNode.generated.hpp>
 
 namespace SR_GRAPH_UI_NS {
     void UIControlNode::Prepare(uint64_t& priority) {
         Super::Prepare(priority);
 
+    #ifdef SR_RENDER_USE_YOGA
         YGNodeStyleSetMarginPercent(GetYGNode(), YGEdgeLeft, m_layout.margin.left);
         YGNodeStyleSetMarginPercent(GetYGNode(), YGEdgeTop, m_layout.margin.top);
         YGNodeStyleSetMarginPercent(GetYGNode(), YGEdgeRight, m_layout.margin.right);
@@ -59,10 +66,12 @@ namespace SR_GRAPH_UI_NS {
             case UIAlign::SpaceEvenly:  YGNodeStyleSetAlignSelf(GetYGNode(), YGAlignSpaceEvenly); break;
             default: SRHalt("Unknown UIAlign!"); break;
         }
+    #endif
 
         //YGNodeStyleSetDirection(GetYGNode(), YGDirectionInherit);
     }
 
+#ifdef SR_RENDER_USE_YOGA
     float GetGlobalX(YGNodeRef node) {
         float x = YGNodeLayoutGetLeft(node);
         YGNodeRef parent = YGNodeGetParent(node);
@@ -82,6 +91,7 @@ namespace SR_GRAPH_UI_NS {
         }
         return y;
     }
+#endif
 
     void UIControlNode::Layout(const SR_MATH_NS::FRect& available) {
         /*/// 1. Учитываем margin
@@ -132,6 +142,7 @@ namespace SR_GRAPH_UI_NS {
         //YGNodeCalculateLayout(GetYGNode(), m_viewportSize.x, m_viewportSize.y, YGDirectionLTR);
         //YGNodeCalculateLayout(GetYGNode(), m_viewportSize.x, m_viewportSize.y, YGDirectionInherit);
 
+#ifdef SR_RENDER_USE_YOGA
         m_hasParent = false;
         m_parentName = SR_UTILS_NS::StringAtom();
         if (auto&& pParent = YGNodeGetParent(GetYGNode())) {
@@ -143,6 +154,7 @@ namespace SR_GRAPH_UI_NS {
         m_finalRect.y = GetGlobalY(GetYGNode());
         m_finalRect.w = YGNodeLayoutGetWidth(GetYGNode());
         m_finalRect.h = YGNodeLayoutGetHeight(GetYGNode());
+#endif
     }
 
     SR_MATH_NS::FVector2 UIControlNode::CalculateContentSize() const {

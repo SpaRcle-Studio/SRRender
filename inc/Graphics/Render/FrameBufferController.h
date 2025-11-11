@@ -18,6 +18,8 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    class RenderContext;
+
     class FrameBufferController final : public SR_HTYPES_NS::SharedPtr<FrameBufferController>, public SR_UTILS_NS::Serializable {
         SR_CLASS()
         using Super = SR_HTYPES_NS::SharedPtr<FrameBufferController>;

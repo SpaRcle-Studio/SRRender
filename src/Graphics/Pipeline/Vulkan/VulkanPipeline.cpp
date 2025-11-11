@@ -2,8 +2,11 @@
 // Created by Monika on 15.09.2023.
 //
 
-#include <Utils/Events/EventManager.h>
 
+#include <Graphics/Render/RenderContext.h>
+#include <Graphics/Types/Framebuffer.h>
+#include <Graphics/Types/Shader.h>
+#include <Graphics/Window/Window.h>
 #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
 #include <Graphics/Pipeline/Vulkan/VulkanKernel.h>
 #include <Graphics/Pipeline/Vulkan/AbstractCasts.h>
@@ -15,13 +18,21 @@
 #endif
 
 #ifdef SR_LINUX
-    #include <GLFW/glfw3.h>
+    #include <Graphics/Window/GLFWWindow.h>
     //#include <Graphics/Pipeline/Vulkan/X11SurfaceInit.h>
+#endif
+
+#ifdef SR_WIN32
+    #include <Graphics/Window/Win32Window.h>
 #endif
 
 #ifdef SR_RENDER_USE_GLSL_LANG_LIB
     #include <Graphics/Pipeline/GLSLDefaultTBuiltInResource.h>
 #endif
+
+#include <Utils/Events/EventManager.h>
+#include <Utils/Common/Features.h>
+#include <Utils/Common/StoreUtils.h>
 
 namespace SR_GRAPH_NS {
     std::string VulkanPipeline::GetVendor() const {
@@ -970,7 +981,7 @@ namespace SR_GRAPH_NS {
     }
 
 #ifdef SR_RENDER_USE_GLSL_LANG_LIB
-    EShLanguage GetShaderStageFromFileExtension(const std::string& filename) {
+    static EShLanguage GetShaderStageFromFileExtension(const std::string& filename) {
         if (filename.ends_with(".vert")) return EShLangVertex;
         if (filename.ends_with(".frag")) return EShLangFragment;
         if (filename.ends_with(".comp")) return EShLangCompute;

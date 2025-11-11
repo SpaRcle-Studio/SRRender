@@ -3,14 +3,13 @@
 //
 
 #include <Graphics/Animations/AnimationPose.h>
-
-#include <Utils/ECS/Transform.h>
-
 #include <Graphics/Animations/AnimationData.h>
 #include <Graphics/Animations/AnimationChannel.h>
 #include <Graphics/Animations/AnimationClip.h>
 #include <Graphics/Animations/Skeleton.h>
 #include <Graphics/Animations/Bone.h>
+
+#include <Utils/ECS/Transform.h>
 
 namespace SR_ANIMATIONS_NS {
     AnimationPose::~AnimationPose() {

@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/Types/Geometry/DebugLine.h>
+#include <Graphics/Material/BaseMaterial.h>
 
 namespace SR_GTYPES_NS {
     DebugLine::DebugLine(SR_MATH_NS::FVector3 startPoint, SR_MATH_NS::FVector3 endPoint, SR_MATH_NS::FVector4 color)

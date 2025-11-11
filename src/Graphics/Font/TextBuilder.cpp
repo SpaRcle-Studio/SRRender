@@ -4,6 +4,10 @@
 
 #include <Graphics/Font/TextBuilder.h>
 #include <Graphics/Font/Font.h>
+#include <Graphics/Pipeline/TextureHelper.h>
+
+#include <Utils/Localization/LocalizationManager.h>
+#include <Utils/Localization/Encoding.h>
 
 namespace SR_GRAPH_NS {
     TextBuilder::TextBuilder(TextBuilder::FontPtr pFont)

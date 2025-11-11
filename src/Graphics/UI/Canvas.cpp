@@ -2,13 +2,14 @@
 // Created by Monika on 01.08.2022.
 //
 
-#include <Utils/ECS/Transform3D.h>
-#include <Utils/ECS/Transform2D.h>
-#include <Utils/ECS/ComponentManager.h>
-
 #include <Graphics/UI/Canvas.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Types/Camera.h>
+
+#include <Utils/ECS/Transform3D.h>
+#include <Utils/ECS/Transform2D.h>
+#include <Utils/ECS/ComponentManager.h>
 
 #include <Codegen/Canvas.generated.hpp>
 

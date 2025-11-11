@@ -8,6 +8,7 @@
 #include <Graphics/macros.h>
 
 #include <Utils/Common/Enumerations.h>
+#include <Utils/Serialization/Serialization.h>
 
 namespace SR_GRAPH_NS {
     SR_ENUM_NS_CLASS_T(LightType, uint8_t,

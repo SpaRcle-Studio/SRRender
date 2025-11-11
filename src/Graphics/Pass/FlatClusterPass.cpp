@@ -5,7 +5,7 @@
 #include <Graphics/Pass/FlatClusterPass.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(FlatClusterPass)
+    /*SR_REGISTER_RENDER_PASS(FlatClusterPass)
 
     MeshClusterType FlatClusterPass::GetClusterType() const noexcept {
         return MeshClusterType::Flat;
@@ -130,6 +130,6 @@ namespace SR_GRAPH_NS {
 //         pShader->SetVec3(SHADER_VIEW_POSITION, m_camera->GetPosition());
 //     }
 
-//     Super::UseSharedUniforms(pShader);
+//     Super::UseSharedUniforms(pShader);*/
 // }
 }

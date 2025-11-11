@@ -5,10 +5,18 @@
 #ifndef SR_ENGINE_GRAPHICS_VULKAN_IMGUI_OVERLAY_H
 #define SR_ENGINE_GRAPHICS_VULKAN_IMGUI_OVERLAY_H
 
-#include <Graphics/macros.h>
-
 #include <Graphics/Overlay/ImGuiOverlay.h>
 #include <Graphics/Overlay/ImGuiInternal.h>
+
+#include <EvoVulkan/Tools/SubmitInfo.h>
+#include <EvoVulkan/Types/RenderPass.h>
+
+namespace EvoVulkan::Types {
+    class Device;
+    class Swapchain;
+    class MultisampleTarget;
+    class DescriptorPool;
+}
 
 namespace SR_GRAPH_NS {
     class VulkanImGuiOverlay : public ImGuiOverlay {

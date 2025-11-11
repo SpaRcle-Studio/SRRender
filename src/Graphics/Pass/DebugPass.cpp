@@ -5,9 +5,11 @@
 #include <Graphics/Pass/DebugPass.h>
 #include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Geometry/IndexedMesh.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Render/DebugRenderer.h>
+#include <Graphics/Render/RenderScene.h>
 
 #include <Utils/Common/Features.h>
 

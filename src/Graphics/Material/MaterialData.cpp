@@ -3,11 +3,11 @@
 //
 
 #include <Graphics/Material/MaterialData.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Enum/ShaderVarType.hpp>
 
 #include <Codegen/MaterialData.generated.hpp>
-#include <utility>
 
 namespace SR_GRAPH_NS {
     void MaterialShaderProperty::Save(SR_UTILS_NS::ISerializer& serializer) const {

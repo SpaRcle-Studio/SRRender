@@ -7,6 +7,8 @@
 
 #include <Graphics/GUI/ImNodeEditorUtils.h>
 
+#include <Utils/Common/NonCopyable.h>
+
 namespace SR_GTYPES_NS {
     class Texture;
 }

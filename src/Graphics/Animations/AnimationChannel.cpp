@@ -4,6 +4,10 @@
 
 #include <Graphics/Animations/AnimationChannel.h>
 
+#include <Utils/Types/RawMesh.h>
+
+#include <assimp/anim.h>
+
 namespace SR_ANIMATIONS_NS {
     AnimationChannel::~AnimationChannel() {
         m_keys.clear();

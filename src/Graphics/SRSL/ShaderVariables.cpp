@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/SRSL/ShaderVariables.h>
+#include <Graphics/Pipeline/IShaderProgram.h>
 
 namespace SR_SRSL_NS {
     std::string ShaderRenderPassTypeToString(ShaderRenderPassType type) {

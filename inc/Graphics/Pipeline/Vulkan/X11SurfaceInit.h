@@ -9,9 +9,11 @@
 
 #include <EvoVulkan/macros.h>
 
-#include <Utils/Types/SafePointer.h>
+#include <Utils/Types/SharedPtr.h>
 
 namespace SR_GRAPH_NS {
+    class Window;
+
     class X11SurfaceInit {
     public:
         static VkSurfaceKHR Init(const SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::Window>& window, VkInstance instance);

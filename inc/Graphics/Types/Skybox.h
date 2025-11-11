@@ -5,10 +5,18 @@
 #ifndef SR_ENGINE_GRAPHICS_SKYBOX_H
 #define SR_ENGINE_GRAPHICS_SKYBOX_H
 
-#include <Utils/Resources/IResource.h>
-
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Loaders/TextureLoader.h>
+
+#include <Utils/Resources/IResource.h>
+
+namespace SR_GRAPH_NS {
+    class DescriptorManager;
+}
+
+namespace SR_GRAPH_NS::Memory {
+    class UBOManager;
+}
 
 namespace SR_GTYPES_NS {
     class Shader;
@@ -26,7 +34,7 @@ namespace SR_GTYPES_NS {
         static Skybox::Ptr Load(const SR_UTILS_NS::Path& path);
 
     public:
-        SR_NODISCARD Shader::Ptr GetShader() const noexcept { return m_shader; }
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<Shader> GetShader() const noexcept { return m_shader; }
         SR_NODISCARD int32_t GetVBO();
         SR_NODISCARD int32_t GetIBO();
         SR_NODISCARD int32_t GetVirtualUBO() const;
@@ -48,7 +56,7 @@ namespace SR_GTYPES_NS {
         bool Calculate();
 
     private:
-        Shader::Ptr m_shader = nullptr;
+        SR_HTYPES_NS::SharedPtr<Shader> m_shader;
 
         int32_t m_VBO = SR_ID_INVALID;
         int32_t m_IBO = SR_ID_INVALID;

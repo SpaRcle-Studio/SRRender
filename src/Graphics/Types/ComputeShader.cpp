@@ -3,6 +3,11 @@
 //
 
 #include <Graphics/Types/ComputeShader.h>
+#include <Graphics/Memory/DescriptorManager.h>
+#include <Graphics/Memory/UBOManager.h>
+#include <Graphics/Render/RenderContext.h>
+
+#include <Utils/Types/DataStorage.h>
 
 namespace SR_GTYPES_NS {
     ComputeShader::ComputeShader() = default;

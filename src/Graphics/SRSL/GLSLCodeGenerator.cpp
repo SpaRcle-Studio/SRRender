@@ -4,6 +4,8 @@
 
 #include <Graphics/SRSL/GLSLCodeGenerator.h>
 #include <Graphics/SRSL/Shader.h>
+#include <Graphics/SRSL/TypeInfo.h>
+#include <Graphics/SRSL/ShaderVariables.h>
 
 namespace SR_SRSL_NS {
     ISRSLCodeGenerator::SRSLCodeGenRes GLSLCodeGenerator::GenerateStages(const SRSLShader* pShader) {

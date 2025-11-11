@@ -6,6 +6,9 @@ endif()
 
 project(Graphics)
 
+SR_COMMON_GENERATE_BUILD_SOURCES(${PROJECT_SOURCE_DIR})
+SR_COMMON_GET_SOURCES(Graphics)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
@@ -71,10 +74,8 @@ if (NOT SR_EMSCRIPTEN)
     add_subdirectory(libs/cmp_core)
 endif()
 
-set(SR_GRAPHICS_SOURCES cxx/Graphics.cxx cxx/ImGUI.cxx cxx/SRSL.cxx cxx/Pass.cxx cxx/GUI.cxx cxx/Animations.cxx cxx/UI.cxx cxx/Render.cxx)
-
 if (SR_GRAPHICS_STATIC_LIBRARY)
-    add_library(Graphics STATIC ${SR_GRAPHICS_SOURCES})
+    add_library(Graphics STATIC ${Graphics_SOURCES})
 
     if (CYGWIN AND SR_RENDER_USE_VULKAN)
         target_link_libraries(Graphics "$ENV{VULKAN_SDK}/Lib/vulkan-1.lib")
@@ -82,7 +83,7 @@ if (SR_GRAPHICS_STATIC_LIBRARY)
 
     endif()
 else()
-    add_library(Graphics SHARED ${SR_GRAPHICS_SOURCES})
+    add_library(Graphics SHARED ${Graphics_SOURCES})
     add_library(Graphics::lib ALIAS Graphics)
 
     if (MINGW AND SR_RENDER_USE_VULKAN)

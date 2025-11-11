@@ -5,7 +5,7 @@
 #include <Graphics/Pass/IMesh3DClusterPass.h>
 
 namespace SR_GRAPH_NS {
-    bool IMesh3DClusterPass::Init() {
+    /*bool IMesh3DClusterPass::Init() {
         SR_TRACY_ZONE;
         m_shadowMapPass = GetTechnique()->FindPass<ShadowMapPass>();
         m_cascadedShadowMapPass = GetTechnique()->FindPass<CascadedShadowMapPass>();
@@ -15,13 +15,13 @@ namespace SR_GRAPH_NS {
     void IMesh3DClusterPass::MarkDirtyCluster(MeshCluster& meshCluster) {
         SR_TRACY_ZONE;
 
-        /*for (auto&& [pClusterShader, subCluster] : meshCluster) {
+        for (auto&& [pClusterShader, subCluster] : meshCluster) {
             for (auto&& [key, meshGroup] : subCluster) {
                 for (auto&& pMesh : meshGroup) {
                     pMesh->MarkMaterialDirty();
                 }
             }
-        }*/
+        }
     }
 
     bool IMesh3DClusterPass::RenderCluster(MeshCluster& meshCluster) {
@@ -42,13 +42,13 @@ namespace SR_GRAPH_NS {
             }
 
             /// Если нет ни одного активного меша, то нет смысла идти дальше
-           /* for (auto&& [key, meshGroup] : subCluster) {
+            for (auto&& [key, meshGroup] : subCluster) {
                 for (auto&& pMesh : meshGroup) {
                     if (pMesh->IsMeshActive()) {
                         goto goDraw;
                     }
                 }
-            }*/
+            }
 
             continue;
 
@@ -91,7 +91,7 @@ namespace SR_GRAPH_NS {
 
             UseSharedUniforms(pShader);
 
-            /*for (auto const& [key, meshGroup] : subCluster) {
+            for (auto const& [key, meshGroup] : subCluster) {
                 for (const auto& pMesh : meshGroup) {
                     if (!pMesh->IsMeshActive()) {
                         continue;
@@ -110,7 +110,7 @@ namespace SR_GRAPH_NS {
 
                     pShader->Flush();
                 }
-            }*/
+            }
 
             GetRenderScene()->SetCurrentSkeleton(nullptr);
             GetContext()->SetCurrentShader(nullptr);
@@ -173,5 +173,5 @@ namespace SR_GRAPH_NS {
         }
 
         Super::OnClusterDirty();
-    }
+    }*/
 }

@@ -4,6 +4,9 @@
 
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Render/RenderContext.h>
+
+#include <Utils/Types/DataStorage.h>
 
 namespace SR_GRAPH_NS::Memory {
     IGraphicsResource::~IGraphicsResource() {

@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/GUI/Utils.h>
+#include <Graphics/GUI/ImGUI.h>
 
 namespace SR_GRAPH_GUI_NS {
     ImGuiDisabledLockGuard::ImGuiDisabledLockGuard(bool disabled)

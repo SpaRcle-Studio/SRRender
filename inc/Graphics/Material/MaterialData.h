@@ -5,10 +5,10 @@
 #ifndef SR_ENGINE_GRAPHICS_MATERIAL_DATA_H
 #define SR_ENGINE_GRAPHICS_MATERIAL_DATA_H
 
-#include <Utils/Serialization/Serializable.h>
-
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Texture.h>
+
+#include <Utils/Serialization/Serializable.h>
 
 namespace SR_GRAPH_NS {
     /*SR_ENUM_NS_CLASS_T(MaterialShader, uint16_t,

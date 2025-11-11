@@ -10,6 +10,7 @@
 #include <Graphics/Memory/ShaderProgramManager.h>
 #include <Graphics/Memory/DescriptorManager.h>
 #include <Graphics/Memory/UBOManager.h>
+#include <Graphics/Memory/CameraManager.h>
 #include <Graphics/Memory/SSBOManager.h>
 #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
 #include <Graphics/Pass/FrameBufferPass.h>
@@ -18,9 +19,12 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/RenderTexture.h>
+#include <Graphics/Types/Mesh.h>
 #include <Graphics/Types/Skybox.h>
+#include <Graphics/Material/FileMaterial.h>
 
 #include <Utils/Common/StoreUtils.h>
+#include <Utils/Common/Features.h>
 #include <Utils/Events/Broadcaster.h>
 
 namespace SR_GRAPH_NS {

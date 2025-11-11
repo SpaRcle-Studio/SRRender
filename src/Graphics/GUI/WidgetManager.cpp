@@ -2,13 +2,15 @@
 // Created by Monika on 10.02.2022.
 //
 
-#include <Utils/Debug.h>
-#include <Utils/Common/Features.h>
-#include <Utils/Types/SafePtrLockGuard.h>
-
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/GUI/WidgetManager.h>
+#include <Graphics/GUI/Widget.h>
+#include <Graphics/GUI/ImGUI.h>
+
+#include <Utils/Debug.h>
+#include <Utils/Common/Features.h>
+#include <Utils/Types/SafePtrLockGuard.h>
 
 namespace SR_GRAPH_NS::GUI {
     WidgetManager::WidgetManager()

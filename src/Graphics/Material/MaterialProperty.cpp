@@ -3,6 +3,9 @@
 //
 
 #include <Graphics/Material/MaterialProperty.h>
+#include <Graphics/Types/Texture.h>
+#include <Graphics/Types/Shader.h>
+#include <Graphics/Material/BaseMaterial.h>
 
 namespace SR_GRAPH_NS {
     void LoadMaterialProperties(const std::string& materialDebugIdentifier, const SR_XML_NS::Node& propertiesNode, MaterialProperties* pProperties) {

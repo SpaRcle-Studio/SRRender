@@ -11,6 +11,7 @@
 #include <Utils/ECS/ComponentManager.h>
 #include <Utils/Math/Vector3.h>
 #include <Utils/Math/Matrix4x4.h>
+#include <Utils/Common/SubscriptionHolder.h>
 
 namespace SR_GRAPH_NS {
     class Window;

@@ -5,8 +5,6 @@
 #ifndef SR_ENGINE_ANIMATIONCHANNEL_H
 #define SR_ENGINE_ANIMATIONCHANNEL_H
 
-#include <Utils/ECS/EntityRefOld.h>
-
 #include <Graphics/Animations/AnimationKey.h>
 #include <Graphics/Animations/AnimationContext.h>
 

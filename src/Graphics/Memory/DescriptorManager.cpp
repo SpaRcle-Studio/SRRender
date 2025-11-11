@@ -3,6 +3,10 @@
 //
 
 #include <Graphics/Memory/DescriptorManager.h>
+#include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Types/Shader.h>
+
+#include <Utils/Common/Features.h>
 
 namespace SR_GRAPH_NS {
     DescriptorManager::VirtualDescriptorSet DescriptorManager::AllocateDescriptorSet(VirtualDescriptorSet reallocation) {

@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/GUI/Editor/Theme.h>
+#include <Graphics/GUI/ImGUI.h>
 
 #include <Utils/Resources/Xml.h>
 #include <Utils/Resources/ResourceManager.h>

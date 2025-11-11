@@ -2,7 +2,10 @@
 // Created by Monika on 05.04.2022.
 //
 
+#include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Geometry/ProceduralMesh.h>
+#include <Graphics/Render/RenderScene.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Codegen/ProceduralMesh.generated.hpp>
 

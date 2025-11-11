@@ -5,6 +5,7 @@
 #include <Graphics/Material/MeshMaterialProperty.h>
 #include <Graphics/Material/FileMaterial.h>
 #include <Graphics/Material/UniqueMaterial.h>
+#include <Graphics/Types/Mesh.h>
 
 namespace SR_GRAPH_NS {
     MeshMaterialProperty::MeshMaterialProperty() {

@@ -9,6 +9,7 @@
 
 #include <Utils/Debug.h>
 #include <Utils/Common/PassKey.h>
+#include <Utils/Types/SharedPtr.h>
 
 namespace SR_GRAPH_NS {
     class RenderContext;

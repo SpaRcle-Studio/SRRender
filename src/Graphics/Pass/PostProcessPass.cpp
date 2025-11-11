@@ -5,8 +5,11 @@
 #include <Graphics/Pass/PostProcessPass.h>
 #include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Types/Texture.h>
+#include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Render/RenderScene.h>
 #include <Graphics/Lighting/LightSystem.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Codegen/PostProcessPass.generated.hpp>
 

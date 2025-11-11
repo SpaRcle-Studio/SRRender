@@ -9,7 +9,7 @@
 #include <Graphics/Types/Texture.h>
 
 namespace SR_GRAPH_NS {
-    class SSAOPass : public PostProcessPass {
+    /*class SSAOPass : public PostProcessPass {
         using Super = PostProcessPass;
         using SSAOKernel = std::vector<SR_MATH_NS::FVector4>;
     public:
@@ -36,7 +36,7 @@ namespace SR_GRAPH_NS {
         SSAOKernel m_kernel;
         SR_GTYPES_NS::Texture::Ptr m_noise;
 
-    };
+    };*/
 }
 
 

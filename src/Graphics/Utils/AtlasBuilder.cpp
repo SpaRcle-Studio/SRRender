@@ -4,7 +4,9 @@
 //
 
 #include <Graphics/Utils/AtlasBuilder.h>
+
 #include <Utils/Common/Hashes.h>
+#include <Utils/Resources/ResourceManager.h>
 
 namespace SR_GRAPH_NS {
     AtlasBuilder::AtlasBuilder(AtlasBuilderData data)

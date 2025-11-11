@@ -5,6 +5,8 @@
 #include <Graphics/Font/Font.h>
 #include <Graphics/Font/SDF.h>
 
+#include <Utils/Resources/ResourceManager.h>
+
 #include <freetype/include/freetype/ftglyph.h>
 
 #include <Codegen/Font.generated.hpp>

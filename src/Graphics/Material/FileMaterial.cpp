@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/Material/FileMaterial.h>
+#include <Graphics/Material/UniqueMaterial.h>
 #include <Graphics/Types/Shader.h>
 
 #include <Codegen/FileMaterial.generated.hpp>

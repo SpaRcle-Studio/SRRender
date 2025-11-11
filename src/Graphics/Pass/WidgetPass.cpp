@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/Pass/WidgetPass.h>
+#include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Render/RenderScene.h>
 
 #include <Codegen/WidgetPass.generated.hpp>
 

@@ -8,21 +8,19 @@
 #include <Graphics/Overlay/Overlay.h>
 
 namespace SR_GRAPH_NS {
-    class ImGuiOverlay : public Overlay {
+    class SR_GRAPHICS_DLL_API ImGuiOverlay : public Overlay {
         using Super = Overlay;
     public:
-        explicit ImGuiOverlay(PipelinePtr pPipeline)
-            : Super(std::move(pPipeline))
-        { }
+        explicit ImGuiOverlay(PipelinePtr pPipeline);
 
     public:
         SR_NODISCARD bool Init() override;
         SR_NODISCARD bool IsUndockingActive() const override;
         SR_NODISCARD bool IsViewportsEnabled() const;
 
-        SR_NODISCARD void* GetIconFont() const { return m_iconFont; }
-        SR_NODISCARD void* GetMainFont() const { return m_mainFont; }
-        SR_NODISCARD void* GetSmallFont() const { return m_smallFont; }
+        SR_NODISCARD void* GetIconFont() const;
+        SR_NODISCARD void* GetMainFont() const;
+        SR_NODISCARD void* GetSmallFont() const;
 
         void Prepare() override;
         void Destroy() override;

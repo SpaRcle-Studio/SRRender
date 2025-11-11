@@ -3,6 +3,9 @@
 //
 
 #include <Graphics/Memory/SSBO.h>
+#include <Graphics/Types/Shader.h>
+#include <Graphics/Render/RenderContext.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 namespace SR_GRAPH_NS {
     SSBOInstance::SSBOInstance() = default;

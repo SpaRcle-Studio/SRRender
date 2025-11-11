@@ -2,8 +2,10 @@
 // Created by Monika on 19.01.2025.
 //
 
-#include <Graphics//UI/UICanvasComponent.h>
+#include <Graphics/UI/UICanvasComponent.h>
 #include <Graphics/Window/Window.h>
+#include <Graphics/Render/RenderScene.h>
+#include <Graphics/Types/Camera.h>
 
 #include <Utils/World/Scene.h>
 

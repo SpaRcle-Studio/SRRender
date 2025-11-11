@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/GUI/Widget.h>
+#include <Graphics/GUI/ImGUI.h>
+#include <Graphics/GUI/WidgetManager.h>
 
 namespace SR_GRAPH_GUI_NS {
     Widget::~Widget() {

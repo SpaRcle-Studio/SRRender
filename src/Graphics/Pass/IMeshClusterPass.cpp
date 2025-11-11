@@ -8,7 +8,7 @@
 #include <Graphics/Pass/CascadedShadowMapPass.h>
 
 namespace SR_GRAPH_NS {
-    bool IMeshClusterPass::Render() {
+    /*bool IMeshClusterPass::Render() {
         SR_TRACY_ZONE;
 
         PrepareFBODependencies();
@@ -155,5 +155,5 @@ namespace SR_GRAPH_NS {
 
     void IMeshClusterPass::PrepareFBODependencies() {
 
-    }
+    }*/
 }

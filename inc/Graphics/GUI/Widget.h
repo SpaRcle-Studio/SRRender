@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_WIDGET_H
 #define SR_ENGINE_GRAPHICS_WIDGET_H
 
-#include <Graphics/macros.h>
+#include <Graphics/GUI/ImmediateGUI.h>
 
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Types/DataStorage.h>
@@ -14,8 +14,6 @@
 #include <Utils/Types/Function.h>
 #include <Utils/Input/InputSystem.h>
 #include <Utils/Input/InputHandler.h>
-
-#include <Graphics/GUI/ImmediateGUI.h>
 
 #include <Enum/WindowFlags.hpp>
 

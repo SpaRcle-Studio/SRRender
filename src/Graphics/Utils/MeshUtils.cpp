@@ -3,12 +3,11 @@
 //
 
 #include <Graphics/Utils/MeshUtils.h>
-
 #include <Graphics/Types/Geometry/Mesh3D.h>
 #include <Graphics/Types/Geometry/DebugWireframeMesh.h>
 #include <Graphics/Types/Geometry/SkinnedMesh.h>
-
 #include <Graphics/Types/Geometry/Sprite.h>
+#include <Graphics/Types/Geometry/ProceduralMesh.h>
 
 namespace SR_GRAPH_NS {
     SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> CreateMeshByType(MeshType type) {

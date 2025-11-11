@@ -4,6 +4,11 @@
 
 #include <Graphics/UI/UIContainerNode.h>
 
+#ifdef SR_RENDER_USE_YOGA
+    #include <yoga/YGEnums.h>
+    #include <yoga/YGNodeStyle.h>
+#endif
+
 #include <Enum/UIContainerDirection.hpp>
 
 #include <Codegen/UIContainerNode.generated.hpp>
@@ -18,6 +23,7 @@ namespace SR_GRAPH_UI_NS {
 
         Super::Prepare(priority);
 
+    #ifdef SR_RENDER_USE_YOGA
         switch (m_containerAlign) {
             case UIAlign::Auto:         YGNodeStyleSetAlignItems(GetYGNode(), YGAlignAuto); break;
             case UIAlign::Stretch:      YGNodeStyleSetAlignItems(GetYGNode(), YGAlignStretch); break;
@@ -59,6 +65,7 @@ namespace SR_GRAPH_UI_NS {
                 SRHalt("UIContainerNode::Prepare() : invalid direction \"{}\"!", m_direction);
                 break;
         }
+    #endif
 
         // YGNodeSetAlwaysFormsContainingBlock(GetYGNode(), true /*alwaysFormsContainingBlock*/);
 

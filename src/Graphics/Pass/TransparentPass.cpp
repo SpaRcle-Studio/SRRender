@@ -9,11 +9,11 @@
 #include <Graphics/Pipeline/IShaderProgram.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(TransparentPass)
-
-    MeshClusterType TransparentPass::GetClusterType() const noexcept {
-        return static_cast<MeshClusterType>(MeshClusterType::Transparent);
-    }
+    //SR_REGISTER_RENDER_PASS(TransparentPass)
+//
+    //MeshClusterType TransparentPass::GetClusterType() const noexcept {
+    //    return static_cast<MeshClusterType>(MeshClusterType::Transparent);
+    //}
 
   // void TransparentPass::UseSharedUniforms(SR_GTYPES_NS::Shader *pShader) {
   //     if (m_camera) {

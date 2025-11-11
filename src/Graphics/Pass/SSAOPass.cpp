@@ -7,7 +7,7 @@
 #include <Graphics/Types/Shader.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(SSAOPass);
+    /*SR_REGISTER_RENDER_PASS(SSAOPass);
 
     bool SSAOPass::Init() {
         SR_TRACY_ZONE;
@@ -145,5 +145,5 @@ namespace SR_GRAPH_NS {
 
     IRenderTechnique* SSAOPass::GetFrameBufferRenderTechnique() const {
         return GetTechnique();
-    }
+    }*/
 }

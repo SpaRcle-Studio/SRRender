@@ -11,6 +11,8 @@
 #include <Utils/Common/ToString.h>
 #include <Utils/Debug.h>
 #include <Utils/Common/Features.h>
+#include <Utils/Resources/ResourceManager.h>
+#include <Utils/FileSystem/FileSystem.h>
 
 #include <stbi/stb_image.c> /// NOLINT
 #include <stbi/stbi_image_write.c> /// NOLINT

@@ -2,9 +2,10 @@
 // Created by Monika on 18.07.2022.
 //
 
-#include <Utils/Resources/ResourceManager.h>
-
 #include <Graphics/Types/RenderTexture.h>
+#include <Graphics/Types/Framebuffer.h>
+
+#include <Utils/Resources/ResourceManager.h>
 
 #include <Codegen/RenderTexture.generated.hpp>
 

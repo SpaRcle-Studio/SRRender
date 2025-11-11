@@ -4,6 +4,8 @@
 
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Memory/CameraManager.h>
+#include <Graphics/Render/RenderScene.h>
+#include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Window/Window.h>
 

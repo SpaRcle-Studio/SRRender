@@ -5,7 +5,13 @@
 #ifndef SR_ENGINE_GRAPHICS_THEME_H
 #define SR_ENGINE_GRAPHICS_THEME_H
 
+#include <Graphics/stdInclude.h>
+
 #include <Utils/Math/Vector4.h>
+
+namespace SR_UTILS_NS {
+    class Path;
+}
 
 namespace SR_GRAPH_GUI_NS {
     class Theme : public SR_UTILS_NS::NonCopyable {

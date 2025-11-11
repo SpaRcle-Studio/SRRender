@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/Animations/AnimationState.h>
+#include <Graphics/Animations/AnimationChannel.h>
+#include <Graphics/Animations/AnimationClip.h>
 #include <Graphics/Animations/Skeleton.h>
 #include <Graphics/Animations/Bone.h>
 

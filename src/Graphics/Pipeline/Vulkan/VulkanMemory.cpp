@@ -4,6 +4,7 @@
 
 #include <Graphics/Pipeline/Vulkan/VulkanMemory.h>
 #include <Graphics/Pipeline/PipelineType.h>
+#include <Graphics/Pipeline/Vulkan/AbstractCasts.h>
 
 #include <EvoVulkan/Types/VmaBuffer.h>
 

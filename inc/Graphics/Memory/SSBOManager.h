@@ -9,6 +9,7 @@
 
 #include <Utils/Common/Singleton.h>
 #include <Utils/Types/ObjectPool.h>
+#include <Utils/Types/SharedPtr.h>
 
 namespace SR_GTYPES_NS {
     class Shader;

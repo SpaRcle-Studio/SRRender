@@ -5,13 +5,13 @@
 #ifndef SR_ENGINE_TEXTURE_H
 #define SR_ENGINE_TEXTURE_H
 
-#include <Utils/Resources/IResource.h>
-#include <Utils/Types/SafePointer.h>
-
 #include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Memory/TextureConfigs.h>
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Loaders/TextureLoader.h>
+
+#include <Utils/Resources/IResource.h>
+#include <Utils/Types/SafePointer.h>
 
 namespace SR_GRAPH_NS {
     class TextureLoader;

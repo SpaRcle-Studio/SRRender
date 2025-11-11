@@ -5,6 +5,11 @@
 #include <Graphics/Font/Text.h>
 #include <Graphics/Font/Font.h>
 #include <Graphics/Font/TextBuilder.h>
+#include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Types/Shader.h>
+#include <Graphics/Render/RenderScene.h>
+
+#include <EvoVulkan/Tools/VulkanDebug.h>
 
 #include <Utils/Localization/Encoding.h>
 #include <Utils/ECS/SceneObject.h>

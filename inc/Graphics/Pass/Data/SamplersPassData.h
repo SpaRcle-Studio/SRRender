@@ -5,10 +5,10 @@
 #ifndef SR_ENGINE_GRAPHICS_I_SAMPLERS_PASS_H
 #define SR_ENGINE_GRAPHICS_I_SAMPLERS_PASS_H
 
-#include <Utils/Types/StringAtom.h>
-
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
+
+#include <Utils/Types/StringAtom.h>
 
 namespace SR_GRAPH_NS {
     class IRenderTechnique;

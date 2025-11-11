@@ -2,9 +2,15 @@
 // Created by Monika on 16.09.2023.
 //
 
+#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Pipeline/Vulkan/VulkanKernel.h>
+#include <Graphics/Pipeline/Vulkan/VulkanMemory.h>
 #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
 #include <Graphics/Overlay/VulkanImGuiOverlay.h>
+#include <Graphics/Window/Window.h>
+#include <Graphics/Types/Framebuffer.h>
+
+#include <Utils/Common/Features.h>
 
 namespace SR_GRAPH_NS {
     VulkanKernel::VulkanKernel(VulkanKernel::PipelinePtr pPipeline)

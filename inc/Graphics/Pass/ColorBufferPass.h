@@ -8,6 +8,7 @@
 #include <Graphics/Pass/Data/FrameBufferPassData.h>
 #include <Graphics/Pass/MeshDrawerPass.h>
 #include <Graphics/Pass/IColorBufferPass.h>
+#include <Graphics/Render/RenderQueue.h>
 
 namespace SR_GRAPH_NS {
     class ColorBufferRenderQueue : public RenderQueue {

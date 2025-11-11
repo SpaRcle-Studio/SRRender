@@ -7,6 +7,8 @@
 
 #include <Graphics/Utils/MeshTypes.h>
 
+#include <Utils/Types/SharedPtr.h>
+
 namespace SR_GTYPES_NS {
     class Mesh;
     class Shader;

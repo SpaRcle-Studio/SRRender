@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/GUI/PopupMenu.h>
+#include <Graphics/GUI/ImGUI.h>
 
 namespace SR_GRAPH_GUI_NS {
     void MenuItemSubWidget::Draw(const DrawPopupContext& context) {

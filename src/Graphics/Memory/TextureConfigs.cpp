@@ -2,10 +2,12 @@
 // Created by Monika on 26.01.2022.
 //
 
+#include <Graphics/Memory/TextureConfigs.h>
+
 #include <Utils/Debug.h>
 #include <Utils/Resources/Xml.h>
-
-#include <Graphics/Memory/TextureConfigs.h>
+#include <Utils/Types/Thread.h>
+#include <Utils/Resources/ResourceManager.h>
 
 namespace SR_GRAPH_NS::Memory {
     bool TextureConfigs::Reload() {

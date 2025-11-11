@@ -7,6 +7,7 @@
 #include <Graphics/SRSL/LexicalAnalyzer.h>
 #include <Graphics/SRSL/MathExpression.h>
 #include <Graphics/SRSL/Evaluator.h>
+#include <Graphics/SRSL/ShaderVariables.h>
 
 namespace SR_SRSL_NS {
     std::vector<uint64_t> SRSLTypeInfo::GetDimension(const std::string &code, const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {

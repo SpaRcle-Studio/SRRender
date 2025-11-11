@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/Types/Geometry/DebugWireframeMesh.h>
+#include <Graphics/Material/BaseMaterial.h>
+
 #include <Utils/Types/RawMesh.h>
 
 #include <Codegen/DebugWireframeMesh.generated.hpp>

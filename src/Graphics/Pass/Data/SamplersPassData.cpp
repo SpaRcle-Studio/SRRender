@@ -9,6 +9,7 @@
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/FrameBufferController.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Codegen/SamplersPassData.generated.hpp>
 

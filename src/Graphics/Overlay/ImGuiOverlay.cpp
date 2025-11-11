@@ -2,15 +2,21 @@
 // Created by Monika on 15.09.2023.
 //
 
-#include <Utils/Common/StoreUtils.h>
-
 #include <Graphics/Overlay/ImGuiOverlay.h>
 #include <Graphics/GUI/Editor/Theme.h>
 #include <Graphics/GUI/Icons.h>
-
 #include <Graphics/GUI/ImGUI.h>
+#include <Graphics/Pipeline/Pipeline.h>
+
+#include <Utils/Common/StoreUtils.h>
+#include <Utils/Common/Features.h>
+#include <Utils/Resources/ResourceManager.h>
 
 namespace SR_GRAPH_NS {
+    ImGuiOverlay::ImGuiOverlay(Overlay::PipelinePtr pPipeline)
+        : Super(std::move(pPipeline))
+    { }
+
     bool ImGuiOverlay::Init() {
         SR_GRAPH("ImGuiOverlay::Init() : initializing ImGui...");
 
@@ -183,4 +189,17 @@ namespace SR_GRAPH_NS {
 
         return false;
     }
+
+    void* ImGuiOverlay::GetIconFont() const {
+        return m_iconFont;
+    }
+
+    void* ImGuiOverlay::GetMainFont() const {
+        return m_mainFont;
+    }
+
+    void* ImGuiOverlay::GetSmallFont() const {
+        return m_smallFont;
+    }
+
 }

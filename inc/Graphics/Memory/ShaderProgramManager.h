@@ -5,11 +5,11 @@
 #ifndef SR_ENGINE_SHADERPROGRAMMANAGER_H
 #define SR_ENGINE_SHADERPROGRAMMANAGER_H
 
+#include <Graphics/Pipeline/IShaderProgram.h>
+
 #include <Utils/Common/Singleton.h>
 #include <Utils/Types/Map.h>
 #include <Utils/Types/ObjectPool.h>
-
-#include <Graphics/Pipeline/IShaderProgram.h>
 
 namespace SR_GRAPH_NS {
     class Pipeline;

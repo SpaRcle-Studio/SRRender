@@ -10,6 +10,7 @@
 #include <Graphics/Font/Text.h>
 #include <Graphics/Types/Geometry/DebugLine.h>
 #include <Graphics/Render/RenderTechnique.h>
+#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Material/FileMaterial.h>
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Lighting/LightSystem.h>

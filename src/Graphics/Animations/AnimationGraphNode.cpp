@@ -4,6 +4,8 @@
 
 #include <Graphics/Animations/AnimationGraphNode.h>
 #include <Graphics/Animations/AnimationPose.h>
+#include <Graphics/Animations/AnimationGraph.h>
+#include <Graphics/Animations/AnimationStateMachine.h>
 
 namespace SR_ANIMATIONS_NS {
     AnimationGraphNode::AnimationGraphNode(uint16_t input, uint16_t output)

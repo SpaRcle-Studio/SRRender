@@ -6,6 +6,7 @@
 #define SR_ENGINE_GRAOHICS_MATERIAL_PROPERTY_H
 
 #include <Graphics/Loaders/ShaderProperties.h>
+
 #include <Utils/Common/SubscriptionHolder.h>
 
 namespace SR_GRAPH_NS {

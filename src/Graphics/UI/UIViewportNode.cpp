@@ -3,8 +3,14 @@
 //
 
 #include <Graphics/UI/UIViewportNode.h>
+#include <Graphics/Types/Camera.h>
 
 #include <Utils/Events/Broadcaster.h>
+#include <Utils/Input/InputSystem.h>
+
+#ifdef SR_RENDER_USE_YOGA
+    #include <yoga/YGNode.h>
+#endif
 
 #include <Codegen/UIViewportNode.generated.hpp>
 
@@ -12,7 +18,6 @@ namespace SR_GRAPH_UI_NS {
     UIViewportNode::UIViewportNode()
         : Super()
     {
-
         m_keyDown = SR_UTILS_NS::Input::Instance().Subscribe("Down", [&](const SR_UTILS_NS::SubscriptionMessage& msg) {
             if (static_cast<SR_UTILS_NS::KeyCode>(msg.GetInt("KeyCode"_atom)) == SR_UTILS_NS::KeyCode::J) {
                 m_doRecalcLayout = true;
@@ -79,6 +84,8 @@ namespace SR_GRAPH_UI_NS {
 
     void UIViewportNode::CalculateLayout() {
         SR_TRACY_ZONE;
+#ifdef SR_RENDER_USE_YOGA
         YGNodeCalculateLayout(GetYGNode(), m_viewportSize.x, m_viewportSize.y, YGDirectionLTR);
+#endif
     }
 }

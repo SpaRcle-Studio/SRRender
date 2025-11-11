@@ -3,8 +3,8 @@
 //
 
 #include <Graphics/GUI/ImmediateGUI.h>
-
 #include <Graphics/GUI/ImGUI.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 namespace SR_GRAPH_GUI_NS::Immediate {
     ImColor FCToImC(const SR_MATH_NS::FColor& color) {

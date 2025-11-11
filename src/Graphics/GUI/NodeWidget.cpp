@@ -4,6 +4,9 @@
 
 #include <Graphics/GUI/NodeWidget.h>
 #include <Graphics/GUI/NodeCreation.h>
+#include <Graphics/GUI/Node.h>
+#include <Graphics/GUI/Link.h>
+#include <Graphics/GUI/ImGUI.h>
 #include <Graphics/Types/Texture.h>
 
 #include <Utils/SRLM/LogicalMachine.h>

@@ -5,11 +5,11 @@
 #ifndef SR_ENGINE_GRAPHICS_DESCRIPTOR_MANAGER_H
 #define SR_ENGINE_GRAPHICS_DESCRIPTOR_MANAGER_H
 
+#include <Graphics/Types/Descriptors.h>
+
 #include <Utils/Common/Singleton.h>
 #include <Utils/Types/ObjectPool.h>
 #include <Utils/Types/SharedPtr.h>
-
-#include <Graphics/Types/Descriptors.h>
 
 namespace SR_GTYPES_NS {
     class Shader;

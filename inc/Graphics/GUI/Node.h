@@ -5,9 +5,10 @@
 #ifndef SR_ENGINE_NODE_H
 #define SR_ENGINE_NODE_H
 
+#include <Graphics/GUI/Icons.h>
+
 #include <Utils/SRLM/DataType.h>
 #include <Utils/SRLM/LogicalNode.h>
-#include <Graphics/GUI/Icons.h>
 
 namespace SR_GRAPH_GUI_NS {
     SR_ENUM_NS_CLASS(NodeType,

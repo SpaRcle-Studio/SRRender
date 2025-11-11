@@ -5,6 +5,10 @@
 #ifndef SR_ENGINE_BASE_PASS_H
 #define SR_ENGINE_BASE_PASS_H
 
+#include <Graphics/Memory/UBOManager.h>
+#include <Graphics/Memory/DescriptorManager.h>
+#include <Graphics/Pass/Data/SamplersPassData.h>
+
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Math/Vector2.h>
 #include <Utils/Types/Function.h>
@@ -12,10 +16,6 @@
 #include <Utils/Types/Time.h>
 #include <Utils/Resources/Xml.h>
 #include <Utils/Resources/ResourceContainer.h>
-
-#include <Graphics/Memory/UBOManager.h>
-#include <Graphics/Memory/DescriptorManager.h>
-#include <Graphics/Pass/Data/SamplersPassData.h>
 
 namespace SR_GTYPES_NS {
     class Camera;

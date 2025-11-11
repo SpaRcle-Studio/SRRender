@@ -5,9 +5,7 @@
 #ifndef SR_ENGINE_SDFL_H
 #define SR_ENGINE_SDFL_H
 
-#include <Graphics/macros.h>
-
-#include <Utils/macros.h>
+#include <Graphics/stdInclude.h>
 
 namespace SR_GRAPH_NS::SDF {
     struct Point {

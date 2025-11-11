@@ -8,6 +8,7 @@
 #include <Graphics/macros.h>
 
 #include <Utils/Math/Vector4.h>
+#include <Utils/Types/SharedPtr.h>
 
 namespace SR_GTYPES_NS {
     class Shader;

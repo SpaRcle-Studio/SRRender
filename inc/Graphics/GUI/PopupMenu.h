@@ -7,6 +7,9 @@
 
 #include <Graphics/macros.h>
 
+#include <Utils/Math/Vector2.h>
+#include <Utils/Types/SharedPtr.h>
+
 namespace SR_GRAPH_GUI_NS {
     class MenuItemSubWidget;
     class NodeWidget;

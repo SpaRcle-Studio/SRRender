@@ -19,7 +19,7 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class RenderScene;
 
-    class FlatMeshCluster : public SR_UTILS_NS::NonCopyable {
+    /*class FlatMeshCluster : public SR_UTILS_NS::NonCopyable {
     public:
         using MeshPtr = SR_GTYPES_NS::Mesh*;
         using Iterator = std::vector<MeshPtr>::iterator;
@@ -58,7 +58,7 @@ namespace SR_GRAPH_NS {
 
         bool m_dirty = true;
 
-    };
+    };*/
 }
 
 #endif //SR_ENGINE_GRAPHICS_FLAT_CLUSTER_H

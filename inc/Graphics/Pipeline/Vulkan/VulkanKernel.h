@@ -7,8 +7,9 @@
 
 #include <Graphics/macros.h>
 
-#include <Utils/Types/SharedPtr.h>
 #include <EvoVulkan/VulkanKernel.h>
+
+#include <Utils/Types/SharedPtr.h>
 
 namespace SR_GRAPH_NS {
     class Pipeline;

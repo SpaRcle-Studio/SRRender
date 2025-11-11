@@ -3,6 +3,9 @@
 //
 
 #include <Graphics/GUI/ImNodeEditorUtils.h>
+#include <Graphics/GUI/Pin.h>
+
+#include <Utils/SRLM/DataType.h>
 
 namespace SR_GRAPH_GUI_NS {
     bool IsPinsCompatible(Pin* a, Pin* b) {

@@ -6,9 +6,9 @@
 #define SR_ENGINE_GRAPHICS_RENDER_PREDICATES_H
 
 #include <Graphics/macros.h>
+#include <Graphics/Pipeline/IShaderProgram.h>
 
 #include <Utils/Types/StringAtom.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
 
 namespace SR_GTYPES_NS {
     class Shader;

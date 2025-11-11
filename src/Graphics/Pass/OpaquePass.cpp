@@ -12,7 +12,7 @@
 #include <Graphics/Pass/CascadedShadowMapPass.h>
 
 namespace SR_GRAPH_NS {
-    SR_REGISTER_RENDER_PASS(OpaquePass)
+    //SR_REGISTER_RENDER_PASS(OpaquePass)
 
 //  void OpaquePass::UseSharedUniforms(SR_GTYPES_NS::Shader *pShader) {
 //      if (m_camera) {
@@ -37,7 +37,7 @@ namespace SR_GRAPH_NS {
 //      Super::UseSharedUniforms(pShader);
 //  }
 
-    MeshClusterType OpaquePass::GetClusterType() const noexcept {
-        return static_cast<MeshClusterType>(MeshClusterType::Opaque);
-    }
+  // MeshClusterType OpaquePass::GetClusterType() const noexcept {
+  //     return static_cast<MeshClusterType>(MeshClusterType::Opaque);
+  // }
 }

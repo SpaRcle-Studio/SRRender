@@ -4,6 +4,7 @@
 
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Codegen/Framebuffer.generated.hpp>
 

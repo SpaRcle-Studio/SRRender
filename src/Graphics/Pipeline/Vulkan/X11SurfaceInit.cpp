@@ -3,6 +3,10 @@
 //
 
 #include <Graphics/Pipeline/Vulkan/X11SurfaceInit.h>
+#include <Graphics/Window/Window.h>
+#include <Graphics/Window/X11Window.h>
+
+#include <EvoVulkan/Tools/VulkanConverter.h>
 
 #include <X11/Xlib-xcb.h>
 

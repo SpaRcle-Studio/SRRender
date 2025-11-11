@@ -10,6 +10,7 @@
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Lighting/LightSystem.h>
+#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/Texture.h>

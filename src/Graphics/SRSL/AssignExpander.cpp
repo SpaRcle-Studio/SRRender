@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/SRSL/AssignExpander.h>
+#include <Graphics/SRSL/MathExpression.h>
 
 namespace SR_SRSL_NS {
     std::pair<std::vector<Lexem>, SRSLResult> SRSLAssignExpander::Expand(std::vector<Lexem>&& lexems) {

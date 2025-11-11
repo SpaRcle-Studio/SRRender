@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/Animations/AnimationStateTransition.h>
+#include <Graphics/Animations/AnimationState.h>
 
 namespace SR_ANIMATIONS_NS {
     AnimationStateTransition::AnimationStateTransition(AnimationState* pSource, AnimationState* pDestination, AnimationStateCondition* pCondition)

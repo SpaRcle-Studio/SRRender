@@ -6,7 +6,9 @@
 #define SR_ENGINE_RENDERER_IMMEDIATE_GUI_H
 
 #include <Graphics/Pipeline/PipelineType.h>
+
 #include <Utils/Math/Rect.h>
+#include <Utils/Math/Vector4.h>
 
 #include <Enum/TreeNodeFlags.hpp>
 

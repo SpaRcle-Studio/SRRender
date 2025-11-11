@@ -4,6 +4,7 @@
 
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Lighting/LightSystem.h>
+#include <Graphics/Lighting/ILightComponent.h>
 #include <Graphics/Types/Mesh.h>
 
 namespace SR_GRAPH_NS {

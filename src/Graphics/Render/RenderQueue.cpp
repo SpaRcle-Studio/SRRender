@@ -12,6 +12,7 @@
 #include <Graphics/Material/BaseMaterial.h>
 
 #include <Utils/ECS/LayerManager.h>
+#include <Utils/Common/Features.h>
 
 namespace SR_GRAPH_NS {
     RenderQueue::RenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer)

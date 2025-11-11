@@ -3,8 +3,9 @@
 //
 
 #include <Graphics/Utils/Frustum.h>
-#include "../../../../../../Resources/API/Engine/libs/Graphics/inc/Graphics/Utils/Frustum.h"
+#include <Graphics/Types/Camera.h>
 
+#include <Utils/ECS/Transform.h>
 
 namespace SR_GRAPH_NS {
     float_t FrustumPlane::Distance(const SR_MATH_NS::FVector3& p) const {

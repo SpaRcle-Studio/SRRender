@@ -5,9 +5,9 @@
 #ifndef SR_ENGINE_GRAPHICS_IMGUI_INTERNAL_H
 #define SR_ENGINE_GRAPHICS_IMGUI_INTERNAL_H
 
-#include <Graphics/macros.h>
+#include <Graphics/GUI/ImGUI.h>
 
-#include <Utils/stdInclude.h>
+#include <EvoVulkan/macros.h>
 
 namespace SR_GRAPH_NS {
     /// Reusable buffers used for rendering 1 current in-flight frame, for ImGui_ImplVulkan_RenderDrawData()

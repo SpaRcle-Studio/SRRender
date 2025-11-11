@@ -4,7 +4,11 @@
 
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/RenderQueue.h>
+#include <Graphics/Render/RenderScene.h>
+#include <Graphics/Render/RenderContext.h>
+#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Pass/MeshDrawerPass.h>
+#include <Graphics/Types/Mesh.h>
 
 #include <Utils/ECS/LayerManager.h>
 

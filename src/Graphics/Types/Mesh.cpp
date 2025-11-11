@@ -2,17 +2,22 @@
 // Created by Nikita on 17.11.2020.
 //
 
-#include <Utils/ECS/Component.h>
-#include <Utils/Resources/ResourceManager.h>
-#include <Utils/Resources/IResource.h>
-#include <Utils/ECS/Node.h>
-
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Material/FileMaterial.h>
+#include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Render/RenderScene.h>
+
+#include <Utils/ECS/Component.h>
+#include <Utils/ECS/Node.h>
+#include <Utils/ECS/GameObject.h>
+#include <Utils/Resources/ResourceManager.h>
+#include <Utils/Resources/IResource.h>
+#include <Utils/Types/RawMesh.h>
+#include <Utils/Types/IRawMeshHolder.h>
 
 #include <Codegen/Mesh.generated.hpp>
 

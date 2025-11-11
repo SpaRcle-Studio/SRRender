@@ -4,6 +4,7 @@
 
 #include <Graphics/GUI/Editor/MessageBox.h>
 #include <Graphics/GUI/WidgetManager.h>
+#include <Graphics/GUI/ImGUI.h>
 
 namespace SR_GRAPH_NS::GUI {
     MessageBoxWidget::MessageBoxWidget()

@@ -6,7 +6,7 @@
 #include <Graphics/Render/RenderScene.h>
 
 namespace SR_GRAPH_NS {
-    int32_t FlatMeshClusterComparator(const void* one, const void* two)
+    /*int32_t FlatMeshClusterComparator(const void* one, const void* two)
     {
         auto&& a = *((FlatMeshCluster::MeshPtr*)one);
         auto&& b = *((FlatMeshCluster::MeshPtr*)two);
@@ -121,20 +121,20 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            /*if (pMesh->IsMeshDestroyed()) {
-                auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
-                SR_MAYBE_UNUSED SR_HTYPES_NS::SingletonRecursiveLockGuard lock(&resourceManager);
-
-                if (pMesh->IsCalculated()) {
-                    pMesh->FreeVideoMemory();
-                    pMesh->DeInitGraphicsResource();
-                }
-
-                pMesh->FreeMesh();
-                pMesh = nullptr;
-                changed = true;
-                --m_count;
-            }*/
+            //if (pMesh->IsMeshDestroyed()) {
+            //    auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
+            //    SR_MAYBE_UNUSED SR_HTYPES_NS::SingletonRecursiveLockGuard lock(&resourceManager);
+//
+            //    if (pMesh->IsCalculated()) {
+            //        pMesh->FreeVideoMemory();
+            //        pMesh->DeInitGraphicsResource();
+            //    }
+//
+            //    pMesh->FreeMesh();
+            //    pMesh = nullptr;
+            //    changed = true;
+            //    --m_count;
+            //}
         }
 
         return changed;
@@ -145,5 +145,5 @@ namespace SR_GRAPH_NS {
         if (m_renderScene) {
             m_renderScene->SetDirty();
         }
-    }
+    }*/
 }

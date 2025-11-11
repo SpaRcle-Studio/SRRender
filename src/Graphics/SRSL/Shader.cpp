@@ -8,6 +8,7 @@
 #include <Graphics/SRSL/GLSLCodeGenerator.h>
 #include <Graphics/SRSL/AssignExpander.h>
 #include <Graphics/SRSL/PreProcessor.h>
+#include <Graphics/SRSL/LexicalAnalyzer.h>
 #include <Graphics/SRSL/TypeInfo.h>
 #include <Graphics/SRSL/ShaderVariables.h>
 
