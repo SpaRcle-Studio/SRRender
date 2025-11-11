@@ -94,16 +94,25 @@ namespace SR_GRAPH_NS {
     }
 
     void SSBOInstance::Resize(uint64_t size) {
+        if (m_size == size) {
+            return;
+        }
         m_size = size;
         ReAllocate();
     }
 
     void SSBOInstance::SetUsage(SSBOUsage usage) {
+        if (m_usage == usage) {
+            return;
+        }
         m_usage = usage;
         ReAllocate();
     }
 
     void SSBOInstance::SetSizeAndUsage(uint64_t size, SSBOUsage usage) {
+        if (m_size == size && m_usage == usage) {
+            return;
+        }
         m_size = size;
         m_usage = usage;
         ReAllocate();
@@ -271,7 +280,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void SSBOInstance::Flush(uint32_t offset, uint32_t size) {
+    void SSBOInstance::Flush(uint64_t offset, uint64_t size) {
         SR_TRACY_ZONE;
 
         if (!m_mappedData) {
@@ -281,6 +290,17 @@ namespace SR_GRAPH_NS {
 
         if (m_SSBO == SR_ID_INVALID) {
             SR_ERROR("SSBOInstance::Flush() : SSBO is not allocated!");
+            return;
+        }
+
+        if (size == SR_UINT64_MAX) {
+            size = m_size;
+            if (offset == SR_UINT64_MAX) {
+                size += GetCounterSize();
+            }
+        }
+        else if (size > m_size) {
+            SR_ERROR("SSBOInstance::Flush() : size exceeds SSBO size!");
             return;
         }
 
@@ -381,5 +401,9 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
         return m_SSBO;
+    }
+
+    uint64_t SSBOInstance::GetCapacity() const noexcept {
+        return m_size;
     }
 }

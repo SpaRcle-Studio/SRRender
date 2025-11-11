@@ -51,7 +51,7 @@ namespace SR_GRAPH_NS {
         void SetSizeAndUsage(uint64_t size, SSBOUsage usage);
         void SetName(SR_UTILS_NS::StringAtom name);
 
-        void Flush(uint32_t offset = 0, uint32_t size = SR_UINT32_MAX);
+        void Flush(uint64_t offset = SR_UINT64_MAX, uint64_t size = SR_UINT64_MAX);
         void FlushCounter();
         void* Map() const;
         void* MapData() const;
@@ -64,6 +64,7 @@ namespace SR_GRAPH_NS {
 
         bool Bind(SR_UTILS_NS::StringAtom name = SR_UTILS_NS::StringAtom()) const;
 
+        SR_NODISCARD uint64_t GetCapacity() const noexcept;
         SR_NODISCARD int32_t GetSSBO() const noexcept;
         SR_NODISCARD uint32_t GetCounter() const;
         SR_NODISCARD void* GetMappedData() const;
