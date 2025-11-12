@@ -16,6 +16,10 @@ namespace SR_GRAPH_NS {
     class Pipeline;
 }
 
+#ifdef Always
+    #undef Always
+#endif
+
 namespace SR_GRAPH_GUI_NS {
     SR_ENUM_NS_STRUCT_T(WindowFlags, uint32_t,
         None                      = 0,
