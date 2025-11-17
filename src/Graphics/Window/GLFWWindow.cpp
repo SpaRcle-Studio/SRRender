@@ -23,8 +23,9 @@ namespace SR_GRAPH_NS {
         SR_LOG("GLFWWindow::Initialize() : initializing GLFW window...");
         SR_LOG("GLFWWindow::Initialize() : GLFW info: \n{}", glfwGetVersionString());
 
-        if (!glfwInit())
-        {
+        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+
+        if (!glfwInit()) {
             SR_ERROR("GLFWWindow::Initialize() : failed to initialize GLFW.");
             return false;
         }
