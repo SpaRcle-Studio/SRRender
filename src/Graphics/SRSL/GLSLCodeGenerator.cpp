@@ -699,6 +699,14 @@ namespace SR_SRSL_NS {
             bool hasUsage = false;
 
             for (auto&& field : uniformBlock.fields) {
+            #ifdef SR_DEBUG
+                if (name != "SHARED" && SR_SRSL_DEFAULT_SHARED_UNIFORMS.count(field.name) > 0) {
+                    SRHalt("GLSLCodeGenerator::GenerateUniforms() : default shared uniform '{}' found in uniform block '{}'! "
+                        "\n\tShader: {}", field.name.c_str(), name.c_str(), m_shader->GetPath()
+                    );
+                }
+            #endif
+
                 hasUsage |= pFunction->IsVariableUsed(field.name);
 
                 auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));

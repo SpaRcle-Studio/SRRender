@@ -44,36 +44,40 @@ namespace SR_SRSL_NS {
         { "VIEW_DIRECTION",                 "vec3"          },
     };
 
-    const std::map<std::string, std::string> SR_SRSL_DEFAULT_UNIFORMS = { /** NOLINT */
-        { "MODEL_MATRIX",                   "mat4"          },
-        { "MODEL_NO_SCALE_MATRIX",          "mat4"          },
+    const std::map<std::string, std::string>& GetDefaultUniforms() {
+        static const std::map<std::string, std::string> defaultUniforms = { /** NOLINT */
+            { "MODEL_MATRIX",                   "mat4"          },
+            { "MODEL_NO_SCALE_MATRIX",          "mat4"          },
 
-        { "SKELETON_MATRICES_128",          "mat4[128]"     },
-        { "SKELETON_MATRIX_OFFSETS_128",    "mat4[128]"     },
+            { "SKELETON_MATRICES_128",          "mat4[128]"     },
+            { "SKELETON_MATRIX_OFFSETS_128",    "mat4[128]"     },
 
-        { "SKELETON_MATRICES_256",          "mat4[256]"     },
-        { "SKELETON_MATRIX_OFFSETS_256",    "mat4[256]"     },
+            { "SKELETON_MATRICES_256",          "mat4[256]"     },
+            { "SKELETON_MATRIX_OFFSETS_256",    "mat4[256]"     },
 
-        { "SKELETON_MATRICES_384",          "mat4[384]"     },
-        { "SKELETON_MATRIX_OFFSETS_384",    "mat4[384]"     },
+            { "SKELETON_MATRICES_384",          "mat4[384]"     },
+            { "SKELETON_MATRIX_OFFSETS_384",    "mat4[384]"     },
 
-        { "HALF_SIZE_NEAR_PLANE",           "vec2"          },
-        { "SLICED_TEXTURE_BORDER",          "vec2"          },
-        { "SLICED_WINDOW_BORDER",           "vec2"          },
+            { "HALF_SIZE_NEAR_PLANE",           "vec2"          },
+            { "SLICED_TEXTURE_BORDER",          "vec2"          },
+            { "SLICED_WINDOW_BORDER",           "vec2"          },
 
-        { "LINE_START_POINT",               "vec3"          },
-        { "LINE_END_POINT",                 "vec3"          },
+            { "LINE_START_POINT",               "vec3"          },
+            { "LINE_END_POINT",                 "vec3"          },
 
-        { "SSAO_SAMPLES",                   "vec4[64]"      },
+            { "SSAO_SAMPLES",                   "vec4[64]"      },
 
-        { "LINE_COLOR",                     "vec4"          },
-        { "RGBA_VALUE",                     "vec4"          },
+            { "LINE_COLOR",                     "vec4"          },
+            { "RGBA_VALUE",                     "vec4"          },
 
-        { "TEXT_RECT_X",                    "float"         },
-        { "TEXT_RECT_Y",                    "float"         },
-        { "TEXT_RECT_WIDTH",                "float"         },
-        { "TEXT_RECT_HEIGHT",               "float"         },
-    };
+            { "TEXT_RECT_X",                    "float"         },
+            { "TEXT_RECT_Y",                    "float"         },
+            { "TEXT_RECT_WIDTH",                "float"         },
+            { "TEXT_RECT_HEIGHT",               "float"         },
+        };
+
+        return defaultUniforms;
+    }
 
     const std::map<std::string, std::string> SR_SRSL_DEFAULT_SAMPLERS = { /** NOLINT */
         { "SKYBOX_DIFFUSE",                 "samplerCube"   },

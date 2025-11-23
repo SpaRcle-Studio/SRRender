@@ -10,9 +10,10 @@
 namespace SR_SRSL_NS {
     std::string ShaderRenderPassTypeToString(ShaderRenderPassType type);
 
+    const std::map<std::string, std::string>& GetDefaultUniforms();
+
     extern const std::map<std::string, std::string> SR_SRSL_DEFAULT_PUSH_CONSTANTS;
     extern const std::map<std::string, std::string> SR_SRSL_DEFAULT_SHARED_UNIFORMS;
-    extern const std::map<std::string, std::string> SR_SRSL_DEFAULT_UNIFORMS;
     extern const std::map<std::string, std::string> SR_SRSL_DEFAULT_SAMPLERS;
     extern const std::string SR_SRSL_MAIN_OUT_LAYER;
     extern const std::set<std::string> SR_SRSL_DEFAULT_OUT_LAYERS;

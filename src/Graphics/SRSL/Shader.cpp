@@ -397,7 +397,7 @@ namespace SR_SRSL_NS {
 
         /// ------------------------------------------------------------------
 
-        for (auto&& [defaultUniform, type] : SR_SRSL_DEFAULT_UNIFORMS) {
+        for (auto&& [defaultUniform, type] : GetDefaultUniforms()) {
             auto&& usedStages = m_useStack->IsVariableUsedInEntryPointsExt(defaultUniform);
             if (!usedStages.empty()) {
                 SRSLUniformBlock::Field field;
