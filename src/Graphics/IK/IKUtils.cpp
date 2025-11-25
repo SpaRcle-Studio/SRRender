@@ -8,214 +8,128 @@
 
 namespace SR_GRAPH_NS::IK {
     void SolveTwoBoneIK(
-            SR_UTILS_NS::Transform& root,
-            SR_UTILS_NS::Transform& mid,
-            SR_UTILS_NS::Transform& tip,
-            const SR_UTILS_NS::Transform& target,
-            const std::optional<SR_MATH_NS::FVector3>& hintPosition,
-            float_t targetPosWeight,
-            float_t targetRotWeight,
-            float_t hintWeight
+        SR_UTILS_NS::Transform& root,
+        SR_UTILS_NS::Transform& mid,
+        SR_UTILS_NS::Transform& tip,
+        const SR_UTILS_NS::Transform& target,
+        const std::optional<SR_MATH_NS::FVector3>& hintPosition,
+        float_t targetPosWeight,
+        float_t targetRotWeight,
+        float_t hintWeight
     ) {
         SR_TRACY_ZONE;
 
+        // Реализация основана на Unity Animation Rigging Package
+        // https://github.com/Unity-Technologies/Animation-Rigging
+
+        const float k_SqrEpsilon = 1e-8f;
+
         // 1. Получаем мировые позиции костей
-        const SR_MATH_NS::FVector3 rootPos = root.GetMatrix().GetTranslate();
-        const SR_MATH_NS::FVector3 midPos  = mid.GetMatrix().GetTranslate();
-        const SR_MATH_NS::FVector3 tipPos  = tip.GetMatrix().GetTranslate();
+        SR_MATH_NS::FVector3 aPosition = root.GetMatrix().GetTranslate();
+        SR_MATH_NS::FVector3 bPosition = mid.GetMatrix().GetTranslate();
+        SR_MATH_NS::FVector3 cPosition = tip.GetMatrix().GetTranslate();
 
-        // 2. Вычисляем длины сегментов (в мировом пространстве)
-        const float len1 = (midPos - rootPos).Length();
-        const float len2 = (tipPos - midPos).Length();
-
-        if (len1 < SR_FLOAT_EPSILON || len2 < SR_FLOAT_EPSILON) {
-            return; // Некорректные кости
-        }
-
-        const float maxReach = len1 + len2;
-        const float minReach = fabsf(len1 - len2);
-
-        // 3. Целевая позиция с учётом веса
+        // 2. Получаем целевую позицию и вращение
         SR_MATH_NS::FVector3 targetPos = target.GetMatrix().GetTranslate();
-        SR_MATH_NS::FVector3 finalTarget = tipPos.Lerp(targetPos, targetPosWeight);
+        SR_MATH_NS::Quaternion targetRot = target.GetMatrix().GetQuat();
 
-        // 4. Вектор от root к target и расстояние
-        SR_MATH_NS::FVector3 rootToTarget = finalTarget - rootPos;
-        float dist = rootToTarget.Length();
+        // 3. Интерполируем целевую позицию с учётом веса
+        SR_MATH_NS::FVector3 tPosition = cPosition.Lerp(targetPos, targetPosWeight);
 
-        // Ограничиваем расстояние до достижимого диапазона
-        if (dist > maxReach) {
-            dist = maxReach;
-            finalTarget = rootPos + rootToTarget.Normalize() * dist;
-        } else if (dist < minReach && minReach > SR_FLOAT_EPSILON) {
-            dist = minReach;
-            finalTarget = rootPos + rootToTarget.Normalize() * dist;
+        // 4. Интерполируем целевое вращение с учётом веса
+        SR_MATH_NS::Quaternion tipCurrentRot = tip.GetMatrix().GetQuat();
+        SR_MATH_NS::Quaternion tRotation = tipCurrentRot.Slerp(targetRot, targetRotWeight);
+
+        // 5. Проверяем наличие hint
+        bool hasHint = hintPosition.has_value() && hintWeight > 0.0f;
+
+        // 6. Вычисляем векторы и длины сегментов
+        SR_MATH_NS::FVector3 ab = bPosition - aPosition;
+        SR_MATH_NS::FVector3 bc = cPosition - bPosition;
+        SR_MATH_NS::FVector3 ac = cPosition - aPosition;
+        SR_MATH_NS::FVector3 at = tPosition - aPosition;
+
+        float abLen = ab.Length();
+        float bcLen = bc.Length();
+        float acLen = ac.Length();
+        float atLen = at.Length();
+
+        // 7. Вычисляем углы треугольников (закон косинусов)
+        float oldAbcAngle = SR_MATH_NS::TriangleAngle(acLen, abLen, bcLen);
+        float newAbcAngle = SR_MATH_NS::TriangleAngle(atLen, abLen, bcLen);
+
+        // 8. Определяем ось изгиба (bend axis)
+        // Стратегия: использовать то, что предоставлено в анимации для минимизации изменений конфигурации
+        // Если векторы коллинеарны, пытаемся вычислить ось изгиба по желаемой позиции цели
+        // Если это также не удается, используем hint если предоставлен
+        SR_MATH_NS::FVector3 axis = ab.Cross(bc);
+        if (axis.SqrMagnitude() < k_SqrEpsilon) {
+            axis = hasHint ? (*hintPosition - aPosition).Cross(bc) : SR_MATH_NS::FVector3::Zero();
+
+            if (axis.SqrMagnitude() < k_SqrEpsilon) {
+                axis = at.Cross(bc);
+            }
+
+            if (axis.SqrMagnitude() < k_SqrEpsilon) {
+                axis = SR_MATH_NS::FVector3::Up();
+            }
         }
+        axis = axis.Normalize();
 
-        // 5. Вычисляем желаемую позицию локтя (mid joint) используя закон косинусов
-        float x = (len1 * len1 - len2 * len2 + dist * dist) / (2.0f * dist);
-        x = SR_MATH_NS::Clamp(x, 0.0f, len1);
+        // 9. Вычисляем дельта-вращение для mid joint
+        // Угол поворота равен половине разности между старым и новым углом треугольника
+        float a = 0.5f * (oldAbcAngle - newAbcAngle);
+        float sin = SR_SIN(a);
+        float cos = SR_COS(a);
+        SR_MATH_NS::Quaternion deltaR(sin * axis.x, sin * axis.y, sin * axis.z, cos);
 
-        float h2 = len1 * len1 - x * x;
-        float h = (h2 > 0.0f) ? SR_SQRT(h2) : 0.0f;
+        // 10. Применяем дельта-вращение к mid (относительное вращение)
+        mid.SetGlobalRotation(deltaR * mid.GetMatrix().GetQuat());
 
-        // 6. Определяем плоскость сгиба (bend plane) и референсное направление для коррекции перекручивания
-        SR_MATH_NS::FVector3 rootToTargetDir = (finalTarget - rootPos).Normalize();
-        SR_MATH_NS::FVector3 bendNormal;
-        SR_MATH_NS::FVector3 referenceUp; // Референсное направление "вверх" для коррекции перекручивания
+        // 11. Обновляем позицию tip после вращения mid
+        cPosition = tip.GetMatrix().GetTranslate();
+        ac = cPosition - aPosition;
 
-        // Получаем текущее вращение root для определения референсного направления
-        SR_MATH_NS::Quaternion rootCurrentRot = root.GetMatrix().GetQuat();
+        // 12. Вычисляем и применяем вращение root (относительное вращение)
+        root.SetGlobalRotation(SR_MATH_NS::Quaternion::FromToRotation(ac, at) * root.GetMatrix().GetQuat());
 
-        // Референсное направление "вверх" в локальном пространстве root (обычно это Y или Z)
-        // Предполагаем, что локальное "вверх" - это Y (0, 1, 0) или можно использовать hint
-        SR_MATH_NS::FVector3 localUp = SR_MATH_NS::FVector3(0.0f, 1.0f, 0.0f);
+        // 13. Применяем hint для дополнительной коррекции
+        if (hasHint) {
+            float acSqrMag = ac.SqrMagnitude();
+            if (acSqrMag > 0.0f) {
+                // Обновляем позиции после предыдущих вращений
+                bPosition = mid.GetMatrix().GetTranslate();
+                cPosition = tip.GetMatrix().GetTranslate();
+                ab = bPosition - aPosition;
+                ac = cPosition - aPosition;
 
-        // Преобразуем локальное "вверх" в текущее мировое пространство
-        SR_MATH_NS::FVector3 currentWorldUp = localUp.Rotate(rootCurrentRot);
+                // Нормализуем ac
+                SR_MATH_NS::FVector3 acNorm = ac / SR_SQRT(acSqrMag);
 
-        // Проецируем на плоскость, перпендикулярную направлению кости
-        SR_MATH_NS::FVector3 currentBoneDir = (midPos - rootPos).Normalize();
-        SR_MATH_NS::FVector3 projectedUp = currentWorldUp - currentBoneDir * currentWorldUp.Dot(currentBoneDir);
-        if (projectedUp.LengthSqr() > SR_SQR_EPSILON) {
-            referenceUp = projectedUp.Normalize();
-        } else {
-            // Fallback: используем произвольное перпендикулярное направление
-            referenceUp = currentBoneDir.ArbitraryPerpendicular();
-        }
+                // Вычисляем проекции ab и ah на плоскость, перпендикулярную ac
+                SR_MATH_NS::FVector3 ah = *hintPosition - aPosition;
+                SR_MATH_NS::FVector3 abProj = ab - acNorm * ab.Dot(acNorm);
+                SR_MATH_NS::FVector3 ahProj = ah - acNorm * ah.Dot(acNorm);
 
-        if (hintPosition && hintWeight > 0.0f) {
-            // Используем hint для определения плоскости сгиба
-            SR_MATH_NS::FVector3 hintVec = (*hintPosition - rootPos);
-            SR_MATH_NS::FVector3 hintProj = hintVec - rootToTargetDir * hintVec.Dot(rootToTargetDir);
+                float maxReach = abLen + bcLen;
+                // Применяем hint только если проекции достаточно велики
+                if (abProj.SqrMagnitude() > (maxReach * maxReach * 0.001f) && ahProj.SqrMagnitude() > 0.0f) {
+                    // Вычисляем вращение от abProj к ahProj
+                    SR_MATH_NS::Quaternion hintR = SR_MATH_NS::Quaternion::FromToRotation(abProj, ahProj);
 
-            if (hintProj.LengthSqr() > SR_SQR_EPSILON) {
-                bendNormal = rootToTargetDir.Cross(hintProj).Normalize();
-                // Обновляем referenceUp на основе hint
-                referenceUp = hintProj.Normalize();
-            } else {
-                // Fallback: используем текущую плоскость сгиба
-                SR_MATH_NS::FVector3 curAB = (midPos - rootPos).Normalize();
-                SR_MATH_NS::FVector3 curBC = (tipPos - midPos).Normalize();
-                SR_MATH_NS::FVector3 curNormal = curAB.Cross(curBC);
-                if (curNormal.LengthSqr() > SR_SQR_EPSILON) {
-                    bendNormal = curNormal.Normalize();
-                } else {
-                    bendNormal = rootToTargetDir.ArbitraryPerpendicular();
+                    // Применяем hintWeight к компонентам вращения
+                    hintR.x *= hintWeight;
+                    hintR.y *= hintWeight;
+                    hintR.z *= hintWeight;
+                    hintR = hintR.NormalizeSafe();
+
+                    // Применяем hint-вращение к root (относительное вращение)
+                    root.SetGlobalRotation(hintR * root.GetMatrix().GetQuat());
                 }
             }
-        } else {
-            // Используем текущую плоскость сгиба
-            SR_MATH_NS::FVector3 curAB = (midPos - rootPos).Normalize();
-            SR_MATH_NS::FVector3 curBC = (tipPos - midPos).Normalize();
-            SR_MATH_NS::FVector3 curNormal = curAB.Cross(curBC);
-            if (curNormal.LengthSqr() > SR_SQR_EPSILON) {
-                bendNormal = curNormal.Normalize();
-            } else {
-                bendNormal = rootToTargetDir.ArbitraryPerpendicular();
-            }
         }
 
-        // 7. Вычисляем желаемую позицию mid joint
-        SR_MATH_NS::FVector3 projPoint = rootPos + rootToTargetDir * x;
-        SR_MATH_NS::FVector3 tangent = bendNormal.Cross(rootToTargetDir).Normalize();
-
-        // Сохраняем знак изгиба (в какую сторону сгибается локоть)
-        SR_MATH_NS::FVector3 curMidOffset = midPos - projPoint;
-        float sign = (curMidOffset.Dot(tangent) >= 0.0f) ? 1.0f : -1.0f;
-
-        SR_MATH_NS::FVector3 desiredMidPos = projPoint + tangent * (h * sign);
-
-        // 8. Вычисляем абсолютные вращения для root и mid
-        SR_MATH_NS::FVector3 desiredRootToMid = (desiredMidPos - rootPos);
-        if (desiredRootToMid.SqrMagnitude() < SR_SQR_EPSILON) {
-            return; // Некорректная позиция
-        }
-        desiredRootToMid = desiredRootToMid.Normalize();
-
-        // Получаем локальное направление root к mid (в локальном пространстве root)
-        SR_MATH_NS::FVector3 localRootToMid = mid.GetTranslation();
-        float localRootToMidLen = localRootToMid.Length();
-        if (localRootToMidLen < SR_FLOAT_EPSILON) {
-            return; // Некорректная структура костей
-        }
-        SR_MATH_NS::FVector3 localRootToMidDir = localRootToMid / localRootToMidLen;
-
-        // Вычисляем базовое вращение root (без учета перекручивания)
-        SR_MATH_NS::Quaternion rootBaseRot = SR_MATH_NS::Quaternion::FromTo(localRootToMidDir, desiredRootToMid);
-
-        // Коррекция перекручивания: минимизируем перекручивание вокруг оси кости
-        // Вычисляем желаемое направление "вверх" в новом вращении
-        SR_MATH_NS::FVector3 desiredWorldUp = localUp.Rotate(rootBaseRot);
-        SR_MATH_NS::FVector3 desiredProjectedUp = desiredWorldUp - desiredRootToMid * desiredWorldUp.Dot(desiredRootToMid);
-
-        if (desiredProjectedUp.LengthSqr() > SR_SQR_EPSILON) {
-            desiredProjectedUp = desiredProjectedUp.Normalize();
-
-            // Вычисляем угол перекручивания между текущим и желаемым "вверх"
-            float twistAngle = SR_ACOS(SR_MATH_NS::Clamp(referenceUp.Dot(desiredProjectedUp), -1.0f, 1.0f));
-
-            // Ограничиваем перекручивание (можно сделать настраиваемым параметром)
-            const float maxTwistAngle = SR_PI * 0.25f; // 45 градусов максимум
-            if (twistAngle > maxTwistAngle) {
-                // Вычисляем ось перекручивания (вдоль кости)
-                SR_MATH_NS::FVector3 twistAxis = desiredRootToMid;
-
-                // Вычисляем коррекцию перекручивания
-                float correctionAngle = twistAngle - maxTwistAngle;
-                SR_MATH_NS::FVector3 cross = referenceUp.Cross(desiredProjectedUp);
-                if (cross.Dot(twistAxis) < 0.0f) {
-                    correctionAngle = -correctionAngle;
-                }
-
-                SR_MATH_NS::Quaternion twistCorrection(twistAxis, correctionAngle);
-                rootBaseRot = twistCorrection * rootBaseRot;
-            }
-        }
-
-        SR_MATH_NS::Quaternion rootGlobalDesired = rootBaseRot;
-
-        // Получаем текущее вращение для интерполяции (но используем вес 1.0 для полной замены)
-        SR_MATH_NS::Quaternion newRootRot = SR_MATH_NS::Quaternion::Slerp(rootCurrentRot, rootGlobalDesired, 1.0f);
-
-        root.SetGlobalRotation(newRootRot);
-
-        // 9. Вычисляем вращение mid
-        SR_MATH_NS::FVector3 desiredMidToTip = (finalTarget - desiredMidPos);
-        if (desiredMidToTip.SqrMagnitude() < SR_SQR_EPSILON) {
-            if (targetRotWeight > 0.0f) {
-                SR_MATH_NS::Quaternion targetRot = target.GetMatrix().GetQuat();
-                SR_MATH_NS::Quaternion tipCurrentRot = tip.GetMatrix().GetQuat();
-                SR_MATH_NS::Quaternion finalTipRot = SR_MATH_NS::Quaternion::Slerp(tipCurrentRot, targetRot, targetRotWeight);
-                tip.SetGlobalRotation(finalTipRot);
-            }
-            return;
-        }
-        desiredMidToTip = desiredMidToTip.Normalize();
-
-        // Получаем локальное направление mid к tip (в локальном пространстве mid)
-        SR_MATH_NS::FVector3 localMidToTip = tip.GetTranslation();
-        float localMidToTipLen = localMidToTip.Length();
-        if (localMidToTipLen < SR_FLOAT_EPSILON) {
-            return; // Некорректная структура костей
-        }
-        SR_MATH_NS::FVector3 localMidToTipDir = localMidToTip / localMidToTipLen;
-
-        // Вычисляем абсолютное мировое вращение mid
-        SR_MATH_NS::Quaternion midGlobalDesired = SR_MATH_NS::Quaternion::FromTo(localMidToTipDir, desiredMidToTip);
-
-        // Получаем текущее вращение для интерполяции (но используем вес 1.0 для полной замены)
-        SR_MATH_NS::Quaternion midCurrentRot = mid.GetMatrix().GetQuat();
-        SR_MATH_NS::Quaternion newMidRot = SR_MATH_NS::Quaternion::Slerp(midCurrentRot, midGlobalDesired, 1.0f);
-
-        mid.SetGlobalRotation(newMidRot);
-
-        // 10. Применяем вращение tip с учётом targetRotWeight
-        if (targetRotWeight > 0.0f) {
-            SR_MATH_NS::Quaternion targetRot = target.GetMatrix().GetQuat();
-            SR_MATH_NS::Quaternion tipCurrentRot = tip.GetMatrix().GetQuat();
-            SR_MATH_NS::Quaternion finalTipRot = SR_MATH_NS::Quaternion::Slerp(tipCurrentRot, targetRot, targetRotWeight);
-            tip.SetGlobalRotation(finalTipRot);
-        }
+        // 14. Применяем целевое вращение к tip
+        tip.SetGlobalRotation(tRotation);
     }
 }

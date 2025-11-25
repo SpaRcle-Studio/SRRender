@@ -311,7 +311,7 @@ namespace SR_GRAPH_UI_NS {
             m_rotationVectorSource = screenRay.RotationVector(m_rotationPlan, m_modelMatrix.v.position.XYZ());
             m_rotationAngleOrigin = screenRay.ComputeAngleOnPlan(m_rotationPlan, m_modelMatrix.v.position.XYZ(), m_rotationVectorSource);
 
-            OnGizmoRotated(SR_MATH_NS::Quaternion(rotationAxisLocalSpace.XYZ(), deltaAngle));
+            OnGizmoRotated(SR_MATH_NS::Quaternion::AngleAxis(SR_DEG(deltaAngle), rotationAxisLocalSpace.XYZ()));
 
             UpdateGizmoTransform();
         }
