@@ -24,12 +24,21 @@ namespace SR_GRAPH_NS {
                 return;
             }
 
+            //IK::SolveTwoBoneIK_UE(
+            //    *pRoot->GetTransform(),
+            //    *pMid->GetTransform(),
+            //    *pTip->GetTransform(),
+            //    pTarget->GetTransform()->GetMatrix().GetTranslate(),
+            //    pHint ? pHint->GetTransform()->GetMatrix().GetEulers() : SR_MATH_NS::FVector3()
+            //);
+
             IK::SolveTwoBoneIK(
                 *pRoot->GetTransform(),
                 *pMid->GetTransform(),
                 *pTip->GetTransform(),
                 *pTarget->GetTransform(),
                 pHint ? pHint->GetTransform()->GetMatrix().GetTranslate() : std::optional<SR_MATH_NS::FVector3>(),
+                m_ikState,
                 m_targetPositionWeight * m_weight,
                 m_targetRotationWeight * m_weight,
                 m_hintWeight * m_weight

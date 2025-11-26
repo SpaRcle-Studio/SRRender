@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_IK_COMPONENT_H
 #define SR_ENGINE_GRAPHICS_IK_COMPONENT_H
 
-#include <Graphics/stdInclude.h>
+#include <Graphics/IK/IKUtils.h>
 
 #include <Utils/ECS/Component.h>
 #include <Utils/ECS/EntityRef.h>
@@ -37,6 +37,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD IKType GetIKType() const noexcept { return m_type; }
 
     private:
+        IK::IKState m_ikState;
+
         /// @property
         IKType m_type = IKType::TwoBone;
 
