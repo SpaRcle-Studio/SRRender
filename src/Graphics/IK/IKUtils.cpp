@@ -7,7 +7,283 @@
 #include <Utils/ECS/Transform.h>
 
 namespace SR_GRAPH_NS::IK {
+    void SolveTwoBoneIK_GLM(
+        SR_UTILS_NS::Transform& root,
+        SR_UTILS_NS::Transform& mid,
+        SR_UTILS_NS::Transform& tip,
+        const SR_UTILS_NS::Transform& target,
+        const std::optional<SR_MATH_NS::FVector3>& hintPosition,
+        IKState& ikState,
+        float_t targetPosWeight,
+        float_t targetRotWeight,
+        float_t hintWeight
+    ) {
+        SR_TRACY_ZONE;
+
+       /* glm::vec3 rootPos = root.GetMatrix().Orthonormalize().GetTranslate().ToGLM();
+        glm::vec3 middlePos = mid.GetMatrix().Orthonormalize().GetTranslate().ToGLM();
+        glm::vec3 effectorPos = tip.GetMatrix().Orthonormalize().GetTranslate().ToGLM();
+        glm::vec3 targetPos = target.GetMatrix().Orthonormalize().GetTranslate().ToGLM();
+
+        glm::quat rootGlobalRotation = root.GetMatrix().Orthonormalize().GetQuat().ToGLM();
+        glm::quat middleGlobalRotation = mid.GetMatrix().Orthonormalize().GetQuat().ToGLM();
+        glm::quat effectorGlobalRotation = tip.GetMatrix().Orthonormalize().GetQuat().ToGLM();
+
+        glm::quat rootLocalRotation = root.GetQuaternion().ToGLM();
+        glm::quat middleLocalRotation = mid.GetQuaternion().ToGLM();
+
+        glm::vec3 ab = middlePos - rootPos;
+        glm::vec3 ac = effectorPos - rootPos;
+        glm::vec3 at = targetPos - rootPos;
+        glm::vec3 cb = middlePos - effectorPos;
+
+        // Step1: 旋转关节root和middle, 让dist(root, effector) == dist(root, target)
+        float len_ab = glm::length(ab);
+        float len_cb = glm::length(cb);
+        // 计算可达性
+        float len_at = SR_CLAMP(glm::length(at), SR_KINDA_SMALL_NUMBER_EPSILON, len_ab + len_cb + SR_KINDA_SMALL_NUMBER_EPSILON);
+        // 计算Step1中, 关节root和middle的旋转角
+        float angle_ac_ab_0 = std::acos(std::clamp(glm::dot(glm::normalize(ac), glm::normalize(ab)),
+                                                   -1.f, 1.f));
+        float angle_ba_bc_0 = std::acos(std::clamp(glm::dot(glm::normalize(-ab), glm::normalize(-cb)),
+                                                   -1.f, 1.f));
+        float angle_ac_ab_1 = std::acos(std::clamp(static_cast<float>(
+                                                           (len_cb * len_cb - len_ab * len_ab - len_at * len_at) / (-2.0 * len_ab * len_at)),
+                                                   -1.f, 1.f));
+        float angle_ba_bc_1 = std::acos(std::clamp(static_cast<float>(
+                                                           (len_at * len_at - len_ab * len_ab - len_cb * len_cb) / (-2.0 * len_ab * len_cb)),
+                                                   -1.f, 1.f));
+        float angle_ac_ab = angle_ac_ab_1 - angle_ac_ab_0;
+        float angle_ba_bc = angle_ba_bc_1 - angle_ba_bc_0;
+        // 计算Step1中, 关节root和middle的旋转轴
+        //glm::vec3 d = glm::rotate(middleGlobalRotation, glm::vec3(0, 0, 1));
+        glm::vec3 d = SR_MATH_NS::FVector3::UnitZ().Rotate(SR_MATH_NS::Quaternion(middleGlobalRotation)).ToGLM();
+        glm::vec3 axis0 = glm::normalize(glm::cross(ac, d));
+        // 旋转关节root和middle, 注意旋转轴"世界空间->模型本地空间"的转换
+        rootLocalRotation = glm::rotate(rootLocalRotation, angle_ac_ab, axis0 * glm::inverse(rootGlobalRotation));
+        middleLocalRotation = glm::rotate(middleLocalRotation, angle_ba_bc, axis0 * glm::inverse(rootGlobalRotation));
+
+        // Step2: 旋转root关节, 让Effector到达Target
+        float angle_ac_at = std::acos(std::clamp(glm::dot(glm::normalize(ac), glm::normalize(at)),
+                                                 -1.f, 1.f));
+        glm::vec3 axis1 = glm::normalize(glm::cross(ac, at));
+        rootLocalRotation = glm::rotate(rootLocalRotation, angle_ac_at, axis1 * glm::inverse(rootGlobalRotation));
+
+
+        mid.SetRotation(SR_MATH_NS::Quaternion(middleLocalRotation));
+        root.SetRotation(SR_MATH_NS::Quaternion(rootLocalRotation));*/
+    }
+
+    // Вспомогательная функция: проекция вектора на нормализованный вектор (аналог ProjectOnToNormal из UE)
+    static SR_MATH_NS::FVector3 ProjectOnToNormal(const SR_MATH_NS::FVector3& vec, const SR_MATH_NS::FVector3& normal) {
+        return normal * vec.Dot(normal);
+    }
+
+    void SolveTwoBoneIK_Twist(
+            SR_UTILS_NS::Transform& root,
+            SR_UTILS_NS::Transform& mid,
+            SR_UTILS_NS::Transform& tip,
+            const SR_UTILS_NS::Transform& target,
+            const std::optional<SR_MATH_NS::FVector3>& hintPosition,
+            IKState& ikState,
+            float_t targetPosWeight,
+            float_t targetRotWeight,
+            float_t hintWeight
+    ) {
+        SR_TRACY_ZONE;
+
+        if (!ikState.rootBaseRotation) {
+            ikState.rootBaseRotation = root.GetGlobalRotation();
+            ikState.rootCurrentRotation = *ikState.rootBaseRotation;
+
+            ikState.midBaseRotation = mid.GetGlobalRotation();
+            ikState.midCurrentRotation = *ikState.midBaseRotation;
+        }
+
+        const float smoothing = 0.5f; // Сглаживание поворота (0 = нет сглаживания, 1 = максимальное)
+        const float minAngle = 0.0f; // Минимальный угол для применения поворота (градусы)
+
+        SR_MATH_NS::FVector3 aPosition = root.GetMatrix().GetTranslate();
+        //SR_MATH_NS::FVector3 bPosition = mid.GetMatrix().GetTranslate();
+        SR_MATH_NS::FVector3 cPosition = tip.GetMatrix().GetTranslate();
+
+        const SR_MATH_NS::FVector3 targetPos = target.GetMatrix().GetTranslate();
+        //const SR_MATH_NS::Quaternion targetRot = target.GetGlobalRotation();
+
+        const SR_MATH_NS::FVector3 tPosition = cPosition.Lerp(targetPos, targetPosWeight);
+        //const SR_MATH_NS::Quaternion tRotation = tip.GetGlobalRotation().Slerp(targetRot, targetRotWeight);
+
+        //SR_MATH_NS::FVector3 ab = bPosition - aPosition;
+        //SR_MATH_NS::FVector3 bc = cPosition - bPosition;
+        SR_MATH_NS::FVector3 ac = cPosition - aPosition;
+        SR_MATH_NS::FVector3 at = tPosition - aPosition;
+
+        /*const float abLen = ab.Length();
+        const float bcLen = bc.Length();
+        const float acLen = ac.Length();
+        const float atLen = at.Length();
+
+        float oldAbcAngle = SR_MATH_NS::TriangleAngle(acLen, abLen, bcLen);
+        float newAbcAngle = SR_MATH_NS::TriangleAngle(atLen, abLen, bcLen);
+
+        SR_MATH_NS::FVector3 axis = ab.Cross(bc);
+
+        if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+        {
+            axis = SR_MATH_NS::FVector3();
+
+            if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+                axis = at.Cross(bc);
+
+            if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+                axis = SR_MATH_NS::FVector3::Up();
+        }
+        axis = axis.Normalize();
+
+        float a = 0.5f * (oldAbcAngle - newAbcAngle);
+        float sin = SR_SIN(a);
+        float cos = SR_COS(a);
+
+        SR_MATH_NS::Quaternion targetMidRotation = SR_MATH_NS::Quaternion(sin * axis.x, sin * axis.y, sin * axis.z, cos) * *ikState.midBaseRotation;
+        SR_MATH_NS::Quaternion rootDelta = *ikState.rootBaseRotation * ikState.rootCurrentRotation.Conjugate();
+
+        targetMidRotation = targetMidRotation * rootDelta;
+
+        if (SR_MATH_NS::Quaternion::Angle(ikState.rootCurrentRotation, targetMidRotation) >= minAngle) {
+            if (smoothing > 0.01f) {
+                ikState.midCurrentRotation = SR_MATH_NS::Quaternion::Slerp(ikState.midCurrentRotation, targetMidRotation, 1.f - smoothing);
+            }
+            else {
+                ikState.midCurrentRotation = targetMidRotation;
+            }
+            mid.SetGlobalRotation(ikState.midCurrentRotation);
+        }
+
+        cPosition = tip.GetMatrix().GetTranslate();
+        ac = cPosition - aPosition;*/
+
+        //////
+
+        //if (ac.SqrMagnitude() < SR_SMALL_NUMBER_EPSILON || at.SqrMagnitude() < SR_SMALL_NUMBER_EPSILON) {
+        //    return; // Векторы слишком малы, не поворачиваем
+        //}
+
+        // Вычисляем поворот от ac к at
+        SR_MATH_NS::Quaternion rootDelta = SR_MATH_NS::Quaternion::FromToRotation(ac, at);
+        SR_MATH_NS::Quaternion targetRootRotation = rootDelta * *ikState.rootBaseRotation;
+
+        if (SR_MATH_NS::Quaternion::Angle(ikState.rootCurrentRotation, targetRootRotation) >= minAngle) {
+            if (smoothing > 0.01f) {
+                ikState.rootCurrentRotation = SR_MATH_NS::Quaternion::Slerp(ikState.rootCurrentRotation, targetRootRotation, 1.f - smoothing);
+            }
+            else {
+                ikState.rootCurrentRotation = targetRootRotation;
+            }
+
+            root.SetGlobalRotation(rootDelta);
+        }
+
+
+        //ikState.rootBaseRotation = ikState.rootBaseRotation->Slerp(ikState.rootCurrentRotation, 0.1f);
+    }
+
     void SolveTwoBoneIK(
+            SR_UTILS_NS::Transform& root,
+            SR_UTILS_NS::Transform& mid,
+            SR_UTILS_NS::Transform& tip,
+            const SR_UTILS_NS::Transform& target,
+            const std::optional<SR_MATH_NS::FVector3>& hintPosition,
+            IKState& ikState,
+            float_t targetPosWeight,
+            float_t targetRotWeight,
+            float_t hintWeight
+    ) {
+        SR_TRACY_ZONE;
+
+        // Реализация основана на Unity Animation Rigging Package
+        // https://github.com/Unity-Technologies/Animation-Rigging
+
+        SR_MATH_NS::FVector3 aPosition = root.GetMatrix().GetTranslate();
+        SR_MATH_NS::FVector3 bPosition = mid.GetMatrix().GetTranslate();
+        SR_MATH_NS::FVector3 cPosition = tip.GetMatrix().GetTranslate();
+
+        const SR_MATH_NS::FVector3 targetPos = target.GetMatrix().GetTranslate();
+        const SR_MATH_NS::Quaternion targetRot = target.GetMatrix().GetQuat();
+
+        const SR_MATH_NS::FVector3 tPosition = cPosition.Lerp(targetPos, targetPosWeight);
+        const SR_MATH_NS::Quaternion tRotation = tip.GetMatrix().GetQuat().Slerp(targetRot, targetRotWeight);
+
+        const bool hasHint = hintPosition.has_value() && hintWeight > 0.0f && true;
+
+        SR_MATH_NS::FVector3 ab = bPosition - aPosition;
+        SR_MATH_NS::FVector3 bc = cPosition - bPosition;
+        SR_MATH_NS::FVector3 ac = cPosition - aPosition;
+        SR_MATH_NS::FVector3 at = tPosition - aPosition;
+
+        const float abLen = ab.Length();
+        const float bcLen = bc.Length();
+        const float acLen = ac.Length();
+        const float atLen = at.Length();
+
+        float oldAbcAngle = SR_MATH_NS::TriangleAngle(acLen, abLen, bcLen);
+        float newAbcAngle = SR_MATH_NS::TriangleAngle(atLen, abLen, bcLen);
+
+        SR_MATH_NS::FVector3 axis = ab.Cross(bc);
+
+        if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+        {
+            axis = hasHint ? (*hintPosition - aPosition).Cross(bc) : SR_MATH_NS::FVector3();
+
+            if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+                axis = at.Cross(bc);
+
+            if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+                axis = SR_MATH_NS::FVector3::Up();
+        }
+        axis = axis.Normalize();
+
+        float a = 0.5f * (oldAbcAngle - newAbcAngle);
+        float sin = SR_SIN(a);
+        float cos = SR_COS(a);
+        //SR_MATH_NS::Quaternion deltaR(sin * axis.x, sin * axis.y, sin * axis.z, cos);
+        //mid.SetGlobalRotation(deltaR * mid.GetMatrix().GetQuat());
+
+        cPosition = tip.GetMatrix().GetTranslate();
+        ac = cPosition - aPosition;
+
+        root.SetGlobalRotation(SR_MATH_NS::Quaternion::FromToRotation(ac, at) * root.GetMatrix().GetQuat());
+
+        if (hasHint) {
+            float acSqrMag = ac.SqrMagnitude();
+            if (acSqrMag > 0.0f) {
+                bPosition = mid.GetMatrix().GetTranslate();
+                cPosition = tip.GetMatrix().GetTranslate();
+                ab = bPosition - aPosition;
+                ac = cPosition - aPosition;
+
+                SR_MATH_NS::FVector3 acNorm = ac / SR_SQRT(acSqrMag);
+                SR_MATH_NS::FVector3 ah = *hintPosition - aPosition;
+                SR_MATH_NS::FVector3 abProj = ab - acNorm * ab.Dot(acNorm);
+                SR_MATH_NS::FVector3 ahProj = ah - acNorm * ah.Dot(acNorm);
+
+                float maxReach = abLen + bcLen;
+                if (abProj.SqrMagnitude() > (maxReach * maxReach * 0.001f) && ahProj.SqrMagnitude() > 0.0f) {
+                    SR_MATH_NS::Quaternion hintR = SR_MATH_NS::Quaternion::FromToRotation(abProj, ahProj); //, ikState.previousBendAxis
+
+                    hintR.x *= hintWeight;
+                    hintR.y *= hintWeight;
+                    hintR.z *= hintWeight;
+                    hintR = hintR.NormalizeSafe();
+
+                    root.SetGlobalRotation(hintR * root.GetMatrix().GetQuat());
+                }
+            }
+        }
+
+        tip.SetGlobalRotation(tRotation);
+    }
+
+    void SolveTwoBoneIK_WithFixes(
         SR_UTILS_NS::Transform& root,
         SR_UTILS_NS::Transform& mid,
         SR_UTILS_NS::Transform& tip,
@@ -23,142 +299,198 @@ namespace SR_GRAPH_NS::IK {
         // Реализация основана на Unity Animation Rigging Package
         // https://github.com/Unity-Technologies/Animation-Rigging
 
-        const float k_SqrEpsilon = 1e-8f;
-        //const float k_SqrEpsilon = 0.1;
-
-        // 1. Получаем мировые позиции костей
         SR_MATH_NS::FVector3 aPosition = root.GetMatrix().Orthonormalize().GetTranslate();
         SR_MATH_NS::FVector3 bPosition = mid.GetMatrix().Orthonormalize().GetTranslate();
         SR_MATH_NS::FVector3 cPosition = tip.GetMatrix().Orthonormalize().GetTranslate();
 
-        // 2. Получаем целевую позицию и вращение
-        SR_MATH_NS::FVector3 targetPos = target.GetMatrix().Orthonormalize().GetTranslate();
-        SR_MATH_NS::Quaternion targetRot = target.GetMatrix().Orthonormalize().GetQuat();
+        const SR_MATH_NS::FVector3 targetPos = target.GetMatrix().Orthonormalize().GetTranslate();
+        const SR_MATH_NS::Quaternion targetRot = target.GetMatrix().Orthonormalize().GetQuat();
 
-        // 3. Интерполируем целевую позицию с учётом веса
-        SR_MATH_NS::FVector3 tPosition = cPosition.Lerp(targetPos, targetPosWeight);
+        const SR_MATH_NS::FVector3 tPosition = cPosition.Lerp(targetPos, targetPosWeight);
+        const SR_MATH_NS::Quaternion tRotation = tip.GetMatrix().Orthonormalize().GetQuat().Slerp(targetRot, targetRotWeight);
 
-        // 4. Интерполируем целевое вращение с учётом веса
-        SR_MATH_NS::Quaternion tipCurrentRot = tip.GetMatrix().Orthonormalize().GetQuat();
-        SR_MATH_NS::Quaternion tRotation = tipCurrentRot.Slerp(targetRot, targetRotWeight);
+        const bool hasHint = hintPosition.has_value() && hintWeight > 0.0f && false;
 
-
-        ///SR_MATH_NS::Quaternion rootQuat = root.GetMatrix().Orthonormalize().GetQuat();
-        ///SR_MATH_NS::Quaternion midQuat = mid.GetMatrix().Orthonormalize().GetQuat();
-        ///SR_MATH_NS::Quaternion tipQuat = tip.GetMatrix().Orthonormalize().GetQuat();
-
-
-
-        // 5. Проверяем наличие hint
-        bool hasHint = hintPosition.has_value() && hintWeight > 0.0f;
-
-        // 6. Вычисляем векторы и длины сегментов
         SR_MATH_NS::FVector3 ab = bPosition - aPosition;
         SR_MATH_NS::FVector3 bc = cPosition - bPosition;
         SR_MATH_NS::FVector3 ac = cPosition - aPosition;
         SR_MATH_NS::FVector3 at = tPosition - aPosition;
 
-        float abLen = ab.Length();
-        float bcLen = bc.Length();
-        float acLen = ac.Length();
-        float atLen = at.Length();
+        const float abLen = ab.Length();
+        const float bcLen = bc.Length();
+        const float acLen = ac.Length();
+        const float atLen = at.Length();
 
-        // 7. Вычисляем углы треугольников (закон косинусов)
         float oldAbcAngle = SR_MATH_NS::TriangleAngle(acLen, abLen, bcLen);
         float newAbcAngle = SR_MATH_NS::TriangleAngle(atLen, abLen, bcLen);
 
-        // 8. Определяем ось изгиба (bend axis)
-        // Стратегия: использовать то, что предоставлено в анимации для минимизации изменений конфигурации
-        // Если векторы коллинеарны, пытаемся вычислить ось изгиба по желаемой позиции цели
-        // Если это также не удается, используем hint если предоставлен
         SR_MATH_NS::FVector3 axis = ab.Cross(bc);
-        if (axis.SqrMagnitude() < k_SqrEpsilon) {
-            //axis = hasHint ? (*hintPosition - aPosition).Cross(bc) : SR_MATH_NS::FVector3::Zero();
 
-            axis = ikState.previousBendAxis;
-            //if (axis.SqrMagnitude() < k_SqrEpsilon) {
-            //    axis = at.Cross(bc);
-            //}
+        if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON) {
+            // Дегенерация → пробуем hint
+            if (hasHint)
+                axis = (*hintPosition - aPosition).Cross(bc);
 
+            // всё ещё ноль → пробуем вектор цели
+            if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+                axis = at.Cross(bc);
 
-            //if (axis.SqrMagnitude() < k_SqrEpsilon) {
-            //    axis = SR_MATH_NS::FVector3::Up();
-            //}
+            // если вообще жопа → fallback на previous ось
+            if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+                axis = ikState.previousBendAxis;
 
-            //if (axis.SqrMagnitude() < k_SqrEpsilon) {
-            //    axis = ikState.previousBendAxis;
-            //}
+            // если даже предыдущая ось пустая — просто Up
+            if (axis.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+                axis = SR_MATH_NS::FVector3::Up();
         }
-        axis = axis.Normalize();
-        ikState.previousBendAxis = axis;
 
-        // 9. Вычисляем дельта-вращение для mid joint
-        // Угол поворота равен половине разности между старым и новым углом треугольника
+        // НОРМАЛЬНЫЙ СЛУЧАЙ → ось обновляем
+        if (axis.SqrMagnitude() >= SR_KINDA_SMALL_NUMBER_EPSILON) {
+            axis = axis.Normalize();
+            ikState.previousBendAxis = axis;
+        }
+        else {
+            // НЕ НОРМА → ось оставляем прежней
+            axis = ikState.previousBendAxis;
+        }
+
         float a = 0.5f * (oldAbcAngle - newAbcAngle);
         float sin = SR_SIN(a);
         float cos = SR_COS(a);
-        SR_MATH_NS::Quaternion deltaR(sin * axis.x, sin * axis.y, sin * axis.z, cos);
+        //SR_MATH_NS::Quaternion deltaR(sin * axis.x, sin * axis.y, sin * axis.z, cos);
+        //mid.SetGlobalRotation(deltaR * mid.GetMatrix().Orthonormalize().GetQuat());
 
-        // 10. Применяем дельта-вращение к mid (относительное вращение)
-        mid.SetGlobalRotation(deltaR * mid.GetMatrix().Orthonormalize().GetQuat());
-        //midQuat = deltaR * midQuat;
-
-        // 11. Обновляем позицию tip после вращения mid
         cPosition = tip.GetMatrix().Orthonormalize().GetTranslate();
         ac = cPosition - aPosition;
 
-        root.SetGlobalRotation(SR_MATH_NS::Quaternion::FromToRotation(ac, at) * root.GetMatrix().Orthonormalize().GetQuat());
-        ///rootQuat = SR_MATH_NS::Quaternion::FromToRotation(ac, at) * rootQuat;
+        //SR_MATH_NS::Quaternion rootR = SR_MATH_NS::Quaternion::FromToRotation(ac, at, ikState.previousBendAxis);
+        //rootR = SR_MATH_NS::Quaternion::Slerp(SR_MATH_NS::Quaternion::Identity(), rootR, hintWeight).NormalizeSafe();
+        //root.SetGlobalRotation(rootR * root.GetMatrix().Orthonormalize().GetQuat());
 
-        // 13. Применяем hint для дополнительной коррекции
-        if (hasHint) {
+
+        //SR_MATH_NS::FVector3 bendPlaneNormal = (*hintPosition - aPosition).Cross(ac).NormalizeSafe();
+        //auto&& acProjected = ac - ProjectOnToNormal(ac, bendPlaneNormal);
+        //auto&& projectedAt = at - ProjectOnToNormal(at, bendPlaneNormal);
+        //SR_MATH_NS::Quaternion rootR = SR_MATH_NS::Quaternion::FromToRotation(acProjected, projectedAt, ikState.previousBendAxis);
+
+        //SR_MATH_NS::FVector3 desiredBendDir = at.Cross(ac); // нормаль плоскости сгиба
+        //if (desiredBendDir.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+        //    desiredBendDir = ikState.previousBendAxis; // fallback
+        //SR_MATH_NS::FVector3 bendPlaneNormal = desiredBendDir.NormalizeSafe();
+
+        /*SR_MATH_NS::FVector3 acNorm = ac.NormalizeSafe();
+        SR_MATH_NS::FVector3 atNorm = at.NormalizeSafe();
+
+// 1. Swing: поворот, который выравнивает ac с at
+        SR_MATH_NS::Quaternion swing;
+        float cosTheta = acNorm.Dot(atNorm);
+        if (cosTheta > 1.0f - 1e-6f) {
+            // почти совпадают
+            swing = SR_MATH_NS::Quaternion::Identity();
+        } else if (cosTheta < -1.0f + 1e-6f) {
+            // противоположные направления — выбираем любую перпендикулярную ось
+            SR_MATH_NS::FVector3 ortho = acNorm.Cross(SR_MATH_NS::FVector3::Up());
+            if (ortho.SqrMagnitude() < 1e-6f)
+                ortho = acNorm.Cross(SR_MATH_NS::FVector3(1,0,0));
+            swing = SR_MATH_NS::Quaternion::AngleAxis(SR_DEG(SR_PI), ortho.NormalizeSafe());
+        } else {
+            SR_MATH_NS::FVector3 rotAxis = acNorm.Cross(atNorm).NormalizeSafe();
+            float angle = acosf(cosTheta);
+            swing = SR_MATH_NS::Quaternion::AngleAxis(SR_DEG(angle), rotAxis);
+        }
+
+        // 2. Twist: вращение вокруг оси ac
+        auto ExtractTwist = [](const SR_MATH_NS::Quaternion& q, const SR_MATH_NS::FVector3& axis) -> SR_MATH_NS::Quaternion {
+            SR_MATH_NS::FVector3 qAxis;
+            float qAngle;
+            q.ToAxisAngle(qAxis, qAngle);
+
+            float proj = qAxis.Dot(axis);
+            if (fabsf(proj) < 1e-6f) return SR_MATH_NS::Quaternion::Identity();
+
+            // twist должен быть минимальным по модулю
+            float twistAngle = qAngle * proj;
+            if (twistAngle > SR_PI)
+                twistAngle -= 2.0f * SR_PI;
+            else if (twistAngle < -SR_PI)
+                twistAngle += 2.0f * SR_PI;
+
+            return SR_MATH_NS::Quaternion::AngleAxis(twistAngle, axis);
+        };
+
+        SR_MATH_NS::Quaternion twist = ExtractTwist(root.GetMatrix().Orthonormalize().GetQuat(), acNorm);
+
+        // 3. Применяем swing и twist
+        //root.SetGlobalRotation(swing * twist);
+        root.SetGlobalRotation(SR_MATH_NS::Quaternion::FromToRotation(ac, at, ikState.previousBendAxis) * root.GetMatrix().Orthonormalize().GetQuat());*/
+
+
+       /* // ПОПЫТКА КОРРЕКЦИИ
+         SR_MATH_NS::FVector3 bendPlaneNormal = axis;
+        if (bendPlaneNormal.SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON) {
+            // fallback: выбираем любую перпендикулярную ось
+            bendPlaneNormal = SR_MATH_NS::FVector3::Up();
+            if ((bendPlaneNormal.Cross(ac)).SqrMagnitude() < SR_KINDA_SMALL_NUMBER_EPSILON)
+                bendPlaneNormal = SR_MATH_NS::FVector3(1,0,0);
+        }
+        bendPlaneNormal = bendPlaneNormal.NormalizeSafe();
+
+        // проекция на плоскость сгиба
+        SR_MATH_NS::FVector3 acProjected = ac - bendPlaneNormal * ac.Dot(bendPlaneNormal);
+        SR_MATH_NS::FVector3 atProjected = at - bendPlaneNormal * at.Dot(bendPlaneNormal);
+
+        // нормализация перед FromToRotation
+        acProjected = acProjected.NormalizeSafe();
+        atProjected = atProjected.NormalizeSafe();
+
+        SR_MATH_NS::Quaternion rootR;
+        float cosTheta = ac.Dot(at) / (ac.Length() * at.Length());
+        if (cosTheta > 1.0f - 1e-4f) {
+            // почти коллинеарно, не вращаем
+            rootR = SR_MATH_NS::Quaternion::Identity();
+        } else {
+            rootR = SR_MATH_NS::Quaternion::FromToRotation(acProjected, atProjected, bendPlaneNormal);
+        }
+
+        root.SetGlobalRotation(rootR * root.GetMatrix().Orthonormalize().GetQuat());*/
+
+        root.SetGlobalRotation(SR_MATH_NS::Quaternion::FromToRotation(ac, at) * root.GetMatrix().Orthonormalize().GetQuat());
+
+        if (hasHint && false) {
             float acSqrMag = ac.SqrMagnitude();
             if (acSqrMag > 0.0f) {
-                // Обновляем позиции после предыдущих вращений
                 bPosition = mid.GetMatrix().Orthonormalize().GetTranslate();
                 cPosition = tip.GetMatrix().Orthonormalize().GetTranslate();
                 ab = bPosition - aPosition;
                 ac = cPosition - aPosition;
 
-                // Нормализуем ac
                 SR_MATH_NS::FVector3 acNorm = ac / SR_SQRT(acSqrMag);
 
-                // Вычисляем проекции ab и ah на плоскость, перпендикулярную ac
                 SR_MATH_NS::FVector3 ah = *hintPosition - aPosition;
                 SR_MATH_NS::FVector3 abProj = ab - acNorm * ab.Dot(acNorm);
                 SR_MATH_NS::FVector3 ahProj = ah - acNorm * ah.Dot(acNorm);
 
                 float maxReach = abLen + bcLen;
-                // Применяем hint только если проекции достаточно велики
                 if (abProj.SqrMagnitude() > (maxReach * maxReach * 0.001f) && ahProj.SqrMagnitude() > 0.0f) {
-                    // Вычисляем вращение от abProj к ahProj
-                    SR_MATH_NS::Quaternion hintR = SR_MATH_NS::Quaternion::FromToRotation(abProj, ahProj);
+                    //SR_MATH_NS::Quaternion hintR = SR_MATH_NS::Quaternion::FromToRotation(abProj, ahProj, ikState.previousBendAxis);
 
-                    // Применяем hintWeight к компонентам вращения
-                    hintR.x *= hintWeight;
-                    hintR.y *= hintWeight;
-                    hintR.z *= hintWeight;
-                    hintR = hintR.NormalizeSafe();
+                    //hintR.x *= hintWeight;
+                    //hintR.y *= hintWeight;
+                    //hintR.z *= hintWeight;
+                    //hintR = hintR.NormalizeSafe();
 
-                    // Применяем hint-вращение к root (относительное вращение)
-                    root.SetGlobalRotation(hintR * root.GetMatrix().Orthonormalize().GetQuat());
-                    ///rootQuat = hintR * rootQuat;
+                    //root.SetGlobalRotation(hintR * root.GetMatrix().Orthonormalize().GetQuat());
+
+                    //if (SR_MATH_NS::Quaternion::IsFromToRotationValid(abProj, ahProj)) {
+                       // SR_MATH_NS::Quaternion hintR = SR_MATH_NS::Quaternion::FromToRotation(abProj, ahProj, ikState.previousBendAxis);
+                       // hintR = SR_MATH_NS::Quaternion::Slerp(SR_MATH_NS::Quaternion::Identity(), hintR, hintWeight).NormalizeSafe();
+                       // root.SetGlobalRotation(hintR * root.GetMatrix().Orthonormalize().GetQuat());
+                    //}
                 }
             }
         }
 
-        // 14. Применяем целевое вращение к tip
         tip.SetGlobalRotation(tRotation);
-        //tipQuat = tRotation;
-//
-        //root.SetGlobalRotation(rootQuat);
-        //mid.SetGlobalRotation(midQuat);
-        //tip.SetGlobalRotation(tipQuat);
-    }
-
-    // Вспомогательная функция: проекция вектора на нормализованный вектор (аналог ProjectOnToNormal из UE)
-    static SR_MATH_NS::FVector3 ProjectOnToNormal(const SR_MATH_NS::FVector3& vec, const SR_MATH_NS::FVector3& normal) {
-        return normal * vec.Dot(normal);
     }
 
     // Вспомогательная функция: безопасная нормализация с fallback (аналог GetSafeNormal из UE)

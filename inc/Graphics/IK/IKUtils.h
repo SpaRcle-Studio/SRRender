@@ -24,9 +24,53 @@ namespace SR_GRAPH_NS::IK {
 
     struct IKState {
         SR_MATH_NS::FVector3 previousBendAxis;
+
+        std::optional<SR_MATH_NS::Quaternion> rootBaseRotation;
+        SR_MATH_NS::Quaternion rootCurrentRotation;
+
+        std::optional<SR_MATH_NS::Quaternion> midBaseRotation;
+        SR_MATH_NS::Quaternion midCurrentRotation;
     };
 
+
     void SolveTwoBoneIK(
+        SR_UTILS_NS::Transform& root,
+        SR_UTILS_NS::Transform& mid,
+        SR_UTILS_NS::Transform& tip,
+        const SR_UTILS_NS::Transform& target,
+        const std::optional<SR_MATH_NS::FVector3>& hintPosition,
+        IKState& ikState,
+        float_t targetPosWeight,
+        float_t targetRotWeight,
+        float_t hintWeight
+    );
+
+
+    void SolveTwoBoneIK_Twist(
+        SR_UTILS_NS::Transform& root,
+        SR_UTILS_NS::Transform& mid,
+        SR_UTILS_NS::Transform& tip,
+        const SR_UTILS_NS::Transform& target,
+        const std::optional<SR_MATH_NS::FVector3>& hintPosition,
+        IKState& ikState,
+        float_t targetPosWeight,
+        float_t targetRotWeight,
+        float_t hintWeight
+    );
+
+    void SolveTwoBoneIK_WithFixes(
+        SR_UTILS_NS::Transform& root,
+        SR_UTILS_NS::Transform& mid,
+        SR_UTILS_NS::Transform& tip,
+        const SR_UTILS_NS::Transform& target,
+        const std::optional<SR_MATH_NS::FVector3>& hintPosition,
+        IKState& ikState,
+        float_t targetPosWeight,
+        float_t targetRotWeight,
+        float_t hintWeight
+    );
+
+    void SolveTwoBoneIK_GLM(
         SR_UTILS_NS::Transform& root,
         SR_UTILS_NS::Transform& mid,
         SR_UTILS_NS::Transform& tip,

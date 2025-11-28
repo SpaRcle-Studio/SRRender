@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_IK_COMPONENT_H
 #define SR_ENGINE_GRAPHICS_IK_COMPONENT_H
 
-#include <Graphics/IK/IKUtils.h>
+#include <Graphics/IK/IKTwoBoneSolver.h>
 
 #include <Utils/ECS/Component.h>
 #include <Utils/ECS/EntityRef.h>
@@ -37,7 +37,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD IKType GetIKType() const noexcept { return m_type; }
 
     private:
-        IK::IKState m_ikState;
+        IK::IKTwoBoneState m_twoBoneState;
 
         /// @property
         IKType m_type = IKType::TwoBone;
@@ -57,12 +57,20 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::EntityRef<SR_UTILS_NS::GameObject> m_target;
 
-        /// @property @propertyCondition(This.GetIKType() == SR_GRAPH_NS::IKType::TwoBone)
-        float_t m_targetPositionWeight = 1.0f;
-        /// @property @propertyCondition(This.GetIKType() == SR_GRAPH_NS::IKType::TwoBone)
-        float_t m_targetRotationWeight = 1.0f;
-        /// @property @propertyCondition(This.GetIKType() == SR_GRAPH_NS::IKType::TwoBone)
-        float_t m_hintWeight = 1.0f;
+        /// @property
+        float_t m_smoothing = 10.f;
+        /// @property
+        bool m_useInitialRotations = true;
+        /// @property
+        float m_rootAngleLimit = 0.f;
+        /// @property
+        float m_midAngleLimit = 0.f;
+        /// @property
+        float m_maxTwistChangePerFrame = 45.f;
+        /// @property
+        bool m_preventTwist = true;
+        /// @property
+        bool m_showDebugGizmos = true;
 
     };
 }

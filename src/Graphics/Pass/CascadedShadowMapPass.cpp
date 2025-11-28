@@ -69,7 +69,7 @@ namespace SR_GRAPH_NS {
                     m_lightFrustumCount = 0;
                 }
 
-                renderLayers = SR_CLAMP(m_lightFrustumCount + 1, 1, m_cascadeCount);
+                renderLayers = SR_CLAMP(m_lightFrustumCount + 1u, 1u, m_cascadeCount);
             }
             else {
                 pController->SetLayersCount(m_cascadeCount);
