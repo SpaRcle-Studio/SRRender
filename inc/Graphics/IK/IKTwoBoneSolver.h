@@ -44,6 +44,7 @@ namespace SR_GRAPH_NS::IK {
         float maxTwistChangePerFrame = 45.f;
         bool preventTwist = true;
         bool showDebugGizmos = true;
+        bool tipRotationFromTarget = false;
         float_t dt = 0.f;
     };
 

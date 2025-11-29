@@ -460,5 +460,9 @@ namespace SR_GRAPH_NS::IK {
         /// Сохраняем текущие вращения для следующего кадра
         state.lastRootRotation = root.GetGlobalRotation();
         state.lastMidRotation = mid.GetGlobalRotation();
+
+        if (params.tipRotationFromTarget) {
+            tip.SetGlobalRotation(target.GetGlobalRotation());
+        }
     }
 }

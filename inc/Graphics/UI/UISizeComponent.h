@@ -5,6 +5,8 @@
 #ifndef SR_GRAPHICS_UI_SIZE_COMPONENT_H
 #define SR_GRAPHICS_UI_SIZE_COMPONENT_H
 
+#include <Graphics/stdInclude.h>
+
 #include <Utils/UI/UIModifier.h>
 
 namespace SR_GRAPH_UI_NS {

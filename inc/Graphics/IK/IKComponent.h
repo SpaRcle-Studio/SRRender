@@ -71,6 +71,8 @@ namespace SR_GRAPH_NS {
         bool m_preventTwist = true;
         /// @property
         bool m_showDebugGizmos = true;
+        /// @property
+        bool m_tipRotationFromTarget = false;
 
     };
 }
