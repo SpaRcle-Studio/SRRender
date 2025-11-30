@@ -117,6 +117,10 @@ if (SR_RENDER_USE_GLSL_LANG_LIB)
     message("Graphics will be using GLSL lang lib")
     target_compile_definitions(Graphics PUBLIC SR_RENDER_USE_GLSL_LANG_LIB)
 
+    if (SR_USE_PCH)
+        set(ENABLE_PCH OFF CACHE BOOL "" FORCE)
+    endif()
+
     set(ENABLE_HLSL OFF CACHE BOOL "" FORCE)
     set(ENABLE_OPT OFF CACHE BOOL "" FORCE)
     set(ENABLE_RTTI ON CACHE BOOL "" FORCE)
@@ -182,6 +186,10 @@ if (SR_RENDER_USE_VULKAN)
     else()
         target_link_libraries(Graphics PUBLIC EvoVulkan::lib)
     endif()
+endif()
+
+if (SR_USE_PCH)
+    target_precompile_headers(Graphics PRIVATE ${SR_COMMON_PCH_HEADER_PATH})
 endif()
 
 target_compile_definitions(Graphics PRIVATE SR_IMGUI_INCLUDE_CHECK)

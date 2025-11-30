@@ -1125,7 +1125,7 @@ namespace SR_GRAPH_NS {
                 return spirv;
             #else
                 SRHalt("GLSLang lib is not supported!");
-                return false;
+                return std::vector<uint32_t>();
             #endif
         };
 
