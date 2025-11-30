@@ -9,6 +9,10 @@
 
 #include <Utils/Common/SubscriptionHolder.h>
 
+namespace SR_XML_NS {
+    class Node;
+}
+
 namespace SR_GRAPH_NS {
     class BaseMaterial;
 

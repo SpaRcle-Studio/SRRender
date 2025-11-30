@@ -13,6 +13,7 @@
 #include <Graphics/SRSL/ShaderVariables.h>
 
 #include <Utils/Platform/Platform.h>
+#include <Utils/Common/LexicalCast.h>
 
 namespace SR_SRSL_NS {
     void SRSLUniformBlock::Align(const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {

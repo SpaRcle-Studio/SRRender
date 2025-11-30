@@ -8,10 +8,9 @@
 #include <Graphics/macros.h>
 
 #include <Utils/Types/Thread.h>
-#include <Utils/Types/SafePointer.h>
+#include <Utils/Types/SharedPtr.h>
 #include <Utils/Input/InputHandler.h>
 #include <Utils/Input/InputSystem.h>
-#include <Utils/Types/SafePointer.h>
 
 namespace SR_WORLD_NS {
     class Scene;

@@ -11,12 +11,11 @@
 namespace SR_ANIMATIONS_NS {
     BoneComponent::BoneComponent()
         : Super()
-        , m_skeleton(GetThis())
     { }
 
     void BoneComponent::Initialize(Skeleton* pSkeleton, uint16_t boneIndex) {
-        m_skeleton.SetPathTo(pSkeleton->GetEntity());
-        SRAssert(m_skeleton.GetComponent<Skeleton>());
-        m_boneIndex = boneIndex;
+        //m_skeleton.SetPathTo(pSkeleton->GetEntity());
+        //SRAssert(m_skeleton.GetComponent<Skeleton>());
+        //m_boneIndex = boneIndex;
     }
 }

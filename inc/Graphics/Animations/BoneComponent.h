@@ -7,7 +7,6 @@
 
 #include <Graphics/macros.h>
 
-#include <Utils/ECS/EntityRefOld.h>
 #include <Utils/ECS/Component.h>
 
 namespace SR_ANIMATIONS_NS {
@@ -27,7 +26,6 @@ namespace SR_ANIMATIONS_NS {
 
     private:
         uint16_t m_boneIndex = 0;
-        SR_UTILS_NS::EntityRefOld m_skeleton;
 
     };
 }

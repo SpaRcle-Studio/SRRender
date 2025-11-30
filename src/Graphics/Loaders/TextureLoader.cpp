@@ -12,6 +12,7 @@
 #include <Utils/Debug.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Resources/ResourceManager.h>
+#include <Utils/Types/Marshal.h>
 #include <Utils/FileSystem/FileSystem.h>
 
 #include <stbi/stb_image.c> /// NOLINT

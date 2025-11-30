@@ -8,7 +8,7 @@
 #include <Graphics/macros.h>
 
 #include <Utils/Common/Singleton.h>
-#include <Utils/Types/SafePointer.h>
+#include <Utils/Types/SharedPtr.h>
 
 namespace SR_GRAPH_NS {
     class Window;

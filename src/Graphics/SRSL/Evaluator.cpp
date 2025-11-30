@@ -7,6 +7,8 @@
 #include <Graphics/SRSL/LexicalAnalyzer.h>
 #include <Graphics/SRSL/MathExpression.h>
 
+#include <Utils/Common/LexicalCast.h>
+
 namespace SR_SRSL_NS {
     double_t SRSLEvaluator::Evaluate(const std::string& code) {
         SR_GLOBAL_LOCK
