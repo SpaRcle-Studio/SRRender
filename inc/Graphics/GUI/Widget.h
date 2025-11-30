@@ -92,6 +92,15 @@ namespace SR_GRAPH_GUI_NS {
         void OnKeyUp(const SR_UTILS_NS::KeyboardInputData* pData) override;
         void OnKeyPress(const SR_UTILS_NS::KeyboardInputData* pData) override;
 
+        template<typename T> T* GetSubWidget() {
+            for (auto* pWidget : m_subWidgets) {
+                if (auto* pCastWidget = dynamic_cast<T*>(pWidget)) {
+                    return pCastWidget;
+                }
+            }
+            return nullptr;
+        }
+
     protected:
         virtual void Draw() = 0;
         virtual void OnClose() { }
