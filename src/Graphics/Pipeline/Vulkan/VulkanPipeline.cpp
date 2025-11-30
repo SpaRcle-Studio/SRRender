@@ -30,6 +30,10 @@
     #include <Graphics/Pipeline/GLSLDefaultTBuiltInResource.h>
 #endif
 
+#ifdef SR_ANDROID
+    #include <Graphics/Window/AndroidWindow.h>
+#endif
+
 #include <Utils/Events/EventManager.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/StoreUtils.h>

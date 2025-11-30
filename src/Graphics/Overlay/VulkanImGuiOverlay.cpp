@@ -26,6 +26,7 @@
 #endif
 
 #ifdef SR_ANDROID
+    #include <Graphics/Window/AndroidWindow.h>
     #include <imgui/backends/imgui_impl_android.h>
 #endif
 
