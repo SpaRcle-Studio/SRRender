@@ -207,7 +207,8 @@ namespace SR_GRAPH_NS {
             case ShaderVarType::SamplerCube:
             case ShaderVarType::Sampler1DShadow:
             case ShaderVarType::Sampler2DShadow:
-                return static_cast<Types::Texture*>(nullptr);
+                return SR_HTYPES_NS::SharedPtr<Types::Texture>();
+                //return static_cast<Types::Texture*>(nullptr);
             default:
                 SRAssert(false);
                 return ShaderPropertyVariant();

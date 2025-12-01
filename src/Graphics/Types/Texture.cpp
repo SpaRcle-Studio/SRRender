@@ -304,7 +304,7 @@ namespace SR_GTYPES_NS {
     Texture::Ptr Texture::LoadFromMemory(const std::string& data, const ImageMetaInfo& meta) {
         SR_TRACY_ZONE;
 
-        auto&& pTexture = Texture::MakeShared<Texture>();
+        Texture::Ptr pTexture = new Texture();
 
         pTexture->m_textureData = TextureLoader::LoadFromMemory(data, meta);
         if (!pTexture->m_textureData) {

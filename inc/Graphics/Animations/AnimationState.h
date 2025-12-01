@@ -97,7 +97,7 @@ namespace SR_ANIMATIONS_NS {
 
     protected:
         std::vector<ChannelUpdateContext> m_channelContexts;
-        SR_HTYPES_NS::SharedPtr<AnimationClip> m_clip = nullptr;
+        SR_HTYPES_NS::SharedPtr<AnimationClip> m_clip;
         uint32_t m_maxKeyFrame = 0;
         float_t m_duration = 0.f;
         float_t m_time = 0.f;
