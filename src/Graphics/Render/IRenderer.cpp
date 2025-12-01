@@ -4,8 +4,6 @@
 
 #include <Graphics/Render/IRenderer.h>
 
-#include <Utils/Serialization/Serializable.h>
-
 #include <Codegen/IRenderer.generated.hpp>
 
 namespace SR_GRAPH_NS {
