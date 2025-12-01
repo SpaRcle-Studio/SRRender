@@ -14,6 +14,8 @@
 #include <Graphics/Loaders/RenderTechniquePostProcess.h>
 #include <Graphics/Types/Camera.h>
 
+#include <Utils/FileSystem/PathDataAccessor.h>
+
 #include <Codegen/IRenderTechnique.generated.hpp>
 
 namespace SR_GRAPH_NS {

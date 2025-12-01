@@ -4,6 +4,8 @@
 
 #include <Graphics/Settings/RenderSettings.h>
 
+#include <Utils/FileSystem/PathDataAccessor.h>
+
 #include <Codegen/RenderSettings.generated.hpp>
 
 namespace SR_GRAPH_NS {

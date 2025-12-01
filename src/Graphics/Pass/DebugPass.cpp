@@ -12,6 +12,7 @@
 #include <Graphics/Render/RenderScene.h>
 
 #include <Utils/Common/Features.h>
+#include <Utils/FileSystem/PathDataAccessor.h>
 
 #include <Codegen/DebugPass.generated.hpp>
 

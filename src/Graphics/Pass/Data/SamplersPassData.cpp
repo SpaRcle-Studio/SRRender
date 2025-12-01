@@ -11,6 +11,8 @@
 #include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Utils/FileSystem/PathDataAccessor.h>
+
 #include <Codegen/SamplersPassData.generated.hpp>
 
 namespace SR_GRAPH_NS {

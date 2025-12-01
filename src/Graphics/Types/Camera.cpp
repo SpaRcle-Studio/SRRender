@@ -14,6 +14,8 @@
 #include <Utils/Platform/Platform.h>
 #include <Utils/Events/Broadcaster.h>
 
+#include <Utils/FileSystem/PathDataAccessor.h>
+
 #include <Codegen/Camera.generated.hpp>
 
 namespace SR_GTYPES_NS {

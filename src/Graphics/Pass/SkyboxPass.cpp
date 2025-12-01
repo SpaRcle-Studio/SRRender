@@ -9,6 +9,8 @@
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Utils/FileSystem/PathDataAccessor.h>
+
 #include <Codegen/SkyboxPass.generated.hpp>
 
 namespace SR_GRAPH_NS {

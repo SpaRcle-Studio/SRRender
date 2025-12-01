@@ -13,6 +13,7 @@
 
 #include <Utils/Localization/Encoding.h>
 #include <Utils/ECS/SceneObject.h>
+#include <Utils/FileSystem/PathDataAccessor.h>
 
 #include <Codegen/Text.generated.hpp>
 

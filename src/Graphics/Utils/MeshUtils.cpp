@@ -9,6 +9,8 @@
 #include <Graphics/Types/Geometry/Sprite.h>
 #include <Graphics/Types/Geometry/ProceduralMesh.h>
 
+#include <Utils/TypeTraits/Factory.h>
+
 namespace SR_GRAPH_NS {
     SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> CreateMeshByType(MeshType type) {
         switch (type) {

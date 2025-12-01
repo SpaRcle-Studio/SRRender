@@ -6,6 +6,7 @@
 #include <Graphics/Pipeline/Pipeline.h>
 
 #include <Utils/Common/SubscriptionMessage.h>
+#include <Utils/FileSystem/PathDataAccessor.h>
 
 #include <Enum/ShaderVarType.hpp>
 

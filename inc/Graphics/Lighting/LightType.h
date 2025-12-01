@@ -5,10 +5,9 @@
 #ifndef SR_ENGINE_RENDER_LIGHT_TYPE_H
 #define SR_ENGINE_RENDER_LIGHT_TYPE_H
 
-#include <Graphics/macros.h>
+#include <Graphics/stdInclude.h>
 
 #include <Utils/Common/Enumerations.h>
-#include <Utils/Serialization/Serialization.h>
 
 namespace SR_GRAPH_NS {
     SR_ENUM_NS_CLASS_T(LightType, uint8_t,

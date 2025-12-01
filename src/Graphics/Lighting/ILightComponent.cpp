@@ -6,6 +6,8 @@
 #include <Graphics/Lighting/ILightComponent.h>
 #include <Graphics/Render/RenderScene.h>
 
+#include <Enum/LightType.hpp>
+
 #include <Codegen/ILightComponent.generated.hpp>
 
 namespace SR_GRAPH_NS {

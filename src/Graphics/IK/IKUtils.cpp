@@ -5,6 +5,7 @@
 #include <Graphics/IK/IKUtils.h>
 
 #include <Utils/ECS/Transform.h>
+#include <Utils/Profile/TracyContext.h>
 
 namespace SR_GRAPH_NS::IK {
     void SolveTwoBoneIK_GLM(

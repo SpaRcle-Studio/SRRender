@@ -7,6 +7,8 @@
 
 #include <Graphics/Overlay/Overlay.h>
 
+#include <Utils/FileSystem/Path.h>
+
 namespace SR_GRAPH_NS {
     class SR_GRAPHICS_DLL_API ImGuiOverlay : public Overlay {
         using Super = Overlay;

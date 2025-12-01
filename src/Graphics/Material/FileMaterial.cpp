@@ -6,6 +6,8 @@
 #include <Graphics/Material/UniqueMaterial.h>
 #include <Graphics/Types/Shader.h>
 
+#include <Utils/FileSystem/PathDataAccessor.h>
+
 #include <Codegen/FileMaterial.generated.hpp>
 
 namespace SR_GRAPH_NS {

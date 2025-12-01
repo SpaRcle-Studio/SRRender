@@ -20,6 +20,7 @@
 #include <Utils/Types/SafePtrLockGuard.h>
 #include <Utils/Resources/Yaml.h>
 #include <Utils/ECS/GameObject.h>
+#include <Utils/TypeTraits/Factory.h>
 
 namespace SR_GRAPH_NS {
     RenderScene::RenderScene(const ScenePtr& scene, RenderContext* pContext)

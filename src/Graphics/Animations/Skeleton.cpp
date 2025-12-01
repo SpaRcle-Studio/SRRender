@@ -9,6 +9,7 @@
 
 #include <Utils/Types/RawMesh.h>
 #include <Utils/DebugDraw.h>
+#include <Utils/FileSystem/PathDataAccessor.h>
 
 #include <Codegen/Skeleton.generated.hpp>
 

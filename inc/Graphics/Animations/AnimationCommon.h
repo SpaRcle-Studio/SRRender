@@ -7,10 +7,10 @@
 
 #include <Graphics/macros.h>
 
-#include <Utils/Types/Map.h>
 #include <Utils/Types/Time.h>
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Common/Enumerations.h>
+#include <Utils/Math/Vector3.h>
 
 #ifdef SR_UTILS_ASSIMP
     #include <assimp/vector3.h>

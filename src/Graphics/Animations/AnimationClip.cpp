@@ -6,6 +6,7 @@
 #include <Graphics/Animations/AnimationChannel.h>
 
 #include <Utils/Types/RawMesh.h>
+#include <Utils/Common/StringUtils.h>
 
 #ifdef SR_UTILS_ASSIMP
     #include <assimp/Importer.hpp>

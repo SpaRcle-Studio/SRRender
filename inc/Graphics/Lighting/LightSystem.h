@@ -10,6 +10,8 @@
 #include <Utils/Math/Vector3.h>
 #include <Utils/Types/SharedPtr.h>
 
+#include <Enum/LightType.hpp>
+
 namespace SR_GRAPH_NS {
     class RenderScene;
     class ILightComponent;

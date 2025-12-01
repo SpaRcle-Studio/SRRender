@@ -12,6 +12,8 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Utils/MeshUtils.h>
 
+#include <Utils/FileSystem/PathDataAccessor.h>
+
 #include <Codegen/Mesh3D.generated.hpp>
 
 namespace SR_GTYPES_NS {

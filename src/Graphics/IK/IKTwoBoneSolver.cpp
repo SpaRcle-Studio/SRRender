@@ -5,6 +5,7 @@
 #include <Graphics/IK/IKTwoBoneSolver.h>
 
 #include <Utils/ECS/Transform.h>
+#include <Utils/Profile/TracyContext.h>
 
 namespace SR_GRAPH_NS::IK {
     void InitializeTwoBoneIKState(
