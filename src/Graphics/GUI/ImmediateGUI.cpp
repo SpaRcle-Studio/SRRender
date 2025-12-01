@@ -6,6 +6,8 @@
 #include <Graphics/GUI/ImGUI.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Enum/TreeNodeFlags.hpp>
+
 namespace SR_GRAPH_GUI_NS::Immediate {
     ImColor FCToImC(const SR_MATH_NS::FColor& color) {
         return ImColor(color.r, color.g, color.b, color.a);
@@ -72,6 +74,14 @@ namespace SR_GRAPH_GUI_NS::Immediate {
 
     void PushStyleVar(StyleVar idx, const SR_MATH_NS::FVector2& val) {
         ImGui::PushStyleVar(static_cast<ImGuiStyleVar>(idx), F2ToImV2(val));
+    }
+
+    SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags GetNodeFlagsWithChild() {
+        return SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags::OpenOnArrow | SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags::OpenOnDoubleClick;
+    }
+
+    SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags GetNodeFlagsWithoutChild() {
+        return SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags::NoTreePushOnOpen | SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags::Leaf;
     }
 
     void PopStyleVar(uint32_t count) {

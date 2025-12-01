@@ -7,6 +7,10 @@
 
 #include <Graphics/SRSL/ShaderType.h>
 
+namespace SR_GRAPH_NS {
+    enum class ShaderStage : uint8_t;
+}
+
 namespace SR_SRSL_NS {
     std::string ShaderRenderPassTypeToString(ShaderRenderPassType type);
 

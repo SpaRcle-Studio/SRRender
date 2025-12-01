@@ -5,6 +5,8 @@
 #include <Graphics/SRSL/RefAnalyzer.h>
 #include <Graphics/SRSL/ShaderVariables.h>
 
+#include <Enum/ShaderStage.hpp>
+
 namespace SR_SRSL_NS {
     void SRSLUseStack::Concat(const SRSLUseStack::Ptr& pOther) {
         for (auto&& name : pOther->variables) {

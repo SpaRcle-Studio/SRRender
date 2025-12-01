@@ -16,6 +16,7 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    enum class SSBOUsage : uint8_t;
     class Pipeline;
 
     class SSBOManager : public SR_UTILS_NS::Singleton<SSBOManager> {

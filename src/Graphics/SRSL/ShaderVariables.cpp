@@ -5,6 +5,8 @@
 #include <Graphics/SRSL/ShaderVariables.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 
+#include <Enum/ShaderStage.hpp>
+
 namespace SR_SRSL_NS {
     std::string ShaderRenderPassTypeToString(ShaderRenderPassType type) {
         return "RenderPassType_" + SR_UTILS_NS::EnumReflector::ToStringAtom(type).ToString();

@@ -9,7 +9,7 @@
 #include <Graphics/Pipeline/Pipeline.h>
 
 namespace SR_GTYPES_NS {
-    class SR_RENDERER_DLL_API ComputeShader final : public SR_UTILS_NS::NonCopyable {
+    class SR_GRAPHICS_DLL_API ComputeShader final : public SR_UTILS_NS::NonCopyable {
     public:
         using Ptr = std::unique_ptr<ComputeShader>;
 

@@ -8,7 +8,7 @@
 #include <Graphics/UI/UIContainerNode.h>
 
 namespace SR_GRAPH_UI_NS {
-    class SR_RENDERER_DLL_API UIVBoxContainerNode : public UIContainerNode {
+    class SR_GRAPHICS_DLL_API UIVBoxContainerNode : public UIContainerNode {
         SR_CLASS()
         using Super = UIContainerNode;
     public:

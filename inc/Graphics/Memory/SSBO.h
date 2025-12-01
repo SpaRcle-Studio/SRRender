@@ -17,7 +17,7 @@ namespace SR_GRAPH_NS {
         StructuredCounter = Counter | Structured /// Счетчик + структурированные данные
     )
 
-    class SR_RENDERER_DLL_API SSBOInstance final : public SR_UTILS_NS::NonCopyable {
+    class SR_GRAPHICS_DLL_API SSBOInstance final : public SR_UTILS_NS::NonCopyable {
     public:
         using Ptr = std::unique_ptr<SSBOInstance>;
 

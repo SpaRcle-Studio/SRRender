@@ -11,7 +11,7 @@
 #include <Graphics/Font/FreeType.h>
 
 namespace SR_GTYPES_NS {
-    class SR_RENDERER_DLL_API Font : public SR_UTILS_NS::IResource {
+    class SR_GRAPHICS_DLL_API Font : public SR_UTILS_NS::IResource {
         SR_CLASS()
         using Super = SR_UTILS_NS::IResource;
         using FontLibrary = FT_Library;

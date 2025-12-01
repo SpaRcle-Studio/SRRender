@@ -17,7 +17,7 @@ namespace SR_GTYPES_NS {
         { {  1.000000, -1.000000,  0.000000 }, { 0.000000, 0.000000 } }
     };
 
-    class SR_RENDERER_DLL_API Sprite : public SR_GTYPES_NS::Mesh {
+    class SR_GRAPHICS_DLL_API Sprite : public SR_GTYPES_NS::Mesh {
         SR_CLASS()
         using Super = SR_GTYPES_NS::Mesh;
     public:

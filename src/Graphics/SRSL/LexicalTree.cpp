@@ -5,6 +5,8 @@
 #include <Graphics/SRSL/LexicalTree.h>
 #include <Graphics/SRSL/ShaderVariables.h>
 
+#include <Enum/ShaderStage.hpp>
+
 namespace SR_SRSL_NS {
     std::string SRSLExpr::ToString(uint32_t deep) const {
         if ((token == "++" || token == "--") && !args.empty()) {

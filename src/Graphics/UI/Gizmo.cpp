@@ -13,6 +13,8 @@
 #include <Utils/Input/InputSystem.h>
 #include <Utils/DebugDraw.h>
 
+#include <Enum/Axis.hpp>
+
 #include <Codegen/Gizmo.generated.hpp>
 
 namespace SR_GRAPH_UI_NS {

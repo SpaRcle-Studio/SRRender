@@ -10,8 +10,6 @@
 #include <Utils/Math/Rect.h>
 #include <Utils/Math/Vector4.h>
 
-#include <Enum/TreeNodeFlags.hpp>
-
 namespace SR_GRAPH_NS {
     class Pipeline;
 }
@@ -59,7 +57,7 @@ namespace SR_GRAPH_GUI_NS {
     )
 
     namespace Immediate {
-        enum class SR_RENDERER_DLL_API ImmediateDataType : uint8_t {
+        enum class SR_GRAPHICS_DLL_API ImmediateDataType : uint8_t {
             Int8,
             UInt8,
             Int16,
@@ -73,7 +71,7 @@ namespace SR_GRAPH_GUI_NS {
             COUNT
         };
 
-        enum class SR_RENDERER_DLL_API StyleColor {
+        enum class SR_GRAPHICS_DLL_API StyleColor {
             Text,
             TextDisabled,
             WindowBg,              // Background of normal windows
@@ -132,7 +130,7 @@ namespace SR_GRAPH_GUI_NS {
             COUNT
         };
 
-        enum class SR_RENDERER_DLL_API Direction {
+        enum class SR_GRAPHICS_DLL_API Direction {
             None    = -1,
             Left    = 0,
             Right   = 1,
@@ -260,8 +258,8 @@ namespace SR_GRAPH_GUI_NS {
             CollapsingHeader     = Framed | NoTreePushOnOpen | NoAutoOpenOnLog
         )
 
-        const auto SR_NODE_FLAGS_WITH_CHILD = SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags::OpenOnArrow | SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags::OpenOnDoubleClick;
-        const auto SR_NODE_FLAGS_WITHOUT_CHILD = SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags::NoTreePushOnOpen | SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags::Leaf;
+        SR_GRAPHICS_DLL_API extern SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags GetNodeFlagsWithChild();
+        SR_GRAPHICS_DLL_API extern SR_GRAPH_GUI_NS::Immediate::TreeNodeFlags GetNodeFlagsWithoutChild();
 
         SR_ENUM_NS_STRUCT_T(Condition, uint32_t,
             None          = 0,        // No condition (always set the variable), same as _Always
@@ -289,7 +287,7 @@ namespace SR_GRAPH_GUI_NS {
             RootAndChildWindows           = RootWindow | ChildWindows
         )
 
-        enum class SR_RENDERER_DLL_API MouseButton
+        enum class SR_GRAPHICS_DLL_API MouseButton
         {
             Left = 0,
             Right = 1,
@@ -297,7 +295,7 @@ namespace SR_GRAPH_GUI_NS {
             COUNT = 5
         };
 
-        union SR_RENDERER_DLL_API ImmediateDataTypeUnion {
+        union SR_GRAPHICS_DLL_API ImmediateDataTypeUnion {
             int8_t   s8;
             uint8_t  u8;
             int16_t  s16;
@@ -310,149 +308,149 @@ namespace SR_GRAPH_GUI_NS {
             double   f64;
         };
 
-        SR_RENDERER_DLL_API extern void SetDragDropPayload(const char* type, const void* data, size_t size, Condition cond = Condition::None);
-        SR_RENDERER_DLL_API extern void Separator();
-        SR_RENDERER_DLL_API extern void Text(const char* text, ...);
-        SR_RENDERER_DLL_API extern void TextWrapped(const char* text, ...);
-        SR_RENDERER_DLL_API extern void LabelText(const char* label, const char* text, ...);
-        SR_RENDERER_DLL_API extern void TextColored(const SR_MATH_NS::FColor& color, const char* text, ...);
-        SR_RENDERER_DLL_API extern void PushID(const char* strId);
-        SR_RENDERER_DLL_API extern void PushID(const void* ptrId);
-        SR_RENDERER_DLL_API extern void PushID(int intId);
-        SR_RENDERER_DLL_API extern void PopID();
-        SR_RENDERER_DLL_API extern bool IsAnyItemHovered();
-        SR_RENDERER_DLL_API extern bool IsWindowHovered(HoveredFlags flags = HoveredFlags::None);
-        SR_RENDERER_DLL_API extern void WindowTreeNodeSetOpen(bool open, uint64_t id);
-        SR_RENDERER_DLL_API extern void PushStyleVar(StyleVar idx, float val);
-        SR_RENDERER_DLL_API extern void PushStyleVar(StyleVar idx, const SR_MATH_NS::FVector2& val);
-        SR_RENDERER_DLL_API extern void PopStyleVar(uint32_t count = 1);
-        SR_RENDERER_DLL_API extern bool BeginPopup(const char* name);
-        SR_RENDERER_DLL_API extern void EndPopup();
-        SR_RENDERER_DLL_API extern void SameLine();
-        SR_RENDERER_DLL_API extern bool Button(const char* label, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
-        SR_RENDERER_DLL_API extern bool Checkbox(const char* label, bool* v);
-        SR_RENDERER_DLL_API extern bool IsCurrentlyDisabled();
-        SR_RENDERER_DLL_API extern bool IsItemHovered();
-        SR_RENDERER_DLL_API extern bool IsItemFocused();
-        SR_RENDERER_DLL_API extern bool DragScalar(const char* label, ImmediateDataType type, void* pData, float_t vSpeed, const void* pMin = nullptr, const void* pMax = nullptr, const char* format = nullptr);
-        SR_RENDERER_DLL_API extern void PushItemWidth(float_t itemWidth);
-        SR_RENDERER_DLL_API extern void PopItemWidth();
-        SR_RENDERER_DLL_API extern void PushStyleColor(StyleColor idx, const SR_MATH_NS::FColor& color);
-        SR_RENDERER_DLL_API extern void PopStyleColor(uint32_t count = 1);
-        SR_RENDERER_DLL_API extern void BeginGroup();
-        SR_RENDERER_DLL_API extern void EndGroup();
-        SR_RENDERER_DLL_API extern void TreePop();
-        SR_RENDERER_DLL_API extern bool BeginDragDropSource(DragDropFlags flags = DragDropFlags::None);
-        SR_RENDERER_DLL_API extern float_t GetFrameHeight();
-        SR_RENDERER_DLL_API extern void Dummy(const SR_MATH_NS::FVector2& size);
-        SR_RENDERER_DLL_API extern bool BeginCombo(const char* label, const char* previewValue, ComboFlags flags = ComboFlags::None);
-        SR_RENDERER_DLL_API extern void EndCombo();
-        SR_RENDERER_DLL_API extern bool Selectable(const char* label, bool selected = false);
-        SR_RENDERER_DLL_API extern void SetItemDefaultFocus();
-        SR_RENDERER_DLL_API extern uint32_t BeginForceEnabled();
-        SR_RENDERER_DLL_API extern void EndForceEnabled(uint32_t stackSize);
-        SR_RENDERER_DLL_API extern void BeginDisabled();
-        SR_RENDERER_DLL_API extern void EndDisabled();
-        SR_RENDERER_DLL_API extern void EndDragDropSource();
-        SR_RENDERER_DLL_API extern void* GetCurrentWindow();
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 GetWindowCursorPos(void* pWindow = nullptr);
-        SR_RENDERER_DLL_API extern void* GetWindowDrawList(void* pWindow = nullptr);
-        SR_RENDERER_DLL_API extern uint32_t GetColorU32(StyleColor idx, float alpha_mul = 1.0f);
-        SR_RENDERER_DLL_API extern void RenderArrow(void* pDrawList, const SR_MATH_NS::FVector2& pos, uint32_t color, Direction dir, float_t scale = 1.0f);
-        SR_RENDERER_DLL_API extern bool InputFloat(const char* label, float_t* v, float_t step = 0.0f, float_t stepFast = 0.0f, const char* format = "%.3f", InputTextFlags flags = InputTextFlags::None);
-        SR_RENDERER_DLL_API extern bool InputInt(const char* label, int* v, int step = 1, int step_fast = 100, InputTextFlags flags = InputTextFlags::None);
-        SR_RENDERER_DLL_API extern bool Combo(const char* label, int* current_item, const char* items_separated_by_zeros);
-        SR_RENDERER_DLL_API extern bool Combo(const char* label, int* current_item, bool(*items_getter)(void* data, int idx, const char** out_text), void* data, int items_count, int popup_max_height_in_items = -1);
+        SR_GRAPHICS_DLL_API extern void SetDragDropPayload(const char* type, const void* data, size_t size, Condition cond = Condition::None);
+        SR_GRAPHICS_DLL_API extern void Separator();
+        SR_GRAPHICS_DLL_API extern void Text(const char* text, ...);
+        SR_GRAPHICS_DLL_API extern void TextWrapped(const char* text, ...);
+        SR_GRAPHICS_DLL_API extern void LabelText(const char* label, const char* text, ...);
+        SR_GRAPHICS_DLL_API extern void TextColored(const SR_MATH_NS::FColor& color, const char* text, ...);
+        SR_GRAPHICS_DLL_API extern void PushID(const char* strId);
+        SR_GRAPHICS_DLL_API extern void PushID(const void* ptrId);
+        SR_GRAPHICS_DLL_API extern void PushID(int intId);
+        SR_GRAPHICS_DLL_API extern void PopID();
+        SR_GRAPHICS_DLL_API extern bool IsAnyItemHovered();
+        SR_GRAPHICS_DLL_API extern bool IsWindowHovered(HoveredFlags flags = HoveredFlags::None);
+        SR_GRAPHICS_DLL_API extern void WindowTreeNodeSetOpen(bool open, uint64_t id);
+        SR_GRAPHICS_DLL_API extern void PushStyleVar(StyleVar idx, float val);
+        SR_GRAPHICS_DLL_API extern void PushStyleVar(StyleVar idx, const SR_MATH_NS::FVector2& val);
+        SR_GRAPHICS_DLL_API extern void PopStyleVar(uint32_t count = 1);
+        SR_GRAPHICS_DLL_API extern bool BeginPopup(const char* name);
+        SR_GRAPHICS_DLL_API extern void EndPopup();
+        SR_GRAPHICS_DLL_API extern void SameLine();
+        SR_GRAPHICS_DLL_API extern bool Button(const char* label, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
+        SR_GRAPHICS_DLL_API extern bool Checkbox(const char* label, bool* v);
+        SR_GRAPHICS_DLL_API extern bool IsCurrentlyDisabled();
+        SR_GRAPHICS_DLL_API extern bool IsItemHovered();
+        SR_GRAPHICS_DLL_API extern bool IsItemFocused();
+        SR_GRAPHICS_DLL_API extern bool DragScalar(const char* label, ImmediateDataType type, void* pData, float_t vSpeed, const void* pMin = nullptr, const void* pMax = nullptr, const char* format = nullptr);
+        SR_GRAPHICS_DLL_API extern void PushItemWidth(float_t itemWidth);
+        SR_GRAPHICS_DLL_API extern void PopItemWidth();
+        SR_GRAPHICS_DLL_API extern void PushStyleColor(StyleColor idx, const SR_MATH_NS::FColor& color);
+        SR_GRAPHICS_DLL_API extern void PopStyleColor(uint32_t count = 1);
+        SR_GRAPHICS_DLL_API extern void BeginGroup();
+        SR_GRAPHICS_DLL_API extern void EndGroup();
+        SR_GRAPHICS_DLL_API extern void TreePop();
+        SR_GRAPHICS_DLL_API extern bool BeginDragDropSource(DragDropFlags flags = DragDropFlags::None);
+        SR_GRAPHICS_DLL_API extern float_t GetFrameHeight();
+        SR_GRAPHICS_DLL_API extern void Dummy(const SR_MATH_NS::FVector2& size);
+        SR_GRAPHICS_DLL_API extern bool BeginCombo(const char* label, const char* previewValue, ComboFlags flags = ComboFlags::None);
+        SR_GRAPHICS_DLL_API extern void EndCombo();
+        SR_GRAPHICS_DLL_API extern bool Selectable(const char* label, bool selected = false);
+        SR_GRAPHICS_DLL_API extern void SetItemDefaultFocus();
+        SR_GRAPHICS_DLL_API extern uint32_t BeginForceEnabled();
+        SR_GRAPHICS_DLL_API extern void EndForceEnabled(uint32_t stackSize);
+        SR_GRAPHICS_DLL_API extern void BeginDisabled();
+        SR_GRAPHICS_DLL_API extern void EndDisabled();
+        SR_GRAPHICS_DLL_API extern void EndDragDropSource();
+        SR_GRAPHICS_DLL_API extern void* GetCurrentWindow();
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetWindowCursorPos(void* pWindow = nullptr);
+        SR_GRAPHICS_DLL_API extern void* GetWindowDrawList(void* pWindow = nullptr);
+        SR_GRAPHICS_DLL_API extern uint32_t GetColorU32(StyleColor idx, float alpha_mul = 1.0f);
+        SR_GRAPHICS_DLL_API extern void RenderArrow(void* pDrawList, const SR_MATH_NS::FVector2& pos, uint32_t color, Direction dir, float_t scale = 1.0f);
+        SR_GRAPHICS_DLL_API extern bool InputFloat(const char* label, float_t* v, float_t step = 0.0f, float_t stepFast = 0.0f, const char* format = "%.3f", InputTextFlags flags = InputTextFlags::None);
+        SR_GRAPHICS_DLL_API extern bool InputInt(const char* label, int* v, int step = 1, int step_fast = 100, InputTextFlags flags = InputTextFlags::None);
+        SR_GRAPHICS_DLL_API extern bool Combo(const char* label, int* current_item, const char* items_separated_by_zeros);
+        SR_GRAPHICS_DLL_API extern bool Combo(const char* label, int* current_item, bool(*items_getter)(void* data, int idx, const char** out_text), void* data, int items_count, int popup_max_height_in_items = -1);
 
-        SR_RENDERER_DLL_API extern bool Splitter(bool split_vertically, float thickness, float* size1, float* size2, float min_size1, float min_size2, float splitter_long_axis_size = -1.0f);
-        SR_RENDERER_DLL_API extern bool ImageButton(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding);
-        SR_RENDERER_DLL_API extern bool ImageButtonDouble(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding);
-        SR_RENDERER_DLL_API extern bool ImageButton(void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding);
-        SR_RENDERER_DLL_API extern bool ImageButton(void* pDescriptor, const SR_MATH_NS::FVector2& size);
-        SR_RENDERER_DLL_API extern bool BeginDragDropTargetWindow(const std::string& payloadType);
-        SR_RENDERER_DLL_API extern bool ImageButtonInternal(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2 &size, float_t framePadding, ButtonFlags flags);
-        SR_RENDERER_DLL_API extern bool ImageButton(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding, ButtonFlags flags);
-        SR_RENDERER_DLL_API extern bool CollapsingHeader(const std::string& label, TreeNodeFlags flags = TreeNodeFlags::CollapsingHeader);
-        SR_RENDERER_DLL_API extern void DrawMultiLineTextOnCenter(const std::string& text);
-        SR_RENDERER_DLL_API extern void DrawMultiLineTextOnCenter(const std::string& text, const SR_MATH_NS::FColor& color);
-        SR_RENDERER_DLL_API extern void DrawTextOnCenter(const std::string& text, const SR_MATH_NS::FColor& color = SR_MATH_NS::FColor(1.f, 1.f, 1.f, 1.f));
-        SR_RENDERER_DLL_API extern int ImTextCharToUtf8(char* buf, int32_t bufSize, uint32_t c);
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 DrawTexture(const void* pDescriptor, const SR_MATH_NS::FVector2& size, SR_GRAPH_NS::PipelineType pipelineType, bool imposition);
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 DrawTexture(const SR_GRAPH_NS::Pipeline* pPipeline, uint32_t textureId, const SR_MATH_NS::FVector2& size, bool imposition);
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 DrawImage(void* user_texture_id, const SR_MATH_NS::FVector2& size, const SR_MATH_NS::FVector2& uv0, const SR_MATH_NS::FVector2& uv1, const SR_MATH_NS::FColor& tint_col, const SR_MATH_NS::FColor& border_col, bool imposition);
-        SR_RENDERER_DLL_API extern bool BeginTabItem(const char* str_id);
-        SR_RENDERER_DLL_API extern void EndTabItem();
-        SR_RENDERER_DLL_API extern bool BeginTabBar(const char* str_id);
-        SR_RENDERER_DLL_API extern void EndTabBar();
-        SR_RENDERER_DLL_API extern void PushFont(void* pFont);
-        SR_RENDERER_DLL_API extern void PopFont();
-        SR_RENDERER_DLL_API extern bool BeginChild(const char* str_id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2(), bool border = false);
-        SR_RENDERER_DLL_API extern void EndChild();
-        SR_RENDERER_DLL_API extern const void* GetDragDropPayload();
-        SR_RENDERER_DLL_API extern float_t GetScrollMaxY();
-        SR_RENDERER_DLL_API extern bool BeginDragDropTarget();
-        SR_RENDERER_DLL_API extern const void* AcceptDragDropPayload(const char* type);
-        SR_RENDERER_DLL_API extern void EndDragDropTarget();
-        SR_RENDERER_DLL_API extern void* GetDataFromDragDropPayload(const void* pPayload);
-        SR_RENDERER_DLL_API extern const char* GetPayloadType(const void* pPayload);
-        SR_RENDERER_DLL_API extern float_t GetFontSize();
-        SR_RENDERER_DLL_API extern float_t GetScrollbarSize();
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 GetMousePos();
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 GetContentRegionAvail();
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 GetFramePadding();
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 GetItemRectSize();
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 GetItemRectMin();
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 CalcTextSize(const char* text);
-        SR_RENDERER_DLL_API extern void SetKeyboardFocusHere();
-        SR_RENDERER_DLL_API extern void OpenPopup(const char* str_id);
-        SR_RENDERER_DLL_API extern void AddText(void* pDrawList, const SR_MATH_NS::FVector2& pos, uint32_t color, const char* text);
-        SR_RENDERER_DLL_API extern void CloseCurrentPopup();
-        SR_RENDERER_DLL_API extern bool InputText(const char* label, std::string* str, InputTextFlags flags = InputTextFlags::None);
-        SR_RENDERER_DLL_API extern bool InputText(const char* label, char* str, size_t strSize, InputTextFlags flags = InputTextFlags::None);
-        SR_RENDERER_DLL_API extern bool InputTextMultiline(const char* label, std::string* str, const SR_MATH_NS::FVector2& size, InputTextFlags flags = InputTextFlags::None);
-        SR_RENDERER_DLL_API extern bool BeginMenu(const char* label);
-        SR_RENDERER_DLL_API extern bool MenuItem(const char* label);
-        SR_RENDERER_DLL_API extern void EndMenu();
-        SR_RENDERER_DLL_API extern void BeginDocking();
-        SR_RENDERER_DLL_API extern void EndDocking();
-        SR_RENDERER_DLL_API extern bool BeginMainMenuBar();
-        SR_RENDERER_DLL_API extern bool IsItemToggledOpen();
-        SR_RENDERER_DLL_API extern bool IsItemDeactivatedAfterEdit();
-        SR_RENDERER_DLL_API extern void TableNextRow();
-        SR_RENDERER_DLL_API extern void EndMenuBar();
-        SR_RENDERER_DLL_API extern void End();
-        SR_RENDERER_DLL_API extern bool BeginListBox(const char* label, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
-        SR_RENDERER_DLL_API extern void EndListBox();
-        SR_RENDERER_DLL_API extern bool BeginTable(const char* str_id, int columns);
-        SR_RENDERER_DLL_API extern void EndTable();
-        SR_RENDERER_DLL_API extern void TableSetColumnIndex(int column_n);
-        SR_RENDERER_DLL_API extern bool IsMouseDragging(MouseButton button);
-        SR_RENDERER_DLL_API extern bool IsMouseDown(MouseButton button);
-        SR_RENDERER_DLL_API extern bool IsMouseReleased(MouseButton button);
-        SR_RENDERER_DLL_API extern bool IsItemClicked(MouseButton button = MouseButton::Left);
-        SR_RENDERER_DLL_API extern bool IsMouseDoubleClicked(MouseButton button);
-        SR_RENDERER_DLL_API extern bool BeginPopupContextWindow(const char* str_id = nullptr);
-        SR_RENDERER_DLL_API extern bool BeginPopupContextItem(const char* str_id = nullptr);
-        SR_RENDERER_DLL_API extern bool TreeNodeEx(const void* ptr_id, TreeNodeFlags flags, const char* fmt, ...);
-        SR_RENDERER_DLL_API extern void* FindWindowByName(const char* name);
-        SR_RENDERER_DLL_API extern void SetCursorPosX(float_t x);
-        SR_RENDERER_DLL_API extern void SetCursorPosY(float_t y);
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 GetWindowSize();
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FVector2 GetCursorPos();
-        SR_RENDERER_DLL_API extern SR_MATH_NS::FRect GetWindowRect(void* pWindow = nullptr);
-        SR_RENDERER_DLL_API extern bool SmallButton(const char* label);
-        SR_RENDERER_DLL_API extern void FocusTopMostWindowUnderOne();
-        SR_RENDERER_DLL_API extern void SetCursorPos(const SR_MATH_NS::FVector2& pos);
-        SR_RENDERER_DLL_API extern void LoadIniSettingsFromDisk();
-        SR_RENDERER_DLL_API extern bool DragFloat(const char* label, float_t* v, float_t vSpeed, float_t min = 0.f, float_t max = 0.f, const char* format = "%.3f");
-        SR_RENDERER_DLL_API extern bool SliderFloat(const char* label, float_t* v, float_t min, float_t max, const char* format = "%.3f");
-        SR_RENDERER_DLL_API extern float_t GetFramerate();
-        SR_RENDERER_DLL_API extern float_t GetFrameHeightWithSpacing();
+        SR_GRAPHICS_DLL_API extern bool Splitter(bool split_vertically, float thickness, float* size1, float* size2, float min_size1, float min_size2, float splitter_long_axis_size = -1.0f);
+        SR_GRAPHICS_DLL_API extern bool ImageButton(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding);
+        SR_GRAPHICS_DLL_API extern bool ImageButtonDouble(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding);
+        SR_GRAPHICS_DLL_API extern bool ImageButton(void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding);
+        SR_GRAPHICS_DLL_API extern bool ImageButton(void* pDescriptor, const SR_MATH_NS::FVector2& size);
+        SR_GRAPHICS_DLL_API extern bool BeginDragDropTargetWindow(const std::string& payloadType);
+        SR_GRAPHICS_DLL_API extern bool ImageButtonInternal(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2 &size, float_t framePadding, ButtonFlags flags);
+        SR_GRAPHICS_DLL_API extern bool ImageButton(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding, ButtonFlags flags);
+        SR_GRAPHICS_DLL_API extern bool CollapsingHeader(const std::string& label, TreeNodeFlags flags = TreeNodeFlags::CollapsingHeader);
+        SR_GRAPHICS_DLL_API extern void DrawMultiLineTextOnCenter(const std::string& text);
+        SR_GRAPHICS_DLL_API extern void DrawMultiLineTextOnCenter(const std::string& text, const SR_MATH_NS::FColor& color);
+        SR_GRAPHICS_DLL_API extern void DrawTextOnCenter(const std::string& text, const SR_MATH_NS::FColor& color = SR_MATH_NS::FColor(1.f, 1.f, 1.f, 1.f));
+        SR_GRAPHICS_DLL_API extern int ImTextCharToUtf8(char* buf, int32_t bufSize, uint32_t c);
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 DrawTexture(const void* pDescriptor, const SR_MATH_NS::FVector2& size, SR_GRAPH_NS::PipelineType pipelineType, bool imposition);
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 DrawTexture(const SR_GRAPH_NS::Pipeline* pPipeline, uint32_t textureId, const SR_MATH_NS::FVector2& size, bool imposition);
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 DrawImage(void* user_texture_id, const SR_MATH_NS::FVector2& size, const SR_MATH_NS::FVector2& uv0, const SR_MATH_NS::FVector2& uv1, const SR_MATH_NS::FColor& tint_col, const SR_MATH_NS::FColor& border_col, bool imposition);
+        SR_GRAPHICS_DLL_API extern bool BeginTabItem(const char* str_id);
+        SR_GRAPHICS_DLL_API extern void EndTabItem();
+        SR_GRAPHICS_DLL_API extern bool BeginTabBar(const char* str_id);
+        SR_GRAPHICS_DLL_API extern void EndTabBar();
+        SR_GRAPHICS_DLL_API extern void PushFont(void* pFont);
+        SR_GRAPHICS_DLL_API extern void PopFont();
+        SR_GRAPHICS_DLL_API extern bool BeginChild(const char* str_id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2(), bool border = false);
+        SR_GRAPHICS_DLL_API extern void EndChild();
+        SR_GRAPHICS_DLL_API extern const void* GetDragDropPayload();
+        SR_GRAPHICS_DLL_API extern float_t GetScrollMaxY();
+        SR_GRAPHICS_DLL_API extern bool BeginDragDropTarget();
+        SR_GRAPHICS_DLL_API extern const void* AcceptDragDropPayload(const char* type);
+        SR_GRAPHICS_DLL_API extern void EndDragDropTarget();
+        SR_GRAPHICS_DLL_API extern void* GetDataFromDragDropPayload(const void* pPayload);
+        SR_GRAPHICS_DLL_API extern const char* GetPayloadType(const void* pPayload);
+        SR_GRAPHICS_DLL_API extern float_t GetFontSize();
+        SR_GRAPHICS_DLL_API extern float_t GetScrollbarSize();
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetMousePos();
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetContentRegionAvail();
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetFramePadding();
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetItemRectSize();
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetItemRectMin();
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 CalcTextSize(const char* text);
+        SR_GRAPHICS_DLL_API extern void SetKeyboardFocusHere();
+        SR_GRAPHICS_DLL_API extern void OpenPopup(const char* str_id);
+        SR_GRAPHICS_DLL_API extern void AddText(void* pDrawList, const SR_MATH_NS::FVector2& pos, uint32_t color, const char* text);
+        SR_GRAPHICS_DLL_API extern void CloseCurrentPopup();
+        SR_GRAPHICS_DLL_API extern bool InputText(const char* label, std::string* str, InputTextFlags flags = InputTextFlags::None);
+        SR_GRAPHICS_DLL_API extern bool InputText(const char* label, char* str, size_t strSize, InputTextFlags flags = InputTextFlags::None);
+        SR_GRAPHICS_DLL_API extern bool InputTextMultiline(const char* label, std::string* str, const SR_MATH_NS::FVector2& size, InputTextFlags flags = InputTextFlags::None);
+        SR_GRAPHICS_DLL_API extern bool BeginMenu(const char* label);
+        SR_GRAPHICS_DLL_API extern bool MenuItem(const char* label);
+        SR_GRAPHICS_DLL_API extern void EndMenu();
+        SR_GRAPHICS_DLL_API extern void BeginDocking();
+        SR_GRAPHICS_DLL_API extern void EndDocking();
+        SR_GRAPHICS_DLL_API extern bool BeginMainMenuBar();
+        SR_GRAPHICS_DLL_API extern bool IsItemToggledOpen();
+        SR_GRAPHICS_DLL_API extern bool IsItemDeactivatedAfterEdit();
+        SR_GRAPHICS_DLL_API extern void TableNextRow();
+        SR_GRAPHICS_DLL_API extern void EndMenuBar();
+        SR_GRAPHICS_DLL_API extern void End();
+        SR_GRAPHICS_DLL_API extern bool BeginListBox(const char* label, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
+        SR_GRAPHICS_DLL_API extern void EndListBox();
+        SR_GRAPHICS_DLL_API extern bool BeginTable(const char* str_id, int columns);
+        SR_GRAPHICS_DLL_API extern void EndTable();
+        SR_GRAPHICS_DLL_API extern void TableSetColumnIndex(int column_n);
+        SR_GRAPHICS_DLL_API extern bool IsMouseDragging(MouseButton button);
+        SR_GRAPHICS_DLL_API extern bool IsMouseDown(MouseButton button);
+        SR_GRAPHICS_DLL_API extern bool IsMouseReleased(MouseButton button);
+        SR_GRAPHICS_DLL_API extern bool IsItemClicked(MouseButton button = MouseButton::Left);
+        SR_GRAPHICS_DLL_API extern bool IsMouseDoubleClicked(MouseButton button);
+        SR_GRAPHICS_DLL_API extern bool BeginPopupContextWindow(const char* str_id = nullptr);
+        SR_GRAPHICS_DLL_API extern bool BeginPopupContextItem(const char* str_id = nullptr);
+        SR_GRAPHICS_DLL_API extern bool TreeNodeEx(const void* ptr_id, TreeNodeFlags flags, const char* fmt, ...);
+        SR_GRAPHICS_DLL_API extern void* FindWindowByName(const char* name);
+        SR_GRAPHICS_DLL_API extern void SetCursorPosX(float_t x);
+        SR_GRAPHICS_DLL_API extern void SetCursorPosY(float_t y);
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetWindowSize();
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetCursorPos();
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FRect GetWindowRect(void* pWindow = nullptr);
+        SR_GRAPHICS_DLL_API extern bool SmallButton(const char* label);
+        SR_GRAPHICS_DLL_API extern void FocusTopMostWindowUnderOne();
+        SR_GRAPHICS_DLL_API extern void SetCursorPos(const SR_MATH_NS::FVector2& pos);
+        SR_GRAPHICS_DLL_API extern void LoadIniSettingsFromDisk();
+        SR_GRAPHICS_DLL_API extern bool DragFloat(const char* label, float_t* v, float_t vSpeed, float_t min = 0.f, float_t max = 0.f, const char* format = "%.3f");
+        SR_GRAPHICS_DLL_API extern bool SliderFloat(const char* label, float_t* v, float_t min, float_t max, const char* format = "%.3f");
+        SR_GRAPHICS_DLL_API extern float_t GetFramerate();
+        SR_GRAPHICS_DLL_API extern float_t GetFrameHeightWithSpacing();
 
-        SR_RENDERER_DLL_API extern ImmediateDataType GetDataType(std::string_view type);
-        SR_RENDERER_DLL_API extern ImmediateDataType GetDataType(uint64_t size, bool isSigned, bool isIntegral);
-        SR_RENDERER_DLL_API extern ImmediateDataTypeUnion ReadDataType(void* pData, ImmediateDataType type);
-        SR_RENDERER_DLL_API extern void WriteDataType(void* pData, ImmediateDataType type, ImmediateDataTypeUnion value);
+        SR_GRAPHICS_DLL_API extern ImmediateDataType GetDataType(std::string_view type);
+        SR_GRAPHICS_DLL_API extern ImmediateDataType GetDataType(uint64_t size, bool isSigned, bool isIntegral);
+        SR_GRAPHICS_DLL_API extern ImmediateDataTypeUnion ReadDataType(void* pData, ImmediateDataType type);
+        SR_GRAPHICS_DLL_API extern void WriteDataType(void* pData, ImmediateDataType type, ImmediateDataTypeUnion value);
     }
 }
 

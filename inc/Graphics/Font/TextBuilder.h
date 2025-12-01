@@ -16,6 +16,8 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    enum class ImageFormat : int32_t;
+
     SR_ENUM_NS_CLASS_T(FontStyle, uint32_t,
         Regular = 0,   /// Этот стиль шрифта не имеет никаких дополнительных свойств
         Bold = 1,      /// Этот стиль шрифта имеет жирное начертание
