@@ -10,7 +10,6 @@
 
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/SortedVector.h>
-#include <Graphics/Memory/UBOManager.h>
 
 namespace SR_GTYPES_NS {
     class Shader;
@@ -18,10 +17,14 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    namespace Memory {
+        class UBOManager;
+    }
     class MeshDrawerPass;
     class RenderStrategy;
     class RenderContext;
     class RenderScene;
+    class Pipeline;
 
     struct RenderQueueInfo;
 

@@ -7,6 +7,7 @@
 
 #include <Utils/Events/Broadcaster.h>
 #include <Utils/Input/InputSystem.h>
+#include <Utils/Common/SubscriptionMessage.h>
 
 #ifdef SR_RENDER_USE_YOGA
     #include <yoga/YGNode.h>

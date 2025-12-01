@@ -5,6 +5,8 @@
 #include <Graphics/Material/MaterialData.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Utils/Common/SubscriptionMessage.h>
+
 #include <Enum/ShaderVarType.hpp>
 
 #include <Codegen/MaterialData.generated.hpp>

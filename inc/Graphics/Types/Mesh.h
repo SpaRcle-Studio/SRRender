@@ -6,19 +6,11 @@
 #define SR_ENGINE_GRAPHICS_MESH_H
 
 #include <Graphics/Utils/MeshUtils.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
-#include <Graphics/Memory/IGraphicsResource.h>
-#include <Graphics/Memory/UBOManager.h>
-#include <Graphics/Material/MaterialProperty.h>
-#include <Graphics/Memory/DescriptorManager.h>
-#include <Graphics/Material/MeshMaterialProperty.h>
 #include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Types/IRenderComponent.h>
 
-#include <Utils/Math/Matrix4x4.h>
 #include <Utils/Math/AABB.h>
 #include <Utils/Common/Enumerations.h>
-#include <Utils/Types/SafePointer.h>
 #include <Utils/Types/Function.h>
 #include <Utils/Types/SortedVector.h>
 
@@ -33,6 +25,7 @@ namespace SR_HTYPES_NS {
 namespace SR_GRAPH_NS {
     class RenderScene;
     class RenderContext;
+    class DescriptorManager;
 }
 
 namespace SR_GRAPH_NS {

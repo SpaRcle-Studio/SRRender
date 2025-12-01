@@ -7,6 +7,8 @@
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Types/Mesh.h>
 
+#include <Utils/Common/SubscriptionMessage.h>
+
 #include <Codegen/BaseMaterial.generated.hpp>
 
 namespace SR_GRAPH_NS {

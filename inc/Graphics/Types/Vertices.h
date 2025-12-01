@@ -7,13 +7,11 @@
 
 #include <Graphics/macros.h>
 
-#include <Utils/Math/Vector2.h>
-#include <Utils/Math/Vector3.h>
 #include <Utils/Math/Vector4.h>
 
 #include <Utils/Common/StringFormat.h>
+#include <Utils/Common/AssertFwd.h>
 #include <Utils/Common/Vertices.h>
-#include <Utils/Common/Enumerations.h>
 #include <Utils/Profile/TracyContext.h>
 
 namespace SR_GRAPH_NS::Vertices {
