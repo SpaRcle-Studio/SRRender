@@ -116,6 +116,7 @@ namespace SR_GRAPH_NS::Memory {
         SR_HTYPES_NS::ObjectPool<VirtualUBOInfo, VirtualUBO> m_uboPool;
         std::vector<void*> m_handles;
         bool m_multiFrameMode = false;
+        bool m_headlessMode = false;
 
     };
 }

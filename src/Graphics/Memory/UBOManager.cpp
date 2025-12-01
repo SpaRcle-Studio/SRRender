@@ -2,11 +2,12 @@
 // Created by Monika on 10.06.2022.
 //
 
-#include <Utils/Common/Features.h>
-
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Pipeline/Pipeline.h>
+
+#include <Utils/Common/Features.h>
+#include <Utils/Common/CLIManager.h>
 
 namespace SR_GRAPH_NS::Memory {
     UBOManager::UBOManager()
@@ -272,5 +273,6 @@ namespace SR_GRAPH_NS::Memory {
     void UBOManager::InitSingleton() {
         Super::InitSingleton();
         m_multiFrameMode = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameResources", true);
+        m_headlessMode = SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode();
     }
 }

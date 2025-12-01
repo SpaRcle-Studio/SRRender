@@ -84,7 +84,7 @@ namespace SR_GRAPH_GUI_NS {
 
         void DrawAsSubWindow();
 
-        void SetManager(WidgetManager* pManager);
+        virtual void SetManager(WidgetManager* pManager);
 
         void AddSubWidget(Widget* pWidget);
 

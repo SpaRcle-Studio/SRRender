@@ -4,6 +4,9 @@
 
 #include <Graphics/Window/BasicWindowImpl.h>
 #include <Utils/Debug.h>
+#include <Utils/Common/CLIManager.h>
+
+#include <Graphics/Window/HeadlessWindow.h>
 
 #if defined(SR_WIN32)
     #include <Graphics/Window/Win32Window.h>
@@ -44,6 +47,11 @@ namespace SR_GRAPH_NS {
     }
 
     BasicWindowImpl* BasicWindowImpl::CreatePlatformWindow(BasicWindowImpl::WindowType type) {
+        if (SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode()) {
+            SR_INFO("BasicWindowImpl::CreatePlatformWindow() : running in headless mode!");
+            return new HeadlessWindow();
+        }
+
     #if defined(SR_WIN32)
         switch (type) {
             case WindowType::Auto:

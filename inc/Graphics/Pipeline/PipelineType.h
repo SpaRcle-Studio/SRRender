@@ -11,7 +11,7 @@
 
 namespace SR_GRAPH_NS {
     SR_ENUM_NS_CLASS_T(PipelineType, uint8_t,
-        Unknown, OpenGL, Vulkan, DirectX9, DirectX10, DirectX11, DirectX12
+        Unknown, Headless, OpenGL, Vulkan, DirectX9, DirectX10, DirectX11, DirectX12
     );
 }
 

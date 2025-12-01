@@ -125,7 +125,7 @@ namespace SR_GTYPES_NS {
 
         auto&& indexedVertices = Vertices::CastVertices<Vertices::SimpleVertex>(SR_UTILS_NS::SKYBOX_INDEXED_VERTICES);
 
-        if (GetPipeline()->GetType() == PipelineType::Vulkan) {
+        if (GetPipeline()->GetType() == PipelineType::Vulkan || GetPipeline()->GetType() == PipelineType::Headless) {
             auto&& indices = SR_UTILS_NS::SKYBOX_INDICES;
 
             if (m_VBO = GetPipeline()->AllocateVBO(indexedVertices.data(), Vertices::VertexType::SimpleVertex, indexedVertices.size()); m_VBO == SR_ID_INVALID) {

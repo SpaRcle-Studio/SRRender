@@ -7,6 +7,8 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Utils/Common/CLIManager.h>
+
 namespace SR_GRAPH_NS {
     SSBOInstance::SSBOInstance() = default;
 
@@ -358,6 +360,10 @@ namespace SR_GRAPH_NS {
 
     void SSBOInstance::UpdateSSBO(const void* pData, uint64_t size) {
         SR_TRACY_ZONE;
+
+        if (SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode()) {
+            return;
+        }
 
         if (!pData) {
             SR_ERROR("SSBOInstance::UpdateSSBO() : pData is nullptr!");

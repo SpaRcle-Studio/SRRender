@@ -19,7 +19,7 @@ namespace SR_GRAPH_NS {
 
     class BasicWindowImpl : public SR_UTILS_NS::NonCopyable {
     public:
-        SR_ENUM_CLASS_T(WindowType, uint8_t, Unknown, Auto, Android, Win32, X11, GLFW, SDL);
+        SR_ENUM_CLASS_T(WindowType, uint8_t, Unknown, Auto, Headless, Android, Win32, X11, GLFW, SDL);
         using Super = SR_UTILS_NS::NonCopyable;
         using ResizeCallback = SR_HTYPES_NS::Function<void(BasicWindowImpl*, int32_t, int32_t)>;
         using MoveCallback = SR_HTYPES_NS::Function<void(BasicWindowImpl*, int32_t, int32_t)>;

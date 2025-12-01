@@ -13,26 +13,25 @@
 #include <Graphics/Memory/CameraManager.h>
 #include <Graphics/Memory/SSBOManager.h>
 #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
+#include <Graphics/Pipeline/HeadlessPipeline.h>
 #include <Graphics/Pass/FrameBufferPass.h>
 
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Texture.h>
-#include <Graphics/Types/RenderTexture.h>
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Types/Skybox.h>
 #include <Graphics/Material/FileMaterial.h>
 
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Features.h>
+#include <Utils/Common/CLIManager.h>
 #include <Utils/Events/Broadcaster.h>
 
 namespace SR_GRAPH_NS {
     RenderContext::RenderContext()
         : Super(this)
-    {
-        m_pipeline = new VulkanPipeline(GetThis());
-    }
+    { }
 
     bool RenderContext::Update() noexcept {
         SR_TRACY_ZONE;
@@ -650,5 +649,21 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::ResourceManager::Instance().ReloadAll(SR_GTYPES_NS::Shader::GetClassStaticName());
         SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
         SetDirty();
+    }
+
+    bool RenderContext::PreInit() {
+        SR_TRACY_ZONE;
+        SR_LOG("RenderContext::PreInit() : pre-initializing render context...");
+
+        if (SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode()) {
+            SR_LOG("RenderContext::PreInit() : creating headless pipeline...");
+            m_pipeline = new HeadlessPipeline(GetThis());
+        }
+        else {
+            SR_LOG("RenderContext::PreInit() : creating vulkan pipeline...");
+            m_pipeline = new VulkanPipeline(GetThis());
+        }
+
+        return true;
     }
 }
