@@ -7,7 +7,6 @@
 
 #include <Graphics/macros.h>
 
-#include <Utils/macros.h>
 #include <EvoVulkan/Memory/Allocator.h>
 
 namespace SR_GRAPH_NS::VulkanTypes {

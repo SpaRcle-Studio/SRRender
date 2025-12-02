@@ -11,6 +11,7 @@
 #include <Graphics/Types/Geometry/DebugLine.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Material/UniqueMaterial.h>
 #include <Graphics/Material/FileMaterial.h>
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Lighting/LightSystem.h>
@@ -286,8 +287,10 @@ namespace SR_GRAPH_NS {
         }
 
         if (!pMesh->GetMaterial()->IsValid()) {
-            SR_ERROR("RenderScene::Register() : mesh have invalid material! Mesh: " + pMesh->GetMeshIdentifier()
-                + "\n\tGameObject: " + (pMesh->GetGameObject() ? pMesh->GetGameObject()->GetName().ToString() : "nullptr"));
+            SR_ERROR("RenderScene::Register() : mesh have invalid material! Mesh: {}\n\tGameObject: {}",
+                 pMesh->GetMeshIdentifier(),
+                 (pMesh->GetSceneObject() ? pMesh->GetSceneObject()->GetName() : "nullptr")
+            );
             return;
         }
 
@@ -559,7 +562,9 @@ namespace SR_GRAPH_NS {
     void RenderScene::SetMeshMaterial(RenderScene::MeshPtr pMesh) {
         if (pMesh->IsFlatMesh()) {
             if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh)) {
-                pText2D->SetMaterial("Engine/Materials/UI/ui_text_white.mat");
+                UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
+                pMaterial->SetShader("Engine/Shaders/text.srsl");
+                pText2D->SetMaterial(pMaterial.StaticCast<BaseMaterial>());
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultUIMaterial()) {
                 pMesh->SetMaterial(pDefaultMat);
@@ -567,7 +572,9 @@ namespace SR_GRAPH_NS {
         }
         else {
             if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh)) {
-                pText3D->SetMaterial("Engine/Materials/text.mat");
+                UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
+                pMaterial->SetShader("Engine/Shaders/text.srsl");
+                pText3D->SetMaterial(pMaterial.StaticCast<BaseMaterial>());
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultMaterial()) {
                 pMesh->SetMaterial(pDefaultMat);

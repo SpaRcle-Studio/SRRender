@@ -5,16 +5,21 @@
 #ifndef SR_GRAPHICS_TEXTURE_LOADER_H
 #define SR_GRAPHICS_TEXTURE_LOADER_H
 
+#include <Graphics/Pipeline/TextureHelper.h>
+
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/Function.h>
-
-#include <Graphics/Memory/TextureConfigs.h>
+#include <Utils/FileSystem/Path.h>
 
 namespace SR_GTYPES_NS {
     class Texture;
 }
 
 namespace SR_GRAPH_NS {
+    namespace Memory {
+        struct TextureConfig;
+    }
+
     class TextureData : public SR_HTYPES_NS::SharedPtr<TextureData>, SR_UTILS_NS::NonCopyable {
         using Super = SR_HTYPES_NS::SharedPtr<TextureData>;
         using DeleterFn = SR_HTYPES_NS::Function<void(uint8_t*)>;

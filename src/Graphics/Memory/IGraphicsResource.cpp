@@ -36,7 +36,7 @@ namespace SR_GRAPH_NS::Memory {
         m_renderContext->Register(this, SR_UTILS_NS::PassKey<IGraphicsResource>(this));
     }
 
-    void IGraphicsResource::DeInitGraphicsResource(SR_UTILS_NS::PassKey<RenderContext>) {
+    void IGraphicsResource::DeInitGraphicsResource() {
         FreeVMemory();
         m_pipeline = nullptr;
         m_renderContext = nullptr;

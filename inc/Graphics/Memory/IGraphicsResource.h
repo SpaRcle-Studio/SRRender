@@ -7,7 +7,6 @@
 
 #include <Graphics/macros.h>
 
-#include <Utils/Debug.h>
 #include <Utils/Common/PassKey.h>
 #include <Utils/Types/SharedPtr.h>
 
@@ -32,7 +31,7 @@ namespace SR_GRAPH_NS::Memory {
 
     public:
         void RegisterGraphicsResource();
-        void DeInitGraphicsResource(SR_UTILS_NS::PassKey<RenderContext>);
+        void DeInitGraphicsResource();
 
         SR_NODISCARD SR_FORCE_INLINE PipelinePtr& GetPipeline() noexcept { return m_pipeline; }
         SR_NODISCARD SR_FORCE_INLINE const PipelinePtr& GetPipeline() const noexcept { return m_pipeline; }

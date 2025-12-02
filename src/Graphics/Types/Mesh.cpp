@@ -10,11 +10,10 @@
 #include <Graphics/Material/FileMaterial.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Memory/DescriptorManager.h>
 
-#include <Utils/ECS/Component.h>
 #include <Utils/ECS/Node.h>
 #include <Utils/ECS/GameObject.h>
-#include <Utils/Resources/ResourceManager.h>
 #include <Utils/Resources/IResource.h>
 #include <Utils/Types/RawMesh.h>
 #include <Utils/Types/IRawMeshHolder.h>

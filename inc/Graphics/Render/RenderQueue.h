@@ -153,7 +153,7 @@ namespace SR_GRAPH_NS {
 
     struct MeshRenderQueues {
         constexpr static size_t MaxQueues = 64;
-        RenderQueueInfo queues[MaxQueues];
+        RenderQueueInfo queues[MaxQueues] = {};
         uint8_t count = 0;
         uint8_t maxCount = 0;
 

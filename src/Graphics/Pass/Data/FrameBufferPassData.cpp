@@ -5,6 +5,7 @@
 #include <Graphics/Pass/Data/FrameBufferPassData.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/FrameBufferController.h>
+#include <Graphics/Render/IRenderTechnique.h>
 #include <Graphics/Types/Framebuffer.h>
 
 #include <Codegen/FrameBufferPassData.generated.hpp>

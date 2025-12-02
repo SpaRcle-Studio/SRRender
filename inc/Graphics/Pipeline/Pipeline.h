@@ -10,6 +10,7 @@
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Overlay/OverlayType.h>
 #include <Graphics/Pipeline/TextureHelper.h>
+#include <Graphics/Memory/SSBOUsage.h>
 
 #include <Utils/Math/Vector3.h>
 #include <Utils/Types/SafePointer.h>

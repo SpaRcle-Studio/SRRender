@@ -2,12 +2,6 @@
 // Created by Nikita on 17.11.2020.
 //
 
-#include <Utils/Resources/ResourceManager.h>
-#include <Utils/Resources/Xml.h>
-#include <Utils/Types/Thread.h>
-#include <Utils/Types/DataStorage.h>
-#include <Utils/Common/Hashes.h>
-
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Render/RenderContext.h>
@@ -15,6 +9,11 @@
 #include <Graphics/SRSL/Shader.h>
 #include <Graphics/SRSL/TypeInfo.h>
 #include <Graphics/SRSL/Cache.h>
+
+#include <Utils/Resources/ResourceManager.h>
+#include <Utils/Resources/FileWatcher.h>
+#include <Utils/Types/DataStorage.h>
+#include <Utils/Common/Hashes.h>
 
 #include <Codegen/Shader.generated.hpp>
 

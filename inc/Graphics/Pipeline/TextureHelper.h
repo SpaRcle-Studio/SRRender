@@ -8,18 +8,8 @@
 #include <Graphics/macros.h>
 
 #include <Utils/Common/Enumerations.h>
-#include <Utils/Resources/Xml.h>
 
 namespace SR_GRAPH_NS {
-    SR_ENUM_NS_CLASS_T(SSBOUsage, uint8_t,
-        Unknown,
-        GPUOnly, CPUOnly,
-        CPUToGPU, GPUToCPU,
-        CPUCopy,
-        GPULazyAlloc,
-        Auto, AutoPreferDevice, AutoPreferHost
-    );
-
     SR_ENUM_NS_CLASS_T(ImageLoadFormat, uint8_t,
         Unknown,
         Grey,
@@ -27,13 +17,6 @@ namespace SR_GRAPH_NS {
         RGB,
         RGBA
     );
-
-    /*SR_ENUM_NS_CLASS_T(Dimension, uint8_t,
-        Unknown,
-        DIMENSION_2D,
-        DIMENSION_3D,
-        DIMENSION_CUBE
-    );*/
 
     SR_ENUM_NS_CLASS_T(Antialiasing, uint8_t,
         None,
@@ -83,35 +66,7 @@ namespace SR_GRAPH_NS {
         D32_SFLOAT_S8_UINT
     );
 
-    SR_INLINE static uint8_t GetChannelCount(ImageFormat format) {
-        switch (format) {
-            case ImageFormat::RGBA8_UNORM:
-            case ImageFormat::BGRA8_UNORM:
-            case ImageFormat::RGBA8_SRGB:
-                return 4;
-            case ImageFormat::R8_UNORM:
-            case ImageFormat::R8_UINT:
-                return 1;
-            case ImageFormat::RG8_UNORM:
-                return 2;
-            case ImageFormat::RGB8_UNORM:
-                return 3;
-            case ImageFormat::RGBA16_UNORM:
-            case ImageFormat::RGB16_UNORM:
-            case ImageFormat::R16_UNORM:
-            case ImageFormat::R32_SFLOAT:
-            case ImageFormat::R64_SFLOAT:
-            case ImageFormat::R16_UINT:
-            case ImageFormat::R32_UINT:
-            case ImageFormat::R64_UINT:
-                SR_ERROR("GetChannelCount : unsupported color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
-                return 0;
-            case ImageFormat::Unknown:
-            default:
-                SR_ERROR("GetChannelCount : unknown color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
-                return 0;
-        }
-    }
+    SR_GRAPHICS_DLL_API extern uint8_t GetChannelCount(ImageFormat format);
 
     struct ColorLayer {
         std::vector<int32_t> texture;
@@ -125,14 +80,6 @@ namespace SR_GRAPH_NS {
         std::vector<std::vector<int32_t>> subLayers;
     };
 
-    //inline static bool IsSRGB(ColorFormat f) {
-    //    return f == ColorFormat::RGBA8_SRGB;
-    //}
-
-    //inline static bool IsUNORM(ColorFormat f) {
-    //    return f >= ColorFormat::RGBA8_UNORM || f <= ColorFormat::RGBA16_UNORM;
-    //}
-
     SR_ENUM_NS_CLASS(TextureFilter,
         Unknown = 0, NEAREST = 1, LINEAR = 2, NEAREST_MIPMAP_NEAREST = 3,
         LINEAR_MIPMAP_NEAREST = 4, NEAREST_MIPMAP_LINEAR = 5, LINEAR_MIPMAP_LINEAR = 6
@@ -142,27 +89,11 @@ namespace SR_GRAPH_NS {
         None = 0, BC1 = 1, BC2 = 2, BC3 = 3, BC4 = 4, BC5 = 5, BC6 = 6, BC7 = 7
     );
 
-    SR_INLINE static uint32_t Find4(uint32_t i) {
-        if (i % 4 == 0)
-            return i;
-        else
-            return Find4(i - 1);
-    }
+    uint32_t Find4(uint32_t i);
 
-    SR_INLINE static auto MakeGoodSizes(uint32_t w, uint32_t h) -> auto {
-        return std::pair(Find4(w), Find4(h));
-    }
+    std::pair<uint32_t, uint32_t> MakeGoodSizes(uint32_t w, uint32_t h);
 
-    SR_INLINE static uint8_t* ResizeToLess(uint32_t ow, uint32_t oh, uint32_t nw, uint32_t nh, const uint8_t* pixels) {
-        auto* image = (uint8_t*)malloc(nw * nh * 4);
-        uint32_t dw = ow - nw;
-
-        for (uint32_t row = 0; row < nh; ++row) {
-            memcpy(image + (nw * 4 * row), pixels + (dw * 4 * row) + (nw * 4 * row), nw * 4);
-        }
-
-        return image;
-    }
+    uint8_t* ResizeToLess(uint32_t ow, uint32_t oh, uint32_t nw, uint32_t nh, const uint8_t* pixels);
 
     uint32_t GetPixelSize(ImageFormat format);
 

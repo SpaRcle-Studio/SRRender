@@ -50,6 +50,10 @@ namespace SR_GRAPH_NS {
         PrepareLayers();
 
         auto&& pNewQueue = info.pMesh->GetRenderQueues().Add(this);
+        if (!pNewQueue) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("RenderQueue::Register() : mesh already registered!");
+            return;
+        }
         pNewQueue->pShader = info.pMaterial ? info.pMaterial->GetShader(m_meshDrawerPass->GetShaderMacros()) : nullptr;
 
         MeshInfo meshInfo;

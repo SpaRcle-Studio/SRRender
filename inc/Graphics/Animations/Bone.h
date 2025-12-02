@@ -5,16 +5,16 @@
 #ifndef SR_ENGINE_BONE_H
 #define SR_ENGINE_BONE_H
 
+#include <Graphics/Types/Mesh.h>
+
 #include <Utils/ECS/Component.h>
 #include <Utils/ECS/GameObject.h>
-
-#include <Graphics/Types/Mesh.h>
 
 namespace SR_ANIMATIONS_NS {
     class Skeleton;
     class BoneComponent;
 
-    struct Bone final : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<Bone> {
+    class Bone final : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<Bone> {
         SR_CLASS()
     public:
         Bone()

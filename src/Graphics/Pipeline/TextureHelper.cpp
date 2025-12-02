@@ -49,6 +49,58 @@ namespace SR_GRAPH_NS {
         return cmpBuffer;
     }
 
+    uint32_t Find4(uint32_t i) {
+        if (i % 4 == 0)
+            return i;
+        else
+            return Find4(i - 1);
+    }
+
+    std::pair<uint32_t, uint32_t> MakeGoodSizes(uint32_t w, uint32_t h) {
+        return std::pair(Find4(w), Find4(h));
+    }
+
+    uint8_t* ResizeToLess(uint32_t ow, uint32_t oh, uint32_t nw, uint32_t nh, const uint8_t* pixels) {
+        auto* image = (uint8_t*)malloc(nw * nh * 4);
+        uint32_t dw = ow - nw;
+
+        for (uint32_t row = 0; row < nh; ++row) {
+            memcpy(image + (nw * 4 * row), pixels + (dw * 4 * row) + (nw * 4 * row), nw * 4);
+        }
+
+        return image;
+    }
+
+    uint8_t GetChannelCount(ImageFormat format) {
+        switch (format) {
+            case ImageFormat::RGBA8_UNORM:
+            case ImageFormat::BGRA8_UNORM:
+            case ImageFormat::RGBA8_SRGB:
+                return 4;
+            case ImageFormat::R8_UNORM:
+            case ImageFormat::R8_UINT:
+                return 1;
+            case ImageFormat::RG8_UNORM:
+                return 2;
+            case ImageFormat::RGB8_UNORM:
+                return 3;
+            case ImageFormat::RGBA16_UNORM:
+            case ImageFormat::RGB16_UNORM:
+            case ImageFormat::R16_UNORM:
+            case ImageFormat::R32_SFLOAT:
+            case ImageFormat::R64_SFLOAT:
+            case ImageFormat::R16_UINT:
+            case ImageFormat::R32_UINT:
+            case ImageFormat::R64_UINT:
+                SR_ERROR("GetChannelCount : unsupported color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
+                return 0;
+            case ImageFormat::Unknown:
+            default:
+                SR_ERROR("GetChannelCount : unknown color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
+                return 0;
+        }
+    }
+
     uint32_t GetPixelSize(ImageFormat format) {
         switch (format) {
             case ImageFormat::RGBA8_UNORM:

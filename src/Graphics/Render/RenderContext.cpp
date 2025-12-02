@@ -29,6 +29,73 @@
 #include <Utils/Events/Broadcaster.h>
 
 namespace SR_GRAPH_NS {
+    template<typename T> bool UpdateRenderResource(RenderContext* pRenderContext, T& resourceList) noexcept {
+        SR_TRACY_ZONE;
+
+        bool dirty = false;
+
+        if constexpr (std::is_same_v<T, std::vector<SR_HTYPES_NS::SharedPtr<IRenderTechnique>>>) {
+            for (auto&& pIt = std::begin(resourceList); pIt != std::end(resourceList); ) {
+                SR_HTYPES_NS::SharedPtr<IRenderTechnique> pRenderTechnique = *pIt;
+
+                if (!pRenderTechnique) {
+                    SRHalt("Render technique is nullptr!");
+                    pIt = resourceList.erase(pIt);
+                    dirty |= true;
+                    continue;
+                }
+
+                if (pRenderTechnique->IsTechniqueDead()) {
+                    pRenderTechnique->DeInitGraphicsResource();
+                    pIt = resourceList.erase(pIt);
+                    pRenderTechnique.AutoFree();
+                    dirty |= true;
+                }
+                else {
+                    ++pIt;
+                }
+            }
+        }
+        else {
+            for (auto pIt = std::begin(resourceList); pIt != std::end(resourceList); ) {
+                if (auto pResource = *pIt) {
+                    const bool removed = pResource->Execute([&]() -> bool {
+                        if (pResource->GetCountUses() == 1) {
+                            SRAssert(pResource->GetContainerParents().empty());
+
+                            /// Ресурс необязательно имеет видеопамять, а лишь содержит другие ресурсы, например материал.
+                            if (auto&& pGraphicsResource = dynamic_cast<Memory::IGraphicsResource*>(pResource.Get())) {
+                                pGraphicsResource->DeInitGraphicsResource();
+                            }
+                            else {
+                                SRHalt("Resource is not IGraphicsResource!");
+                            }
+
+                            pResource->RemoveUsePoint();
+                            pIt = resourceList.erase(pIt);
+                            /// После освобождения ресурса необходимо перестроить все контекстные сцены рендера.
+                            dirty |= true;
+                            return true;
+                        }
+
+                        return false;
+                    });
+
+                    /// TODO: это безопасно?
+                    if (!removed) {
+                        ++pIt;
+                    }
+                }
+                else {
+                    SRHalt("Resource is nullptr!");
+                    pIt = resourceList.erase(pIt);
+                }
+            }
+        }
+
+        return dirty;
+    }
+
     RenderContext::RenderContext()
         : Super(this)
     { }
@@ -46,11 +113,11 @@ namespace SR_GRAPH_NS {
         m_updateState = static_cast<RCUpdateQueueState>(static_cast<uint8_t>(m_updateState) + 1);
 
         switch (m_updateState) {
-            case RCUpdateQueueState::Framebuffers: dirty |= Update(m_framebuffers); break;
-            case RCUpdateQueueState::Shaders: dirty |= Update(m_shaders); break;
-            case RCUpdateQueueState::Textures: dirty |= Update(m_textures); break;
-            case RCUpdateQueueState::Techniques: dirty |= Update(m_techniques); break;
-            case RCUpdateQueueState::Skyboxes: dirty |= Update(m_skyboxes); break;
+            case RCUpdateQueueState::Framebuffers: dirty |= UpdateRenderResource(this, m_framebuffers); break;
+            case RCUpdateQueueState::Shaders: dirty |= UpdateRenderResource(this, m_shaders); break;
+            case RCUpdateQueueState::Textures: dirty |= UpdateRenderResource(this, m_textures); break;
+            case RCUpdateQueueState::Techniques: dirty |= UpdateRenderResource(this, m_techniques); break;
+            case RCUpdateQueueState::Skyboxes: dirty |= UpdateRenderResource(this, m_skyboxes); break;
             case RCUpdateQueueState::End:
                 m_updateState = RCUpdateQueueState::Begin;
                 break;
@@ -87,7 +154,7 @@ namespace SR_GRAPH_NS {
 
             pRenderScene->DeInit();
 
-            Update(m_techniques);
+            UpdateRenderResource(this, m_techniques);
 
             /// Как только уничтожается основная сцена, уничтожаем сцену рендера
             SR_LOG("RenderContext::Update() : destroy render scene...");

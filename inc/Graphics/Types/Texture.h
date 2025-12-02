@@ -5,10 +5,8 @@
 #ifndef SR_ENGINE_TEXTURE_H
 #define SR_ENGINE_TEXTURE_H
 
-#include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Memory/TextureConfigs.h>
 #include <Graphics/Memory/IGraphicsResource.h>
-#include <Graphics/Loaders/TextureLoader.h>
 
 #include <Utils/Resources/IResource.h>
 #include <Utils/Types/SafePointer.h>
@@ -17,6 +15,7 @@ namespace SR_GRAPH_NS {
     class TextureLoader;
     class RenderContext;
     class Render;
+    class TextureData;
 }
 
 namespace SR_GTYPES_NS {
@@ -61,7 +60,7 @@ namespace SR_GTYPES_NS {
         void FreeTextureData();
 
     private:
-        TextureData::Ptr m_textureData;
+        SR_HTYPES_NS::SharedPtr<TextureData> m_textureData;
 
         int32_t m_id = SR_ID_INVALID;
 

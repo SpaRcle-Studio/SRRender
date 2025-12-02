@@ -5,11 +5,15 @@
 #ifndef SR_ENGINE_GRAPHICS_MEMORY_SSBO_H
 #define SR_ENGINE_GRAPHICS_MEMORY_SSBO_H
 
-#include <Graphics/Pipeline/Pipeline.h>
-#include <Graphics/Pipeline/TextureHelper.h>
-#include <Graphics/Render/RenderContext.h>
+#include <Graphics/Memory/SSBOUsage.h>
+
+#include <Utils/Types/SharedPtr.h>
+#include <Utils/Types/SafePointer.h>
 
 namespace SR_GRAPH_NS {
+    class RenderContext;
+    class Pipeline;
+
     SR_ENUM_NS_STRUCT_T(SSBOFlags, uint32_t,
         None              = 0,                   /// По умолчанию, просто сырые данные, массив байт
         Counter           = 1 << 1,              /// Добавляет в начало SSBO счетчик uint32_t, который можно считывать и изменять
@@ -68,8 +72,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t GetSSBO() const noexcept;
         SR_NODISCARD uint32_t GetCounter() const;
         SR_NODISCARD void* GetMappedData() const;
-        SR_NODISCARD const SR_GRAPH_NS::RenderContext::Ptr& GetRenderContext() const noexcept;
-        SR_NODISCARD const Pipeline::Ptr& GetPipeline() const noexcept;
+        SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;
+        SR_NODISCARD const SR_HTYPES_NS::SharedPtr<Pipeline>& GetPipeline() const noexcept;
 
     private:
         bool ReAllocate();
@@ -85,8 +89,8 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom m_name;
         SSBOUsage m_usage = SSBOUsage::Auto;
         SSBOFlags m_flags = SSBOFlags::None;
-        mutable SR_GRAPH_NS::Pipeline::Ptr m_pipeline;
-        mutable SR_GRAPH_NS::RenderContext::Ptr m_renderContext;
+        mutable SR_HTYPES_NS::SharedPtr<Pipeline> m_pipeline;
+        mutable SR_HTYPES_NS::SafePtr<RenderContext> m_renderContext;
 
     };
 }

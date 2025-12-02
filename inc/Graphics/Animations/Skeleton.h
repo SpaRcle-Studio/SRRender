@@ -5,14 +5,19 @@
 #ifndef SR_ENGINE_SKELETON_H
 #define SR_ENGINE_SKELETON_H
 
-#include <Graphics/Animations/Bone.h>
 #include <Graphics/Memory/SSBO.h>
-#include <Graphics/Render/RenderContext.h>
 
-#include <Utils/ECS/Transform3D.h>
+#include <Utils/ECS/Component.h>
 #include <Utils/Types/IRawMeshHolder.h>
 
+namespace SR_GRAPH_NS {
+    class RenderScene;
+    class SSBOInstance;
+}
+
 namespace SR_ANIMATIONS_NS {
+    class Bone;
+
     /// @category(Animations)
     class Skeleton : public SR_UTILS_NS::Component, public SR_HTYPES_NS::IRawMeshHolder {
         SR_CLASS()
@@ -71,14 +76,14 @@ namespace SR_ANIMATIONS_NS {
         mutable bool m_isSSBODirty = true;
 
         std::vector<uint32_t> m_indices;
-        std::vector<SR_UTILS_NS::Transform3D::Ptr> m_transforms;
+        std::vector<SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::Transform3D>> m_transforms;
         std::vector<SR_MATH_NS::Matrix4x4> m_matrices;
 
-        mutable SR_GRAPH_NS::SSBOInstance::Ptr m_bonesSSBO;
+        mutable std::unique_ptr<SSBOInstance> m_bonesSSBO;
 
     private:
         /// @property @notNull
-        Bone::Ptr m_rootBone = nullptr;
+        SR_HTYPES_NS::SharedPtr<Bone> m_rootBone;
         /// @property @dontSave @setter(SetDebugEnabled)
         bool m_debugEnabled = false;
         /// @property @dontSave @readOnly

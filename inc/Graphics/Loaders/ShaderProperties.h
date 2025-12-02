@@ -8,10 +8,9 @@
 #include <Graphics/macros.h>
 
 #include <Utils/Types/SharedPtr.h>
-#include <Utils/Common/StringUtils.h>
 #include <Utils/Common/Hashes.h>
 #include <Utils/Common/Enumerations.h>
-#include <Utils/TypeTraits/Properties.h>
+#include <Utils/Profile/TracyContext.h>
 
 namespace SR_GTYPES_NS {
     class Texture;

@@ -36,8 +36,8 @@ namespace SR_GRAPH_NS {
         bool FreeShader(int32_t* id) override { *id = SR_ID_INVALID; return true; }
         bool FreeTexture(int32_t* id) override { *id = SR_ID_INVALID; return true; }
 
-        void GetFBOHandles(std::vector<void*>& handles) const;
-        void GetShaderHandles(std::vector<void*>& handles) const;
+        void GetFBOHandles(std::vector<void*>& handles) const override;
+        void GetShaderHandles(std::vector<void*>& handles) const override;
 
         bool IsSamplerValid(int32_t id) const override { return true; }
 
