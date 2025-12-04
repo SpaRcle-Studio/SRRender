@@ -38,7 +38,7 @@ namespace SR_GRAPH_NS {
 
         using namespace std::placeholders;
 
-        SR_UTILS_NS::DebugDraw::Callbacks callbacks;
+        SR_UTILS_NS::IDebugDraw::Callbacks callbacks;
         callbacks.removeCallback = std::bind(&DebugRenderer::Remove, this, _1, true);
         callbacks.drawLineCallback = std::bind(&DebugRenderer::AddLine, this, _1, _2, _3, _4, _5);
         callbacks.drawCubeCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 0, _2, _3, _4, _5, _6);
@@ -47,12 +47,23 @@ namespace SR_GRAPH_NS {
         callbacks.drawCapsuleCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 3, _2, _3, _4, _5, _6);
         callbacks.drawMeshCallback = std::bind(&DebugRenderer::AddCustomMesh, this, _1, _2, _3, _4, _5, _6, _7, _8);
 
-        SR_UTILS_NS::DebugDraw::Instance().SetCallbacks(this, std::move(callbacks));
+        if (IsOverlayRenderer()) {
+            SR_UTILS_NS::DebugOverlayDraw::Instance().SetCallbacks(this, std::move(callbacks));
+        }
+        else {
+            SR_UTILS_NS::DebugDraw::Instance().SetCallbacks(this, std::move(callbacks));
+        }
     }
 
     void DebugRenderer::DeInit() {
         SR_LOCK_GUARD;
-        SR_UTILS_NS::DebugDraw::Instance().RemoveCallbacks(this);
+
+        if (IsOverlayRenderer()) {
+            SR_UTILS_NS::DebugOverlayDraw::Instance().RemoveCallbacks(this);
+        }
+        else {
+            SR_UTILS_NS::DebugDraw::Instance().RemoveCallbacks(this);
+        }
 
         for (auto&& pBaseMesh : m_meshes) {
             if (!pBaseMesh) {
@@ -68,7 +79,12 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         /// INFO: Меняем тут, иначе будет дедлок
-        SR_UTILS_NS::DebugDraw::Instance().SwitchCallbacks(this);
+        if (IsOverlayRenderer()) {
+            SR_UTILS_NS::DebugOverlayDraw::Instance().SwitchCallbacks(this);
+        }
+        else {
+            SR_UTILS_NS::DebugDraw::Instance().SwitchCallbacks(this);
+        }
 
         SR_LOCK_GUARD;
 

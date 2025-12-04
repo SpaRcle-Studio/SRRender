@@ -6,6 +6,7 @@
 
 #include <Utils/ECS/Transform.h>
 #include <Utils/Profile/TracyContext.h>
+#include <Utils/DebugDraw.h>
 
 namespace SR_GRAPH_NS::IK {
     void InitializeTwoBoneIKState(
@@ -387,6 +388,69 @@ namespace SR_GRAPH_NS::IK {
         }
     }
 
+    void DrawTwoBoneDebugGizmos(
+        SR_UTILS_NS::Transform& root,
+        SR_UTILS_NS::Transform& mid,
+        SR_UTILS_NS::Transform& tip,
+        const SR_UTILS_NS::Transform& target,
+        const SR_UTILS_NS::Transform* pHint,
+        IKTwoBoneState& state,
+        const IKTwoBoneParams& params
+    ) {
+        if (!params.showDebugGizmos) {
+            RemoveTwoBoneIKDebugGizmos(state);
+            return;
+        }
+
+        state.hasDebugGizmos = true;
+
+        const SR_MATH_NS::FVector3 rootPos = root.GetGlobalTranslation();
+        const SR_MATH_NS::FVector3 midPos = mid.GetGlobalTranslation();
+        const SR_MATH_NS::FVector3 tipPos = tip.GetGlobalTranslation();
+        const SR_MATH_NS::FVector3 targetPos = target.GetGlobalTranslation();
+
+        state.rootToMidDebugLineId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawLine(state.rootToMidDebugLineId,
+            rootPos, midPos, SR_MATH_NS::FColor::Yellow(), SR_FLOAT_MAX
+        );
+
+        state.midToTipDebugLineId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawLine(state.midToTipDebugLineId,
+            midPos, tipPos, SR_MATH_NS::FColor::Cyan(), SR_FLOAT_MAX
+        );
+
+        state.tipToTargetDebugLineId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawLine(state.tipToTargetDebugLineId,
+            tipPos, targetPos, SR_MATH_NS::FColor::Red(), SR_FLOAT_MAX
+        );
+
+        state.rootSphereDebugId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawSphere(state.rootSphereDebugId,
+            rootPos, SR_MATH_NS::Quaternion(), 0.02f, SR_MATH_NS::FColor::Red(), SR_FLOAT_MAX
+        );
+
+        state.midSphereDebugId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawSphere(state.midSphereDebugId,
+            midPos, SR_MATH_NS::Quaternion(), 0.02f, SR_MATH_NS::FColor::Blue(), SR_FLOAT_MAX
+        );
+
+        state.tipSphereDebugId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawSphere(state.tipSphereDebugId,
+            tipPos, SR_MATH_NS::Quaternion(), 0.02f, SR_MATH_NS::FColor::Green(), SR_FLOAT_MAX
+        );
+
+        state.targetSphereDebugId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawSphere(state.targetSphereDebugId,
+            targetPos, SR_MATH_NS::Quaternion(), 0.03f, SR_MATH_NS::FColor::Red(), SR_FLOAT_MAX
+        );
+
+        if (pHint) {
+            state.hintSphereDebugId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawSphere(state.hintSphereDebugId,
+                pHint->GetGlobalTranslation(), SR_MATH_NS::Quaternion(), 0.03f, SR_MATH_NS::FColor::Magenta(), SR_FLOAT_MAX
+            );
+            state.rootToHintDebugLineId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawLine(state.rootToHintDebugLineId,
+                rootPos, pHint->GetGlobalTranslation(), SR_MATH_NS::FColor::Magenta(), SR_FLOAT_MAX
+            );
+        }
+        else {
+            SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.hintSphereDebugId);
+            SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.rootToHintDebugLineId);
+        }
+    }
+
     void SolveTwoBone(
         SR_UTILS_NS::Transform& root,
         SR_UTILS_NS::Transform& mid,
@@ -403,6 +467,7 @@ namespace SR_GRAPH_NS::IK {
         }
 
         InitializeTwoBoneIKState(root, mid, tip, target, pHint, state);
+        DrawTwoBoneDebugGizmos(root, mid, tip, target, pHint, state, params);
 
         /// Сохраняем исходные вращения для интерполяции
         const SR_MATH_NS::Quaternion rootRotationOriginal = root.GetGlobalRotation();
@@ -465,5 +530,21 @@ namespace SR_GRAPH_NS::IK {
         if (params.tipRotationFromTarget) {
             tip.SetGlobalRotation(target.GetGlobalRotation());
         }
+    }
+
+    void RemoveTwoBoneIKDebugGizmos(IKTwoBoneState& state) {
+        if (!state.hasDebugGizmos) {
+            return;
+        }
+        state.hasDebugGizmos = false;
+        SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.rootToMidDebugLineId);
+        SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.midToTipDebugLineId);
+        SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.tipToTargetDebugLineId);
+        SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.rootToHintDebugLineId);
+        SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.rootSphereDebugId);
+        SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.midSphereDebugId);
+        SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.tipSphereDebugId);
+        SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.targetSphereDebugId);
+        SR_UTILS_NS::DebugOverlayDraw::Instance().TryRemove(&state.hintSphereDebugId);
     }
 }

@@ -481,6 +481,12 @@ namespace SR_GRAPH_NS {
 
                 if (meshInfo.pInfo->isVisible != isVisible) {
                     meshInfo.pInfo->isVisible = isVisible;
+                    if (isVisible) {
+                        meshInfo.pInfo->dirtyUniformsFrames.set();
+                        if (!meshInfo.pInfo->inUpdateQueue) {
+                            meshInfo.pInfo->pRenderQueue->OnMeshDirty(meshInfo.pMesh, meshInfo.pInfo);
+                        }
+                    }
                     changed = true;
                 }
             }

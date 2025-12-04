@@ -27,12 +27,14 @@ namespace SR_GRAPH_NS {
 
     /// @displayName(IK) @category(Animations)
     class IKComponent : public SR_UTILS_NS::Component {
+        using Super = Component;
         SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<IKComponent>;
 
     public:
-        void Update(float_t dt) override;
+        void OnDisable() override;
+        void LateUpdate() override;
 
         SR_NODISCARD IKType GetIKType() const noexcept { return m_type; }
 

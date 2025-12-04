@@ -5,8 +5,9 @@
 #ifndef SR_ENGINE_GRAPHICS_DEBUG_PASS_H
 #define SR_ENGINE_GRAPHICS_DEBUG_PASS_H
 
-#include <Graphics/Pass/IMesh3DClusterPass.h>
 #include <Graphics/Render/DebugRenderer.h>
+#include <Graphics/Pass/BasePass.h>
+#include <Graphics/Memory/DescriptorManager.h>
 
 namespace SR_GRAPH_NS {
     struct DebugPassShaderInfo : public SR_UTILS_NS::Serializable {
@@ -53,6 +54,9 @@ namespace SR_GRAPH_NS {
         void UpdateUBO(DebugPassShaderInfo& shaderInfo, DebugRenderer::DrawType type);
 
     private:
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<DebugRenderer> GetDebugRenderer() const;
+
+    private:
         std::pair<uint32_t, uint32_t> m_linesCountCache;
         std::vector<std::pair<uint32_t, uint32_t>> m_meshesCountCache;
         bool m_hasRendered = false;
@@ -62,6 +66,8 @@ namespace SR_GRAPH_NS {
 
         /// @property
         std::map<SR_UTILS_NS::StringAtom, DebugPassShaderInfo> m_shaders;
+        /// @property
+        bool m_isOverlay = false;
 
     };
 }

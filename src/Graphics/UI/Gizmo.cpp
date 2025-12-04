@@ -173,7 +173,7 @@ namespace SR_GRAPH_UI_NS {
         Super::OnDisable();
     }
 
-    void Gizmo::FixedUpdate() {
+    void Gizmo::Update(float_t dt) {
         SR_TRACY_ZONE;
 
         if (!IsGizmoAvailable()) {
@@ -277,7 +277,7 @@ namespace SR_GRAPH_UI_NS {
 
         m_lastMousePos = mousePos;
 
-        Super::FixedUpdate();
+        Super::Update(dt);
     }
 
     void Gizmo::ProcessGizmo(const SR_MATH_NS::FPoint& mousePos) {

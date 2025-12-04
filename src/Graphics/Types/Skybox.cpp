@@ -182,6 +182,10 @@ namespace SR_GTYPES_NS {
 
         SetShader(nullptr);
 
+        m_idDirty = true;
+        m_dirtyShader = true;
+        m_hasErrors = false;
+
         IGraphicsResource::FreeVMemory();
     }
 

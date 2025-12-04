@@ -33,6 +33,18 @@ namespace SR_GRAPH_NS::IK {
         // Для предотвращения перекручивания
         SR_MATH_NS::FVector3 lastBendNormal;
         bool hasLastBendNormal = false;
+
+        // debug
+        bool hasDebugGizmos = false;
+        uint64_t rootToMidDebugLineId = SR_UINT64_MAX;
+        uint64_t midToTipDebugLineId = SR_UINT64_MAX;
+        uint64_t tipToTargetDebugLineId = SR_UINT64_MAX;
+        uint64_t rootToHintDebugLineId = SR_UINT64_MAX;
+        uint64_t rootSphereDebugId = SR_UINT64_MAX;
+        uint64_t midSphereDebugId = SR_UINT64_MAX;
+        uint64_t tipSphereDebugId = SR_UINT64_MAX;
+        uint64_t targetSphereDebugId = SR_UINT64_MAX;
+        uint64_t hintSphereDebugId = SR_UINT64_MAX;
     };
 
     struct IKTwoBoneParams {
@@ -47,6 +59,8 @@ namespace SR_GRAPH_NS::IK {
         bool tipRotationFromTarget = false;
         float_t dt = 0.f;
     };
+
+    void RemoveTwoBoneIKDebugGizmos(IKTwoBoneState& state);
 
     void SolveTwoBone(
         SR_UTILS_NS::Transform& root,

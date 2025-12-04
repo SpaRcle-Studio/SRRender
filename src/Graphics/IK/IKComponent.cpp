@@ -6,11 +6,14 @@
 #include <Graphics/IK/IKTwoBoneSolver.h>
 
 #include <Utils/ECS/Transform.h>
+#include <Utils/Types/Time.h>
 
 #include <Codegen/IKComponent.generated.hpp>
 
 namespace SR_GRAPH_NS {
-    void IKComponent::Update(float_t dt) {
+    void IKComponent::LateUpdate() {
+        Super::LateUpdate();
+
         SR_TRACY_ZONE;
 
         if (m_type == IKType::TwoBone) {
@@ -34,7 +37,7 @@ namespace SR_GRAPH_NS {
             params.preventTwist = m_preventTwist;
             params.showDebugGizmos = m_showDebugGizmos;
             params.tipRotationFromTarget = m_tipRotationFromTarget;
-            params.dt = dt;
+            params.dt = SR_HTYPES_NS::Time::Instance().DeltaTime();
 
             IK::SolveTwoBone(
                 *pRoot->GetTransform(),
@@ -46,5 +49,10 @@ namespace SR_GRAPH_NS {
                 params
             );
         }
+    }
+
+    void IKComponent::OnDisable() {
+        IK::RemoveTwoBoneIKDebugGizmos(m_twoBoneState);
+        Super::OnDisable();
     }
 }

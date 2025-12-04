@@ -69,7 +69,7 @@ namespace SR_GRAPH_UI_NS {
         void OnDisable() override;
         void OnAttached() override;
         void OnDestroy() override;
-        void FixedUpdate() override;
+        void Update(float_t dt) override;
 
         SR_NODISCARD bool IsGizmoEnabled() const {
             return SR_MATH_NS::IsAnyMaskIncludedSubMask(m_operation, { GizmoOperation::Translate, GizmoOperation::Rotate, GizmoOperation::Scale, GizmoOperation::Bounds });

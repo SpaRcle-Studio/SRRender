@@ -65,6 +65,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_FORCE_INLINE const Memory::BakedMesh& GetMeshUnchecked(uint32_t index) const noexcept { return m_meshes[index].GetUncheckedRef(); }
         SR_NODISCARD SR_FORCE_INLINE bool IsMeshValid(uint32_t index) const noexcept { return m_meshes[index].Valid(); }
         SR_NODISCARD bool IsRenderSceneChanged() const noexcept { return m_renderSceneChanged; }
+        SR_NODISCARD virtual bool IsOverlayRenderer() const noexcept { return false; }
 
     private:
         uint64_t AddLine(uint64_t id, const SR_MATH_NS::FVector3& start, const SR_MATH_NS::FVector3& end, const SR_MATH_NS::FColor& color, float_t seconds);
@@ -72,7 +73,6 @@ namespace SR_GRAPH_NS {
         uint64_t AddCustomMesh(SR_HTYPES_NS::RawMesh* pRawMesh, int32_t meshIndex, uint64_t id, const SR_MATH_NS::FVector3& pos, const SR_MATH_NS::Quaternion& rot, const SR_MATH_NS::FVector3& scale, const SR_MATH_NS::FColor& color, float_t seconds);
 
     private:
-        uint64_t AddTimedObject(float_t seconds, SR_GTYPES_NS::Mesh* pMesh);
         void Remove(uint64_t id, bool fromPool);
         void OnSceneChanged();
 
@@ -82,6 +82,14 @@ namespace SR_GRAPH_NS {
         SR_HTYPES_NS::ObjectPool<DebugTimedObject> m_timedObjects;
 
         std::vector<Memory::BakedMesh::Ptr> m_meshes;
+    };
+
+    class DebugOverlayRenderer : public DebugRenderer {
+        using Super = DebugRenderer;
+        SR_CLASS()
+    public:
+        SR_NODISCARD bool IsOverlayRenderer() const noexcept override { return true; }
+
     };
 }
 

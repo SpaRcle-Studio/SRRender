@@ -24,6 +24,8 @@ namespace SR_GRAPH_NS {
     }
 
     void DebugPassShaderInfo::LoadShader() {
+        SR_TRACY_ZONE;
+
         if (!shaderPath.empty()) {
             if (pShader) {
                 pShader->RemoveUsePoint();
@@ -44,7 +46,9 @@ namespace SR_GRAPH_NS {
     }
 
     void DebugPass::Prepare() {
-        auto&& pDebugRenderer = GetRenderScene()->GetRenderer<DebugRenderer>();
+        SR_TRACY_ZONE;
+
+        auto&& pDebugRenderer = GetDebugRenderer();
         if (!pDebugRenderer) {
             return;
         }
@@ -66,7 +70,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        auto&& pDebugRenderer = GetRenderScene()->GetRenderer<DebugRenderer>();
+        auto&& pDebugRenderer = GetDebugRenderer();
         auto&& pPipeline = GetPipeline();
         if (!pDebugRenderer || !pPipeline) {
             return false;
@@ -138,6 +142,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool DebugPass::Init() {
+        SR_TRACY_ZONE;
+
         m_isValid = true;
         m_updateMeshesOnDemand = SR_UTILS_NS::Features::Instance().Enabled("UpdateDebugMeshesOnDemand", false);
 
@@ -145,7 +151,7 @@ namespace SR_GRAPH_NS {
             shaderInfo.LoadShader();
 
             if (!shaderInfo.pShader) {
-                SR_ERROR("DebugRenderer::Load() : failed to load shader \"{}\"!", id);
+                SR_ERROR("DebugPass::Load() : failed to load shader \"{}\"!", id);
                 continue;
             }
         }
@@ -154,7 +160,7 @@ namespace SR_GRAPH_NS {
 
         for (auto&& shader : requiredShaders) {
             if (m_shaders.find(shader) == m_shaders.end()) {
-                SR_ERROR("DebugRenderer::Init() : shader \"{}\" not set, but required!", shader);
+                SR_ERROR("DebugPass::Init() : shader \"{}\" not set, but required!", shader);
                 m_isValid = false;
             }
         }
@@ -167,6 +173,8 @@ namespace SR_GRAPH_NS {
     }
 
     void DebugPass::DeInit() {
+        SR_TRACY_ZONE;
+
         for (auto& [id, shaderInfo] : m_shaders) {
             for (DebugPassShaderInfo::MemInfo& UBO : shaderInfo.UBOs) {
                 m_uboManager.FreeUBO(&UBO.virtualUBO);
@@ -179,6 +187,7 @@ namespace SR_GRAPH_NS {
     }
 
     void DebugPass::OnResize(const SR_MATH_NS::UVector2& size) {
+        SR_TRACY_ZONE;
         Super::OnResize(size);
     }
 
@@ -189,7 +198,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        auto&& pDebugRenderer = GetRenderScene()->GetRenderer<DebugRenderer>();
+        auto&& pDebugRenderer = GetDebugRenderer();
         auto&& pPipeline = GetPipeline();
         if (!pDebugRenderer || !pPipeline) {
             return;
@@ -310,6 +319,8 @@ namespace SR_GRAPH_NS {
     }
 
     void DebugPass::UpdateUBO(DebugPassShaderInfo& shaderInfo, DebugRenderer::DrawType type) {
+        SR_TRACY_ZONE;
+
         if (!m_isValid) {
             return;
         }
@@ -353,6 +364,15 @@ namespace SR_GRAPH_NS {
 
                 ++index;
             }
+        }
+    }
+
+    SR_HTYPES_NS::SharedPtr<DebugRenderer> DebugPass::GetDebugRenderer() const {
+        if (m_isOverlay) {
+            return GetRenderScene()->GetRenderer<DebugOverlayRenderer>().StaticCast<DebugRenderer>();
+        }
+        else {
+            return GetRenderScene()->GetRenderer<DebugRenderer>();
         }
     }
 }
