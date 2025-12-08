@@ -49,8 +49,8 @@ namespace SR_GRAPH_NS::IK {
         /// Вытягиваем руку полностью в направлении target
         SR_MATH_NS::Quaternion rootTargetRotation;
         if (params.useInitialRotations) {
-            SR_MATH_NS::FVector3 rootForward = state.rootInitialRotation * state.rootToMidLocal;
-            rootTargetRotation = SR_MATH_NS::Quaternion::FromToRotation(rootForward, rootToTargetDir) * state.rootInitialRotation;
+            SR_MATH_NS::FVector3 rootForward = (state.ikRotation * state.rootInitialRotation) * state.rootToMidLocal;
+            rootTargetRotation = SR_MATH_NS::Quaternion::FromToRotation(rootForward, rootToTargetDir) * (state.ikRotation * state.rootInitialRotation);
         }
         else {
             SR_MATH_NS::FVector3 rootForward = root.GetGlobalRotation() * state.rootToMidLocal;
@@ -77,8 +77,8 @@ namespace SR_GRAPH_NS::IK {
         /// Складываем руку - направляем оба звена к target
         SR_MATH_NS::Quaternion rootTargetRotation;
         if (params.useInitialRotations) {
-            SR_MATH_NS::FVector3 rootForward = state.rootInitialRotation * state.rootToMidLocal;
-            rootTargetRotation = SR_MATH_NS::Quaternion::FromToRotation(rootForward, rootToTargetDir) * state.rootInitialRotation;
+            SR_MATH_NS::FVector3 rootForward = (state.ikRotation * state.rootInitialRotation) * state.rootToMidLocal;
+            rootTargetRotation = SR_MATH_NS::Quaternion::FromToRotation(rootForward, rootToTargetDir) * (state.ikRotation * state.rootInitialRotation);
         }
         else {
             SR_MATH_NS::FVector3 rootForward = root.GetGlobalRotation() * state.rootToMidLocal;
@@ -190,8 +190,8 @@ namespace SR_GRAPH_NS::IK {
         if (params.useInitialRotations)
         {
             /// Используем исходное вращение root как базу для стабильности
-            SR_MATH_NS::FVector3 rootForward = state.rootInitialRotation * state.rootToMidLocal;
-            rootTargetRotation = SR_MATH_NS::Quaternion::FromToRotation(rootForward, rootToMidDir) * state.rootInitialRotation;
+            SR_MATH_NS::FVector3 rootForward = (state.ikRotation * state.rootInitialRotation) * state.rootToMidLocal;
+            rootTargetRotation = SR_MATH_NS::Quaternion::FromToRotation(rootForward, rootToMidDir) * (state.ikRotation * state.rootInitialRotation);
         }
         else
         {

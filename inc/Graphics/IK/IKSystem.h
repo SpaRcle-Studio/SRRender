@@ -2,8 +2,8 @@
 // Created by Monika on 22.11.2025.
 //
 
-#ifndef SR_ENGINE_GRAPHICS_IK_COMPONENT_H
-#define SR_ENGINE_GRAPHICS_IK_COMPONENT_H
+#ifndef SR_ENGINE_GRAPHICS_IK_SYSTEM_H
+#define SR_ENGINE_GRAPHICS_IK_SYSTEM_H
 
 #include <Graphics/IK/IKTwoBoneSolver.h>
 
@@ -25,12 +25,12 @@ namespace SR_GRAPH_NS {
         FABRIK
     )
 
-    /// @displayName(IK) @category(Animations)
-    class IKComponent : public SR_UTILS_NS::Component {
+    /// @displayName(IK System) @category(Animations)
+    class IKSystem : public SR_UTILS_NS::Component {
         using Super = Component;
         SR_CLASS()
     public:
-        using Ptr = SR_HTYPES_NS::SharedPtr<IKComponent>;
+        using Ptr = SR_HTYPES_NS::SharedPtr<IKSystem>;
 
     public:
         void OnDisable() override;
@@ -47,6 +47,8 @@ namespace SR_GRAPH_NS {
         /// @property
         float_t m_weight = 1.0f;
 
+        /// @property
+        SR_UTILS_NS::EntityRef<SR_UTILS_NS::GameObject> m_rotationReference;
         /// @property
         SR_UTILS_NS::EntityRef<SR_UTILS_NS::GameObject> m_root;
         /// @property @propertyCondition(This.GetIKType() == SR_GRAPH_NS::IKType::TwoBone)
@@ -79,4 +81,4 @@ namespace SR_GRAPH_NS {
     };
 }
 
-#endif //SR_ENGINE_GRAPHICS_IK_COMPONENT_H
+#endif //SR_ENGINE_GRAPHICS_IK_SYSTEM_H

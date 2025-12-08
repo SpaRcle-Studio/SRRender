@@ -8,7 +8,6 @@
 #include <Graphics/stdInclude.h>
 
 #include <Utils/Math/Vector3.h>
-#include <Utils/Math/Vector3.h>
 
 namespace SR_UTILS_NS {
     class Transform;
@@ -29,6 +28,8 @@ namespace SR_GRAPH_NS::IK {
         SR_MATH_NS::FVector3 midToTipLocal;
         SR_MATH_NS::Quaternion rootInitialRotation;
         SR_MATH_NS::Quaternion midInitialRotation;
+
+        SR_MATH_NS::Quaternion ikRotation;
 
         // Для предотвращения перекручивания
         SR_MATH_NS::FVector3 lastBendNormal;
