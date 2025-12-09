@@ -295,6 +295,7 @@ namespace SR_GRAPH_NS {
                 currentVBO = SR_ID_INVALID;
                 if (!shaderOk) SR_UNLIKELY_ATTRIBUTE {
                     pElement->state = QUEUE_STATE_SHADER_ERROR;
+                    pElement->pMesh->MarkMaterialDirty();
                     pElement = FindNextShader(queue, pElement);
                     continue;
                 }
