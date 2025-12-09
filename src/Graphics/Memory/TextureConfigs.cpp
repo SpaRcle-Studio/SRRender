@@ -10,7 +10,7 @@
 #include <Utils/Resources/ResourceManager.h>
 
 namespace SR_GRAPH_NS::Memory {
-    bool TextureConfigs::Reload() {
+    /*bool TextureConfigs::Reload() {
         SR_SCOPED_LOCK;
 
         SR_INFO("TextureConfigs::Reload() : reloading configs...");
@@ -69,5 +69,5 @@ namespace SR_GRAPH_NS::Memory {
         }
         else
             return std::optional<TextureConfig>();
-    }
+    }*/
 }

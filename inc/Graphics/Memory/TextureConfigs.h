@@ -5,12 +5,12 @@
 #ifndef SR_ENGINE_TEXTURE_CONFIGS_H
 #define SR_ENGINE_TEXTURE_CONFIGS_H
 
-#include <Utils/Common/Singleton.h>
-
 #include <Graphics/Pipeline/TextureHelper.h>
 
+#include <Utils/Common/Singleton.h>
+
 namespace SR_GRAPH_NS::Memory {
-    struct TextureConfig {
+    /*struct TextureConfig {
         TextureConfig(
             ImageFormat format,
             TextureFilter filter,
@@ -62,23 +62,23 @@ namespace SR_GRAPH_NS::Memory {
         bool operator!=(const TextureConfig& lrs) const {
             return !(*this == lrs);
         }
-    };
+    };*/
 
-    class TextureConfigs : public SR_UTILS_NS::Singleton<TextureConfigs> {
-        friend class SR_UTILS_NS::Singleton<TextureConfigs>;
-    private:
-        ~TextureConfigs() override = default;
+    //class TextureConfigs : public SR_UTILS_NS::Singleton<TextureConfigs> {
+    //    friend class SR_UTILS_NS::Singleton<TextureConfigs>;
+    //private:
+    //    ~TextureConfigs() override = default;
 
-    public:
-        bool Reload();
-        std::optional<TextureConfig> Find(const std::string& path);
-        TextureConfig FindOrDefault(const std::string& path);
+    //public:
+    //    bool Reload();
+    //    std::optional<TextureConfig> Find(const std::string& path);
+    //    TextureConfig FindOrDefault(const std::string& path);
 
-    private:
-        std::atomic<bool> m_loaded = false;
-        std::unordered_map<std::string, TextureConfig> m_configs;
+    //private:
+    //    std::atomic<bool> m_loaded = false;
+    //    std::unordered_map<std::string, TextureConfig> m_configs;
 
-    };
+    //};
 }
 
 #endif //SR_ENGINE_TEXTURE_CONFIGS_H

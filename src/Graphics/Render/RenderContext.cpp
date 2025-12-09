@@ -208,19 +208,19 @@ namespace SR_GRAPH_NS {
 
         /// ----------------------------------------------------------------------------
 
-        Memory::TextureConfig config;
+        ImageMetaInfo imageMetaInfo;
 
-        config.m_format = ImageFormat::RGBA8_UNORM;
-        config.m_filter = TextureFilter::NEAREST;
-        config.m_compression = TextureCompression::None;
-        config.m_mipLevels = 1;
-        config.m_alpha = SR_UTILS_NS::BoolExt::None;
-        config.m_cpuUsage = false;
+        imageMetaInfo.format = ImageFormat::RGBA8_UNORM;
+        imageMetaInfo.filter = TextureFilter::NEAREST;
+        imageMetaInfo.compression = TextureCompression::None;
+        imageMetaInfo.mipLevels = 1;
+        imageMetaInfo.alpha = SR_UTILS_NS::BoolExt::None;
+        imageMetaInfo.cpuUsage = false;
 
         /// так как вписать в код данные текстуры невозможно, то она хранится в виде base64, текстура размером 1x1 белого цвета формата png
         const std::string image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABmJLR0QA/wD/AP+gvaeTAAAADUlEQVQI12N48eIFOwAINALALwGcPAAAAABJRU5ErkJggg==";
 
-        if ((m_noneTexture = SR_GTYPES_NS::Texture::LoadFromMemory(SR_UTILS_NS::StringUtils::Base64Decode(image), config))) {
+        if ((m_noneTexture = SR_GTYPES_NS::Texture::LoadFromMemory(SR_UTILS_NS::StringUtils::Base64Decode(image), imageMetaInfo))) {
             m_noneTexture->AddUsePoint();
         }
         else {
@@ -499,6 +499,18 @@ namespace SR_GRAPH_NS {
             m_hasChangedFrameBuffers = true;
         }
 
+        if (m_noneTexture) {
+            m_noneTexture->PrepareFrame();
+        }
+
+        if (m_defaultTexture) {
+            m_defaultTexture->PrepareFrame();
+        }
+
+        for (auto&& pTexture : m_textures) {
+            pTexture->PrepareFrame();
+        }
+
         if (m_hasChangedFrameBuffers) {
             if (m_isOptimizedUpdateEnabled) {
                 for (auto&& [pScene, pRenderScene] : m_scenes) {
@@ -563,16 +575,16 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderContext::LoadDefaultResources() {
-        Memory::TextureConfig config;
+        ImageMetaInfo imageMetaInfo;
 
-        config.m_format = ImageFormat::RGBA8_UNORM;
-        config.m_filter = TextureFilter::NEAREST;
-        config.m_compression = TextureCompression::None;
-        config.m_mipLevels = 1;
-        config.m_alpha = SR_UTILS_NS::BoolExt::None;
-        config.m_cpuUsage = false;
+        imageMetaInfo.format = ImageFormat::RGBA8_UNORM;
+        imageMetaInfo.filter = TextureFilter::NEAREST;
+        imageMetaInfo.compression = TextureCompression::None;
+        imageMetaInfo.mipLevels = 1;
+        imageMetaInfo.alpha = SR_UTILS_NS::BoolExt::None;
+        imageMetaInfo.cpuUsage = false;
 
-        if ((m_defaultTexture = SR_GTYPES_NS::Texture::Load("Engine/Textures/default_improved.png", config))) {
+        if ((m_defaultTexture = SR_GTYPES_NS::Texture::Load("Engine/Textures/default_improved.png", imageMetaInfo))) {
             m_defaultTexture->AddUsePoint();
         }
         else {

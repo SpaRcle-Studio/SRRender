@@ -141,17 +141,15 @@ namespace SR_GRAPH_NS {
 
         if (cacheEnabled) {
             SRAssert2(!path.empty(), "TextureLoader::Load() : path is empty!");
-            SR_LOG("TextureLoader::Load() : save texture to cache...\n\tPath: ", path);
+            SR_LOG("TextureLoader::Load() : save texture to cache...\n\tPath: {}", path);
 
             auto&& stringHash = SR_UTILS_NS::ToString(hashName);
             auto&& cachePath = cache.Concat(path.GetBaseNameAndExt() + "." + stringHash);
             auto&& cacheHashPath = cachePath.ConcatExt(".cache.hash");
             auto&& cacheFilePath = cachePath.ConcatExt(".cache");
 
-            if (!cacheHashPath.Exists(SR_UTILS_NS::Path::Type::File)) {
-                if (!SR_UTILS_NS::FileSystem::WriteHashToFile(cacheHashPath, fileHash)) {
-                    SR_ERROR("TextureLoader::Load() : failed to write hash to file \"" + cacheHashPath.ToStringRef() + "\"!");
-                }
+            if (!SR_UTILS_NS::FileSystem::WriteHashToFile(cacheHashPath, fileHash)) {
+                SR_ERROR("TextureLoader::Load() : failed to write hash to file \"" + cacheHashPath.ToStringRef() + "\"!");
             }
 
             auto&& marshal = SR_HTYPES_NS::Marshal();
@@ -195,12 +193,12 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    TextureData::Ptr TextureLoader::LoadFromMemory(const std::string& data, const Memory::TextureConfig &config) {
+    TextureData::Ptr TextureLoader::LoadFromMemory(const std::string& data, const ImageMetaInfo& config) {
         SR_TRACY_ZONE;
 
         int32_t width = 0, height = 0, numComponents = 0;
 
-        const uint8_t requireComponents = GetChannelCount(config.m_format);
+        const uint8_t requireComponents = GetChannelCount(config.format);
 
         uint8_t* pImgData = stbi_load_from_memory(
             reinterpret_cast<const stbi_uc*>(data.c_str()),

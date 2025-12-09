@@ -224,6 +224,21 @@ namespace SR_GRAPH_NS::Types {
     void Shader::SetConstIVec3(uint64_t hashId, const SR_MATH_NS::IVector3& v) noexcept { SetValue<true>(hashId, &v); }
 
     void Shader::SetSampler(SR_UTILS_NS::StringAtom name, int32_t sampler) noexcept {
+        if (sampler == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            auto&& pSampler = GetRenderContext()->GetNoneTexture();
+            if (!pSampler) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("The none texture is nullptr!");
+                return;
+            }
+
+            sampler = pSampler->GetId();
+
+            if (sampler == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("The none texture id is invalid!");
+                return;
+            }
+        }
+
         m_samplers.at(name).samplerId = sampler;
     }
 
@@ -253,17 +268,16 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Shader::SetSampler2D(SR_UTILS_NS::StringAtom name, SR_HTYPES_NS::SharedPtr<Texture> pSampler) noexcept {
-        if (!IsLoaded() || m_samplers.count(name) == 0) {
+        if (!IsLoaded() || m_samplers.count(name) == 0) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
-        if (!pSampler) {
+        if (!pSampler) SR_UNLIKELY_ATTRIBUTE {
             pSampler = GetRenderContext()->GetNoneTexture();
-        }
-
-        if (!pSampler) {
-            SRHalt("The default sampler is nullptr!");
-            return;
+            if (!pSampler) {
+                SRHalt("The none texture is nullptr!");
+                return;
+            }
         }
 
         SetSampler(name, pSampler->GetId());

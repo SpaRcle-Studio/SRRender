@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_TEXTURE_H
 #define SR_ENGINE_TEXTURE_H
 
-#include <Graphics/Memory/TextureConfigs.h>
+#include <Graphics/Utils/ImageMetaInfo.h>
 #include <Graphics/Memory/IGraphicsResource.h>
 
 #include <Utils/Resources/IResource.h>
@@ -33,9 +33,9 @@ namespace SR_GTYPES_NS {
         ~Texture() override;
 
     public:
-        static Texture::Ptr Load(const SR_UTILS_NS::Path& rawPath, const std::optional<Memory::TextureConfig>& config = std::nullopt);
-        static Texture::Ptr LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const Memory::TextureConfig& config);
-        static Texture::Ptr LoadFromMemory(const std::string& data, const Memory::TextureConfig& config);
+        static Texture::Ptr Load(const SR_UTILS_NS::Path& rawPath, std::optional<ImageMetaInfo> config = std::nullopt);
+        static Texture::Ptr LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const ImageMetaInfo& config);
+        static Texture::Ptr LoadFromMemory(const std::string& data, const ImageMetaInfo& config);
 
     public:
         SR_NODISCARD uint32_t GetWidth() const noexcept;
@@ -44,11 +44,13 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD int32_t GetId() noexcept;
         SR_NODISCARD void* GetDescriptor();
         SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
-        SR_NODISCARD const Memory::TextureConfig& GetTextureConfig() const noexcept { return m_config; }
+        SR_NODISCARD const ImageMetaInfo& GetImageMetaInfo() const noexcept { return m_imageMetaInfo; }
 
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
 
         void FreeVMemory() override;
+        void SetImageMetaInfo(const ImageMetaInfo& meta);
+        void PrepareFrame();
 
     protected:
         bool Unload() override;
@@ -56,8 +58,8 @@ namespace SR_GTYPES_NS {
 
     private:
         bool Calculate();
-        void SetConfig(const Memory::TextureConfig& config);
         void FreeTextureData();
+        void SetImageMetaInfoInternal(const ImageMetaInfo& meta);
 
     private:
         SR_HTYPES_NS::SharedPtr<TextureData> m_textureData;
@@ -67,7 +69,8 @@ namespace SR_GTYPES_NS {
         std::atomic<bool> m_hasErrors = false;
         std::atomic<bool> m_isDirty = true;
 
-        Memory::TextureConfig m_config = Memory::TextureConfig();
+        ImageMetaInfo m_imageMetaInfo;
+        ImageMetaInfo m_activeImageMetaInfo;
 
     };
 }

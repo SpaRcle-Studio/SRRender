@@ -666,7 +666,13 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        m_state.allocatedMemory += GetPixelSize(textureCreateInfo.format) * textureCreateInfo.width * textureCreateInfo.height;
+        const auto pixelSize = GetPixelSize(textureCreateInfo.format);
+        if (pixelSize == 0) {
+            PipelineError("VulkanPipeline::AllocateTexture() : unknown pixel size!");
+            return SR_ID_INVALID;
+        }
+
+        m_state.allocatedMemory += pixelSize * textureCreateInfo.width * textureCreateInfo.height;
 
         auto&& id = m_memory->AllocateTexture(
             textureCreateInfo.pData, textureCreateInfo.width, textureCreateInfo.height, vkFormat,

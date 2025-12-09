@@ -8,7 +8,7 @@
 #include <Graphics/Pipeline/Pipeline.h>
 
 #include <Utils/Resources/ResourceManager.h>
-#include <Utils/Common/StringUtils.h>
+#include <Utils/Serialization/SRASerialization.h>
 
 #include <EvoVulkan/Tools/VulkanDebug.h>
 
@@ -26,7 +26,7 @@ namespace SR_GTYPES_NS {
         FreeTextureData();
     }
 
-    Texture::Ptr Texture::LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const Memory::TextureConfig& config) {
+    Texture::Ptr Texture::LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const ImageMetaInfo& metaInfo) {
         auto&& pTexture = Texture::MakeShared<Texture>();
 
         auto&& pCopyData = new uint8_t[bytes];
@@ -37,13 +37,13 @@ namespace SR_GTYPES_NS {
         });
 
         pTexture->m_isFromMemory = true;
-        pTexture->m_config = config;
+        pTexture->m_activeImageMetaInfo = metaInfo;
         pTexture->SetId("RawTexture");
 
         return pTexture;
     }
 
-    Texture::Ptr Texture::Load(const SR_UTILS_NS::Path& rawPath, const std::optional<Memory::TextureConfig>& config) {
+    Texture::Ptr Texture::Load(const SR_UTILS_NS::Path& rawPath, std::optional<ImageMetaInfo> metaInfo) {
         SR_TRACY_ZONE;
 
         if (rawPath.IsEmpty()) {
@@ -55,15 +55,32 @@ namespace SR_GTYPES_NS {
 
         auto&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(resourceManager.GetResPath());
         if (!resourceManager.GetResPath().Concat(path).Exists(SR_UTILS_NS::Path::Type::File)) {
-            SR_ERROR("Texture::Load() : texture \"{}\" does not exist!", path.ToStringRef());
+            SR_ERROR("Texture::Load() : texture \"{}\" does not exist!", path);
             return nullptr;
+        }
+
+        if (!metaInfo) {
+            auto&& metaPath = resourceManager.GetResPath().Concat(path).ConcatExt(".meta");
+            if (metaPath.Exists(SR_UTILS_NS::Path::Type::File)) {
+                SR_UTILS_NS::SRADeserializer deserializer;
+                if (deserializer.LoadFromFile(metaPath)) {
+                    metaInfo = ImageMetaInfo();
+                    if (!metaInfo->Load(deserializer)) {
+                        SR_WARN("Texture::Load() : failed to load meta info from file: {}", metaPath);
+                        metaInfo = std::nullopt;
+                    }
+                }
+                else {
+                    SR_WARN("Texture::Load() : failed to load meta info from file: {}", metaPath);
+                }
+            }
         }
 
         Texture::Ptr pTexture = nullptr;
 
         resourceManager.Execute([&]() {
             if ((pTexture = SR_UTILS_NS::ResourceManager::Instance().Find<Texture>(path))) {
-                if (config && pTexture->m_config != config.value()) {
+                if (metaInfo && pTexture->m_activeImageMetaInfo != metaInfo.value()) {
                     const std::string debugInfo =
                         "\n\tPath: {}"
                         "\n\tOld alpha: {}, New alpha: {}"
@@ -74,12 +91,12 @@ namespace SR_GTYPES_NS {
                         "\n\tOld cpu usage: {}, New cpu usage: {}"
                         ""_format(
                             path,
-                            pTexture->m_config.m_alpha, config.value().m_alpha,
-                            pTexture->m_config.m_mipLevels, config.value().m_mipLevels,
-                            pTexture->m_config.m_format, config.value().m_format,
-                            pTexture->m_config.m_filter, config.value().m_filter,
-                            pTexture->m_config.m_compression, config.value().m_compression,
-                            pTexture->m_config.m_cpuUsage, config.value().m_cpuUsage
+                            pTexture->m_activeImageMetaInfo.alpha, metaInfo.value().alpha,
+                            pTexture->m_activeImageMetaInfo.mipLevels, metaInfo.value().mipLevels,
+                            pTexture->m_activeImageMetaInfo.format, metaInfo.value().format,
+                            pTexture->m_activeImageMetaInfo.filter, metaInfo.value().filter,
+                            pTexture->m_activeImageMetaInfo.compression, metaInfo.value().compression,
+                            pTexture->m_activeImageMetaInfo.cpuUsage, metaInfo.value().cpuUsage
                     );
                     SR_WARN("Texture::Load() : copy values do not match load values!" + debugInfo);
                 }
@@ -89,11 +106,11 @@ namespace SR_GTYPES_NS {
 
             pTexture = Texture::MakeShared<Texture>();
 
-            if (config) {
-                pTexture->SetConfig(config.value());
+            if (metaInfo) {
+                pTexture->SetImageMetaInfoInternal(metaInfo.value());
             }
             else {
-                pTexture->SetConfig(Memory::TextureConfig());
+                pTexture->SetImageMetaInfoInternal(ImageMetaInfo());
             }
 
             pTexture->SetId(path.ToStringRef(), false /** auto register */);
@@ -184,12 +201,26 @@ namespace SR_GTYPES_NS {
         createInfo.pData = m_textureData->GetData();
         createInfo.width = m_textureData->GetWidth();
         createInfo.height = m_textureData->GetHeight();
-        createInfo.compression = m_config.m_compression;
-        createInfo.cpuUsage = m_config.m_cpuUsage;
-        createInfo.alpha = m_config.m_alpha == SR_UTILS_NS::BoolExt::None;
-        createInfo.format = m_config.m_format;
-        createInfo.mipLevels = m_config.m_mipLevels;
-        createInfo.filter = m_config.m_filter;
+        createInfo.compression = m_activeImageMetaInfo.compression;
+        createInfo.cpuUsage = m_activeImageMetaInfo.cpuUsage;
+        createInfo.alpha = m_activeImageMetaInfo.alpha == SR_UTILS_NS::BoolExt::None;
+        createInfo.format = m_activeImageMetaInfo.format;
+        createInfo.mipLevels = m_activeImageMetaInfo.mipLevels;
+        createInfo.filter = m_activeImageMetaInfo.filter;
+
+        if (!IsTextureSupportsFormat(createInfo.format) && createInfo.format != ImageFormat::Auto && createInfo.format != ImageFormat::Unknown) {
+            SR_WARN("Texture::Calculate() : the texture format {} is not supported! Falling back to Auto format.", createInfo.format);
+            createInfo.format = ImageFormat::Auto;
+        }
+
+        if (createInfo.format == ImageFormat::Auto || createInfo.format == ImageFormat::Unknown) {
+            if (m_textureData->GetChannels() == 4) {
+                createInfo.format = ImageFormat::RGBA8_UNORM;
+            }
+            else {
+                createInfo.format = ImageFormat::RGB8_UNORM;
+            }
+        }
 
         m_id = GetPipeline()->AllocateTexture(createInfo);
 
@@ -225,16 +256,27 @@ namespace SR_GTYPES_NS {
         IGraphicsResource::FreeVMemory();
     }
 
-    void Texture::SetConfig(const Memory::TextureConfig &config) {
-        auto alpha = m_config.m_alpha;
-        m_config = config;
+    void Texture::SetImageMetaInfoInternal(const ImageMetaInfo& meta) {
+        m_imageMetaInfo = m_activeImageMetaInfo = meta;
+    }
+
+    void Texture::SetImageMetaInfo(const ImageMetaInfo& meta) {
+        if (m_imageMetaInfo == meta) {
+            return;
+        }
+
+        auto alpha = m_imageMetaInfo.alpha;
+        m_imageMetaInfo = meta;
 
         // TODO: to refactoring
-        if (alpha != SR_UTILS_NS::BoolExt::None)
-            m_config.m_alpha = alpha;
+        if (alpha != SR_UTILS_NS::BoolExt::None) {
+            m_imageMetaInfo.alpha = alpha;
+        }
     }
 
     int32_t Texture::GetId() noexcept {
+        SR_TRACY_ZONE;
+
         if (m_hasErrors) {
             return SR_ID_INVALID;
         }
@@ -255,12 +297,12 @@ namespace SR_GTYPES_NS {
         return m_id;
     }
 
-    Texture::Ptr Texture::LoadFromMemory(const std::string& data, const Memory::TextureConfig &config) {
+    Texture::Ptr Texture::LoadFromMemory(const std::string& data, const ImageMetaInfo& meta) {
         SR_TRACY_ZONE;
 
         auto&& pTexture = Texture::MakeShared<Texture>();
 
-        pTexture->m_textureData = TextureLoader::LoadFromMemory(data, config);
+        pTexture->m_textureData = TextureLoader::LoadFromMemory(data, meta);
         if (!pTexture->m_textureData) {
             SR_ERROR("Texture::LoadFromMemory() : failed to load texture from memory!");
             pTexture->DeleteResource();
@@ -270,7 +312,7 @@ namespace SR_GTYPES_NS {
 
         pTexture->m_isFromMemory = true;
 
-        pTexture->SetConfig(config);
+        pTexture->SetImageMetaInfo(meta);
         pTexture->SetId("TextureFromMemory");
 
         return pTexture;
@@ -304,5 +346,29 @@ namespace SR_GTYPES_NS {
 
     uint32_t Texture::GetChannels() const noexcept {
         return m_textureData ? m_textureData->GetChannels() : 0;
+    }
+
+    void Texture::PrepareFrame() {
+        SR_TRACY_ZONE;
+
+        if (m_imageMetaInfo == m_activeImageMetaInfo) {
+            return;
+        }
+
+        if (auto&& pRenderContext = GetRenderContext()) {
+            pRenderContext->SetDirty();
+        }
+
+        if (auto&& pPipeline = GetPipeline()) {
+            pPipeline->SetDirty(true);
+        }
+
+        SetImageMetaInfoInternal(m_imageMetaInfo);
+
+        Broadcast(SR_UTILS_NS::IResource::RELOAD_BEGIN_EVENT);
+        Broadcast(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT);
+
+        m_isDirty = true;
+        m_hasErrors = false;
     }
 }

@@ -281,8 +281,8 @@ namespace SR_GRAPH_NS {
                         }
 
                         if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(*sampler.data)) {
-                            pTexture->RemoveUsePoint();
                             OnSamplerChanged(pTexture, nullptr);
+                            pTexture->RemoveUsePoint();
                         }
                     }
 

@@ -125,4 +125,22 @@ namespace SR_GRAPH_NS {
 
         return 0;
     }
+
+    bool IsTextureSupportsFormat(ImageFormat format) {
+        switch (format) {
+            case ImageFormat::RGBA8_UNORM:
+            case ImageFormat::BGRA8_UNORM:
+            case ImageFormat::RGBA8_SRGB:
+            case ImageFormat::RGBA16_UNORM:
+            case ImageFormat::RGBA16_SFLOAT:
+            case ImageFormat::RGB8_UNORM:
+            case ImageFormat::RGB8_SRGB:
+            case ImageFormat::RGB16_UNORM:
+            case ImageFormat::R32_SFLOAT:
+                return true;
+            default:
+                break;
+        }
+        return false;
+    }
 }

@@ -5,7 +5,7 @@
 #ifndef SR_GRAPHICS_TEXTURE_LOADER_H
 #define SR_GRAPHICS_TEXTURE_LOADER_H
 
-#include <Graphics/Pipeline/TextureHelper.h>
+#include <Graphics/Utils/ImageMetaInfo.h>
 
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/Function.h>
@@ -67,7 +67,7 @@ namespace SR_GRAPH_NS {
 
     public:
         static TextureData::Ptr Load(const SR_UTILS_NS::Path& path);
-        static TextureData::Ptr LoadFromMemory(const std::string& data, const Memory::TextureConfig& config);
+        static TextureData::Ptr LoadFromMemory(const std::string& data, const ImageMetaInfo& meta);
 
         static bool Free(unsigned char* data);
 

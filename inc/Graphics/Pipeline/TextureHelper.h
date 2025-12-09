@@ -66,6 +66,8 @@ namespace SR_GRAPH_NS {
         D32_SFLOAT_S8_UINT
     );
 
+    SR_GRAPHICS_DLL_API extern bool IsTextureSupportsFormat(ImageFormat format);
+
     SR_GRAPHICS_DLL_API extern uint8_t GetChannelCount(ImageFormat format);
 
     struct ColorLayer {
