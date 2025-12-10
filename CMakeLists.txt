@@ -53,7 +53,9 @@ if (SR_RENDER_GLFW)
 endif()
 
 if (SR_RENDER_USE_VULKAN)
+    message("EvoVulkan will be used")
     set(EVO_VULKAN_USE_OWN_GLFW OFF)
+    set(EVO_VULKAN_TRACY_PROFILER_PATH "${SR_UTILS_SOURCE_DIR}/libs/tracy")
     add_subdirectory(libs/EvoVulkan/Core)
 endif()
 
