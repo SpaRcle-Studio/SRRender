@@ -614,10 +614,6 @@ namespace SR_GRAPH_NS::Types {
             return false;
         }
 
-        //if (m_uniformSharedBlock.m_memory) SR_LIKELY_ATTRIBUTE {
-        //    m_uniformSharedBlock.ResetDefaultValues();
-        //}
-
         GetPipeline()->SetCurrentShader(this);
 
         if (m_virtualUBO.second) SR_UNLIKELY_ATTRIBUTE {

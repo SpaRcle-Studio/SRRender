@@ -29,7 +29,7 @@ namespace SR_GRAPH_NS::Memory {
             void* pShaderHandle = nullptr;
             uint16_t uboSize = 0;
 
-            void Validate() const {
+            SR_FORCE_INLINE void Validate() const {
                 SR_TRACY_ZONE;
                 for (auto ubo : ubos) {
                     SRAssert(ubo != SR_ID_INVALID);

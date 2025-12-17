@@ -28,7 +28,11 @@ namespace SR_GRAPH_NS::Memory {
         virtualProgramInfo.m_createInfo = createInfo;
 
         if (auto&& shaderProgramInfo = AllocateShaderProgram(createInfo); shaderProgramInfo.Valid()) SR_LIKELY_ATTRIBUTE {
-            virtualProgramInfo.SetProgramInfo(GetCurrentIdentifier(), shaderProgramInfo);
+            if (!virtualProgramInfo.SetProgramInfo(GetCurrentIdentifier(), shaderProgramInfo)) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("ShaderProgramManager::Allocate() : failed to set program info!");
+                m_pipeline->FreeShader(&shaderProgramInfo.id);
+                return SR_ID_INVALID;
+            }
         }
         else {
             SR_ERROR("ShaderProgramManager::Allocate() : failed to allocate shader program!");
@@ -55,16 +59,20 @@ namespace SR_GRAPH_NS::Memory {
         /// EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
 
         /// очишаем старые шейдерные программы
-        for (auto&& [fbo /** unused */, shaderProgramInfo] : virtualProgramInfo.m_data) {
-            m_pipeline->FreeShader(&shaderProgramInfo.id);
+        for (uint32_t dataIndex = 0; dataIndex < virtualProgramInfo.m_dataUsed; ++dataIndex) {
+            m_pipeline->FreeShader(&virtualProgramInfo.m_data[dataIndex].second.id);
         }
-        virtualProgramInfo.m_data.clear();
+        virtualProgramInfo.ResetData();
 
         /// обновляем данные
         virtualProgramInfo.m_createInfo = SRShaderCreateInfo(createInfo);
 
         if (auto&& shaderProgramInfo = AllocateShaderProgram(createInfo); shaderProgramInfo.Valid()) {
-            virtualProgramInfo.SetProgramInfo(GetCurrentIdentifier(), shaderProgramInfo);
+            if (!virtualProgramInfo.SetProgramInfo(GetCurrentIdentifier(), shaderProgramInfo)) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("ShaderProgramManager::ReAllocate() : failed to set program info!");
+                m_pipeline->FreeShader(&shaderProgramInfo.id);
+                return SR_ID_INVALID;
+            }
             /// EVK_POP_LOG_LEVEL();
         }
         else {
@@ -91,6 +99,11 @@ namespace SR_GRAPH_NS::Memory {
         if (!pProgramInfo) SR_UNLIKELY_ATTRIBUTE {
             if (auto&& shaderProgramInfo = AllocateShaderProgram(virtualProgramInfo.m_createInfo); shaderProgramInfo.Valid()) {
                 pProgramInfo = virtualProgramInfo.SetProgramInfo(identifier, shaderProgramInfo);
+                if (!pProgramInfo) SR_UNLIKELY_ATTRIBUTE {
+                    SRHalt("ShaderProgramManager::BindProgram() : failed to set program info!");
+                    m_pipeline->FreeShader(&shaderProgramInfo.id);
+                    return ShaderBindResult::Failed;
+                }
                 result = ShaderBindResult::Duplicated;
             }
             else {
@@ -132,8 +145,8 @@ namespace SR_GRAPH_NS::Memory {
 
         *program = SR_ID_INVALID;
 
-        for (auto&& [fbo /** unused */, shaderProgramInfo] : virtualProgramInfo.m_data) {
-            m_pipeline->FreeShader(&shaderProgramInfo.id);
+        for (uint32_t dataIndex = 0; dataIndex < virtualProgramInfo.m_dataUsed; ++dataIndex) {
+            m_pipeline->FreeShader(&virtualProgramInfo.m_data[dataIndex].second.id);
         }
 
         return true;
@@ -258,12 +271,12 @@ namespace SR_GRAPH_NS::Memory {
         uint32_t count = 0;
 
         m_programPool.ForEach([&](VirtualProgram, VirtualProgramInfo& virtualProgramInfo) {
-            for (auto pIt = virtualProgramInfo.m_data.begin(); pIt != virtualProgramInfo.m_data.end(); ) {
+            for (auto pIt = virtualProgramInfo.DataBegin(); pIt != virtualProgramInfo.DataEnd(); ) {
                 auto&& [identifier, program] = *pIt;
 
                 if (!std::ranges::binary_search(m_handles, reinterpret_cast<void*>(identifier))) SR_UNLIKELY_ATTRIBUTE {
                     m_pipeline->FreeShader(&program.id);
-                    pIt = virtualProgramInfo.m_data.erase(pIt);
+                    pIt = virtualProgramInfo.EraseData(pIt);
                     ++count;
                 }
                 else {

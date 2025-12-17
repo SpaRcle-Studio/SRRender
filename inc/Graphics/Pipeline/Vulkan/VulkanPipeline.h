@@ -146,7 +146,6 @@ namespace SR_GRAPH_NS {
 
         void BindAttachment(uint8_t activeTexture, uint32_t textureId) override;
         void BindVBO(uint32_t VBO) override;
-        void BindUBO(uint32_t UBO) override;
         void BindIBO(uint32_t IBO) override;
         void BindTexture(uint8_t activeTexture, uint32_t textureId) override;
         bool BindDescriptorSet(uint32_t descriptorSet) override;

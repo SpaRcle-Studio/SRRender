@@ -17,47 +17,61 @@ namespace SR_GRAPH_NS {
 
 namespace SR_GRAPH_NS::Memory {
     struct SR_GRAPHICS_DLL_API VirtualProgramInfo : public SR_UTILS_NS::NonCopyable {
+    public:
         using Identifier = uint64_t;
         using ShaderProgram = int32_t;
-    public:
-        VirtualProgramInfo() = default;
-        ~VirtualProgramInfo() override = default;
-
-        VirtualProgramInfo(VirtualProgramInfo&& ref) noexcept {
-            m_data = SR_UTILS_NS::Exchange(ref.m_data, {});
-            m_createInfo = SR_UTILS_NS::Exchange(ref.m_createInfo, {});
-        }
-
-        VirtualProgramInfo& operator=(VirtualProgramInfo&& ref) noexcept {
-            m_data = SR_UTILS_NS::Exchange(ref.m_data, {});
-            m_createInfo = SR_UTILS_NS::Exchange(ref.m_createInfo, {});
-            return *this;
-        }
-
         struct ShaderProgramInfo {
             ShaderProgram id = SR_ID_INVALID;
             bool depth = false;
             uint8_t samples = 1;
 
-            SR_NODISCARD bool Valid() const { return id != SR_ID_INVALID; }
+            SR_NODISCARD SR_FORCE_INLINE bool Valid() const {
+                return id != SR_ID_INVALID;
+            }
         };
+        using DataType = std::pair<Identifier, ShaderProgramInfo>;
+        static constexpr uint32_t MAX_DATA_COUNT = 128;
+
+    public:
+        VirtualProgramInfo() = default;
+        ~VirtualProgramInfo() override = default;
+
+        VirtualProgramInfo(VirtualProgramInfo&& ref) noexcept {
+            memmove(m_data, ref.m_data, sizeof(DataType) * MAX_DATA_COUNT);
+            m_dataUsed = SR_UTILS_NS::Exchange(ref.m_dataUsed, {});
+            m_createInfo = SR_UTILS_NS::Exchange(ref.m_createInfo, {});
+        }
+
+        VirtualProgramInfo& operator=(VirtualProgramInfo&& ref) noexcept {
+            memmove(m_data, ref.m_data, sizeof(DataType) * MAX_DATA_COUNT);
+            m_dataUsed = SR_UTILS_NS::Exchange(ref.m_dataUsed, {});
+            m_createInfo = SR_UTILS_NS::Exchange(ref.m_createInfo, {});
+            return *this;
+        }
 
         SR_NODISCARD bool Valid() const { return m_createInfo.Validate(); }
 
-        ShaderProgramInfo* SetProgramInfo(Identifier identifier, const ShaderProgramInfo& info) {
-            for (auto&& [id, data] : m_data) {
-                if (id == identifier) SR_UNLIKELY_ATTRIBUTE {
-                    data = info;
-                    return &data;
+        SR_FORCE_INLINE ShaderProgramInfo* SetProgramInfo(Identifier identifier, const ShaderProgramInfo& info) {
+            for (uint32_t i = 0; i < m_dataUsed; ++i) {
+                if (m_data[i].first == identifier) SR_LIKELY_ATTRIBUTE {
+                    m_data[i].second = info;
+                    return &m_data[i].second;
                 }
             }
 
-            return &m_data.emplace_back(identifier, info).second;
+            if (m_dataUsed < MAX_DATA_COUNT) {
+                m_data[m_dataUsed] = std::make_pair(identifier, info);
+                ++m_dataUsed;
+                return &m_data[m_dataUsed - 1].second;
+            }
+
+            SRHalt("Exceeded maximum shader program info count!");
+            return nullptr;
         }
 
-        SR_NODISCARD bool HasProgram(Identifier identifier) const {
-            const auto* pBegin = m_data.data();
-            const auto* pEnd = pBegin + m_data.size();
+        SR_NODISCARD SR_FORCE_INLINE bool HasProgram(Identifier identifier) const {
+            const auto* pBegin = m_data;
+            const auto* pEnd = pBegin + MAX_DATA_COUNT;
 
             while (pBegin != pEnd) {
                 if (pBegin->first == identifier) SR_LIKELY_ATTRIBUTE {
@@ -68,37 +82,60 @@ namespace SR_GRAPH_NS::Memory {
             return false;
         }
 
-        SR_NODISCARD ShaderProgramInfo* GetProgramInfo(Identifier identifier) {
-            for (auto&& [id, data] : m_data) {
-                if (id == identifier) SR_LIKELY_ATTRIBUTE {
-                    return &data;
+        SR_NODISCARD SR_FORCE_INLINE ShaderProgramInfo* GetProgramInfo(Identifier identifier) {
+            for (uint32_t i = 0; i < m_dataUsed; ++i) {
+                if (m_data[i].first == identifier) SR_LIKELY_ATTRIBUTE {
+                    return &m_data[i].second;
                 }
             }
 
             return nullptr;
         }
 
-        SR_NODISCARD const ShaderProgramInfo* GetProgramInfo(Identifier identifier) const noexcept {
-            for (auto&& iter : m_data) {
-                if (iter.first == identifier) SR_LIKELY_ATTRIBUTE {
-                    return &iter.second;
+        SR_NODISCARD SR_FORCE_INLINE const ShaderProgramInfo* GetProgramInfo(Identifier identifier) const noexcept {
+            for (uint32_t i = 0; i < m_dataUsed; ++i) {
+                if (m_data[i].first == identifier) SR_LIKELY_ATTRIBUTE {
+                    return &m_data[i].second;
                 }
             }
 
             return nullptr;
         }
 
-        SR_NODISCARD int32_t GetProgramId(Identifier identifier) const noexcept {
-            for (auto&& iter : m_data) {
-                if (iter.first == identifier) SR_LIKELY_ATTRIBUTE {
-                    return iter.second.id;
+        SR_NODISCARD SR_FORCE_INLINE int32_t GetProgramId(Identifier identifier) const noexcept {
+            for (uint32_t i = 0; i < m_dataUsed; ++i) {
+                if (m_data[i].first == identifier) SR_LIKELY_ATTRIBUTE {
+                    return m_data[i].second.id;
                 }
             }
 
             return SR_ID_INVALID;
         }
 
-        std::vector<std::pair<Identifier, ShaderProgramInfo>> m_data;
+        SR_FORCE_INLINE void ResetData() noexcept {
+            for (uint32_t i = 0; i < m_dataUsed; ++i) {
+                m_data[i] = std::make_pair(0, ShaderProgramInfo());
+            }
+            m_dataUsed = 0;
+        }
+
+        SR_FORCE_INLINE DataType* DataBegin() noexcept { return m_data; }
+        SR_FORCE_INLINE DataType* DataEnd() noexcept { return m_data + m_dataUsed; }
+
+        SR_FORCE_INLINE DataType* EraseData(DataType* pData) noexcept {
+            if (pData < m_data || pData >= m_data + m_dataUsed) {
+                return pData;
+            }
+
+            const auto index = static_cast<uint32_t>(pData - m_data);
+            memmove(&m_data[index], &m_data[index + 1], sizeof(DataType) * (m_dataUsed - index - 1));
+            --m_dataUsed;
+            m_data[m_dataUsed] = std::make_pair(0, ShaderProgramInfo());
+            return &m_data[index];
+        }
+
+        uint32_t m_dataUsed = 0;
+        DataType m_data[MAX_DATA_COUNT] = {};
         SRShaderCreateInfo m_createInfo;
 
     };

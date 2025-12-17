@@ -1837,10 +1837,6 @@ namespace SR_GRAPH_NS {
         vkCmdBindIndexBuffer(m_currentCmd, *m_memory->GetIBO(IBO), 0, VK_INDEX_TYPE_UINT32);
     }
 
-    void VulkanPipeline::BindUBO(uint32_t UBO) {
-        Super::BindUBO(UBO);
-    }
-
     bool VulkanPipeline::IsSamplerValid(int32_t id) const {
         return m_memory->IsTextureValid(id);
     }
@@ -2225,7 +2221,6 @@ namespace SR_GRAPH_NS {
     }
 
     void* VulkanPipeline::GetCurrentShaderHandle() const {
-        SR_TRACY_ZONE;
         ++m_state.operations;
 
         if (!m_state.pShader) SR_UNLIKELY_ATTRIBUTE {
