@@ -149,6 +149,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        m_pipeline->SetCurrentCamera(m_meshDrawerPass->GetCamera());
+
         UpdateShaders();
 
         if (m_updateMeshesOnDemand) {

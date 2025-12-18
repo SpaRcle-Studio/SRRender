@@ -9,9 +9,10 @@
 #include <Codegen/WidgetPass.generated.hpp>
 
 namespace SR_GRAPH_NS {
-    void WidgetPass::Prepare() {
+    bool WidgetPass::Prepare() {
         Super::Prepare();
         GetPipeline()->PrepareOverlay(OverlayType::ImGui);
+        return true;
     }
 
     bool WidgetPass::Overlay() {

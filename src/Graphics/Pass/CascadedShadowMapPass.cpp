@@ -132,9 +132,9 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void CascadedShadowMapPass::Prepare() {
+    bool CascadedShadowMapPass::Prepare() {
         SR_TRACY_ZONE;
-        Super::Prepare();
+        return Super::Prepare();
     }
 
     const Frustum& CascadedShadowMapPass::GetFrustum(uint32_t renderLayer) const {

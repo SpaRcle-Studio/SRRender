@@ -38,7 +38,7 @@ namespace SR_GRAPH_NS {
         bool PreRender() override;
         bool Render() override;
         void Update() override;
-        void Prepare() override;
+        bool Prepare() override;
 
     protected:
         void UseSamplers(SR_GTYPES_NS::Shader* pShader) override;

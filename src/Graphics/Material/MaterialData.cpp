@@ -118,6 +118,10 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
+    bool MaterialShaderProperty::operator==(const MaterialShaderProperty &other) const {
+        return id == other.id && type == other.type && pushConstant == other.pushConstant && data == other.data;
+    }
+
     MaterialShaderData::~MaterialShaderData() {
         SR_SAFE_DELETE_PTR(m_shaderSubscription);
 
@@ -149,6 +153,11 @@ namespace SR_GRAPH_NS {
 
     void MaterialShaderData::OnPostLoad() {
         SR_TRACY_ZONE;
+
+        if (!pOwnedMaterialData) {
+            SRHalt("MaterialShaderData::OnPostLoad() : pOwnedMaterialData is null!");
+            return;
+        }
 
         for (MaterialShaderProperty& sampler : samplers) {
             if (sampler.data) {
@@ -261,7 +270,9 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        pOwnedMaterialData->OnPropertyChanged(false);
+        if (pOwnedMaterialData) {
+            pOwnedMaterialData->OnPropertyChanged(false);
+        }
     }
 
     MaterialPropertyChangeResult MaterialShaderData::SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept {
@@ -469,6 +480,14 @@ namespace SR_GRAPH_NS {
         });
     }
 
+    bool MaterialShaderData::operator==(const MaterialShaderData& other) const {
+        return shaderPath == other.shaderPath &&
+            useType == other.useType &&
+            uniforms == other.uniforms &&
+            samplers == other.samplers;
+
+    }
+
     /// ----------------------------------------------------------------------------------------------------------------
 
     MaterialData::MaterialData()
@@ -622,5 +641,23 @@ namespace SR_GRAPH_NS {
         else {
             RemoveShaderDefine(define);
         }
+    }
+
+    void MaterialData::AddShaderDefine(SR_UTILS_NS::StringAtom define, const std::string& value) {
+        SR_TRACY_ZONE;
+        if (m_shaderDefines.find(define) != m_shaderDefines.end()) {
+            return;
+        }
+        m_shaderDefines[define] = value;
+        OnShaderDefinesChanged();
+    }
+
+    void MaterialData::RemoveShaderDefine(SR_UTILS_NS::StringAtom define) {
+        SR_TRACY_ZONE;
+        if (m_shaderDefines.find(define) == m_shaderDefines.end()) {
+            return;
+        }
+        m_shaderDefines.erase(define);
+        OnShaderDefinesChanged();
     }
 }

@@ -5,6 +5,7 @@
 #ifndef SR_GRAPHICS_UI_UI_H_BOX_CONTAINER_NODE_H
 #define SR_GRAPHICS_UI_UI_H_BOX_CONTAINER_NODE_H
 
+/*
 #include <Graphics/UI/UIContainerNode.h>
 
 namespace SR_GRAPH_UI_NS {
@@ -20,6 +21,6 @@ namespace SR_GRAPH_UI_NS {
         void Layout(const SR_MATH_NS::FRect& available) override;
 
     };
-}
+}*/
 
 #endif //SR_GRAPHICS_UI_UI_H_BOX_CONTAINER_NODE_H

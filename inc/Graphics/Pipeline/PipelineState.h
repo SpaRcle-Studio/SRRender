@@ -12,6 +12,7 @@
 
 namespace SR_GTYPES_NS {
     class Shader;
+    class Camera;
     class Framebuffer;
 }
 
@@ -102,6 +103,7 @@ namespace SR_GRAPH_NS {
         uint32_t frameBufferLayer = 0;
 
         RenderStrategy* pRenderStrategy = nullptr;
+        SR_GTYPES_NS::Camera* pCamera = nullptr;
 
         /// Количество вызовов Draw и подобное
         mutable uint32_t drawCalls = 0;

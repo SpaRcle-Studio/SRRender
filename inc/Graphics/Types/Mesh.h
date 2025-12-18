@@ -96,6 +96,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsFrustumCullingSupported() const noexcept;
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
 
+        void SetFrustumCullingType(FrustumCullingType type) { m_frustumCullingType = type; }
+
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
         void SetPipeline(Pipeline* pPipeline) { m_pipeline = pPipeline; }
 

@@ -5,6 +5,7 @@
 #ifndef SR_UTILS_UI_CANVAS_COMPONENT_H
 #define SR_UTILS_UI_CANVAS_COMPONENT_H
 
+/*
 #include <Utils/UI/UIModifier.h>
 
 namespace SR_GRAPH_UI_NS {
@@ -15,6 +16,6 @@ namespace SR_GRAPH_UI_NS {
         void Prepare(SR_UTILS_NS::UI::UIModifierContext& context) const override;
 
     };
-}
+}*/
 
 #endif //SR_UTILS_UI_CANVAS_COMPONENT_H

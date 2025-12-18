@@ -38,8 +38,8 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    void BasePass::Prepare() {
-
+    bool BasePass::Prepare() {
+        return true;
     }
 
     void BasePass::DeInit() {

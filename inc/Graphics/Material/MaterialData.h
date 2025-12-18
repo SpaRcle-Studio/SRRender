@@ -45,6 +45,10 @@ namespace SR_GRAPH_NS {
         ShaderVarType type = ShaderVarType::Unknown;
         /// @property
         bool pushConstant = false;
+
+        bool operator==(const MaterialShaderProperty& other) const;
+        bool operator!=(const MaterialShaderProperty& other) const { return !(*this == other); }
+
     };
 
     struct MaterialShaderData : public SR_UTILS_NS::Serializable {
@@ -88,6 +92,9 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Subscription* m_shaderSubscription = nullptr;
         std::map<SR_GTYPES_NS::Texture::Ptr, std::pair<SR_UTILS_NS::Subscription*, uint32_t>> m_textureSubscriptions;
 
+        bool operator==(const MaterialShaderData& other) const;
+        bool operator!=(const MaterialShaderData& other) const { return !(*this == other); }
+
     };
 
     /// @inspector(MaterialDataPropertyDrawer)
@@ -121,8 +128,8 @@ namespace SR_GRAPH_NS {
         void SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
 
         void OnPropertyChanged(bool onlyUniforms);
-        void AddShaderDefine(SR_UTILS_NS::StringAtom define, const std::string& value = "") { m_shaderDefines[define] = value; OnShaderDefinesChanged(); }
-        void RemoveShaderDefine(SR_UTILS_NS::StringAtom define) { m_shaderDefines.erase(define); OnShaderDefinesChanged(); }
+        void AddShaderDefine(SR_UTILS_NS::StringAtom define, const std::string& value = "");
+        void RemoveShaderDefine(SR_UTILS_NS::StringAtom define);
         void SwitchShaderDefine(SR_UTILS_NS::StringAtom define, bool enabled);
 
         void OnShaderChanged();

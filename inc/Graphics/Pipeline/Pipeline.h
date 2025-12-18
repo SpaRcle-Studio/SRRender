@@ -18,6 +18,7 @@
 
 namespace SR_GTYPES_NS {
     class Shader;
+    class Camera;
     class Framebuffer;
 }
 
@@ -144,6 +145,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD FrameBufferQueue& GetQueue() noexcept { ++m_state.operations; return m_fboQueue; }
         SR_NODISCARD RenderStrategy* GetCurrentRenderStrategy() const noexcept { ++m_state.operations; return m_state.pRenderStrategy; }
         SR_NODISCARD SR_UTILS_NS::StringAtom GetRenderStageId() const { return m_renderStageId; }
+        SR_NODISCARD SR_GTYPES_NS::Camera* GetCurrentCamera() const { ++m_state.operations; return m_state.pCamera; }
 
         SR_NODISCARD virtual uint8_t GetCurrentFrameIndex() const { return 0; }
         SR_NODISCARD virtual void* GetCurrentShaderHandle() const { return nullptr; }
@@ -160,6 +162,7 @@ namespace SR_GRAPH_NS {
 
         SR_FORCE_INLINE void SetCurrentShader(ShaderPtr pShader) { ++m_state.operations; m_state.pShader = pShader; }
         SR_FORCE_INLINE void SetCurrentShaderId(int32_t id) { ++m_state.operations; m_state.shaderId = id; }
+        SR_FORCE_INLINE void SetCurrentCamera(SR_GTYPES_NS::Camera* pCamera) { ++m_state.operations; m_state.pCamera = pCamera; }
 
         virtual void SetSwapchainImagesCount(uint16_t count) { }
         virtual void SetRenderStageId(SR_UTILS_NS::StringAtom id) { m_renderStageId = id; }
@@ -309,6 +312,7 @@ namespace SR_GRAPH_NS {
         bool m_isComputeState = false;
         bool m_isRenderState = false;
         bool m_isCmdState = false;
+        bool m_enableGPUAssist = false;
         bool m_enableValidationLayers = false;
         bool m_enableValidationDebug = false;
 

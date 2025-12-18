@@ -12,7 +12,7 @@ namespace SR_GRAPH_NS {
         SR_CLASS()
         using Super = BasePass;
     public:
-        void Prepare() override;
+        bool Prepare() override;
         bool Overlay() override;
 
     };

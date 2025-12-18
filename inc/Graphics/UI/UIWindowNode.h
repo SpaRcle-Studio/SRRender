@@ -5,6 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_UI_WINDOW_NODE_H
 #define SR_ENGINE_GRAPHICS_UI_WINDOW_NODE_H
 
+/*
 #include <Graphics/UI/UIContainerNode.h>
 
 #include <Utils/ECS/EntityRef.h>
@@ -35,6 +36,6 @@ namespace SR_GRAPH_UI_NS {
         SR_UTILS_NS::EntityRef<SR_GTYPES_NS::Sprite> m_border;
 
     };
-}
+}*/
 
 #endif //SR_ENGINE_GRAPHICS_UI_WINDOW_NODE_H

@@ -18,7 +18,11 @@ namespace SR_GRAPH_NS {
     public:
         SR_NODISCARD SR_FORCE_INLINE bool ExecuteInEditMode() const override { return true; }
         SR_NODISCARD bool IsUpdatable() const noexcept override { return false; }
-        SR_NODISCARD virtual LightType GetLightType() const = 0;
+
+        SR_NODISCARD virtual LightType GetLightType() const {
+            SRHalt("Abstract method called!");
+            return LightType::LightTypeMAX;
+        }
 
         void OnAttached() override;
         void OnDestroy() override;

@@ -26,6 +26,7 @@ namespace SR_SRSL_NS {
         { "INVERSE_PROJECTION_MATRIX",      "mat4"          },
         { "PROJECTION_NO_FOV_MATRIX",       "mat4"          },
         { "ORTHOGONAL_MATRIX",              "mat4"          },
+        { "PIXEL_ORTHOGONAL_MATRIX",        "mat4"          },
         { "VIEW_NO_TRANSLATE_MATRIX",       "mat4"          },
         { "LIGHT_SPACE_MATRIX",             "mat4"          },
 

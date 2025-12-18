@@ -27,7 +27,7 @@ namespace SR_GTYPES_NS {
     { }
 
     Mesh::~Mesh() {
-        SRAssert(m_isDestroyingState);
+        SRAssert(m_isDestroyingState || !m_isCalculated);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
         SRAssert(!m_registrationInfo.has_value());
         SRAssert2(!m_isWaitReRegister, "Application may will crash if you delete mesh with waiting re-register!");

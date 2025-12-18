@@ -45,12 +45,13 @@ namespace SR_GRAPH_NS {
         shaderPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
     }
 
-    void DebugPass::Prepare() {
+    bool DebugPass::Prepare() {
         SR_TRACY_ZONE;
 
         auto&& pDebugRenderer = GetDebugRenderer();
         if (!pDebugRenderer) {
-            return;
+            SR_ERROR("DebugPass::Prepare() : debug renderer is null!");
+            return false;
         }
 
         m_isNeedUpdate = pDebugRenderer->IsRenderSceneChanged();
@@ -60,7 +61,7 @@ namespace SR_GRAPH_NS {
             BuildQueues();
         }
 
-        Super::Prepare();
+        return Super::Prepare();
     }
 
     bool DebugPass::Render() {

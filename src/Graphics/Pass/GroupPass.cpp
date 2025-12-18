@@ -50,14 +50,17 @@ namespace SR_GRAPH_NS {
         BasePass::DeInit();
     }
 
-    void GroupPass::Prepare() {
+    bool GroupPass::Prepare() {
         SR_TRACY_ZONE;
 
         for (auto&& pPass : m_passes) {
-            pPass->Prepare();
+            if (!pPass->Prepare()) {
+                SR_ERROR("GroupPass::Prepare() : failed to prepare pass \"{}\"!", pPass->GetPassName());
+                return false;
+            }
         }
 
-        BasePass::Prepare();
+        return Super::Prepare();
     }
 
     bool GroupPass::PreRender() {

@@ -77,7 +77,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsSamplersDirty() const noexcept { return m_dirtySamplers; }
 
         void MarkSamplersDirty() { m_dirtySamplers = true; }
-        void PrepareSamplers();
+        bool PrepareSamplers();
         void SetRenderTechnique(IRenderTechnique* pTechnique) { m_pTechnique = pTechnique; }
 
     private:

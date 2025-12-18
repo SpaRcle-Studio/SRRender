@@ -53,6 +53,7 @@ namespace SR_GTYPES_NS {
     public:
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetView() const noexcept { return m_viewMat; }
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetOrthogonal() const noexcept { return m_orthogonal; }
+        SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetPixelOrthogonal() const noexcept { return m_pixelOrthogonal; }
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetViewTranslate() const noexcept { return m_viewTranslateMat; }
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetProjection() const noexcept { return m_projection; }
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetProjectionNoFOV() const noexcept { return m_projectionNoFOV; }
@@ -150,6 +151,7 @@ namespace SR_GTYPES_NS {
         SR_MATH_NS::Matrix4x4 m_viewTranslateMat;
         SR_MATH_NS::Matrix4x4 m_viewMat;
         SR_MATH_NS::Matrix4x4 m_orthogonal;
+        SR_MATH_NS::Matrix4x4 m_pixelOrthogonal;
 
         mutable bool m_isInverseDirty = true;
         mutable SR_MATH_NS::Matrix4x4 m_inverseProjection;

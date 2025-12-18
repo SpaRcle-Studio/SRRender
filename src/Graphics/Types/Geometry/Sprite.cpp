@@ -6,8 +6,12 @@
 #include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Uniforms.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Types/Camera.h>
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/UI/UINode.h>
+
+#include <Utils/ECS/GameObject.h>
+#include <Utils/ECS/TransformRect.h>
 
 #include <Codegen/Sprite.generated.hpp>
 
@@ -37,12 +41,44 @@ namespace SR_GTYPES_NS {
     }
 
     void Sprite::UseModelMatrix() {
+        SR_TRACY_ZONE;
+
+        auto&& pCamera = GetPipeline()->GetCurrentCamera();
+        if (!pCamera) {
+            return;
+        }
+
         if (auto&& pShader = GetPipeline()->GetCurrentShader()) {
-            if (HasParent()) SR_LIKELY_ATTRIBUTE {
-                if (auto&& pUINode = GetParent()->DynamicCast<SR_GRAPH_UI_NS::UINode>()) SR_LIKELY_ATTRIBUTE {
-                    pShader->SetVec4(SHADER_NDC_RECT, pUINode->GetNDCVector());
+            pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+
+            if (auto&& pParent = dynamic_cast<SR_UTILS_NS::GameObject*>(GetParent())) SR_LIKELY_ATTRIBUTE {
+                if (auto&& pTransform = pParent->GetTransform(); pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
+                    SR_MATH_NS::FRect layout = static_cast<const SR_UTILS_NS::TransformRect*>(pTransform.Get())->GetLayoutRect();
+                    //auto&& viewportSize = pCamera->GetViewportSize().CastToFloat();
+
+                    //const float_t left   = (layout.x / viewportSize.x) * 2.0f - 1.0f;
+                    //const float_t right  = ((layout.x + layout.w) / viewportSize.x) * 2.0f - 1.0f;
+                    //const float_t top    = 1.0f - (layout.y / viewportSize.y) * 2.0f;
+                    //const float_t bottom = 1.0f - ((layout.y + layout.h) / viewportSize.y) * 2.0f;
+                    //pShader->SetVec4(SHADER_NDC_RECT, SR_MATH_NS::FVector4(left, right, top, bottom));
+
+                    pShader->SetVec4(SHADER_NDC_RECT, layout.vec4);
                 }
             }
+
+            //if (auto&& pParent = dynamic_cast<SR_UTILS_NS::GameObject*>(GetParent())) SR_LIKELY_ATTRIBUTE {
+            //    if (auto&& pTransform = pParent->GetTransform(); pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
+            //        SR_MATH_NS::FRect layout = static_cast<const SR_UTILS_NS::TransformRect*>(pTransform.Get())->GetLayoutRect();
+            //        auto&& viewportSize = pCamera->GetViewportSize().CastToFloat();
+
+            //        const float_t left   = (layout.x / viewportSize.x) * 2.0f - 1.0f;
+            //        const float_t right  = ((layout.x + layout.w) / viewportSize.x) * 2.0f - 1.0f;
+            //        const float_t top    = 1.0f - (layout.y / viewportSize.y) * 2.0f;
+            //        const float_t bottom = 1.0f - ((layout.y + layout.h) / viewportSize.y) * 2.0f;
+
+            //        pShader->SetVec4(SHADER_NDC_RECT, SR_MATH_NS::FVector4(left, right, top, bottom));
+            //    }
+            //}
 
             if (m_sliced) {
                 pShader->SetVec2(SHADER_SLICED_TEXTURE_BORDER, m_textureBorder);

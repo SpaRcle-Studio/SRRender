@@ -5,6 +5,7 @@
 #ifndef SR_GRAPHICS_UI_UI_VIEWPORT_NODE_H
 #define SR_GRAPHICS_UI_UI_VIEWPORT_NODE_H
 
+/*
 #include <Graphics/UI/UIContainerNode.h>
 
 namespace SR_GRAPH_UI_NS {
@@ -35,6 +36,6 @@ namespace SR_GRAPH_UI_NS {
         bool m_doRecalcLayout = false;
 
     };
-}
+}*/
 
 #endif //SR_GRAPHICS_UI_UI_VIEWPORT_NODE_H

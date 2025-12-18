@@ -167,8 +167,8 @@ namespace SR_GRAPH_NS {
         m_samplers.SetRenderTechnique(pRenderTechnique);
     }
 
-    void PostProcessPass::Prepare() {
+    bool PostProcessPass::Prepare() {
         Super::Prepare();
-        m_samplers.PrepareSamplers();
+        return m_samplers.PrepareSamplers();
     }
 }

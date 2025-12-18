@@ -67,7 +67,7 @@ namespace SR_GRAPH_NS {
         virtual void Bind() { }
 
         /// Вызывается всегда но полсе оверлея
-        virtual void Prepare();
+        virtual bool Prepare();
 
         /// Вызывается только во время построения
         virtual bool PreRender() { return false; }

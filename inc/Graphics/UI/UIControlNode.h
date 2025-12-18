@@ -5,6 +5,7 @@
 #ifndef SR_GRAPHICS_UI_UI_CONTROL_NODE_H
 #define SR_GRAPHICS_UI_UI_CONTROL_NODE_H
 
+/*
 #include <Graphics/UI/UINode.h>
 
 namespace SR_GRAPH_UI_NS {
@@ -99,6 +100,6 @@ namespace SR_GRAPH_UI_NS {
         UILayout m_layout;
 
     };
-}
+}*/
 
 #endif //SR_GRAPHICS_UI_UI_CONTROL_NODE_H

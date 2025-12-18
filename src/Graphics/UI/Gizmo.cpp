@@ -50,6 +50,8 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
+        pMesh->SetFrustumCullingType(FrustumCullingType::None);
+
         /////////////////////////////////////////////////////////////////////////////////pMeshComponent->AddSerializationFlags(SR_UTILS_NS::ObjectSerializationFlags::DontSave);
 
         const BaseMaterial::Ptr pMaterial = SRNew<SR_GRAPH_NS::UniqueMaterial>();
@@ -214,11 +216,21 @@ namespace SR_GRAPH_UI_NS {
 
         for (auto&& [flag, info]: m_meshes) {
             if (info.pVisual) {
-                info.pVisual->GetMaterial()->SetBool("useOrthogonal", IsGizmo2DSpace());
+                if (IsGizmo2DSpace()) {
+                    info.pVisual->GetMaterial()->GetMaterialData()->AddShaderDefine("USE_ORTHOGONAL");
+                }
+                else {
+                    info.pVisual->GetMaterial()->GetMaterialData()->RemoveShaderDefine("USE_ORTHOGONAL");
+                }
             }
 
             if (info.pSelection) {
-                info.pSelection->GetMaterial()->SetBool("useOrthogonal", IsGizmo2DSpace());
+                if (IsGizmo2DSpace()) {
+                    info.pSelection->GetMaterial()->GetMaterialData()->AddShaderDefine("USE_ORTHOGONAL");
+                }
+                else {
+                    info.pSelection->GetMaterial()->GetMaterialData()->RemoveShaderDefine("USE_ORTHOGONAL");
+                }
             }
         }
 

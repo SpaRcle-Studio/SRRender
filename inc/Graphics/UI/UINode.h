@@ -5,6 +5,7 @@
 #ifndef SR_GRAPHICS_UI_UI_NODE_H
 #define SR_GRAPHICS_UI_UI_NODE_H
 
+/*
 #include <Graphics/macros.h>
 
 #include <Utils/Math/Rect.h>
@@ -76,6 +77,6 @@ namespace SR_GRAPH_UI_NS {
         mutable RenderScene* m_renderScene = nullptr;
 
     };
-}
+}*/
 
 #endif //SR_GRAPHICS_UI_UI_NODE_H

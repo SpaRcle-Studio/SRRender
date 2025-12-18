@@ -153,11 +153,11 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void SamplersPassData::PrepareSamplers() {
+    bool SamplersPassData::PrepareSamplers() {
         SR_TRACY_ZONE;
 
         if (!m_dirtySamplers) {
-            return;
+            return true;
         }
 
         m_dirtySamplers = false;
@@ -173,7 +173,8 @@ namespace SR_GRAPH_NS {
 
                     if (!pFBO->Update()) {
                         SR_ERROR("ISamplersPass::PrepareSamplers() : failed to update frame buffer!\n\tName: " + sampler.fboName.ToStringRef());
-                        continue;
+                        m_dirtySamplers = true;
+                        return false;
                     }
 
                     if (pFBO->GetId() != SR_ID_INVALID) {
@@ -209,5 +210,6 @@ namespace SR_GRAPH_NS {
 
             sampler.textureId = textureIds;
         }
+        return true;
     }
 }

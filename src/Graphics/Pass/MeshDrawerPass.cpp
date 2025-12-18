@@ -47,6 +47,10 @@ namespace SR_GRAPH_NS {
     bool MeshDrawerPass::Render() {
         SR_TRACY_ZONE;
 
+        if (!m_valid) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
+
         const uint32_t layer = GetPipeline()->GetCurrentFrameBufferLayer();
         if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("MeshDrawerPass::Render() : out of bounds! Layer: {}, Queues: {}", layer, m_renderQueues.size());
@@ -59,6 +63,10 @@ namespace SR_GRAPH_NS {
     void MeshDrawerPass::Update() {
         SR_TRACY_ZONE;
 
+        if (!m_valid) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
         const uint32_t layer = GetPipeline()->GetCurrentFrameBufferLayer();
         if (layer >= m_renderQueues.size()) SR_UNLIKELY_ATTRIBUTE {
             SR_ERROR("MeshDrawerPass::Update() : out of bounds! Layer: {}, Queues: {}", layer, m_renderQueues.size());
@@ -70,6 +78,10 @@ namespace SR_GRAPH_NS {
 
     bool MeshDrawerPass::UpdateFrustum() {
         SR_TRACY_ZONE;
+
+        if (!m_valid) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
 
         if (!m_frustumCulling) {
             return false;
@@ -97,15 +109,30 @@ namespace SR_GRAPH_NS {
     void MeshDrawerPass::UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) {
         SR_TRACY_ZONE;
 
+        if (!m_valid) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
         if (m_uniforms.shared.time) {
             pShader->SetFloat(SHADER_TIME, static_cast<float_t>(m_time.Clock()));
         }
 
         if (m_uniforms.shared.camera) {
+            SR_MATH_NS::FVector2 resolution;
+            if (auto&& pCamera = GetRenderScene()->GetMainCamera()) {
+                resolution = pCamera->GetSize().Cast<float_t>();
+            }
+            else {
+                resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();
+            }
+
+            pShader->SetVec2(SHADER_RESOLUTION, resolution);
+
             if (auto&& pCamera = GetCamera()) SR_LIKELY_ATTRIBUTE {
                 pShader->SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());
                 pShader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
                 pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, pCamera->GetOrthogonal());
+                pShader->SetMat4(SHADER_PIXEL_ORTHOGONAL_MATRIX, pCamera->GetPixelOrthogonal());
                 pShader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
                 pShader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
             }
@@ -211,9 +238,13 @@ namespace SR_GRAPH_NS {
         m_samplers.MarkSamplersDirty();
     }
 
-    void MeshDrawerPass::Prepare() {
+    bool MeshDrawerPass::Prepare() {
         Super::Prepare();
-        m_samplers.PrepareSamplers();
+        m_valid = m_samplers.PrepareSamplers();
+        if (!m_valid) {
+            SR_ERROR("MeshDrawerPass::Prepare() : failed to prepare samplers! Disabling \"{}\" pass.", GetPassName());
+        }
+        return m_valid;
     }
 
     const Frustum& MeshDrawerPass::GetFrustum(uint32_t renderLayer) const {

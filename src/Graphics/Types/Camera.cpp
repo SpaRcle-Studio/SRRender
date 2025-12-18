@@ -217,6 +217,15 @@ namespace SR_GTYPES_NS {
         //m_orthogonal[3][1] = 1.0f;
         //m_orthogonal[3][2] = m_near / (m_near - m_far);
 
+        m_pixelOrthogonal = SR_MATH_NS::Matrix4x4::Identity();
+        m_pixelOrthogonal[0][0] =  2.0f / m_viewportSize.x;  // масштабируем X в [-1,1]
+        m_pixelOrthogonal[1][1] = -2.0f / m_viewportSize.y;  // масштабируем Y в [-1,1] и переворачиваем, чтобы (0,0) был в верхнем левом
+        m_pixelOrthogonal[2][2] = 1.f / (m_far - m_near);
+        m_pixelOrthogonal[3][2] = m_near / (m_far - m_near);
+        m_pixelOrthogonal[3][0] = -1.0f;       // смещение X
+        m_pixelOrthogonal[3][1] = 1.0f;        // смещение Y
+
+
         //////////////////////////////////////////////////////////////////////////////////////////////
 
         if (m_renderTechnique.pTechnique) {

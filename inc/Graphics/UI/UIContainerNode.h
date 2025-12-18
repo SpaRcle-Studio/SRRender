@@ -5,6 +5,7 @@
 #ifndef SR_GRAPHICS_UI_UI_CONTAINER_NODE_H
 #define SR_GRAPHICS_UI_UI_CONTAINER_NODE_H
 
+/*
 #include <Graphics/UI/UIControlNode.h>
 
 namespace SR_GRAPH_UI_NS {
@@ -33,6 +34,6 @@ namespace SR_GRAPH_UI_NS {
         UIJustify m_justify = UIJustify::Auto;
 
     };
-}
+}*/
 
 #endif //SR_GRAPHICS_UI_UI_CONTAINER_NODE_H

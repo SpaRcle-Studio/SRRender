@@ -116,8 +116,10 @@ namespace SR_GRAPH_NS {
         }
 
         m_enableValidationDebug = SR_UTILS_NS::Features::Instance().Enabled("VulkanValidation", false);
+        m_enableGPUAssist = SR_UTILS_NS::Features::Instance().Enabled("VulkanGPUAssist", false);
 
     #ifdef SR_ANDROID
+        m_enableGPUAssist = false;
         m_enableValidationLayers = false;
     #else
         m_enableValidationLayers = m_enableValidationDebug;
@@ -131,6 +133,10 @@ namespace SR_GRAPH_NS {
 
         if (m_enableValidationDebug) {
             m_kernel->SetValidationDebugEnabled(true);
+        }
+
+        if (m_enableGPUAssist) {
+            m_kernel->SetGPUAssistEnabled(true);
         }
 
         m_viewport = EvoVulkan::Tools::Initializers::Viewport(1, 1, 0, 0);
@@ -177,6 +183,9 @@ namespace SR_GRAPH_NS {
 
         if (m_enableValidationLayers) {
             instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            if (m_enableGPUAssist) {
+                instanceExtensions.emplace_back(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
+            }
             validationLayers.emplace_back("VK_LAYER_KHRONOS_validation");
         }
 

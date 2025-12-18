@@ -40,7 +40,7 @@ namespace SR_GRAPH_NS {
         SR_CLASS()
         using Super = BasePass;
     protected:
-        void Prepare() override;
+        bool Prepare() override;
         bool Render() override;
         void Update() override;
 

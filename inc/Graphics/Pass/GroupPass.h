@@ -21,7 +21,7 @@ namespace SR_GRAPH_NS {
 
         bool Overlay() override;
 
-        void Prepare() override;
+        bool Prepare() override;
 
         bool PreRender() override;
         bool Render() override;
