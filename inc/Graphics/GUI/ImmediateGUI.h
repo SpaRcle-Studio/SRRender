@@ -314,6 +314,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void TextWrapped(const char* text, ...);
         SR_GRAPHICS_DLL_API extern void LabelText(const char* label, const char* text, ...);
         SR_GRAPHICS_DLL_API extern void TextColored(const SR_MATH_NS::FColor& color, const char* text, ...);
+        SR_GRAPHICS_DLL_API extern void TextVertical(const char* text, SR_MATH_NS::FVector2 pos, SR_MATH_NS::FColor color = SR_MATH_NS::FColor::White());
         SR_GRAPHICS_DLL_API extern void PushID(const char* strId);
         SR_GRAPHICS_DLL_API extern void PushID(const void* ptrId);
         SR_GRAPHICS_DLL_API extern void PushID(int intId);
@@ -326,8 +327,9 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void PopStyleVar(uint32_t count = 1);
         SR_GRAPHICS_DLL_API extern bool BeginPopup(const char* name);
         SR_GRAPHICS_DLL_API extern void EndPopup();
-        SR_GRAPHICS_DLL_API extern void SameLine();
+        SR_GRAPHICS_DLL_API extern void SameLine(float_t offsetFromStartX = 0.0f, float_t spacing = -1.0f);
         SR_GRAPHICS_DLL_API extern bool Button(const char* label, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
+        SR_GRAPHICS_DLL_API extern bool ButtonColored(const char* label, const SR_MATH_NS::FColor& color, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
         SR_GRAPHICS_DLL_API extern bool Checkbox(const char* label, bool* v);
         SR_GRAPHICS_DLL_API extern bool IsCurrentlyDisabled();
         SR_GRAPHICS_DLL_API extern bool IsItemHovered();
@@ -354,9 +356,13 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void EndDragDropSource();
         SR_GRAPHICS_DLL_API extern void* GetCurrentWindow();
         SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetWindowCursorPos(void* pWindow = nullptr);
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetCursorScreenPos();
         SR_GRAPHICS_DLL_API extern void* GetWindowDrawList(void* pWindow = nullptr);
         SR_GRAPHICS_DLL_API extern uint32_t GetColorU32(StyleColor idx, float alpha_mul = 1.0f);
         SR_GRAPHICS_DLL_API extern void RenderArrow(void* pDrawList, const SR_MATH_NS::FVector2& pos, uint32_t color, Direction dir, float_t scale = 1.0f);
+        SR_GRAPHICS_DLL_API extern void DrawListAddRect(void* pDrawList, const SR_MATH_NS::FVector2& min, const SR_MATH_NS::FVector2& max, uint32_t color, float rounding = 0.0f, float thickness = 1.0f);
+        SR_GRAPHICS_DLL_API extern void DrawListAddRectFilled(void* pDrawList, const SR_MATH_NS::FVector2& min, const SR_MATH_NS::FVector2& max, uint32_t color, float rounding = 0.0f);
+        SR_GRAPHICS_DLL_API extern void DrawListAddLine(void* pDrawList, const SR_MATH_NS::FVector2& p1, const SR_MATH_NS::FVector2& p2, uint32_t color, float thickness = 1.0f);
         SR_GRAPHICS_DLL_API extern bool InputFloat(const char* label, float_t* v, float_t step = 0.0f, float_t stepFast = 0.0f, const char* format = "%.3f", InputTextFlags flags = InputTextFlags::None);
         SR_GRAPHICS_DLL_API extern bool InputInt(const char* label, int* v, int step = 1, int step_fast = 100, InputTextFlags flags = InputTextFlags::None);
         SR_GRAPHICS_DLL_API extern bool Combo(const char* label, int* current_item, const char* items_separated_by_zeros);
@@ -443,6 +449,8 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void SetCursorPos(const SR_MATH_NS::FVector2& pos);
         SR_GRAPHICS_DLL_API extern void LoadIniSettingsFromDisk();
         SR_GRAPHICS_DLL_API extern bool DragFloat(const char* label, float_t* v, float_t vSpeed, float_t min = 0.f, float_t max = 0.f, const char* format = "%.3f");
+        SR_GRAPHICS_DLL_API extern bool DragFloat2(const char* label, float_t v[2], float_t vSpeed, float_t min = 0.f, float_t max = 0.f, const char* format = "%.3f");
+        SR_GRAPHICS_DLL_API extern bool DragFloat3(const char* label, float_t v[3], float_t vSpeed, float_t min = 0.f, float_t max = 0.f, const char* format = "%.3f");
         SR_GRAPHICS_DLL_API extern bool SliderFloat(const char* label, float_t* v, float_t min, float_t max, const char* format = "%.3f");
         SR_GRAPHICS_DLL_API extern float_t GetFramerate();
         SR_GRAPHICS_DLL_API extern float_t GetFrameHeightWithSpacing();

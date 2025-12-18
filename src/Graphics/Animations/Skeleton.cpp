@@ -290,21 +290,31 @@ namespace SR_ANIMATIONS_NS {
 
         SR_TRACY_ZONE;
 
+        bool hasDirty = m_isNeedRecalcTransforms;
+        bool wasCalledRecalc = false;
+
         if (m_isNeedRecalcTransforms) {
             CalculateTransforms();
         }
 
-        bool hasDirty = false;
         const uint64_t optimizedBonesSize = GetOptimizedBones().size();
 
         for (uint64_t i = 0; i < optimizedBonesSize; ++i) {
             const uint32_t index = m_indices[i];
 
             if (!m_transforms[index]) SR_UNLIKELY_ATTRIBUTE {
-                static const auto identityMatrix = SR_MATH_NS::Matrix4x4::Identity();
-                m_matrices[index] = identityMatrix;
                 m_isNeedRecalcTransforms = true;
-                continue;
+
+                if (!wasCalledRecalc) {
+                    CalculateTransforms();
+                    wasCalledRecalc = true;
+                }
+
+                if (!m_transforms[index]) {
+                    static const auto identityMatrix = SR_MATH_NS::Matrix4x4::Identity();
+                    m_matrices[index] = identityMatrix;
+                    continue;
+                }
             }
 
             auto&& pTransform = m_transforms[index].Get();

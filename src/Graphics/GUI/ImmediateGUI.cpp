@@ -173,8 +173,8 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         }
     }
 
-    void SameLine() {
-        ImGui::SameLine();
+    void SameLine(float_t offsetFromStartX, float_t spacing) {
+        ImGui::SameLine(offsetFromStartX, spacing);
     }
 
     bool IsCurrentlyDisabled() {
@@ -184,6 +184,16 @@ namespace SR_GRAPH_GUI_NS::Immediate {
 
     bool Button(const char* label, const SR_MATH_NS::FVector2& size) {
         return ImGui::Button(label, F2ToImV2(size));
+    }
+
+    bool ButtonColored(const char* label, const SR_MATH_NS::FColor& color, const SR_MATH_NS::FVector2& size) {
+        PushStyleColor(StyleColor::Button, color);
+        PushStyleColor(StyleColor::ButtonHovered, color + SR_MATH_NS::FColor(0.1f, 0.1f, 0.1f, 0.0f));
+        PushStyleColor(StyleColor::ButtonActive, color + SR_MATH_NS::FColor(0.2f, 0.2f, 0.2f, 0.0f));
+
+        const bool result = ImGui::Button(label, F2ToImV2(size));
+        PopStyleColor(3);
+        return result;
     }
 
     void PushItemWidth(float_t itemWidth) {
@@ -279,6 +289,10 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImV2ToF2(ImGui::GetCurrentWindow()->DC.CursorPos);
     }
 
+    SR_MATH_NS::FVector2 GetCursorScreenPos() {
+        return ImV2ToF2(ImGui::GetCursorScreenPos());
+    }
+
     void* GetWindowDrawList(void *pWindow) {
         if (auto&& pImGuiWindow = static_cast<ImGuiWindow*>(pWindow)) {
             return pImGuiWindow->DrawList;
@@ -293,6 +307,24 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     void RenderArrow(void* pDrawList, const SR_MATH_NS::FVector2& pos, uint32_t color, Direction dir, float_t scale) {
         if (auto&& pImGuiDrawList = static_cast<ImDrawList*>(pDrawList)) {
             ImGui::RenderArrow(pImGuiDrawList, F2ToImV2(pos), color, static_cast<ImGuiDir>(dir), scale);
+        }
+    }
+
+    void DrawListAddRect(void* pDrawList, const SR_MATH_NS::FVector2& min, const SR_MATH_NS::FVector2& max, uint32_t color, float rounding, float thickness) {
+        if (auto&& pImGuiDrawList = static_cast<ImDrawList*>(pDrawList)) {
+            pImGuiDrawList->AddRect(F2ToImV2(min), F2ToImV2(max), color, rounding, 0, thickness);
+        }
+    }
+
+    void DrawListAddRectFilled(void* pDrawList, const SR_MATH_NS::FVector2& min, const SR_MATH_NS::FVector2& max, uint32_t color, float rounding) {
+        if (auto&& pImGuiDrawList = static_cast<ImDrawList*>(pDrawList)) {
+            pImGuiDrawList->AddRectFilled(F2ToImV2(min), F2ToImV2(max), color, rounding);
+        }
+    }
+
+    void DrawListAddLine(void* pDrawList, const SR_MATH_NS::FVector2& p1, const SR_MATH_NS::FVector2& p2, uint32_t color, float thickness) {
+        if (auto&& pImGuiDrawList = static_cast<ImDrawList*>(pDrawList)) {
+            pImGuiDrawList->AddLine(F2ToImV2(p1), F2ToImV2(p2), color, thickness);
         }
     }
 
@@ -931,6 +963,14 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImGui::DragFloat(label, v, vSpeed, min, max, format);
     }
 
+    bool DragFloat2(const char *label, float_t v[2], float_t vSpeed, const float_t min, const float_t max, const char *format) {
+        return ImGui::DragFloat2(label, v, vSpeed, min, max, format);
+    }
+
+    bool DragFloat3(const char *label, float_t v[3], float_t vSpeed, const float_t min, const float_t max, const char *format) {
+        return ImGui::DragFloat3(label, v, vSpeed, min, max, format);
+    }
+
     bool SliderFloat(const char *label, float_t *v, float_t min, float_t max, const char *format) {
         return ImGui::SliderFloat(label, v, min, max, format);
     }
@@ -945,5 +985,26 @@ namespace SR_GRAPH_GUI_NS::Immediate {
 
     void* FindWindowByName(const char *name) {
         return ImGui::FindWindowByName(name);
+    }
+
+    void TextVertical(const char* text, SR_MATH_NS::FVector2 pos, SR_MATH_NS::FColor color) {
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImFont* font = ImGui::GetFont();
+        float yOffset = 0.0f;
+
+        for (const char* c = text; *c; c++) {
+            char buf[2] = { *c, '\0' };
+            draw_list->AddText(
+                    font,
+                    font->FontSize,
+                    ImVec2(pos.x, pos.y + yOffset),
+                    ImGui::GetColorU32(FCToImV4(color)),
+                    buf
+            );
+            yOffset += font->FontSize; // шаг вниз
+        }
+
+        // Чтобы layout ImGui знал, что занято место
+        ImGui::Dummy(ImVec2(0, yOffset));
     }
 }
