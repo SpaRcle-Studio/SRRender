@@ -8,6 +8,7 @@
 #include <Graphics/Pipeline/TextureHelper.h>
 
 #include <Utils/Serialization/Serializable.h>
+#include <Utils/Math/Rect.h>
 
 namespace SR_GRAPH_NS {
     struct ImageMetaInfo : public SR_UTILS_NS::Serializable {
@@ -19,12 +20,16 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetMipLevels() const noexcept { return mipLevels; }
         SR_NODISCARD SR_UTILS_NS::BoolExt GetAlpha() const noexcept { return alpha; }
         SR_NODISCARD bool GetCpuUsage() const noexcept { return cpuUsage; }
+        SR_NODISCARD float_t GetPixelsPerUnit() const noexcept { return m_pixelsPerUnit; }
+        SR_NODISCARD const SR_MATH_NS::FRect& GetBorder() const noexcept { return m_border; }
 
         bool operator==(const ImageMetaInfo& lrs) const {
             return format == lrs.format
                    && filter == lrs.filter
                    && compression == lrs.compression
                    && mipLevels == lrs.mipLevels
+                   && m_border == lrs.m_border
+                   && SR_EQUALS_T(m_pixelsPerUnit, lrs.m_pixelsPerUnit, SR_SCALAR_EPSILON)
                    && (alpha == lrs.alpha || alpha == SR_UTILS_NS::BoolExt::None || lrs.alpha == SR_UTILS_NS::BoolExt::None)
                    && cpuUsage == lrs.cpuUsage;
         }
@@ -43,9 +48,13 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::BoolExt alpha = SR_UTILS_NS::BoolExt::None;
         /// @property
+        float_t m_pixelsPerUnit = 100.f;
+        /// @property
         uint32_t mipLevels = 0;
         /// @property
         bool cpuUsage = false;
+        /// @property
+        SR_MATH_NS::FRect m_border;
 
     };
 }

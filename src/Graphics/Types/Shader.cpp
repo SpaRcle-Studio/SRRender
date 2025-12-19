@@ -368,6 +368,8 @@ namespace SR_GRAPH_NS::Types {
 
         SR_UTILS_NS::Path&& path = GetResourcePath();
 
+        SR_LOG("Shader::Load() : loading shader \"{}\"\n\tMacros: {}", path, m_macros.ToString());
+
         if (path.IsAbs()) {
             SR_ERROR("Shader::Load() : absolute path is not allowed!");
             return false;

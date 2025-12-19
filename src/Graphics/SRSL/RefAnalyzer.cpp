@@ -20,6 +20,14 @@ namespace SR_SRSL_NS {
 
             functions[name] = function;
         }
+
+        for (auto&& name : pOther->forceUsedVariables) {
+            forceUsedVariables.insert(name);
+        }
+
+        for (auto&& name : pOther->forceUsedFunctions) {
+            forceUsedFunctions.insert(name);
+        }
     }
 
     std::string SRSLUseStack::ToString(int32_t deep) const {
@@ -27,6 +35,10 @@ namespace SR_SRSL_NS {
 
         for (auto&& name : variables) {
             str += std::string(SR_MAX(0, deep * 4), ' ') + "var is \"" + name + "\"\n";
+        }
+
+        for (auto&& name : forceUsedVariables) {
+            str += std::string(SR_MAX(0, deep * 4), ' ') + "force use var is \"" + name + "\"\n";
         }
 
         for (auto&& [name, function] : functions) {
@@ -38,11 +50,17 @@ namespace SR_SRSL_NS {
             }
         }
 
+        for (auto&& name : forceUsedFunctions) {
+            str += std::string(SR_MAX(0, deep * 4), ' ') + "force use function is \"" + name + "\"\n";
+        }
+
         return str;
     }
 
     bool SRSLUseStack::IsVariableUsed(const std::string& name) const {
-        for (auto&& nameInForce : forceUsed) {
+        SR_TRACY_ZONE;
+
+        for (auto&& nameInForce : forceUsedVariables) {
             if (nameInForce == name) {
                 return true;
             }
@@ -60,13 +78,26 @@ namespace SR_SRSL_NS {
             }
         }
 
+        if (SRVerify(pRoot)) {
+            for (auto&& function : forceUsedFunctions) {
+                if (auto&& pFunction = pRoot->FindFunction(function); pFunction && pFunction->IsVariableUsed(name)) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
     bool SRSLUseStack::IsFunctionUsed(const std::string &name) const {
-        for (auto&& nameInForce : forceUsed) {
+        for (auto&& nameInForce : forceUsedFunctions) {
             if (nameInForce == name) {
                 return true;
+            }
+            if (SRVerify(pRoot)) {
+                if (auto&& pFunction = pRoot->FindFunction(nameInForce); pFunction && pFunction->IsFunctionUsed(name)) {
+                    return true;
+                }
             }
         }
 
@@ -94,6 +125,8 @@ namespace SR_SRSL_NS {
     }
 
     SRSLUseStack::Ptr SRSLUseStack::FindFunction(const std::string &name) const {
+        SR_TRACY_ZONE;
+
         for (auto&& function : functions) {
             if (function.first == name) {
                 return function.second;
@@ -104,6 +137,8 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLUseStack::IsVariableUsedInEntryPoint(SR_GRAPH_NS::ShaderStage stage, const std::string& name) const {
+        SR_TRACY_ZONE;
+
         if (auto&& it = SR_SRSL_ENTRY_POINTS.find(stage); it != SR_SRSL_ENTRY_POINTS.end()) {
             if (auto&& pFunction = FindFunction(it->second); pFunction && pFunction->IsVariableUsed(name)) {
                 return true;
@@ -113,6 +148,8 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLUseStack::IsVariableUsedInEntryPoints(const std::string &name) const {
+        SR_TRACY_ZONE;
+
         for (auto&& [stage, entryPoint] : SR_SRSL_ENTRY_POINTS) {
             if (auto&& pFunction = FindFunction(entryPoint); pFunction && pFunction->IsVariableUsed(name)) {
                 return true;
@@ -134,6 +171,15 @@ namespace SR_SRSL_NS {
         return stages;
     }
 
+    void SRSLUseStack::SetRoot(SRSLUseStack* pRootStack) {
+        pRoot = pRootStack;
+        for (auto&& [name, function] : functions) {
+            if (function) {
+                function->SetRoot(pRootStack);
+            }
+        }
+    }
+
     /// ----------------------------------------------------------------------------------------------------------------
 
     SRSLUseStack::Ptr SRSLRefAnalyzer::Analyze(const SRSLAnalyzedTree::Ptr& pAnalyzedTree, const SR_SRSL_NS::ShaderMacrosParams& macros) {
@@ -145,6 +191,11 @@ namespace SR_SRSL_NS {
         if (pUseStack) {
             PreprocessUseStack(pUseStack, macros);
         }
+
+        pUseStack->SetRoot(pUseStack.get());
+
+        /// SR_LOG("Analyzed pUseStack:\n\t{}"_format(pUseStack->ToString(1)));
+
         return pUseStack;
     }
 
@@ -152,7 +203,13 @@ namespace SR_SRSL_NS {
         const bool isColorPassDefined = macros.IsDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
 
         if (isColorPassDefined) {
-            pUseStack->FindFunction(SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment))->forceUsed.insert(SHADER_PC_COLOR_BUFFER_VALUE);
+            auto&& pFragmentEntryPoint = pUseStack->FindFunction(SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment));
+
+            pFragmentEntryPoint->forceUsedVariables.insert(SHADER_PC_COLOR_BUFFER_VALUE);
+
+            if (pUseStack->FindFunction("fragment_color_buffer_discard")) {
+                pFragmentEntryPoint->forceUsedFunctions.insert("fragment_color_buffer_discard");
+            }
         }
     }
 
@@ -169,9 +226,7 @@ namespace SR_SRSL_NS {
                 AnalyzeVariable(pUseStack, stack, pVariable);
             }
             else if (auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit)) {
-                if (IsShaderEntryPoint(pFunction->GetName())) {
-                    AnalyzeEntryPoint(pUseStack, stack, pFunction);
-                }
+                AnalyzeFunction(pUseStack, stack, pFunction);
             }
             else if (auto&& pSubTree = dynamic_cast<SRSLLexicalTree*>(pUnit)) {
                 pUseStack->Concat(AnalyzeTree(stack, pSubTree));
@@ -228,24 +283,10 @@ namespace SR_SRSL_NS {
         }
 
         if (pExpr->isCall) {
-            /// проверяем наличие рекурсии
-            for (auto&& stackName : stack) {
-                if (stackName == pExpr->token) {
-                    pUseStack->functions[pExpr->token] = nullptr;
-                    goto skipRecursion;
-                }
-            }
-
             if (auto&& pFunction = FindFunction(pExpr->token)) {
-                stack.emplace_back(pExpr->token);
-                pUseStack->functions[pExpr->token] = AnalyzeTree(stack, pFunction->pLexicalTree);
-                stack.pop_back();
-            }
-            else {
-                pUseStack->functions[pExpr->token] = nullptr;
+                pUseStack->forceUsedFunctions.insert(pExpr->token);
             }
 
-        skipRecursion:
             for (auto&& pSubExpr : pExpr->args) {
                 AnalyzeExpression(pUseStack, stack, pSubExpr);
             }
@@ -310,15 +351,13 @@ namespace SR_SRSL_NS {
         }
     }
 
-    void SRSLRefAnalyzer::AnalyzeEntryPoint(SRSLUseStack::Ptr &pUseStack, std::list<std::string> &stack, SRSLFunction *pFunction) {
-        stack.emplace_back(pFunction->GetName());
+    void SRSLRefAnalyzer::AnalyzeFunction(SRSLUseStack::Ptr &pUseStack, std::list<std::string> &stack, SRSLFunction *pFunction) {
         if (pFunction->pLexicalTree) {
             pUseStack->functions[pFunction->GetName()] = AnalyzeTree(stack, pFunction->pLexicalTree);
         }
         else {
             SRHalt("EntryPoint function must have a body!");
         }
-        stack.pop_back();
     }
 
     void SRSLRefAnalyzer::AnalyzeWhileStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLWhileStatement* pWhileStatement) {

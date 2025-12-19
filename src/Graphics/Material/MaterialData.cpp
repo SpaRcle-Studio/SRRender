@@ -488,6 +488,20 @@ namespace SR_GRAPH_NS {
 
     }
 
+    SR_GTYPES_NS::Texture::Ptr MaterialShaderData::GetSamplerTexture(SR_UTILS_NS::StringAtom id) const noexcept {
+        SR_TRACY_ZONE;
+
+        for (const MaterialShaderProperty& sampler : samplers) {
+            if (sampler.id == id) {
+                if (sampler.data) {
+                    return std::get<SR_GTYPES_NS::Texture::Ptr>(*sampler.data);
+                }
+                return nullptr;
+            }
+        }
+        return nullptr;
+    }
+
     /// ----------------------------------------------------------------------------------------------------------------
 
     MaterialData::MaterialData()

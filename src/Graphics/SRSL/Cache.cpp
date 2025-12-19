@@ -316,7 +316,8 @@ namespace SR_SRSL_NS {
             }
             SR_UTILS_NS::MarshalUtils::SaveValue<bool>(marshal, true);
 
-            SR_UTILS_NS::MarshalUtils::SaveStringSet(marshal, pUseStack->forceUsed);
+            SR_UTILS_NS::MarshalUtils::SaveStringSet(marshal, pUseStack->forceUsedVariables);
+            SR_UTILS_NS::MarshalUtils::SaveStringSet(marshal, pUseStack->forceUsedFunctions);
             SR_UTILS_NS::MarshalUtils::SaveStringSet(marshal, pUseStack->variables);
 
             SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, pUseStack->functions.size());

@@ -81,6 +81,8 @@ namespace SR_GRAPH_NS {
 
         MaterialPropertyChangeResult SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
 
+        SR_NODISCARD SR_GTYPES_NS::Texture::Ptr GetSamplerTexture(SR_UTILS_NS::StringAtom id) const noexcept;
+
         void UpdateProperties();
         void Init();
 

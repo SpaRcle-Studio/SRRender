@@ -62,8 +62,6 @@ namespace SR_SRSL_NS {
             { "SKELETON_MATRIX_OFFSETS_384",    "mat4[384]"     },
 
             { "HALF_SIZE_NEAR_PLANE",           "vec2"          },
-            { "SLICED_TEXTURE_BORDER",          "vec2"          },
-            { "SLICED_WINDOW_BORDER",           "vec2"          },
 
             { "LINE_START_POINT",               "vec3"          },
             { "LINE_END_POINT",                 "vec3"          },
@@ -72,11 +70,20 @@ namespace SR_SRSL_NS {
 
             { "LINE_COLOR",                     "vec4"          },
             { "RGBA_VALUE",                     "vec4"          },
+            { "SLICED_TEXTURE_BORDER",          "vec4"          },
+            { "SLICED_WINDOW_BORDER",           "vec4"          },
 
             { "TEXT_RECT_X",                    "float"         },
             { "TEXT_RECT_Y",                    "float"         },
             { "TEXT_RECT_WIDTH",                "float"         },
             { "TEXT_RECT_HEIGHT",               "float"         },
+            { "SPRITE_FILL_AMOUNT",             "float"         },
+
+            { "FILL_CENTER",                    "int"           },
+            { "SPRITE_MODE",                    "int"           },
+            { "SPRITE_FILL_ORIGIN",             "int"           },
+            { "SPRITE_FILL_METHOD",             "int"           },
+            { "SPRITE_FILL_CLOCKWISE",          "int"           },
         };
 
         return defaultUniforms;

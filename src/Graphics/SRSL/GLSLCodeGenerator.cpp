@@ -225,6 +225,10 @@ namespace SR_SRSL_NS {
 
         /// color buffer pass code
         if (isColorPassDefined) {
+            const bool discardExists = m_shader->GetAnalyzedTree()->pLexicalTree->FindFunction("fragment_color_buffer_discard") != nullptr;
+            if (discardExists) {
+                postCode += GenerateTab(1) + "fragment_color_buffer_discard();\n";
+            }
             preCode += GenerateTab(1) + "COLOR = vec4({}, 1.0);\n"_format(SHADER_PC_COLOR_BUFFER_VALUE);
         }
 

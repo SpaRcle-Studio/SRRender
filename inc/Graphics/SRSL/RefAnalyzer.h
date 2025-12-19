@@ -27,11 +27,15 @@ namespace SR_SRSL_NS {
         SR_NODISCARD std::string ToString(int32_t deep) const;
 
         void Concat(const SRSLUseStack::Ptr& pOther);
+        void SetRoot(SRSLUseStack* pRootStack);
 
         std::map<std::string, SRSLUseStack::Ptr> functions;
         std::set<std::string> variables;
 
-        std::set<std::string> forceUsed;
+        std::set<std::string> forceUsedVariables;
+        std::set<std::string> forceUsedFunctions;
+
+        SRSLUseStack* pRoot = nullptr;
     };
 
     class SRSLRefAnalyzer : public SR_UTILS_NS::Singleton<SRSLRefAnalyzer> {
@@ -52,7 +56,7 @@ namespace SR_SRSL_NS {
         void AnalyzeIfStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLIfStatement* pIfStatement);
         void AnalyzeForStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLForStatement* pForStatement);
         void AnalyzeWhileStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLWhileStatement* pWhileStatement);
-        void AnalyzeEntryPoint(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLFunction* pFunction);
+        void AnalyzeFunction(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLFunction* pFunction);
 
     private:
         SRSLAnalyzedTree::Ptr m_analyzedTree;

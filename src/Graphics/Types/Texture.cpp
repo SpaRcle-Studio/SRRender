@@ -89,6 +89,8 @@ namespace SR_GTYPES_NS {
                         "\n\tOld filter: {}, New filter: {}"
                         "\n\tOld compression: {}, New compression: {}"
                         "\n\tOld cpu usage: {}, New cpu usage: {}"
+                        "\n\tOld pixels per unit: {}, New pixels per unit: {}"
+                        "\n\tOld border: {}, New border: {}"
                         ""_format(
                             path,
                             pTexture->m_activeImageMetaInfo.alpha, metaInfo.value().alpha,
@@ -96,7 +98,9 @@ namespace SR_GTYPES_NS {
                             pTexture->m_activeImageMetaInfo.format, metaInfo.value().format,
                             pTexture->m_activeImageMetaInfo.filter, metaInfo.value().filter,
                             pTexture->m_activeImageMetaInfo.compression, metaInfo.value().compression,
-                            pTexture->m_activeImageMetaInfo.cpuUsage, metaInfo.value().cpuUsage
+                            pTexture->m_activeImageMetaInfo.cpuUsage, metaInfo.value().cpuUsage,
+                            pTexture->m_activeImageMetaInfo.m_pixelsPerUnit, metaInfo.value().m_pixelsPerUnit,
+                            pTexture->m_activeImageMetaInfo.m_border, metaInfo.value().m_border
                     );
                     SR_WARN("Texture::Load() : copy values do not match load values!" + debugInfo);
                 }
@@ -370,5 +374,13 @@ namespace SR_GTYPES_NS {
 
         m_isDirty = true;
         m_hasErrors = false;
+    }
+
+    float_t Texture::GetPPU() const noexcept {
+        return m_activeImageMetaInfo.GetPixelsPerUnit();
+    }
+
+    SR_MATH_NS::FRect Texture::GetBorder() const noexcept {
+        return m_activeImageMetaInfo.GetBorder();
     }
 }

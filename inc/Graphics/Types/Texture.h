@@ -38,6 +38,8 @@ namespace SR_GTYPES_NS {
         static Texture::Ptr LoadFromMemory(const std::string& data, const ImageMetaInfo& config);
 
     public:
+        SR_NODISCARD SR_MATH_NS::FRect GetBorder() const noexcept;
+        SR_NODISCARD float_t GetPPU() const noexcept;
         SR_NODISCARD uint32_t GetWidth() const noexcept;
         SR_NODISCARD uint32_t GetHeight() const noexcept;
         SR_NODISCARD uint32_t GetChannels() const noexcept;

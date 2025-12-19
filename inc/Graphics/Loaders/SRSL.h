@@ -46,6 +46,14 @@ namespace SR_SRSL_NS {
             m_initialized = false;
         }
 
+        std::string ToString() const {
+            std::string result;
+            for (const auto& [key, value] : m_params) {
+                result += key.ToString() + "=" + value + ";";
+            }
+            return result;
+        }
+
     private:
         std::map<SR_UTILS_NS::StringAtom, std::string> m_params;
         SR_UTILS_NS::SRHashType m_hash = 0;
