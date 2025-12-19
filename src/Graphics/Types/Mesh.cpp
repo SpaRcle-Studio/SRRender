@@ -12,7 +12,7 @@
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Memory/DescriptorManager.h>
 
-#include <Utils/ECS/Node.h>
+#include <Utils/ECS/TransformRect.h>
 #include <Utils/ECS/GameObject.h>
 #include <Utils/Resources/IResource.h>
 #include <Utils/Types/RawMesh.h>
@@ -94,8 +94,8 @@ namespace SR_GTYPES_NS {
             switch (pSO->GetSceneObjectType()) {
                 case SR_UTILS_NS::SceneObjectType::GameObject:
                     return static_cast<const SR_UTILS_NS::GameObject*>(pSO.Get())->GetTransform()->GetMatrix();
-                case SR_UTILS_NS::SceneObjectType::Node:
-                    return static_cast<const SR_UTILS_NS::Node*>(pSO.Get())->GetMatrix();
+                //case SR_UTILS_NS::SceneObjectType::Node:
+                //    return static_cast<const SR_UTILS_NS::Node*>(pSO.Get())->GetMatrix();
                 default:
                     SRHalt("Mesh::GetMatrix() : unknown scene object type!");
                     break;
@@ -269,8 +269,14 @@ namespace SR_GTYPES_NS {
 
     int64_t Mesh::GetSortingPriority() const {
         if (auto&& pSO = GetSceneObject()) {
-            if (pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node) {
-                return static_cast<const SR_UTILS_NS::Node*>(pSO.Get())->GetNodePriority();
+            //if (pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node) {
+            //    return static_cast<const SR_UTILS_NS::Node*>(pSO.Get())->GetNodePriority();
+            //}
+            if (pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::GameObject) {
+                auto&& pTransform = static_cast<const SR_UTILS_NS::GameObject*>(pSO.Get())->GetTransform();
+                if (pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
+                    return static_cast<const SR_UTILS_NS::TransformRect*>(pTransform.Get())->GetPriority();
+                }
             }
         }
         return -1;
@@ -278,7 +284,10 @@ namespace SR_GTYPES_NS {
 
     bool Mesh::HasSortingPriority() const {
         if (auto&& pSO = GetSceneObject()) {
-            return pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node;
+            //return pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node;
+            if (pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::GameObject) {
+                return static_cast<const SR_UTILS_NS::GameObject*>(pSO.Get())->GetTransform()->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
+            }
         }
         return false;
     }
