@@ -2217,11 +2217,6 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (!m_currentVkFrameBuffer) {
-            PipelineError("VulkanPipeline::ClearDepthAttachment() : framebuffer is not attached!");
-            return;
-        }
-
         if (depth < 0.0f || depth > 1.0f) {
             SR_ERROR("VulkanPipeline::ClearDepthAttachment() : depth value must be in range [0.0, 1.0]!");
             depth = std::clamp(depth, 0.0f, 1.0f);
@@ -2229,6 +2224,7 @@ namespace SR_GRAPH_NS {
 
         // Use vkCmdClearAttachments to clear depth inside active RenderPass
         // This is the correct Vulkan way to clear attachments during rendering
+        // Works for both framebuffers and swapchain (when m_currentVkFrameBuffer is nullptr)
         VkClearAttachment clearAttachment = {};
         clearAttachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         clearAttachment.clearValue.depthStencil.depth = depth;
