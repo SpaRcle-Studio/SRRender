@@ -5,13 +5,13 @@
 #ifndef SR_ENGINE_FRAMEBUFFER_H
 #define SR_ENGINE_FRAMEBUFFER_H
 
-#include <Utils/Debug.h>
-#include <Utils/Math/Vector2.h>
-#include <Utils/Resources/IResource.h>
-
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Pipeline/FrameBufferFeatures.h>
+#include <Graphics/Utils/FrameBufferAccessMode.h>
+
+#include <Utils/Math/Vector2.h>
+#include <Utils/Resources/IResource.h>
 
 namespace SR_GRAPH_NS {
     class Pipeline;
@@ -72,6 +72,7 @@ namespace SR_GTYPES_NS {
         void SetName(SR_UTILS_NS::StringAtom name) { m_name = name; }
         void SetInstanceForEachFram(bool forEach) { m_forEachSwapchainImage = forEach; }
         void SetRenderAsSingleLayer(bool renderAsSingleLayer) { m_renderAsSingleLayer = renderAsSingleLayer; }
+        void SetAccessMode(FrameBufferAccessMode accessMode);
 
         SR_NODISCARD bool IsFileResource() const noexcept override { return false; }
         SR_NODISCARD bool IsAllowedMultiInstance() const override { return true; }
@@ -101,6 +102,7 @@ namespace SR_GTYPES_NS {
         uint64_t GetFileHash() const override;
 
     private:
+        FrameBufferAccessMode m_accessMode = FrameBufferAccessMode::Read;
         FrameBufferFeatures m_features;
 
         SR_UTILS_NS::StringAtom m_name;

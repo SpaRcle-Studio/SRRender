@@ -29,6 +29,7 @@ namespace SR_GRAPH_NS::VulkanTools {
             m_kernel->GetDescriptorManager(),
             m_kernel->GetSwapchain(),
             m_kernel->GetCmdPool(),
+            m_kernel->GetFrameCmdPools(),
             info.features,
             info.inputColorAttachments,
             info.width, info.height,

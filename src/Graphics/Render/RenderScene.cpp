@@ -86,11 +86,6 @@ namespace SR_GRAPH_NS {
 
         m_hasDrawData = false;
 
-        /// ImGui будет нарисован поверх независимо от порядка отрисовки.
-        /// Однако, если его нарисовать в конце, то пользователь может
-        /// изменить данные отрисовки сцены и сломать уже нарисованную сцену
-        Overlay();
-
         auto&& pPipeline = GetPipeline();
         if (pPipeline->IsDirty()) {
             pPipeline->SetDirty(false);
@@ -100,6 +95,8 @@ namespace SR_GRAPH_NS {
         const uint8_t frameIndex = pPipeline->GetCurrentFrameIndex();
 
         if (m_dirtyFrames[frameIndex]) {
+            GetPipeline()->OnFrameBuildBegin();
+
             Build();
 
             if (!m_hasDrawData) {
@@ -110,6 +107,12 @@ namespace SR_GRAPH_NS {
 
             pPipeline->OnFrameBuildEnd();
         }
+
+        /// [Временно перенесено в конец отрисовки]
+        /// ImGui будет нарисован поверх независимо от порядка отрисовки.
+        /// Однако, если его нарисовать в конце, то пользователь может
+        /// изменить данные отрисовки сцены и сломать уже нарисованную сцену
+        Overlay();
 
         Update();
         PostUpdate();

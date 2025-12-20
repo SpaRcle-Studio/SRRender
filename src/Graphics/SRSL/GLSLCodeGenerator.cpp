@@ -201,7 +201,12 @@ namespace SR_SRSL_NS {
         for (auto&& layer : SR_SRSL_DEFAULT_OUT_LAYERS) {
             const bool isNeedMain = layer == SR_SRSL_MAIN_OUT_LAYER && isColorUsed;
             if (isNeedMain || pUseStackFunction->IsVariableUsed(layer)) {
-                locationsCode += SR_FORMAT("layout (location = {}) out vec4 {};\n", outLocation, layer.c_str());
+                if (m_shader->IsMacroDefined(SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[outLocation])) {
+                    locationsCode += SR_FORMAT("layout (location = {}) out vec4 {};\n", outLocation, layer.c_str());
+                }
+                else {
+                    locationsCode += SR_FORMAT("vec4 {}; /// emulate location {}\n", layer.c_str(), outLocation);
+                }
             }
             ++outLocation;
         }

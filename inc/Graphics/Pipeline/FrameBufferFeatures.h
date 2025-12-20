@@ -7,7 +7,6 @@
 
 #include <Graphics/macros.h>
 
-#include <Utils/Debug.h>
 #include <Utils/Serialization/Serializable.h>
 
 namespace SR_GRAPH_NS {
@@ -30,7 +29,7 @@ namespace SR_GRAPH_NS {
         bool depthShaderRead = false;
         /// @property
         bool colorShaderRead = true;
-        /// @property
+
         bool offscreen = false;
     };
 }

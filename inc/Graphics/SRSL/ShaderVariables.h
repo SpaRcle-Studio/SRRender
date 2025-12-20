@@ -21,6 +21,7 @@ namespace SR_SRSL_NS {
     extern const std::map<std::string, std::string> SR_SRSL_DEFAULT_SAMPLERS;
     extern const std::string SR_SRSL_MAIN_OUT_LAYER;
     extern const std::set<std::string> SR_SRSL_DEFAULT_OUT_LAYERS;
+    extern const std::vector<std::string> SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO;
     extern const std::map<ShaderStage, std::string> SR_SRSL_ENTRY_POINTS;
     extern const std::map<ShaderStage, std::string> SR_SRSL_STAGE_EXTENSIONS;
     extern const std::map<std::string, ShaderVarType> SR_SRSL_TYPE_STRINGS;

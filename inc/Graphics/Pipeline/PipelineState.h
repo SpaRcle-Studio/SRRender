@@ -10,6 +10,9 @@
 #include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Types/Descriptors.h>
 
+#include <Utils/FileSystem/Path.h>
+#include <Utils/Math/Vector2.h>
+
 namespace SR_GTYPES_NS {
     class Shader;
     class Camera;

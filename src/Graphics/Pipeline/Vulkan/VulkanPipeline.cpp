@@ -152,8 +152,6 @@ namespace SR_GRAPH_NS {
 #ifndef SR_LINUX
         std::vector<const char*>&& instanceExtensions = {
             VK_KHR_SURFACE_EXTENSION_NAME,
-            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-            VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
             /// VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME,
         #ifdef SR_WIN32
             VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
@@ -915,7 +913,7 @@ namespace SR_GRAPH_NS {
             formats.reserve((*createInfo.colors).size());
 
             for (auto&& color : (*createInfo.colors)) {
-                color.texture.resize(maxFrames);
+                color.texture.resize(maxFrames, SR_ID_INVALID);
                 colorBuffers.emplace_back(color.texture[frame]);
                 formats.emplace_back(VulkanTools::AbstractTextureFormatToVkFormat(color.format));
             }
@@ -1206,6 +1204,15 @@ namespace SR_GRAPH_NS {
         if (m_kernel) {
             m_kernel->WaitComputeIdle();
         }
+    }
+
+    void VulkanPipeline::OnFrameBuildBegin() {
+        SR_TRACY_ZONE;
+
+        Super::OnFrameBuildBegin();
+
+        auto&& pFrameCmdPool = m_kernel->GetCurrentFrameCmdPool();
+        vkResetCommandPool(*m_kernel->GetDevice(), *pFrameCmdPool, 0);
     }
 
     void VulkanPipeline::WaitRenderIdle() {
@@ -2324,6 +2331,44 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         SRAssert2(SSBO != SR_ID_INVALID, "Invalid SSBO ID!");
         m_memory->GetSSBO(SSBO)->Unmap();
+    }
+
+    void VulkanPipeline::SetFrameBufferAccessMode(FrameBufferAccessMode mode) {
+        /// Необходимо поменять режим доступа к текущему фреймбуферу
+        /// VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL - для рендеринга (Write)
+        /// VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL - для чтения в шейдере (Read)
+
+        SR_TRACY_ZONE;
+
+        auto&& pCurrentFBO = GetCurrentFrameBuffer();
+        if (!m_currentVkFrameBuffer) {
+            SRHalt("VulkanPipeline::SetFrameBufferAccessMode() : current frame buffer is nullptr!");
+            return;
+        }
+
+        auto&& features = pCurrentFBO->GetFeatures();
+
+        const auto newColorLayout = (mode == FrameBufferAccessMode::Read && features.colorShaderRead) ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        for (uint32_t layer = 0; layer < pCurrentFBO->GetColorLayersCount(); ++layer) {
+            int32_t colorTexture = pCurrentFBO->GetColorTexture(layer, GetCurrentFrameIndex());
+            if (colorTexture == SR_ID_INVALID) {
+                continue;
+            }
+            m_memory->GetTexture(colorTexture)->GetImage().TransitionImageLayout(newColorLayout, m_currentCmd);
+        }
+
+        //for (auto&& colorAttachment : pLayer->GetColorAttachments()) {
+        //    const auto newLayout = (mode == FrameBufferAccessMode::Read && features.colorShaderRead) ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        //    colorAttachment->GetImage().TransitionImageLayout(newLayout, m_currentCmd);
+        //}
+
+        //if (auto&& pDepth = pLayer->GetDepthAttachment()) {
+        //    const auto newLayout = (mode == FrameBufferAccessMode::Read && features.depthShaderRead) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        //    pDepth->GetImage().TransitionImageLayout(newLayout, m_currentCmd);
+        //}
+
+        Super::SetFrameBufferAccessMode(mode);
     }
 
     void VulkanPipeline::SetSwapchainImagesCount(uint16_t count) {

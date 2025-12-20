@@ -379,4 +379,26 @@ namespace SR_GTYPES_NS {
         m_features = features;
         m_dirty = true;
     }
+
+    void Framebuffer::SetAccessMode(FrameBufferAccessMode accessMode) {
+        SR_TRACY_ZONE;
+
+        if (GetPipeline()->GetCurrentFrameBuffer() != this) {
+            SRHalt("Framebuffer::SetAccessMode() : changing access mode for unbound framebuffer!");
+            return;
+        }
+
+        if (accessMode == FrameBufferAccessMode::Read) {
+            if (!m_features.colorShaderRead && !m_features.depthShaderRead) {
+                return; /// nothing to change
+            }
+        }
+
+        if (m_accessMode == accessMode) {
+            return;
+        }
+
+        m_accessMode = accessMode;
+        GetPipeline()->SetFrameBufferAccessMode(m_accessMode);
+    }
 }

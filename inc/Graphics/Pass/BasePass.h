@@ -30,6 +30,7 @@ namespace SR_GRAPH_NS {
     class IRenderTechnique;
     class Pipeline;
     class BasePass;
+    class FrameBufferPass;
 
     /// @abstract
     class BasePass : public SR_HTYPES_NS::SharedPtr<BasePass>, public SR_UTILS_NS::Serializable {
@@ -98,6 +99,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD IRenderTechnique* GetTechnique() const { return m_technique; }
         SR_NODISCARD bool IsInit() const { return m_isInit; }
         SR_NODISCARD virtual BasePass* FindPass(SR_UTILS_NS::StringAtom name);
+
+        SR_NODISCARD FrameBufferPass* GetFrameBufferPass() const;
 
         SR_NODISCARD BasePass* GetParent() const { return m_parent; }
         virtual void SetParent(BasePass* pParent) { m_parent = pParent; }

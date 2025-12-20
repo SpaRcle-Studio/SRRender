@@ -3,13 +3,16 @@
 //
 
 #include <Graphics/Pass/DebugPass.h>
+#include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Geometry/IndexedMesh.h>
+#include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Render/RenderContext.h>
 
 #include <Utils/Common/Features.h>
 #include <Utils/FileSystem/PathDataAccessor.h>
@@ -23,7 +26,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void DebugPassShaderInfo::LoadShader() {
+    void DebugPassShaderInfo::LoadShader(const DebugPass* pPass) {
         SR_TRACY_ZONE;
 
         if (!shaderPath.empty()) {
@@ -31,7 +34,26 @@ namespace SR_GRAPH_NS {
                 pShader->RemoveUsePoint();
             }
 
-            pShader = SR_GTYPES_NS::Shader::Load(shaderPath);
+            SR_SRSL_NS::ShaderMacrosParams shaderMacros;
+
+            auto&& macros = pPass->GetRenderContext()->GetShaderMacros();
+            for (auto&& [key, value] : macros) {
+                shaderMacros.SetParam(key, value);
+            }
+
+            if (auto&& pFrameBufferPass = pPass->GetFrameBufferPass()) {
+                if (auto&& pFrameBuffer = pFrameBufferPass->GetFrameBufferPassData().GetFramebuffer()) {
+                    const uint32_t layers = SR_MIN(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO.size(), pFrameBuffer->GetColorLayersCount());
+                    for (uint32_t i = 0; i < layers; ++i) {
+                        shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
+                    }
+                }
+                else {
+                    SR_ERROR("DebugPassShaderInfo::LoadShader() : framebuffer is null in \"{}\" pass!", pFrameBufferPass->GetPassName());
+                }
+            }
+
+            pShader = SR_GTYPES_NS::Shader::Load(shaderPath, shaderMacros);
             if (pShader) {
                 pShader->AddUsePoint();
             }
@@ -149,7 +171,7 @@ namespace SR_GRAPH_NS {
         m_updateMeshesOnDemand = SR_UTILS_NS::Features::Instance().Enabled("UpdateDebugMeshesOnDemand", false);
 
         for (auto& [id, shaderInfo] : m_shaders) {
-            shaderInfo.LoadShader();
+            shaderInfo.LoadShader(this);
 
             if (!shaderInfo.pShader) {
                 SR_ERROR("DebugPass::Load() : failed to load shader \"{}\"!", id);

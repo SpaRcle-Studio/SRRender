@@ -103,7 +103,7 @@ namespace SR_GRAPH_NS {
                 }
 
                 if (!pFrameBuffer->IsValid()) {
-                    SR_WARN("VulkanKernel::Render() : frame buffer is not valid! Skipping...");
+                    // SR_WARN("VulkanKernel::Render() : frame buffer is not valid! Skipping...");
                     continue;
                 }
 
@@ -168,10 +168,15 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        EvoVulkan::Core::FrameResult presentResult = QueuePresent();
+        EvoVulkan::Core::FrameResult presentResult = m_isSwapchainSuboptimal ? EvoVulkan::Core::FrameResult::Suboptimal : QueuePresent();
 
         //m_currentBuffer = (m_currentBuffer + 1) % GetSwapchainImagesCount();
+        //m_currentBuffer = (m_currentImage + 1) % GetSwapchainImagesCount();
         m_currentBuffer = (m_currentImage + 1) % GetSwapchainImagesCount();
+
+        //if (m_currentBuffer != m_currentImage) {
+        //    VK_HALT("VulkanKernel::Render() : current buffer and current image are out of sync!");
+        //}
 
         if (presentResult == EvoVulkan::Core::FrameResult::DeviceLost) {
             SR_PLATFORM_NS::Terminate();

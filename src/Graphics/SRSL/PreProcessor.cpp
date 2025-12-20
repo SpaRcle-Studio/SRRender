@@ -118,6 +118,13 @@ namespace SR_SRSL_NS {
                         m_state = PPState::IncludeOpen;
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
+                    else if (value == "define") {
+                        m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                        std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
+                        m_macros->AddDefine(macroName);
+                        m_lexems.erase(m_lexems.begin() + m_currentLexem);
+                        m_state = PPState::Idle;
+                    }
                     else if (value == "if" || value == "ifdef" || value == "ifndef")
                     {
                         if (!m_ifStack.top()) {

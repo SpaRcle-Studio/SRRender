@@ -10,6 +10,8 @@
 #include <Graphics/Memory/DescriptorManager.h>
 
 namespace SR_GRAPH_NS {
+    class DebugPass;
+
     struct DebugPassShaderInfo : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
@@ -17,7 +19,7 @@ namespace SR_GRAPH_NS {
         ~DebugPassShaderInfo() override;
 
         void SetShader(const SR_UTILS_NS::Path& path);
-        void LoadShader();
+        void LoadShader(const DebugPass* pPass);
 
         struct MemInfo {
             Memory::UBOManager::VirtualUBO virtualUBO;

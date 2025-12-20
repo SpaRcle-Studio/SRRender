@@ -560,6 +560,10 @@ namespace SR_GRAPH_NS {
         return m_buildStates[frameIndex];
     }
 
+    void Pipeline::OnFrameBuildBegin() {
+
+    }
+
     void Pipeline::OnFrameBuildEnd() {
         m_buildStates.resize(GetSwapchainImagesCount());
         const uint8_t frameIndex = GetCurrentFrameIndex();

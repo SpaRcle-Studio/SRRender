@@ -11,6 +11,7 @@
 #include <Graphics/Overlay/OverlayType.h>
 #include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Memory/SSBOUsage.h>
+#include <Graphics/Utils/FrameBufferAccessMode.h>
 
 #include <Utils/Math/Vector3.h>
 #include <Utils/Types/SafePointer.h>
@@ -109,7 +110,8 @@ namespace SR_GRAPH_NS {
         virtual void WaitComputeIdle();
         virtual void WaitRenderIdle();
 
-        void OnFrameBuildEnd();
+        virtual void OnFrameBuildEnd();
+        virtual void OnFrameBuildBegin();
 
         /// ------------------------------------------ Работа с Overlay ------------------------------------------------
 
@@ -169,6 +171,7 @@ namespace SR_GRAPH_NS {
         virtual void SetCurrentFrameBufferLayer(uint32_t layer) { ++m_state.operations; m_state.frameBufferLayer = layer; }
         virtual void SetCurrentFrameBuffer(FramebufferPtr pFrameBuffer);
         virtual void SetCurrentRenderStrategy(RenderStrategy* pStrategy) { ++m_state.operations; m_state.pRenderStrategy = pStrategy; }
+        virtual void SetFrameBufferAccessMode(FrameBufferAccessMode mode) { ++m_state.operations; }
 
         virtual void* GetOverlayTextureDescriptorSet(uint32_t textureId, OverlayType overlayType) const;
 

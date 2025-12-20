@@ -132,10 +132,10 @@ namespace SR_GRAPH_NS {
         if (pShader->GetUBOBlockSize() > 0) SR_LIKELY_ATTRIBUTE {
             m_allocationTypesCache.emplace_back(DescriptorType::Uniform);
         }
-        else if (pShader->GetSamplersCount() > 0) {
+        if (pShader->GetSamplersCount() > 0) {
             m_allocationTypesCache.emplace_back(DescriptorType::CombinedImage);
         }
-        else if (pShader->HasSSBOBindings()) {
+        if (pShader->HasSSBOBindings()) {
             m_allocationTypesCache.emplace_back(DescriptorType::Storage);
         }
 

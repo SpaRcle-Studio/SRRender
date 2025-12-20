@@ -109,6 +109,18 @@ namespace SR_SRSL_NS {
         { "COLOR_INDEX_8" },
     };
 
+    const std::vector<std::string> SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO = { /** NOLINT */
+        { "USE_COLOR_INDEX_0" },
+        { "USE_COLOR_INDEX_1" },
+        { "USE_COLOR_INDEX_2" },
+        { "USE_COLOR_INDEX_3" },
+        { "USE_COLOR_INDEX_4" },
+        { "USE_COLOR_INDEX_5" },
+        { "USE_COLOR_INDEX_6" },
+        { "USE_COLOR_INDEX_7" },
+        { "USE_COLOR_INDEX_8" },
+    };
+
     const std::map<ShaderStage, std::string> SR_SRSL_ENTRY_POINTS = { /** NOLINT */
         { ShaderStage::Vertex,   "vertex"    },
         { ShaderStage::Fragment, "fragment"  },

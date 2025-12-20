@@ -3,17 +3,15 @@
 //
 
 #include <Graphics/Pass/MeshDrawerPass.h>
+#include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/RenderQueue.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderTechnique.h>
-#include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Lighting/LightSystem.h>
-#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Framebuffer.h>
-#include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/SRSL/ShaderVariables.h>
@@ -188,6 +186,19 @@ namespace SR_GRAPH_NS {
 
         for (auto&& definition : m_shaderDefines) {
             m_shaderMacros.AddDefine(definition);
+        }
+
+        if (auto&& pFrameBufferPass = GetFrameBufferPass()) {
+            if (auto&& pFrameBuffer = pFrameBufferPass->GetFrameBufferPassData().GetFramebuffer()) {
+                const uint32_t layers = SR_MIN(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO.size(), pFrameBuffer->GetColorLayersCount());
+                for (uint32_t i = 0; i < layers; ++i) {
+                    m_shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
+                }
+            }
+            else {
+                SR_ERROR("MeshDrawerPass::Init() : framebuffer is null in \"{}\" pass!", pFrameBufferPass->GetPassName());
+                return false;
+            }
         }
 
         auto&& macros = GetRenderContext()->GetShaderMacros();

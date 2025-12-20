@@ -98,6 +98,8 @@ namespace SR_GRAPH_NS {
         void WaitComputeIdle() override;
         void WaitRenderIdle() override;
 
+        void OnFrameBuildBegin() override;
+
         bool BeginCompute() override;
         void EndCompute() override;
 
@@ -113,6 +115,7 @@ namespace SR_GRAPH_NS {
         void OnMultiSampleChanged() override;
         void SetCurrentFrameBuffer(FramebufferPtr pFrameBuffer) override;
         void SetSwapchainImagesCount(uint16_t count) override;
+        void SetFrameBufferAccessMode(FrameBufferAccessMode mode) override;
 
         void SetViewport(int32_t width, int32_t height) override;
         void SetScissor(int32_t width, int32_t height) override;

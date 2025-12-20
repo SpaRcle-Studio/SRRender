@@ -263,7 +263,7 @@ namespace SR_GRAPH_NS {
         m_cmdBuffs.resize(m_swapChain->GetCountImages());
 
         for (auto&& cmdBuff : m_cmdBuffs) {
-            if (auto&& pool = m_device->CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT); pool != VK_NULL_HANDLE) {
+            if (auto&& pool = m_device->CreateCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); pool != VK_NULL_HANDLE) {
                 m_cmdPools.emplace_back(pool);
 
                 auto&& info = EvoVulkan::Tools::Initializers::CommandBufferAllocateInfo(pool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
@@ -650,7 +650,10 @@ namespace SR_GRAPH_NS {
                 }
 
                 if (auto&& drawData = ImGui::GetDrawData()) {
+                    const bool old = EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationMuteSmallMemoryAllocations;
+                    EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationMuteSmallMemoryAllocations = true;
                     ImGui_ImplVulkan_RenderDrawData(drawData, m_cmdBuffs[frame]);
+                    EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationMuteSmallMemoryAllocations = old;
                 }
                 else if (!hasWarn) {
                     hasWarn = true;

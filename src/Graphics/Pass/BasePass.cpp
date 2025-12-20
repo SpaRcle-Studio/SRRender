@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/Pass/BasePass.h>
+#include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
@@ -24,6 +25,20 @@ namespace SR_GRAPH_NS {
 
     void BasePass::OnResize(const SR_MATH_NS::UVector2& size) {
 
+    }
+
+    FrameBufferPass* BasePass::GetFrameBufferPass() const {
+        static const auto name = FrameBufferPass::GetClassStaticName();
+
+        BasePass* pParent = GetParent();
+        while (pParent) {
+            if (pParent->GetMeta()->IsSameOrInherited(name)) {
+                return static_cast<FrameBufferPass*>(pParent);
+            }
+            pParent = pParent->GetParent();
+        }
+
+        return nullptr;
     }
 
     bool BasePass::PreInit() {
