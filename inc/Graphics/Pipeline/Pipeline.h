@@ -188,6 +188,10 @@ namespace SR_GRAPH_NS {
         virtual void ClearDepthBuffer(float_t depth);
         virtual void ClearColorBuffer(const ClearColors& clearColors);
 
+        /// Clear depth attachment inside active RenderPass using vkCmdClearAttachments
+        /// This is the correct way to clear attachments during rendering without ending RenderPass
+        virtual void ClearDepthAttachment(float_t depth);
+
         /// Устанавливает состояние графического конвейера.
         /// Если грязный, то будет перестроена сцена
         /// Если чистый, то считаем, что постороение сцены завершено

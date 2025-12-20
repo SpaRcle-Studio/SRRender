@@ -41,16 +41,9 @@ namespace SR_GRAPH_NS {
                 shaderMacros.SetParam(key, value);
             }
 
-            if (auto&& pFrameBufferPass = pPass->GetFrameBufferPass()) {
-                if (auto&& pFrameBuffer = pFrameBufferPass->GetFrameBufferPassData().GetFramebuffer()) {
-                    const uint32_t layers = SR_MIN(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO.size(), pFrameBuffer->GetColorLayersCount());
-                    for (uint32_t i = 0; i < layers; ++i) {
-                        shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
-                    }
-                }
-                else {
-                    SR_ERROR("DebugPassShaderInfo::LoadShader() : framebuffer is null in \"{}\" pass!", pFrameBufferPass->GetPassName());
-                }
+            const uint32_t layers = pPass->GetColorLayersCount();
+            for (uint32_t i = 0; i < layers; ++i) {
+                shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
             }
 
             pShader = SR_GTYPES_NS::Shader::Load(shaderPath, shaderMacros);

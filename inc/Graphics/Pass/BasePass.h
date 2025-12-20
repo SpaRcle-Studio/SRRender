@@ -101,6 +101,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual BasePass* FindPass(SR_UTILS_NS::StringAtom name);
 
         SR_NODISCARD FrameBufferPass* GetFrameBufferPass() const;
+        SR_NODISCARD uint32_t GetColorLayersCount() const;
 
         SR_NODISCARD BasePass* GetParent() const { return m_parent; }
         virtual void SetParent(BasePass* pParent) { m_parent = pParent; }

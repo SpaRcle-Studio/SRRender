@@ -4,11 +4,13 @@
 
 #include <Graphics/Pass/BasePass.h>
 #include <Graphics/Pass/FrameBufferPass.h>
+#include <Graphics/Pass/SwapchainPass.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Types/Camera.h>
+#include <Graphics/Types/Framebuffer.h>
 
 #include <Codegen/BasePass.generated.hpp>
 
@@ -107,5 +109,31 @@ namespace SR_GRAPH_NS {
 
     void BasePass::ForEachPass(const std::function<void(BasePass&)>& func) {
         func(*this);
+    }
+
+    uint32_t BasePass::GetColorLayersCount() const {
+        SR_TRACY_ZONE;
+
+        if (auto&& pFrameBufferPass = GetFrameBufferPass()) {
+            if (auto&& pFrameBuffer = pFrameBufferPass->GetFrameBufferPassData().GetFramebuffer()) {
+                return SR_MIN(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO.size(), pFrameBuffer->GetColorLayersCount());
+            }
+            else {
+                SR_ERROR("MeshDrawerPass::Init() : framebuffer is null in \"{}\" pass!", pFrameBufferPass->GetPassName());
+                return false;
+            }
+        }
+
+        static const auto name = SwapchainPass::GetClassStaticName();
+
+        BasePass* pParent = GetParent();
+        while (pParent) {
+            if (pParent->GetMeta()->IsSameOrInherited(name)) {
+                return 1;
+            }
+            pParent = pParent->GetParent();
+        }
+
+        return 0;
     }
 }

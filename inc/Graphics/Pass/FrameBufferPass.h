@@ -47,6 +47,18 @@ namespace SR_GRAPH_NS {
         bool m_clearColor = true;
 
     };
+
+    class ClearDepthAttachmentPass : public BasePass {
+        SR_CLASS()
+        using Super = BasePass;
+    public:
+        bool Render() override;
+
+    private:
+        /// @property
+        float_t m_depth = 1.f;
+
+    };
 }
 
 #endif //SR_ENGINE_GRAPHICS_FRAME_BUFFER_PASS_H

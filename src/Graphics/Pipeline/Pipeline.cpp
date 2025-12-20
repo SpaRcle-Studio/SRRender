@@ -439,6 +439,10 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
     }
 
+    void Pipeline::ClearDepthAttachment(float_t depth) {
+        ++m_state.operations;
+    }
+
     bool Pipeline::Init() {
         return true;
     }

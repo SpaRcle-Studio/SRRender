@@ -40,6 +40,8 @@ namespace SR_GRAPH_NS {
     /// ----------------------------------------------------------------------------------------------------------------
 
     bool ClearBuffersPass::Render() {
+        SR_ERROR("Deprecated! Use ClearDepthAttachmentPass instead.");
+
         auto&& pFrameBufferPass = dynamic_cast<FrameBufferPass*>(GetParent());
         if (!pFrameBufferPass) {
             SR_WARN("ClearBuffersPass::Render() : parent is not FrameBufferPass!");
@@ -51,17 +53,38 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        GetPipeline()->EndRender();
+        // Use vkCmdClearAttachments for depth clearing inside active RenderPass
+        // This is the correct Vulkan way and avoids READ_AFTER_WRITE hazards
+        if (m_clearDepth) {
+            GetPipeline()->ClearDepthAttachment(1.f);
+        }
 
+        // Color clearing still uses transfer operations if needed
+        // (This is less common, but kept for compatibility)
         if (m_clearColor && pFBO->GetFeatures().colorTransferDst) {
+            GetPipeline()->EndRender();
             GetPipeline()->ClearColorBuffer(pFrameBufferPass->GetClearColors());
+            GetPipeline()->BeginRender();
         }
 
-        if (m_clearDepth && pFBO->GetFeatures().depthTransferDst) {
-            GetPipeline()->ClearDepthBuffer(1.f);
+        return Super::Render();
+    }
+
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    bool ClearDepthAttachmentPass::Render() {
+        auto&& pFrameBufferPass = dynamic_cast<FrameBufferPass*>(GetParent());
+        if (!pFrameBufferPass) {
+            SR_WARN("ClearDepthAttachmentPass::Render() : parent is not FrameBufferPass!");
+            return false;
         }
 
-        GetPipeline()->BeginRender();
+        auto&& pFBO = pFrameBufferPass->GetFrameBuffer();
+        if (!pFBO) {
+            return false;
+        }
+
+        GetPipeline()->ClearDepthAttachment(m_depth);
 
         return Super::Render();
     }

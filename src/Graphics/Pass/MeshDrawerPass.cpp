@@ -188,17 +188,9 @@ namespace SR_GRAPH_NS {
             m_shaderMacros.AddDefine(definition);
         }
 
-        if (auto&& pFrameBufferPass = GetFrameBufferPass()) {
-            if (auto&& pFrameBuffer = pFrameBufferPass->GetFrameBufferPassData().GetFramebuffer()) {
-                const uint32_t layers = SR_MIN(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO.size(), pFrameBuffer->GetColorLayersCount());
-                for (uint32_t i = 0; i < layers; ++i) {
-                    m_shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
-                }
-            }
-            else {
-                SR_ERROR("MeshDrawerPass::Init() : framebuffer is null in \"{}\" pass!", pFrameBufferPass->GetPassName());
-                return false;
-            }
+        const uint32_t layers = GetColorLayersCount();
+        for (uint32_t i = 0; i < layers; ++i) {
+            m_shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
         }
 
         auto&& macros = GetRenderContext()->GetShaderMacros();

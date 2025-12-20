@@ -125,6 +125,7 @@ namespace SR_GRAPH_NS {
         void ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth) override;
         void ClearDepthBuffer(float_t depth) override;
         void ClearColorBuffer(const ClearColors& clearColors) override;
+        void ClearDepthAttachment(float_t depth) override;
 
         void ResetSubmitQueue() override;
 

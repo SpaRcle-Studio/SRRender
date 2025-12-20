@@ -1110,8 +1110,11 @@ namespace SR_GRAPH_NS {
                 shader.setStrings(&shaderStrings, 1);
 
                 shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, 450);
-                shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_3);
-                shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
+                //shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_3);
+                //shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
+
+                shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
+                shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5); // SPIR-V 1.5 нормально для Vulkan 1.2+
 
                 EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
                 if (!shader.parse(&DefaultTBuiltInResource, 450, false, messages)) {
@@ -2105,9 +2108,26 @@ namespace SR_GRAPH_NS {
                 return;
             }
 
+            const VkImageLayout oldLayout = image.GetLayout();
+
+            // --- determine proper srcAccessMask & srcStage depending on oldLayout ---
+            VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            VkAccessFlags srcAccess = 0;
+
+            if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+                srcAccess = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+                srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            } else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+                srcAccess = VK_ACCESS_SHADER_READ_BIT;
+                srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            } else {
+                srcAccess = 0;
+                srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            }
+
             VkImageMemoryBarrier barrier = {};
             barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            barrier.oldLayout = image.GetLayout();
+            barrier.oldLayout = oldLayout;
             barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -2117,12 +2137,12 @@ namespace SR_GRAPH_NS {
             barrier.subresourceRange.levelCount = 1;
             barrier.subresourceRange.baseArrayLayer = 0;
             barrier.subresourceRange.layerCount = 1;
-            barrier.srcAccessMask = 0;
+            barrier.srcAccessMask = srcAccess;
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
             vkCmdPipelineBarrier(
                     m_currentCmd,
-                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    srcStage, VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0,
                     0, nullptr,
                     0, nullptr,
@@ -2182,6 +2202,53 @@ namespace SR_GRAPH_NS {
         }
 
         Super::ClearColorBuffer(clearColors);
+    }
+
+    void VulkanPipeline::ClearDepthAttachment(float_t depth) {
+        SR_TRACY_ZONE;
+
+        if (!m_isRenderState) {
+            PipelineError("VulkanPipeline::ClearDepthAttachment() : RenderPass is not active!");
+            return;
+        }
+
+        if (!m_currentCmd) {
+            PipelineError("VulkanPipeline::ClearDepthAttachment() : cmd buffer is nullptr!");
+            return;
+        }
+
+        if (!m_currentVkFrameBuffer) {
+            PipelineError("VulkanPipeline::ClearDepthAttachment() : framebuffer is not attached!");
+            return;
+        }
+
+        if (depth < 0.0f || depth > 1.0f) {
+            SR_ERROR("VulkanPipeline::ClearDepthAttachment() : depth value must be in range [0.0, 1.0]!");
+            depth = std::clamp(depth, 0.0f, 1.0f);
+        }
+
+        // Use vkCmdClearAttachments to clear depth inside active RenderPass
+        // This is the correct Vulkan way to clear attachments during rendering
+        VkClearAttachment clearAttachment = {};
+        clearAttachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        clearAttachment.clearValue.depthStencil.depth = depth;
+        clearAttachment.clearValue.depthStencil.stencil = 0;
+
+        // Clear the entire render area
+        VkClearRect clearRect = {};
+        clearRect.rect = m_renderPassBI.renderArea;
+        clearRect.baseArrayLayer = 0;
+        clearRect.layerCount = 1;
+
+        vkCmdClearAttachments(
+            m_currentCmd,
+            1,
+            &clearAttachment,
+            1,
+            &clearRect
+        );
+
+        Super::ClearDepthAttachment(depth);
     }
 
     bool VulkanPipeline::FreeSSBO(int32_t* id) {
