@@ -141,4 +141,27 @@ namespace SR_GRAPH_NS {
         //}
         //return true;
     }
+
+    Frustum::FrustumCorners Frustum::GetFrustumCorners() const {
+        FrustumCorners corners;
+
+        const auto& near = planes[FRUSTUM_SIDE_NEAR];
+        const auto& far = planes[FRUSTUM_SIDE_FAR];
+        const auto& left = planes[FRUSTUM_SIDE_LEFT];
+        const auto& right = planes[FRUSTUM_SIDE_RIGHT];
+        const auto& top = planes[FRUSTUM_SIDE_TOP];
+        const auto& bottom = planes[FRUSTUM_SIDE_BOTTOM];
+
+        corners[0] = IntersectFrustumPlanes(near, left, top);    // Near Top Left
+        corners[1] = IntersectFrustumPlanes(near, right, top);   // Near Top Right
+        corners[2] = IntersectFrustumPlanes(near, right, bottom);// Near Bottom Right
+        corners[3] = IntersectFrustumPlanes(near, left, bottom); // Near Bottom Left
+
+        corners[4] = IntersectFrustumPlanes(far, left, top);     // Far Top Left
+        corners[5] = IntersectFrustumPlanes(far, right, top);    // Far Top Right
+        corners[6] = IntersectFrustumPlanes(far, right, bottom); // Far Bottom Right
+        corners[7] = IntersectFrustumPlanes(far, left, bottom);  // Far Bottom Left
+
+        return corners;
+    }
 }

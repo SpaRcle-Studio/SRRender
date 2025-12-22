@@ -72,7 +72,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (type == LightType::Directional) {
-            m_directionalLightDir = -pLightComponent->GetTransform()->Forward().Normalize();
+            m_directionalLightDir = pLightComponent->GetTransform()->Forward().Normalize();
         }
 
         m_renderScene->SetDirty();

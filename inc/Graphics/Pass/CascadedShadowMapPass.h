@@ -6,6 +6,7 @@
 #define SR_ENGINE_CASCADED_SHADOW_MAP_PASS_H
 
 #include <Graphics/Pass/MeshDrawerPass.h>
+#include <Graphics/Utils/Frustum.h>
 
 #include <Utils/Math/Matrix4x4.h>
 
@@ -30,8 +31,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD RenderQueuePtr AllocateRenderQueue(uint32_t index) override;
 
     protected:
-        bool CheckCamera();
-        void UpdateCascades();
+        SR_NODISCARD SR_GTYPES_NS::Camera* CheckCamera();
+        void UpdateCascades(SR_GTYPES_NS::Camera* pCamera);
 
         void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const override;
 
@@ -44,23 +45,31 @@ namespace SR_GRAPH_NS {
         SR_MATH_NS::Quaternion m_cameraRotation;
 
         /// @property
-        float_t m_near = 0.1f;
+        float_t m_near = 0.f;
         /// @property
-        float_t m_far = 100.f;
-        /// @property
-        float_t m_cascadeSplitLambda = 0.95f;
+        float_t m_far = 0.f;
         /// @property
         bool m_instancing = false;
         /// @property
         uint32_t m_lightFrustumCount = 2;
         /// @property
         uint32_t m_cascadeCount = 4;
+        /// @property
+        float_t m_oneMeterUnit = 1.f;
+        /// @property
+        float_t m_maxShadowDistance = 500.f;
+        /// @property
+        float_t m_split1 = 25.f;
+        /// @property
+        float_t m_split2 = 75.f;
+        /// @property
+        float_t m_split3 = 150.f;
 
         int32_t m_drawCascadeIndex = -1;
         std::vector<SR_MATH_NS::Matrix4x4> m_cascadeMatrices;
         std::vector<Frustum> m_lightFrustums;
-        std::vector<float_t> m_cascadeSplitDepths;
         std::vector<float_t> m_cascadeRadii;
+        std::vector<float_t> m_cascadeSplitDepths;
 
     };
 }

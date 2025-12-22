@@ -182,7 +182,6 @@ namespace SR_GTYPES_NS {
         m_viewTranslateMat = m_viewMat.Translate(m_position.Inverse());
         m_viewDirection = m_rotation * SR_MATH_NS::FVector3(0, 0, 1);
         m_frustum = ExtractFrustum(m_projection * m_viewTranslateMat);
-        //m_frustum = ExtractFrustum(*this);
     }
 
     void Camera::UpdateProjection() {

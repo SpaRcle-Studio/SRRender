@@ -664,6 +664,11 @@ namespace SR_GRAPH_NS::Types {
         SR_TRACY_ZONE;
 
         for (auto&& [hashName, samplerInfo] : m_samplers) {
+            if (samplerInfo.samplerId == SR_ID_INVALID) {
+                SR_ERROR("Shader::AttachDescriptorSets() : invalid \"{}\" sampler!", hashName);
+                samplerInfo.samplerId = GetRenderContext()->GetDefaultTexture()->GetId();
+            }
+
             if (samplerInfo.isAttachment) {
                 GetPipeline()->BindAttachment(samplerInfo.binding, samplerInfo.samplerId);
             }

@@ -46,6 +46,10 @@ namespace SR_GRAPH_NS {
     struct Frustum {
         std::array<FrustumPlane, 6> planes;
 
+        using FrustumCorners = std::array<SR_MATH_NS::FVector3, 8>;
+
+        SR_NODISCARD FrustumCorners GetFrustumCorners() const;
+
         SR_NODISCARD bool IsAABBVisible(const SR_MATH_NS::AABB& box) const;
 
         SR_NODISCARD const FrustumPlane& Top() const { return planes[FRUSTUM_SIDE_TOP]; }
