@@ -381,7 +381,11 @@ namespace SR_GRAPH_NS {
         /// Update and Render additional Platform Windows
         if (IsViewportsEnabled()) {
             ImGui::UpdatePlatformWindows();
+
+            const bool old = EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationMuteSmallMemoryAllocations;
+            EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationMuteSmallMemoryAllocations = true;
             ImGui::RenderPlatformWindowsDefault();
+            EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationMuteSmallMemoryAllocations = old;
         }
     }
 

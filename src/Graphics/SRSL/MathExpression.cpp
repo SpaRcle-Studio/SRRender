@@ -153,13 +153,55 @@ namespace SR_SRSL_NS {
         retrySubExpr:
             if (auto&& pLexem = GetCurrentLexem(); pLexem && pLexem->kind == LexemKind::OpeningSquareBracket) {
                 ++m_currentLexem;
-                if (auto&& pNextLexem = GetCurrentLexem(); pNextLexem && pNextLexem->kind == LexemKind::ClosingSquareBracket) {
+
+                std::vector<Lexem> bracketLexems;
+                int32_t bracketCount = 1;
+
+                while (InBounds() && bracketCount > 0) {
+                    auto&& pNextLexem = GetCurrentLexem();
+                    if (pNextLexem->kind == LexemKind::OpeningSquareBracket) {
+                        ++bracketCount;
+                    }
+                    else if (pNextLexem->kind == LexemKind::ClosingSquareBracket) {
+                        --bracketCount;
+                        if (bracketCount == 0) {
+                            ++m_currentLexem;
+                            break;
+                        }
+                    }
+                    bracketLexems.emplace_back(*pNextLexem);
                     ++m_currentLexem;
-                    pBasicExpr = new SRSLExpr("[", pBasicExpr, nullptr);
-                    goto retrySubExpr;
                 }
-                auto&& pExpr = ParseBinaryExpression(30 /** = */);
-                pBasicExpr = new SRSLExpr("[", pBasicExpr, pExpr);
+
+                if (bracketLexems.empty()) {
+                    pBasicExpr = new SRSLExpr("[", pBasicExpr, nullptr);
+                }
+                else {
+                    const int64_t stashLexem = m_currentLexem;
+                    std::vector<Lexem> oldLexems = std::move(m_lexems);
+
+                    auto&& pInnerExpr = SRSLMathExpression::Instance().Analyze(std::move(bracketLexems));
+                    if (pInnerExpr.second.HasErrors()) {
+                        SR_SAFE_DELETE_PTR(pBasicExpr);
+                        m_result = pInnerExpr.second;
+                        SR_ERROR("SRSLMathExpression::ParseSimpleExpression() : failed to parse inner expression!");
+                        return nullptr;
+                    }
+
+                    m_currentLexem = stashLexem;
+                    m_lexems = std::move(oldLexems);
+
+                    pBasicExpr = new SRSLExpr("[", pBasicExpr, pInnerExpr.first);
+                }
+
+                //if (auto&& pNextLexem = GetCurrentLexem(); pNextLexem && pNextLexem->kind == LexemKind::ClosingSquareBracket) {
+                //    ++m_currentLexem;
+                //    pBasicExpr = new SRSLExpr("[", pBasicExpr, nullptr);
+                //    goto retrySubExpr;
+                //}
+
+                //auto&& pExpr = ParseBinaryExpression(30 /** = */);
+
                 goto retrySubExpr;
             }
             else if (pLexem && pLexem->kind == LexemKind::Dot) {

@@ -8,6 +8,7 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/SRSL/ShaderVariables.h>
 
 #include <Utils/FileSystem/PathDataAccessor.h>
 
@@ -24,22 +25,11 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         m_skyboxPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+        m_isSkyboxDirty = true;
+        m_isRendered = false;
 
-        if (m_skybox) {
-            m_skybox->RemoveUsePoint();
-            m_skybox = nullptr;
-        }
-
-        if (!(m_skybox = SR_GTYPES_NS::Skybox::Load(m_skyboxPath))) {
-            SR_ERROR("SkyboxPass::Load() : failed to load skybox!\n\tPath: {}", m_skyboxPath);
-            return;
-        }
-        else {
-            m_skybox->AddUsePoint();
-        }
-
-        if (m_skybox && !m_shaderPath.empty()) {
-            m_skybox->SetShader(SR_GTYPES_NS::Shader::Load(m_shaderPath));
+        if (auto&& pPipeline = GetPipeline()) {
+            pPipeline->SetDirty(true);
         }
     }
 
@@ -47,14 +37,20 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         m_shaderPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+        m_isShaderDirty = true;
+        m_isRendered = false;
 
-        if (m_skybox) {
-            m_skybox->SetShader(SR_GTYPES_NS::Shader::Load(m_shaderPath));
+        if (auto&& pPipeline = GetPipeline()) {
+            pPipeline->SetDirty(true);
         }
     }
 
     bool SkyboxPass::Render() {
         m_isRendered = false;
+
+        if (!UpdateParams()) {
+            return false;
+        }
 
         if (!m_skybox) {
             return false;
@@ -115,5 +111,42 @@ namespace SR_GRAPH_NS {
         }
 
         Super::Update();
+    }
+
+    bool SkyboxPass::UpdateParams() {
+        if (m_isSkyboxDirty) {
+            if (m_skybox) {
+                m_skybox->RemoveUsePoint();
+                m_skybox = nullptr;
+            }
+
+            if (!(m_skybox = SR_GTYPES_NS::Skybox::Load(m_skyboxPath))) {
+                SR_ERROR("SkyboxPass::UpdateParams() : failed to load skybox!\n\tPath: {}", m_skyboxPath);
+                return false;
+            }
+            else {
+                m_skybox->AddUsePoint();
+            }
+            m_isSkyboxDirty = false;
+        }
+
+        if (m_skybox && m_isShaderDirty) {
+            SR_SRSL_NS::ShaderMacrosParams shaderMacros;
+            const uint32_t layers = GetColorLayersCount();
+            for (uint32_t i = 0; i < layers; ++i) {
+                shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
+            }
+
+            if (auto&& pShader = SR_GTYPES_NS::Shader::Load(m_shaderPath, shaderMacros)) {
+                m_skybox->SetShader(pShader);
+            }
+            else {
+                SR_ERROR("SkyboxPass::UpdateParams() : failed to load shader for skybox!\n\tPath: {}", m_shaderPath);
+                return false;
+            }
+            m_isShaderDirty = false;
+        }
+
+        return true;
     }
 }

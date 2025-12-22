@@ -449,8 +449,6 @@ namespace SR_GRAPH_NS {
             pPipeline->BeginRender();
             pPipeline->SetViewport();
             pPipeline->SetScissor();
-
-
             pPipeline->EndRender();
         }
         pPipeline->EndCmdBuffer();

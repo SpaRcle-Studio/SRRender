@@ -26,8 +26,13 @@ namespace SR_GRAPH_NS {
         void SetShader(const SR_UTILS_NS::Path& path);
 
     private:
+        bool UpdateParams();
+
+    private:
         SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Skybox> m_skybox;
         bool m_isRendered = false;
+        bool m_isSkyboxDirty = true;
+        bool m_isShaderDirty = true;
 
         /// @property @setter(SetSkybox)
         SR_UTILS_NS::Path m_skyboxPath;
