@@ -144,11 +144,132 @@ namespace SR_GRAPH_NS {
         return Super::GetFrustum(renderLayer);
     }
 
+    void CascadedShadowMapPass::UpdateCascadesUnityStyle(SR_GTYPES_NS::Camera* pCamera) {
+        SR_TRACY_ZONE;
+
+        m_cascadeMatrices.resize(m_cascadeCount);
+        m_lightFrustums.resize(m_cascadeCount);
+        m_cascadeRadii.resize(m_cascadeCount);
+
+        m_lastCascadeData.resize(m_cascadeCount);
+
+        const SR_MATH_NS::FVector3 ndcCorners[8] = {
+            {-1,  1, 0}, { 1,  1, 0},
+            { 1, -1, 0}, {-1, -1, 0},
+            {-1,  1, 1}, { 1,  1, 1},
+            { 1, -1, 1}, {-1, -1, 1},
+        };
+
+        auto&& invCamera = (pCamera->GetProjection() * pCamera->GetViewTranslate()).Inverse();
+
+        const float_t maxShadowDistance = m_maxShadowDistance * m_oneMeterUnit;
+        m_cascadeSplitDepths.resize(4);
+        m_cascadeSplitDepths[0] = m_split1 * m_oneMeterUnit;
+        m_cascadeSplitDepths[1] = m_split2 * m_oneMeterUnit;
+        m_cascadeSplitDepths[2] = m_split3 * m_oneMeterUnit;
+        m_cascadeSplitDepths[3] = maxShadowDistance;
+
+        float_t shadowMapSize = 0.f;
+        if (auto&& pPass = GetFrameBufferPass()) {
+            if (auto&& pFBO = pPass->GetFrameBuffer()) {
+                shadowMapSize = SR_MAX(static_cast<float_t>(pFBO->GetWidth()), static_cast<float_t>(pFBO->GetHeight()));
+            }
+        }
+
+        if (shadowMapSize <= 0.f) {
+            SR_ERROR("CascadedShadowMapPass::UpdateCascades() : invalid shadow map size!");
+            return;
+        }
+
+        const float cameraFar = pCamera->GetFar();
+        const SR_MATH_NS::FVector3 lightDir = m_directionalLightDirection.Normalized();
+        auto lightView = SR_MATH_NS::Matrix4x4::FromTranslate(pCamera->GetPosition().InverseAxis(SR_MATH_NS::Axis::Y)) *
+                SR_MATH_NS::Matrix4x4::LookAt(SR_MATH_NS::FVector3() - lightDir * 1000.0f, SR_MATH_NS::FVector3(), SR_MATH_NS::FVector3::Up());
+
+        for (uint32_t i = 0; i < m_cascadeCount; ++i) {
+            const float lastSplit = (i == 0) ? 0.0f : m_cascadeSplitDepths[i - 1];
+            const float split     = m_cascadeSplitDepths[i];
+
+            // 1. Восстанавливаем фрустум камеры в world-space
+            SR_MATH_NS::FVector3 frustumCornersWS[8];
+            for (uint32_t j = 0; j < 8; ++j) {
+                SR_MATH_NS::FVector4 corner = invCamera * SR_MATH_NS::FVector4(ndcCorners[j], 1.0f);
+                frustumCornersWS[j] = corner.XYZ() / corner.w;
+            }
+
+            // 2. Усечение по split
+            SR_MATH_NS::FVector3 frustumCornersWS_near[4], frustumCornersWS_far[4];
+            for (uint32_t j = 0; j < 4; ++j) {
+                frustumCornersWS_near[j] = frustumCornersWS[j];      // near
+                frustumCornersWS_far[j]  = frustumCornersWS[j + 4];  // far
+            }
+
+            for (uint32_t j = 0; j < 4; ++j) {
+                frustumCornersWS[j]     = frustumCornersWS_near[j] + (frustumCornersWS_far[j] - frustumCornersWS_near[j]) * (lastSplit / cameraFar);
+                frustumCornersWS[j + 4] = frustumCornersWS_near[j] + (frustumCornersWS_far[j] - frustumCornersWS_near[j]) * (split / cameraFar);
+            }
+
+            // 3. Bounding box в light-space
+            SR_MATH_NS::FVector3 minLS( FLT_MAX,  FLT_MAX,  FLT_MAX);
+            SR_MATH_NS::FVector3 maxLS(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+            for (uint32_t j = 0; j < 8; ++j) {
+                SR_MATH_NS::FVector4 ls = lightView * SR_MATH_NS::FVector4(frustumCornersWS[j], 1.0f);
+                SR_MATH_NS::FVector3 p = ls.XYZ();
+                minLS = SR_MATH_NS::Min(minLS, p);
+                maxLS = SR_MATH_NS::Max(maxLS, p);
+            }
+
+            // 4. Bounding sphere
+            SR_MATH_NS::FVector3 frustumCenter = (minLS + maxLS) * 0.5f;
+            float_t forwardOffset = (lastSplit + split) * 0.5f; // вдоль взгляда камеры
+            frustumCenter += pCamera->GetViewDirection() * forwardOffset;
+
+            float radius = 0.0f;
+            for (uint32_t j = 0; j < 8; ++j) {
+                SR_MATH_NS::FVector3 p = (lightView * SR_MATH_NS::FVector4(frustumCornersWS[j], 1.0f)).XYZ();
+                radius = glm::max(radius, (p - frustumCenter).Length());
+            }
+
+            // 5. Snap к texel grid
+            const float shadowMapTexelSize = (2.0f * radius) / shadowMapSize;
+
+            // Snap относительно прошлого центра
+            frustumCenter.x = std::floor((frustumCenter.x - m_lastCascadeData[i].center.x) / shadowMapTexelSize) * shadowMapTexelSize + m_lastCascadeData[i].center.x;
+            frustumCenter.y = std::floor((frustumCenter.y - m_lastCascadeData[i].center.y) / shadowMapTexelSize) * shadowMapTexelSize + m_lastCascadeData[i].center.y;
+
+            // Радиус выравниваем по texel и не уменьшаем
+            radius = glm::max(radius, m_lastCascadeData[i].radius);
+            radius = std::ceil(radius / shadowMapTexelSize) * shadowMapTexelSize;
+
+            m_lastCascadeData[i].center = frustumCenter;
+            m_lastCascadeData[i].radius   = radius;
+            m_cascadeRadii[i] = radius;
+
+            const float_t zOffset = radius * 4.f;
+
+            // 6. Ortho projection
+            const auto lightProj = SR_MATH_NS::Matrix4x4::Ortho(
+                -radius, radius, radius, -radius,
+                -maxLS.z - zOffset, -minLS.z + zOffset
+            );
+
+            m_cascadeMatrices[i] = lightProj * lightView;
+        }
+
+        for (uint32_t i = 0; i < m_cascadeCount; i++) {
+            if (i < m_lightFrustumCount) {
+                m_lightFrustums[i] = ExtractFrustum(m_cascadeMatrices[i]);
+            }
+        }
+    }
+
     void CascadedShadowMapPass::UpdateCascades(SR_GTYPES_NS::Camera* pCamera) {
         SR_TRACY_ZONE;
 
         m_cascadeMatrices.resize(m_cascadeCount);
         m_lightFrustums.resize(m_cascadeCount);
+        m_cascadeRadii.resize(m_cascadeCount);
+        m_lastCascadeData.resize(m_cascadeCount);
 
         const SR_MATH_NS::FVector3 ndcCorners[8] = {
             {-1,  1, 0}, { 1,  1, 0},
@@ -196,21 +317,67 @@ namespace SR_GRAPH_NS {
 
             // ---- 2. Обрезаем фрустум по split’ам (LINEAR) ----
 
+            SR_MATH_NS::FVector3 frustumCornersWS_near[4], frustumCornersWS_far[4];
             for (uint32_t j = 0; j < 4; ++j) {
-                const SR_MATH_NS::FVector3 dir = frustumCornersWS[j + 4] - frustumCornersWS[j];
-
-                const float_t nearT = lastSplit / cameraFar;
-                const float_t farT  = split     / cameraFar;
-
-                frustumCornersWS[j]     = frustumCornersWS[j] + dir * nearT;
-                frustumCornersWS[j + 4] = frustumCornersWS[j] + dir * (farT - nearT);
+                frustumCornersWS_near[j] = frustumCornersWS[j];      // near
+                frustumCornersWS_far[j]  = frustumCornersWS[j + 4];  // far
             }
 
+            for (uint32_t j = 0; j < 4; ++j) {
+                frustumCornersWS[j]     = frustumCornersWS_near[j] + (frustumCornersWS_far[j] - frustumCornersWS_near[j]) * (lastSplit / cameraFar);
+                frustumCornersWS[j+4]   = frustumCornersWS_near[j] + (frustumCornersWS_far[j] - frustumCornersWS_near[j]) * (split / cameraFar);
+            }
+
+           /*//for (uint32_t j = 0; j < 4; ++j) {
+           //    const SR_MATH_NS::FVector3 dir = frustumCornersWS[j + 4] - frustumCornersWS[j];
+
+           //    const float_t nearT = lastSplit / cameraFar;
+           //    const float_t farT  = split     / cameraFar;
+
+           //    frustumCornersWS[j]     = frustumCornersWS[j] + dir * nearT;
+           //    frustumCornersWS[j + 4] = frustumCornersWS[j] + dir * (farT - nearT);
+           //}
+
+            // ---- 2.5. Вычисляем bounding sphere для каскада ----
+            //{
+            //    SR_MATH_NS::FVector3 frustumCenterNear(0,0,0), frustumCenterFar(0,0,0);
+            //    for (uint32_t j = 0; j < 4; ++j) {
+            //        frustumCenterNear += frustumCornersWS[j];
+            //        frustumCenterFar  += frustumCornersWS[j+4];
+            //    }
+            //    frustumCenterNear /= 4.0f;
+            //    frustumCenterFar  /= 4.0f;
+
+            //    // Unity-style center: середина сплита по дальности
+            //    SR_MATH_NS::FVector3 cascadeCenter = frustumCenterNear + (frustumCenterFar - frustumCenterNear) * 0.5f;
+
+            //    float_t cascadeRadius = 0.0f;
+            //    for (uint32_t j = 0; j < 8; ++j) {
+            //        cascadeRadius = glm::max(cascadeRadius, (frustumCornersWS[j] - cascadeCenter).Length());
+            //    }
+            //    cascadeRadius = std::ceil(cascadeRadius * 16.0f) / 16.0f;
+
+            //    const float_t  texelSize = (2.0f * cascadeRadius) / shadowMapSize;
+
+            //    // стабилизация центра
+            //    cascadeCenter.x = std::floor(cascadeCenter.x / texelSize) * texelSize;
+            //    cascadeCenter.y = std::floor(cascadeCenter.y / texelSize) * texelSize;
+
+            //    m_cascadeRadii[i]   = cascadeRadius;
+            //}*/
             // ---- 3. Light view matrix ----
 
             const SR_MATH_NS::FVector3 lightDir = m_directionalLightDirection.Normalized();
 
-            const auto lightView = SR_MATH_NS::Matrix4x4::LookAt(SR_MATH_NS::FVector3() - lightDir * 1000.0f, SR_MATH_NS::FVector3(), SR_MATH_NS::FVector3::Up());
+            SR_MATH_NS::FVector3 cameraPos = pCamera->GetPosition();
+            //cameraPos += (pCamera->GetViewDirection() * ((lastSplit + split) * 0.5f));
+            //float_t forwardOffset = (lastSplit + split) * 0.5f; // вдоль взгляда камеры
+            //center += pCamera->GetViewDirection() * forwardOffset;
+
+            //const auto lightView = SR_MATH_NS::Matrix4x4::LookAt(SR_MATH_NS::FVector3() - lightDir * 1000.0f, SR_MATH_NS::FVector3(), SR_MATH_NS::FVector3::Up());
+
+            auto lightView = SR_MATH_NS::Matrix4x4::FromTranslate(cameraPos.InverseAxis(SR_MATH_NS::Axis::Y)) *
+                             SR_MATH_NS::Matrix4x4::LookAt(SR_MATH_NS::FVector3() - lightDir * 1000.0f, SR_MATH_NS::FVector3(), SR_MATH_NS::FVector3::Up());
 
             // ---- 4. Переводим углы в light space и считаем AABB ----
 
@@ -240,6 +407,8 @@ namespace SR_GRAPH_NS {
             maxLS.y = minLS.y + extentY;*/
 
             SR_MATH_NS::FVector3 center = (minLS + maxLS) * 0.5f;
+            //float_t forwardOffset = (lastSplit + split) * 0.5f; // вдоль взгляда камеры
+            //center += pCamera->GetViewDirection() * forwardOffset;
 
             // расширяем на половину экстента, чтобы центр фиксировался по texel
             float extentX = (maxLS.x - minLS.x) * 0.5f;
@@ -248,8 +417,21 @@ namespace SR_GRAPH_NS {
             float texelSizeX = (extentX * 2.0f) / shadowMapSize;
             float texelSizeY = (extentY * 2.0f) / shadowMapSize;
 
-            center.x = std::floor(center.x / texelSizeX) * texelSizeX;
-            center.y = std::floor(center.y / texelSizeY) * texelSizeY;
+            {
+                extentX = glm::max(extentX, m_lastCascadeData[i].extentX);
+                extentX = std::ceil(extentX / texelSizeX) * texelSizeX;
+
+                extentY = glm::max(extentY, m_lastCascadeData[i].extentY);
+                extentY = std::ceil(extentY / texelSizeY) * texelSizeY;
+
+                m_cascadeRadii[i] = glm::max(extentX, extentY);
+
+                m_lastCascadeData[i].extentX = extentX;
+                m_lastCascadeData[i].extentY = extentY;
+            }
+
+            center.x = std::floor((center.x - m_lastCascadeData[i].center.x) / texelSizeX) * texelSizeX + m_lastCascadeData[i].center.x;
+            center.y = std::floor((center.y - m_lastCascadeData[i].center.y) / texelSizeY) * texelSizeY + m_lastCascadeData[i].center.y;
 
             minLS.x = center.x - extentX;
             maxLS.x = center.x + extentX;
@@ -259,7 +441,7 @@ namespace SR_GRAPH_NS {
 
             // ---- 6. Ortho из AABB (НЕ СИММЕТРИЧНАЯ!) ----
 
-            constexpr float zMult = 10.0f; // Unity-style запас по Z
+            constexpr float zMult = 100.0f; // Unity-style запас по Z
 
             const auto lightProj = SR_MATH_NS::Matrix4x4::Ortho(minLS.x, maxLS.x, maxLS.y, minLS.y, -maxLS.z - zMult, -minLS.z + zMult);
 
@@ -468,6 +650,7 @@ namespace SR_GRAPH_NS {
 
         pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
         pShader->SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadeSplitDepths.data());
+        pShader->SetValue<false>(SHADER_CASCADE_RADII, m_cascadeRadii.data());
     }
 
     void CascadedShadowMapPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {

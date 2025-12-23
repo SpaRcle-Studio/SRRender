@@ -213,7 +213,7 @@ namespace SR_ANIMATIONS_NS {
         }
 
         for (auto&& [pBone, debugId] : m_debugLines) {
-            SR_UTILS_NS::DebugDraw::Instance().DrawLine(debugId);
+            SR_UTILS_NS::DebugOverlayDraw::Instance().DrawLine(debugId);
         }
 
         m_debugLines.clear();
@@ -246,11 +246,11 @@ namespace SR_ANIMATIONS_NS {
             auto&& fromPos = fromGameObject->gameObject->GetTransform()->GetMatrix().GetTranslate();
             auto&& toPos = toGameObject->gameObject->GetTransform()->GetMatrix().GetTranslate();
 
-            debugId = SR_UTILS_NS::DebugDraw::Instance().DrawLine(
-                    debugId,
-                    fromPos,
-                    toPos,
-                    SR_MATH_NS::FColor(38, 37, 45, 255)
+            debugId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawLine(
+                debugId,
+                fromPos,
+                toPos,
+                SR_MATH_NS::FColor(38, 37, 45, 255)
             );
         }
     }

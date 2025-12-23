@@ -33,6 +33,7 @@ namespace SR_GRAPH_NS {
     protected:
         SR_NODISCARD SR_GTYPES_NS::Camera* CheckCamera();
         void UpdateCascades(SR_GTYPES_NS::Camera* pCamera);
+        void UpdateCascadesUnityStyle(SR_GTYPES_NS::Camera* pCamera);
 
         void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const override;
 
@@ -65,6 +66,16 @@ namespace SR_GRAPH_NS {
         /// @property
         float_t m_split3 = 150.f;
 
+        struct LastCascadeData {
+            float_t radius = 1.f;
+            float_t extentX = 1.f;
+            float_t extentY = 1.f;
+            SR_MATH_NS::FVector3 center;
+            SR_MATH_NS::FVector3 minLS;
+            SR_MATH_NS::FVector3 maxLS;
+        };
+
+        std::vector<LastCascadeData> m_lastCascadeData;
         int32_t m_drawCascadeIndex = -1;
         std::vector<SR_MATH_NS::Matrix4x4> m_cascadeMatrices;
         std::vector<Frustum> m_lightFrustums;

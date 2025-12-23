@@ -140,12 +140,16 @@ namespace SR_GRAPH_NS {
         void OnShaderDefinesChanged();
 
         SR_NODISCARD bool IsNormalMappingEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_NORMAL) == 1; }
+        SR_NODISCARD bool IsAlphaMaskEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_ALPHA_MASK) == 1; }
         SR_NODISCARD bool IsSkeletalAnimationEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_SKELETON) == 1; }
         SR_NODISCARD bool IsAlphaEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_ALPHA) == 1; }
+        SR_NODISCARD bool IsBlendingDisabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_DISABLE_BLENDING) == 1; }
 
         void SetNormalMappingEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_NORMAL, enabled); }
+        void SetAlphaMaskEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ALPHA_MASK, enabled); }
         void SetSkeletalAnimationEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_SKELETON, enabled); }
         void SetAlphaEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ALPHA, enabled); }
+        void SetBlendingDisabled(bool disabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_DISABLE_BLENDING, disabled); }
 
     private:
         /// @property @onChanged(OnShaderDefinesChanged)
@@ -154,11 +158,15 @@ namespace SR_GRAPH_NS {
         /// @property @hidden
         MaterialShaderData m_defaultShader;
 
-        /// @virtualProperty(hasSkeleton) @getter(IsSkeletalAnimationEnabled) @setter(SetSkeletalAnimationEnabled) @dontSave
+        /// @virtualProperty(hasSkeleton) @getter(IsSkeletalAnimationEnabled) @setter(SetSkeletalAnimationEnabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY
-        /// @virtualProperty(hasNormals) @getter(IsNormalMappingEnabled) @setter(SetNormalMappingEnabled) @dontSave
+        /// @virtualProperty(hasAlphaMask) @getter(IsAlphaMaskEnabled) @setter(SetAlphaMaskEnabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY
-        /// @virtualProperty(hasAlpha) @getter(IsAlphaEnabled) @setter(SetAlphaEnabled) @dontSave
+        /// @virtualProperty(hasNormals) @getter(IsNormalMappingEnabled) @setter(SetNormalMappingEnabled) @dontSave @group(Params)
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(hasAlpha) @getter(IsAlphaEnabled) @setter(SetAlphaEnabled) @dontSave @group(Params)
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(disableBlending) @getter(IsBlendingDisabled) @setter(SetBlendingDisabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY
 
 

@@ -40,8 +40,10 @@ namespace SR_SRSL_NS {
         { "ASPECT",                         "vec2"          },
 
         { "CASCADE_LIGHT_SPACE_MATRICES",   "mat4[4]"       },
+        { "CASCADE_RADII",                  "vec4"          },
         { "CASCADE_SPLITS",                 "vec4"          },
 
+        { "CASCADE_CENTERS",                "vec3[4]"       },
         { "DIRECTIONAL_LIGHT_DIRECTION",    "vec3"          },
         { "VIEW_POSITION",                  "vec3"          },
         { "VIEW_DIRECTION",                 "vec3"          },
