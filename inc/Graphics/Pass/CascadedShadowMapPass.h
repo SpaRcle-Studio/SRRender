@@ -38,6 +38,7 @@ namespace SR_GRAPH_NS {
         void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const override;
 
         SR_NODISCARD const Frustum& GetFrustum(uint32_t renderLayer) const override;
+        SR_NODISCARD float_t GetCascadedMapResolution() const;
 
     protected:
         SR_MATH_NS::FVector3 m_directionalLightDirection;
