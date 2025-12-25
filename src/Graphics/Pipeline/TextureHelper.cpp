@@ -117,6 +117,17 @@ namespace SR_GRAPH_NS {
                 return 3 * 2;
             case ImageFormat::R32_SFLOAT:
                 return 4;
+            case ImageFormat::R64_SFLOAT:
+                return 8;
+            case ImageFormat::R8_UNORM:
+            case ImageFormat::R8_UINT:
+                return 1;
+            case ImageFormat::R16_UNORM:
+            case ImageFormat::R16_UINT:
+                return 2;
+            case ImageFormat::R32_UINT:
+            case ImageFormat::D32_SFLOAT:
+                return 4;
             default:
                 break;
         }
@@ -130,13 +141,24 @@ namespace SR_GRAPH_NS {
         switch (format) {
             case ImageFormat::RGBA8_UNORM:
             case ImageFormat::BGRA8_UNORM:
-            case ImageFormat::RGBA8_SRGB:
             case ImageFormat::RGBA16_UNORM:
             case ImageFormat::RGBA16_SFLOAT:
             case ImageFormat::RGB8_UNORM:
-            case ImageFormat::RGB8_SRGB:
             case ImageFormat::RGB16_UNORM:
+            case ImageFormat::RGBA8_SRGB:
+            case ImageFormat::R8_UNORM:
+            case ImageFormat::R16_UNORM:
             case ImageFormat::R32_SFLOAT:
+            case ImageFormat::R64_SFLOAT:
+            case ImageFormat::R8_UINT:
+            case ImageFormat::R16_UINT:
+            case ImageFormat::R32_UINT:
+            case ImageFormat::R64_UINT:
+            case ImageFormat::RG8_UNORM:
+            case ImageFormat::D16_UNORM:
+            case ImageFormat::D24_UNORM_S8_UINT:
+            case ImageFormat::D32_SFLOAT_S8_UINT:
+            case ImageFormat::D32_SFLOAT:
                 return true;
             default:
                 break;
