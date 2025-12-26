@@ -5,6 +5,7 @@
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Lighting/LightSystem.h>
 #include <Graphics/Lighting/ILightComponent.h>
+#include <Graphics/Lighting/DirectionalLight.h>
 #include <Graphics/Types/Mesh.h>
 
 namespace SR_GRAPH_NS {
@@ -12,7 +13,8 @@ namespace SR_GRAPH_NS {
         : Super()
         , m_renderScene(pRenderScene)
     {
-        m_directionalLightDir = SR_MATH_NS::FVector3(20, 60, 5).Normalize();
+        m_directionalLightParams.direction = SR_MATH_NS::FVector3(20, 60, 5).Normalize();
+        m_directionalLightParams.lightColor = SR_MATH_NS::FVector3(1.0f, 0.95f, 0.85f);
     }
 
     LightSystem::~LightSystem() {
@@ -36,7 +38,8 @@ namespace SR_GRAPH_NS {
         m_lights[index].insert(pLightComponent);
         m_renderScene->SetDirty();
 
-        OnLightTransformChanged(pLightComponent);
+        pLightComponent->UpdateLightParams();
+        OnLightChanged(pLightComponent);
     }
 
     void LightSystem::Remove(ILightComponent* pLightComponent) {
@@ -56,7 +59,7 @@ namespace SR_GRAPH_NS {
         m_renderScene->SetDirty();
     }
 
-    void LightSystem::OnLightTransformChanged(ILightComponent* pLightComponent) {
+    void LightSystem::OnLightChanged(ILightComponent* pLightComponent) {
         SR_TRACY_ZONE;
 
         if (!SRVerify(pLightComponent)) SR_UNLIKELY_ATTRIBUTE {
@@ -67,12 +70,12 @@ namespace SR_GRAPH_NS {
         const uint32_t index = SR_UTILS_NS::EnumReflector::AsInt(type);
         auto&& pIt = m_lights[index].find(pLightComponent);
         if (pIt == m_lights[index].end()) {
-            SRHalt("LightSystem::OnLightTransformChanged() : light component is not registered!");
+            SRHalt("LightSystem::OnLightChanged() : light component is not registered!");
             return;
         }
 
         if (type == LightType::Directional) {
-            m_directionalLightDir = pLightComponent->GetTransform()->Forward().Normalize();
+            m_directionalLightParams = static_cast<DirectionalLight*>(pLightComponent)->GetParams();
         }
 
         m_renderScene->SetDirty();
@@ -81,7 +84,7 @@ namespace SR_GRAPH_NS {
         });
     }
 
-    SR_MATH_NS::FVector3 LightSystem::GetDirectionalLightDirection() const noexcept {
-        return m_directionalLightDir;
+    const DirectionalLightParams& LightSystem::GetDirectionalLightParams() const noexcept {
+        return m_directionalLightParams;
     }
 }

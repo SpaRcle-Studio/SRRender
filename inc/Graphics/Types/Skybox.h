@@ -31,7 +31,8 @@ namespace SR_GTYPES_NS {
         ~Skybox() override;
 
     public:
-        static Skybox::Ptr Load(const SR_UTILS_NS::Path& path);
+        static Skybox::Ptr CreateEmpty(bool isQuad);
+        static Skybox::Ptr Load(const SR_UTILS_NS::Path& path, bool isQuad);
 
     public:
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<Shader> GetShader() const noexcept { return m_shader; }
@@ -72,6 +73,7 @@ namespace SR_GTYPES_NS {
         bool m_hasErrors = false;
         bool m_idDirty = true;
         bool m_dirtyShader = false;
+        bool m_isQuad = false;
 
         Memory::UBOManager& m_uboManager;
         DescriptorManager& m_descriptorManager;

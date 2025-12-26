@@ -34,6 +34,8 @@ namespace SR_GRAPH_NS {
         bool m_isSkyboxDirty = true;
         bool m_isShaderDirty = true;
 
+        /// @property
+        bool m_isQuad = false;
         /// @property @setter(SetSkybox)
         SR_UTILS_NS::Path m_skyboxPath;
         /// @property @setter(SetShader)

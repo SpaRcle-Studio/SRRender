@@ -137,7 +137,15 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_uniforms.shared.light) {
-            pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection());
+            auto&& dirLightParams = GetRenderScene()->GetLightSystem()->GetDirectionalLightParams();
+
+            pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, dirLightParams.direction);
+            pShader->SetVec3(SHADER_SUN_COLOR, dirLightParams.lightColor);
+            pShader->SetVec3(SHADER_SKY_COLOR, dirLightParams.skyColor);
+            pShader->SetVec3(SHADER_GROUND_COLOR, dirLightParams.groundColor);
+            pShader->SetFloat(SHADER_SUN_INTENSITY, dirLightParams.intensity);
+            pShader->SetFloat(SHADER_SHADOW_STRENGTH, dirLightParams.shadowStrength);
+            pShader->SetFloat(SHADER_AMBIENT_INTENSITY, dirLightParams.ambientIntensity);
         }
 
         for (auto&& pAnotherPass : m_useSharedFromPass) {

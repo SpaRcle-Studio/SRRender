@@ -24,10 +24,7 @@ namespace SR_GRAPH_NS {
         if (!m_isLightRegistered) {
             return;
         }
-
-        if (auto&& pRenderScene = TryGetRenderScene()) {
-            pRenderScene->GetLightSystem()->OnLightTransformChanged(this);
-        }
+        UpdateLightParams();
     }
 
     void ILightComponent::OnEnable() {
@@ -55,8 +52,22 @@ namespace SR_GRAPH_NS {
             return;
         }
         if (auto&& pRenderScene = GetRenderScene()) {
-            pRenderScene->GetLightSystem()->Register(this);
             m_isLightRegistered = true;
+            pRenderScene->GetLightSystem()->Register(this);
+        }
+    }
+
+    void ILightComponent::UpdateLightParams() {
+        SR_TRACY_ZONE;
+
+        if (!GetTransform() || !m_isLightRegistered) {
+            return;
+        }
+
+        UpdateLightParamsImpl();
+
+        if (auto&& pRenderScene = TryGetRenderScene()) {
+            pRenderScene->GetLightSystem()->OnLightChanged(this);
         }
     }
 }

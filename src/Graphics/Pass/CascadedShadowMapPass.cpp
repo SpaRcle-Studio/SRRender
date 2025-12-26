@@ -21,7 +21,7 @@ namespace SR_GRAPH_NS {
 
         /// обновляем строго в конце, чтобы не дергались тени, так как данные используются двумя проходами рендера
         if (auto&& pCamera = CheckCamera()) {
-            m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection();
+            m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightParams().direction;
             m_cameraPosition = pCamera->GetPosition();
             m_cameraRotation = pCamera->GetRotation();
             m_screenSize = pCamera->GetSize();
@@ -605,7 +605,7 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        if (m_directionalLightDirection != GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection()) SR_UNLIKELY_ATTRIBUTE {
+        if (m_directionalLightDirection != GetRenderScene()->GetLightSystem()->GetDirectionalLightParams().direction) SR_UNLIKELY_ATTRIBUTE {
             goto dirty;
         }
 
@@ -626,7 +626,7 @@ namespace SR_GRAPH_NS {
         return nullptr;
 
     dirty:
-        m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightDirection();
+        m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightParams().direction;
         m_cameraPosition = pCamera->GetPosition();
         m_cameraRotation = pCamera->GetRotation();
         m_screenSize = pCamera->GetSize();

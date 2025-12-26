@@ -31,6 +31,9 @@ namespace SR_SRSL_NS {
         { "LIGHT_SPACE_MATRIX",             "mat4"          },
 
         { "TIME",                           "float"         },
+        { "SUN_INTENSITY",                  "float"         },
+        { "SHADOW_STRENGTH",                "float"         },
+        { "AMBIENT_INTENSITY",              "float"         },
         { "CAMERA_FAR",                     "float"         },
         { "CAMERA_NEAR",                    "float"         },
 
@@ -47,6 +50,9 @@ namespace SR_SRSL_NS {
         { "DIRECTIONAL_LIGHT_DIRECTION",    "vec3"          },
         { "VIEW_POSITION",                  "vec3"          },
         { "VIEW_DIRECTION",                 "vec3"          },
+        { "SUN_COLOR",                      "vec3"          },
+        { "SKY_COLOR",                      "vec3"          },
+        { "GROUND_COLOR",                   "vec3"          },
     };
 
     const std::map<std::string, std::string>& GetDefaultUniforms() {

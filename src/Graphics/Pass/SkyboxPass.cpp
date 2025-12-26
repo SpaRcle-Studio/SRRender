@@ -8,7 +8,9 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Render/RenderScene.h>
 #include <Graphics/SRSL/ShaderVariables.h>
+#include <Graphics/Lighting/LightSystem.h>
 
 #include <Utils/FileSystem/PathDataAccessor.h>
 
@@ -100,9 +102,23 @@ namespace SR_GRAPH_NS {
             pShader->SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, pCamera->GetView());
             pShader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
             pShader->SetMat4(SHADER_PROJECTION_NO_FOV_MATRIX, pCamera->GetProjectionNoFOV());
+            pShader->SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());
             pShader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
             pShader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
             pShader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
+            pShader->SetMat4(SHADER_INVERSE_PROJECTION_MATRIX, pCamera->GetInverseProjection());
+            pShader->SetMat4(SHADER_INVERSE_VIEW_MATRIX, pCamera->GetInverseViewTranslate());
+
+            auto&& dirLightParams = GetRenderScene()->GetLightSystem()->GetDirectionalLightParams();
+
+            pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, dirLightParams.direction);
+            pShader->SetVec3(SHADER_SUN_COLOR, dirLightParams.lightColor);
+            pShader->SetVec3(SHADER_SKY_COLOR, dirLightParams.skyColor);
+            pShader->SetVec3(SHADER_GROUND_COLOR, dirLightParams.groundColor);
+            pShader->SetFloat(SHADER_SUN_INTENSITY, dirLightParams.intensity);
+            pShader->SetFloat(SHADER_SHADOW_STRENGTH, dirLightParams.shadowStrength);
+            pShader->SetFloat(SHADER_AMBIENT_INTENSITY, dirLightParams.ambientIntensity);
+
             pShader->EndSharedUBO();
         }
         else {
@@ -120,7 +136,7 @@ namespace SR_GRAPH_NS {
                 m_skybox = nullptr;
             }
 
-            if (!(m_skybox = SR_GTYPES_NS::Skybox::Load(m_skyboxPath))) {
+            if (!(m_skybox = m_skyboxPath.empty() ? SR_GTYPES_NS::Skybox::CreateEmpty(m_isQuad) : SR_GTYPES_NS::Skybox::Load(m_skyboxPath, m_isQuad))) {
                 SR_ERROR("SkyboxPass::UpdateParams() : failed to load skybox!\n\tPath: {}", m_skyboxPath);
                 return false;
             }

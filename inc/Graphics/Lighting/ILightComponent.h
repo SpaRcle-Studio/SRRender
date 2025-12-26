@@ -32,20 +32,26 @@ namespace SR_GRAPH_NS {
 
         void OnMatrixDirty() override;
 
+        void UpdateLightParams();
+
     private:
         void RegisterLight();
         void UnregisterLight();
+        virtual void UpdateLightParamsImpl() { }
 
     protected:
-        /// @property
+        /// @property @onChanged(UpdateLightParams)
         float_t m_intensity = 1.f;
-        /// @property
-        float_t m_bounceIntensity = 1.f;
-        /// @property
+        /// @property @onChanged(UpdateLightParams)
+        float_t m_temperature = 6500.f;
+        /// @property @onChanged(UpdateLightParams)
+        SR_MATH_NS::FVector3 m_filter = SR_MATH_NS::FVector3::One();
+        /// @property @onChanged(UpdateLightParams)
         ShadowType m_shadowType = ShadowType::Soft;
 
-    private:
+    protected:
         bool m_isLightRegistered = false;
+
 
     };
 }

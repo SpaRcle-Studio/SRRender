@@ -26,9 +26,9 @@ namespace SR_GRAPH_NS {
 
         void Register(ILightComponent* pLightComponent);
         void Remove(ILightComponent* pLightComponent);
-        void OnLightTransformChanged(ILightComponent* pLightComponent);
+        void OnLightChanged(ILightComponent* pLightComponent);
 
-        SR_NODISCARD SR_MATH_NS::FVector3 GetDirectionalLightDirection() const noexcept;
+        SR_NODISCARD const DirectionalLightParams& GetDirectionalLightParams() const noexcept;
 
     public:
         RenderScenePtr m_renderScene;
@@ -36,7 +36,7 @@ namespace SR_GRAPH_NS {
         std::array<std::set<ILightComponent*>, SR_UTILS_NS::EnumTraits<LightType>::NumItems> m_lights;
 
     private:
-        SR_MATH_NS::FVector3 m_directionalLightDir;
+        DirectionalLightParams m_directionalLightParams;
 
     };
 }

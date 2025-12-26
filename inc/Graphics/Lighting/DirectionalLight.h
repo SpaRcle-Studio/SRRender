@@ -14,6 +14,34 @@ namespace SR_GRAPH_NS {
     public:
         SR_NODISCARD LightType GetLightType() const override { return LightType::Directional; };
 
+    public:
+        void UpdateLightParamsImpl() override;
+
+        SR_NODISCARD DirectionalLightParams GetParams() const;
+
+    private:
+        /// @property @onChanged(UpdateLightParams)
+        bool m_interactsWithSky = true;
+        /// @property @onChanged(UpdateLightParams) @group(Sky)
+        SR_MATH_NS::FVector3 m_sunsetSky = SR_MATH_NS::FVector3(0.06f, 0.0f, 0.0f);
+        /// @property @onChanged(UpdateLightParams) @group(Sky)
+        SR_MATH_NS::FVector3 m_daySkyColor = SR_MATH_NS::FVector3(0.514f, 0.734f, 0.997f);
+        /// @property @onChanged(UpdateLightParams) @group(Sky)
+        SR_MATH_NS::FVector3 m_groundSky = SR_MATH_NS::FVector3(0.7f, 0.6f, 0.5f);
+        /// @property @onChanged(UpdateLightParams) @group(Sky)
+        float_t m_saturationMin = 0.5f;
+        /// @property @onChanged(UpdateLightParams) @group(Sky)
+        float_t m_saturationMax = 1.0f;
+        /// @property @onChanged(UpdateLightParams) @group(Sky)
+        float_t m_shadowMin = 0.6f;
+        /// @property @onChanged(UpdateLightParams) @group(Sky)
+        float_t m_shadowMax = 0.9f;
+        /// @property @onChanged(UpdateLightParams) @group(Sky)
+        float_t m_skyHeightOffset = 0.0f;
+
+    private:
+        DirectionalLightParams m_params;
+
     };
 }
 
