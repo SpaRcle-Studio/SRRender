@@ -20,6 +20,7 @@ namespace SR_GRAPH_NS::Memory {
     public:
         using Identifier = uint64_t;
         using ShaderProgram = int32_t;
+
         struct ShaderProgramInfo {
             ShaderProgram id = SR_ID_INVALID;
             bool depth = false;
@@ -29,7 +30,13 @@ namespace SR_GRAPH_NS::Memory {
                 return id != SR_ID_INVALID;
             }
         };
-        using DataType = std::pair<Identifier, ShaderProgramInfo>;
+
+        struct DataTypePair {
+            Identifier first = 0;
+            ShaderProgramInfo second;
+        };
+
+        using DataType = DataTypePair;
         static constexpr uint32_t MAX_DATA_COUNT = 128;
 
     public:
@@ -60,7 +67,7 @@ namespace SR_GRAPH_NS::Memory {
             }
 
             if (m_dataUsed < MAX_DATA_COUNT) {
-                m_data[m_dataUsed] = std::make_pair(identifier, info);
+                m_data[m_dataUsed] = {identifier, info};
                 ++m_dataUsed;
                 return &m_data[m_dataUsed - 1].second;
             }
@@ -114,7 +121,7 @@ namespace SR_GRAPH_NS::Memory {
 
         SR_FORCE_INLINE void ResetData() noexcept {
             for (uint32_t i = 0; i < m_dataUsed; ++i) {
-                m_data[i] = std::make_pair(0, ShaderProgramInfo());
+                m_data[i] = {0, ShaderProgramInfo()};
             }
             m_dataUsed = 0;
         }
@@ -130,7 +137,7 @@ namespace SR_GRAPH_NS::Memory {
             const auto index = static_cast<uint32_t>(pData - m_data);
             memmove(&m_data[index], &m_data[index + 1], sizeof(DataType) * (m_dataUsed - index - 1));
             --m_dataUsed;
-            m_data[m_dataUsed] = std::make_pair(0, ShaderProgramInfo());
+            m_data[m_dataUsed] = {0, ShaderProgramInfo()};
             return &m_data[index];
         }
 
