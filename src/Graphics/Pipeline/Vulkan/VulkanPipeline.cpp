@@ -316,9 +316,10 @@ namespace SR_GRAPH_NS {
 
         UsedVideoMemoryInfo info = { };
 
-        info.videoMemoryUsed = m_kernel->GetAllocator() ? m_kernel->GetAllocator()->GetGPUMemoryUsage() : 0;
-        info.descriptorSetsCount = m_memory ? m_memory->GetDescriptorSetsCount() : 0;
+        info.videoMemoryUsed = m_kernel->GetAllocator() ? m_kernel->GetAllocator()->GetAllocatedMemorySize() : 0;
+        info.videoMemoryHeaps = m_kernel->GetAllocator() ? m_kernel->GetAllocator()->GetAllocatedHeapsCount() : 0;
         info.shaderProgramsCount = m_memory ? m_memory->GetShaderProgramsCount() : 0;
+        info.descriptorSetsCount = m_memory ? m_memory->GetDescriptorSetsCount() : 0;
         info.UBOsCount = m_memory ? m_memory->GetUBOsCount() : 0;
         info.VBOsCount = m_memory ? m_memory->GetVBOsCount() : 0;
         info.IBOsCount = m_memory ? m_memory->GetIBOsCount() : 0;
@@ -1030,22 +1031,22 @@ namespace SR_GRAPH_NS {
             SR_PLATFORM_NS::IsRunningUnderDebugger();
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().LogCallback = [GetUsedMemoryFn](const std::string& msg) {
-            SR_VULKAN_LOG("[{}] {}", GetUsedMemoryFn(), msg);
+            SR_VULKAN_LOG("[{} MB] {}", GetUsedMemoryFn(), msg);
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().WarnCallback = [GetUsedMemoryFn](const std::string& msg) {
-            SR_WARN("[{}] {}", GetUsedMemoryFn(), msg);
+            SR_WARN("[{} MB] {}", GetUsedMemoryFn(), msg);
         };
         EvoVulkan::Tools::VkFunctionsHolder::Instance().ErrorCallback = [GetUsedMemoryFn](const std::string& msg) {
-            SR_VULKAN_ERROR("[{}] {}", GetUsedMemoryFn(), msg);
+            SR_VULKAN_ERROR("[{} MB] {}", GetUsedMemoryFn(), msg);
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().GraphCallback = [GetUsedMemoryFn](const std::string& msg) {
-            SR_VULKAN_MSG("[{}] {}", GetUsedMemoryFn(), msg);
+            SR_VULKAN_MSG("[{} MB] {}", GetUsedMemoryFn(), msg);
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().AssertCallback = [GetUsedMemoryFn](const std::string &msg) {
-            SRHalt("[{}] {}", GetUsedMemoryFn(), msg);
+            SRHalt("[{} MB] {}", GetUsedMemoryFn(), msg);
             return false;
         };
 

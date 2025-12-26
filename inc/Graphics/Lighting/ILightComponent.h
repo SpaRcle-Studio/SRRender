@@ -27,7 +27,14 @@ namespace SR_GRAPH_NS {
         void OnAttached() override;
         void OnDestroy() override;
 
+        void OnEnable() override;
+        void OnDisable() override;
+
         void OnMatrixDirty() override;
+
+    private:
+        void RegisterLight();
+        void UnregisterLight();
 
     protected:
         /// @property

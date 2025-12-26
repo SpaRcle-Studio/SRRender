@@ -31,6 +31,7 @@ namespace SR_GRAPH_NS {
 
     struct UsedVideoMemoryInfo {
         uint64_t videoMemoryUsed = 0;
+        uint64_t videoMemoryHeaps = 0;
         uint32_t descriptorSetsCount = 0;
         uint32_t shaderProgramsCount = 0;
         uint32_t UBOsCount = 0;

@@ -310,7 +310,7 @@ namespace SR_GRAPH_NS {
             const float_t split = m_cascadeSplitDepths[i];
             const float_t lastSplit = (i == 0) ? 0.0f : m_cascadeSplitDepths[i - 1];
 
-            const float_t forwardOffset = 0.5f * (split + lastSplit);
+            const float_t forwardOffset = 0.65f * (split + lastSplit);
             const SR_MATH_NS::FVector3 offset = viewDir * forwardOffset;
 
             const SR_MATH_NS::FVector3 cascadeCenterWSTmp = cameraPos + offset;

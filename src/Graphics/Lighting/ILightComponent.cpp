@@ -12,19 +12,11 @@
 
 namespace SR_GRAPH_NS {
     void ILightComponent::OnAttached() {
-        if (auto&& pRenderScene = GetRenderScene()) {
-            pRenderScene->GetLightSystem()->Register(this);
-            m_isLightRegistered = true;
-        }
         Super::OnAttached();
     }
 
     void ILightComponent::OnDestroy() {
-        if (auto&& pRenderScene = TryGetRenderScene()) {
-            pRenderScene->GetLightSystem()->Remove(this);
-            m_isLightRegistered = false;
-        }
-
+        UnregisterLight();
         Super::OnDestroy();
     }
 
@@ -35,6 +27,36 @@ namespace SR_GRAPH_NS {
 
         if (auto&& pRenderScene = TryGetRenderScene()) {
             pRenderScene->GetLightSystem()->OnLightTransformChanged(this);
+        }
+    }
+
+    void ILightComponent::OnEnable() {
+        RegisterLight();
+        Super::OnEnable();
+    }
+
+    void ILightComponent::OnDisable() {
+        UnregisterLight();
+        Super::OnDisable();
+    }
+
+    void ILightComponent::UnregisterLight() {
+        if (!m_isLightRegistered) {
+            return;
+        }
+        if (auto&& pRenderScene = TryGetRenderScene()) {
+            pRenderScene->GetLightSystem()->Remove(this);
+            m_isLightRegistered = false;
+        }
+    }
+
+    void ILightComponent::RegisterLight() {
+        if (m_isLightRegistered) {
+            return;
+        }
+        if (auto&& pRenderScene = GetRenderScene()) {
+            pRenderScene->GetLightSystem()->Register(this);
+            m_isLightRegistered = true;
         }
     }
 }
