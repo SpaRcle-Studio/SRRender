@@ -1213,7 +1213,6 @@ namespace SR_GRAPH_NS {
 
     void VulkanPipeline::WaitDeviceIdle() {
         SR_TRACY_ZONE;
-        SR_TRACY_ZONE_COLOR(0xFF0000);
         if (m_kernel) {
             m_kernel->WaitDeviceIdle();
         }
@@ -1227,6 +1226,8 @@ namespace SR_GRAPH_NS {
         const auto imageIndex = GetCurrentImageIndex();
 
         if (!m_kernel->GetFrameSyncs().empty()) {
+            SR_TRACY_ZONE_N("Wait in-flight fence");
+            SR_TRACY_ZONE_COLOR(0xffa500ff);
             auto&& fence = m_kernel->GetInFlightFences()[imageIndex];
             vkWaitForFences(*m_kernel->GetDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
         }
@@ -2470,5 +2471,12 @@ namespace SR_GRAPH_NS {
     bool VulkanPipeline::IsShaderViewportIndexLayerSupported() const noexcept {
         ++m_state.operations;
         return m_kernel && m_kernel->GetDevice() && m_kernel->GetDevice()->IsShaderViewportIndexLayerSupported();
+    }
+
+    uint16_t VulkanPipeline::GetMaxFramesInFlight() const {
+        if (m_kernel) {
+            return m_kernel->GetMaxFramesInFlight();
+        }
+        return 0;
     }
 }

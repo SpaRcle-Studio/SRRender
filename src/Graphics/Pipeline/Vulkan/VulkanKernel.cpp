@@ -169,8 +169,6 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_isSwapchainSuboptimal || presentResult == EvoVulkan::Core::FrameResult::OutOfDate || presentResult == EvoVulkan::Core::FrameResult::Suboptimal) {
-            WaitAllFences();
-            WaitDeviceIdle();
             m_hasErrors |= !ReCreate(m_isSwapchainSuboptimal ? EvoVulkan::Core::FrameResult::Suboptimal : presentResult);
             m_isSwapchainSuboptimal = false;
 
@@ -216,8 +214,6 @@ namespace SR_GRAPH_NS {
                 break;
             case EvoVulkan::Core::FrameResult::OutOfDate: {
                 VK_LOG("SRVulkan::Render() : out of date...");
-                WaitAllFences();
-                WaitDeviceIdle();
                 m_hasErrors |= !ReCreate(prepareResult);
 
                 if (m_hasErrors) {
