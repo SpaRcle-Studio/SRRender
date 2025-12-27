@@ -366,10 +366,10 @@ namespace SR_GRAPH_NS {
                     if (type == DebugRenderer::DrawType::Line) {
                         shaderInfo.pShader->SetVec3(SHADER_LINE_START_POINT, drawInfo.start);
                         shaderInfo.pShader->SetVec3(SHADER_LINE_END_POINT, drawInfo.end);
-                        shaderInfo.pShader->SetColor(SHADER_LINE_COLOR, drawInfo.color);
+                        shaderInfo.pShader->SetColor(SHADER_LINE_COLOR, drawInfo.color / 255.0f);
                     }
                     else {
-                         shaderInfo.pShader->SetColor(SHADER_RGBA_VALUE, drawInfo.color);
+                         shaderInfo.pShader->SetColor(SHADER_RGBA_VALUE, drawInfo.color / 255.0f);
                          shaderInfo.pShader->SetMat4(SHADER_MODEL_MATRIX, drawInfo.modelMatrix);
                     }
 

@@ -249,6 +249,9 @@ namespace SR_SRSL_NS {
                 else if (varName == "BlendEnabled") {
                     m_createInfo.blendEnabled = SR_UTILS_NS::LexicalCast<bool>(varValue);
                 }
+                else if (varName == "AlphaCoverage") {
+                    m_createInfo.alphaCoverage = SR_UTILS_NS::LexicalCast<bool>(varValue);
+                }
                 else if (varName == "DepthWrite") {
                     m_createInfo.depthWrite = SR_UTILS_NS::LexicalCast<bool>(varValue);
                 }

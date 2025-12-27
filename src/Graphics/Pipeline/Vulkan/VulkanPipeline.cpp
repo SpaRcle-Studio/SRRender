@@ -602,6 +602,7 @@ namespace SR_GRAPH_NS {
                     createInfo.blendEnabled && depthEnabled,
                     createInfo.depthWrite,
                     createInfo.depthTest,
+                    createInfo.alphaCoverage,
                     VulkanTools::AbstractPrimitiveTopologyToVk(createInfo.primitiveTopology),
                     vkSampleCount
                 )) {

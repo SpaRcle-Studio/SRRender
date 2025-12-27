@@ -273,6 +273,7 @@ namespace SR_GRAPH_NS {
         bool blendEnabled = false;
         bool depthWrite   = false;
         bool depthTest    = false;
+        bool alphaCoverage = false;
 
     };
 
