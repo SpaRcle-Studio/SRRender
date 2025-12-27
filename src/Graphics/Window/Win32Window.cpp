@@ -241,6 +241,10 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        if (!enable && !SR_UTILS_NS::Features::Instance().Enabled("BorderlessWindow")) {
+            return;
+        }
+
         m_styleState = WinAPI::StyleState::Changing;
 
         m_headerEnabled = enable;

@@ -73,7 +73,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (!m_skeletonIsBroken && pSkeleton && !m_ssboBones.empty()) {
-            const uint8_t frame = GetPipeline()->GetCurrentFrameIndex();
+            const uint8_t frame = GetPipeline()->GetCurrentImageIndex();
             const auto ssbo = m_ssboBones[SR_MIN(frame, m_ssboBones.size() - 1)];
             if (ssbo == SR_ID_INVALID) {
                 return Super::LateUpdate();
@@ -130,8 +130,8 @@ namespace SR_GTYPES_NS {
     }
 
     void SkinnedMesh::FreeVMemory() {
-        FreeSSBO();
         Super::FreeVMemory();
+        FreeSSBO();
     }
 
     void SkinnedMesh::UseSSBO() {
@@ -141,7 +141,7 @@ namespace SR_GTYPES_NS {
             return Super::UseSSBO();
         }
 
-        const uint8_t frame = GetPipeline()->GetCurrentFrameIndex();
+        const uint8_t frame = GetPipeline()->GetCurrentImageIndex();
         const auto ssbo = m_ssboBones[SR_MIN(frame, m_ssboBones.size() - 1)];
 
         GetPipeline()->GetCurrentShader()->BindSSBO("bones", ssbo);

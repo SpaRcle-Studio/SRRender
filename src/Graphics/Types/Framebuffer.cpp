@@ -266,7 +266,7 @@ namespace SR_GTYPES_NS {
             return SR_ID_INVALID;
         }
 
-        return m_frameBuffer[SR_MIN(GetPipeline()->GetCurrentFrameIndex(), static_cast<uint32_t>(m_frameBuffer.size() - 1))];
+        return m_frameBuffer[SR_MIN(GetPipeline()->GetCurrentImageIndex(), static_cast<uint32_t>(m_frameBuffer.size() - 1))];
     }
 
     uint64_t Framebuffer::GetFileHash() const {

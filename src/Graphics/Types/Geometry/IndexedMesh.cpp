@@ -115,6 +115,8 @@ namespace SR_GTYPES_NS {
     void IndexedMesh::FreeVMemory() {
         SR_TRACY_ZONE;
 
+        Mesh::FreeVMemory();
+
         if (!FreeVBO()) {
             SR_ERROR("IndexedMesh::FreeVideoMemory() : failed to free VBO!");
         }
@@ -122,8 +124,6 @@ namespace SR_GTYPES_NS {
         if (!FreeIBO()) {
             SR_ERROR("IndexedMesh::FreeVideoMemory() : failed to free IBO!");
         }
-
-        Mesh::FreeVMemory();
     }
 
     int32_t IndexedMesh::GetVBO() {

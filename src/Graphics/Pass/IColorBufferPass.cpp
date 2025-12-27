@@ -25,7 +25,7 @@ namespace SR_GRAPH_NS {
             return SR_MATH_NS::FColor(0.f);
         }
 
-        auto&& textureId = pColorFrameBuffer->GetColorTexture(0, pColorFrameBuffer->GetPipeline()->GetCurrentFrameIndex());
+        auto&& textureId = pColorFrameBuffer->GetColorTexture(0, pColorFrameBuffer->GetPipeline()->GetCurrentImageIndex());
         return pColorFrameBuffer->GetPipeline()->GetPixelColor(textureId, xPos, yPos);
     }
 

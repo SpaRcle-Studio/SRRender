@@ -534,6 +534,10 @@ namespace SR_GRAPH_NS {
         m_isComputeState = false;
     }
 
+    void Pipeline::WaitDeviceIdle() {
+        m_state.operations++;
+    }
+
     void Pipeline::WaitComputeIdle() {
         m_state.operations++;
     }
@@ -570,7 +574,7 @@ namespace SR_GRAPH_NS {
 
     void Pipeline::OnFrameBuildEnd() {
         m_buildStates.resize(GetSwapchainImagesCount());
-        const uint8_t frameIndex = GetCurrentFrameIndex();
+        const uint8_t frameIndex = GetCurrentImageIndex();
         if (frameIndex >= m_buildStates.size()) {
             SRHalt("Pipeline::OnFrameBuildEnd() : frame index out of range! Index: {}, Size: {}", frameIndex, m_buildStates.size());
             return;

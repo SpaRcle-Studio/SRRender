@@ -108,6 +108,7 @@ namespace SR_GRAPH_NS {
 
         virtual void SwitchWindow(const WindowPtr& pWindow);
 
+        virtual void WaitDeviceIdle();
         virtual void WaitComputeIdle();
         virtual void WaitRenderIdle();
 
@@ -151,6 +152,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_GTYPES_NS::Camera* GetCurrentCamera() const { ++m_state.operations; return m_state.pCamera; }
 
         SR_NODISCARD virtual uint8_t GetCurrentFrameIndex() const { return 0; }
+        SR_NODISCARD virtual uint8_t GetCurrentImageIndex() const { return 0; }
         SR_NODISCARD virtual void* GetCurrentShaderHandle() const { return nullptr; }
         SR_NODISCARD virtual void* GetCurrentFBOHandle() const { return nullptr; }
         SR_NODISCARD virtual void GetFBOHandles(std::vector<void*>& handles) const { }
@@ -162,6 +164,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual bool IsShaderViewportIndexLayerSupported() const { ++m_state.operations; return false; }
         SR_NODISCARD virtual SR_MATH_NS::FColor GetPixelColor(uint32_t textureId, uint32_t x, uint32_t y) { return SR_MATH_NS::FColor(0.f); }
         SR_NODISCARD virtual uint16_t GetSwapchainImagesCount() const { return 0; }
+        SR_NODISCARD virtual uint16_t GetMaxFramesInFlight() const { return 3; }
 
         SR_FORCE_INLINE void SetCurrentShader(ShaderPtr pShader) { ++m_state.operations; m_state.pShader = pShader; }
         SR_FORCE_INLINE void SetCurrentShaderId(int32_t id) { ++m_state.operations; m_state.shaderId = id; }

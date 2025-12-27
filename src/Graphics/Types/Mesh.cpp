@@ -137,6 +137,11 @@ namespace SR_GTYPES_NS {
     }
 
     void Mesh::FreeVMemory() {
+        //if (m_pipeline) {
+        //    m_pipeline->WaitRenderIdle();
+        //    m_pipeline->WaitDeviceIdle();
+        //}
+
         if (m_virtualUBO != SR_ID_INVALID && !m_uboManager.FreeUBO(&m_virtualUBO)) {
             SR_ERROR("Mesh::FreeVideoMemory() : failed to free virtual uniform buffer object!");
         }

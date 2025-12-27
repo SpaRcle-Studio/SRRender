@@ -144,7 +144,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            const uint32_t textureId = sampler.GetTextureId(m_pTechnique->GetPipeline()->GetCurrentFrameIndex());
+            const uint32_t textureId = sampler.GetTextureId(m_pTechnique->GetPipeline()->GetCurrentImageIndex());
             if (textureId == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }

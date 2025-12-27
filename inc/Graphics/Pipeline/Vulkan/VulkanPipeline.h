@@ -57,6 +57,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD void* GetCurrentShaderHandle() const override;
         SR_NODISCARD uint16_t GetSwapchainImagesCount() const override;
         SR_NODISCARD uint8_t GetCurrentFrameIndex() const override;
+        SR_NODISCARD uint8_t GetCurrentImageIndex() const override;
 
         SR_NODISCARD EvoVulkan::Core::VulkanKernel* GetKernel() const noexcept { return m_kernel; }
         SR_NODISCARD VulkanTools::MemoryManager* GetMemoryManager() const noexcept { return m_memory; }
@@ -95,6 +96,7 @@ namespace SR_GRAPH_NS {
 
         void OnResize(const SR_MATH_NS::UVector2& size) override;
 
+        void WaitDeviceIdle() override;
         void WaitComputeIdle() override;
         void WaitRenderIdle() override;
 

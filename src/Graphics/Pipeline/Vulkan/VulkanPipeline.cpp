@@ -845,7 +845,7 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::BindFrameBuffer(Pipeline::FramebufferPtr pFBO) {
         Super::BindFrameBuffer(pFBO);
 
-        const auto frameIndex = GetCurrentFrameIndex();
+        const auto frameIndex = GetCurrentImageIndex();
 
         if (!pFBO) {
             if (m_kernel->m_frameBuffers.size() <= frameIndex) {
@@ -1211,10 +1211,25 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void VulkanPipeline::WaitDeviceIdle() {
+        SR_TRACY_ZONE;
+        SR_TRACY_ZONE_COLOR(0xFF0000);
+        if (m_kernel) {
+            m_kernel->WaitDeviceIdle();
+        }
+    }
+
     void VulkanPipeline::OnFrameBuildBegin() {
         SR_TRACY_ZONE;
 
         Super::OnFrameBuildBegin();
+
+        const auto imageIndex = GetCurrentImageIndex();
+
+        if (!m_kernel->GetFrameSyncs().empty()) {
+            auto&& fence = m_kernel->GetInFlightFences()[imageIndex];
+            vkWaitForFences(*m_kernel->GetDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
+        }
 
         auto&& pFrameCmdPool = m_kernel->GetCurrentFrameCmdPool();
         vkResetCommandPool(*m_kernel->GetDevice(), *pFrameCmdPool, 0);
@@ -1230,7 +1245,7 @@ namespace SR_GRAPH_NS {
     bool VulkanPipeline::BeginCmdBuffer() {
         SR_TRACY_ZONE;
 
-        const auto frameIndex = GetCurrentFrameIndex();
+        const auto frameIndex = GetCurrentImageIndex();
 
         if (!m_isComputeState) {
             if (m_currentVkFrameBuffer) {
@@ -1776,9 +1791,9 @@ namespace SR_GRAPH_NS {
 
         Super::PrepareFrame();
 
-        if (m_kernel) {
-            m_kernel->WaitFences();
-        }
+        //if (m_kernel) {
+        //    m_kernel->WaitFences();
+        //}
 
         if (m_kernel && (m_kernel->IsDirty() || m_kernel->GetSwapchain()->IsDirty())) {
             m_kernel->WaitAllFences();
@@ -1793,6 +1808,10 @@ namespace SR_GRAPH_NS {
             if (!pOverlay->ReCreate()) {
                 PipelineError("VulkanPipeline::PrepareFrame() : failed to re-create \"" + pOverlay->GetName() + "\" overlay!");
             }
+        }
+
+        if (m_kernel) {
+            m_kernel->PrepareFrame();
         }
     }
 
@@ -2301,6 +2320,10 @@ namespace SR_GRAPH_NS {
         return m_kernel ? m_kernel->GetCurrentFrameIndex() : 0;
     }
 
+    uint8_t VulkanPipeline::GetCurrentImageIndex() const {
+        return m_kernel ? m_kernel->GetCurrentImageIndex() : 0;
+    }
+
     void* VulkanPipeline::GetCurrentShaderHandle() const {
         ++m_state.operations;
 
@@ -2416,7 +2439,7 @@ namespace SR_GRAPH_NS {
         const auto newColorLayout = (mode == FrameBufferAccessMode::Read && features.colorShaderRead) ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         for (uint32_t layer = 0; layer < pCurrentFBO->GetColorLayersCount(); ++layer) {
-            int32_t colorTexture = pCurrentFBO->GetColorTexture(layer, GetCurrentFrameIndex());
+            int32_t colorTexture = pCurrentFBO->GetColorTexture(layer, GetCurrentImageIndex());
             if (colorTexture == SR_ID_INVALID) {
                 continue;
             }

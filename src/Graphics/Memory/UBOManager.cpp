@@ -37,7 +37,7 @@ namespace SR_GRAPH_NS::Memory {
         SR_TRACY_ZONE;
 
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
-        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentImageIndex() : 0;
         const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
 
         if (!pShaderHandle) SR_UNLIKELY_ATTRIBUTE {
@@ -142,7 +142,7 @@ namespace SR_GRAPH_NS::Memory {
             return BindResult::Failed;
         }
 
-        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentImageIndex() : 0;
 
         auto&& info = m_uboPool.At(virtualUbo);
         BindResult result = BindResult::Success;
@@ -197,7 +197,7 @@ namespace SR_GRAPH_NS::Memory {
             return BindResult::Failed;
         }
 
-        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentImageIndex() : 0;
 
         auto&& info = m_uboPool.At(virtualUbo);
 
@@ -220,7 +220,7 @@ namespace SR_GRAPH_NS::Memory {
         SR_TRACY_ZONE;
 
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
-        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentImageIndex() : 0;
 
         auto&& info = m_uboPool.At(virtualUbo);
         for (auto&& data : info.data) {

@@ -40,7 +40,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (pFrameBuffer->Bind()) {
-            pFrameBuffer->BeginCmdBuffer(pPipeline->GetCurrentFrameIndex(), m_clearColors, m_depth);
+            pFrameBuffer->BeginCmdBuffer(pPipeline->GetCurrentImageIndex(), m_clearColors, m_depth);
             {
                 pFrameBuffer->BeginRender();
                 pFrameBuffer->SetViewportScissor();
@@ -65,7 +65,7 @@ namespace SR_GRAPH_NS {
         /// установим кадровый буфер, чтобы BeginCmdBuffer понимал какие значение для очистки ставить
         pPipeline->SetCurrentFrameBuffer(const_cast<Pipeline::FramebufferPtr>(pFrameBuffer.Get()));
 
-        pFrameBuffer->BeginCmdBuffer(pPipeline->GetCurrentFrameIndex(), m_clearColors, m_depth);
+        pFrameBuffer->BeginCmdBuffer(pPipeline->GetCurrentImageIndex(), m_clearColors, m_depth);
         pFrameBuffer->SetViewportScissor();
 
         for (uint32_t i = 0; i < layers; ++i) {

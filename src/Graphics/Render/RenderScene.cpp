@@ -92,7 +92,9 @@ namespace SR_GRAPH_NS {
             m_dirtyFrames.set();
         }
 
-        const uint8_t frameIndex = pPipeline->GetCurrentFrameIndex();
+        //m_dirtyFrames.set();/// ВРЕМЕННО
+
+        const uint8_t frameIndex = pPipeline->GetCurrentImageIndex();
 
         if (m_dirtyFrames[frameIndex]) {
             GetPipeline()->OnFrameBuildBegin();

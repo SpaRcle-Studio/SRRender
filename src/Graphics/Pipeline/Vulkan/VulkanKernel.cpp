@@ -62,36 +62,17 @@ namespace SR_GRAPH_NS {
             return EvoVulkan::Core::RenderResult::Success;
         }
 
-        auto&& prepareResult = PrepareFrame();
-        switch (prepareResult) {
-            case EvoVulkan::Core::FrameResult::Suboptimal:
-                SRAssert2(!m_isSwapchainSuboptimal, "SRVulkan::Render() : suboptimal swapchain already set!");
-                m_isSwapchainSuboptimal = true;
-                break;
-            case EvoVulkan::Core::FrameResult::OutOfDate: {
-                VK_LOG("SRVulkan::Render() : out of date...");
-                m_hasErrors |= !ReCreate(prepareResult);
-
-                if (m_hasErrors) {
-                    return EvoVulkan::Core::RenderResult::Fatal;
-                }
-
-                VK_LOG("SRVulkan::Render() : window are successfully resized!");
-
-                return EvoVulkan::Core::RenderResult::Success;
-            }
-            case EvoVulkan::Core::FrameResult::Success:
-                break;
-            default:
-                SRHalt("SRVulkan::Render() : unexcepted behaviour!");
-                return EvoVulkan::Core::RenderResult::Error;
-        }
+        //auto&& prepareResult = PrepareFrame();
 
         m_submitInfo.Clear();
         m_offscreenSubmitInfo.Clear();
 
         m_submitInfo.SetWaitDstStageMask(GetSubmitPipelineStages());
         m_offscreenSubmitInfo.SetWaitDstStageMask(GetSubmitPipelineStages());
+
+        FrameSync& frame = m_frames[m_frameIndex];
+
+        vkResetFences(*m_device, 1, &frame.inFlightFence);
 
         auto&& pVulkanPipeline = m_pipeline.DynamicCast<VulkanPipeline>();
 
@@ -113,27 +94,37 @@ namespace SR_GRAPH_NS {
                     m_offscreenSubmitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(0));
                 }
                 else {
-                    m_submitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(m_currentBuffer));
+                    m_submitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(m_imageIndex));
                 }
             }
         }
 
-        m_submitInfo.waitSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_presentComplete);
-        m_submitInfo.signalSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_renderComplete);
+        //m_submitInfo.waitSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_presentComplete);
+        //m_submitInfo.signalSemaphores.emplace_back(m_frameSyncs[m_currentImage].m_renderComplete);
+
+        m_submitInfo.signalSemaphores.emplace_back(frame.renderFinished);
+        m_submitInfo.waitSemaphores.emplace_back(frame.imageAvailable);
 
         auto&& pImGuiOverlay = m_pipeline->GetOverlay(OverlayType::ImGui).DynamicCast<VulkanImGuiOverlay>();
 
+        //auto&& pFrameCmdPool = GetCurrentFrameCmdPool();
+        //vkResetCommandPool(*GetDevice(), *pFrameCmdPool, 0);
+
         if (m_GUIEnabled && pImGuiOverlay && !pImGuiOverlay->IsSurfaceDirty()) {
-            auto&& submitInfo = pImGuiOverlay->Render(m_currentBuffer);
+            //auto&& submitInfo = pImGuiOverlay->Render(m_currentImage);
+            auto&& submitInfo = pImGuiOverlay->Render(m_imageIndex);
             m_submitInfo.commandBuffers.emplace_back(submitInfo.commandBuffers.front());
         }
         else {
-            if (m_pipeline->GetBuildState(m_currentBuffer).hasRenderData) {
-                m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_currentBuffer]);
-            }
+            //if (m_pipeline->GetBuildState(m_currentImage).hasRenderData) {
+            //    m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_currentImage]);
+            //}
+           // if (m_pipeline->GetBuildState(m_imageIndex).hasRenderData) {
+                m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_imageIndex]);
+          //  }
         }
 
-        if (!m_offscreenSubmitInfo.commandBuffers.empty())
+        /*if (!m_offscreenSubmitInfo.commandBuffers.empty())
         {
             SR_TRACY_ZONE_S("OffscreenGraphicsQueueSubmit");
 
@@ -151,15 +142,16 @@ namespace SR_GRAPH_NS {
             }
 
             WaitIdle();
-        }
+        }*/
 
         {
             SR_TRACY_ZONE_S("GraphicsQueueSubmit");
 
             auto&& vkSubmitInfo = m_submitInfo.ToVk();
-            vkResetFences(*m_device, 1, &m_waitFences[m_currentBuffer]);
+            //vkResetFences(*m_device, 1, &m_waitFences[m_currentImage]);
 
-            if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, m_waitFences[m_currentBuffer]); result != VK_SUCCESS) {
+            //if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, m_waitFences[m_currentImage]); result != VK_SUCCESS) {
+            if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, frame.inFlightFence); result != VK_SUCCESS) {
                 VK_ERROR("VulkanKernel::Render() : failed to queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
                 if (result == VK_ERROR_DEVICE_LOST) {
                     SR_PLATFORM_NS::Terminate();
@@ -170,19 +162,15 @@ namespace SR_GRAPH_NS {
 
         EvoVulkan::Core::FrameResult presentResult = m_isSwapchainSuboptimal ? EvoVulkan::Core::FrameResult::Suboptimal : QueuePresent();
 
-        //m_currentBuffer = (m_currentBuffer + 1) % GetSwapchainImagesCount();
-        //m_currentBuffer = (m_currentImage + 1) % GetSwapchainImagesCount();
-        m_currentBuffer = (m_currentImage + 1) % GetSwapchainImagesCount();
-
-        //if (m_currentBuffer != m_currentImage) {
-        //    VK_HALT("VulkanKernel::Render() : current buffer and current image are out of sync!");
-        //}
+        m_frameIndex = (m_frameIndex + 1) % GetMaxFramesInFlight();
 
         if (presentResult == EvoVulkan::Core::FrameResult::DeviceLost) {
             SR_PLATFORM_NS::Terminate();
         }
 
         if (m_isSwapchainSuboptimal || presentResult == EvoVulkan::Core::FrameResult::OutOfDate || presentResult == EvoVulkan::Core::FrameResult::Suboptimal) {
+            WaitAllFences();
+            WaitDeviceIdle();
             m_hasErrors |= !ReCreate(m_isSwapchainSuboptimal ? EvoVulkan::Core::FrameResult::Suboptimal : presentResult);
             m_isSwapchainSuboptimal = false;
 
@@ -219,7 +207,35 @@ namespace SR_GRAPH_NS {
 
     EvoVulkan::Core::FrameResult VulkanKernel::PrepareFrame() {
         SR_TRACY_ZONE;
-        return Super::PrepareFrame();
+
+        auto&& prepareResult = Super::PrepareFrame();
+        switch (prepareResult) {
+            case EvoVulkan::Core::FrameResult::Suboptimal:
+                SRAssert2(!m_isSwapchainSuboptimal, "SRVulkan::Render() : suboptimal swapchain already set!");
+                m_isSwapchainSuboptimal = true;
+                break;
+            case EvoVulkan::Core::FrameResult::OutOfDate: {
+                VK_LOG("SRVulkan::Render() : out of date...");
+                WaitAllFences();
+                WaitDeviceIdle();
+                m_hasErrors |= !ReCreate(prepareResult);
+
+                if (m_hasErrors) {
+                    return EvoVulkan::Core::FrameResult::Fatal;
+                }
+
+                VK_LOG("SRVulkan::Render() : window are successfully resized!");
+
+                return EvoVulkan::Core::FrameResult::Success;
+            }
+            case EvoVulkan::Core::FrameResult::Success:
+                break;
+            default:
+                SRHalt("SRVulkan::Render() : unexcepted behaviour!");
+                return EvoVulkan::Core::FrameResult::Error;
+        }
+
+        return prepareResult;
     }
 
     EvoVulkan::Core::FrameResult VulkanKernel::SubmitFrame() {

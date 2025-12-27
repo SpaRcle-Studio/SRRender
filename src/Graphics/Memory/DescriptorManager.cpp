@@ -30,7 +30,7 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
-        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentImageIndex() : 0;
 
         if (reallocation != SR_ID_INVALID) {
             auto&& descriptors = m_descriptorPool.At(reallocation);
@@ -69,7 +69,7 @@ namespace SR_GRAPH_NS {
 
         auto&& info = m_descriptorPool.At(virtualDescriptorSet);
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
-        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentFrameIndex() : 0;
+        const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentImageIndex() : 0;
 
         DescriptorSet descriptorSet = SR_ID_INVALID;
         bool hasDescriptorSet = false;

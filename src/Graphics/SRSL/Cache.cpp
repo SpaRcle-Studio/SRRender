@@ -209,6 +209,7 @@ namespace SR_SRSL_NS {
             SR_UTILS_NS::MarshalUtils::SaveValue<bool>(marshal, createInfo.blendEnabled);
             SR_UTILS_NS::MarshalUtils::SaveValue<bool>(marshal, createInfo.depthWrite);
             SR_UTILS_NS::MarshalUtils::SaveValue<bool>(marshal, createInfo.depthTest);
+            SR_UTILS_NS::MarshalUtils::SaveValue<bool>(marshal, createInfo.alphaCoverage);
 
             SR_UTILS_NS::MarshalUtils::SaveVector(marshal, createInfo.vertexAttributes);
             SR_UTILS_NS::MarshalUtils::SaveVector(marshal, createInfo.vertexDescriptions);
@@ -233,6 +234,7 @@ namespace SR_SRSL_NS {
             createInfo.blendEnabled = SR_UTILS_NS::MarshalUtils::LoadValue<bool>(marshal);
             createInfo.depthWrite = SR_UTILS_NS::MarshalUtils::LoadValue<bool>(marshal);
             createInfo.depthTest = SR_UTILS_NS::MarshalUtils::LoadValue<bool>(marshal);
+            createInfo.alphaCoverage = SR_UTILS_NS::MarshalUtils::LoadValue<bool>(marshal);
 
             createInfo.vertexAttributes = SR_UTILS_NS::MarshalUtils::LoadVector<VertexAttributes>(marshal);
             createInfo.vertexDescriptions = SR_UTILS_NS::MarshalUtils::LoadVector<VertexDescriptions>(marshal);

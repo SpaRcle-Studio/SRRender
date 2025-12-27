@@ -184,7 +184,7 @@ namespace SR_GRAPH_NS {
 
         m_tempMeshes.clear();
 
-        const uint8_t frameIndex = m_pipeline->GetCurrentFrameIndex();
+        const uint8_t frameIndex = m_pipeline->GetCurrentImageIndex();
         const uint8_t maxFrames = m_pipeline->GetSwapchainImagesCount();
 
         auto pStart = m_meshes.data();
