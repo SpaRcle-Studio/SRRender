@@ -6,7 +6,9 @@
 
 #include <Utils/Types/RawMesh.h>
 
-#include <assimp/anim.h>
+#ifdef SR_UTILS_ASSIMP
+    #include <assimp/anim.h>
+#endif
 
 namespace SR_ANIMATIONS_NS {
     AnimationChannel::~AnimationChannel() {

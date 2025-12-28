@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_SHADERPROPERTIES_H
 #define SR_ENGINE_SHADERPROPERTIES_H
 
-#include <Graphics/macros.h>
+#include <Graphics/Types/Texture.h>
 
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Common/Hashes.h>
@@ -183,37 +183,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    SR_MAYBE_UNUSED static ShaderPropertyVariant GetVariantFromShaderVarType(ShaderVarType type) {
-        SR_TRACY_ZONE;
-
-        switch (type) {
-            case ShaderVarType::Bool:
-                return static_cast<int32_t>(0);
-            case ShaderVarType::Int:
-                return static_cast<int32_t>(0);
-            case ShaderVarType::Float:
-                return static_cast<float_t>(0.f);
-            case ShaderVarType::Vec2:
-                return SR_MATH_NS::FVector2(SR_MATH_NS::Unit(0));
-            case ShaderVarType::Vec3:
-                return SR_MATH_NS::FVector3(SR_MATH_NS::Unit(0));
-            case ShaderVarType::IVec3:
-                return SR_MATH_NS::IVector3(0);
-            case ShaderVarType::Vec4:
-                return SR_MATH_NS::FVector4(SR_MATH_NS::Unit(0));
-            case ShaderVarType::Sampler1D:
-            case ShaderVarType::Sampler2D:
-            case ShaderVarType::Sampler3D:
-            case ShaderVarType::SamplerCube:
-            case ShaderVarType::Sampler1DShadow:
-            case ShaderVarType::Sampler2DShadow:
-                return SR_HTYPES_NS::SharedPtr<Types::Texture>();
-                //return static_cast<Types::Texture*>(nullptr);
-            default:
-                SRAssert(false);
-                return ShaderPropertyVariant();
-        }
-    }
+    SR_MAYBE_UNUSED ShaderPropertyVariant GetVariantFromShaderVarType(ShaderVarType type);
 
     SR_MAYBE_UNUSED static ShaderVarType GetShaderVarTypeFromString(std::string str) {
         if (!str.empty()) {

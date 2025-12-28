@@ -401,6 +401,10 @@ namespace SR_GRAPH_NS {
         return m_defaultMaterial;
     }
 
+    RenderContext::MaterialPtr RenderContext::GetDefaultUIMaterial() const {
+        return m_defaultUIMaterial;
+    }
+
     void RenderContext::SetDirty() {
         for (auto&& [pScene, pRenderScene] : m_scenes) {
             pRenderScene->SetDirty();

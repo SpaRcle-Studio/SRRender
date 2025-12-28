@@ -136,8 +136,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual std::string GetRenderer() const { return "None"; }
         SR_NODISCARD virtual std::string GetVersion() const { return "None"; }
 
-        SR_NODISCARD RenderContextPtr GetRenderContext() const noexcept { return m_renderContext; }
-        SR_NODISCARD WindowPtr GetWindow() const { return m_window; }
+        SR_NODISCARD RenderContextPtr GetRenderContext() const noexcept;
+        SR_NODISCARD WindowPtr GetWindow() const;
         SR_NODISCARD ShaderPtr GetCurrentShader() const { ++m_state.operations; return m_state.pShader; }
         SR_NODISCARD FramebufferPtr GetCurrentFrameBuffer() const noexcept { ++m_state.operations; return m_state.pFrameBuffer; }
         SR_NODISCARD int32_t GetCurrentShaderId() const { ++m_state.operations; return m_state.shaderId; }
@@ -155,8 +155,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual uint8_t GetCurrentImageIndex() const { return 0; }
         SR_NODISCARD virtual void* GetCurrentShaderHandle() const { return nullptr; }
         SR_NODISCARD virtual void* GetCurrentFBOHandle() const { return nullptr; }
-        SR_NODISCARD virtual void GetFBOHandles(std::vector<void*>& handles) const { }
-        SR_NODISCARD virtual void GetShaderHandles(std::vector<void*>& handles) const { }
+        virtual void GetFBOHandles(std::vector<void*>& handles) const { }
+        virtual void GetShaderHandles(std::vector<void*>& handles) const { }
         SR_NODISCARD virtual uint8_t GetFrameBufferSampleCount() const { ++m_state.operations; return 0; }
         SR_NODISCARD virtual uint8_t GetBuildIterationsCount() const noexcept { ++m_state.operations; return 0; }
         SR_NODISCARD virtual uint8_t GetSupportedSamples() const noexcept { return m_supportedSampleCount; }

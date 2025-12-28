@@ -153,7 +153,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD static AnimationStateConditionBool* Load(const SR_XML_NS::Node& nodeXml);
 
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
-        SR_NODISCARD void Update(const StateConditionContext& context) override;
+        void Update(const StateConditionContext& context) override;
         SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override { return !m_checked; }
 
         void Reset() override;

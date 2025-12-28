@@ -97,7 +97,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD WindowPtr GetWindow() const;
         SR_NODISCARD PipelineType GetPipelineType() const;
         SR_NODISCARD MaterialPtr GetDefaultMaterial() const;
-        SR_NODISCARD MaterialPtr GetDefaultUIMaterial() const { return m_defaultUIMaterial; }
+        SR_NODISCARD MaterialPtr GetDefaultUIMaterial() const;
         SR_NODISCARD TexturePtr GetDefaultTexture() const;
         SR_NODISCARD TexturePtr GetNoneTexture() const;
         SR_NODISCARD ShaderPtr GetCurrentShader() const noexcept;

@@ -400,6 +400,14 @@ namespace SR_GRAPH_NS {
         return pIt->second->SetEnabled(enabled);
     }
 
+    Pipeline::RenderContextPtr Pipeline::GetRenderContext() const noexcept {
+        return m_renderContext;
+    }
+
+    Pipeline::WindowPtr Pipeline::GetWindow() const {
+        return m_window;
+    }
+
     void Pipeline::SetCurrentFrameBuffer(Pipeline::FramebufferPtr pFrameBuffer) {
         ++m_state.operations;
         m_state.pFrameBuffer = pFrameBuffer;

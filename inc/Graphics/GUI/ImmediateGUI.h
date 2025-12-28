@@ -57,7 +57,7 @@ namespace SR_GRAPH_GUI_NS {
     )
 
     namespace Immediate {
-        enum class SR_GRAPHICS_DLL_API ImmediateDataType : uint8_t {
+        enum class ImmediateDataType : uint8_t {
             Int8,
             UInt8,
             Int16,
@@ -71,7 +71,7 @@ namespace SR_GRAPH_GUI_NS {
             COUNT
         };
 
-        enum class SR_GRAPHICS_DLL_API StyleColor {
+        enum class StyleColor {
             Text,
             TextDisabled,
             WindowBg,              // Background of normal windows
@@ -130,7 +130,7 @@ namespace SR_GRAPH_GUI_NS {
             COUNT
         };
 
-        enum class SR_GRAPHICS_DLL_API Direction {
+        enum class Direction {
             None    = -1,
             Left    = 0,
             Right   = 1,
@@ -287,7 +287,7 @@ namespace SR_GRAPH_GUI_NS {
             RootAndChildWindows           = RootWindow | ChildWindows
         )
 
-        enum class SR_GRAPHICS_DLL_API MouseButton
+        enum class MouseButton
         {
             Left = 0,
             Right = 1,
@@ -295,7 +295,7 @@ namespace SR_GRAPH_GUI_NS {
             COUNT = 5
         };
 
-        union SR_GRAPHICS_DLL_API ImmediateDataTypeUnion {
+        union ImmediateDataTypeUnion {
             int8_t   s8;
             uint8_t  u8;
             int16_t  s16;
