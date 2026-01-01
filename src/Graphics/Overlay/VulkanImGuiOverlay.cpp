@@ -204,6 +204,8 @@ namespace SR_GRAPH_NS {
     };
 
     bool VulkanImGuiOverlay::Init() {
+        SR_TRACY_ZONE;
+
         auto&& pKernel = m_pipeline.DynamicCast<VulkanPipeline>()->GetKernel();
         if (!pKernel->GetDevice() || !pKernel->GetDevice()->IsReady()) {
             SR_ERROR("VulkanImGuiOverlay::Init() : device is nullptr or not ready!");
@@ -334,6 +336,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool VulkanImGuiOverlay::BeginDraw() {
+        SR_TRACY_ZONE;
+
         if (!m_context) {
             return false;
         }
@@ -362,6 +366,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanImGuiOverlay::EndDraw() {
+        SR_TRACY_ZONE;
+
         if (m_undockingActive != IsUndockingActive()) {
             SR_LOG("VulkanImGuiOverlay::EndDraw() : undocking active changed!");
             m_undockingActive = IsUndockingActive();
@@ -599,7 +605,10 @@ namespace SR_GRAPH_NS {
 
         auto&& buffer = m_cmdBuffs[frame];
 
-        vkResetCommandPool(*m_device, m_cmdPools[frame], 0);
+        {
+            SR_TRACY_ZONE_S("VkResetCommandPool");
+            vkResetCommandPool(*m_device, m_cmdPools[frame], 0);
+        }
 
         static bool hasWarn = false;
 
@@ -631,6 +640,7 @@ namespace SR_GRAPH_NS {
                 vkCmdBeginRenderPass(m_cmdBuffs[frame], &m_renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
 
                 if (auto&& drawData = ImGui::GetDrawData()) {
+                    SR_TRACY_ZONE_S("ImGui_ImplVulkan_RenderDrawData");
                     ImGui_ImplVulkan_RenderDrawData(drawData, m_cmdBuffs[frame]);
                 }
                 else if (!hasWarn) {
@@ -646,6 +656,28 @@ namespace SR_GRAPH_NS {
             vkBeginCommandBuffer(buffer, &m_cmdBuffBI);
             {
                 if (m_dynamicRendering) {
+                    // Transition swapchain image from PRESENT_SRC_KHR to COLOR_ATTACHMENT_OPTIMAL
+                    // Use COLOR_ATTACHMENT_OUTPUT_BIT as srcStageMask to synchronize with vkAcquireNextImageKHR
+                    VkImageMemoryBarrier barrier = {};
+                    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                    barrier.srcAccessMask = 0;
+                    barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                    barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                    barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    barrier.image = m_swapChain->GetBuffers()[frame].m_image;
+                    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                    barrier.subresourceRange.levelCount = 1;
+                    barrier.subresourceRange.layerCount = 1;
+                    vkCmdPipelineBarrier(
+                        m_cmdBuffs[frame],
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                        0,
+                        0, nullptr,
+                        0, nullptr,
+                        1, &barrier
+                    );
+
                     m_pVkCmdBeginRendering(m_cmdBuffs[frame], &renderingInfo);
                 }
                 else {
@@ -654,6 +686,7 @@ namespace SR_GRAPH_NS {
                 }
 
                 if (auto&& drawData = ImGui::GetDrawData()) {
+                    SR_TRACY_ZONE_S("ImGui_ImplVulkan_RenderDrawData");
                     const bool old = EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationMuteSmallMemoryAllocations;
                     EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationMuteSmallMemoryAllocations = true;
                     ImGui_ImplVulkan_RenderDrawData(drawData, m_cmdBuffs[frame]);
@@ -666,6 +699,27 @@ namespace SR_GRAPH_NS {
 
                 if (m_dynamicRendering) {
                     m_pVkCmdEndRendering(m_cmdBuffs[frame]);
+
+                    // Transition swapchain image from COLOR_ATTACHMENT_OPTIMAL back to PRESENT_SRC_KHR
+                    VkImageMemoryBarrier barrier = {};
+                    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                    barrier.dstAccessMask = 0;
+                    barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                    barrier.image = m_swapChain->GetBuffers()[frame].m_image;
+                    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                    barrier.subresourceRange.levelCount = 1;
+                    barrier.subresourceRange.layerCount = 1;
+                    vkCmdPipelineBarrier(
+                        m_cmdBuffs[frame],
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                        0,
+                        0, nullptr,
+                        0, nullptr,
+                        1, &barrier
+                    );
                 }
                 else {
                     vkCmdEndRenderPass(m_cmdBuffs[frame]);

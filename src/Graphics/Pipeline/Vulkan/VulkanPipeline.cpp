@@ -1223,14 +1223,13 @@ namespace SR_GRAPH_NS {
 
         Super::OnFrameBuildBegin();
 
-        const auto imageIndex = GetCurrentImageIndex();
-
-        if (!m_kernel->GetFrameSyncs().empty()) {
+        /*if (!m_kernel->GetFrameSyncs().empty()) {
             SR_TRACY_ZONE_N("Wait in-flight fence");
             SR_TRACY_ZONE_COLOR(0xffa500ff);
-            auto&& fence = m_kernel->GetInFlightFences()[imageIndex];
-            vkWaitForFences(*m_kernel->GetDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
-        }
+            if (auto&& fence = m_kernel->GetInFlightFences()[GetCurrentImageIndex()]) {
+                vkWaitForFences(*m_kernel->GetDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
+            }
+        }*/
 
         auto&& pFrameCmdPool = m_kernel->GetCurrentFrameCmdPool();
         vkResetCommandPool(*m_kernel->GetDevice(), *pFrameCmdPool, 0);

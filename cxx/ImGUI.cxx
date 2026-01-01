@@ -4,6 +4,12 @@
 
 #include <Graphics/GUI/ImGUI.h>
 
+#include <Utils/Profile/TracyContext.h>
+
+#define IMGUI_TRACY_ZONE SR_TRACY_ZONE
+#define IMGUI_TRACY_ZONE_N(name) SR_TRACY_ZONE_N(name)
+#define IMGUI_TRACY_ZONE_VALUE(value) SR_TRACY_ZONE_VALUE(value)
+
 #include <imgui/imgui.cpp>
 #include <imgui/imgui_tables.cpp>
 #include <imgui/imgui_draw.cpp>
