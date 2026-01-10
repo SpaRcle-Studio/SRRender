@@ -4,21 +4,32 @@
 
 #include <Graphics/Animations/AnimationStateMachine.h>
 
+#include <Codegen/AnimationStateMachine.generated.hpp>
+
 namespace SR_ANIMATIONS_NS {
     AnimationStateMachine::AnimationStateMachine()
         : Super()
-    {
-        CreateState<AnimationEntryPointState>();
-        m_activeStates.insert(GetEntryPoint());
-    }
+    { }
 
     AnimationStateMachine::~AnimationStateMachine() {
+        m_states.clear();
+    }
+
+    void AnimationStateMachine::OnPostLoad() {
+        Super::OnPostLoad();
         for (auto&& pState : m_states) {
-            delete pState;
+            pState->SetMachine(this);
         }
     }
 
-    AnimationStateMachine* AnimationStateMachine::Load(const SR_XML_NS::Node& nodeXml) {
+    void AnimationStateMachine::CloneTo(SR_UTILS_NS::SRClass& clone) const {
+        Super::CloneTo(clone);
+        for (auto&& pState : static_cast<AnimationStateMachine&>(clone).m_states) {
+            pState->SetMachine(&static_cast<AnimationStateMachine&>(clone));
+        }
+    }
+
+    /*AnimationStateMachine* AnimationStateMachine::Load(const SR_XML_NS::Node& nodeXml) {
         SR_TRACY_ZONE;
 
         auto&& pStateMachine = new AnimationStateMachine();
@@ -66,24 +77,28 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return pStateMachine;
-    }
+    }*/
 
     void AnimationStateMachine::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 
         for (auto pIt = m_activeStates.begin(); pIt != m_activeStates.end(); ) {
             AnimationState* pState = *pIt;
+            if (!pState) {
+                SRHalt("Invalid state in active states!");
+                continue;
+            }
 
             bool changed = false;
             bool hasActiveTransitions = false;
 
             for (auto&& pTransition : pState->GetTransitions()) {
                 auto&& pActiveTransition = pState->GetActiveTransition();
-                if (pActiveTransition && pActiveTransition != pTransition) {
+                if (pActiveTransition && pActiveTransition != pTransition.Get()) {
                     continue;
                 }
 
-                if (UpdateTransition(context, pTransition, hasActiveTransitions)) {
+                if (UpdateTransition(context, pTransition.Get(), hasActiveTransitions)) {
                     if (m_activeStates.count(pTransition->GetSource()) == 1) {
                         pIt = m_activeStates.erase(pIt);
                     }
@@ -106,19 +121,28 @@ namespace SR_ANIMATIONS_NS {
         for (auto&& pState : m_states) {
             pState->Compile(context);
         }
+
+        if (m_activeStates.empty()) {
+            if (auto&& pEntryPoint = GetEntryPoint()) {
+                m_activeStates.insert(pEntryPoint);
+            }
+            else {
+                SR_WARN("AnimationStateMachine::Compile() : entry point state not found!");
+            }
+        }
     }
 
     bool AnimationStateMachine::IsStateActive(SR_UTILS_NS::StringAtom name) const {
         SR_TRACY_ZONE;
 
         for (auto&& pState : m_activeStates) {
-            if (pState->GetName() == name) {
+            if (pState->GetStateName() == name) {
                 return true;
             }
 
             for (auto&& pTransition : pState->GetTransitions()) {
                 auto&& pActiveTransition = pState->GetActiveTransition();
-                if (pActiveTransition && pActiveTransition != pTransition) {
+                if (pActiveTransition && pActiveTransition != pTransition.Get()) {
                     continue;
                 }
 
@@ -130,7 +154,7 @@ namespace SR_ANIMATIONS_NS {
                     return false;
                 }
 
-                if (pTransition->GetDestination() && pTransition->GetDestination()->GetName() == name) {
+                if (pTransition->GetDestination() && pTransition->GetDestination()->GetStateName() == name) {
                     return true;
                 }
             }
@@ -145,8 +169,8 @@ namespace SR_ANIMATIONS_NS {
             return nullptr;
         }
 
-        if (auto&& pState = dynamic_cast<AnimationEntryPointState*>(m_states.front())) {
-            return pState;
+        if (auto&& pState = dynamic_cast<const AnimationEntryPointState*>(m_states.front().Get())) {
+            return const_cast<AnimationEntryPointState*>(pState);
         }
 
         SRHalt("Failed to get entry point!");
@@ -156,8 +180,8 @@ namespace SR_ANIMATIONS_NS {
 
     AnimationState* AnimationStateMachine::FindState(SR_UTILS_NS::StringAtom name) const {
         for (auto&& pState : m_states) {
-            if (pState->GetName() == name) {
-                return pState;
+            if (pState->GetStateName() == name) {
+                return const_cast<AnimationState*>(pState.Get());
             }
         }
 
@@ -165,12 +189,15 @@ namespace SR_ANIMATIONS_NS {
     }
 
     AnimationState* AnimationStateMachine::GetState(uint32_t index) const {
-        if (index >= m_states.size()) {
-            SRHalt("Index out of range!");
-            return nullptr;
+        if (auto&& pState = GetStateOrNull(index)) {
+            return pState;
         }
+        SRHalt("AnimationStateMachine::GetState() : state index \"{}\" out of bounds!", index);
+        return nullptr;
+    }
 
-        return m_states[index];
+    AnimationState* AnimationStateMachine::GetStateOrNull(uint32_t index) const {
+        return index < m_states.size() ? const_cast<AnimationState*>(m_states[index].Get()) : nullptr;
     }
 
     bool AnimationStateMachine::UpdateTransition(UpdateContext& context, AnimationStateTransition* pTransition, bool&  hasActiveTransitions) {

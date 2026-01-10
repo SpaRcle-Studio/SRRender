@@ -366,7 +366,7 @@ namespace SR_GRAPH_NS::Types {
 
         m_isDirty = true;
 
-        SR_UTILS_NS::Path&& path = GetResourcePath();
+        const SR_UTILS_NS::Path& path = GetResourcePath();
 
         SR_LOG("Shader::Load() : loading shader \"{}\"\n\tMacros: {}", path, m_macros.ToString());
 

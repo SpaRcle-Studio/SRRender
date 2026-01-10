@@ -10,20 +10,25 @@
 namespace SR_ANIMATIONS_NS {
     class AnimationGraph;
 
-    class AnimationStateMachine : public IAnimationDataSet, public SR_UTILS_NS::NonCopyable {
+    class AnimationStateMachine : public IAnimationDataSet {
+        SR_CLASS()
         using Super = IAnimationDataSet;
     public:
         AnimationStateMachine();
         ~AnimationStateMachine() override;
 
     public:
-        SR_NODISCARD static AnimationStateMachine* Load(const SR_XML_NS::Node& nodeXml);
+        //SR_NODISCARD static AnimationStateMachine* Load(const SR_XML_NS::Node& nodeXml);
+
+        void OnPostLoad() override;
+        void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
 
         SR_NODISCARD bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD AnimationEntryPointState* GetEntryPoint() const;
         SR_NODISCARD AnimationState* FindState(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD AnimationState* GetState(uint32_t index) const;
-        SR_NODISCARD const std::vector<AnimationState*>& GetStates() const noexcept { return m_states; }
+        SR_NODISCARD AnimationState* GetStateOrNull(uint32_t index) const;
+        SR_NODISCARD const std::vector<AnimationState::Ptr>& GetStates() const noexcept { return m_states; }
 
         void Compile(CompileContext& context);
         void Update(UpdateContext& context);
@@ -47,8 +52,8 @@ namespace SR_ANIMATIONS_NS {
     private:
         AnimationGraphNode* m_node = nullptr;
 
-        /// первый стейт это всегда EntryPoint
-        std::vector<AnimationState*> m_states;
+        /// @property
+        std::vector<AnimationState::Ptr> m_states;
 
         std::set<AnimationState*> m_activeStates;
 

@@ -36,7 +36,7 @@ namespace SR_ANIMATIONS_NS {
         void SetGraph(const SR_UTILS_NS::Path& path);
 
         SR_NODISCARD SR_UTILS_NS::Path GetGraphPath() const noexcept;
-        SR_NODISCARD AnimationGraph* GetGraph() const noexcept { return m_graph; }
+        SR_NODISCARD AnimationGraph* GetGraph() const noexcept;
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<Skeleton>& GetSkeleton() noexcept { return m_skeleton; }
 
     private:
@@ -53,9 +53,11 @@ namespace SR_ANIMATIONS_NS {
         bool m_fpsCompensation = false;
 
         /// @virtualProperty(graph) @getter(GetGraphPath) @setter(SetGraph)
+        /// @customArgs(pick: enabled, filter name: Animator, relative: resources)
+        /// @customArg(filter value: animator)
         SR_VIRTUAL_PROPERTY
 
-        AnimationGraph* m_graph = nullptr;
+        SR_HTYPES_NS::SharedPtr<AnimationGraph> m_graph;
 
         SR_HTYPES_NS::SharedPtr<Skeleton> m_skeleton;
 

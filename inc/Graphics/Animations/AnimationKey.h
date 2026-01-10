@@ -71,20 +71,15 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    struct UnionAnimationKey {
+    struct UnionAnimationKey final {
         UnionAnimationKey() = default;
         ~UnionAnimationKey() = default;
 
-        UnionAnimationKey(const UnionAnimationKey& other) {
-            CopyFrom(other);
-        }
+        UnionAnimationKey(const UnionAnimationKey& other);
+        UnionAnimationKey(UnionAnimationKey&& other) noexcept;
 
-        UnionAnimationKey& operator=(const UnionAnimationKey& other) {
-            if (this != &other) {
-                CopyFrom(other);
-            }
-            return *this;
-        }
+        UnionAnimationKey& operator=(const UnionAnimationKey& other);
+        UnionAnimationKey& operator=(UnionAnimationKey&& other) noexcept;
 
         void SR_FASTCALL UpdateWithWeight(float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t weight) const noexcept;
         void SR_FASTCALL SetWithWeight(AnimationGameObjectData& animation, float_t weight) const noexcept;
@@ -114,6 +109,7 @@ namespace SR_ANIMATIONS_NS {
         }
 
         void CopyFrom(const UnionAnimationKey& other);
+        void MoveFrom(UnionAnimationKey& other) noexcept;
 
     public:
         union Data {

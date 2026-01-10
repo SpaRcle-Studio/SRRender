@@ -7,7 +7,7 @@
 
 #include <Graphics/macros.h>
 
-#include <Utils/Resources/IResource.h>
+#include <Utils/Resources/Asset.h>
 
 namespace SR_HTYPES_NS {
     class RawMesh;
@@ -16,9 +16,10 @@ namespace SR_HTYPES_NS {
 namespace SR_ANIMATIONS_NS {
     class AnimationChannel;
 
-    class AnimationClip : public SR_UTILS_NS::IResource {
+    /// @extension(animation)
+    class AnimationClip : public SR_UTILS_NS::Asset {
         SR_CLASS()
-        using Super = SR_UTILS_NS::IResource;
+        using Super = SR_UTILS_NS::Asset;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<AnimationClip>;
 
@@ -27,14 +28,8 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationClip() override;
 
     public:
-        static std::vector<AnimationClip::Ptr> Load(const SR_UTILS_NS::Path& path, const SR_UTILS_NS::Path& skeleton);
-        static AnimationClip::Ptr Load(const SR_UTILS_NS::Path& path, const SR_UTILS_NS::Path& skeleton, SR_UTILS_NS::StringAtom name);
-
-    public:
-        SR_NODISCARD const std::vector<AnimationChannel*>& GetChannels() const { return m_channels; }
+        SR_NODISCARD const std::vector<AnimationChannel>& GetChannels() const { return m_channels; }
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
-
-        SR_NODISCARD bool IsAllowedMultiInstance() const override { return true; }
 
         SR_NODISCARD SR_UTILS_NS::StringAtom GetClipName() const noexcept;
 
@@ -43,14 +38,27 @@ namespace SR_ANIMATIONS_NS {
 
     protected:
         bool Unload() override;
-        bool Load() override;
+        void OnAssetLoaded() override;
+        void PostProcess();
 
     private:
         SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, const std::string& name);
 
     private:
+        /// @property
+        SR_UTILS_NS::StringAtom m_clipName;
+        /// @property
+        /// @customArgs(pick: enabled, filter name: Animation, relative: resources)
+        /// @customArg(filter value: fbx)
+        SR_UTILS_NS::Path m_clipPath;
+        /// @property
+        /// @customArgs(pick: enabled, filter name: Skeleton, relative: resources)
+        /// @customArg(filter value: fbx)
         SR_UTILS_NS::Path m_skeletonPath;
-        std::vector<AnimationChannel*> m_channels;
+        /// @property
+        std::vector<SR_UTILS_NS::StringAtom> m_excludedBones;
+
+        std::vector<AnimationChannel> m_channels;
 
         float_t m_duration = 0.f;
         uint32_t m_maxKeyFrame = 0;

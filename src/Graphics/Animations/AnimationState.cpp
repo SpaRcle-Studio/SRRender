@@ -7,39 +7,20 @@
 #include <Graphics/Animations/AnimationClip.h>
 #include <Graphics/Animations/Skeleton.h>
 #include <Graphics/Animations/Bone.h>
+#include <Graphics/Animations/AnimationStateMachine.h>
+
+#include <Utils/FileSystem/PathDataAccessor.h>
+
+#include <Codegen/AnimationState.generated.hpp>
 
 namespace SR_ANIMATIONS_NS {
-    AnimationState::~AnimationState() {
-        for (auto&& pTransition : m_transitions) {
-            delete pTransition;
-        }
-    }
-
-    AnimationState* AnimationState::Load(const SR_XML_NS::Node& nodeXml) {
-        SR_TRACY_ZONE;
-
-        AnimationState* pState = nullptr;
-
-        auto&& type = nodeXml.GetAttribute("Type").ToString();
-        if (type == "Clip") {
-            pState = AnimationClipState::Load(nodeXml);
-        }
-
-        if (pState) {
-            pState->SetResetOnPlay(nodeXml.GetAttribute("ResetOnPlay").ToBool(true));
-            return pState;
-        }
-
-        SR_ERROR("AnimationState::Load() : unknown type \"{}\"!", type);
-
-        return nullptr;
-    }
+    AnimationState::~AnimationState() = default;
 
     void AnimationState::OnTransitionBegin(AnimationStateTransition* pTransition) {
         m_activeTransition = pTransition;
 
         if (m_resetOnPlay) {
-            Reset();
+            ResetState();
         }
     }
 
@@ -47,8 +28,45 @@ namespace SR_ANIMATIONS_NS {
         m_activeTransition = nullptr;
 
         for (auto&& pTransition : m_transitions) {
-            pTransition->Reset();
+            pTransition->ResetTransition();
         }
+    }
+
+    AnimationState::AnimationState()
+        : SR_HTYPES_NS::SharedPtr<AnimationState>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+    { }
+
+    SR_UTILS_NS::StringAtom AnimationState::GetStateName() const noexcept {
+        return m_stateName.empty() ? GetDefaultStateName() : m_stateName;
+    }
+
+    SR_UTILS_NS::StringAtom AnimationState::GetDefaultStateName() const noexcept {
+        return GetMeta()->GetFactoryName();
+    }
+
+    bool AnimationState::Compile(CompileContext& context) {
+        SR_TRACY_ZONE;
+
+        if (!m_machine) {
+            SRHalt("AnimationState::Compile() : machine is nullptr!");
+            return false;
+        }
+
+        for (auto&& pTransition : m_transitions) {
+            auto&& pSourceState = m_machine->GetStateOrNull(pTransition->GetFromStateIndex());
+            auto&& pDestinationState = m_machine->GetStateOrNull(pTransition->GetToStateIndex());
+            if (!pSourceState || !pDestinationState) {
+                SR_ERROR("AnimationState::Compile() : failed to find states for transition! From: {}, To: {}",
+                    pTransition->GetFromStateIndex(),
+                    pTransition->GetToStateIndex()
+                );
+                return false;
+            }
+            pTransition->SetSourceState(pSourceState);
+            pTransition->SetDestinationState(pDestinationState);
+        }
+
+        return true;
     }
 
     void AnimationClipState::Update(UpdateContext& context) {
@@ -71,7 +89,7 @@ namespace SR_ANIMATIONS_NS {
 
         if (context.weight > 0.f && context.weight < 1.f) SR_UNLIKELY_ATTRIBUTE {
             for (uint32_t i = 0; i < channelsCount; ++i) {
-                uint32_t keyFrame = channels[i]->UpdateChannelWithWeight(
+                const uint32_t keyFrame = channels[i].UpdateChannelWithWeight(
                     m_channelPlayState[i],
                     m_time,
                     context,
@@ -83,7 +101,7 @@ namespace SR_ANIMATIONS_NS {
         }
         else {
             for (uint32_t i = 0; i < channelsCount; ++i) {
-                uint32_t keyFrame = channels[i]->UpdateChannel(
+                const uint32_t keyFrame = channels[i].UpdateChannel(
                     m_channelPlayState[i],
                     m_time,
                     context,
@@ -97,8 +115,9 @@ namespace SR_ANIMATIONS_NS {
         m_time += context.dt;
 
         if (currentKeyFrame >= m_maxKeyFrame) {
-            m_time = 0.f;
+            SR_TRACY_ZONE_N("memset");
             memset(m_channelPlayState.data(), 0, m_channelPlayState.size() * sizeof(uint32_t));
+            m_time = 0.f;
         }
 
         Super::Update(context);
@@ -106,29 +125,6 @@ namespace SR_ANIMATIONS_NS {
 
     AnimationClipState::~AnimationClipState() {
         SetClip(nullptr);
-    }
-
-    AnimationClipState* AnimationClipState::Load(const SR_XML_NS::Node& nodeXml) {
-        auto&& path = nodeXml.GetAttribute("Path").ToString();
-        auto&& name = nodeXml.GetAttribute("Name").ToString();
-        auto&& skeleton = nodeXml.TryGetAttribute("Skeleton").ToString("");
-        if (path.empty() || name.empty()) {
-            SR_ERROR("AnimationClipState::Load() : path or name is empty!");
-            return nullptr;
-        }
-
-        if (skeleton.empty()) {
-            skeleton = path;
-        }
-
-        if (auto&& pClip = AnimationClip::Load(path, skeleton, name)) {
-            auto&& pState = new AnimationClipState();
-            pState->SetClip(pClip);
-            return pState;
-        }
-
-        SR_ERROR("AnimationClipState::Load() : failed to load clip \"{}\" with name \"{}\"!", path, name);
-        return nullptr;
     }
 
     void AnimationClipState::SetClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip) {
@@ -163,28 +159,24 @@ namespace SR_ANIMATIONS_NS {
         return m_time / m_duration;
     }
 
-    SR_UTILS_NS::StringAtom AnimationClipState::GetName() const noexcept {
-        return m_clip ? m_clip->GetClipName() : SR_UTILS_NS::StringAtom();
-    }
-
     bool AnimationClipState::Compile(CompileContext& context) {
         if (!m_clip) {
-            SR_ERROR("AnimationClipState::Compile() : clip is nullptr!");
+            SR_ERROR("AnimationClipState::Compile() : clip is nullptr! Clip name: {}", m_animation);
             return false;
         }
 
         m_channelContexts.clear();
 
-        for (auto&& pChannel : m_clip->GetChannels()) {
+        for (auto&& channel : m_clip->GetChannels()) {
             auto&& channelContext = m_channelContexts.emplace_back();
 
-            if (pChannel->HasBoneIndex()) {
+            if (channel.HasBoneIndex()) {
                 if (!context.pSkeleton) {
                     SR_WARN("AnimationClipState::Compile() : skeleton is nullptr!");
                     continue;
                 }
 
-                auto&& pBone = context.pSkeleton->GetBone(pChannel->GetGameObjectName());
+                auto&& pBone = context.pSkeleton->GetBone(channel.GetChannelName());
                 if (!pBone) {
                     SR_WARN("AnimationClipState::Compile() : bone is nullptr!");
                     continue;
@@ -215,11 +207,38 @@ namespace SR_ANIMATIONS_NS {
         return Super::Compile(context);
     }
 
-    void AnimationClipState::Reset() {
+    void AnimationClipState::ResetState() {
+        SR_TRACY_ZONE;
         m_time = 0.f;
         if (!m_channelPlayState.empty()) {
             memset(m_channelPlayState.data(), 0, m_channelPlayState.size() * sizeof(uint32_t));
         }
-        Super::Reset();
+        Super::ResetState();
+    }
+
+    void AnimationClipState::OnPostLoad() {
+        UpdateClip();
+        Super::OnPostLoad();
+    }
+
+    void AnimationClipState::UpdateClip() {
+        SR_TRACY_ZONE;
+        if (!m_animation.empty()) {
+            if (auto&& pClip = SR_UTILS_NS::Asset::Load<AnimationClip>(m_animation)) {
+                SetClip(pClip);
+            }
+            else {
+                SR_ERROR("AnimationClipState::OnPostLoad() : failed to load clip \"{}\" with name \"{}\"!", m_animation);
+            }
+        }
+    }
+
+    void AnimationClipState::CloneTo(SR_UTILS_NS::SRClass& clone) const {
+        Super::CloneTo(clone);
+        static_cast<AnimationClipState&>(clone).UpdateClip();
+    }
+
+    SR_UTILS_NS::StringAtom AnimationClipState::GetDefaultStateName() const noexcept {
+        return m_clip ? m_clip->GetClipName() : Super::GetDefaultStateName();
     }
 }

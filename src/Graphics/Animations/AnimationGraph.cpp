@@ -8,133 +8,35 @@
 #include <Utils/ECS/Transform.h>
 #include <Utils/ECS/GameObject.h>
 
+#include <Codegen/AnimationGraph.generated.hpp>
+
 namespace SR_ANIMATIONS_NS {
-    AnimationGraph::AnimationGraph(Animator* pAnimator)
+    AnimationGraph::AnimationGraph()
         : Super()
-        , m_pAnimator(pAnimator)
-    {
-        SRAssert2(m_pAnimator, "Invalid animator!");
-        CreateNode<AnimationGraphNodeFinal>();
-    }
+    { }
 
     AnimationGraph::~AnimationGraph() {
-        for (auto&& pNode : m_nodes) {
-            delete pNode;
-        }
-    }
-
-    AnimationGraph* AnimationGraph::Load(Animator* pAnimator, const SR_UTILS_NS::Path& path) {
-        SR_TRACY_ZONE;
-
-        auto&& graphPath = SR_UTILS_NS::Path();
-        if (!path.IsAbs()) {
-            graphPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
-        }
-        else {
-            SR_ERROR("AnimationGraph::Load() : path is absolute! \"{}\"", path.ToStringRef());
-            graphPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path.RemoveSubPath("Resources"));
-        }
-
-        if (!graphPath.Exists(SR_UTILS_NS::Path::Type::File)) {
-            SR_ERROR("AnimationGraph::Load() : animation graph \"{}\" doesn't exist!", graphPath.ToStringRef());
-            return nullptr;
-        }
-
-        auto&& xmlDocument = SR_XML_NS::Document::Load(graphPath);
-        if (!xmlDocument) {
-            SR_ERROR("AnimationGraph::Load() : failed to open xml document \"{}\"!", graphPath.ToStringRef());
-            return nullptr;
-        }
-
-        auto&& rootXml = xmlDocument.Root().GetNode("Animator");
-        if (!rootXml) {
-            SR_ERROR("AnimationGraph::Load() : failed to find root node \"Animator\" in xml document \"{}\"!", graphPath.ToStringRef());
-            return nullptr;
-        }
-
-        auto&& pAnimationGraph = new AnimationGraph(pAnimator);
-        pAnimationGraph->m_path = path;
-        SRAssert2(!path.IsFile(), "Path is absolute!");
-
-        std::vector<uint32_t> errorNodes;
-
-        for (auto&& nodeXml : rootXml.GetNodes("Node")) {
-            if (auto&& pNode = AnimationGraphNode::Load(nodeXml)) {
-                pAnimationGraph->AddNode(pNode);
-            }
-            else {
-                errorNodes.emplace_back(pAnimationGraph->GetNodesCount());
-                SR_ERROR("AnimationGraph::Load() : failed to load node \"{}\"!", nodeXml.GetAttribute("Type").ToString());
-            }
-        }
-
-        auto&& fixNodeIndex = [&errorNodes](uint32_t index) {
-            for (auto&& errorIndex : errorNodes) {
-                if (errorIndex > index) {
-                    --index;
-                }
-            }
-            return index;
-        };
-
-        for (auto&& transitionXml : rootXml.GetNodes("Connection")) {
-            auto&& fromNodeIndex = fixNodeIndex(transitionXml.GetAttribute("FromNode").ToUInt());
-            auto&& toNodeIndex = fixNodeIndex(transitionXml.GetAttribute("ToNode").ToUInt());
-            auto&& pFromNode = pAnimationGraph->GetNode(fromNodeIndex);
-            auto&& pToNode = pAnimationGraph->GetNode(toNodeIndex);
-
-            if (!pFromNode || !pToNode) {
-                SR_ERROR("AnimationGraph::Load() : failed to find node! From: {}, to: {}",
-                    pFromNode ? "ok" : "fail", pToNode ? "ok" : "fail");
-                continue;
-            }
-
-            auto&& fromPinIndex = transitionXml.GetAttribute("FromPin").ToUInt();
-            auto&& toPinIndex = transitionXml.GetAttribute("ToPin").ToUInt();
-
-            if (fromPinIndex >= pFromNode->GetOutputCount() || toPinIndex >= pToNode->GetInputCount()) {
-                SR_ERROR("AnimationGraph::Load() : pins out of range! From: {}, to: {}",
-                    fromPinIndex >= pFromNode->GetOutputCount() ? "ok" : "fail",
-                    toPinIndex >= pToNode->GetInputCount() ? "ok" : "fail");
-                continue;
-            }
-
-            pFromNode->ConnectTo(pToNode, fromPinIndex, toPinIndex);
-        }
-
-        for (auto&& variableXml : rootXml.GetNodes("Variable")) {
-            auto&& name = variableXml.GetAttribute("Name").ToString();
-            auto&& value = variableXml.GetAttribute("Value");
-            auto&& type = variableXml.GetAttribute("Type").ToString();
-
-            if (type == "Bool") {
-                pAnimationGraph->SetBool(name, value.ToBool());
-            } else if (type == "Int") {
-                pAnimationGraph->SetInt(name, value.ToInt());
-            } else if (type == "Float") {
-                pAnimationGraph->SetFloat(name, value.ToFloat());
-            } else if (type == "String") {
-                pAnimationGraph->SetString(name, value.ToString());
-            } else {
-                SR_ERROR("AnimationGraph::Load() : unknown variable type \"{}\"!", type);
-            }
-        }
-
-        return pAnimationGraph;
+        m_nodes.clear();
+        SetAsset(nullptr);
     }
 
     uint64_t AnimationGraph::GetNodeIndex(const AnimationGraphNode* pNode) const {
-        if (auto&& pIt = m_indices.find(const_cast<AnimationGraphNode*>(pNode)); pIt != m_indices.end()) {
-            return pIt->second;
+        for (uint32_t i = 0; i < m_nodes.size(); ++i) {
+            if (m_nodes[i] == pNode) {
+                return i;
+            }
         }
 
         SRHalt("Node not found!");
-
         return SR_ID_INVALID;
     }
 
     AnimationGraphNode* AnimationGraph::GetFinal() const {
-        return m_nodes.front();
+        if (m_nodes.empty()) {
+            SRHalt("AnimationGraph::GetFinal() : no nodes in graph!");
+            return nullptr;
+        }
+        return const_cast<AnimationGraphNode*>(m_nodes.front().Get());
     }
 
     bool AnimationGraph::IsStateActive(SR_UTILS_NS::StringAtom name) const {
@@ -196,7 +98,12 @@ namespace SR_ANIMATIONS_NS {
     void AnimationGraph::Compile() {
         SR_TRACY_ZONE;
 
-        if (m_isCompiled || !m_pAnimator) SR_UNLIKELY_ATTRIBUTE {
+        if (m_isCompiled) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
+        if (!m_pAnimator) SR_UNLIKELY_ATTRIBUTE {
+            SR_WARN("AnimationGraph::Compile() : animator is nullptr!");
             return;
         }
 
@@ -217,11 +124,64 @@ namespace SR_ANIMATIONS_NS {
 
     AnimationGraphNode* AnimationGraph::GetNode(uint64_t index) const {
         if (index < m_nodes.size()) {
-            return m_nodes.at(index);
+            return const_cast<AnimationGraphNode*>(m_nodes.at(index).Get());
         }
 
         SRHalt("Out of range!");
 
         return nullptr;
+    }
+
+    void AnimationGraph::SetAsset(AnimationGraphAsset* pAsset) {
+        if (m_pAsset) {
+            m_pAsset->RemoveUsePoint();
+        }
+        m_pAsset = pAsset;
+        if (m_pAsset) {
+            m_pAsset->AddUsePoint();
+        }
+    }
+
+    void AnimationGraph::OnPostLoad() {
+        Super::OnPostLoad();
+        for (auto&& pNode : m_nodes) {
+            pNode->SetGraph(this);
+        }
+    }
+
+    void AnimationGraph::CloneTo(SR_UTILS_NS::SRClass& clone) const {
+        Super::CloneTo(clone);
+        for (auto&& pNode : static_cast<AnimationGraph&>(clone).m_nodes) {
+            pNode->SetGraph(&static_cast<AnimationGraph&>(clone));
+        }
+        static_cast<AnimationGraph&>(clone).SetAsset(m_pAsset);
+    }
+
+    const SR_UTILS_NS::Path& AnimationGraph::GetPath() const noexcept {
+        if (m_pAsset) {
+            return m_pAsset->GetResourcePath();
+        }
+        SRHalt("AnimationGraph::GetPath() : asset is nullptr!");
+        static SR_UTILS_NS::Path emptyPath;
+        return emptyPath;
+    }
+
+    const AnimationGraph& AnimationGraphAsset::GetData() const noexcept {
+        if (!m_data) {
+            m_data = new AnimationGraph();
+        }
+        return *m_data;
+    }
+
+    AnimationGraphAsset::AnimationGraphAsset() {
+        m_data = new AnimationGraph();
+    }
+
+    void AnimationGraphAsset::OnAssetLoaded() {
+        Super::OnAssetLoaded();
+    }
+
+    AnimationGraphAsset::~AnimationGraphAsset() {
+        m_data.AutoFree();
     }
 }

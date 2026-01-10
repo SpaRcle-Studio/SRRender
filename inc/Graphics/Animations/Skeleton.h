@@ -30,7 +30,7 @@ namespace SR_ANIMATIONS_NS {
         ~Skeleton() override;
 
     public:
-        void Update(float_t dt) override;
+        void LateUpdate() override;
 
         void OnPostLoad() override;
 
@@ -43,6 +43,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const Bone* GetRootBone() const noexcept { return m_rootBone.Get(); }
         SR_NODISCARD Bone* GetRootBone() noexcept { return m_rootBone.Get(); }
         SR_NODISCARD int32_t GetOffsetsSSBO() const noexcept;
+        SR_NODISCARD int32_t GetBonesSSBO() const noexcept;
 
         const SR_MATH_NS::Matrix4x4& GetMatrixByIndex(uint16_t index) noexcept;
         SR_NODISCARD const std::vector<SR_MATH_NS::Matrix4x4>& GetMatrices() noexcept;
@@ -56,6 +57,9 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD bool IsDirtyMatrices() const noexcept { return m_dirtyMatrices; }
         SR_NODISCARD const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& GetOptimizedBones() const noexcept;
         void SetDebugEnabled(bool enabled) { m_debugEnabled = enabled; }
+
+        SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;
+        SR_NODISCARD const SR_HTYPES_NS::SharedPtr<Pipeline>& GetPipeline() const noexcept;
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
@@ -73,13 +77,18 @@ namespace SR_ANIMATIONS_NS {
         std::vector<Bone*> m_bonesByIndex;
 
         bool m_isNeedRecalcTransforms = true;
-        mutable bool m_isSSBODirty = true;
+        bool m_multiFrameSSBOResources = true;
+        mutable bool m_isBonesSSBODirty = true;
+        mutable bool m_isOffsetsSSBODirty = true;
 
         std::vector<uint32_t> m_indices;
         std::vector<SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::Transform3D>> m_transforms;
         std::vector<SR_MATH_NS::Matrix4x4> m_matrices;
 
-        mutable std::unique_ptr<SSBOInstance> m_bonesSSBO;
+        mutable std::unique_ptr<SSBOInstance> m_offsetsSSBO;
+        mutable std::array<std::unique_ptr<SSBOInstance>, SR_MAX_FRAMES_IN_FLIGHT> m_bonesSSBO;
+        mutable SR_HTYPES_NS::SharedPtr<Pipeline> m_pipeline;
+        mutable SR_HTYPES_NS::SafePtr<RenderContext> m_renderContext;
 
     private:
         /// @property @notNull

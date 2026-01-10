@@ -15,7 +15,11 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationGraphNode : public SR_UTILS_NS::NonCopyable {
+    class AnimationGraphNode : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<AnimationGraphNode> {
+        SR_CLASS()
+    public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<AnimationGraphNode>;
+
     public:
         /**
          * @param input - сколько данная нода имеет входных пинов
@@ -25,8 +29,6 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationGraphNode() override;
 
     public:
-        SR_NODISCARD static AnimationGraphNode* Load(const SR_XML_NS::Node& nodeXml);
-
         SR_NODISCARD uint32_t GetInputCount() const noexcept { return static_cast<uint32_t>(m_inputPins.size()); }
         SR_NODISCARD uint32_t GetOutputCount() const noexcept { return static_cast<uint32_t>(m_outputPins.size()); }
         SR_NODISCARD virtual AnimationGraphNodeType GetType() const noexcept = 0;
@@ -43,14 +45,17 @@ namespace SR_ANIMATIONS_NS {
         AnimationGraph* m_graph = nullptr;
         AnimationPose* m_pose = nullptr;
 
-        std::vector<std::optional<AnimationLink>> m_inputPins;
-        std::vector<std::optional<AnimationLink>> m_outputPins;
+        /// @property
+        std::vector<AnimationLink> m_inputPins;
+        /// @property
+        std::vector<AnimationLink> m_outputPins;
 
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
     class AnimationGraphNodeFinal : public AnimationGraphNode {
+        SR_CLASS()
         using Super = AnimationGraphNode;
     public:
         explicit AnimationGraphNodeFinal()
@@ -59,7 +64,6 @@ namespace SR_ANIMATIONS_NS {
 
     public:
         SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
-
         SR_NODISCARD AnimationGraphNodeType GetType() const noexcept override { return AnimationGraphNodeType::Final; }
 
     };
@@ -67,16 +71,15 @@ namespace SR_ANIMATIONS_NS {
     /// ----------------------------------------------------------------------------------------------------------------
 
     class AnimationGraphNodeStateMachine : public AnimationGraphNode {
+        SR_CLASS()
         using Super = AnimationGraphNode;
     public:
-        AnimationGraphNodeStateMachine()
-            :  Super(0, 1)
-        { }
-
+        AnimationGraphNodeStateMachine();
         ~AnimationGraphNodeStateMachine() override;
 
     public:
-        SR_NODISCARD static AnimationGraphNodeStateMachine* Load(const SR_XML_NS::Node& nodeXml);
+        void OnPostLoad() override;
+        void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
 
         void SetStateMachine(AnimationStateMachine* pMachine);
         void Compile(CompileContext& context) override;
@@ -84,11 +87,12 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD bool IsStateActive(SR_UTILS_NS::StringAtom name) const override;
         SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
 
-        SR_NODISCARD AnimationStateMachine* GetMachine() const noexcept { return m_stateMachine; }
+        SR_NODISCARD const SR_HTYPES_NS::SharedPtr<AnimationStateMachine>& GetMachine() const noexcept { return m_stateMachine; }
         SR_NODISCARD AnimationGraphNodeType GetType() const noexcept override { return AnimationGraphNodeType::StateMachine; }
 
     protected:
-        AnimationStateMachine* m_stateMachine = nullptr;
+        /// @property @notNull
+        SR_HTYPES_NS::SharedPtr<AnimationStateMachine> m_stateMachine;
 
     };
 

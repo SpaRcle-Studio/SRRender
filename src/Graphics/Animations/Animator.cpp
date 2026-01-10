@@ -93,17 +93,22 @@ namespace SR_ANIMATIONS_NS {
     }
 
     void Animator::SetGraph(const SR_UTILS_NS::Path& path) {
-        SR_SAFE_DELETE_PTR(m_graph);
+        SR_TRACY_ZONE;
 
+        m_graph.AutoFree();
         if (path.IsEmpty()) {
             return;
         }
 
-        if (path.IsAbs()) {
-            m_graph = AnimationGraph::Load(this, path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath()));
+        auto&& loadPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+        if (auto&& pAsset = SR_UTILS_NS::Asset::Load<AnimationGraphAsset>(loadPath)) {
+            m_graph = new AnimationGraph();
+            pAsset->GetData().CloneTo(*m_graph);
+            m_graph->SetAnimator(this);
+            m_graph->SetAsset(pAsset.Get());
         }
         else {
-            m_graph = AnimationGraph::Load(this, path);
+            SR_ERROR("Animator::SetGraph() : failed to load animation graph asset: {}", loadPath);
         }
     }
 
@@ -111,13 +116,7 @@ namespace SR_ANIMATIONS_NS {
         return m_graph ? m_graph->GetPath() : SR_UTILS_NS::Path();
     }
 
-    //void Animator::SetClipPath(const SR_UTILS_NS::Path& path) {
-    //    m_clipPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
-    //    ReloadClip();
-    //}
-
-    //void Animator::SetClipName(const std::string& name) {
-    //    m_clipName = name;
-    //    ReloadClip();
-    //}
+    AnimationGraph* Animator::GetGraph() const noexcept {
+        return const_cast<AnimationGraph*>(m_graph.Get());
+    }
 }

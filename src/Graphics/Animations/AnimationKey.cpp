@@ -4,12 +4,32 @@
 
 #include <Graphics/Animations/AnimationKey.h>
 #include <Graphics/Animations/AnimationData.h>
-#include <Graphics/Animations/AnimationGraph.h>
 
-#include <Utils/ECS/GameObject.h>
 #include <Utils/ECS/Transform.h>
 
 namespace SR_ANIMATIONS_NS {
+    UnionAnimationKey::UnionAnimationKey(const UnionAnimationKey& other) {
+        CopyFrom(other);
+    }
+
+    UnionAnimationKey::UnionAnimationKey(UnionAnimationKey&& other) noexcept {
+        MoveFrom(other);
+    }
+
+    UnionAnimationKey& UnionAnimationKey::operator=(const UnionAnimationKey& other) {
+        if (this != &other) {
+            CopyFrom(other);
+        }
+        return *this;
+    }
+
+    UnionAnimationKey& UnionAnimationKey::operator=(UnionAnimationKey&& other) noexcept {
+        if (this != &other) {
+            MoveFrom(other);
+        }
+        return *this;
+    }
+
     void UnionAnimationKey::Update(const float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t tolerance) const noexcept {
         if (tolerance == 0.0f) SR_UNLIKELY_ATTRIBUTE {
             Update(progress, prevKey, animation);
@@ -83,6 +103,21 @@ namespace SR_ANIMATIONS_NS {
                 }
                 animation.rotation = animation.rotation.value().Slerp(prevKey.data.rotation.rotation
                     .Slerp(data.rotation.rotation, progress), weight);
+
+                //// Вычисляем интерполированное значение один раз
+                //const auto interpolated = prevKey.data.rotation.rotation
+                //        .Slerp(data.rotation.rotation, progress);
+
+                //if (!animation.rotation.has_value()) {
+                //    animation.rotation = interpolated;
+                //    animation.rotationWeight = weight;
+                //} else {
+                //    // Используем более быстрый NLerp для блендинга
+                //    // или накапливаем взвешенные значения
+                //    animation.rotation = animation.rotation.value()
+                //            .NLerp(interpolated, weight / (animation.rotationWeight + weight));
+                //    animation.rotationWeight += weight;
+                //}
                 break;
             case AnimationKeyType::Translation:
                 if (!animation.translation.has_value()) SR_UNLIKELY_ATTRIBUTE {
@@ -185,6 +220,25 @@ namespace SR_ANIMATIONS_NS {
             case AnimationKeyType::Scaling:
                 data.scaling = other.data.scaling;
             break;
+            default:
+                SRHalt("Unknown key type!");
+        }
+    }
+
+    void UnionAnimationKey::MoveFrom(UnionAnimationKey& other) noexcept {
+        time = other.time;
+        type = other.type;
+
+        switch (type) {
+            case AnimationKeyType::Translation:
+                data.translation = SR_UTILS_NS::Exchange(other.data.translation, {});
+                break;
+            case AnimationKeyType::Rotation:
+                data.rotation = SR_UTILS_NS::Exchange(other.data.rotation, {});
+                break;
+            case AnimationKeyType::Scaling:
+                data.scaling = SR_UTILS_NS::Exchange(other.data.scaling, {});
+                break;
             default:
                 SRHalt("Unknown key type!");
         }

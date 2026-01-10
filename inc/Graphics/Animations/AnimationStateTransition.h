@@ -11,16 +11,13 @@ namespace SR_ANIMATIONS_NS {
     class AnimationState;
     class AnimationStateMachine;
 
-    class AnimationStateTransition : public SR_UTILS_NS::NonCopyable {
+    class AnimationStateTransition : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<AnimationStateTransition> {
+        SR_CLASS()
     public:
-        using Super = SR_UTILS_NS::NonCopyable;
+        using Ptr = SR_HTYPES_NS::SharedPtr<AnimationStateTransition>;
 
     public:
-        SR_NODISCARD static AnimationStateTransition* Load(AnimationState* pSource, AnimationState* pDestination, const SR_XML_NS::Node& nodeXml);
-
-        AnimationStateTransition(AnimationState* pSource, AnimationState* pDestination, AnimationStateCondition* pCondition);
-        AnimationStateTransition(AnimationState* pSource, AnimationState* pDestination);
-
+        AnimationStateTransition();
         ~AnimationStateTransition() override;
 
     public:
@@ -36,12 +33,24 @@ namespace SR_ANIMATIONS_NS {
 
         SR_NODISCARD float_t GetProgress() const noexcept { return m_condition ? m_condition->GetProgress().value_or(1.f) : 1.f; }
 
-        virtual void Reset();
+        void SetSourceState(AnimationState* state) { m_sourceState = state; }
+        void SetDestinationState(AnimationState* state) { m_destinationState = state; }
+
+        SR_NODISCARD int32_t GetFromStateIndex() const noexcept { return m_fromStateIndex; }
+        SR_NODISCARD int32_t GetToStateIndex() const noexcept { return m_toStateIndex; }
+
+        virtual void ResetTransition();
         virtual void Update(const StateConditionContext& context);
 
     protected:
+        /// @property
+        int32_t m_fromStateIndex = -1;
+        /// @property
+        int32_t m_toStateIndex = -1;
+        /// @property
+        AnimationStateCondition::Ptr m_condition;
+
         bool m_isActive = false;
-        AnimationStateCondition* m_condition = nullptr;
         AnimationState* m_sourceState = nullptr;
         AnimationState* m_destinationState = nullptr;
 

@@ -52,10 +52,6 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
 
     private:
-        bool m_skeletonIsBroken = false;
-        std::vector<int32_t> m_ssboBones;
-
-    private:
         /// @property
         SkeletonRef m_skeleton;
 

@@ -6,7 +6,13 @@
 #include <Graphics/Animations/AnimationState.h>
 #include <Graphics/Animations/AnimationStateMachine.h>
 
+#include <Codegen/AnimationStateCondition.generated.hpp>
+
 namespace SR_ANIMATIONS_NS {
+    AnimationStateCondition::AnimationStateCondition()
+        : Ptr(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+    { }
+
     bool AnimationStateConditionAnd::IsSuitable(const StateConditionContext& context) const noexcept {
         for (auto&& pCondition : m_conditions) {
             if (!pCondition->IsSuitable(context)) {
@@ -17,11 +23,11 @@ namespace SR_ANIMATIONS_NS {
         return true;
     }
 
-    void AnimationStateConditionAnd::Reset() {
+    void AnimationStateConditionAnd::ResetCondition() {
         for (auto&& pCondition : m_conditions) {
-            pCondition->Reset();
+            pCondition->ResetCondition();
         }
-        Super::Reset();
+        Super::ResetCondition();
     }
 
     void AnimationStateConditionAnd::Update(const StateConditionContext& context) {
@@ -42,62 +48,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    AnimationStateCondition* AnimationStateCondition::Load(const SR_XML_NS::Node& nodeXml) {
-        SR_TRACY_ZONE;
-
-        auto&& type = nodeXml.GetAttribute("Type").ToString();
-        if (type == "True") {
-            return new AnimationStateConditionTrue();
-        }
-
-        if (type == "Bool") {
-            return AnimationStateConditionBool::Load(nodeXml);
-        }
-
-        if (type == "And") {
-            return AnimationStateConditionAnd::Load(nodeXml);
-        }
-
-        /*if (type == "Or") {
-            auto&& pCondition = new AnimationStateConditionOr();
-            for (auto&& node : nodeXml.GetChildren()) {
-                if (auto&& pChild = Load(node)) {
-                    pCondition->m_conditions.push_back(pChild);
-                }
-            }
-
-            return pCondition;
-        }*/
-
-        if (type == "Not") {
-            return AnimationStateConditionNot::Load(nodeXml);
-        }
-
-        if (type == "ExitTime") {
-            return AnimationStateConditionExitTime::Load(nodeXml);
-        }
-
-        SR_ERROR("AnimationStateCondition::Load() : unknown type \"{}\"!", type);
-
-        return nullptr;
-    }
-
-    AnimationStateConditionAnd::~AnimationStateConditionAnd() {
-        for (auto&& pCondition : m_conditions) {
-            delete pCondition;
-        }
-    }
-
-    AnimationStateConditionAnd* AnimationStateConditionAnd::Load(const SR_XML_NS::Node& nodeXml) {
-        auto&& pCondition = new AnimationStateConditionAnd();
-        for (auto&& childNodeXml : nodeXml.GetNodes("Condition")) {
-            if (auto&& pChild = AnimationStateCondition::Load(childNodeXml)) {
-                pCondition->m_conditions.push_back(pChild);
-            }
-        }
-
-        return pCondition;
-    }
+    AnimationStateConditionAnd::~AnimationStateConditionAnd() = default;
 
     bool AnimationStateConditionAnd::IsFinished(const StateConditionContext& context) const noexcept {
         for (auto&& pCondition : m_conditions) {
@@ -130,11 +81,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    AnimationStateConditionOr::~AnimationStateConditionOr() {
-        for (auto&& pCondition : m_conditions) {
-            delete pCondition;
-        }
-    }
+    AnimationStateConditionOr::~AnimationStateConditionOr() = default;
 
     bool AnimationStateConditionOr::IsSuitable(const StateConditionContext& context) const noexcept {
         for (auto&& pCondition : m_conditions) {
@@ -146,11 +93,11 @@ namespace SR_ANIMATIONS_NS {
         return false;
     }
 
-    void AnimationStateConditionOr::Reset() {
+    void AnimationStateConditionOr::ResetCondition() {
         for (auto&& pCondition : m_conditions) {
-            pCondition->Reset();
+            pCondition->ResetCondition();
         }
-        Super::Reset();
+        Super::ResetCondition();
     }
 
     bool AnimationStateConditionOr::IsFinished(const StateConditionContext &context) const noexcept {
@@ -205,25 +152,14 @@ namespace SR_ANIMATIONS_NS {
         Super::Update(context);
     }
 
-    void AnimationStateConditionNot::Reset() {
+    void AnimationStateConditionNot::ResetCondition() {
         if (m_condition) {
-            m_condition->Reset();
+            m_condition->ResetCondition();
         }
-        Super::Reset();
+        Super::ResetCondition();
     }
 
-    AnimationStateConditionNot::~AnimationStateConditionNot() {
-        SR_SAFE_DELETE_PTR(m_condition);
-    }
-
-    AnimationStateConditionNot* AnimationStateConditionNot::Load(const SR_XML_NS::Node& nodeXml) {
-        auto&& pCondition = new AnimationStateConditionNot();
-        if (auto&& xmlCondition = nodeXml.GetNode("Condition")) {
-            pCondition->m_condition = AnimationStateCondition::Load(xmlCondition);
-        }
-
-        return pCondition;
-    }
+    AnimationStateConditionNot::~AnimationStateConditionNot() = default;
 
     bool AnimationStateConditionNot::IsNeedBreakUpdate() const noexcept {
         return m_condition && m_condition->IsNeedBreakUpdate();
@@ -234,18 +170,6 @@ namespace SR_ANIMATIONS_NS {
     }
 
     /// ----------------------------------------------------------------------------------------------------------------
-
-    AnimationStateConditionExitTime* AnimationStateConditionExitTime::Load(const SR_XML_NS::Node& nodeXml) {
-        SR_TRACY_ZONE;
-
-        auto&& pCondition = new AnimationStateConditionExitTime();
-
-        pCondition->m_exitTime = nodeXml.GetAttribute("ExitTime").ToFloat();
-        pCondition->m_hasExitTime = nodeXml.GetAttribute("HasExitTime").ToBool();
-        pCondition->m_duration = nodeXml.GetAttribute("Duration").ToFloat();
-
-        return pCondition;
-    }
 
     bool AnimationStateConditionExitTime::IsSuitable(const StateConditionContext& context) const noexcept {
         if (!context.pState) {
@@ -284,19 +208,19 @@ namespace SR_ANIMATIONS_NS {
         return SR_MIN(progress, 1.f);
     }
 
-    void AnimationStateConditionExitTime::Reset() {
+    void AnimationStateConditionExitTime::ResetCondition() {
         m_dtDuration = 0.f;
         m_dtCapacity = 0.f;
-        Super::Reset();
+        Super::ResetCondition();
     }
 
     void AnimationStateConditionExitTime::Update(const StateConditionContext& context) {
         if (m_hasExitTime && m_dtExitTime <= 0.f) SR_UNLIKELY_ATTRIBUTE {
-            m_dtExitTime = context.pState->GetDuration() * m_exitTime;
+            m_dtExitTime = context.pState ? (context.pState->GetDuration() * m_exitTime) : 0.f;
         }
 
         if (m_dtDuration <= 0.f) SR_UNLIKELY_ATTRIBUTE {
-            m_dtDuration = context.pState->GetDuration() * m_duration;
+            m_dtDuration = context.pState ? (context.pState->GetDuration() * m_duration) : 0.f;
         }
 
         m_dtCapacity += context.dt;
@@ -305,13 +229,6 @@ namespace SR_ANIMATIONS_NS {
     }
 
     /// ----------------------------------------------------------------------------------------------------------------
-
-    AnimationStateConditionBool* AnimationStateConditionBool::Load(const SR_XML_NS::Node& nodeXml) {
-        auto&& pCondition = new AnimationStateConditionBool();
-        pCondition->m_variableName = nodeXml.GetAttribute("Variable").ToString();
-        pCondition->m_value = nodeXml.GetAttribute("Value").ToBool();
-        return pCondition;
-    }
 
     bool AnimationStateConditionBool::IsSuitable(const StateConditionContext& context) const noexcept {
         return m_checked;
@@ -325,8 +242,8 @@ namespace SR_ANIMATIONS_NS {
         Super::Update(context);
     }
 
-    void AnimationStateConditionBool::Reset() {
+    void AnimationStateConditionBool::ResetCondition() {
         m_checked = false;
-        Super::Reset();
+        Super::ResetCondition();
     }
 }

@@ -209,7 +209,7 @@ namespace SR_GRAPH_NS {
         auto&& prepareResult = Super::PrepareFrame();
         switch (prepareResult) {
             case EvoVulkan::Core::FrameResult::Suboptimal:
-                SRAssert2(!m_isSwapchainSuboptimal, "SRVulkan::Render() : suboptimal swapchain already set!");
+                //SRAssert2(!m_isSwapchainSuboptimal, "SRVulkan::Render() : suboptimal swapchain already set!");
                 m_isSwapchainSuboptimal = true;
                 break;
             case EvoVulkan::Core::FrameResult::OutOfDate: {

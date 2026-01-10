@@ -35,24 +35,24 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        const uint32_t sizeBones = GetRawMesh()->GetOptimizedBones().size() * sizeof(SR_MATH_NS::Matrix4x4);
-        const uint8_t maxFrames = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameSSBOResources", true) ? GetPipeline()->GetSwapchainImagesCount() : 1;
-
-        m_ssboBones.resize(maxFrames, SR_ID_INVALID);
-        for (uint8_t frame = 0; frame < maxFrames; ++frame) {
-            m_ssboBones[frame] = GetPipeline()->AllocateSSBO(sizeBones, SSBOUsage::CPUToGPU);
-        }
+        //const uint32_t sizeBones = GetRawMesh()->GetOptimizedBones().size() * sizeof(SR_MATH_NS::Matrix4x4);
+        //const uint8_t maxFrames = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameSSBOResources", true) ? GetPipeline()->GetSwapchainImagesCount() : 1;
+        //
+        //m_ssboBones.resize(maxFrames, SR_ID_INVALID);
+        //for (uint8_t frame = 0; frame < maxFrames; ++frame) {
+        //    m_ssboBones[frame] = GetPipeline()->AllocateSSBO(sizeBones, SSBOUsage::CPUToGPU);
+        //}
 
         return IndexedMesh::Calculate();
     }
 
     void SkinnedMesh::FreeSSBO() {
-        for (auto& ssbo : m_ssboBones) {
-            if (ssbo != SR_ID_INVALID) {
-                GetPipeline()->FreeSSBO(&ssbo);
-            }
-        }
-        m_ssboBones.clear();
+        //for (auto& ssbo : m_ssboBones) {
+        //    if (ssbo != SR_ID_INVALID) {
+        //        GetPipeline()->FreeSSBO(&ssbo);
+        //    }
+        //}
+        //m_ssboBones.clear();
     }
 
     const SR_HTYPES_NS::FastMemoryArray<uint32_t>& SkinnedMesh::GetIndices() const {
@@ -66,7 +66,7 @@ namespace SR_GTYPES_NS {
     void SkinnedMesh::LateUpdate() {
         SR_TRACY_ZONE;
 
-        auto&& pSkeleton = m_skeleton.Get();
+        /*auto&& pSkeleton = m_skeleton.Get();
 
         if (m_skeletonIsBroken && !pSkeleton) {
             return Super::LateUpdate();
@@ -87,7 +87,7 @@ namespace SR_GTYPES_NS {
         }
 
         m_skeletonIsBroken = !pSkeleton;
-        m_renderScene->SetDirty();
+        m_renderScene->SetDirty();*/
 
         return Super::LateUpdate();
     };
@@ -137,23 +137,25 @@ namespace SR_GTYPES_NS {
     void SkinnedMesh::UseSSBO() {
         SR_TRACY_ZONE;
 
-        if (m_ssboBones.empty()) {
+        auto&& pSkeleton = m_skeleton.Get();
+        if (!pSkeleton) {
             return Super::UseSSBO();
         }
 
-        const uint8_t frame = GetPipeline()->GetCurrentImageIndex();
-        const auto ssbo = m_ssboBones[SR_MIN(frame, m_ssboBones.size() - 1)];
+        const int32_t bonesSSBO = pSkeleton->GetBonesSSBO();
+        if (bonesSSBO == SR_ID_INVALID) {
+            return Super::UseSSBO();
+        }
 
-        GetPipeline()->GetCurrentShader()->BindSSBO("bones", ssbo);
+        const int32_t offsetsSSBO = pSkeleton->GetOffsetsSSBO();
 
-        auto&& pSkeleton = m_skeleton.Get();
-        const int32_t offsetsSSBO = pSkeleton ? pSkeleton->GetOffsetsSSBO() : SR_ID_INVALID;
+        GetPipeline()->GetCurrentShader()->BindSSBO("bones", bonesSSBO);
 
         if (offsetsSSBO != SR_ID_INVALID) {
             GetPipeline()->GetCurrentShader()->BindSSBO("offsets", offsetsSSBO);
         }
         else {
-            GetPipeline()->GetCurrentShader()->BindSSBO("offsets", ssbo);
+            GetPipeline()->GetCurrentShader()->BindSSBO("offsets", bonesSSBO);
         }
 
         Super::UseSSBO();

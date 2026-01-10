@@ -18,26 +18,13 @@ namespace SR_ANIMATIONS_NS {
     class AnimationKey;
     class AnimationPose;
 
-    class AnimationChannel final : public SR_UTILS_NS::NonCopyable {
+    class AnimationChannel final {
         using Keys = std::vector<UnionAnimationKey>;
     public:
-        ~AnimationChannel() override;
+        ~AnimationChannel();
 
     public:
-        static void Load(SR_HTYPES_NS::RawMesh* pRawMesh, aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel*>& channels);
-
-        SR_NODISCARD AnimationChannel* Copy() const noexcept {
-            auto&& pChannel = new AnimationChannel();
-
-            for (auto&& key : m_keys) {
-                pChannel->m_keys.emplace_back(key);
-            }
-
-            pChannel->m_name = m_name;
-            pChannel->m_boneIndex = m_boneIndex;
-
-            return pChannel;
-        }
+        static void Load(SR_HTYPES_NS::RawMesh* pRawMesh, aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels);
 
         void SetName(SR_UTILS_NS::StringAtom name);
         void SetBoneIndex(uint16_t index) { m_boneIndex = index; }
@@ -53,8 +40,9 @@ namespace SR_ANIMATIONS_NS {
 
     public:
         SR_NODISCARD const Keys& GetKeys() const { return m_keys; }
+        SR_NODISCARD Keys& GetKeys() { return m_keys; }
 
-        SR_NODISCARD SR_FORCE_INLINE SR_UTILS_NS::StringAtom GetGameObjectName() const noexcept { return m_name; }
+        SR_NODISCARD SR_FORCE_INLINE SR_UTILS_NS::StringAtom GetChannelName() const noexcept { return m_name; }
         SR_NODISCARD SR_FORCE_INLINE uint16_t GetBoneIndex() const noexcept { return m_boneIndex.value_or(SR_UINT16_MAX); }
         SR_NODISCARD SR_FORCE_INLINE bool HasBoneIndex() const noexcept { return m_boneIndex.has_value(); }
 

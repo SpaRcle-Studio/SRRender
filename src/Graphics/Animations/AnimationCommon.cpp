@@ -4,7 +4,13 @@
 
 #include <Graphics/Animations/AnimationCommon.h>
 
+#include <Codegen/AnimationCommon.generated.hpp>
+
 namespace SR_ANIMATIONS_NS {
+    IAnimationDataSet::IAnimationDataSet()
+        : SR_HTYPES_NS::SharedPtr<IAnimationDataSet>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+    { }
+
     std::optional<bool> IAnimationDataSet::GetBool(const SR_UTILS_NS::StringAtom& name) const { /** NOLINT */
         if (auto&& pIt = m_boolTable.find(name); pIt != m_boolTable.end()) {
             return pIt->second;

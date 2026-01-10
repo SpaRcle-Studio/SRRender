@@ -7,6 +7,7 @@
 
 #include <Utils/Types/RawMesh.h>
 #include <Utils/Common/StringUtils.h>
+#include <Utils/FileSystem/PathDataAccessor.h>
 
 #ifdef SR_UTILS_ASSIMP
     #include <assimp/Importer.hpp>
@@ -19,41 +20,7 @@ namespace SR_ANIMATIONS_NS {
     AnimationClip::AnimationClip() = default;
 
     AnimationClip::~AnimationClip() {
-        for (auto&& pChannel : m_channels) {
-            delete pChannel;
-        }
         m_channels.clear();
-    }
-
-    AnimationClip::Ptr AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton, SR_UTILS_NS::StringAtom name) {
-        return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<AnimationClip>(rawPath,
-            [&skeleton](AnimationClip& clip) { clip.m_skeletonPath = SR_UTILS_NS::Path(skeleton).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath()); },
-            [&rawPath, name]() { return rawPath.GetExtensionView() == "animation" ? std::string() : name.ToStringRef(); }
-        );
-    }
-
-    std::vector<AnimationClip::Ptr> AnimationClip::Load(const SR_UTILS_NS::Path& rawPath, const SR_UTILS_NS::Path& skeleton) {
-        std::vector<AnimationClip::Ptr> animations;
-
-        SR_HTYPES_NS::RawMeshParams params;
-        params.animation = true;
-
-        auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(rawPath, params);
-        if (!pRawMesh) {
-            return animations;
-        }
-
-        auto&& animationNames = pRawMesh->GetAnimationNames();
-        for (auto&& name : animationNames) {
-            auto&& pAnimationClip = Load(rawPath, skeleton, name);
-            animations.emplace_back(pAnimationClip);
-        }
-
-        if (animations.empty()) {
-            SR_ERROR("AnimationClip::Load() : failed to load animation clips! Path: " + rawPath.ToString());
-        }
-
-        return animations;
     }
 
     bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, const std::string& name) {
@@ -82,6 +49,8 @@ namespace SR_ANIMATIONS_NS {
             );
         }
 
+        PostProcess();
+
         return true;
     #else
         return false;
@@ -89,9 +58,6 @@ namespace SR_ANIMATIONS_NS {
     }
 
     bool AnimationClip::Unload() {
-        for (auto&& pChannel : m_channels) {
-            delete pChannel;
-        }
         m_channels.clear();
 
         m_maxKeyFrame = 0;
@@ -100,83 +66,78 @@ namespace SR_ANIMATIONS_NS {
         return Super::Unload();
     }
 
-    bool AnimationClip::Load() {
+    void AnimationClip::OnAssetLoaded() {
         SR_TRACY_ZONE;
 
-        auto&& resourceId = GetResourceId();
+        SR_HTYPES_NS::RawMeshParams params;
+        params.animation = true;
 
-        if (SR_UTILS_NS::StringUtils::GetExtensionFromFilePath(resourceId) == "animation") {
-            SRHalt("TODO!");
+        auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(m_clipPath, params);
+        if (!pRawMesh) {
+            SR_ERROR("AnimationClip::Load() : failed to load raw mesh from path: {}", m_clipPath);
+            return;
         }
-        else {
-            auto&& [animationName, rawPath] = SR_UTILS_NS::StringUtils::SplitTwo(
-                resourceId,
-                SR_UTILS_NS::RESOURCE_ID_SEPARATOR.ToStringRef()
-            );
 
-            SR_HTYPES_NS::RawMeshParams params;
-            params.animation = true;
+        SR_HTYPES_NS::RawMesh::Ptr pSkeletonMesh = nullptr;
 
-            auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(rawPath, params);
-            if (!pRawMesh) {
-                return false;
-            }
-
-            SR_HTYPES_NS::RawMesh::Ptr pSkeletonMesh = nullptr;
-
-            if (m_skeletonPath.empty() || m_skeletonPath == rawPath) {
-                pSkeletonMesh = pRawMesh;
-            }
-            else if (!m_skeletonPath.empty()) {
-                pSkeletonMesh = SR_HTYPES_NS::RawMesh::Load(m_skeletonPath);
-                if (!pSkeletonMesh) {
-                    pRawMesh->CheckResourceUsage();
-                    return false;
-                }
-            }
-
-            if (!LoadChannels(pRawMesh.Get(), pSkeletonMesh.Get(), animationName)) {
-                std::string animations;
-            #ifdef SR_UTILS_ASSIMP
-                const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
-                for (uint32_t i = 0; i < pScene->mNumAnimations; ++i) {
-                    animations += pScene->mAnimations[i]->mName.C_Str();
-                    if (i < pScene->mNumAnimations - 1) {
-                        animations += ", ";
-                    }
-                }
-            #endif
+        if (m_skeletonPath.empty() || m_skeletonPath == m_clipPath) {
+            pSkeletonMesh = pRawMesh;
+        }
+        else if (!m_skeletonPath.empty()) {
+            pSkeletonMesh = SR_HTYPES_NS::RawMesh::Load(m_skeletonPath);
+            if (!pSkeletonMesh) {
                 pRawMesh->CheckResourceUsage();
-                pSkeletonMesh->CheckResourceUsage();
-                SR_ERROR("AnimationClip::Load() : wrong animation name \"{}\"!\n\tTotal animations: {}", animationName, animations);
-                return false;
+                SR_ERROR("AnimationClip::Load() : failed to load skeleton raw mesh from path: {}", m_skeletonPath);
+                return;
             }
+        }
 
+        if (!LoadChannels(pRawMesh.Get(), pSkeletonMesh.Get(), m_clipName)) {
+            std::string animations;
+        #ifdef SR_UTILS_ASSIMP
+            const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
+            for (uint32_t i = 0; i < pScene->mNumAnimations; ++i) {
+                animations += pScene->mAnimations[i]->mName.C_Str();
+                if (i < pScene->mNumAnimations - 1) {
+                    animations += ", ";
+                }
+            }
+        #endif
             pRawMesh->CheckResourceUsage();
             pSkeletonMesh->CheckResourceUsage();
+            SR_ERROR("AnimationClip::Load() : wrong animation name \"{}\"!\n\tTotal animations: {}", m_clipName, animations);
+            return;
         }
 
-        for (auto&& pChannel : GetChannels()) {
-            m_maxKeyFrame = SR_MAX(m_maxKeyFrame, pChannel->GetKeys().size());
-            for (auto&& key : pChannel->GetKeys()) {
+        pRawMesh->CheckResourceUsage();
+        pSkeletonMesh->CheckResourceUsage();
+
+        for (auto&& channel : GetChannels()) {
+            m_maxKeyFrame = SR_MAX(m_maxKeyFrame, channel.GetKeys().size());
+            for (auto&& key : channel.GetKeys()) {
                 m_duration = SR_MAX(m_duration, key.time);
             }
         }
 
-        return Super::Load();
+        Super::OnAssetLoaded();
     }
 
     SR_UTILS_NS::StringAtom AnimationClip::GetClipName() const noexcept {
-        auto&& resourceId = GetResourceId();
-        if (resourceId.empty()) {
-            SR_ERROR("AnimationClip::GetClipName() : resource id is empty!");
-            return SR_UTILS_NS::StringAtom();
-        }
+        return m_clipName;
+    }
 
-        auto&& [animationName, rawPath] = SR_UTILS_NS::StringUtils::SplitTwo(
-            resourceId,
-            SR_UTILS_NS::RESOURCE_ID_SEPARATOR.ToStringRef()
-        );
-        return animationName;
+    void AnimationClip::PostProcess() {
+        SR_TRACY_ZONE;
+
+        for (SR_UTILS_NS::StringAtom excludedBone : m_excludedBones) {
+            auto pIt = std::remove_if(
+                m_channels.begin(),
+                m_channels.end(),
+                [&](const AnimationChannel& channel) {
+                    return channel.GetChannelName() == excludedBone;
+                }
+            );
+            m_channels.erase(pIt, m_channels.end());
+        }
     }
 }

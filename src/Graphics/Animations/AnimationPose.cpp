@@ -179,7 +179,7 @@ namespace SR_ANIMATIONS_NS {
                     continue;
                 }
 
-                auto&& pData = GetData(pChannel->GetGameObjectName());
+                auto&& pData = GetData(pChannel->GetChannelName());
                 if (!pData) {
                     continue;
                 }

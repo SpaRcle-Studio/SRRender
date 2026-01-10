@@ -5,6 +5,7 @@
 #include <Graphics/Animations/Skeleton.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/RenderContext.h>
+#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Animations/Bone.h>
 
@@ -13,6 +14,7 @@
 #include <Utils/FileSystem/PathDataAccessor.h>
 #include <Utils/ECS/Transform3D.h>
 #include <Utils/World/Scene.h>
+#include <Utils/Common/Features.h>
 
 #include <Codegen/Skeleton.generated.hpp>
 
@@ -160,10 +162,12 @@ namespace SR_ANIMATIONS_NS {
             }
         }
 
+        m_multiFrameSSBOResources = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameSSBOResources", false);
+
         Super::OnAttached();
     }
 
-    void Skeleton::Update(float_t dt) {
+    void Skeleton::LateUpdate() {
         if (m_bonesByName.empty()) { /// Update не должен вызываться, если кости ещё не загружены
             return;
         }
@@ -177,7 +181,13 @@ namespace SR_ANIMATIONS_NS {
             DisableDebug();
         }
 
-        Super::Update(dt);
+        if (const auto ssbo = GetBonesSSBO(); ssbo != SR_ID_INVALID)  {
+            if (auto&& matrices = GetMatrices(); !matrices.empty()) {
+                GetPipeline()->UpdateSSBO(ssbo, (void*)matrices.data(), matrices.size() * sizeof(SR_MATH_NS::Matrix4x4));
+            }
+        }
+
+        Super::LateUpdate();
     }
 
     void Skeleton::CalculateTransforms() {
@@ -346,20 +356,55 @@ namespace SR_ANIMATIONS_NS {
     void Skeleton::OnRawMeshChanged() {
         IRawMeshHolder::OnRawMeshChanged();
         m_isNeedRecalcTransforms = true;
-        m_isSSBODirty = true;
-        if (m_bonesSSBO) {
-            m_bonesSSBO->GetRenderContext()->SetDirty();
+        m_isOffsetsSSBODirty = true;
+        m_isBonesSSBODirty = true;
+        if (m_offsetsSSBO) {
+            m_offsetsSSBO->GetRenderContext()->SetDirty();
         }
     }
 
+    const SR_GRAPH_NS::RenderContext::Ptr& Skeleton::GetRenderContext() const noexcept {
+        if (!m_renderContext) SR_UNLIKELY_ATTRIBUTE {
+            SRAssert2(SR_THIS_THREAD, "Skeleton::GetPipeline() : SR_THIS_THREAD is nullptr!");
+            m_renderContext = SR_THIS_THREAD->GetContext()->GetValue<SR_GRAPH_NS::RenderContext::Ptr>();
+            SRAssert2(m_renderContext, "Failed to get render context from thread context!");
+        }
+        return m_renderContext;
+    }
+
+    const Pipeline::Ptr& Skeleton::GetPipeline() const noexcept {
+        if (m_pipeline) SR_LIKELY_ATTRIBUTE {
+            return m_pipeline;
+        }
+
+        SR_TRACY_ZONE;
+
+        m_pipeline = GetRenderContext()->GetPipeline();
+        SRAssert2(m_pipeline, "Skeleton::GetPipeline() : m_pipeline is nullptr!");
+
+        return m_pipeline;
+    }
+
     int32_t Skeleton::GetOffsetsSSBO() const noexcept {
-        if (!m_bonesSSBO || m_isSSBODirty) {
+        if (!m_offsetsSSBO || m_isOffsetsSSBODirty) {
             SR_TRACY_ZONE;
             auto&& offsets = GetOffsets();
-            m_bonesSSBO = SR_GRAPH_NS::SSBOInstance::Create<SR_MATH_NS::Matrix4x4>(offsets.size(), SSBOUsage::CPUToGPU);
-            m_bonesSSBO->UpdateSSBO(offsets.data());
-            m_isSSBODirty = false;
+            m_offsetsSSBO = SR_GRAPH_NS::SSBOInstance::Create<SR_MATH_NS::Matrix4x4>(offsets.size(), SSBOUsage::CPUToGPU);
+            m_offsetsSSBO->UpdateSSBO(offsets.data());
+            m_isOffsetsSSBODirty = false;
         }
-        return m_bonesSSBO->GetSSBO();
+        return m_offsetsSSBO->GetSSBO();
+    }
+
+    int32_t Skeleton::GetBonesSSBO() const noexcept {
+        SR_TRACY_ZONE;
+
+        const auto frame = m_multiFrameSSBOResources ? GetPipeline()->GetCurrentImageIndex() : 0;
+        if (!m_bonesSSBO[frame] || m_isBonesSSBODirty) {
+            auto&& matrices = const_cast<Skeleton*>(this)->GetMatrices();
+            m_bonesSSBO[frame] = SR_GRAPH_NS::SSBOInstance::Create<SR_MATH_NS::Matrix4x4>(matrices.size(), SSBOUsage::CPUToGPU);
+            m_isBonesSSBODirty = false;
+        }
+        return m_bonesSSBO[frame]->GetSSBO();
     }
 }

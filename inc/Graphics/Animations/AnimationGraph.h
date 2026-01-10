@@ -7,26 +7,34 @@
 
 #include <Graphics/Animations/AnimationGraphNode.h>
 
+#include <Utils/Resources/Asset.h>
+
 namespace SR_ANIMATIONS_NS {
     class Animator;
+    class AnimationGraphAsset;
 
-    class AnimationGraph : public IAnimationDataSet, public SR_UTILS_NS::NonCopyable {
+    class AnimationGraph : public IAnimationDataSet {
+        SR_CLASS()
         using Hash = uint64_t;
         using Super = IAnimationDataSet;
     public:
-        explicit AnimationGraph(Animator* pAnimator);
+        using Ptr = SR_HTYPES_NS::SharedPtr<AnimationGraph>;
+
+    public:
+        AnimationGraph();
         ~AnimationGraph() override;
 
     public:
-        SR_NODISCARD static AnimationGraph* Load(Animator* pAnimator, const SR_UTILS_NS::Path& path);
+        void OnPostLoad() override;
+        void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
 
         SR_NODISCARD AnimationGraphNode* GetNode(uint64_t index) const;
         SR_NODISCARD uint64_t GetNodeIndex(const AnimationGraphNode* pNode) const;
         SR_NODISCARD AnimationGraphNode* GetFinal() const;
         SR_NODISCARD bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD uint32_t GetNodesCount() const noexcept { return static_cast<uint32_t>(m_nodes.size()); }
-        SR_NODISCARD const std::vector<AnimationGraphNode*>& GetNodes() const noexcept { return m_nodes; }
-        SR_NODISCARD const SR_UTILS_NS::Path& GetPath() const noexcept { return m_path; }
+        SR_NODISCARD const std::vector<AnimationGraphNode::Ptr>& GetNodes() const noexcept { return m_nodes; }
+        SR_NODISCARD const SR_UTILS_NS::Path& GetPath() const noexcept;
 
         void Update(UpdateContext& context);
 
@@ -36,28 +44,49 @@ namespace SR_ANIMATIONS_NS {
 
         template<class T> T* AddNode(T* pNode) {
             SR_STATIC_ASSERT2((std::is_base_of_v<AnimationGraphNode, T>), "T must be derived from AnimationGraphNode");
-            m_indices.insert(std::make_pair(pNode, static_cast<uint32_t>(m_nodes.size())));
             m_nodes.emplace_back(pNode);
             pNode->SetGraph(this);
             return pNode;
         }
 
+        void SetAsset(AnimationGraphAsset* pAsset);
+        void SetAnimator(Animator* pAnimator) { m_pAnimator = pAnimator; }
+
     private:
         void Apply(AnimationPose* pPose);
         void Compile();
 
-    public:
-        SR_UTILS_NS::Path m_path;
-
+    private:
         bool m_isCompiled = false;
-
         Animator* m_pAnimator = nullptr;
-
+        AnimationGraphAsset* m_pAsset = nullptr;
         std::vector<SR_UTILS_NS::GameObject::Ptr> m_gameObjects;
 
-        /// первая нода всегда является Final
-        std::vector<AnimationGraphNode*> m_nodes;
-        ska::flat_hash_map<AnimationGraphNode*, uint32_t> m_indices;
+    private:
+        /// @property
+        std::vector<AnimationGraphNode::Ptr> m_nodes;
+
+    };
+
+    /// @extension(animator)
+    class AnimationGraphAsset : public SR_UTILS_NS::Asset {
+        SR_CLASS()
+        using Super = SR_UTILS_NS::Asset;
+    public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<AnimationGraphAsset>;
+
+    public:
+        AnimationGraphAsset();
+        ~AnimationGraphAsset() override;
+
+        void OnAssetLoaded() override;
+
+    public:
+        const AnimationGraph& GetData() const noexcept;
+
+    private:
+        /// @property @noHeader @notNull
+        mutable AnimationGraph::Ptr m_data;
 
     };
 }

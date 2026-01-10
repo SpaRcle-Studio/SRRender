@@ -8,9 +8,10 @@
 #include <Graphics/macros.h>
 
 #include <Utils/Types/Time.h>
-#include <Utils/Common/NonCopyable.h>
+#include <Utils/Types/SharedPtr.h>
 #include <Utils/Common/Enumerations.h>
 #include <Utils/Math/Vector3.h>
+#include <Utils/Serialization/Serializable.h>
 
 #ifdef SR_UTILS_ASSIMP
     #include <assimp/vector3.h>
@@ -58,22 +59,34 @@ namespace SR_ANIMATIONS_NS {
         None, Graph, Entry
     );
 
-    struct AnimationLink {
-    public:
-        AnimationLink(uint16_t targetNodeIndex, uint16_t targetPinIndex)
-            : m_targetNodeIndex(targetNodeIndex)
-            , m_targetPinIndex(targetPinIndex)
-        { }
-
-    public:
-        uint16_t m_targetNodeIndex = 0;
-        uint16_t m_targetPinIndex = 0;
-
-    };
-
     SR_ENUM_NS_CLASS_T(AnimationStateConditionOperationType, uint8_t,
         Equals, Less, More, NotEquals
     );
+
+    struct AnimationLink : public SR_UTILS_NS::Serializable {
+        SR_CLASS()
+    public:
+        AnimationLink() = default;
+
+        AnimationLink(uint16_t targetNodeIndex, uint16_t targetPinIndex)
+            : m_connected(true)
+            , m_targetNodeIndex(targetNodeIndex)
+            , m_targetPinIndex(targetPinIndex)
+        { }
+
+        SR_NODISCARD bool IsConnected() const {
+            return m_connected;
+        }
+
+    public:
+        /// @property
+        bool m_connected = false;
+        /// @property
+        uint16_t m_targetNodeIndex = 0;
+        /// @property
+        uint16_t m_targetPinIndex = 0;
+
+    };
 
     class IAnimationDataSet;
     class AnimationGraphNode;
@@ -87,7 +100,12 @@ namespace SR_ANIMATIONS_NS {
         AnimationState* pState = nullptr;
     };
 
-    class IAnimationDataSet {
+    class IAnimationDataSet : public SR_HTYPES_NS::SharedPtr<IAnimationDataSet>, public SR_UTILS_NS::Serializable, public SR_UTILS_NS::NonCopyable {
+        SR_CLASS()
+    public:
+        IAnimationDataSet();
+        ~IAnimationDataSet() override = default;
+
     public:
         void SetBool(const SR_UTILS_NS::StringAtom& name, const bool value) {
             m_boolTable[name] = value;
@@ -112,18 +130,13 @@ namespace SR_ANIMATIONS_NS {
         }
 
     protected:
-        IAnimationDataSet() = default;
-
-        explicit IAnimationDataSet(IAnimationDataSet* pParent)
-            : m_parent(pParent)
-        { }
-
-        virtual ~IAnimationDataSet() = default;
-
-    protected:
+        /// @property
         std::map<SR_UTILS_NS::StringAtom, bool> m_boolTable;
+        /// @property
         std::map<SR_UTILS_NS::StringAtom, int32_t> m_intTable;
+        /// @property
         std::map<SR_UTILS_NS::StringAtom, float_t> m_floatTable;
+        /// @property
         std::map<SR_UTILS_NS::StringAtom, std::string> m_stringTable;
 
         IAnimationDataSet* m_parent = nullptr;
