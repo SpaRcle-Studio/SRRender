@@ -41,7 +41,7 @@ namespace SR_ANIMATIONS_NS {
                 if (prevKey.data.rotation.rotation.IsEquals(data.rotation.rotation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
                     return;
                 }
-                animation.rotation = prevKey.data.rotation.rotation.Slerp(data.rotation.rotation, progress);
+                animation.rotation = prevKey.data.rotation.rotation.Nlerp(data.rotation.rotation, progress);
                 break;
             case AnimationKeyType::Translation:
                 if (prevKey.data.translation.translation.IsEquals(data.translation.translation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
@@ -98,10 +98,10 @@ namespace SR_ANIMATIONS_NS {
         switch (type) {
             case AnimationKeyType::Rotation:
                 if (!animation.rotation.has_value()) SR_UNLIKELY_ATTRIBUTE {
-                    animation.rotation = prevKey.data.rotation.rotation.Slerp(data.rotation.rotation, progress);
+                    animation.rotation = prevKey.data.rotation.rotation.Nlerp(data.rotation.rotation, progress);
                     break;
                 }
-                animation.rotation = animation.rotation.value().Slerp(prevKey.data.rotation.rotation
+                animation.rotation = animation.rotation.value().Nlerp(prevKey.data.rotation.rotation
                     .Slerp(data.rotation.rotation, progress), weight);
 
                 //// Вычисляем интерполированное значение один раз
@@ -149,7 +149,7 @@ namespace SR_ANIMATIONS_NS {
                     animation.rotation = data.rotation.rotation;
                     break;
                 }
-                animation.rotation = animation.rotation.value().Slerp(data.rotation.rotation, weight);
+                animation.rotation = animation.rotation.value().Nlerp(data.rotation.rotation, weight);
                 break;
             case AnimationKeyType::Translation:
                 if (!animation.translation.has_value()) SR_UNLIKELY_ATTRIBUTE {
@@ -173,7 +173,7 @@ namespace SR_ANIMATIONS_NS {
     void UnionAnimationKey::Update(const float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation) const noexcept {
         switch (type) {
             case AnimationKeyType::Rotation:
-                animation.rotation = prevKey.data.rotation.rotation.Slerp(data.rotation.rotation, progress);
+                animation.rotation = prevKey.data.rotation.rotation.Nlerp(data.rotation.rotation, progress);
                 break;
             case AnimationKeyType::Translation:
                 animation.translation = prevKey.data.translation.translation.Lerp(data.translation.translation, progress);

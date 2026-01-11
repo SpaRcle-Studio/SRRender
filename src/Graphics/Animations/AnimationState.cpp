@@ -53,16 +53,12 @@ namespace SR_ANIMATIONS_NS {
         }
 
         for (auto&& pTransition : m_transitions) {
-            auto&& pSourceState = m_machine->GetStateOrNull(pTransition->GetFromStateIndex());
-            auto&& pDestinationState = m_machine->GetStateOrNull(pTransition->GetToStateIndex());
-            if (!pSourceState || !pDestinationState) {
-                SR_ERROR("AnimationState::Compile() : failed to find states for transition! From: {}, To: {}",
-                    pTransition->GetFromStateIndex(),
-                    pTransition->GetToStateIndex()
-                );
+            auto&& pDestinationState = m_machine->GetStateOrNull(pTransition->GetTargetIndex());
+            if (!pDestinationState) {
+                SR_ERROR("AnimationState::Compile() : failed to get destination state! State name: {}, Target index: {}", GetStateName(), pTransition->GetTargetIndex());
                 return false;
             }
-            pTransition->SetSourceState(pSourceState);
+            pTransition->SetSourceState(this);
             pTransition->SetDestinationState(pDestinationState);
         }
 

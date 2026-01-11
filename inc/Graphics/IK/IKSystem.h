@@ -35,11 +35,17 @@ namespace SR_GRAPH_NS {
     public:
         void OnDisable() override;
         void LateUpdate() override;
+        void UpdateIK(float_t dt);
 
         SR_NODISCARD IKType GetIKType() const noexcept { return m_type; }
 
+        void SetControlledByAnimator(bool isControlled) noexcept { m_isControlledByAnimator = isControlled; }
+
+        IK::IKTwoBoneState& GetTwoBoneState() noexcept { return m_twoBoneState; }
+
     private:
         IK::IKTwoBoneState m_twoBoneState;
+        bool m_isControlledByAnimator = false;
 
         /// @property
         IKType m_type = IKType::TwoBone;

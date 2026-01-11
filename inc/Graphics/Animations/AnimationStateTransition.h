@@ -36,17 +36,14 @@ namespace SR_ANIMATIONS_NS {
         void SetSourceState(AnimationState* state) { m_sourceState = state; }
         void SetDestinationState(AnimationState* state) { m_destinationState = state; }
 
-        SR_NODISCARD int32_t GetFromStateIndex() const noexcept { return m_fromStateIndex; }
-        SR_NODISCARD int32_t GetToStateIndex() const noexcept { return m_toStateIndex; }
+        SR_NODISCARD int32_t GetTargetIndex() const noexcept { return m_targetIndex; }
 
         virtual void ResetTransition();
         virtual void Update(const StateConditionContext& context);
 
     protected:
         /// @property
-        int32_t m_fromStateIndex = -1;
-        /// @property
-        int32_t m_toStateIndex = -1;
+        int32_t m_targetIndex = -1;
         /// @property
         AnimationStateCondition::Ptr m_condition;
 

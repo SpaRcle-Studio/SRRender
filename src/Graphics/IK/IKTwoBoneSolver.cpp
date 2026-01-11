@@ -397,6 +397,8 @@ namespace SR_GRAPH_NS::IK {
         IKTwoBoneState& state,
         const IKTwoBoneParams& params
     ) {
+        SR_TRACY_ZONE;
+
         if (!params.showDebugGizmos) {
             RemoveTwoBoneIKDebugGizmos(state);
             return;
@@ -467,7 +469,6 @@ namespace SR_GRAPH_NS::IK {
         }
 
         InitializeTwoBoneIKState(root, mid, tip, target, pHint, state);
-        DrawTwoBoneDebugGizmos(root, mid, tip, target, pHint, state, params);
 
         /// Сохраняем исходные вращения для интерполяции
         const SR_MATH_NS::Quaternion rootRotationOriginal = root.GetGlobalRotation();
@@ -530,6 +531,8 @@ namespace SR_GRAPH_NS::IK {
         if (params.tipRotationFromTarget) {
             tip.SetGlobalRotation(target.GetGlobalRotation());
         }
+
+        DrawTwoBoneDebugGizmos(root, mid, tip, target, pHint, state, params);
     }
 
     void RemoveTwoBoneIKDebugGizmos(IKTwoBoneState& state) {

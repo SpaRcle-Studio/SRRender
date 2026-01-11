@@ -82,7 +82,15 @@ namespace SR_ANIMATIONS_NS {
     void AnimationStateMachine::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 
+        const uint32_t maxTransitions = 64;
+        uint32_t transitionCount = 0;
+
         for (auto pIt = m_activeStates.begin(); pIt != m_activeStates.end(); ) {
+            if (transitionCount >= maxTransitions) {
+                SR_WARN("AnimationStateMachine::Update() : max transitions count \"{}\" reached!", maxTransitions);
+                break;
+            }
+
             AnimationState* pState = *pIt;
             if (!pState) {
                 SRHalt("Invalid state in active states!");
@@ -103,6 +111,7 @@ namespace SR_ANIMATIONS_NS {
                         pIt = m_activeStates.erase(pIt);
                     }
                     pIt = m_activeStates.insert(pIt, pTransition->GetDestination());
+                    transitionCount++;
                     changed = true;
                 }
             }

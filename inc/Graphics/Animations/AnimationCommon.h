@@ -51,8 +51,13 @@ namespace SR_ANIMATIONS_NS {
     }
 #endif
 
-    SR_ENUM_NS_CLASS_T(AnimationGraphNodeType, uint8_t,
-        None, Final, Mix, Clip, StateMachine
+    //SR_ENUM_NS_CLASS_T(AnimationGraphNodeType, uint8_t,
+    //    None, Final, Mix, Clip, StateMachine, InverseKinematic
+    //);
+
+    SR_ENUM_NS_CLASS_T(QuaternionBlendMode, uint8_t,
+        Nlerp,
+        Slerp
     );
 
     SR_ENUM_NS_CLASS_T(AnimationStateType, uint8_t ,

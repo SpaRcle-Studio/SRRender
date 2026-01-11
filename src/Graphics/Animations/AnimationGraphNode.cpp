@@ -50,6 +50,12 @@ namespace SR_ANIMATIONS_NS {
         pNode->m_inputPins[toPinIndex] = AnimationLink(GetIndex(), fromPinIndex);
     }
 
+    void AnimationGraphNode::Compile(CompileContext& context) {
+        if (SRVerify(m_pose)) {
+            m_pose->SetGameObjectsCount(context.gameObjects.size());
+        }
+    }
+
     /// ----------------------------------------------------------------------------------------------------------------
 
     AnimationPose* AnimationGraphNodeFinal::Update(UpdateContext& context, const AnimationLink& from) {
@@ -84,8 +90,6 @@ namespace SR_ANIMATIONS_NS {
             m_stateMachine->SetAnimationDataSetParent(m_graph);
             m_stateMachine->Compile(context);
         }
-
-        m_pose->SetGameObjectsCount(context.gameObjects.size());
 
         Super::Compile(context);
     }
@@ -128,5 +132,65 @@ namespace SR_ANIMATIONS_NS {
         if (auto&& pStateMachine = static_cast<AnimationGraphNodeStateMachine&>(clone).m_stateMachine) {
             pStateMachine->SetNode(static_cast<AnimationGraphNodeStateMachine*>(&clone));
         }
+    }
+
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    AnimationGraphNodeExternalPose::AnimationGraphNodeExternalPose()
+        : Super(0, 1)
+    { }
+
+    AnimationPose* AnimationGraphNodeExternalPose::Update(UpdateContext& context, const AnimationLink& from) {
+        return m_pose;
+    }
+
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    AnimationGraphNodeLinearBlend::AnimationGraphNodeLinearBlend()
+        : Super(2, 1)
+    { }
+
+    void AnimationGraphNodeLinearBlend::Compile(CompileContext& context) {
+        SR_TRACY_ZONE;
+        Super::Compile(context);
+    }
+
+    AnimationPose* AnimationGraphNodeLinearBlend::Update(UpdateContext& context, const AnimationLink& from) {
+        SR_TRACY_ZONE;
+
+        if (SR_MATH_NS::IsEquals(m_blendFactor, 0.f)) {
+            if (m_inputPins.front().IsConnected()) {
+                if (auto&& pNode = m_graph->GetNode(m_inputPins.front().m_targetNodeIndex)) {
+                    return pNode->Update(context, AnimationLink(0, 0));
+                }
+            }
+
+            return nullptr;
+        }
+        else if (SR_MATH_NS::IsEquals(m_blendFactor, 1.f)) {
+            if (m_inputPins.size() > 1 && m_inputPins[1].IsConnected()) {
+                if (auto&& pNode = m_graph->GetNode(m_inputPins[1].m_targetNodeIndex)) {
+                    return pNode->Update(context, AnimationLink(0, 0));
+                }
+            }
+
+            return nullptr;
+        }
+
+        for (size_t i = 0; i < m_inputPins.size(); ++i) {
+            auto& inputPin = m_inputPins[i];
+            if (inputPin.IsConnected()) {
+                if (auto&& pNode = m_graph->GetNode(inputPin.m_targetNodeIndex)) {
+                    m_poses[i] = pNode->Update(context, AnimationLink(0, 0));
+                }
+            }
+        }
+
+        if (m_poses[0] && m_poses[1]) {
+            m_pose->BlendLinear(*m_poses[0], *m_poses[1], m_blendFactor, m_blendMode);
+            return m_pose;
+        }
+
+        return nullptr;
     }
 }

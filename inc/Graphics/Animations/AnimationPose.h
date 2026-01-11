@@ -22,6 +22,9 @@ namespace SR_ANIMATIONS_NS {
     public:
         void SetGameObjectsCount(uint32_t count);
 
+        void BlendLinear(AnimationPose& first, AnimationPose& second, float_t factor, QuaternionBlendMode quatBlendMode);
+        void BlendAdditive(AnimationPose& base, AnimationPose& additive, float_t factor);
+
         SR_NODISCARD AnimationGameObjectData& GetGameObjectData(Index index) noexcept;
 
         SR_NODISCARD std::vector<AnimationGameObjectData>& GetGameObjects() noexcept { return m_gameObjects; }

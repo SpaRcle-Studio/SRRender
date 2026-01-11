@@ -11,9 +11,7 @@
 #include <Codegen/IKSystem.generated.hpp>
 
 namespace SR_GRAPH_NS {
-    void IKSystem::LateUpdate() {
-        Super::LateUpdate();
-
+    void IKSystem::UpdateIK(float_t dt) {
         SR_TRACY_ZONE;
 
         if (m_type == IKType::TwoBone) {
@@ -37,7 +35,7 @@ namespace SR_GRAPH_NS {
             params.preventTwist = m_preventTwist;
             params.showDebugGizmos = m_showDebugGizmos;
             params.tipRotationFromTarget = m_tipRotationFromTarget;
-            params.dt = SR_HTYPES_NS::Time::Instance().DeltaTime();
+            params.dt = dt;
 
             m_twoBoneState.ikRotation = m_rotationReference ? m_rotationReference.Get()->GetTransform()->GetGlobalRotation() : GetTransform()->GetGlobalRotation();
 
@@ -56,5 +54,16 @@ namespace SR_GRAPH_NS {
     void IKSystem::OnDisable() {
         IK::RemoveTwoBoneIKDebugGizmos(m_twoBoneState);
         Super::OnDisable();
+    }
+
+    void IKSystem::LateUpdate() {
+        SR_TRACY_ZONE;
+        Super::LateUpdate();
+
+        if (m_isControlledByAnimator) {
+            return;
+        }
+
+        UpdateIK(SR_HTYPES_NS::Time::Instance().DeltaTime());
     }
 }

@@ -31,10 +31,9 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD uint32_t GetInputCount() const noexcept { return static_cast<uint32_t>(m_inputPins.size()); }
         SR_NODISCARD uint32_t GetOutputCount() const noexcept { return static_cast<uint32_t>(m_outputPins.size()); }
-        SR_NODISCARD virtual AnimationGraphNodeType GetType() const noexcept = 0;
         SR_NODISCARD virtual AnimationPose* Update(UpdateContext& context, const AnimationLink& from) = 0;
         SR_NODISCARD virtual bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
-		virtual void Compile(CompileContext& context) { }
+		virtual void Compile(CompileContext& context);
         void SetGraph(AnimationGraph* pGraph) { m_graph = pGraph; }
 
         SR_NODISCARD uint64_t GetIndex() const;
@@ -47,7 +46,7 @@ namespace SR_ANIMATIONS_NS {
 
         /// @property
         std::vector<AnimationLink> m_inputPins;
-        /// @property
+
         std::vector<AnimationLink> m_outputPins;
 
     };
@@ -64,7 +63,6 @@ namespace SR_ANIMATIONS_NS {
 
     public:
         SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
-        SR_NODISCARD AnimationGraphNodeType GetType() const noexcept override { return AnimationGraphNodeType::Final; }
 
     };
 
@@ -88,7 +86,6 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
 
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<AnimationStateMachine>& GetMachine() const noexcept { return m_stateMachine; }
-        SR_NODISCARD AnimationGraphNodeType GetType() const noexcept override { return AnimationGraphNodeType::StateMachine; }
 
     protected:
         /// @property @notNull
@@ -96,6 +93,43 @@ namespace SR_ANIMATIONS_NS {
 
     };
 
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    class AnimationGraphNodeExternalPose : public AnimationGraphNode {
+        SR_CLASS()
+        using Super = AnimationGraphNode;
+    public:
+        AnimationGraphNodeExternalPose();
+
+        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
+
+    protected:
+        /// @property
+        SR_UTILS_NS::StringAtom m_externalId;
+
+    };
+
+    /// ----------------------------------------------------------------------------------------------------------------
+
+    class AnimationGraphNodeLinearBlend : public AnimationGraphNode {
+        SR_CLASS()
+        using Super = AnimationGraphNode;
+    public:
+        AnimationGraphNodeLinearBlend();
+
+        void Compile(CompileContext& context) override;
+
+        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
+
+    private:
+        std::array<AnimationPose*, 2> m_poses;
+
+        /// @property
+        float_t m_blendFactor = 0.5f;
+        /// @property
+        QuaternionBlendMode m_blendMode = QuaternionBlendMode::Nlerp;
+
+    };
     /// ----------------------------------------------------------------------------------------------------------------
 }
 

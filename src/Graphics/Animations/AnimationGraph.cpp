@@ -79,6 +79,17 @@ namespace SR_ANIMATIONS_NS {
         SR_TRACY_ZONE;
 
         auto&& gameObjectsData = pPose->GetGameObjects();
+
+        {
+            SR_TRACY_ZONE_N("Normalize");
+
+            for (auto&& data : gameObjectsData) {
+                if (data.rotation.has_value()) SR_LIKELY_ATTRIBUTE {
+                    data.rotation = data.rotation.value().Normalized();
+                }
+            }
+        }
+
         for (uint32_t i = 0; i < gameObjectsData.size(); ++i) {
             AnimationGameObjectData& data = gameObjectsData[i];
             if (!data.dirty) SR_UNLIKELY_ATTRIBUTE {
@@ -181,7 +192,5 @@ namespace SR_ANIMATIONS_NS {
         Super::OnAssetLoaded();
     }
 
-    AnimationGraphAsset::~AnimationGraphAsset() {
-        m_data.AutoFree();
-    }
+    AnimationGraphAsset::~AnimationGraphAsset() = default;
 }

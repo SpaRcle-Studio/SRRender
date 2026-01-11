@@ -46,16 +46,33 @@ namespace SR_ANIMATIONS_NS {
         }
 
         if (m_graph) {
+            m_preparedIKSystems.resize(m_IKSystems.size());
+            for (size_t i = 0; i < m_IKSystems.size(); ++i) {
+                if (auto&& pSystem = m_IKSystems[i].Get(); pSystem && pSystem->IsActive()) {
+                    if (!m_preparedIKSystems[i]) {
+                        pSystem->UpdateIK(dt);
+                        m_preparedIKSystems[i] = true;
+                    }
+                }
+            }
+
             UpdateContext context;
 
-            context.tolerance = m_tolerance / 100.f;
+            context.tolerance = m_tolerance / 1000.f / 1000.f;
             context.frameRate = SR_MAX(1, m_frameRate);
-            context.now = SR_HTYPES_NS::Time::Instance().Now();
             context.weight = 1.f;
             context.fpsCompensation = m_fpsCompensation;
             context.dt = dt;
 
             m_graph->Update(context);
+        }
+
+        for (auto&& pIK : m_IKSystems) {
+            if (auto&& pSystem = pIK.Get()) {
+                if (pSystem->IsActive()) {
+                    pSystem->UpdateIK(dt);
+                }
+            }
         }
     }
 
@@ -90,6 +107,52 @@ namespace SR_ANIMATIONS_NS {
 
     void Animator::Start() {
         Super::Start();
+
+        for (auto&& pIK : m_IKSystems) {
+            if (auto&& pSystem = pIK.Get()) {
+                pSystem->SetControlledByAnimator(true);
+            }
+        }
+    }
+
+    void Animator::SetBool(const SR_UTILS_NS::StringAtom& name, const bool value) {
+        if (m_graph) {
+            m_graph->SetBool(name, value);
+        }
+    }
+
+    void Animator::SetInt(const SR_UTILS_NS::StringAtom& name, const int32_t value) {
+        if (m_graph) {
+            m_graph->SetInt(name, value);
+        }
+    }
+
+    void Animator::SetFloat(const SR_UTILS_NS::StringAtom& name, const float_t value) {
+        if (m_graph) {
+            m_graph->SetFloat(name, value);
+        }
+    }
+
+    void Animator::SetString(const SR_UTILS_NS::StringAtom& name, const std::string& value) {
+        if (m_graph) {
+            m_graph->SetString(name, value);
+        }
+    }
+
+    SR_NODISCARD std::optional<bool> Animator::GetBool(const SR_UTILS_NS::StringAtom& name) const {
+        return m_graph ? m_graph->GetBool(name) : std::nullopt;
+    }
+
+    SR_NODISCARD std::optional<int32_t> Animator::GetInt(const SR_UTILS_NS::StringAtom& name) const {
+        return m_graph ? m_graph->GetInt(name) : std::nullopt;
+    }
+
+    SR_NODISCARD std::optional<float_t> Animator::GetFloat(const SR_UTILS_NS::StringAtom& name) const {
+        return m_graph ? m_graph->GetFloat(name) : std::nullopt;
+    }
+
+    SR_NODISCARD std::optional<std::string> Animator::GetString(const SR_UTILS_NS::StringAtom& name) const {
+        return m_graph ? m_graph->GetString(name) : std::nullopt;
     }
 
     void Animator::SetGraph(const SR_UTILS_NS::Path& path) {
