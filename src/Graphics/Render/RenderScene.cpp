@@ -22,6 +22,7 @@
 #include <Utils/Resources/Yaml.h>
 #include <Utils/ECS/GameObject.h>
 #include <Utils/TypeTraits/Factory.h>
+#include <Utils/TypeTraits/SRClassMeta.h>
 
 namespace SR_GRAPH_NS {
     RenderScene::RenderScene(const ScenePtr& scene, RenderContext* pContext)
@@ -69,7 +70,7 @@ namespace SR_GRAPH_NS {
     void RenderScene::DeInit() {
         SR_SAFE_DELETE_PTR(m_lightSystem);
 
-        for (auto&& [name, pRenderer] : m_renderers) {
+        for (auto&& pRenderer : m_renderers) {
             pRenderer->DeInit();
             pRenderer.AutoFree();
         }
@@ -132,7 +133,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderScene::IsEmpty() const {
-        for (auto&& [name, pRenderer] : m_renderers) {
+        for (auto&& pRenderer : m_renderers) {
             if (!pRenderer->IsEmpty()) {
                 return false;
             }
@@ -187,7 +188,7 @@ namespace SR_GRAPH_NS {
     void RenderScene::PostUpdate() {
         SR_TRACY_ZONE_N("Post update render");
 
-        for (auto&& [name, pRenderer] : m_renderers) {
+        for (auto&& pRenderer : m_renderers) {
             pRenderer->PostUpdate();
         }
 
@@ -253,7 +254,7 @@ namespace SR_GRAPH_NS {
     void RenderScene::PrepareRender() {
         SR_TRACY_ZONE;
 
-        for (auto&& [name, pRenderer] : m_renderers) {
+        for (auto&& pRenderer : m_renderers) {
             pRenderer->Prepare();
         }
 
@@ -485,7 +486,7 @@ namespace SR_GRAPH_NS {
         /// ее нужно принудительно освобождать при закрытии сцены.
 
         if (!m_scene.Valid()) {
-            for (auto&& [name, pRenderer] : m_renderers) {
+            for (auto&& pRenderer : m_renderers) {
                 pRenderer->Clear();
             }
         }
@@ -540,13 +541,13 @@ namespace SR_GRAPH_NS {
     }
 
     IRenderer::Ptr RenderScene::AddRenderer(SR_UTILS_NS::StringAtom name) {
-        if (auto&& pIt = m_renderers.find(name); pIt != m_renderers.end()) {
-            SR_ERROR("RenderScene::AddRenderer() : renderer \"{}\" already exists!", name);
-            return pIt->second;
+        if (GetRenderer(name)) {
+            SR_WARN("RenderScene::AddRenderer() : renderer \"{}\" already exists!", name.ToStringRef());
+            return GetRenderer(name)->GetThis();
         }
 
         if (auto&& pIRenderer = SR_UTILS_NS::Factory::Instance().Create<IRenderer>(name.ToStringView())) {
-            m_renderers[name] = pIRenderer;
+            m_renderers.emplace_back(pIRenderer);
             pIRenderer->SetRenderScene(this);
             pIRenderer->Init();
             return pIRenderer;
@@ -555,9 +556,11 @@ namespace SR_GRAPH_NS {
         return nullptr;
     }
 
-    IRenderer::Ptr RenderScene::GetRenderer(SR_UTILS_NS::StringAtom name) const {
-        if (auto&& pIt = m_renderers.find(name); pIt != m_renderers.end()) {
-            return pIt->second;
+    IRenderer* RenderScene::GetRenderer(SR_UTILS_NS::StringAtom name) const {
+        for (auto&& pRenderer : m_renderers) {
+            if (name == pRenderer->GetMeta()->GetFactoryName()) {
+                return const_cast<IRenderer*>(pRenderer.Get());
+            }
         }
         return nullptr;
     }

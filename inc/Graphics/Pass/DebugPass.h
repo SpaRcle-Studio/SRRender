@@ -56,7 +56,7 @@ namespace SR_GRAPH_NS {
         void UpdateUBO(DebugPassShaderInfo& shaderInfo, DebugRenderer::DrawType type);
 
     private:
-        SR_NODISCARD SR_HTYPES_NS::SharedPtr<DebugRenderer> GetDebugRenderer() const;
+        SR_NODISCARD DebugRenderer* GetDebugRenderer() const;
 
     private:
         std::pair<uint32_t, uint32_t> m_linesCountCache;

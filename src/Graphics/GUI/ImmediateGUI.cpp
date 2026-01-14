@@ -35,6 +35,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     void Separator() {
+        SR_TRACY_ZONE;
         ImGui::Separator();
     }
 
@@ -174,6 +175,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     void SameLine(float_t offsetFromStartX, float_t spacing) {
+        SR_TRACY_ZONE;
         ImGui::SameLine(offsetFromStartX, spacing);
     }
 
@@ -183,10 +185,12 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     bool Button(const char* label, const SR_MATH_NS::FVector2& size) {
+        SR_TRACY_ZONE;
         return ImGui::Button(label, F2ToImV2(size));
     }
 
     bool ButtonColored(const char* label, const SR_MATH_NS::FColor& color, const SR_MATH_NS::FVector2& size) {
+        SR_TRACY_ZONE;
         PushStyleColor(StyleColor::Button, color);
         PushStyleColor(StyleColor::ButtonHovered, color + SR_MATH_NS::FColor(0.1f, 0.1f, 0.1f, 0.0f));
         PushStyleColor(StyleColor::ButtonActive, color + SR_MATH_NS::FColor(0.2f, 0.2f, 0.2f, 0.0f));
@@ -197,38 +201,47 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     void PushItemWidth(float_t itemWidth) {
+        SR_TRACY_ZONE;
         ImGui::PushItemWidth(itemWidth);
     }
 
     bool BeginDragDropTarget() {
+        SR_TRACY_ZONE;
         return ImGui::BeginDragDropTarget();
     }
 
     void PopItemWidth() {
+        SR_TRACY_ZONE;
         ImGui::PopItemWidth();
     }
 
     bool Checkbox(const char *label, bool *v) {
+        SR_TRACY_ZONE;
         return ImGui::Checkbox(label, v);
     }
 
     bool DragScalar(const char* label, ImmediateDataType type, void* pData, float_t vSpeed, const void* pMin, const void *pMax, const char* format) {
+        SR_TRACY_ZONE;
         return ImGui::DragScalar(label, static_cast<ImGuiDataType_>(type), pData, vSpeed, pMin, pMax, format);
     }
 
     void PushStyleColor(StyleColor idx, const SR_MATH_NS::FColor& color) {
+        SR_TRACY_ZONE;
         ImGui::PushStyleColor(static_cast<ImGuiCol>(idx), FCToImV4(color));
     }
 
     void PopStyleColor(uint32_t count) {
+        SR_TRACY_ZONE;
         ImGui::PopStyleColor(count);
     }
 
     void BeginGroup() {
+        SR_TRACY_ZONE;
         ImGui::BeginGroup();
     }
 
     void EndGroup() {
+        SR_TRACY_ZONE;
         ImGui::EndGroup();
     }
 
@@ -514,12 +527,12 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImV2ToF2(bb.GetTL());
     }
 
-    bool BeginDragDropTargetWindow(const std::string& payloadType) {
+    bool BeginDragDropTargetWindow(const char* payloadType) {
         ImRect inner_rect = ImGui::GetCurrentWindow()->InnerRect;
 
         if (ImGui::BeginDragDropTargetCustom(inner_rect, ImGui::GetID("##WindowBgArea")))
         {
-            auto&& pPayload = ImGui::AcceptDragDropPayload(payloadType.c_str(), ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+            auto&& pPayload = ImGui::AcceptDragDropPayload(payloadType, ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
             if (pPayload) {
                 if (pPayload->IsPreview()) {
                     ImDrawList* draw_list = ImGui::GetForegroundDrawList();
@@ -837,6 +850,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     const void* AcceptDragDropPayload(const char* type) {
+        SR_TRACY_ZONE;
         return ImGui::AcceptDragDropPayload(type);
     }
 
@@ -845,6 +859,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     void* GetDataFromDragDropPayload(const void* pPayload) {
+        SR_TRACY_ZONE;
         return static_cast<const ImGuiPayload*>(pPayload)->Data;
     }
 
@@ -891,6 +906,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     const void* GetDragDropPayload() {
+        SR_TRACY_ZONE;
         return ImGui::GetDragDropPayload();
     }
 
@@ -936,6 +952,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     bool TreeNodeEx(const void *ptr_id, TreeNodeFlags flags, const char *fmt, ...) {
+        SR_TRACY_ZONE;
         va_list args;
         va_start(args, fmt);
         const bool result = ImGui::TreeNodeExV(ptr_id, static_cast<ImGuiTreeNodeFlags>(flags), fmt, args);
@@ -944,6 +961,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     void TreePop() {
+        SR_TRACY_ZONE;
         ImGui::TreePop();
     }
 

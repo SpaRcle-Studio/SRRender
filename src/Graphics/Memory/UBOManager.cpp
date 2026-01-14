@@ -243,13 +243,14 @@ namespace SR_GRAPH_NS::Memory {
 
         uint32_t count = 0;
 
+        const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
+
         m_uboPool.ForEach([&](VirtualUBO, VirtualUBOInfo& virtualUboInfo) {
             for (auto pIt = virtualUboInfo.data.begin(); pIt != virtualUboInfo.data.end(); ) {
                 VirtualUBOInfo::Data& data = *pIt;
 
                 if (!std::ranges::binary_search(m_handles, data.pShaderHandle)) SR_UNLIKELY_ATTRIBUTE {
                     if (data.uboSize > 0) {
-                        const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
                         for (uint8_t i = 0; i < maxFramesInFlight; ++i) {
                             if (data.ubos[i] != SR_ID_INVALID) {
                                 m_pipeline->FreeUBO(&data.ubos[i]);

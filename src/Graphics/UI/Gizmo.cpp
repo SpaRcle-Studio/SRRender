@@ -8,7 +8,6 @@
 #include <Graphics/Render/RenderTechnique.h>
 
 #include <Utils/ECS/ComponentManager.h>
-#include <Utils/ECS/GameObject.h>
 #include <Utils/ECS/Transform3D.h>
 #include <Utils/Input/InputSystem.h>
 #include <Utils/DebugDraw.h>
@@ -144,6 +143,8 @@ namespace SR_GRAPH_UI_NS {
     }
 
     void Gizmo::ReleaseGizmo() {
+        SR_TRACY_ZONE;
+
         m_hoveredOperation = GizmoOperation::None;
         m_activeOperation = GizmoOperation::None;
 
@@ -158,11 +159,15 @@ namespace SR_GRAPH_UI_NS {
 
         m_meshes.clear();
 
+        m_destroyCache.clear();
+
         if (auto&& pGameObject = GetGameObject()) {
-            for (auto&& pChild : pGameObject->GetChildren()) {
-                if (pChild->GetName() == "Debug") {
-                    continue;
+            for (auto&& pChild : pGameObject->GetChildrenRef()) {
+                if (pChild->GetName() != "Debug") {
+                    m_destroyCache.emplace_back(pChild);
                 }
+            }
+            for (auto&& pChild : m_destroyCache) {
                 pChild->Destroy();
             }
         }

@@ -82,7 +82,8 @@ namespace SR_GRAPH_NS {
 
         SR_TRACY_ZONE;
 
-        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(SR_SRSL_NS::ShaderMacrosParams());
+        static const SR_SRSL_NS::ShaderMacrosParams emptyParams;
+        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(emptyParams);
 
         GetPipeline()->SetCurrentShader(pShader);
 

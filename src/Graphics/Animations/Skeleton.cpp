@@ -300,7 +300,7 @@ namespace SR_ANIMATIONS_NS {
 
         SR_TRACY_ZONE;
 
-        bool hasDirty = m_isNeedRecalcTransforms;
+        //bool hasDirty = m_isNeedRecalcTransforms;
         bool wasCalledRecalc = false;
 
         if (m_isNeedRecalcTransforms) {
@@ -329,15 +329,15 @@ namespace SR_ANIMATIONS_NS {
 
             auto&& pTransform = m_transforms[index].Get();
 
-            if (hasDirty) {
-                m_matrices[index] = pTransform->GetMatrix();
-                continue;
-            }
+            //if (hasDirty) {
+            //    m_matrices[index] = pTransform->GetMatrix();
+            //    continue;
+            //}
 
-            if (pTransform->IsDirty()) {
-                hasDirty = true;
-                m_matrices[index] = pTransform->GetMatrix();
-            }
+           // if (pTransform->IsDirty()) {
+           //     hasDirty = true;
+            m_matrices[index] = pTransform->GetMatrix();
+           // }
         }
 
         m_dirtyMatrices = false;

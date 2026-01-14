@@ -97,17 +97,15 @@ namespace SR_GRAPH_NS {
 
         template<typename T> SR_HTYPES_NS::SharedPtr<T> AddRenderer() {
             SR_TRACY_ZONE;
-            return AddRenderer(T::GetClassStaticName()).template DynamicCast<T>();
+            return AddRenderer(T::GetClassStaticName()).template StaticCast<T>();
         }
 
-        template<typename T> SR_HTYPES_NS::SharedPtr<T> GetRenderer() const {
+        template<typename T> SR_NODISCARD T* GetRenderer() const {
             SR_TRACY_ZONE;
-            return GetRenderer(T::GetClassStaticName()).template DynamicCast<T>();
+            return static_cast<T*>(GetRenderer(T::GetClassStaticName()));
         }
 
-        SR_HTYPES_NS::SharedPtr<IRenderer> AddRenderer(SR_UTILS_NS::StringAtom name);
-
-        SR_NODISCARD SR_HTYPES_NS::SharedPtr<IRenderer> GetRenderer(SR_UTILS_NS::StringAtom name) const;
+        SR_NODISCARD IRenderer* GetRenderer(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD bool IsDirty() const noexcept;
         SR_NODISCARD bool IsEmpty() const;
         SR_NODISCARD bool IsOverlayEnabled() const;
@@ -125,6 +123,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::vector<CameraInfo>& GetCameras() { return m_cameras; }
 
     private:
+        SR_HTYPES_NS::SharedPtr<IRenderer> AddRenderer(SR_UTILS_NS::StringAtom name);
         void SetMeshMaterial(MeshPtr pMesh);
 
         void SortCameras();
@@ -154,7 +153,7 @@ namespace SR_GRAPH_NS {
 
         ScenePtr m_scene;
 
-        std::map<SR_UTILS_NS::StringAtom, SR_HTYPES_NS::SharedPtr<IRenderer>> m_renderers;
+        std::vector<SR_HTYPES_NS::SharedPtr<IRenderer>> m_renderers;
         SR_HTYPES_NS::SharedPtr<IRenderTechnique> m_technique;
         RenderContext* m_context = nullptr;
 

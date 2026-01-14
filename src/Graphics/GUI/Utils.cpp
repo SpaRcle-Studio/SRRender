@@ -22,6 +22,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     bool RadioButton(const char* label, bool active, float_t radius) {
+        SR_TRACY_ZONE;
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems)
             return false;

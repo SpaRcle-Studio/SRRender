@@ -15,6 +15,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Widget::DrawAsSubWindow() {
+        SR_TRACY_ZONE;
         m_widgetFlags = WIDGET_FLAG_NONE;
 
         if (m_center) {

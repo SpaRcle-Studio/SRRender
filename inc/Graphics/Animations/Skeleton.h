@@ -6,6 +6,7 @@
 #define SR_ENGINE_SKELETON_H
 
 #include <Graphics/Memory/SSBO.h>
+#include <Graphics/Animations/Bone.h>
 
 #include <Utils/ECS/Component.h>
 #include <Utils/Types/IRawMeshHolder.h>
@@ -16,8 +17,6 @@ namespace SR_GRAPH_NS {
 }
 
 namespace SR_ANIMATIONS_NS {
-    class Bone;
-
     /// @category(Animations)
     class Skeleton : public SR_UTILS_NS::Component, public SR_HTYPES_NS::IRawMeshHolder {
         SR_CLASS()

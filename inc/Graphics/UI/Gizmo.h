@@ -8,6 +8,8 @@
 #include <Graphics/Types/Geometry/MeshComponent.h>
 #include <Graphics/Types/IRenderComponent.h>
 
+#include <Utils/ECS/GameObject.h>
+
 namespace SR_GRAPH_UI_NS {
     SR_ENUM_NS_CLASS_T(GizmoMode, uint8_t, Local, Global);
 
@@ -129,6 +131,7 @@ namespace SR_GRAPH_UI_NS {
             bool isHovered = false;
         };
         std::map<GizmoOperation, MeshInfo> m_meshes;
+        std::vector<SR_UTILS_NS::SceneObject::Ptr> m_destroyCache;
 
         bool m_isGizmoDirty = false;
 

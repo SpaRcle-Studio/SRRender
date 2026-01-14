@@ -498,9 +498,8 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         for (auto&& pFrameBuffer : m_framebuffers) {
+            m_hasChangedFrameBuffers |= pFrameBuffer->IsDirty();
             pFrameBuffer->Update();
-            /// TODO: тут че-то не оптимальное, вызывает обновление всех мешей даже если не нужно
-            m_hasChangedFrameBuffers = true;
         }
 
         if (m_noneTexture) {

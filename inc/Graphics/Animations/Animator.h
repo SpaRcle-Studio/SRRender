@@ -49,12 +49,14 @@ namespace SR_ANIMATIONS_NS {
 
         SR_NODISCARD SR_UTILS_NS::Path GetGraphPath() const noexcept;
         SR_NODISCARD AnimationGraph* GetGraph() const noexcept;
-        SR_NODISCARD SR_HTYPES_NS::SharedPtr<Skeleton>& GetSkeleton() noexcept { return m_skeleton; }
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<Skeleton> GetSkeleton() noexcept;
 
     private:
         void UpdateInternal(float_t dt);
 
     private:
+        /// @property
+        SR_UTILS_NS::EntityRef<Skeleton> m_skeleton;
         /// @property
         uint32_t m_frameRate = 1;
         /// @property @drag(0.01f)
@@ -75,8 +77,6 @@ namespace SR_ANIMATIONS_NS {
         std::vector<bool> m_preparedIKSystems;
 
         SR_HTYPES_NS::SharedPtr<AnimationGraph> m_graph;
-
-        SR_HTYPES_NS::SharedPtr<Skeleton> m_skeleton;
 
     };
 }

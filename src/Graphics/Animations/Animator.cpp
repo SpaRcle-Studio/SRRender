@@ -29,7 +29,11 @@ namespace SR_ANIMATIONS_NS {
     void Animator::Update(float_t dt) {
         SR_TRACY_ZONE;
 
-        m_skeleton = GetParent()->GetComponent<Skeleton>();
+        if (!m_skeleton) {
+            if (auto&& pSkeleton = GetParent()->GetComponent<Skeleton>()) {
+                m_skeleton.SetEntityId(pSkeleton->GetEntityId());
+            }
+        }
 
         if (!m_sync) {
             UpdateInternal(dt);
@@ -181,5 +185,9 @@ namespace SR_ANIMATIONS_NS {
 
     AnimationGraph* Animator::GetGraph() const noexcept {
         return const_cast<AnimationGraph*>(m_graph.Get());
+    }
+
+    SR_HTYPES_NS::SharedPtr<Skeleton> Animator::GetSkeleton() noexcept {
+        return m_skeleton.Get();
     }
 }

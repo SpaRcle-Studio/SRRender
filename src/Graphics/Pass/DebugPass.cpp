@@ -383,9 +383,9 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    SR_HTYPES_NS::SharedPtr<DebugRenderer> DebugPass::GetDebugRenderer() const {
+    DebugRenderer* DebugPass::GetDebugRenderer() const {
         if (m_isOverlay) {
-            return GetRenderScene()->GetRenderer<DebugOverlayRenderer>().StaticCast<DebugRenderer>();
+            return GetRenderScene()->GetRenderer<DebugOverlayRenderer>();
         }
         else {
             return GetRenderScene()->GetRenderer<DebugRenderer>();

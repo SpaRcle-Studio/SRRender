@@ -373,7 +373,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern bool ImageButtonDouble(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding);
         SR_GRAPHICS_DLL_API extern bool ImageButton(void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding);
         SR_GRAPHICS_DLL_API extern bool ImageButton(void* pDescriptor, const SR_MATH_NS::FVector2& size);
-        SR_GRAPHICS_DLL_API extern bool BeginDragDropTargetWindow(const std::string& payloadType);
+        SR_GRAPHICS_DLL_API extern bool BeginDragDropTargetWindow(const char* payloadType);
         SR_GRAPHICS_DLL_API extern bool ImageButtonInternal(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2 &size, float_t framePadding, ButtonFlags flags);
         SR_GRAPHICS_DLL_API extern bool ImageButton(std::string_view&& imageId, void* pDescriptor, const SR_MATH_NS::FVector2& size, float_t framePadding, ButtonFlags flags);
         SR_GRAPHICS_DLL_API extern bool CollapsingHeader(const std::string& label, TreeNodeFlags flags = TreeNodeFlags::CollapsingHeader);
