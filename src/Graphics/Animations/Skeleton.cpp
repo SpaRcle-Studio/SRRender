@@ -15,8 +15,15 @@
 #include <Utils/ECS/Transform3D.h>
 #include <Utils/World/Scene.h>
 #include <Utils/Common/Features.h>
+#include <Utils/Events/Broadcaster.h>
 
 #include <Codegen/Skeleton.generated.hpp>
+
+#ifdef SR_UTILS_ASSIMP
+    #include <assimp/scene.h>
+    #include <assimp/postprocess.h>
+    #include <assimp/Importer.hpp>
+#endif
 
 namespace SR_ANIMATIONS_NS {
     Skeleton::~Skeleton() {
@@ -60,7 +67,8 @@ namespace SR_ANIMATIONS_NS {
         m_bonesByName.clear();
         m_bonesByIndex.clear();
 
-        if (!m_rootBone) {
+        if (!m_rootBone && !TryInitializeBonesFromMesh()) {
+            SR_WARN("Skeleton::ReCalculateSkeleton() : root bone is nullptr!");
             return false;
         }
 
@@ -145,6 +153,14 @@ namespace SR_ANIMATIONS_NS {
         return pBoneIt->second;
     }
 
+    void Skeleton::OnEnable() {
+        m_prepareFrameSubscription = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_PREPARE_FRAME, std::bind(&Skeleton::UpdateBonesSSBO, this));
+    }
+
+    void Skeleton::OnDisable() {
+        m_prepareFrameSubscription.Reset();
+    }
+
     void Skeleton::OnPostLoad() {
         if (m_rootBone) {
             m_rootBone->SetSkeleton(this);
@@ -154,6 +170,8 @@ namespace SR_ANIMATIONS_NS {
 
     void Skeleton::OnAttached() {
         ReCalculateSkeleton();
+
+
 
         if (auto&& pScene = TryGetScene()) {
             auto&& pRenderScene = pScene->GetDataStorage().GetValue<RenderScenePtr>();
@@ -181,12 +199,6 @@ namespace SR_ANIMATIONS_NS {
             DisableDebug();
         }
 
-        if (const auto ssbo = GetBonesSSBO(); ssbo != SR_ID_INVALID)  {
-            if (auto&& matrices = GetMatrices(); !matrices.empty()) {
-                GetPipeline()->UpdateSSBO(ssbo, (void*)matrices.data(), matrices.size() * sizeof(SR_MATH_NS::Matrix4x4));
-            }
-        }
-
         Super::LateUpdate();
     }
 
@@ -206,6 +218,13 @@ namespace SR_ANIMATIONS_NS {
 
         for (auto&& [hashName, index] : optimizedBones) {
             auto&& pBone = GetBone(hashName);
+            if (!pBone) {
+                m_transforms[index] = nullptr;
+                m_hasInvalidBones = true;
+                m_indices[transformIndex++] = index;
+                continue;
+            }
+
             auto&& pGameObject = pBone->gameObject;
 
             if (pGameObject || pBone->hasError || pBone->Initialize()) {
@@ -227,6 +246,15 @@ namespace SR_ANIMATIONS_NS {
         }
 
         m_debugLines.clear();
+    }
+
+    void Skeleton::UpdateBonesSSBO() {
+        SR_TRACY_ZONE;
+        if (const auto ssbo = GetBonesSSBO(); ssbo != SR_ID_INVALID)  {
+            if (auto&& matrices = GetMatrices(); !matrices.empty()) {
+                GetPipeline()->UpdateSSBO(ssbo, (void*)matrices.data(), matrices.size() * sizeof(SR_MATH_NS::Matrix4x4));
+            }
+        }
     }
 
     void Skeleton::UpdateDebug() {
@@ -286,7 +314,7 @@ namespace SR_ANIMATIONS_NS {
     }
 
     const std::vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetOffsets() const noexcept {
-        if (auto&& pRawMesh = GetRawMesh()) {
+        if (auto&& pRawMesh = m_skeleton.GetRawMesh()) {
             return pRawMesh->GetBoneOffsets();
         }
         const static std::vector<SR_MATH_NS::Matrix4x4> defValue;
@@ -346,7 +374,7 @@ namespace SR_ANIMATIONS_NS {
     }
 
     const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& Skeleton::GetOptimizedBones() const noexcept {
-        if (auto&& pRawMesh = GetRawMesh()) {
+        if (auto&& pRawMesh = m_skeleton.GetRawMesh()) {
             return pRawMesh->GetOptimizedBones();
         }
         static ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t> defValue;
@@ -354,7 +382,6 @@ namespace SR_ANIMATIONS_NS {
     }
 
     void Skeleton::OnRawMeshChanged() {
-        IRawMeshHolder::OnRawMeshChanged();
         m_isNeedRecalcTransforms = true;
         m_isOffsetsSSBODirty = true;
         m_isBonesSSBODirty = true;
@@ -401,10 +428,54 @@ namespace SR_ANIMATIONS_NS {
 
         const auto frame = m_multiFrameSSBOResources ? GetPipeline()->GetCurrentImageIndex() : 0;
         if (!m_bonesSSBO[frame] || m_isBonesSSBODirty) {
-            auto&& matrices = const_cast<Skeleton*>(this)->GetMatrices();
-            m_bonesSSBO[frame] = SR_GRAPH_NS::SSBOInstance::Create<SR_MATH_NS::Matrix4x4>(matrices.size(), SSBOUsage::CPUToGPU);
             m_isBonesSSBODirty = false;
+            auto&& matrices = const_cast<Skeleton*>(this)->GetMatrices();
+            if (!matrices.empty()) {
+                m_bonesSSBO[frame] = SR_GRAPH_NS::SSBOInstance::Create<SR_MATH_NS::Matrix4x4>(matrices.size(), SSBOUsage::CPUToGPU);
+            }
+            else {
+                SR_ERROR("Skeleton::GetBonesSSBO() : matrices are empty!");
+                return SR_ID_INVALID;
+            }
         }
+
         return m_bonesSSBO[frame]->GetSSBO();
+    }
+
+    bool Skeleton::TryInitializeBonesFromMesh() {
+        SR_TRACY_ZONE;
+
+        if (m_customHierarchy) {
+            return false;
+        }
+
+        SR_HTYPES_NS::RawMesh::Ptr pRawMesh = m_boneHierarchy.GetRawMesh();
+        if (!pRawMesh) {
+            pRawMesh = m_skeleton.GetRawMesh();
+        }
+
+        if (pRawMesh) {
+        #ifdef SR_UTILS_ASSIMP
+            const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
+
+            if (!pScene->mRootNode) {
+                return false;
+            }
+
+            const SR_HTYPES_NS::Function<void(aiNode*, SR_ANIMATIONS_NS::Bone*)> processNode = [&](aiNode* node, SR_ANIMATIONS_NS::Bone* pBone) {
+                pBone = AddBone(pBone, node->mName.C_Str(), false);
+
+                for (uint32_t i = 0; i < node->mNumChildren; ++i) {
+                    processNode(node->mChildren[i], pBone);
+                }
+            };
+
+            processNode(pScene->mRootNode, m_rootBone.Get());
+        #endif
+
+            return m_rootBone;
+        }
+
+        return false;
     }
 }

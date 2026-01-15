@@ -10,6 +10,7 @@
 
 #include <Utils/ECS/Component.h>
 #include <Utils/Types/IRawMeshHolder.h>
+#include <Utils/Common/Subscription.h>
 
 namespace SR_GRAPH_NS {
     class RenderScene;
@@ -18,7 +19,7 @@ namespace SR_GRAPH_NS {
 
 namespace SR_ANIMATIONS_NS {
     /// @category(Animations)
-    class Skeleton : public SR_UTILS_NS::Component, public SR_HTYPES_NS::IRawMeshHolder {
+    class Skeleton : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:
@@ -33,14 +34,15 @@ namespace SR_ANIMATIONS_NS {
 
         void OnPostLoad() override;
 
+        void OnEnable() override;
+        void OnDisable() override;
+
         void OnAttached() override;
         void OnDestroy() override;
 
         bool ReCalculateSkeleton();
 
         Bone* AddBone(Bone* pParent, SR_UTILS_NS::StringAtom name, bool recalculate);
-        SR_NODISCARD const Bone* GetRootBone() const noexcept { return m_rootBone.Get(); }
-        SR_NODISCARD Bone* GetRootBone() noexcept { return m_rootBone.Get(); }
         SR_NODISCARD int32_t GetOffsetsSSBO() const noexcept;
         SR_NODISCARD int32_t GetBonesSSBO() const noexcept;
 
@@ -60,18 +62,24 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<Pipeline>& GetPipeline() const noexcept;
 
+        SR_HTYPES_NS::RawMeshHolder& GetSkeletonRawMesh() noexcept { return m_skeleton; }
+        SR_HTYPES_NS::RawMeshHolder& GetBoneHierarchyRawMesh() noexcept { return m_boneHierarchy; }
+
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
-        void OnRawMeshChanged() override;
-
     private:
+        void UpdateBonesSSBO();
         void UpdateDebug();
         void DisableDebug();
         void CalculateTransforms();
+        bool TryInitializeBonesFromMesh();
+        void OnRawMeshChanged();
 
     private:
         ska::flat_hash_map<Bone*, uint64_t> m_debugLines;
         ska::flat_hash_map<SR_UTILS_NS::StringAtom, Bone*> m_bonesByName;
+
+        SR_UTILS_NS::Subscription m_prepareFrameSubscription;
 
         std::vector<Bone*> m_bonesByIndex;
 
@@ -90,20 +98,24 @@ namespace SR_ANIMATIONS_NS {
         mutable SR_HTYPES_NS::SafePtr<RenderContext> m_renderContext;
 
     private:
-        /// @property @notNull
-        SR_HTYPES_NS::SharedPtr<Bone> m_rootBone;
+        /// @property
+        bool m_customHierarchy = false;
         /// @property @dontSave @setter(SetDebugEnabled)
         bool m_debugEnabled = false;
         /// @property @dontSave @readOnly
         bool m_dirtyMatrices = false;
         /// @property @dontSave @readOnly
         bool m_hasInvalidBones = false;
-        /// @virtualProperty(meshPath) @getter(GetMeshPath) @setter(SetRawMesh)
-        /// @customArgs(pick: enabled, filter name: Meshes, relative: resources)
-        /// @customArg(filter value: fbx,blend,obj,pmx,stl,dae)
-        SR_VIRTUAL_PROPERTY
-        /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)
-        SR_VIRTUAL_PROPERTY
+
+        /// @property
+        /// @onChanged(OnRawMeshChanged)
+        SR_HTYPES_NS::RawMeshHolder m_skeleton;
+        /// @property @propertyCondition(This.m_customHierarchy == false) @loadCondition(This.m_customHierarchy == false)
+        /// @onChanged(OnRawMeshChanged)
+        SR_HTYPES_NS::RawMeshHolder m_boneHierarchy;
+
+        /// @property @notNull @propertyCondition(This.m_customHierarchy == true) @loadCondition(This.m_customHierarchy == true)
+        SR_HTYPES_NS::SharedPtr<Bone> m_rootBone;
 
     };
 }

@@ -23,6 +23,7 @@
 #include <Utils/ECS/GameObject.h>
 #include <Utils/TypeTraits/Factory.h>
 #include <Utils/TypeTraits/SRClassMeta.h>
+#include <Utils/Events/Broadcaster.h>
 
 namespace SR_GRAPH_NS {
     RenderScene::RenderScene(const ScenePtr& scene, RenderContext* pContext)
@@ -249,6 +250,8 @@ namespace SR_GRAPH_NS {
         m_currentSkeleton = nullptr;
 
         m_context->PrepareFrame();
+
+        SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_PREPARE_FRAME);
     }
 
     void RenderScene::PrepareRender() {
