@@ -10,6 +10,10 @@
 #include <Codegen/AnimationGraphNode.generated.hpp>
 
 namespace SR_ANIMATIONS_NS {
+    AnimationGraphNode::AnimationGraphNode()
+        : AnimationGraphNode(0, 0)
+    { }
+
     AnimationGraphNode::AnimationGraphNode(uint16_t input, uint16_t output)
         : SR_HTYPES_NS::SharedPtr<AnimationGraphNode>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
         , m_pose(new AnimationPose())

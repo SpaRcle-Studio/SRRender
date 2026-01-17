@@ -25,6 +25,7 @@ namespace SR_ANIMATIONS_NS {
          * @param input - сколько данная нода имеет входных пинов
          * @param output - сколько данная нода имеет выходных пинов
          */
+        AnimationGraphNode();
         explicit AnimationGraphNode(uint16_t input, uint16_t output);
         ~AnimationGraphNode() override;
 
