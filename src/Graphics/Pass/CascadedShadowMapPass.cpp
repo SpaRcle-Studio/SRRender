@@ -578,22 +578,22 @@ namespace SR_GRAPH_NS {
         }*/
     }
 
-    void CascadedShadowMapPass::UseUniformsFromAnotherPass(SR_GTYPES_NS::Shader* pShader) {
-        Super::UseUniformsFromAnotherPass(pShader);
+    void CascadedShadowMapPass::UseUniformsFromAnotherPass(SR_GTYPES_NS::Shader& shader) {
+        Super::UseUniformsFromAnotherPass(shader);
 
-        pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
-        pShader->SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadeSplitDepths.data());
-        pShader->SetValue<false>(SHADER_CASCADE_RADII, m_cascadeRadii.data());
+        shader.SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
+        shader.SetValue<false>(SHADER_CASCADE_SPLITS, m_cascadeSplitDepths.data());
+        shader.SetValue<false>(SHADER_CASCADE_RADII, m_cascadeRadii.data());
     }
 
-    void CascadedShadowMapPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
-        Super::UseConstants(pShader);
+    void CascadedShadowMapPass::UseConstants(SR_GTYPES_NS::Shader& shader) {
+        Super::UseConstants(shader);
 
         if (m_instancing) {
-            pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, m_drawCascadeIndex);
+            shader.SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, m_drawCascadeIndex);
         }
         else {
-            pShader->SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, GetPipeline()->GetCurrentFrameBufferLayer());
+            shader.SetConstInt(SHADER_PC_SHADOW_CASCADE_INDEX, GetPipeline()->GetCurrentFrameBufferLayer());
         }
     }
 
@@ -634,14 +634,13 @@ namespace SR_GRAPH_NS {
         return pCamera;
     }
 
-    void CascadedShadowMapPass::UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) {
+    void CascadedShadowMapPass::UseSharedUniforms(SR_GTYPES_NS::Shader& shader) {
         SR_TRACY_ZONE;
 
-        Super::UseSharedUniforms(pShader);
+        Super::UseSharedUniforms(shader);
 
-        pShader->SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
-
-        pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, m_directionalLightDirection);
+        shader.SetValue<false>(SHADER_CASCADE_LIGHT_SPACE_MATRICES, m_cascadeMatrices.data());
+        shader.SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, m_directionalLightDirection);
     }
 
     float_t CascadedShadowMapPass::GetCascadedMapResolution() const {

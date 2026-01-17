@@ -10,6 +10,7 @@
 
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/SortedVector.h>
+#include <Utils/Types/FastMemoryArray.h>
 
 namespace SR_GTYPES_NS {
     class Shader;
@@ -123,13 +124,11 @@ namespace SR_GRAPH_NS {
 
         Memory::UBOManager& m_uboManager;
 
-        SR_UTILS_NS::StringAtom m_renderStageId;
-
         std::vector<std::pair<Layer, Queue>> m_queues;
 
         SR_HTYPES_NS::SortedVector<SR_GTYPES_NS::Shader*> m_shaders;
-        std::vector<MeshShaderPair> m_meshes;
-        std::vector<MeshShaderPair> m_tempMeshes;
+        SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_meshes;
+        SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_tempMeshes;
 
         MeshDrawerPass* m_meshDrawerPass = nullptr;
         RenderContext* m_renderContext = nullptr;

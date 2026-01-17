@@ -21,8 +21,8 @@ namespace SR_GTYPES_NS {
         typedef Vertices::StaticMeshVertex VertexType;
 
     public:
-        void UseMaterial() override;
-        void UseModelMatrix() override;
+        void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
+        void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
         void OnRawMeshChanged() override;
         bool OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) override;

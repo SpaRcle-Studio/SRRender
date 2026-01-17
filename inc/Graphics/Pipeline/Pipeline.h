@@ -148,7 +148,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsDirty() const noexcept { ++m_state.operations; return m_dirty; }
         SR_NODISCARD FrameBufferQueue& GetQueue() noexcept { ++m_state.operations; return m_fboQueue; }
         SR_NODISCARD RenderStrategy* GetCurrentRenderStrategy() const noexcept { ++m_state.operations; return m_state.pRenderStrategy; }
-        SR_NODISCARD SR_UTILS_NS::StringAtom GetRenderStageId() const { return m_renderStageId; }
         SR_NODISCARD SR_GTYPES_NS::Camera* GetCurrentCamera() const { ++m_state.operations; return m_state.pCamera; }
 
         SR_NODISCARD virtual uint8_t GetCurrentFrameIndex() const { return 0; }
@@ -171,7 +170,6 @@ namespace SR_GRAPH_NS {
         SR_FORCE_INLINE void SetCurrentCamera(SR_GTYPES_NS::Camera* pCamera) { ++m_state.operations; m_state.pCamera = pCamera; }
 
         virtual void SetSwapchainImagesCount(uint16_t count) { }
-        virtual void SetRenderStageId(SR_UTILS_NS::StringAtom id) { m_renderStageId = id; }
         virtual void SetCurrentFrameBufferLayer(uint32_t layer) { ++m_state.operations; m_state.frameBufferLayer = layer; }
         virtual void SetCurrentFrameBuffer(FramebufferPtr pFrameBuffer);
         virtual void SetCurrentRenderStrategy(RenderStrategy* pStrategy) { ++m_state.operations; m_state.pRenderStrategy = pStrategy; }
@@ -330,8 +328,6 @@ namespace SR_GRAPH_NS {
         mutable uint64_t m_errorsCount = 0;
 
         std::atomic<bool> m_dirty = false;
-
-        SR_UTILS_NS::StringAtom m_renderStageId;
 
         WindowPtr m_window;
         RenderContextPtr m_renderContext;

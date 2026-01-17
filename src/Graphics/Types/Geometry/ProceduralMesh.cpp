@@ -196,14 +196,14 @@ namespace SR_GTYPES_NS {
         }
     }
 
-    void ProceduralMesh::UseMaterial() {
-        Super::UseMaterial();
-        UseModelMatrix();
+    void ProceduralMesh::UseMaterial(SR_GTYPES_NS::Shader& shader) {
+        Super::UseMaterial(shader);
+        UseModelMatrix(shader);
     }
 
-    void ProceduralMesh::UseModelMatrix() {
-        Super::UseModelMatrix();
-        GetPipeline()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+    void ProceduralMesh::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
+        Super::UseModelMatrix(shader);
+        shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
     }
 
     bool ProceduralMesh::IsSupportVBO() const {

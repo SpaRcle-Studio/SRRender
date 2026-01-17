@@ -45,7 +45,7 @@ namespace SR_GTYPES_NS {
 
         bool Calculate() override;
 
-        void UseMaterial() override;
+        void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
 
     private:
         SR_MATH_NS::FVector4 m_color;

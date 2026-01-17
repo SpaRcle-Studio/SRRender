@@ -92,15 +92,13 @@ namespace SR_GTYPES_NS {
         return Super::LateUpdate();
     };
 
-    void SkinnedMesh::UseMaterial() {
-        Super::UseMaterial();
-        UseModelMatrix();
+    void SkinnedMesh::UseMaterial(SR_GTYPES_NS::Shader& shader) {
+        Super::UseMaterial(shader);
+        UseModelMatrix(shader);
     }
 
-    void SkinnedMesh::UseModelMatrix() {
-        if (auto&& pShader = GetPipeline()->GetCurrentShader()) {
-            pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-        }
+    void SkinnedMesh::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
+        shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
     }
 
     bool SkinnedMesh::OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) {

@@ -26,9 +26,9 @@ namespace SR_GRAPH_NS {
         info.pMesh->Draw();
     }
 
-    void ColorBufferPass::UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) {
+    void ColorBufferPass::UseUniforms(SR_GTYPES_NS::Shader& shader, MeshPtr pMesh) {
         SR_TRACY_ZONE;
-        Super::UseUniforms(pShader, pMesh);
+        Super::UseUniforms(shader, pMesh);
     }
 
     MeshDrawerPass::RenderQueuePtr ColorBufferPass::AllocateRenderQueue(uint32_t index) {
@@ -44,12 +44,12 @@ namespace SR_GRAPH_NS {
         return nullValue;
     }
 
-    void ColorBufferPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
-        Super::UseConstants(pShader);
+    void ColorBufferPass::UseConstants(SR_GTYPES_NS::Shader& shader) {
+        Super::UseConstants(shader);
     }
 
-    void ColorBufferPass::UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) {
-        Super::UseSharedUniforms(pShader);
+    void ColorBufferPass::UseSharedUniforms(SR_GTYPES_NS::Shader& shader) {
+        Super::UseSharedUniforms(shader);
     }
 
     bool ColorBufferPass::Render() {

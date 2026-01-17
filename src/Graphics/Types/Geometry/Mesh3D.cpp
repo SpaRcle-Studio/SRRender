@@ -52,14 +52,13 @@ namespace SR_GTYPES_NS {
         return IsValidMeshId() && Super::IsCalculatable();
     }
 
-    void Mesh3D::UseMaterial() {
-        Super::UseMaterial();
-        UseModelMatrix();
+    void Mesh3D::UseMaterial(SR_GTYPES_NS::Shader& shader) {
+        Super::UseMaterial(shader);
+        UseModelMatrix(shader);
     }
 
-    void Mesh3D::UseModelMatrix() {
-        auto&& pShader = GetPipeline()->GetCurrentShader();
-        pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+    void Mesh3D::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
+        shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
     }
 
     void Mesh3D::OnRawMeshChanged() {

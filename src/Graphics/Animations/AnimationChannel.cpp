@@ -98,9 +98,10 @@ namespace SR_ANIMATIONS_NS {
         if (pChannel->mNumPositionKeys > 0) {
             static constexpr float_t mul = 0.01;
 
-            auto&& channel = AnimationChannel();
+            auto&& channel = channels.emplace_back();
 
-            channel.SetName(pChannel->mNodeName.C_Str());
+            channel.ReserveKeys(pChannel->mNumPositionKeys);
+            channel.SetName(boneName);
             channel.SetBoneIndex(boneIndex);
 
             for (uint32_t positionKeyIndex = 0; positionKeyIndex < pChannel->mNumPositionKeys; ++positionKeyIndex) {
@@ -110,16 +111,15 @@ namespace SR_ANIMATIONS_NS {
 
                 channel.AddKey(pPositionKey.mTime / ticksPerSecond, TranslationKey(translation));
             }
-
-            channels.emplace_back(channel);
         }
 
         /// --------------------------------------------------------------------------------------------------------
 
         if (pChannel->mNumRotationKeys > 0) {
-            auto&& channel = AnimationChannel();
+            auto&& channel = channels.emplace_back();
 
-            channel.SetName(pChannel->mNodeName.C_Str());
+            channel.ReserveKeys(pChannel->mNumRotationKeys);
+            channel.SetName(boneName);
             channel.SetBoneIndex(boneIndex);
 
             for (uint32_t rotationKeyIndex = 0; rotationKeyIndex < pChannel->mNumRotationKeys; ++rotationKeyIndex) {
@@ -129,16 +129,15 @@ namespace SR_ANIMATIONS_NS {
 
                 channel.AddKey(pRotationKey.mTime / ticksPerSecond, RotationKey(q));
             }
-
-            channels.emplace_back(channel);
         }
 
         /// --------------------------------------------------------------------------------------------------------
 
         if (pChannel->mNumScalingKeys > 0) {
-            auto&& channel = AnimationChannel();
+            auto&& channel = channels.emplace_back();
 
-            channel.SetName(pChannel->mNodeName.C_Str());
+            channel.ReserveKeys(pChannel->mNumScalingKeys);
+            channel.SetName(boneName);
             channel.SetBoneIndex(boneIndex);
 
             for (uint32_t scalingKeyIndex = 0; scalingKeyIndex < pChannel->mNumScalingKeys; ++scalingKeyIndex) {
@@ -148,8 +147,6 @@ namespace SR_ANIMATIONS_NS {
 
                 channel.AddKey(pScalingKey.mTime / ticksPerSecond, ScalingKey(scale));
             }
-
-            channels.emplace_back(channel);
         }
 #endif
     }

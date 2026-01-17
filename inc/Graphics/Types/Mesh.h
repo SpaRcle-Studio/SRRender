@@ -110,9 +110,9 @@ namespace SR_GTYPES_NS {
 
         virtual void Draw();
 
-        virtual void UseMaterial();
-        virtual void UseModelMatrix() { }
-        virtual void UseSamplers();
+        virtual void UseMaterial(SR_GTYPES_NS::Shader& shader);
+        virtual void UseSamplers(SR_GTYPES_NS::Shader& shader);
+        virtual void UseModelMatrix(SR_GTYPES_NS::Shader& shader) { }
         virtual void UseSSBO() { }
 
         void OnReRegistered();

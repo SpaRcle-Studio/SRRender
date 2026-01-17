@@ -49,8 +49,8 @@ namespace SR_GTYPES_NS {
         typedef Vertices::UIVertex VertexType;
 
     public:
-        void UseMaterial() override;
-        void UseModelMatrix() override;
+        void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
+        void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
         bool IsSupportVBO() const override;
 

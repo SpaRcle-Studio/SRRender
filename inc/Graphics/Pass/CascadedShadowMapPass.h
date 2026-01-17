@@ -24,9 +24,9 @@ namespace SR_GRAPH_NS {
         void Update() override;
         bool Prepare() override;
         void PostUpdate() override;
-        void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) override;
-        void UseConstants(SR_GTYPES_NS::Shader* pShader) override;
-        void UseUniformsFromAnotherPass(SR_GTYPES_NS::Shader* pShader) override;
+        void UseSharedUniforms(SR_GTYPES_NS::Shader& shader) override;
+        void UseConstants(SR_GTYPES_NS::Shader& shader) override;
+        void UseUniformsFromAnotherPass(SR_GTYPES_NS::Shader& shader) override;
 
         SR_NODISCARD RenderQueuePtr AllocateRenderQueue(uint32_t index) override;
 

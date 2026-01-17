@@ -510,25 +510,16 @@ namespace SR_GRAPH_NS {
         m_defaultShader.pOwnedMaterialData = this;
     }
 
-    MaterialData::~MaterialData() {
-    }
+    MaterialData::~MaterialData() = default;
 
-    void MaterialData::UseUniforms(const Pipeline* pPipeline) {
-        SR_TRACY_ZONE;
+    void MaterialData::UseUniforms(SR_GTYPES_NS::Shader& shader) {
+        MaterialShaderData& shaderData = GetDefaultShaderData();
 
-        const SR_UTILS_NS::StringAtom renderStageId = pPipeline->GetRenderStageId();
-        SR_GTYPES_NS::Shader* pShader = pPipeline->GetCurrentShader();
-
-        const MaterialShaderData* pShaderData = GetShaderData(renderStageId);
-        if (!pShaderData) {
+        if (shaderData.useType != MaterialStageUseType::Uniforms && shaderData.useType != MaterialStageUseType::Full) {
             return;
         }
 
-        if (pShaderData->useType != MaterialStageUseType::Uniforms && pShaderData->useType != MaterialStageUseType::Full) {
-            return;
-        }
-
-        for (const MaterialShaderProperty& uniform : pShaderData->uniforms) {
+        for (const MaterialShaderProperty& uniform : shaderData.uniforms) {
             if (!uniform.data) SR_UNLIKELY_ATTRIBUTE {
                 SRHalt("MaterialData::UseUniforms() : property data is null! Property id: {}, Type: {}", uniform.id, uniform.type);
                 continue;
@@ -537,22 +528,22 @@ namespace SR_GRAPH_NS {
             switch (uniform.type) {
                 case ShaderVarType::Int:
                 case ShaderVarType::Bool:
-                    pShader->SetInt(uniform.id, std::get<int32_t>(*uniform.data));
+                    shader.SetInt(uniform.id, std::get<int32_t>(*uniform.data));
                     break;
                 case ShaderVarType::Float:
-                    pShader->SetFloat(uniform.id, std::get<float_t>(*uniform.data));
+                    shader.SetFloat(uniform.id, std::get<float_t>(*uniform.data));
                     break;
                 case ShaderVarType::Vec2:
-                    pShader->SetVec2(uniform.id, std::get<SR_MATH_NS::FVector2>(*uniform.data).template Cast<float_t>());
+                    shader.SetVec2(uniform.id, std::get<SR_MATH_NS::FVector2>(*uniform.data).template Cast<float_t>());
                     break;
                 case ShaderVarType::Vec3:
-                    pShader->SetVec3(uniform.id, std::get<SR_MATH_NS::FVector3>(*uniform.data).template Cast<float_t>());
+                    shader.SetVec3(uniform.id, std::get<SR_MATH_NS::FVector3>(*uniform.data).template Cast<float_t>());
                     break;
                 case ShaderVarType::IVec3:
-                    pShader->SetIVec3(uniform.id, std::get<SR_MATH_NS::IVector3>(*uniform.data).template Cast<int32_t>());
+                    shader.SetIVec3(uniform.id, std::get<SR_MATH_NS::IVector3>(*uniform.data).template Cast<int32_t>());
                     break;
                 case ShaderVarType::Vec4:
-                    pShader->SetVec4(uniform.id, std::get<SR_MATH_NS::FVector4>(*uniform.data).template Cast<float_t>());
+                    shader.SetVec4(uniform.id, std::get<SR_MATH_NS::FVector4>(*uniform.data).template Cast<float_t>());
                     break;
                 default:
                     SR_ERROR("MaterialData::UseUniforms() : unknown property type! Property id: {}, Type: {}", uniform.id, uniform.type);
@@ -561,32 +552,26 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialData::UseSamplers(const Pipeline* pPipeline) {
+    void MaterialData::UseSamplers(SR_GTYPES_NS::Shader& shader) {
         SR_TRACY_ZONE;
 
-        const SR_UTILS_NS::StringAtom renderStageId = pPipeline->GetRenderStageId();
-        SR_GTYPES_NS::Shader* pShader = pPipeline->GetCurrentShader();
+        MaterialShaderData& shaderData = GetDefaultShaderData();
 
-        const MaterialShaderData* pShaderData = GetShaderData(renderStageId);
-        if (!pShaderData) {
+        if (shaderData.useType != MaterialStageUseType::Samplers && shaderData.useType != MaterialStageUseType::Full) {
             return;
         }
 
-        if (pShaderData->useType != MaterialStageUseType::Samplers && pShaderData->useType != MaterialStageUseType::Full) {
-            return;
-        }
-
-        for (const MaterialShaderProperty& sampler : pShaderData->samplers) {
+        for (const MaterialShaderProperty& sampler : shaderData.samplers) {
             if (!sampler.data) SR_UNLIKELY_ATTRIBUTE {
                 SRHalt("MaterialData::UseSamplers() : property data is null! Property id: {}, Type: {}", sampler.id, sampler.type);
                 continue;
             }
 
             if (auto&& pTexture = std::get<SR_GTYPES_NS::Texture::Ptr>(*sampler.data)) {
-                pShader->SetSampler2D(sampler.id, pTexture);
+                shader.SetSampler2D(sampler.id, pTexture);
             }
             else {
-                pShader->SetSampler2D(sampler.id, nullptr);
+                shader.SetSampler2D(sampler.id, nullptr);
             }
         }
     }

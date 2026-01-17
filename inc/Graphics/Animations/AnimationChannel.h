@@ -28,6 +28,7 @@ namespace SR_ANIMATIONS_NS {
 
         void SetName(SR_UTILS_NS::StringAtom name);
         void SetBoneIndex(uint16_t index) { m_boneIndex = index; }
+        void ReserveKeys(uint64_t count) { m_keys.reserve(count); }
 
         template<class T> void AddKey(double_t timePoint, T key) {
             auto&& newKey = m_keys.emplace_back();

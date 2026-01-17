@@ -59,7 +59,7 @@ namespace SR_GRAPH_NS {
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
-            UseSamplers(pShader);
+            UseSamplers(*pShader);
             m_descriptorManager.Flush();
         }
         GetPipeline()->GetCurrentShader()->FlushConstants();
@@ -115,7 +115,7 @@ namespace SR_GRAPH_NS {
                 pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, pLightSystem->GetDirectionalLightParams().direction);
             }
 
-            m_material->Use();
+            m_material->Use(*pShader);
 
             pShader->EndSharedUBO();
         }
@@ -144,10 +144,10 @@ namespace SR_GRAPH_NS {
         Super::DeInit();
     }
 
-    void PostProcessPass::UseSamplers(SR_GTYPES_NS::Shader* pShader) {
-        Super::UseSamplers(pShader);
-        m_samplers.UseSamplers(pShader);
-        m_material->UseSamplers();
+    void PostProcessPass::UseSamplers(SR_GTYPES_NS::Shader& shader) {
+        Super::UseSamplers(shader);
+        m_samplers.UseSamplers(&shader);
+        m_material->UseSamplers(shader);
     }
 
     void PostProcessPass::OnResize(const SR_MATH_NS::UVector2& size) {

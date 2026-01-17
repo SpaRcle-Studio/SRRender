@@ -30,7 +30,7 @@ namespace SR_ANIMATIONS_NS {
         const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
 
         for (uint32_t i = 0; i < pScene->mNumAnimations; ++i) {
-            if (pScene->mAnimations[i]->mName.C_Str() == name) {
+            if (name == pScene->mAnimations[i]->mName.C_Str()) {
                 pAnimation = pScene->mAnimations[i];
                 break;
             }

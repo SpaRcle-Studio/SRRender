@@ -34,8 +34,8 @@ namespace SR_GTYPES_NS {
         void SetVertices(const std::vector<Vertices::StaticMeshVertex>& vertices);
         void SetVertices(const SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertex>& vertices);
 
-        void UseMaterial() override;
-        void UseModelMatrix() override;
+        void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
+        void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
         SR_NODISCARD bool IsUniqueMesh() const override { return true; }
         SR_NODISCARD bool IsCalculatable() const override;

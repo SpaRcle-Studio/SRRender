@@ -127,8 +127,6 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         SRAssert(m_isInitialized);
 
-        m_pipeline->SetRenderStageId(m_renderStageId);
-
         PrepareLayers();
 
         m_rendered = false;
@@ -173,7 +171,7 @@ namespace SR_GRAPH_NS {
 
         for (auto* pElement = pStart; pElement < pEnd; ++pElement) {
             if ((*pElement)->BeginSharedUBO()) SR_LIKELY_ATTRIBUTE {
-                m_meshDrawerPass->UseSharedUniforms(*pElement);
+                m_meshDrawerPass->UseSharedUniforms(**pElement);
                 (*pElement)->EndSharedUBO();
             }
         }
@@ -227,7 +225,7 @@ namespace SR_GRAPH_NS {
 
             /// Если меш не был отрисован, то бинд не пройдет
             if (m_uboManager.BindNoDublicateUBO(virtualUbo) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
-                m_meshDrawerPass->UseUniforms(pShader, pMesh);
+                m_meshDrawerPass->UseUniforms(*pShader, pMesh);
                 SR_MAYBE_UNUSED_VAR pShader->Flush();
             }
         }
@@ -377,10 +375,10 @@ namespace SR_GRAPH_NS {
 
         m_renderContext->SetCurrentShader(pShader);
 
-        m_meshDrawerPass->UseConstants(pShader);
+        m_meshDrawerPass->UseConstants(*pShader);
 
         if (m_pipeline->IsShaderChanged()) {
-            m_meshDrawerPass->UseSamplers(pShader);
+            m_meshDrawerPass->UseSamplers(*pShader);
         }
 
         if (!pShader->IsSamplersValid()) {
@@ -451,7 +449,7 @@ namespace SR_GRAPH_NS {
 
                 /// Если меш не был отрисован, то бинд не пройдет
                 if (m_uboManager.BindNoDublicateUBO(virtualUbo) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
-                    m_meshDrawerPass->UseUniforms(meshInfo.pShader, meshInfo.pMesh);
+                    m_meshDrawerPass->UseUniforms(*meshInfo.pShader, meshInfo.pMesh);
                     SR_MAYBE_UNUSED_VAR meshInfo.pShader->Flush();
                 }
             }

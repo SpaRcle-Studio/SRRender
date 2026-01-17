@@ -91,7 +91,7 @@ namespace SR_GRAPH_NS {
         m_technique = pRenderTechnique;
     }
 
-    void BasePass::UseSamplers(SR_GTYPES_NS::Shader* pShader) {
+    void BasePass::UseSamplers(SR_GTYPES_NS::Shader& shader) {
 
     }
 

@@ -113,24 +113,24 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    void Text::UseMaterial() {
-        Super::UseMaterial();
-        UseModelMatrix();
+    void Text::UseMaterial(SR_GTYPES_NS::Shader& shader) {
+        Super::UseMaterial(shader);
+        UseModelMatrix(shader);
     }
 
-    void Text::UseModelMatrix() {
-        GetPipeline()->GetCurrentShader()->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-        GetPipeline()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_X, 0.f);
-        GetPipeline()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_Y, 0.f);
-        GetPipeline()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_WIDTH, static_cast<float_t>(m_atlasSize.x) / 100.f);
-        GetPipeline()->GetCurrentShader()->SetFloat(SHADER_TEXT_RECT_HEIGHT, static_cast<float_t>(m_atlasSize.y) / 100.f);
+    void Text::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
+        shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+        shader.SetFloat(SHADER_TEXT_RECT_X, 0.f);
+        shader.SetFloat(SHADER_TEXT_RECT_Y, 0.f);
+        shader.SetFloat(SHADER_TEXT_RECT_WIDTH, static_cast<float_t>(m_atlasSize.x) / 100.f);
+        shader.SetFloat(SHADER_TEXT_RECT_HEIGHT, static_cast<float_t>(m_atlasSize.y) / 100.f);
 
-        Super::UseModelMatrix();
+        Super::UseModelMatrix(shader);
     }
 
-    void Text::UseSamplers() {
-        GetPipeline()->GetCurrentShader()->SetSampler2D(SHADER_TEXT_ATLAS_TEXTURE, m_id);
-        Mesh::UseSamplers();
+    void Text::UseSamplers(SR_GTYPES_NS::Shader& shader) {
+        shader.SetSampler2D(SHADER_TEXT_ATLAS_TEXTURE, m_id);
+        Mesh::UseSamplers(shader);
     }
 
     bool Text::IsFlatMesh() const noexcept {

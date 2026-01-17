@@ -3,14 +3,17 @@
 //
 
 #include <Graphics/Pipeline/TextureHelper.h>
+
 #include <Utils/Debug.h>
+#include <Utils/Profile/TracyContext.h>
 
 #include <cmp_core.h>
 
 namespace SR_GRAPH_NS {
     uint8_t* Compress(uint32_t w, uint32_t h, const uint8_t *pixels, TextureCompression method) {
+        SR_TRACY_ZONE;
         uint32_t blockCount = (w / 4) * (h / 4);
-        auto* cmpBuffer = (uint8_t*)malloc(16 * blockCount * 4);
+        auto* cmpBuffer = (uint8_t*)SRMalloc(16 * blockCount * 4);
         for (uint32_t col = 0; col < w / 4; col++) {
             for (uint32_t row = 0; row < h / 4; row++) {
                 uint32_t colOffs = col * 16;
@@ -50,6 +53,7 @@ namespace SR_GRAPH_NS {
     }
 
     uint32_t Find4(uint32_t i) {
+        SR_TRACY_ZONE;
         if (i % 4 == 0)
             return i;
         else
@@ -57,11 +61,13 @@ namespace SR_GRAPH_NS {
     }
 
     std::pair<uint32_t, uint32_t> MakeGoodSizes(uint32_t w, uint32_t h) {
+        SR_TRACY_ZONE;
         return std::pair(Find4(w), Find4(h));
     }
 
     uint8_t* ResizeToLess(uint32_t ow, uint32_t oh, uint32_t nw, uint32_t nh, const uint8_t* pixels) {
-        auto* image = (uint8_t*)malloc(nw * nh * 4);
+        SR_TRACY_ZONE;
+        auto* image = (uint8_t*)SRMalloc(nw * nh * 4);
         uint32_t dw = ow - nw;
 
         for (uint32_t row = 0; row < nh; ++row) {
@@ -102,6 +108,7 @@ namespace SR_GRAPH_NS {
     }
 
     uint32_t GetPixelSize(ImageFormat format) {
+        SR_TRACY_ZONE;
         switch (format) {
             case ImageFormat::RGBA8_UNORM:
             case ImageFormat::BGRA8_UNORM:

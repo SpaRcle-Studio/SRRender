@@ -34,12 +34,12 @@ namespace SR_GTYPES_NS {
         return Super::Calculate();
     }
 
-    void Sprite::UseMaterial() {
-        Super::UseMaterial();
-        UseModelMatrix();
+    void Sprite::UseMaterial(SR_GTYPES_NS::Shader& shader) {
+        Super::UseMaterial(shader);
+        UseModelMatrix(shader);
     }
 
-    void Sprite::UseModelMatrix() {
+    void Sprite::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
         SR_TRACY_ZONE;
 
         auto&& pCamera = GetPipeline()->GetCurrentCamera();
@@ -48,25 +48,21 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        if (auto&& pShader = GetPipeline()->GetCurrentShader()) {
-            pShader->SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-            pShader->SetInt(SHADER_SPRITE_MODE, static_cast<int32_t>(m_spriteMode));
-            switch (m_spriteMode) {
-                case SpriteMode::Filled:
-                    ApplyFillModeParams(pShader);
-                    break;
-                case SpriteMode::Sliced:
-                    ApplySliceModeParams(pShader);
-                    break;
-                default:
-                    SRHaltOnce("Unknown sprite mode!");
-                    break;
-            }
+        shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
+        shader.SetInt(SHADER_SPRITE_MODE, static_cast<int32_t>(m_spriteMode));
+        switch (m_spriteMode) {
+            case SpriteMode::Filled:
+                ApplyFillModeParams(&shader);
+                break;
+            case SpriteMode::Sliced:
+                ApplySliceModeParams(&shader);
+                break;
+            default:
+                SRHaltOnce("Unknown sprite mode!");
+                break;
         }
-        else {
-            SRHaltOnce("Shader is nullptr!");
-        }
-        Super::UseModelMatrix();
+
+        Super::UseModelMatrix(shader);
     }
 
     bool Sprite::BindMesh() {

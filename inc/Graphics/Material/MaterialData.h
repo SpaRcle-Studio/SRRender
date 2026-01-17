@@ -117,8 +117,8 @@ namespace SR_GRAPH_NS {
         MaterialData();
         ~MaterialData() override;
 
-        void UseUniforms(const Pipeline* pPipeline);
-        void UseSamplers(const Pipeline* pPipeline);
+        void UseUniforms(SR_GTYPES_NS::Shader& shader);
+        void UseSamplers(SR_GTYPES_NS::Shader& shader);
 
         SR_NODISCARD MaterialShaderData& GetDefaultShaderData() noexcept { return m_defaultShader; }
         SR_NODISCARD const MaterialShaderData& GetDefaultShaderData() const noexcept { return m_defaultShader; }

@@ -29,8 +29,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Skinned; }
 
         void LateUpdate() override;
-        void UseMaterial() override;
-        void UseModelMatrix() override;
+        void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
+        void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD bool IsUpdatable() const noexcept override { return true; }

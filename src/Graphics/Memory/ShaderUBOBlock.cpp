@@ -180,7 +180,7 @@ namespace SR_GRAPH_NS::Memory {
         }
 
         /// _aligned_free(pMemory);
-        free(pMemory);
+        SRFree(pMemory);
 
         pMemory = nullptr;
     }
@@ -191,7 +191,7 @@ namespace SR_GRAPH_NS::Memory {
             return nullptr;
         }
         SRAssert(m_align == 0 || size % m_align == 0);
-        auto&& pMemory = (char*)malloc(size);
+        auto&& pMemory = (char*)SRMalloc(size);
         memset(pMemory, 0, size);
         return pMemory;
     }

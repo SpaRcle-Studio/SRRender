@@ -304,6 +304,7 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     SR_MAYBE_UNUSED static SR_FORCE_INLINE VkFormat AbstractTextureFormatToVkFormat(const ImageFormat& format) {
+        SR_TRACY_ZONE;
         switch (format) {
             case ImageFormat::RGBA8_UNORM: return VK_FORMAT_R8G8B8A8_UNORM;
             case ImageFormat::BGRA8_UNORM: return VK_FORMAT_B8G8R8A8_UNORM;
@@ -341,6 +342,7 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     SR_MAYBE_UNUSED static SR_FORCE_INLINE VkFormat AbstractTextureCompToVkFormat(const TextureCompression& comp, VkFormat format) {
+        SR_TRACY_ZONE;
         switch (comp) {
             case TextureCompression::None: return format;
             case TextureCompression::BC1:

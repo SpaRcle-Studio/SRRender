@@ -41,7 +41,7 @@ namespace SR_GRAPH_NS {
         bool Prepare() override;
 
     protected:
-        void UseSamplers(SR_GTYPES_NS::Shader* pShader) override;
+        void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
         void SetRenderTechnique(SR_GRAPH_NS::IRenderTechnique* pRenderTechnique) override;
         void DeInit() override;
 

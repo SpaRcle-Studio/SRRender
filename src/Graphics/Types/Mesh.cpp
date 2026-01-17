@@ -188,12 +188,8 @@ namespace SR_GTYPES_NS {
         }
     }
 
-    void Mesh::UseMaterial() {
-        SR_TRACY_ZONE;
-
-        if (m_material) {
-            m_material->Use();
-        }
+    void Mesh::UseMaterial(SR_GTYPES_NS::Shader& shader) {
+        m_material->Use(shader);
     }
 
     bool Mesh::BindMesh() {
@@ -242,7 +238,7 @@ namespace SR_GTYPES_NS {
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-            UseSamplers();
+            UseSamplers(*m_pipeline->GetCurrentShader());
             UseSSBO();
             MarkUniformsDirty();
             m_descriptorManager.Flush();
@@ -261,10 +257,9 @@ namespace SR_GTYPES_NS {
         m_dirtyMaterial = false;
     }
 
-    void Mesh::UseSamplers() {
-        if (m_material) {
-            m_material->UseSamplers();
-        }
+    void Mesh::UseSamplers(SR_GTYPES_NS::Shader& shader) {
+        SR_TRACY_ZONE;
+        m_material->UseSamplers(shader);
     }
 
     std::string Mesh::GetMeshIdentifier() const {

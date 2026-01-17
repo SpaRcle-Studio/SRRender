@@ -20,10 +20,10 @@ namespace SR_GTYPES_NS {
         ~Text() override;
 
     public:
-        void UseMaterial() override;
-        void UseModelMatrix() override;
+        void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
+        void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
-        void UseSamplers() override;
+        void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
 
         SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Text; }
 

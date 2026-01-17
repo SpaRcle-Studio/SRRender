@@ -191,7 +191,7 @@ namespace SR_GRAPH_NS {
 
     void TextBuilder::Clear() {
         if (m_textureData) {
-            free(m_textureData);
+            SRFree(m_textureData);
             m_textureData = nullptr;
         }
 

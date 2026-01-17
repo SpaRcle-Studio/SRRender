@@ -313,6 +313,8 @@ namespace SR_GRAPH_NS::VulkanTools {
         uint8_t mipLevels,
         bool cpuUsage)
     {
+        SR_TRACY_ZONE;
+
         EvoVulkan::Types::Texture* pTexture = nullptr;
 
         if (mipLevels == 0) {

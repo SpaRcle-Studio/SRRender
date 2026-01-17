@@ -630,12 +630,12 @@ namespace SR_GRAPH_NS {
     }
 
     int32_t VulkanPipeline::AllocateTexture(const SRTextureCreateInfo& createInfo) {
+        SR_TRACY_ZONE;
+
         if (!m_memory) {
             SR_ERROR("VulkanPipeline::AllocateTexture() : memory manager is nullptr!");
             return SR_ID_INVALID;
         }
-
-        SR_TRACY_ZONE;
 
         SRTextureCreateInfo textureCreateInfo = createInfo;
 
@@ -690,7 +690,7 @@ namespace SR_GRAPH_NS {
         );
 
         if (textureCreateInfo.compression != TextureCompression::None) {
-            free(const_cast<uint8_t*>(textureCreateInfo.pData)); /// Free compressed data. Original data isn't will be free.
+            SRFree(const_cast<uint8_t*>(textureCreateInfo.pData)); /// Free compressed data. Original data isn't will be free.
         }
 
         if (id < 0) {

@@ -95,16 +95,18 @@ namespace SR_GRAPH_NS {
         return changed;
     }
 
-    void MeshDrawerPass::UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh) {
+    void MeshDrawerPass::UseUniforms(SR_GTYPES_NS::Shader& shader, MeshPtr pMesh) {
+        SR_TRACY_ZONE;
+
         if (m_uniforms.material.useMaterial) {
-            pMesh->UseMaterial();
+            pMesh->UseMaterial(shader);
         }
         else if (m_uniforms.material.modelMatrix) {
-            pMesh->UseModelMatrix();
+            pMesh->UseModelMatrix(shader);
         }
     }
 
-    void MeshDrawerPass::UseSharedUniforms(SR_GTYPES_NS::Shader* pShader) {
+    void MeshDrawerPass::UseSharedUniforms(SR_GTYPES_NS::Shader& shader) {
         SR_TRACY_ZONE;
 
         if (!m_valid) SR_UNLIKELY_ATTRIBUTE {
@@ -112,7 +114,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_uniforms.shared.time) {
-            pShader->SetFloat(SHADER_TIME, static_cast<float_t>(m_time.Clock()));
+            shader.SetFloat(SHADER_TIME, static_cast<float_t>(m_time.Clock()));
         }
 
         if (m_uniforms.shared.camera) {
@@ -124,41 +126,41 @@ namespace SR_GRAPH_NS {
                 resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();
             }
 
-            pShader->SetVec2(SHADER_RESOLUTION, resolution);
+            shader.SetVec2(SHADER_RESOLUTION, resolution);
 
             if (auto&& pCamera = GetCamera()) SR_LIKELY_ATTRIBUTE {
-                pShader->SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());
-                pShader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
-                pShader->SetMat4(SHADER_ORTHOGONAL_MATRIX, pCamera->GetOrthogonal());
-                pShader->SetMat4(SHADER_PIXEL_ORTHOGONAL_MATRIX, pCamera->GetPixelOrthogonal());
-                pShader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
-                pShader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
+                shader.SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());
+                shader.SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
+                shader.SetMat4(SHADER_ORTHOGONAL_MATRIX, pCamera->GetOrthogonal());
+                shader.SetMat4(SHADER_PIXEL_ORTHOGONAL_MATRIX, pCamera->GetPixelOrthogonal());
+                shader.SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
+                shader.SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
             }
         }
 
         if (m_uniforms.shared.light) {
             auto&& dirLightParams = GetRenderScene()->GetLightSystem()->GetDirectionalLightParams();
 
-            pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, dirLightParams.direction);
-            pShader->SetVec3(SHADER_SUN_COLOR, dirLightParams.lightColor);
-            pShader->SetVec3(SHADER_SKY_COLOR, dirLightParams.skyColor);
-            pShader->SetVec3(SHADER_GROUND_COLOR, dirLightParams.groundColor);
-            pShader->SetFloat(SHADER_SUN_INTENSITY, dirLightParams.intensity);
-            pShader->SetFloat(SHADER_SHADOW_STRENGTH, dirLightParams.shadowStrength);
-            pShader->SetFloat(SHADER_AMBIENT_INTENSITY, dirLightParams.ambientIntensity);
+            shader.SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, dirLightParams.direction);
+            shader.SetVec3(SHADER_SUN_COLOR, dirLightParams.lightColor);
+            shader.SetVec3(SHADER_SKY_COLOR, dirLightParams.skyColor);
+            shader.SetVec3(SHADER_GROUND_COLOR, dirLightParams.groundColor);
+            shader.SetFloat(SHADER_SUN_INTENSITY, dirLightParams.intensity);
+            shader.SetFloat(SHADER_SHADOW_STRENGTH, dirLightParams.shadowStrength);
+            shader.SetFloat(SHADER_AMBIENT_INTENSITY, dirLightParams.ambientIntensity);
         }
 
         for (auto&& pAnotherPass : m_useSharedFromPass) {
-            pAnotherPass->UseUniformsFromAnotherPass(pShader);
+            pAnotherPass->UseUniformsFromAnotherPass(shader);
         }
     }
 
-    void MeshDrawerPass::UseConstants(SR_GTYPES_NS::Shader* pShader) {
+    void MeshDrawerPass::UseConstants(SR_GTYPES_NS::Shader& shader) {
     }
 
-    void MeshDrawerPass::UseSamplers(SR_GTYPES_NS::Shader* pShader) {
-        Super::UseSamplers(pShader);
-        m_samplers.UseSamplers(pShader);
+    void MeshDrawerPass::UseSamplers(SR_GTYPES_NS::Shader& shader) {
+        Super::UseSamplers(shader);
+        m_samplers.UseSamplers(&shader);
     }
 
     RenderStrategy* MeshDrawerPass::GetRenderStrategy() const {

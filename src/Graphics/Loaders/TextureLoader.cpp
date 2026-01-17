@@ -153,6 +153,14 @@ namespace SR_GRAPH_NS {
             }
 
             auto&& marshal = SR_HTYPES_NS::Marshal();
+
+            marshal.Reserve(
+                1024 + // overhead
+                path.ToStringRef().size() + // path
+                width * height * 4 * sizeof(uint8_t) // data
+            );
+
+            marshal.Write<uint64_t>(TextureLoader::VERSION);
             marshal.Write<std::string>(path.ToStringRef());
             marshal.Write<uint32_t>(width);
             marshal.Write<uint32_t>(height);
@@ -236,22 +244,29 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
+        auto&& version = marshal.Read<uint64_t>();
+        if (version != TextureLoader::VERSION) {
+            return nullptr;
+        }
+
         auto&& sourcePath = marshal.Read<std::string>();
         auto&& width = marshal.Read<uint32_t>();
         auto&& height = marshal.Read<uint32_t>();
         auto&& format = static_cast<ImageLoadFormat>(marshal.Read<uint8_t>());
 
         auto&& size = marshal.Read<uint64_t>();
-
-        uint8_t* pData = nullptr;
-
-        if (size > 0) {
-            pData = (uint8_t*)malloc(size);
-            marshal.Stream::Read(pData, size);
+        if (size == 0) {
+            SR_ERROR("TextureLoader::LoadFromCache() : size is zero!");
+            return nullptr;
         }
 
-        auto&& pTextureData = TextureData::Create(width, height, pData, [](uint8_t* pData) {
-            free(pData);
+        const uint64_t offset = marshal.GetPosition();
+
+        uint8_t* pOriginData = reinterpret_cast<uint8_t*>(marshal.Detach().first);
+        uint8_t* pData = pOriginData + offset;
+
+        auto&& pTextureData = TextureData::Create(width, height, pData, [pOriginData](uint8_t*) {
+            SRFree(pOriginData);
         }, format);
 
         pTextureData->SetPath(sourcePath);

@@ -53,17 +53,9 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    SR_UTILS_NS::StringAtom BaseMaterial::GetRenderStageId() const noexcept {
-        InitContext();
-        return m_context->GetPipeline()->GetRenderStageId();
-    }
-
-    void BaseMaterial::Use() {
-        SR_TRACY_ZONE;
-
+    void BaseMaterial::Use(SR_GTYPES_NS::Shader& shader) {
         if (auto&& pData = GetMaterialData()) {
-            InitContext();
-            pData->UseUniforms(m_context->GetPipeline().Get());
+            pData->UseUniforms(shader);
         }
     }
 
@@ -129,12 +121,11 @@ namespace SR_GRAPH_NS {
         SetShader(pShader);
     }
 
-    void BaseMaterial::UseSamplers() {
+    void BaseMaterial::UseSamplers(SR_GTYPES_NS::Shader& shader) {
         SR_TRACY_ZONE;
 
         if (auto&& pData = GetMaterialData()) {
-            InitContext();
-            pData->UseSamplers(m_context->GetPipeline().Get());
+            pData->UseSamplers(shader);
         }
     }
 

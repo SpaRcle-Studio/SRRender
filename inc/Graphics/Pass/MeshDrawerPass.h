@@ -77,10 +77,10 @@ namespace SR_GRAPH_NS {
 
         void SetRenderTechnique(SR_GRAPH_NS::IRenderTechnique* pRenderTechnique) override;
 
-        virtual void UseUniforms(SR_GTYPES_NS::Shader* pShader, MeshPtr pMesh);
-        virtual void UseSharedUniforms(SR_GTYPES_NS::Shader* pShader);
-        virtual void UseConstants(SR_GTYPES_NS::Shader* pShader);
-        void UseSamplers(SR_GTYPES_NS::Shader* pShader) override;
+        virtual void UseUniforms(SR_GTYPES_NS::Shader& shader, MeshPtr pMesh);
+        virtual void UseSharedUniforms(SR_GTYPES_NS::Shader& shader);
+        virtual void UseConstants(SR_GTYPES_NS::Shader& shader);
+        void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
 
         void OnMultisampleChanged() override;
         void OnResize(const SR_MATH_NS::UVector2& size) override;

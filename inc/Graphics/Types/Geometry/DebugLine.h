@@ -25,7 +25,7 @@ namespace SR_GTYPES_NS {
         void SetEndPoint(const SR_MATH_NS::FVector3& endPoint);
         void SetColor(const SR_MATH_NS::FVector4& color);
 
-        void UseMaterial() override;
+        void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
 
         SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Line; }
 

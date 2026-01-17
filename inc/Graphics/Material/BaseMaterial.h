@@ -47,7 +47,6 @@ namespace SR_GRAPH_NS {
         void SR_FASTCALL SetTexture(SR_UTILS_NS::StringAtom id, const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>& pTexture) noexcept;
 
         SR_NODISCARD bool IsValid() const;
-        SR_NODISCARD SR_UTILS_NS::StringAtom GetRenderStageId() const noexcept;
         SR_NODISCARD RenderContextPtr GetContext() const { return m_context; }
         SR_NODISCARD virtual const MaterialData::Ptr& GetMaterialData() const noexcept = 0;
         SR_NODISCARD SR_GTYPES_NS::Shader* GetDefaultShader() const noexcept;
@@ -64,8 +63,8 @@ namespace SR_GRAPH_NS {
         void OnPropertyChanged(bool onlyUniforms) const;
         void OnShaderChanged();
 
-        void Use();
-        void UseSamplers();
+        void Use(SR_GTYPES_NS::Shader& shader);
+        void UseSamplers(SR_GTYPES_NS::Shader& shader);
 
     protected:
         virtual void InitContext() const;
