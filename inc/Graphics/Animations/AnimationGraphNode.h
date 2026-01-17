@@ -31,7 +31,7 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD uint32_t GetInputCount() const noexcept { return static_cast<uint32_t>(m_inputPins.size()); }
         SR_NODISCARD uint32_t GetOutputCount() const noexcept { return static_cast<uint32_t>(m_outputPins.size()); }
-        SR_NODISCARD virtual AnimationPose* Update(UpdateContext& context, const AnimationLink& from) = 0;
+        SR_NODISCARD virtual AnimationPose* Update(UpdateContext& context, const AnimationLink& from) { return nullptr; }
         SR_NODISCARD virtual bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
 		virtual void Compile(CompileContext& context);
         void SetGraph(AnimationGraph* pGraph) { m_graph = pGraph; }
