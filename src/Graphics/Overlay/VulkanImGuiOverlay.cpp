@@ -22,7 +22,9 @@
 #endif
 
 #ifdef SR_LINUX
-    #include <imgui/backends/imgui_impl_glfw.h>
+    // #include <imgui/backends/imgui_impl_glfw.h>
+    #include <imgui/backends/imgui_impl_sdl3.h>
+    #include <Graphics/Window/SDLWindow.h>
 #endif
 
 #ifdef SR_ANDROID
@@ -224,11 +226,13 @@ namespace SR_GRAPH_NS {
         auto&& pWindow = m_pipeline->GetWindow();
         ImGui_ImplWin32_Init((HWND)pWindow->GetHandle());
     #elif defined(SR_LINUX)
+        auto&& pWindow = m_pipeline->GetWindow();
+        ImGui_ImplSDL3_InitForVulkan(pWindow->GetImplementation<SDLWindow>()->GetWindow());
+
         //auto&& pWindow = m_pipeline->GetWindow();
         //ImGui_ImplX11_Init(pWindow->GetImplementation<X11Window>()->GetWindow());
-        auto&& pWindow = m_pipeline->GetWindow();
         // TODO: check what 'instant callbacks' argument does.
-        ImGui_ImplGlfw_InitForVulkan(pWindow->GetImplementation<GLFWWindow>()->GetWindow(), true);
+        // ImGui_ImplGlfw_InitForVulkan(pWindow->GetImplementation<GLFWWindow>()->GetWindow(), true);
         //ImGui_ImplGlfw_InitForVulkan()
     #elif defined(SR_ANDROID)
         auto&& pWindow = m_pipeline->GetWindow();
@@ -355,7 +359,8 @@ namespace SR_GRAPH_NS {
             ImGui_ImplWin32_NewFrame();
         #elif defined(SR_LINUX)
             //ImGui_ImplX11_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
+            // ImGui_ImplGlfw_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
         #elif defined(SR_ANDROID)
             ImGui_ImplAndroid_NewFrame();
         #endif

@@ -32,5 +32,8 @@
 
 #if defined(SR_LINUX)
     //#include "../src/Graphics/Window/X11Window.cpp"
+#endif
+
+#if defined(SR_USE_GLFW)
     #include "../src/Graphics/Window/GLFWWindow.cpp"
 #endif

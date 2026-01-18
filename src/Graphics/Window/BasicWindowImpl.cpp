@@ -14,7 +14,8 @@
     #include <Graphics/Window/AndroidWindow.h>
 #elif defined(SR_LINUX)
     //#include <Graphics/Window/X11Window.h>
-    #include <Graphics/Window/GLFWWindow.h>
+    // #include <Graphics/Window/GLFWWindow.h>
+    #include <Graphics/Window/SDLWindow.h>
 #endif
 
 namespace SR_GRAPH_NS {
@@ -79,8 +80,9 @@ namespace SR_GRAPH_NS {
     #elif defined (SR_LINUX)
         switch (type) {
             case WindowType::Auto:
+                return new SDLWindow();
             case WindowType::GLFW:
-                return new GLFWWindow();
+                // return new GLFWWindow();
             case WindowType::X11:
                 //return new X11Window();
             default:
