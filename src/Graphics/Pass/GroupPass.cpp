@@ -139,6 +139,14 @@ namespace SR_GRAPH_NS {
         Super::OnMultisampleChanged();
     }
 
+    void GroupPass::OnCameraParamsChanged() {
+        SR_TRACY_ZONE;
+        for (auto&& pPass : m_passes) {
+            pPass->OnCameraParamsChanged();
+        }
+        Super::OnCameraParamsChanged();
+    }
+
     void GroupPass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
         for (auto&& pPass : m_passes) {
             pPass->SetRenderTechnique(pRenderTechnique);

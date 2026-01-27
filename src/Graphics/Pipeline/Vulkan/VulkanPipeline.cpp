@@ -39,6 +39,24 @@
 #include <Utils/Common/StoreUtils.h>
 
 namespace SR_GRAPH_NS {
+    namespace Details {
+        VkRect2D ToVkRect2D(const SR_MATH_NS::IRect& rect) {
+            return EvoVulkan::Tools::Initializers::Rect2D(
+                static_cast<int32_t>(rect.position.x),
+                static_cast<int32_t>(rect.position.y),
+                static_cast<uint32_t>(rect.size.x),
+                static_cast<uint32_t>(rect.size.y)
+            );
+        }
+
+        bool CompareVkRect2D(const VkRect2D& a, const VkRect2D& b) {
+            return a.offset.x == b.offset.x &&
+                   a.offset.y == b.offset.y &&
+                   a.extent.width == b.extent.width &&
+                   a.extent.height == b.extent.height;
+        }
+    }
+
     std::string VulkanPipeline::GetVendor() const {
         if (m_kernel && m_kernel->GetDevice()) {
             return m_kernel->GetDevice()->GetName();
@@ -824,7 +842,7 @@ namespace SR_GRAPH_NS {
         Super::SetScissor(width, height);
 
         if (width > 0 && height > 0) {
-            m_scissor = EvoVulkan::Tools::Initializers::Rect2D(width, height, 0, 0);
+            m_scissor = EvoVulkan::Tools::Initializers::Rect2D(0, 0, width, height);
         }
         else {
             if (m_state.frameBufferId == 0) {
@@ -840,6 +858,7 @@ namespace SR_GRAPH_NS {
         }
 
         vkCmdSetScissor(m_currentCmd, 0, 1, &m_scissor);
+        m_activeScissor = m_scissor;
     }
 
     void VulkanPipeline::BindFrameBuffer(Pipeline::FramebufferPtr pFBO) {
@@ -1943,6 +1962,12 @@ namespace SR_GRAPH_NS {
             vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
         }
 
+        const VkRect2D scissor = m_scissorsStack.empty() ? m_scissor : Details::ToVkRect2D(m_scissorsStack.back());
+        if (!Details::CompareVkRect2D(m_activeScissor, scissor)) {
+            m_activeScissor = scissor;
+            vkCmdSetScissor(m_currentCmd, 0, 1, &m_activeScissor);
+        }
+
         vkCmdDraw(m_currentCmd, count, m_drawInstancesCount, 0, m_drawInstancesStart);
     }
 
@@ -1968,6 +1993,12 @@ namespace SR_GRAPH_NS {
 
         if (m_currentDescriptorSet) {
             vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
+        }
+
+        const VkRect2D scissor = m_scissorsStack.empty() ? m_scissor : Details::ToVkRect2D(m_scissorsStack.back());
+        if (!Details::CompareVkRect2D(m_activeScissor, scissor)) {
+            m_activeScissor = scissor;
+            vkCmdSetScissor(m_currentCmd, 0, 1, &m_activeScissor);
         }
 
         vkCmdDrawIndexed(m_currentCmd, count, m_drawInstancesCount, 0, 0, m_drawInstancesStart);

@@ -45,8 +45,6 @@ namespace SR_GRAPH_GUI_NS {
 
         m_nodes.clear();
         m_links.clear();
-
-        m_currentFile = SR_UTILS_NS::Path();
     }
 
     void NodeWidget::Draw() {

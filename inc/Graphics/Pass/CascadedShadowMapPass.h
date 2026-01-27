@@ -35,6 +35,7 @@ namespace SR_GRAPH_NS {
         void UpdateCascades(SR_GTYPES_NS::Camera* pCamera);
         void UpdateCascadesUnityStyle(SR_GTYPES_NS::Camera* pCamera);
 
+        void OnCameraParamsChanged() override;
         void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const override;
 
         SR_NODISCARD const Frustum& GetFrustum(uint32_t renderLayer) const override;
@@ -45,6 +46,7 @@ namespace SR_GRAPH_NS {
         SR_MATH_NS::FVector3 m_cameraPosition;
         SR_MATH_NS::UVector2 m_screenSize;
         SR_MATH_NS::Quaternion m_cameraRotation;
+        bool m_cameraDirty = true;
 
         /// @property
         float_t m_near = 0.f;

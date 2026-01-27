@@ -605,4 +605,26 @@ namespace SR_GRAPH_NS {
         m_drawInstancesCount = 1;
         m_drawInstancesStart = 0;
     }
+
+    void Pipeline::SetScissor(int32_t width, int32_t height) {
+        if (!m_scissorsStack.empty()) {
+            SRHaltOnce("Pipeline::SetScissor() : scissors stack is not empty!");
+            m_scissorsStack.clear();
+        }
+        ++m_state.operations;
+    }
+
+    void Pipeline::PushScissor(const SR_MATH_NS::IRect& scissor) {
+        ++m_state.operations;
+        m_scissorsStack.emplace_back(scissor);
+    }
+
+    void Pipeline::PopScissor() {
+        ++m_state.operations;
+        if (m_scissorsStack.empty()) {
+            SRHaltOnce("Pipeline::PopScissor() : scissors stack is empty!");
+            return;
+        }
+        m_scissorsStack.pop_back();
+    }
 }

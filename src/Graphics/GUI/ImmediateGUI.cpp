@@ -4,9 +4,14 @@
 
 #include <Graphics/GUI/ImmediateGUI.h>
 #include <Graphics/GUI/ImGUI.h>
+#include <Graphics/GUI/Icons.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
 #include <Enum/TreeNodeFlags.hpp>
+
+#ifdef SR_USE_IMGUI_NODE_EDITOR
+    #include <imgui-node-editor/imgui_node_editor.h>
+#endif
 
 namespace SR_GRAPH_GUI_NS::Immediate {
     ImColor FCToImC(const SR_MATH_NS::FColor& color) {
@@ -15,6 +20,10 @@ namespace SR_GRAPH_GUI_NS::Immediate {
 
     ImVec2 F2ToImV2(const SR_MATH_NS::FVector2& vec) {
         return ImVec2(vec.x, vec.y);
+    }
+
+    ImVec4 F4ToImV4(const SR_MATH_NS::FVector4& vec) {
+        return ImVec4(vec.x, vec.y, vec.z, vec.w);
     }
 
     ImVec4 FCToImV4(const SR_MATH_NS::FColor& vec) {
@@ -329,9 +338,9 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         }
     }
 
-    void DrawListAddRectFilled(void* pDrawList, const SR_MATH_NS::FVector2& min, const SR_MATH_NS::FVector2& max, uint32_t color, float rounding) {
+    void DrawListAddRectFilled(void* pDrawList, const SR_MATH_NS::FVector2& min, const SR_MATH_NS::FVector2& max, uint32_t color, float rounding, DrawFlags flags) {
         if (auto&& pImGuiDrawList = static_cast<ImDrawList*>(pDrawList)) {
-            pImGuiDrawList->AddRectFilled(F2ToImV2(min), F2ToImV2(max), color, rounding);
+            pImGuiDrawList->AddRectFilled(F2ToImV2(min), F2ToImV2(max), color, rounding, static_cast<ImDrawFlags>(flags));
         }
     }
 
@@ -473,7 +482,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         /// Render
         const ImU32 col = ImGui::GetColorU32((held && hovered) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
         ImGui::RenderNavHighlight(bb, id);
-        ImGui::RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float)ImMin(padding.x, padding.y), 0.0f, g.Style.FrameRounding));
+        ImGui::RenderFrame(bb.Min, bb.Max, col, true, SR_CLAMP((float)SR_MIN(padding.x, padding.y), 0.0f, g.Style.FrameRounding));
         if (bg_col.w > 0.0f)
             window->DrawList->AddRectFilled(bb.Min + padding, bb.Max - padding, ImGui::GetColorU32(bg_col));
         window->DrawList->AddImage((ImTextureID)pDescriptor, bb.Min + padding, bb.Max - padding, uv0, uv1, ImGui::GetColorU32(tint_col));
@@ -1025,4 +1034,317 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         // Чтобы layout ImGui знал, что занято место
         ImGui::Dummy(ImVec2(0, yOffset));
     }
+
+    void BeginVertical(const char* str_id, const SR_MATH_NS::FVector2& size, float align) {
+        ImGui::BeginVertical(str_id, F2ToImV2(size), align);
+    }
+
+    void BeginVertical(const void* ptr_id, const SR_MATH_NS::FVector2& size, float align) {
+        ImGui::BeginVertical(ptr_id, F2ToImV2(size), align);
+    }
+
+    void EndVertical() {
+        ImGui::EndVertical();
+    }
+
+    void BeginHorizontal(const char* str_id, const SR_MATH_NS::FVector2& size, float align) {
+        ImGui::BeginHorizontal(str_id, F2ToImV2(size), align);
+    }
+
+    void BeginHorizontal(const void* ptr_id, const SR_MATH_NS::FVector2& size, float align) {
+        ImGui::BeginHorizontal(ptr_id, F2ToImV2(size), align);
+    }
+
+    void EndHorizontal() {
+        ImGui::EndHorizontal();
+    }
+
+    void Spring(float weight, float spacing) {
+        ImGui::Spring(weight, spacing);
+    }
+
+    void DrawPinIcon(const SR_MATH_NS::FVector2& size, SR_GRAPH_NS::GUI::IconType iconType, bool filled, const SR_MATH_NS::FColor& color, const SR_MATH_NS::FColor& innerColor) {
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
+        if (ImGui::IsRectVisible(F2ToImV2(size))) {
+            auto cursorPos = ImGui::GetCursorScreenPos();
+            auto drawList = ImGui::GetWindowDrawList();
+            
+            auto rect = ImRect(cursorPos, cursorPos + F2ToImV2(size));
+            auto rect_center = rect.GetCenter();
+            auto rect_w = rect.Max.x - rect.Min.x;
+            auto rect_h = rect.Max.y - rect.Min.y;
+            
+            ImU32 colorU32 = ImColor(FCToImV4(color));
+            ImU32 innerColorU32 = ImColor(FCToImV4(innerColor));
+            const auto outline_scale = rect_w / 24.0f;
+            const auto extra_segments = static_cast<int>(2 * outline_scale);
+            
+            switch (iconType) {
+                case SR_GRAPH_NS::GUI::IconType::Circle: {
+                    const auto c = rect_center;
+                    if (!filled) {
+                        const auto r = 0.5f * rect_w / 2.0f - 0.5f;
+                        if (innerColorU32 & 0xFF000000) {
+                            drawList->AddCircleFilled(c, r, innerColorU32, 12 + extra_segments);
+                        }
+                        drawList->AddCircle(c, r, colorU32, 12 + extra_segments, 2.0f * outline_scale);
+                    } else {
+                        drawList->AddCircleFilled(c, 0.5f * rect_w / 2.0f, colorU32, 12 + extra_segments);
+                    }
+                    break;
+                }
+                case SR_GRAPH_NS::GUI::IconType::Square: {
+                    if (filled) {
+                        const auto r = 0.5f * rect_w / 2.0f;
+                        const auto p0 = rect_center - ImVec2(r, r);
+                        const auto p1 = rect_center + ImVec2(r, r);
+                        drawList->AddRectFilled(p0, p1, colorU32, 0.0f);
+                    } else {
+                        const auto r = 0.5f * rect_w / 2.0f - 0.5f;
+                        const auto p0 = rect_center - ImVec2(r, r);
+                        const auto p1 = rect_center + ImVec2(r, r);
+                        if (innerColorU32 & 0xFF000000) {
+                            drawList->AddRectFilled(p0, p1, innerColorU32, 0.0f);
+                        }
+                        drawList->AddRect(p0, p1, colorU32, 0.0f, 0, 2.0f * outline_scale);
+                    }
+                    break;
+                }
+                case SR_GRAPH_NS::GUI::IconType::Flow: {
+                    const auto origin_scale = rect_w / 24.0f;
+                    const auto offset_x = 1.0f * origin_scale;
+                    const auto offset_y = 0.0f * origin_scale;
+                    const auto margin = 2.0f * origin_scale;
+                    const auto rounding = 0.1f * origin_scale;
+                    const auto tip_round = 0.7f;
+                    const auto canvas = ImRect(
+                        rect.Min.x + margin + offset_x,
+                        rect.Min.y + margin + offset_y,
+                        rect.Max.x - margin + offset_x,
+                        rect.Max.y - margin + offset_y);
+                    const auto canvas_x = canvas.Min.x;
+                    const auto canvas_y = canvas.Min.y;
+                    const auto canvas_w = canvas.Max.x - canvas.Min.x;
+                    const auto canvas_h = canvas.Max.y - canvas.Min.y;
+                    const auto left = canvas_x + canvas_w * 0.5f * 0.3f;
+                    const auto right = canvas_x + canvas_w - canvas_w * 0.5f * 0.3f;
+                    const auto top = canvas_y + canvas_h * 0.5f * 0.2f;
+                    const auto bottom = canvas_y + canvas_h - canvas_h * 0.5f * 0.2f;
+                    const auto center_y = (top + bottom) * 0.5f;
+                    const auto tip_top = ImVec2(canvas_x + canvas_w * 0.5f, top);
+                    const auto tip_right = ImVec2(right, center_y);
+                    const auto tip_bottom = ImVec2(canvas_x + canvas_w * 0.5f, bottom);
+                    
+                    drawList->PathLineTo(ImVec2(left, top) + ImVec2(0, rounding));
+                    drawList->PathBezierCubicCurveTo(ImVec2(left, top), ImVec2(left, top), ImVec2(left, top) + ImVec2(rounding, 0));
+                    drawList->PathLineTo(tip_top);
+                    drawList->PathLineTo(tip_top + (tip_right - tip_top) * tip_round);
+                    drawList->PathBezierCubicCurveTo(tip_right, tip_right, tip_bottom + (tip_right - tip_bottom) * tip_round);
+                    drawList->PathLineTo(tip_bottom);
+                    drawList->PathLineTo(ImVec2(left, bottom) + ImVec2(rounding, 0));
+                    drawList->PathBezierCubicCurveTo(ImVec2(left, bottom), ImVec2(left, bottom), ImVec2(left, bottom) - ImVec2(0, rounding));
+                    
+                    if (!filled) {
+                        if (innerColorU32 & 0xFF000000) {
+                            drawList->AddConvexPolyFilled(drawList->_Path.Data, drawList->_Path.Size, innerColorU32);
+                        }
+                        drawList->PathStroke(colorU32, true, 2.0f * outline_scale);
+                    } else {
+                        drawList->PathFillConvex(colorU32);
+                    }
+                    break;
+                }
+                default:
+                    // По умолчанию круг
+                    {
+                        const auto c = rect_center;
+                        drawList->AddCircleFilled(c, 0.5f * rect_w / 2.0f, colorU32, 12 + extra_segments);
+                    }
+                    break;
+            }
+        }
+        
+        ImGui::Dummy(F2ToImV2(size));
+    #endif
+    }
+
+#ifdef SR_USE_IMGUI_NODE_EDITOR
+    void* CreateEditor(const char* settingsFile) {
+        ax::NodeEditor::Config config;
+        if (settingsFile) {
+            config.SettingsFile = settingsFile;
+        }
+        return ax::NodeEditor::CreateEditor(&config);
+    }
+
+    void DestroyEditor(void* editor) {
+        if (editor) {
+            ax::NodeEditor::DestroyEditor(reinterpret_cast<ax::NodeEditor::EditorContext*>(editor));
+        }
+    }
+
+    void SetCurrentEditor(void* editor) {
+        ax::NodeEditor::SetCurrentEditor(reinterpret_cast<ax::NodeEditor::EditorContext*>(editor));
+    }
+
+    bool Begin(const char* id, const SR_MATH_NS::FVector2& size) {
+        return ax::NodeEditor::Begin(id, F2ToImV2(size));
+    }
+
+    void EndNodeEditor() {
+        ax::NodeEditor::End();
+    }
+
+    void BeginNode(uintptr_t nodeId) {
+        ax::NodeEditor::BeginNode(ax::NodeEditor::NodeId(nodeId));
+    }
+
+    void EndNode() {
+        ax::NodeEditor::EndNode();
+    }
+
+    void BeginPin(uintptr_t pinId, bool isInput) {
+        ax::NodeEditor::BeginPin(
+            ax::NodeEditor::PinId(pinId),
+            isInput ? ax::NodeEditor::PinKind::Input : ax::NodeEditor::PinKind::Output
+        );
+    }
+
+    void PinPivotAlignment(const SR_MATH_NS::FVector2& alignment) {
+        ax::NodeEditor::PinPivotAlignment(F2ToImV2(alignment));
+    }
+
+    void PinPivotSize(const SR_MATH_NS::FVector2& size) {
+        ax::NodeEditor::PinPivotSize(F2ToImV2(size));
+    }
+
+    void EndPin() {
+        ax::NodeEditor::EndPin();
+    }
+
+    void Link(uintptr_t linkId, uintptr_t startPinId, uintptr_t endPinId) {
+        ax::NodeEditor::Link(
+            ax::NodeEditor::LinkId(linkId),
+            ax::NodeEditor::PinId(startPinId),
+            ax::NodeEditor::PinId(endPinId)
+        );
+    }
+
+    bool BeginCreate() {
+        return ax::NodeEditor::BeginCreate();
+    }
+
+    bool QueryNewLink(uintptr_t* startPinId, uintptr_t* endPinId) {
+        ax::NodeEditor::PinId startId, endId;
+        if (ax::NodeEditor::QueryNewLink(&startId, &endId)) {
+            if (startPinId) *startPinId = startId.Get();
+            if (endPinId) *endPinId = endId.Get();
+            return true;
+        }
+        return false;
+    }
+
+    bool AcceptNewItem() {
+        return ax::NodeEditor::AcceptNewItem();
+    }
+
+    void EndCreate() {
+        ax::NodeEditor::EndCreate();
+    }
+
+    bool BeginDelete() {
+        return ax::NodeEditor::BeginDelete();
+    }
+
+    bool QueryDeletedLink(uintptr_t* linkId, uintptr_t* startPinId, uintptr_t* endPinId) {
+        ax::NodeEditor::LinkId linkIdObj;
+        ax::NodeEditor::PinId startId, endId;
+        if (ax::NodeEditor::QueryDeletedLink(&linkIdObj, startPinId ? &startId : nullptr, endPinId ? &endId : nullptr)) {
+            if (linkId) *linkId = linkIdObj.Get();
+            if (startPinId && startId) *startPinId = startId.Get();
+            if (endPinId && endId) *endPinId = endId.Get();
+            return true;
+        }
+        return false;
+    }
+
+    bool QueryDeletedNode(uintptr_t* nodeId) {
+        ax::NodeEditor::NodeId nodeIdObj;
+        if (ax::NodeEditor::QueryDeletedNode(&nodeIdObj)) {
+            if (nodeId) *nodeId = nodeIdObj.Get();
+            return true;
+        }
+        return false;
+    }
+
+    void EndDelete() {
+        ax::NodeEditor::EndDelete();
+    }
+
+    bool ShowBackgroundContextMenu() {
+        return ax::NodeEditor::ShowBackgroundContextMenu();
+    }
+
+    int GetSelectedNodes(uintptr_t* nodeIds, int maxCount) {
+        if (!nodeIds || maxCount <= 0) {
+            return ax::NodeEditor::GetSelectedNodes(nullptr, 0);
+        }
+        std::vector<ax::NodeEditor::NodeId> ids(maxCount);
+        int count = ax::NodeEditor::GetSelectedNodes(ids.data(), maxCount);
+        for (int i = 0; i < count; ++i) {
+            nodeIds[i] = ids[i].Get();
+        }
+        return count;
+    }
+
+    SR_MATH_NS::FVector2 ScreenToCanvas(const SR_MATH_NS::FVector2& screenPos) {
+        auto&& result = ax::NodeEditor::ScreenToCanvas(F2ToImV2(screenPos));
+        return ImV2ToF2(result);
+    }
+
+    void SetNodePosition(uintptr_t nodeId, const SR_MATH_NS::FVector2& position) {
+        ax::NodeEditor::SetNodePosition(ax::NodeEditor::NodeId(nodeId), F2ToImV2(position));
+    }
+
+    SR_MATH_NS::FVector2 GetNodePosition(uintptr_t nodeId) {
+        auto&& result = ax::NodeEditor::GetNodePosition(ax::NodeEditor::NodeId(nodeId));
+        return ImV2ToF2(result);
+    }
+
+    void PushNodeEditorStyleColor(NodeEditorStyleColor colorIndex, const SR_MATH_NS::FColor& color) {
+        ax::NodeEditor::PushStyleColor(static_cast<ax::NodeEditor::StyleColor>(colorIndex), FCToImV4(color));
+    }
+
+    void PopNodeEditorStyleColor(int count) {
+        ax::NodeEditor::PopStyleColor(count);
+    }
+
+    void PushNodeEditorStyleVar(NodeEditorStyleVar varIndex, float value) {
+        ax::NodeEditor::PushStyleVar(static_cast<ax::NodeEditor::StyleVar>(varIndex), value);
+    }
+
+    void PushNodeEditorStyleVar(NodeEditorStyleVar varIndex, const SR_MATH_NS::FVector2& value) {
+        ax::NodeEditor::PushStyleVar(static_cast<ax::NodeEditor::StyleVar>(varIndex), F2ToImV2(value));
+    }
+
+    void PushNodeEditorStyleVar(NodeEditorStyleVar varIndex, const SR_MATH_NS::FVector4& value) {
+        ax::NodeEditor::PushStyleVar(static_cast<ax::NodeEditor::StyleVar>(varIndex), F4ToImV4(value));
+    }
+
+    void PopNodeEditorStyleVar(int count) {
+        ax::NodeEditor::PopStyleVar(count);
+    }
+
+    void* GetNodeBackgroundDrawList(uintptr_t nodeId) {
+        return ax::NodeEditor::GetNodeBackgroundDrawList(ax::NodeEditor::NodeId(nodeId));
+    }
+
+    SR_MATH_NS::FVector2 GetItemRectMax() {
+        return ImV2ToF2(ImGui::GetItemRectMax());
+    }
+
+    bool IsItemVisible() {
+        return ImGui::IsItemVisible();
+    }
+#endif
 }

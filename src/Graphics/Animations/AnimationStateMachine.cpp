@@ -29,56 +29,6 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    /*AnimationStateMachine* AnimationStateMachine::Load(const SR_XML_NS::Node& nodeXml) {
-        SR_TRACY_ZONE;
-
-        auto&& pStateMachine = new AnimationStateMachine();
-
-        for (auto&& stateXml : nodeXml.GetNodes("State")) {
-            auto&& type = stateXml.GetAttribute("Type").ToString();
-
-            if (auto&& pState = AnimationState::Load(stateXml)) {
-                pStateMachine->AddState(pState);
-            }
-            else {
-                SR_ERROR("AnimationStateMachine::Load() : failed to load state \"{}\"!", type);
-                pStateMachine->AddState(new AnimationNoneState());
-            }
-        }
-
-        for (auto&& transitionXml : nodeXml.GetNodes("Transition")) {
-            auto&& from = transitionXml.GetAttribute("From").ToUInt();
-            auto&& to = transitionXml.GetAttribute("To").ToUInt();
-
-            if (from == to) {
-                SR_ERROR("AnimationStateMachine::Load() : cycle transition detected! \"{}\"", from);
-                continue;
-            }
-
-            auto&& pFromState = pStateMachine->GetState(from);
-            if (!pFromState) {
-                SR_ERROR("AnimationStateMachine::Load() : state \"{}\" not found!", from);
-                continue;
-            }
-
-            auto&& pToState = pStateMachine->GetState(to);
-            if (!pToState) {
-                SR_ERROR("AnimationStateMachine::Load() : state \"{}\" not found!", to);
-                continue;
-            }
-
-            auto&& pTransition = AnimationStateTransition::Load(pFromState, pToState, transitionXml);
-            if (!pTransition) {
-                SR_ERROR("AnimationStateMachine::Load() : failed to load transition!");
-                continue;
-            }
-
-            pFromState->AddTransition(pTransition);
-        }
-
-        return pStateMachine;
-    }*/
-
     void AnimationStateMachine::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 

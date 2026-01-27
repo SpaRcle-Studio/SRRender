@@ -10,6 +10,10 @@
 #include <Utils/SRLM/LogicalNodes.h>
 #include <Utils/Common/HashManager.h>
 
+#ifdef SR_USE_IMGUI_NODE_EDITOR
+    #include <imgui-node-editor/imgui_node_editor.h>
+#endif
+
 namespace SR_GRAPH_GUI_NS {
     Node::Node()
        // : Node(std::string(), NodeType::None, ImColor(255, 255, 255, 255))

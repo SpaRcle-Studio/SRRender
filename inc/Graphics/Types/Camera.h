@@ -106,7 +106,7 @@ namespace SR_GTYPES_NS {
         void SetRenderTechnique(const SR_UTILS_NS::Path& path);
 
     protected:
-        void UpdateProjection();
+        void UpdateProjection(bool nonResized);
 
         void UpdateView() noexcept;
 
@@ -128,7 +128,7 @@ namespace SR_GTYPES_NS {
         /// @property @setter(SetNear)
         float_t m_near = 0.01f;
         /// @property @setter(SetFOV)
-        float_t m_FOV = 70.f;
+        float_t m_FOV = 60.f;
 
         /// @virtualProperty(renderTechnique) @getter(GetRenderTechniquePath) @setter(SetRenderTechnique)
         /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)

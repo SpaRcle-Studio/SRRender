@@ -184,7 +184,7 @@ namespace SR_GTYPES_NS {
         m_frustum = ExtractFrustum(m_projection * m_viewTranslateMat);
     }
 
-    void Camera::UpdateProjection() {
+    void Camera::UpdateProjection(bool nonResized) {
         m_isInverseDirty = true;
 
         if (m_viewportSize.HasZero()) {
@@ -228,7 +228,12 @@ namespace SR_GTYPES_NS {
         //////////////////////////////////////////////////////////////////////////////////////////////
 
         if (m_renderTechnique.pTechnique) {
-            m_renderTechnique.pTechnique->OnResize(m_viewportSize);
+            if (nonResized) {
+                m_renderTechnique.pTechnique->OnCameraParamsChanged();
+            }
+            else {
+                m_renderTechnique.pTechnique->OnResize(m_viewportSize);
+            }
         }
     }
 
@@ -239,7 +244,7 @@ namespace SR_GTYPES_NS {
 
         m_viewportSize = SR_MATH_NS::UVector2(w, h);
 
-        UpdateProjection();
+        UpdateProjection(false);
     }
 
     SR_MATH_NS::Matrix4x4 Camera::GetImGuizmoView() const noexcept {
@@ -262,7 +267,7 @@ namespace SR_GTYPES_NS {
         m_far = value;
 
         if (!m_viewportSize.HasZero()) {
-            UpdateProjection();
+            UpdateProjection(true);
         }
     }
 
@@ -270,7 +275,7 @@ namespace SR_GTYPES_NS {
         m_near = value;
 
         if (!m_viewportSize.HasZero()) {
-            UpdateProjection();
+            UpdateProjection(true);
         }
     }
 
@@ -278,7 +283,7 @@ namespace SR_GTYPES_NS {
         m_FOV = value;
 
         if (!m_viewportSize.HasZero()) {
-            UpdateProjection();
+            UpdateProjection(true);
         }
     }
 

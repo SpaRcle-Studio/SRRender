@@ -46,3 +46,10 @@
 #ifdef SR_USE_VULKAN
     #include <imgui/backends/imgui_impl_vulkan.cpp>
 #endif
+
+#ifdef SR_USE_IMGUI_NODE_EDITOR
+    #include <imgui-node-editor/imgui_node_editor.cpp>
+    #include <imgui-node-editor/imgui_node_editor_api.cpp>
+    #include <imgui-node-editor/imgui_canvas.cpp>
+    #include <imgui-node-editor/crude_json.cpp>
+#endif

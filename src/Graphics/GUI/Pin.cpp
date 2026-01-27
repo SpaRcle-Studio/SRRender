@@ -79,6 +79,7 @@ namespace SR_GRAPH_GUI_NS {
 
     IconType Pin::GetIconType(const PinType &type) {
         switch (type) {
+            case PinType::None: return IconType::Flow;
             case PinType::Flow: return IconType::Flow;
             case PinType::Bool: return IconType::Circle;
             case PinType::Int8:

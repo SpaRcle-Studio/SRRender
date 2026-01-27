@@ -222,9 +222,13 @@ namespace SR_GRAPH_NS {
     }
 
     void IRenderTechnique::OnResize(const SR_MATH_NS::UVector2& size) {
-        SR_LOG("IRenderTechnique::OnResize() : resizing technique \"{}\" to {}x{}", m_data.name, size.x, size.y);
+        if (m_surfaceSize && *m_surfaceSize == size) {
+            return;
+        }
 
         m_surfaceSize = size;
+
+        SR_LOG("IRenderTechnique::OnResize() : resizing technique \"{}\" to {}x{}", m_data.name, size.x, size.y);
 
         for (auto&& pController : m_data.frameBuffers) {
             pController->OnResize(size);
@@ -345,5 +349,12 @@ namespace SR_GRAPH_NS {
     BasePass* IRenderTechnique::FindPass(SR_UTILS_NS::StringAtom name) const {
         SR_TRACY_ZONE;
         return m_data.pass ? m_data.pass->FindPass(name) : nullptr;
+    }
+
+    void IRenderTechnique::OnCameraParamsChanged() {
+        SR_TRACY_ZONE;
+        if (m_data.pass) {
+            m_data.pass->OnCameraParamsChanged();
+        }
     }
 }

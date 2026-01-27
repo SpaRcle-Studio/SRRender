@@ -10,6 +10,7 @@
 #include <Graphics/Types/IRenderComponent.h>
 
 #include <Utils/Math/AABB.h>
+#include <Utils/UI/MaskInfo.h>
 #include <Utils/Common/Enumerations.h>
 #include <Utils/Types/Function.h>
 #include <Utils/Types/SortedVector.h>
@@ -60,6 +61,7 @@ namespace SR_GTYPES_NS {
     public:
         void OnDestroy() override;
         void OnMatrixDirty() override;
+        void OnMaskDirty() override;
         void OnLayerChanged() override;
         void OnPriorityChanged() override;
         void OnEnable() override;
@@ -95,6 +97,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsCalculated() const noexcept { return m_isCalculated; }
         SR_NODISCARD bool IsFrustumCullingSupported() const noexcept;
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
+        SR_NODISCARD const SR_UTILS_NS::UI::MaskInfo& GetMaskInfo() const;
 
         void SetFrustumCullingType(FrustumCullingType type) { m_frustumCullingType = type; }
 
@@ -164,8 +167,10 @@ namespace SR_GTYPES_NS {
         bool m_dirtyMaterial = false;
 
     private:
+        mutable SR_UTILS_NS::UI::MaskInfo m_maskInfo;
         mutable SR_MATH_NS::AABB m_aabb;
         mutable bool m_isAABBDirty = true;
+        mutable bool m_isMaskDirty = true;
         bool m_isDestroyingState = false;
         std::optional<MeshRegistrationInfo> m_registrationInfo;
         uint32_t m_materialRegisterId = SR_ID_INVALID;

@@ -86,6 +86,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const noexcept { return m_data.name; }
 
         void OnResize(const SR_MATH_NS::UVector2& size);
+        void OnCameraParamsChanged();
         void OnMultisampleChanged();
         void OnHierarchyChanged();
 

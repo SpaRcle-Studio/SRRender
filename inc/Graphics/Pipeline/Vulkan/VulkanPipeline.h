@@ -170,6 +170,7 @@ namespace SR_GRAPH_NS {
         VkDeviceSize m_offsets[1] = { 0 };
         VkViewport m_viewport = { };
         VkRect2D m_scissor = { };
+        VkRect2D m_activeScissor = { };
         VkRenderPassBeginInfo m_renderPassBI = { };
         VkCommandBufferBeginInfo m_cmdBufInfo = { };
 

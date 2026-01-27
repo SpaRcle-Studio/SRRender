@@ -4,6 +4,7 @@
 
 #include <Graphics/GUI/Link.h>
 #include <Graphics/GUI/Pin.h>
+#include <Graphics/GUI/ImmediateGUI.h>
 
 namespace SR_GRAPH_NS::GUI {
     uintptr_t Link::GetId() const {
@@ -12,7 +13,9 @@ namespace SR_GRAPH_NS::GUI {
 
     void Link::Draw() const {
     #ifdef SR_USE_IMGUI_NODE_EDITOR
-        ax::NodeEditor::Link(GetId(), m_startPin->GetId(), m_endPin->GetId());
+        if (m_startPin && m_endPin) {
+            SR_GRAPH_GUI_NS::Immediate::Link(GetId(), m_startPin->GetId(), m_endPin->GetId());
+        }
     #endif
     }
 
@@ -22,7 +25,10 @@ namespace SR_GRAPH_NS::GUI {
 
     Link::Link(Pin* start, Pin* end)
        // : Link(start, end, ImColor(255, 255, 255, 255))
-    { }
+    {
+        SetStart(start);
+        SetEnd(end);
+    }
 
    //Link::Link(Pin* start, Pin* end, ImColor color)
    //    : m_color(color)

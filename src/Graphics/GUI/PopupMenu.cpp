@@ -5,6 +5,10 @@
 #include <Graphics/GUI/PopupMenu.h>
 #include <Graphics/GUI/ImGUI.h>
 
+#ifdef SR_USE_IMGUI_NODE_EDITOR
+    #include <imgui-node-editor/imgui_node_editor.h>
+#endif
+
 namespace SR_GRAPH_GUI_NS {
     void MenuItemSubWidget::Draw(const DrawPopupContext& context) {
         if (m_name.empty()) {

@@ -5,8 +5,9 @@
 #ifndef SR_ENGINE_LINK_H
 #define SR_ENGINE_LINK_H
 
-#include <Utils/Common/Enumerations.h>
 #include <Graphics/GUI/Icons.h>
+
+#include <Utils/Common/Enumerations.h>
 
 namespace SR_GRAPH_NS::GUI {
     class Pin;

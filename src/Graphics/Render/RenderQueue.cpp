@@ -315,11 +315,21 @@ namespace SR_GRAPH_NS {
                 currentVBO = info.vbo;
             }
 
+            const SR_UTILS_NS::UI::MaskInfo& mask = info.pMesh->GetMaskInfo();
+            const bool hasMask = mask.hasMask && mask.scissor;
+            if (hasMask) {
+                m_pipeline->PushScissor(mask.rect);
+            }
+
             if (m_customMeshDraw) SR_UNLIKELY_ATTRIBUTE {
                 CustomDrawMesh(info);
             }
             else {
                 info.pMesh->Draw();
+            }
+
+            if (hasMask) {
+                m_pipeline->PopScissor();
             }
 
             pElement->state = QUEUE_STATE_OK;

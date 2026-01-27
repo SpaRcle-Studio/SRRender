@@ -6,9 +6,18 @@
 #define SR_ENGINE_RENDERER_IMMEDIATE_GUI_H
 
 #include <Graphics/Pipeline/PipelineType.h>
+#include <Graphics/GUI/Icons.h>
 
 #include <Utils/Math/Rect.h>
 #include <Utils/Math/Vector4.h>
+
+#define SR_COL32_R_SHIFT    0
+#define SR_COL32_G_SHIFT    8
+#define SR_COL32_B_SHIFT    16
+#define SR_COL32_A_SHIFT    24
+#define SR_COL32_A_MASK     0xFF000000
+
+#define SR_COL32(R,G,B,A)    (((uint32_t)(A)<<SR_COL32_A_SHIFT) | ((uint32_t)(B)<<SR_COL32_B_SHIFT) | ((uint32_t)(G)<<SR_COL32_G_SHIFT) | ((uint32_t)(R)<<SR_COL32_R_SHIFT))
 
 namespace SR_GRAPH_NS {
     class Pipeline;
@@ -269,6 +278,23 @@ namespace SR_GRAPH_GUI_NS {
             Appearing     = 1 << 3    // Set the variable if the object/window is appearing after being hidden/inactive (or the first time)
         )
 
+        SR_ENUM_NS_STRUCT_T(DrawFlags, uint32_t,
+            None                        = 0,
+            Closed                      = 1 << 0, // PathStroke(), AddPolyline(): specify that shape should be closed (Important: this is always == 1 for legacy reason)
+            RoundCornersTopLeft         = 1 << 4, // AddRect(), AddRectFilled(), PathRect(): enable rounding top-left corner only (when rounding > 0.0f, we default to all corners). Was 0x01.
+            RoundCornersTopRight        = 1 << 5, // AddRect(), AddRectFilled(), PathRect(): enable rounding top-right corner only (when rounding > 0.0f, we default to all corners). Was 0x02.
+            RoundCornersBottomLeft      = 1 << 6, // AddRect(), AddRectFilled(), PathRect(): enable rounding bottom-left corner only (when rounding > 0.0f, we default to all corners). Was 0x04.
+            RoundCornersBottomRight     = 1 << 7, // AddRect(), AddRectFilled(), PathRect(): enable rounding bottom-right corner only (when rounding > 0.0f, we default to all corners). Wax 0x08.
+            RoundCornersNone            = 1 << 8, // AddRect(), AddRectFilled(), PathRect(): disable rounding on all corners (when rounding > 0.0f). This is NOT zero, NOT an implicit flag!
+            RoundCornersTop             = RoundCornersTopLeft | RoundCornersTopRight,
+            RoundCornersBottom          = RoundCornersBottomLeft | RoundCornersBottomRight,
+            RoundCornersLeft            = RoundCornersBottomLeft | RoundCornersTopLeft,
+            RoundCornersRight           = RoundCornersBottomRight | RoundCornersTopRight,
+            RoundCornersAll             = RoundCornersTopLeft | RoundCornersTopRight | RoundCornersBottomLeft | RoundCornersBottomRight,
+            RoundCornersDefault_        = RoundCornersAll, // Default to ALL corners if none of the _RoundCornersXX flags are specified.
+            RoundCornersMask_           = RoundCornersAll | RoundCornersNone
+        )
+
         // Note: windows with the ImGuiWindowFlags_NoInputs flag are ignored by IsWindowHovered() calls.
         SR_ENUM_NS_STRUCT_T(HoveredFlags, uint32_t,
             None                          = 0,        // Return true if directly over the item/window, not obstructed by another window, not obstructed by an active popup or modal blocking inputs under them.
@@ -361,7 +387,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern uint32_t GetColorU32(StyleColor idx, float alpha_mul = 1.0f);
         SR_GRAPHICS_DLL_API extern void RenderArrow(void* pDrawList, const SR_MATH_NS::FVector2& pos, uint32_t color, Direction dir, float_t scale = 1.0f);
         SR_GRAPHICS_DLL_API extern void DrawListAddRect(void* pDrawList, const SR_MATH_NS::FVector2& min, const SR_MATH_NS::FVector2& max, uint32_t color, float rounding = 0.0f, float thickness = 1.0f);
-        SR_GRAPHICS_DLL_API extern void DrawListAddRectFilled(void* pDrawList, const SR_MATH_NS::FVector2& min, const SR_MATH_NS::FVector2& max, uint32_t color, float rounding = 0.0f);
+        SR_GRAPHICS_DLL_API extern void DrawListAddRectFilled(void* pDrawList, const SR_MATH_NS::FVector2& min, const SR_MATH_NS::FVector2& max, uint32_t color, float rounding = 0.0f, DrawFlags flags = DrawFlags::None);
         SR_GRAPHICS_DLL_API extern void DrawListAddLine(void* pDrawList, const SR_MATH_NS::FVector2& p1, const SR_MATH_NS::FVector2& p2, uint32_t color, float thickness = 1.0f);
         SR_GRAPHICS_DLL_API extern bool InputFloat(const char* label, float_t* v, float_t step = 0.0f, float_t stepFast = 0.0f, const char* format = "%.3f", InputTextFlags flags = InputTextFlags::None);
         SR_GRAPHICS_DLL_API extern bool InputInt(const char* label, int* v, int step = 1, int step_fast = 100, InputTextFlags flags = InputTextFlags::None);
@@ -459,6 +485,93 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern ImmediateDataType GetDataType(uint64_t size, bool isSigned, bool isIntegral);
         SR_GRAPHICS_DLL_API extern ImmediateDataTypeUnion ReadDataType(void* pData, ImmediateDataType type);
         SR_GRAPHICS_DLL_API extern void WriteDataType(void* pData, ImmediateDataType type, ImmediateDataTypeUnion value);
+
+        // Layout functions
+        SR_GRAPHICS_DLL_API extern void BeginVertical(const char* str_id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2(), float align = -1.0f);
+        SR_GRAPHICS_DLL_API extern void BeginVertical(const void* ptr_id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2(), float align = -1.0f);
+        SR_GRAPHICS_DLL_API extern void EndVertical();
+        SR_GRAPHICS_DLL_API extern void BeginHorizontal(const char* str_id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2(), float align = -1.0f);
+        SR_GRAPHICS_DLL_API extern void BeginHorizontal(const void* ptr_id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2(), float align = -1.0f);
+        SR_GRAPHICS_DLL_API extern void EndHorizontal();
+        SR_GRAPHICS_DLL_API extern void Spring(float weight = 1.0f, float spacing = -1.0f);
+
+        // Icon drawing
+        SR_GRAPHICS_DLL_API extern void DrawPinIcon(const SR_MATH_NS::FVector2& size, SR_GRAPH_NS::GUI::IconType iconType, bool filled, const SR_MATH_NS::FColor& color, const SR_MATH_NS::FColor& innerColor = SR_MATH_NS::FColor(0, 0, 0, 0));
+
+        // NodeEditor wrappers
+    #ifdef SR_USE_IMGUI_NODE_EDITOR
+        enum class NodeEditorStyleColor : uint8_t {
+            Bg, Grid, NodeBg, NodeBorder, HovNodeBorder, SelNodeBorder,
+            NodeSelRect, NodeSelRectBorder, HovLinkBorder, SelLinkBorder,
+            HighlightLinkBorder, LinkSelRect, LinkSelRectBorder,
+            PinRect, PinRectBorder, Flow, FlowMarker, GroupBg, GroupBorder
+        };
+
+        enum NodeEditorStyleVar : uint8_t
+        {
+            NodePadding,
+            NodeRounding,
+            NodeBorderWidth,
+            HoveredNodeBorderWidth,
+            SelectedNodeBorderWidth,
+            PinRounding,
+            PinBorderWidth,
+            LinkStrength,
+            SourceDirection,
+            TargetDirection,
+            ScrollDuration,
+            FlowMarkerDistance,
+            FlowSpeed,
+            FlowDuration,
+            PivotAlignment,
+            PivotSize,
+            PivotScale,
+            PinCorners,
+            PinRadius,
+            PinArrowSize,
+            PinArrowWidth,
+            GroupRounding,
+            GroupBorderWidth,
+            HighlightConnectedLinks,
+            SnapLinkToPinDir,
+            Count
+        };
+
+        SR_GRAPHICS_DLL_API extern void* CreateEditor(const char* settingsFile);
+        SR_GRAPHICS_DLL_API extern void DestroyEditor(void* editor);
+        SR_GRAPHICS_DLL_API extern void SetCurrentEditor(void* editor);
+        SR_GRAPHICS_DLL_API extern bool Begin(const char* id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2());
+        SR_GRAPHICS_DLL_API extern void EndNodeEditor();
+        SR_GRAPHICS_DLL_API extern void BeginNode(uintptr_t nodeId);
+        SR_GRAPHICS_DLL_API extern void EndNode();
+        SR_GRAPHICS_DLL_API extern void BeginPin(uintptr_t pinId, bool isInput);
+        SR_GRAPHICS_DLL_API extern void PinPivotAlignment(const SR_MATH_NS::FVector2& alignment);
+        SR_GRAPHICS_DLL_API extern void PinPivotSize(const SR_MATH_NS::FVector2& size);
+        SR_GRAPHICS_DLL_API extern void EndPin();
+        SR_GRAPHICS_DLL_API extern void Link(uintptr_t linkId, uintptr_t startPinId, uintptr_t endPinId);
+        SR_GRAPHICS_DLL_API extern bool BeginCreate();
+        SR_GRAPHICS_DLL_API extern bool QueryNewLink(uintptr_t* startPinId, uintptr_t* endPinId);
+        SR_GRAPHICS_DLL_API extern bool AcceptNewItem();
+        SR_GRAPHICS_DLL_API extern void EndCreate();
+        SR_GRAPHICS_DLL_API extern bool BeginDelete();
+        SR_GRAPHICS_DLL_API extern bool QueryDeletedLink(uintptr_t* linkId, uintptr_t* startPinId, uintptr_t* endPinId);
+        SR_GRAPHICS_DLL_API extern bool QueryDeletedNode(uintptr_t* nodeId);
+        SR_GRAPHICS_DLL_API extern void EndDelete();
+        SR_GRAPHICS_DLL_API extern bool ShowBackgroundContextMenu();
+        SR_GRAPHICS_DLL_API extern int GetSelectedNodes(uintptr_t* nodeIds, int maxCount);
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 ScreenToCanvas(const SR_MATH_NS::FVector2& screenPos);
+        SR_GRAPHICS_DLL_API extern void SetNodePosition(uintptr_t nodeId, const SR_MATH_NS::FVector2& position);
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetNodePosition(uintptr_t nodeId);
+        SR_GRAPHICS_DLL_API extern void PushNodeEditorStyleColor(NodeEditorStyleColor colorIndex, const SR_MATH_NS::FColor& color);
+        SR_GRAPHICS_DLL_API extern void PopNodeEditorStyleColor(int count = 1);
+        SR_GRAPHICS_DLL_API extern void PushNodeEditorStyleVar(NodeEditorStyleVar varIndex, float value);
+        SR_GRAPHICS_DLL_API extern void PushNodeEditorStyleVar(NodeEditorStyleVar varIndex, const SR_MATH_NS::FVector2& value);
+        SR_GRAPHICS_DLL_API extern void PushNodeEditorStyleVar(NodeEditorStyleVar varIndex, const SR_MATH_NS::FVector4& value);
+        SR_GRAPHICS_DLL_API extern void PopNodeEditorStyleVar(int count = 1);
+        SR_GRAPHICS_DLL_API extern void* GetNodeBackgroundDrawList(uintptr_t nodeId);
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetItemRectMax();
+        SR_GRAPHICS_DLL_API extern bool IsItemVisible();
+    #endif
     }
 }
 

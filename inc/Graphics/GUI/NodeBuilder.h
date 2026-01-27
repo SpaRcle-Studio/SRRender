@@ -5,9 +5,10 @@
 #ifndef SR_ENGINE_NODEBUILDER_H
 #define SR_ENGINE_NODEBUILDER_H
 
-#include <Graphics/GUI/ImNodeEditorUtils.h>
+#include <Graphics/stdInclude.h>
 
 #include <Utils/Common/NonCopyable.h>
+#include <Utils/Math/Vector4.h>
 
 namespace SR_GTYPES_NS {
     class Texture;
@@ -36,7 +37,7 @@ namespace SR_GRAPH_NS::GUI {
         void Begin(Node* pNode);
         void End();
 
-        //void Header(const ImVec4& color = ImVec4(1, 1, 1, 1));
+        void Header(const SR_MATH_NS::FColor& color = SR_MATH_NS::FColor(1, 1, 1, 1));
         void EndHeader();
 
         void Input(Pin* pPin);
@@ -61,10 +62,13 @@ namespace SR_GRAPH_NS::GUI {
         Pin* m_currentPin = nullptr;
 
         Stage m_currentStage = Stage::Invalid;
-        //ImU32 m_headerColor = 0;
-//
-        //ImVec2 m_headerMin;
-        //ImVec2 m_headerMax;
+        SR_MATH_NS::FColor m_headerColor = SR_MATH_NS::FColor(1, 1, 1, 1);
+        SR_MATH_NS::FVector2 m_headerMin;
+        SR_MATH_NS::FVector2 m_headerMax;
+        SR_MATH_NS::FVector2 m_contentMin;
+        SR_MATH_NS::FVector2 m_contentMax;
+        SR_MATH_NS::FVector2 m_nodeMin;
+        SR_MATH_NS::FVector2 m_nodeMax;
 
         bool m_hasHeader = false;
 

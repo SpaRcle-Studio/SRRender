@@ -25,6 +25,10 @@ namespace SR_GRAPH_NS {
 
     }
 
+    void BasePass::OnCameraParamsChanged() {
+
+    }
+
     void BasePass::OnResize(const SR_MATH_NS::UVector2& size) {
 
     }

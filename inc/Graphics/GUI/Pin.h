@@ -5,13 +5,10 @@
 #ifndef SR_ENGINE_PIN_H
 #define SR_ENGINE_PIN_H
 
-#include <Utils/Common/Enumerations.h>
-#include <Utils/Math/Vector2.h>
 #include <Graphics/GUI/Icons.h>
 
-namespace ax::NodeEditor {
-    enum class PinKind;
-}
+#include <Utils/Common/Enumerations.h>
+#include <Utils/Math/Vector2.h>
 
 namespace SR_SRLM_NS {
     class DataType;

@@ -54,7 +54,7 @@ namespace SR_GRAPH_NS {
         using ShaderProgram = int32_t;
     public:
         explicit Pipeline(const RenderContextPtr& pContext);
-        virtual ~Pipeline();
+        ~Pipeline() override;
 
         /// ---------------------------------------- Инициализация рендера ---------------------------------------------
 
@@ -103,8 +103,8 @@ namespace SR_GRAPH_NS {
         /// Обязательно нужно вызвать после успешного вызова BeginRender
         virtual void EndRender();
 
-        virtual void SetViewport(int32_t width = -1, int32_t height = -1) { ++m_state.operations; };
-        virtual void SetScissor(int32_t width = -1, int32_t height = -1) { ++m_state.operations; };
+        virtual void SetViewport(int32_t width = -1, int32_t height = -1) { ++m_state.operations; }
+        virtual void SetScissor(int32_t width = -1, int32_t height = -1);
 
         virtual void SwitchWindow(const WindowPtr& pWindow);
 
@@ -300,6 +300,9 @@ namespace SR_GRAPH_NS {
         /// Поддерживается не всеми API
         virtual void PushConstants(void* pData, uint64_t size);
 
+        void PushScissor(const SR_MATH_NS::IRect& scissor);
+        void PopScissor();
+
         virtual void BindTexture(uint8_t activeTexture, uint32_t textureId);
         virtual void BindAttachment(uint8_t activeTexture, uint32_t textureId);
 
@@ -353,6 +356,8 @@ namespace SR_GRAPH_NS {
         std::optional<SR_UTILS_NS::TimePointType> m_lastSecond;
 
         bool m_isShaderChanged = true;
+
+        std::vector<SR_MATH_NS::IRect> m_scissorsStack;
 
     };
 }

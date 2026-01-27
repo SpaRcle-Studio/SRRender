@@ -144,6 +144,10 @@ namespace SR_GRAPH_NS {
         return Super::GetFrustum(renderLayer);
     }
 
+    void CascadedShadowMapPass::OnCameraParamsChanged() {
+        m_cameraDirty = true;
+    }
+
     void CascadedShadowMapPass::UpdateCascadesUnityStyle(SR_GTYPES_NS::Camera* pCamera) {
         SR_TRACY_ZONE;
 
@@ -299,7 +303,7 @@ namespace SR_GRAPH_NS {
 
         for (uint32_t i = 0; i < m_cascadeCount; ++i) {
             const float_t split  = m_cascadeSplitDepths[i];
-            const float_t fovY   = pCamera->GetFOV();
+            const float_t fovY   = SR_RAD(pCamera->GetFOV());
             const float_t aspect = pCamera->GetAspect();
             const float_t tanHalfFovY = std::tan(fovY * 0.5f);
             const float_t cascadeRadius = split * tanHalfFovY * std::sqrt(1.0f + aspect * aspect);
@@ -603,6 +607,11 @@ namespace SR_GRAPH_NS {
         auto&& pCamera = GetCamera();
         if (!pCamera) SR_UNLIKELY_ATTRIBUTE {
             return nullptr;
+        }
+
+        if (m_cameraDirty) SR_UNLIKELY_ATTRIBUTE {
+            m_cameraDirty = false;
+            goto dirty;
         }
 
         if (m_directionalLightDirection != GetRenderScene()->GetLightSystem()->GetDirectionalLightParams().direction) SR_UNLIKELY_ATTRIBUTE {

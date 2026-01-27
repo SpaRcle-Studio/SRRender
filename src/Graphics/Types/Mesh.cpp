@@ -320,6 +320,11 @@ namespace SR_GTYPES_NS {
         Super::OnDestroy();
     }
 
+    void Mesh::OnMaskDirty() {
+        Super::OnMaskDirty();
+        m_isMaskDirty = true;
+    }
+
     void Mesh::OnMatrixDirty() {
         MarkUniformsDirty();
         Super::OnMatrixDirty();
@@ -347,6 +352,16 @@ namespace SR_GTYPES_NS {
     void Mesh::OnDisable() {
         Super::OnDisable();
         UnRegisterMesh();
+    }
+
+    const SR_UTILS_NS::UI::MaskInfo& Mesh::GetMaskInfo() const {
+        if (m_isMaskDirty) {
+            if (auto&& pTransform = GetTransformAs<SR_UTILS_NS::TransformRect>()) {
+                m_maskInfo = pTransform->GetMaskInfo();
+                m_isMaskDirty = false;
+            }
+        }
+        return m_maskInfo;
     }
 
     const SR_MATH_NS::AABB& Mesh::GetAABB() const {

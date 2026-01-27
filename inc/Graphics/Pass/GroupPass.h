@@ -32,6 +32,7 @@ namespace SR_GRAPH_NS {
 
         void OnResize(const SR_MATH_NS::UVector2& size) override;
         void OnMultisampleChanged() override;
+        void OnCameraParamsChanged() override;
 
         void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
         void SetParent(BasePass* pParent) override;
