@@ -29,8 +29,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsFlatMesh() const noexcept override;
 
-        /// TODO: можно сделать при помощи 4х вершин
-        SR_NODISCARD uint32_t GetIndicesCount() const override { return 6; }
+        SR_NODISCARD uint32_t GetIndicesCount() const override { return 4; }
 
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD SR_FORCE_INLINE bool GetKerning() const noexcept { return m_kerning; }
@@ -78,8 +77,6 @@ namespace SR_GTYPES_NS {
         SR_MATH_NS::UVector2 m_atlasSize;
         /// @property @setter(SetFontSize)
         uint16_t m_fontSize = 16;
-        /// @property @onChanged(ReRegisterMesh)
-        bool m_is3D = false;
         /// @property @setter(SetKerning)
         bool m_kerning = true;
         /// @property @setter(SetDebug)

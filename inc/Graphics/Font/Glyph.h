@@ -66,8 +66,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD static GlyphImage::Ptr Create(const Glyph::Ptr& pGlyph, bool needInit);
         SR_NODISCARD uint8_t* GetData() const { return m_data; }
 
-        void InsertTo(uint8_t* pTarget, int32_t top, uint32_t sizeX);
-        void Debug(uint8_t* pTarget, int32_t top, uint32_t sizeX);
+        void InsertTo(uint8_t* pTarget, int32_t top, uint32_t sizeX, uint32_t sizeY, bool invertX, bool invertY);
+        void Debug(uint8_t* pTarget, int32_t top, uint32_t sizeX, uint32_t sizeY, bool invertX, bool invertY);
 
     private:
         SR_NODISCARD bool Init();

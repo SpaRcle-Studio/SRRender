@@ -162,6 +162,12 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual bool IsShaderConstantSupport() const { ++m_state.operations; return false; }
         SR_NODISCARD virtual bool IsShaderViewportIndexLayerSupported() const { ++m_state.operations; return false; }
         SR_NODISCARD virtual SR_MATH_NS::FColor GetPixelColor(uint32_t textureId, uint32_t x, uint32_t y) { return SR_MATH_NS::FColor(0.f); }
+        
+        /// Асинхронный запрос диапазона пикселей
+        SR_NODISCARD virtual uint64_t RequestPixelRange(uint64_t workId, uint32_t textureId, uint32_t x, uint32_t y, uint32_t width, uint32_t height) { return SR_ID_INVALID; }
+        SR_NODISCARD virtual bool IsPixelRangeReady(uint64_t workId) const { return false; }
+        virtual bool GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height) { return false; }
+        virtual void ReleasePixelRangeRequest(uint64_t workId) { }
         SR_NODISCARD virtual uint16_t GetSwapchainImagesCount() const { return 0; }
         SR_NODISCARD virtual uint16_t GetMaxFramesInFlight() const { return 3; }
 

@@ -94,13 +94,17 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD BasePass* FindPass(SR_UTILS_NS::StringAtom name) const;
 
+        template<typename T> SR_NODISCARD T* FindPassAs() const {
+            SR_TRACY_ZONE;
+            if (auto&& pPass = FindPass(T::GetClassStaticName())) {
+                return dynamic_cast<T*>(pPass);
+            }
+            return nullptr;
+        }
+
         SR_NODISCARD const FrameBufferController::Ptr& GetFrameBufferController(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD const std::vector<FrameBufferController::Ptr>& GetFrameBufferControllers() const;
 
-        SR_GTYPES_NS::Mesh* PickMeshAt(const SR_MATH_NS::FPoint& pos) const;
-        SR_GTYPES_NS::Mesh* PickMeshAt(float_t x, float_t y) const;
-        SR_GTYPES_NS::Mesh* PickMeshAt(float_t x, float_t y, SR_UTILS_NS::StringAtom passName) const;
-        SR_GTYPES_NS::Mesh* PickMeshAt(float_t x, float_t y, const std::vector<SR_UTILS_NS::StringAtom>& passFilter) const;
         SR_NODISCARD const RenderTechniqueQueues& GetQueues() const { return m_data.queues; }
 
     private:

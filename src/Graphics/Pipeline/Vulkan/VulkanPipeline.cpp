@@ -13,6 +13,10 @@
 #include <Graphics/Pipeline/Vulkan/VulkanTracy.h>
 #include <Graphics/Pipeline/Vulkan/VulkanMemory.h>
 
+#include <EvoVulkan/Types/CmdBuffer.h>
+#include <EvoVulkan/Types/VmaBuffer.h>
+#include <EvoVulkan/Tools/VulkanTools.h>
+
 #ifdef SR_USE_IMGUI
     #include <Graphics/Overlay/VulkanImGuiOverlay.h>
 #endif
@@ -96,6 +100,27 @@ namespace SR_GRAPH_NS {
     #endif
 
         SR_TRACY_DESTROY(SR_UTILS_NS::TracyType::Vulkan);
+
+        // Освобождаем все активные запросы пикселей
+        if (m_kernel && m_kernel->GetDevice()) {
+            for (auto&& [workId, request] : m_pixelRequests) {
+                // Ждем завершения операции перед освобождением ресурсов
+                if (!request.isReady && request.fence != VK_NULL_HANDLE) {
+                    vkWaitForFences(*m_kernel->GetDevice(), 1, &request.fence, VK_TRUE, UINT64_MAX);
+                }
+
+                if (request.pBuffer) {
+                    delete request.pBuffer;
+                }
+                if (request.pCmdBuffer) {
+                    delete request.pCmdBuffer;
+                }
+                if (request.fence != VK_NULL_HANDLE) {
+                    EvoVulkan::Tools::DestroyVulkanFence(*m_kernel->GetDevice(), &request.fence);
+                }
+            }
+            m_pixelRequests.clear();
+        }
 
         DestroyOverlay();
 
@@ -1016,6 +1041,346 @@ namespace SR_GRAPH_NS {
             static_cast<SR_MATH_NS::Unit>(pixel.b),
             static_cast<SR_MATH_NS::Unit>(pixel.a)
         );
+    }
+
+    uint64_t VulkanPipeline::RequestPixelRange(uint64_t workId, uint32_t textureId, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+        SR_TRACY_ZONE;
+
+        ++m_state.operations;
+
+        auto&& pTexture = m_memory->GetTexture(textureId);
+        if (!pTexture) {
+            PipelineError("VulkanPipeline::RequestPixelRange() : invalid texture id!");
+            return SR_ID_INVALID;
+        }
+
+        auto&& image = pTexture->GetImage();
+        const VkImageLayout originalLayout = image.GetLayout();
+        const VkFormat format = image.GetFormat();
+        const uint8_t channels = EvoVulkan::Tools::GetPixelChannelsCount(format);
+        const uint8_t pixelTypeSize = EvoVulkan::Tools::GetPixelTypeSize(format);
+
+        if (!channels || !pixelTypeSize) {
+            PipelineError("VulkanPipeline::RequestPixelRange() : unsupported format!");
+            return SR_ID_INVALID;
+        }
+
+        if (!(image.GetInfo().usage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) {
+            PipelineError("VulkanPipeline::RequestPixelRange() : image does not support VK_IMAGE_USAGE_TRANSFER_SRC_BIT!");
+            return SR_ID_INVALID;
+        }
+
+        if (x + width > image.GetInfo().width || y + height > image.GetInfo().height) {
+            PipelineError("VulkanPipeline::RequestPixelRange() : incorrect pixel range!");
+            return SR_ID_INVALID;
+        }
+
+        if (workId == SR_ID_INVALID) {
+            workId = m_nextWorkId.fetch_add(1);
+        }
+
+        const uint64_t bufferSize = uint64_t(width) * height * channels * pixelTypeSize;
+
+        PixelRangeRequest* pRequest = nullptr;
+
+        auto it = m_pixelRequests.find(workId);
+        if (it == m_pixelRequests.end()) {
+            auto [iter, _] = m_pixelRequests.emplace(workId, PixelRangeRequest{});
+            pRequest = &iter->second;
+        }
+        else {
+            pRequest = &it->second;
+            if (!pRequest->isReady) {
+                PipelineError("VulkanPipeline::RequestPixelRange() : previous request is not ready yet!");
+                return SR_ID_INVALID;
+            }
+        }
+
+        /* ---------- buffer ---------- */
+
+        if (!pRequest->pBuffer || pRequest->pBuffer->GetSize() < bufferSize) {
+            delete pRequest->pBuffer;
+
+            pRequest->pBuffer = EvoVulkan::Types::VmaBuffer::Create(
+                m_kernel->GetAllocator(),
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VMA_MEMORY_USAGE_CPU_ONLY,
+                bufferSize
+            );
+
+            if (!pRequest->pBuffer) {
+                PipelineError("VulkanPipeline::RequestPixelRange() : buffer alloc failed!");
+                return SR_ID_INVALID;
+            }
+        }
+
+        /* ---------- fence ---------- */
+
+        if (!pRequest->fence) {
+            pRequest->fence = EvoVulkan::Tools::CreateVulkanFence(*m_kernel->GetDevice(), 0);
+            if (!pRequest->fence) {
+                PipelineError("VulkanPipeline::RequestPixelRange() : fence create failed!");
+                return SR_ID_INVALID;
+            }
+        }
+        else {
+            vkResetFences(*m_kernel->GetDevice(), 1, &pRequest->fence);
+        }
+
+        /* ---------- command buffer ---------- */
+
+        if (!pRequest->pCmdBuffer) {
+            pRequest->pCmdBuffer = EvoVulkan::Types::CmdBuffer::Create(
+                m_kernel->GetDevice(),
+                m_kernel->GetResettableCmdPool(),
+                VK_COMMAND_BUFFER_LEVEL_PRIMARY
+            );
+
+            if (!pRequest->pCmdBuffer) {
+                PipelineError("VulkanPipeline::RequestPixelRange() : cmd buffer create failed!");
+                return SR_ID_INVALID;
+            }
+        }
+        else {
+            vkResetCommandBuffer(*pRequest->pCmdBuffer, 0);
+        }
+
+        auto&& cmd = pRequest->pCmdBuffer;
+
+        if (!cmd->Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)) {
+            PipelineError("VulkanPipeline::RequestPixelRange() : begin failed!");
+            return SR_ID_INVALID;
+        }
+
+        image.TransitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, cmd);
+
+        VkBufferImageCopy region = {};
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.layerCount = 1;
+        region.imageOffset = { int32_t(x), int32_t(y), 0 };
+        region.imageExtent = { width, height, 1 };
+
+        vkCmdCopyImageToBuffer(
+            *cmd,
+            image,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            *pRequest->pBuffer,
+            1,
+            &region
+        );
+
+        image.TransitionImageLayout(originalLayout, cmd);
+        cmd->End(false);
+
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = cmd->GetCmdRef();
+
+        if (vkQueueSubmit(
+            m_kernel->GetDevice()->GetQueues()->GetGraphicsQueue(),
+            1,
+            &submitInfo,
+            pRequest->fence
+        ) != VK_SUCCESS) {
+            PipelineError("VulkanPipeline::RequestPixelRange() : submit failed!");
+            return SR_ID_INVALID;
+        }
+
+        pRequest->textureId = textureId;
+        pRequest->x = x;
+        pRequest->y = y;
+        pRequest->width = width;
+        pRequest->height = height;
+        pRequest->originalLayout = originalLayout;
+        pRequest->isReady = false;
+
+        return workId;
+    }
+
+    bool VulkanPipeline::IsPixelRangeReady(uint64_t workId) const {
+        SR_TRACY_ZONE;
+
+        auto it = m_pixelRequests.find(workId);
+        if (it == m_pixelRequests.end()) {
+            return false;
+        }
+
+        auto&& request = it->second;
+        
+        // Если уже помечен как готовый, возвращаем true
+        if (request.isReady) {
+            return true;
+        }
+
+        // Проверяем статус fence
+        VkResult result = vkGetFenceStatus(*m_kernel->GetDevice(), request.fence);
+        
+        if (result == VK_SUCCESS) {
+            // Fence сигнализирован - операция завершена
+            request.isReady = true;
+            return true;
+        }
+        else if (result == VK_NOT_READY) {
+            // Fence еще не сигнализирован
+            return false;
+        }
+        else {
+            // Ошибка
+            PipelineError("VulkanPipeline::IsPixelRangeReady() : failed to get fence status!");
+            return false;
+        }
+    }
+
+    bool VulkanPipeline::GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height) {
+        SR_TRACY_ZONE;
+
+        if (!pixels) {
+            PipelineError("VulkanPipeline::GetPixelRangeResult() : pixels is nullptr!");
+            return false;
+        }
+
+        auto it = m_pixelRequests.find(workId);
+        if (it == m_pixelRequests.end()) {
+            PipelineError("VulkanPipeline::GetPixelRangeResult() : invalid workId!");
+            return false;
+        }
+
+        auto&& request = it->second;
+
+        // Проверяем размеры
+        if (request.width != width || request.height != height) {
+            PipelineError("VulkanPipeline::GetPixelRangeResult() : size mismatch!");
+            return false;
+        }
+
+        // Если еще не готов, проверяем еще раз
+        if (!request.isReady) {
+            VkResult result = vkGetFenceStatus(*m_kernel->GetDevice(), request.fence);
+            if (result == VK_SUCCESS) {
+                request.isReady = true;
+            }
+            else if (result == VK_NOT_READY) {
+                return false;  // Еще не готов
+            }
+            else {
+                PipelineError("VulkanPipeline::GetPixelRangeResult() : failed to get fence status!");
+                return false;
+            }
+        }
+
+        // Получаем информацию о формате текстуры
+        auto&& pTexture = m_memory->GetTexture(request.textureId);
+        if (!pTexture) {
+            PipelineError("VulkanPipeline::GetPixelRangeResult() : texture not found!");
+            return false;
+        }
+
+        const VkFormat format = pTexture->GetImage().GetFormat();
+        const uint8_t channels = EvoVulkan::Tools::GetPixelChannelsCount(format);
+        const uint8_t pixelTypeSize = EvoVulkan::Tools::GetPixelTypeSize(format);
+
+        // Маппим буфер и копируем данные
+        if (auto&& pData = request.pBuffer->MapData()) {
+            const auto&& GetPixelValue = [pixelTypeSize](void* pData, uint8_t offset) -> int64_t {
+                switch (pixelTypeSize) {
+                    case 1: return ((uint8_t*)pData)[offset];
+                    case 2: return ((uint16_t*)pData)[offset];
+                    case 4: return ((uint32_t*)pData)[offset];
+                    case 8: return ((uint64_t*)pData)[offset];
+                    default: return 0;
+                }
+            };
+
+            const uint32_t pixelStride = channels * pixelTypeSize;
+            const uint32_t rowStride = width * pixelStride;
+
+            for (uint32_t py = 0; py < height; ++py) {
+                for (uint32_t px = 0; px < width; ++px) {
+                    const uint32_t bufferOffset = py * rowStride + px * pixelStride;
+                    uint8_t* pPixelData = static_cast<uint8_t*>(pData) + bufferOffset;
+
+                    uint64_t r = 0, g = 0, b = 0, a = 255;
+                    if (channels >= 1) { r = GetPixelValue(pPixelData, 0); }
+                    if (channels >= 2) { g = GetPixelValue(pPixelData, 1); }
+                    if (channels >= 3) { b = GetPixelValue(pPixelData, 2); }
+                    if (channels >= 4) { a = GetPixelValue(pPixelData, 3); }
+
+                    pixels[py * width + px] = SR_MATH_NS::FColor(
+                        static_cast<SR_MATH_NS::Unit>(r),
+                        static_cast<SR_MATH_NS::Unit>(g),
+                        static_cast<SR_MATH_NS::Unit>(b),
+                        static_cast<SR_MATH_NS::Unit>(a)
+                    );
+                }
+            }
+
+            request.pBuffer->Unmap();
+        }
+        else {
+            PipelineError("VulkanPipeline::GetPixelRangeResult() : failed to map buffer!");
+            return false;
+        }
+
+        return true;
+    }
+
+    void VulkanPipeline::ReleasePixelRangeRequest(uint64_t workId) {
+        SR_TRACY_ZONE;
+
+        auto it = m_pixelRequests.find(workId);
+        if (it == m_pixelRequests.end()) {
+            return;  // Уже удален или не существует
+        }
+
+        auto&& request = it->second;
+
+        // Ждем завершения операции перед освобождением ресурсов
+        if (!request.isReady) {
+            vkWaitForFences(*m_kernel->GetDevice(), 1, &request.fence, VK_TRUE, UINT64_MAX);
+        }
+
+        // Освобождаем ресурсы
+        if (request.pBuffer) {
+            delete request.pBuffer;
+        }
+        if (request.pCmdBuffer) {
+            delete request.pCmdBuffer;
+        }
+        if (request.fence != VK_NULL_HANDLE) {
+            EvoVulkan::Tools::DestroyVulkanFence(*m_kernel->GetDevice(), &request.fence);
+        }
+
+        m_pixelRequests.erase(it);
+    }
+
+    void VulkanPipeline::CleanupCompletedRequests() {
+        SR_TRACY_ZONE;
+
+        auto it = m_pixelRequests.begin();
+        while (it != m_pixelRequests.end()) {
+            auto&& request = it->second;
+
+            // Проверяем статус fence
+            VkResult result = vkGetFenceStatus(*m_kernel->GetDevice(), request.fence);
+            
+            if (result == VK_SUCCESS && request.isReady) {
+                // Операция завершена и данные уже получены - можно удалить
+                if (request.pBuffer) {
+                    delete request.pBuffer;
+                }
+                if (request.pCmdBuffer) {
+                    delete request.pCmdBuffer;
+                }
+                if (request.fence != VK_NULL_HANDLE) {
+                    EvoVulkan::Tools::DestroyVulkanFence(*m_kernel->GetDevice(), &request.fence);
+                }
+                it = m_pixelRequests.erase(it);
+            }
+            else {
+                ++it;
+            }
+        }
     }
 
 #ifdef SR_RENDER_USE_GLSL_LANG_LIB

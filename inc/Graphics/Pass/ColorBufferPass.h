@@ -33,6 +33,7 @@ namespace SR_GRAPH_NS {
 
         void UseConstants(SR_GTYPES_NS::Shader& shader) override;
         void UseSharedUniforms(SR_GTYPES_NS::Shader& shader) override;
+        void OnResize(const SR_MATH_NS::UVector2& size) override;
 
     protected:
         void UseUniforms(SR_GTYPES_NS::Shader& shader, MeshPtr pMesh) override;

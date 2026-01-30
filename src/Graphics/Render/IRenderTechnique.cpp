@@ -187,40 +187,6 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    SR_GTYPES_NS::Mesh* IRenderTechnique::PickMeshAt(float_t x, float_t y, SR_UTILS_NS::StringAtom passName) const {
-        SR_TRACY_ZONE;
-
-        if (!m_data.pass) {
-            SR_ERROR("IRenderTechnique::PickMeshAt() : technique \"{}\" does not have a pass!", m_data.name);
-            return nullptr;
-        }
-
-        if (auto&& pPass = dynamic_cast<SR_GRAPH_NS::IColorBufferPass*>(m_data.pass->FindPass(passName))) {
-            if (auto&& pMesh = pPass->GetMesh(x, y)) {
-                return pMesh;
-            }
-        }
-        return nullptr;
-    }
-
-    SR_GTYPES_NS::Mesh* IRenderTechnique::PickMeshAt(float_t x, float_t y, const std::vector<SR_UTILS_NS::StringAtom>& passFilter) const {
-        for (auto&& filter : passFilter) {
-            if (auto&& pMesh = PickMeshAt(x, y, filter)) {
-                return pMesh;
-            }
-        }
-        return nullptr;
-    }
-
-    SR_GTYPES_NS::Mesh* IRenderTechnique::PickMeshAt(float_t x, float_t y) const {
-        static SR_UTILS_NS::StringAtom colorBufferPassName = "ColorBufferPass";
-        return PickMeshAt(x, y, colorBufferPassName);
-    }
-
-    SR_GTYPES_NS::Mesh* IRenderTechnique::PickMeshAt(const SR_MATH_NS::FPoint& pos) const {
-        return PickMeshAt(pos.x, pos.y);
-    }
-
     void IRenderTechnique::OnResize(const SR_MATH_NS::UVector2& size) {
         if (m_surfaceSize && *m_surfaceSize == size) {
             return;

@@ -52,6 +52,13 @@ namespace SR_GRAPH_NS {
         Super::UseSharedUniforms(shader);
     }
 
+    void ColorBufferPass::OnResize(const SR_MATH_NS::UVector2& size) {
+        ResetColorIndex();
+        ClearTable();
+        DestroyRequests();
+        Super::OnResize(size);
+    }
+
     bool ColorBufferPass::Render() {
         ResetColorIndex();
         ClearTable();

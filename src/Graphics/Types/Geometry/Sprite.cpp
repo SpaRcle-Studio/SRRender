@@ -159,13 +159,11 @@ namespace SR_GTYPES_NS {
 
         const float_t effectivePPU = std::max(pTexture->GetPPU() / 100.f * m_pixelsPerUnitMultiplier, static_cast<float_t>(SR_KINDA_SMALL_NUMBER_EPSILON));
 
-        if (auto&& pParent = dynamic_cast<SR_UTILS_NS::GameObject*>(GetParent())) SR_LIKELY_ATTRIBUTE {
-            if (auto&& pTransform = pParent->GetTransform(); pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
-                SR_MATH_NS::FRect layout = static_cast<const SR_UTILS_NS::TransformRect*>(pTransform.Get())->GetLayoutRect();
-                layoutWidth = layout.w;
-                layoutHeight = layout.h;
-                pShader->SetVec4(SHADER_NDC_RECT, layout.vec4);
-            }
+        if (auto&& pTransformRect = SR_UTILS_NS::ExtractTransformAs<SR_UTILS_NS::TransformRect>(GetSceneObject().Get())) SR_LIKELY_ATTRIBUTE {
+            SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
+            layoutWidth = layout.w;
+            layoutHeight = layout.h;
+            pShader->SetVec4(SHADER_NDC_RECT, layout.vec4);
         }
 
         if (m_sliceMode == SliceMode::Manual) {

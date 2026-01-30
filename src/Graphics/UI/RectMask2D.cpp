@@ -5,6 +5,7 @@
 #include <Graphics/UI/RectMask2D.h>
 
 #include <Utils/ECS/TransformRect.h>
+#include <Utils/ECS/SceneObject.h>
 #include <Utils/World/Scene.h>
 
 #include <Codegen/RectMask2D.generated.hpp>
@@ -30,6 +31,23 @@ namespace SR_GRAPH_NS::UI {
         Super::OnMatrixDirty();
     }
 
+    SR_GRAPH_NS::UI::Canvas* RectMask2D::FindCanvas() {
+        if (auto&& pCanvas = m_canvas.Get()) {
+            return pCanvas.Get();
+        }
+
+        SR_UTILS_NS::SceneObject::Ptr pParent = GetSceneObject()->GetParent();
+        while (pParent) {
+            if (auto&& pCanvas = pParent->GetComponent<SR_GRAPH_NS::UI::Canvas>()) {
+                m_canvas.SetEntityId(pCanvas->GetEntityId());
+                return pCanvas.Get();
+            }
+            pParent = pParent->GetParent();
+        }
+
+        return nullptr;
+    }
+
     void RectMask2D::UpdateClipping(bool enable) {
         SR_TRACY_ZONE;
 
@@ -37,7 +55,11 @@ namespace SR_GRAPH_NS::UI {
             SR_UTILS_NS::UI::MaskInfo maskInfo;
             maskInfo.hasMask = enable && IsActive();
             maskInfo.scissor = true;
-            maskInfo.rect = pTransform->GetLayoutRect().ToInt();
+            maskInfo.rect = pTransform->GetLayoutRect().CastToInt();
+
+            if (auto&& pCanvas = FindCanvas()) {
+                maskInfo.referenceSize = pCanvas->GetSize().CastToInt();
+            }
 
             if (m_maskInfo == maskInfo) {
                 return;

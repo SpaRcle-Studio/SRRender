@@ -6,8 +6,10 @@
 #define SR_ENGINE_COMMON_UI_RECT_MASK_2D_H
 
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/UI/Canvas.h>
 
 #include <Utils/ECS/Component.h>
+#include <Utils/ECS/EntityRef.h>
 #include <Utils/UI/MaskInfo.h>
 
 namespace SR_GRAPH_NS::UI {
@@ -28,8 +30,10 @@ namespace SR_GRAPH_NS::UI {
 
     private:
         void UpdateClipping(bool enable);
+        SR_NODISCARD SR_GRAPH_NS::UI::Canvas* FindCanvas();
 
     private:
+        SR_UTILS_NS::EntityRef<SR_GRAPH_NS::UI::Canvas> m_canvas;
         SR_UTILS_NS::UI::MaskInfo m_maskInfo;
         SR_GRAPH_NS::RenderScene::Ptr m_renderScene;
 

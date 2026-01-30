@@ -121,7 +121,7 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    void GlyphImage::InsertTo(uint8_t* pTarget, int32_t top, uint32_t sizeX) {
+    void GlyphImage::InsertTo(uint8_t* pTarget, int32_t top, uint32_t sizeX, uint32_t sizeY, bool invertX, bool invertY) {
         const int32_t posX = m_glyph->GetPosX();
         const int32_t posY = m_glyph->GetPosY();
 
@@ -135,7 +135,7 @@ namespace SR_GRAPH_NS {
 
         for (uint32_t x = 0; x < width; ++x) {
             for (uint32_t y = 0; y < height; ++y) {
-                uint32_t src = 0; 
+                uint32_t src = 0;
 
                 if (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA) {
                     src = x * pixelSize + y * width * pixelSize;
@@ -144,20 +144,22 @@ namespace SR_GRAPH_NS {
                     }
                 }
                 else {
-                    src = x + y * width;
+                    src = x + y * bitmap.pitch;
                     if (pBuffer[src] == 0) {
                         continue;
                     }
                 }
 
-                const int32_t dstY = posY + y - top;
-                const int32_t dstX = posX + x;
+                const int32_t rawDstX = posX + static_cast<int32_t>(x);
+                const int32_t rawDstY = posY + static_cast<int32_t>(y) - top;
+                const int32_t dstX = invertX ? (static_cast<int32_t>(sizeX) - 1 - rawDstX) : rawDstX;
+                const int32_t dstY = invertY ? (static_cast<int32_t>(sizeY) - 1 - rawDstY) : rawDstY;
 
-                const int32_t dst = dstX * pixelSize + dstY * sizeX * pixelSize;
-
-                if (dst < 0) {
+                if (dstX < 0 || dstX >= static_cast<int32_t>(sizeX) || dstY < 0 || dstY >= static_cast<int32_t>(sizeY)) {
                     continue;
                 }
+
+                const int32_t dst = dstX * static_cast<int32_t>(pixelSize) + dstY * static_cast<int32_t>(sizeX) * static_cast<int32_t>(pixelSize);
 
                 if (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA) {
                     *(pTarget + dst + 0) = *(pBuffer + src + 2);
@@ -178,8 +180,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void GlyphImage::Debug(uint8_t* pTarget, int32_t top, uint32_t sizeX)
-    {
+    void GlyphImage::Debug(uint8_t* pTarget, int32_t top, uint32_t sizeX, uint32_t sizeY, bool invertX, bool invertY) {
         const int32_t posX = m_glyph->GetPosX();
         const int32_t posY = m_glyph->GetPosY();
 
@@ -193,8 +194,14 @@ namespace SR_GRAPH_NS {
                     continue;
                 }
 
-                const int32_t dstY = posY + y - top;
-                const int32_t dstX = posX + x;
+                const int32_t rawDstX = posX + static_cast<int32_t>(x);
+                const int32_t rawDstY = posY + static_cast<int32_t>(y) - top;
+                const int32_t dstX = invertX ? (static_cast<int32_t>(sizeX) - 1 - rawDstX) : rawDstX;
+                const int32_t dstY = invertY ? (static_cast<int32_t>(sizeY) - 1 - rawDstY) : rawDstY;
+
+                if (dstX < 0 || dstX >= static_cast<int32_t>(sizeX) || dstY < 0 || dstY >= static_cast<int32_t>(sizeY)) {
+                    continue;
+                }
 
                 const uint32_t dst = dstX * pixelSize + dstY * sizeX * pixelSize;
 

@@ -51,6 +51,8 @@ namespace SR_GRAPH_NS {
         void SetFontSize(uint32_t size) { m_fontSize = size; }
         void SetKerning(bool enabled);
         void SetDebug(bool enabled);
+        void SetInvertX(bool enabled) { m_invertX = enabled; }
+        void SetInvertY(bool enabled) { m_invertY = enabled; }
 
     private:
         void InitFontSize();
@@ -71,6 +73,8 @@ namespace SR_GRAPH_NS {
 
         bool m_kerning = false;
         bool m_debug = false;
+        bool m_invertX = false;
+        bool m_invertY = false;
 
         uint32_t m_fontSize = 12;
 

@@ -8,8 +8,10 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Types/Mesh.h>
+#include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Utils/Frustum.h>
 #include <Graphics/Material/BaseMaterial.h>
+#include <Graphics/Window/Window.h>
 
 #include <Utils/ECS/LayerManager.h>
 #include <Utils/Common/Features.h>
@@ -257,6 +259,15 @@ namespace SR_GRAPH_NS {
         SR_GTYPES_NS::Shader* pCurrentShader = nullptr;
         VBO currentVBO = 0;
 
+        auto&& pCurrentFramebuffer = m_pipeline->GetCurrentFrameBuffer();
+        SR_MATH_NS::IVector2 viewportSize;
+        if (pCurrentFramebuffer) {
+            viewportSize = pCurrentFramebuffer->GetSize();
+        }
+        else if (auto&& pWindow = m_pipeline->GetWindow()) {
+            viewportSize = pWindow->GetSize().CastToInt();
+        }
+
         MeshInfo* pStart = queue.data();
         const MeshInfo* pEnd = pStart + queue.size();
         bool shaderOk = false;
@@ -318,7 +329,12 @@ namespace SR_GRAPH_NS {
             const SR_UTILS_NS::UI::MaskInfo& mask = info.pMesh->GetMaskInfo();
             const bool hasMask = mask.hasMask && mask.scissor;
             if (hasMask) {
-                m_pipeline->PushScissor(mask.rect);
+                SR_MATH_NS::FVector2 multiplier = viewportSize.CastToFloat() / mask.referenceSize.CastToFloat();
+                const auto rect = SR_MATH_NS::FRect(
+                    static_cast<float_t>(mask.rect.x) * multiplier.x, static_cast<float_t>(mask.rect.y) * multiplier.y,
+                    static_cast<float_t>(mask.rect.w) * multiplier.x, static_cast<float_t>(mask.rect.h) * multiplier.y
+                ).CastToInt();
+                m_pipeline->PushScissor(rect);
             }
 
             if (m_customMeshDraw) SR_UNLIKELY_ATTRIBUTE {

@@ -22,6 +22,7 @@ namespace SR_GRAPH_UI_NS {
 
     public:
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
+        SR_NODISCARD SR_MATH_NS::UVector2 GetSize() const noexcept { return m_size; }
 
         void OnAttached() override;
 

@@ -13,6 +13,7 @@
 
 #include <Utils/Localization/Encoding.h>
 #include <Utils/ECS/SceneObject.h>
+#include <Utils/ECS/TransformRect.h>
 #include <Utils/FileSystem/PathDataAccessor.h>
 
 #include <Codegen/Text.generated.hpp>
@@ -79,6 +80,8 @@ namespace SR_GTYPES_NS {
         textBuilder.SetKerning(m_kerning);
         textBuilder.SetDebug(m_debug);
         textBuilder.SetFontSize(m_fontSize);
+        textBuilder.SetInvertX(true);
+        textBuilder.SetInvertY(true);
 
         if (!textBuilder.Build(m_text)) {
             return false;
@@ -120,10 +123,11 @@ namespace SR_GTYPES_NS {
 
     void Text::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
         shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-        shader.SetFloat(SHADER_TEXT_RECT_X, 0.f);
-        shader.SetFloat(SHADER_TEXT_RECT_Y, 0.f);
-        shader.SetFloat(SHADER_TEXT_RECT_WIDTH, static_cast<float_t>(m_atlasSize.x) / 100.f);
-        shader.SetFloat(SHADER_TEXT_RECT_HEIGHT, static_cast<float_t>(m_atlasSize.y) / 100.f);
+
+        if (auto&& pTransformRect = SR_UTILS_NS::ExtractTransformAs<SR_UTILS_NS::TransformRect>(GetSceneObject().Get())) SR_LIKELY_ATTRIBUTE {
+            SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
+            shader.SetVec4(SHADER_NDC_RECT, layout.vec4);
+        }
 
         Super::UseModelMatrix(shader);
     }
@@ -134,7 +138,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool Text::IsFlatMesh() const noexcept {
-        return !m_is3D;
+        auto&& pTransform = GetTransform();
+        return pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
     }
 
     void Text::SetFont(const SR_GTYPES_NS::Font::Ptr& pFont) {

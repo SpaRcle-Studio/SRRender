@@ -572,7 +572,7 @@ namespace SR_GRAPH_NS {
         if (pMesh->IsFlatMesh()) {
             if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh)) {
                 UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
-                pMaterial->SetShader("Engine/Shaders/text.srsl");
+                pMaterial->SetShader("Engine/Shaders/UI/text.srsl");
                 pText2D->SetMaterial(pMaterial.StaticCast<BaseMaterial>());
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultUIMaterial()) {
@@ -582,7 +582,7 @@ namespace SR_GRAPH_NS {
         else {
             if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh)) {
                 UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
-                pMaterial->SetShader("Engine/Shaders/text.srsl");
+                pMaterial->SetShader("Engine/Shaders/UI/text.srsl");
                 pText3D->SetMaterial(pMaterial.StaticCast<BaseMaterial>());
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultMaterial()) {

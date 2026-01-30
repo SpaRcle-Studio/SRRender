@@ -7,6 +7,7 @@
 
 #include <Graphics/Types/Geometry/MeshComponent.h>
 #include <Graphics/Types/IRenderComponent.h>
+#include <Graphics/Pass/ColorBufferPass.h>
 
 #include <Utils/ECS/GameObject.h>
 
@@ -144,6 +145,8 @@ namespace SR_GRAPH_UI_NS {
 
         GizmoMode m_mode = GizmoMode::Local;
         GizmoOperation m_operation = GizmoOperation::TranslateAll;
+
+        SR_GRAPH_NS::ColorBufferPassRequest::Ptr m_colorRequest;
 
         GizmoOperation m_activeOperation = GizmoOperation::None;
         GizmoOperation m_hoveredOperation = GizmoOperation::None;

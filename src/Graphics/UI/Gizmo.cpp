@@ -240,19 +240,31 @@ namespace SR_GRAPH_UI_NS {
         }
 
         if (m_activeOperation == GizmoOperation::None) {
-            auto&& pMesh = pTechnique->PickMeshAt(mousePos);
-            for (auto&& [flag, info] : m_meshes) {
-                if (!info.pVisual) {
-                    continue;
-                }
+            auto&& pColorBufferPass = pTechnique->FindPassAs<SR_GRAPH_NS::ColorBufferPass>();
+            if (m_colorRequest) {
+                if (m_colorRequest->IsReady()) {
+                    auto&& pMesh = m_colorRequest->GetMesh(false);
+                    for (auto&& [flag, info] : m_meshes) {
+                        if (!info.pVisual) {
+                            continue;
+                        }
 
-                if (pMesh == info.pSelection.Get() && info.pSelection.Get()) {
-                    info.pVisual->GetMaterial()->SetColor("color", SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f));
-                    m_hoveredOperation = flag;
+                        if (pMesh == info.pSelection.Get() && info.pSelection.Get()) {
+                            info.pVisual->GetMaterial()->SetColor("color", SR_MATH_NS::FColor(1.f, 1.f, 0.f, 1.f));
+                            m_hoveredOperation = flag;
+                        }
+                        else {
+                            info.pVisual->GetMaterial()->SetColor("color", GetColorByOperation(flag));
+                        }
+                    }
+
+                    if (!m_colorRequest->ChangeRequest(mousePos)) {
+                        m_colorRequest = nullptr;
+                    }
                 }
-                else {
-                    info.pVisual->GetMaterial()->SetColor("color", GetColorByOperation(flag));
-                }
+            }
+            else {
+                m_colorRequest = pColorBufferPass->CreateColorRequest(mousePos);
             }
         }
 

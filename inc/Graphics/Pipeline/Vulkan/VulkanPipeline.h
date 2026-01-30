@@ -8,6 +8,11 @@
 #include <Graphics/Pipeline/Pipeline.h>
 
 #include <EvoVulkan/Types/VmaBuffer.h>
+#include <EvoVulkan/Types/CmdBuffer.h>
+#include <EvoVulkan/Tools/VulkanTools.h>
+#include <unordered_map>
+#include <atomic>
+#include <mutex>
 
 namespace SR_GRAPH_NS::VulkanTools {
     class MemoryManager;
@@ -54,6 +59,20 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint8_t GetFrameBufferSampleCount() const override;
         SR_NODISCARD uint8_t GetBuildIterationsCount() const noexcept override;
         SR_NODISCARD SR_MATH_NS::FColor GetPixelColor(uint32_t textureId, uint32_t x, uint32_t y) override;
+
+        /// Асинхронный запрос диапазона пикселей
+        /// Возвращает workId для отслеживания запроса
+        SR_NODISCARD uint64_t RequestPixelRange(uint64_t workId, uint32_t textureId, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+        
+        /// Проверяет, готов ли запрос с указанным workId
+        SR_NODISCARD bool IsPixelRangeReady(uint64_t workId) const;
+        
+        /// Получает результат запроса. Возвращает true если данные готовы и скопированы в pixels
+        /// pixels должен быть достаточно большим для хранения width * height пикселей
+        bool GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height);
+        
+        /// Освобождает ресурсы запроса
+        void ReleasePixelRangeRequest(uint64_t workId);
         SR_NODISCARD void* GetCurrentShaderHandle() const override;
         SR_NODISCARD uint16_t GetSwapchainImagesCount() const override;
         SR_NODISCARD uint16_t GetMaxFramesInFlight() const override;
@@ -164,6 +183,22 @@ namespace SR_GRAPH_NS {
     private:
         bool InitEvoVulkanHooks();
 
+        /// Структура для хранения состояния асинхронного запроса пикселей
+        struct PixelRangeRequest {
+            uint32_t textureId = 0;
+            uint32_t x = 0;
+            uint32_t y = 0;
+            uint32_t width = 0;
+            uint32_t height = 0;
+            VkFence fence = VK_NULL_HANDLE;
+            EvoVulkan::Types::VmaBuffer* pBuffer = nullptr;
+            EvoVulkan::Types::CmdBuffer* pCmdBuffer = nullptr;
+            VkImageLayout originalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            bool isReady = false;
+        };
+
+        void CleanupCompletedRequests();
+
     private:
         bool m_isGlslLangInit = false;
 
@@ -187,6 +222,9 @@ namespace SR_GRAPH_NS {
         EvoVulkan::Core::VulkanKernel* m_kernel = nullptr;
 
         VulkanTools::MemoryManager* m_memory = nullptr;
+
+        mutable std::unordered_map<uint64_t, PixelRangeRequest> m_pixelRequests;
+        std::atomic<uint64_t> m_nextWorkId;
 
     };
 }

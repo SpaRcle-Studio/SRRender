@@ -63,7 +63,7 @@ namespace SR_GRAPH_NS {
             if (!pGlyphImage) {
                 continue;
             }
-            pGlyphImage->InsertTo(m_textureData, m_top, m_imageWidth);
+            pGlyphImage->InsertTo(m_textureData, m_top, m_imageWidth, m_imageHeight, m_invertX, m_invertY);
         }
 
         if (m_debug) {
@@ -72,7 +72,7 @@ namespace SR_GRAPH_NS {
                 if (!pGlyphImage) {
                     continue;
                 }
-                pGlyphImage->Debug(m_textureData, m_top, m_imageWidth);
+                pGlyphImage->Debug(m_textureData, m_top, m_imageWidth, m_imageHeight, m_invertX, m_invertY);
             }
 
             for (uint32_t x = 0; x < m_imageWidth; ++x) {
