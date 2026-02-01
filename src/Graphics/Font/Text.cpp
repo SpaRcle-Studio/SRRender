@@ -98,6 +98,7 @@ namespace SR_GTYPES_NS {
         textureCreateInfo.height = m_atlasSize.y;
         textureCreateInfo.compression = TextureCompression::None;
         textureCreateInfo.filter = TextureFilter::NEAREST;
+        textureCreateInfo.addressMode = AddressMode::ClampToEdge;
         textureCreateInfo.mipLevels = 1;
         textureCreateInfo.cpuUsage = false;
         textureCreateInfo.alpha = true;
@@ -128,6 +129,8 @@ namespace SR_GTYPES_NS {
             SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
             shader.SetVec4(SHADER_NDC_RECT, layout.vec4);
         }
+
+        shader.SetVec2(SHADER_TEXT_ATLAS_SIZE, m_atlasSize.CastToFloat());
 
         Super::UseModelMatrix(shader);
     }

@@ -225,6 +225,7 @@ namespace SR_GRAPH_NS {
 
         mutable std::unordered_map<uint64_t, PixelRangeRequest> m_pixelRequests;
         std::atomic<uint64_t> m_nextWorkId;
+        std::vector<VkWriteDescriptorSet> m_writeDescriptorSets;
 
     };
 }

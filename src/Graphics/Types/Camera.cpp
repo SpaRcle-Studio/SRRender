@@ -247,22 +247,6 @@ namespace SR_GTYPES_NS {
         UpdateProjection(false);
     }
 
-    SR_MATH_NS::Matrix4x4 Camera::GetImGuizmoView() const noexcept {
-        /// TODO: optimize
-
-        SR_MATH_NS::Matrix4x4 matrix = SR_MATH_NS::Matrix4x4::Identity();
-
-        SR_MATH_NS::FVector3 eulerAngles = m_rotation.EulerAngle();
-
-        matrix = matrix.RotateAxis(SR_MATH_NS::FVector3(1, 0, 0), eulerAngles.x);
-        matrix = matrix.RotateAxis(SR_MATH_NS::FVector3(0, 1, 0), eulerAngles.y + 180);
-        matrix = matrix.RotateAxis(SR_MATH_NS::FVector3(0, 0, 1), eulerAngles.z);
-
-        matrix = matrix.Translate(m_position.InverseAxis(SR_MATH_NS::Axis::YZ));
-
-        return matrix;
-    }
-
     void Camera::SetFar(float_t value) {
         m_far = value;
 
@@ -379,11 +363,11 @@ namespace SR_GTYPES_NS {
         return SR_PLATFORM_NS::GetMousePos();
     }
 
-    SR_MATH_NS::Ray Camera::GetScreenRay(float_t x, float_t y,  bool orthogonal) const {
+    SR_MATH_NS::Ray Camera::GetScreenRay(float_t x, float_t y, bool orthogonal) const {
         return GetScreenRay(SR_MATH_NS::FPoint(x, y), orthogonal);
     }
 
-    SR_MATH_NS::Ray Camera::GetScreenRay(const SR_MATH_NS::FPoint& screenPos,  bool orthogonal) const {
+    SR_MATH_NS::Ray Camera::GetScreenRay(const SR_MATH_NS::FPoint& screenPos, bool orthogonal) const {
         SR_MATH_NS::Matrix4x4 viewProjInverse;
 
         if (orthogonal) {
@@ -458,5 +442,12 @@ namespace SR_GTYPES_NS {
 
     SR_MATH_NS::FVector3 Camera::GetCameraDir() const {
         return GetViewTranslate().Inverse().v.dir.XYZ();
+    }
+
+    SR_MATH_NS::FRect Camera::GetViewportRect() const {
+        if (m_viewportRect) {
+            return *m_viewportRect;
+        }
+        return SR_MATH_NS::FRect(0.f, 0.f, m_viewportSize.CastToFloat());
     }
 }

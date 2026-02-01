@@ -416,7 +416,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void EndTabBar();
         SR_GRAPHICS_DLL_API extern void PushFont(void* pFont);
         SR_GRAPHICS_DLL_API extern void PopFont();
-        SR_GRAPHICS_DLL_API extern bool BeginChild(const char* str_id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2(), bool border = false);
+        SR_GRAPHICS_DLL_API extern bool BeginChild(const char* str_id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2(), bool border = false, WindowFlags flags = WindowFlags::None);
         SR_GRAPHICS_DLL_API extern void EndChild();
         SR_GRAPHICS_DLL_API extern const void* GetDragDropPayload();
         SR_GRAPHICS_DLL_API extern float_t GetScrollMaxY();

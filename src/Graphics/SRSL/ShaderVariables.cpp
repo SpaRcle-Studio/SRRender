@@ -70,6 +70,7 @@ namespace SR_SRSL_NS {
             { "SKELETON_MATRIX_OFFSETS_384",    "mat4[384]"     },
 
             { "HALF_SIZE_NEAR_PLANE",           "vec2"          },
+            { "TEXT_ATLAS_SIZE",                "vec2"          },
 
             { "LINE_START_POINT",               "vec3"          },
             { "LINE_END_POINT",                 "vec3"          },

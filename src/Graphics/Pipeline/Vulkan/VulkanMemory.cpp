@@ -292,11 +292,23 @@ namespace SR_GRAPH_NS::VulkanTools {
             uint32_t w,
             uint32_t h,
             VkFormat format,
-            VkFilter /*filter*/,
+            VkFilter filter,
             uint8_t mipLevels,
             bool cpuUsage)
     {
-        auto&& pTexture = EvoVulkan::Types::Texture::LoadCubeMap(m_device, m_allocator, m_pool, format, w, h, pixels, mipLevels, cpuUsage);
+        EvoVulkan::Types::TextureLoadInfo info;
+        info.width = w;
+        info.height = h;
+        info.format = format;
+        info.mipLevels = mipLevels;
+        info.cpuUsage = cpuUsage;
+        info.filter = filter;
+        info.pPool = m_pool;
+        info.pAllocator = m_allocator;
+        info.pDevice = m_device;
+        info.pDescriptorManager = m_descriptorManager;
+
+        auto&& pTexture = EvoVulkan::Types::Texture::LoadCubeMap(info, pixels);
         if (!pTexture) {
             SR_ERROR("MemoryManager::AllocateTexture() : failed to load Evo Vulkan texture!");
             return SR_ID_INVALID;
@@ -308,6 +320,7 @@ namespace SR_GRAPH_NS::VulkanTools {
     int32_t MemoryManager::AllocateTexture(
         const uint8_t *pixels, uint32_t w, uint32_t h,
         VkFormat format,
+        VkSamplerAddressMode addressMode,
         VkFilter filter,
         SR_GRAPH_NS::TextureCompression /*compression*/,
         uint8_t mipLevels,
@@ -315,16 +328,29 @@ namespace SR_GRAPH_NS::VulkanTools {
     {
         SR_TRACY_ZONE;
 
+        EvoVulkan::Types::TextureLoadInfo info;
+        info.width = w;
+        info.height = h;
+        info.format = format;
+        info.mipLevels = mipLevels;
+        info.cpuUsage = cpuUsage;
+        info.filter = filter;
+        info.addressMode = addressMode;
+        info.pPool = m_pool;
+        info.pAllocator = m_allocator;
+        info.pDevice = m_device;
+        info.pDescriptorManager = m_descriptorManager;
+
         EvoVulkan::Types::Texture* pTexture = nullptr;
 
         if (mipLevels == 0) {
-            pTexture = EvoVulkan::Types::Texture::LoadAutoMip(m_device, m_allocator, m_descriptorManager, m_pool, pixels, format, w, h, filter, cpuUsage);
+            pTexture = EvoVulkan::Types::Texture::LoadAutoMip(info, pixels);
         }
         else if (mipLevels == 1) {
-            pTexture = EvoVulkan::Types::Texture::LoadWithoutMip(m_device, m_allocator, m_descriptorManager, m_pool, pixels, format, w, h, filter, cpuUsage);
+            pTexture = EvoVulkan::Types::Texture::LoadWithoutMip(info, pixels);
         }
         else {
-            pTexture = EvoVulkan::Types::Texture::Load(m_device, m_allocator, m_descriptorManager, m_pool, pixels, format, w, h, mipLevels, filter, cpuUsage);
+            pTexture = EvoVulkan::Types::Texture::Load(info, pixels);
         }
 
         if (!pTexture) {

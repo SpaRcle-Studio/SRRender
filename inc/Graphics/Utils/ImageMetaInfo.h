@@ -22,10 +22,12 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool GetCpuUsage() const noexcept { return cpuUsage; }
         SR_NODISCARD float_t GetPixelsPerUnit() const noexcept { return m_pixelsPerUnit; }
         SR_NODISCARD const SR_MATH_NS::FRect& GetBorder() const noexcept { return m_border; }
+        SR_NODISCARD AddressMode GetAddressMode() const noexcept { return addressMode; }
 
         bool operator==(const ImageMetaInfo& lrs) const {
             return format == lrs.format
                    && filter == lrs.filter
+                   && addressMode == lrs.addressMode
                    && compression == lrs.compression
                    && mipLevels == lrs.mipLevels
                    && m_border == lrs.m_border
@@ -43,6 +45,8 @@ namespace SR_GRAPH_NS {
         ImageFormat format = ImageFormat::RGBA8_UNORM;
         /// @property
         TextureFilter filter = TextureFilter::LINEAR;
+        /// @property
+        AddressMode addressMode = AddressMode::Repeat;
         /// @property
         TextureCompression compression = TextureCompression::None;
         /// @property

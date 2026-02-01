@@ -58,7 +58,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     void TextColored(const SR_MATH_NS::FColor& color, const char* text, ...) {
         va_list args;
         va_start(args, text);
-        ImGui::TextColored(FCToImC(color), text, args);
+        ImGui::TextColoredV(FCToImC(color), text, args);
         va_end(args);
     }
 
@@ -834,8 +834,8 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImGui::IsItemDeactivatedAfterEdit();
     }
 
-    bool BeginChild(const char *str_id, const Utils::Math::FVector2 &size, bool border) {
-        return ImGui::BeginChild(str_id, F2ToImV2(size), border);
+    bool BeginChild(const char *str_id, const Utils::Math::FVector2 &size, bool border, WindowFlags flags) {
+        return ImGui::BeginChild(str_id, F2ToImV2(size), border, static_cast<ImGuiWindowFlags>(flags));
     }
 
     bool BeginTable(const char* str_id, int columns) {

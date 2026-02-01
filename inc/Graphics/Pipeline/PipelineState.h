@@ -39,6 +39,7 @@ namespace SR_GRAPH_NS {
         ImageFormat format = ImageFormat::None;
         TextureFilter filter = TextureFilter::Unknown;
         TextureCompression compression = TextureCompression::None;
+        AddressMode addressMode = AddressMode::Repeat;
         uint32_t width = 0;
         uint32_t height = 0;
         uint8_t mipLevels = 0;

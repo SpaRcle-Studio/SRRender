@@ -7,16 +7,27 @@
 
 namespace SR_GRAPH_NS {
     void FrameBufferQueue::AddFrameBuffer(FrameBufferQueue::FrameBuffer pFrameBuffer, uint32_t layer) {
-        auto&& pIt = m_used.find(pFrameBuffer);
+        SR_TRACY_ZONE;
+
+        auto&& pIt = std::ranges::find_if(m_used, [pFrameBuffer](const auto& pair) { return pair.fbo == pFrameBuffer; });
+
         if (pIt == m_used.end()) {
-            m_used.insert(std::make_pair(pFrameBuffer, std::set { layer }));
+            auto&& info = m_used.emplace_back();
+            info.fbo = pFrameBuffer;
+            info.layers.emplace_back(layer);
         }
         else {
-            pIt->second.insert(layer);
+            auto&& info = *pIt;
+            if (std::ranges::find(info.layers, layer) == info.layers.end()) {
+                info.layers.emplace_back(layer);
+            }
+            else {
+                SRHalt("FrameBufferQueue::AddFrameBuffer() : framebuffer for layer already exists!");
+            }
         }
     }
 
-    const std::vector<std::vector<FrameBufferQueue::FrameBuffer>>& FrameBufferQueue::GetQueues() const {
+    const FrameBufferQueue::Queues& FrameBufferQueue::GetQueues() const {
         return m_levels;
     }
 
@@ -25,8 +36,9 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        if (auto&& pIt = m_used.find(pFrameBuffer); pIt != m_used.end()) {
-            return pIt->second.count(layer) == 1;
+        auto&& pIt = std::ranges::find_if(m_used, [pFrameBuffer](const auto& pair) { return pair.fbo == pFrameBuffer; });
+        if (pIt != m_used.end()) {
+            return std::ranges::find(pIt->layers, layer) != pIt->layers.end();
         }
 
         return false;
@@ -36,7 +48,8 @@ namespace SR_GRAPH_NS {
         if (IsAllowMultiFrameBuffers()) {
             return false;
         }
-        return m_used.find(pFrameBuffer) != m_used.end();
+        auto&& pIt = std::ranges::find_if(m_used, [pFrameBuffer](const auto& pair) { return pair.fbo == pFrameBuffer; });
+        return pIt != m_used.end();
     }
 
     void FrameBufferQueue::Clear() {

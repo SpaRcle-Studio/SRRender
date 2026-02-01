@@ -14,7 +14,7 @@
 
 namespace SR_GRAPH_NS::UI {
     /// @category(UI)
-    class RectMask2D final : public SR_UTILS_NS::Component {
+    class RectMask2D final : public SR_UTILS_NS::Component, public IFindCanvasOwner {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:
@@ -30,10 +30,8 @@ namespace SR_GRAPH_NS::UI {
 
     private:
         void UpdateClipping(bool enable);
-        SR_NODISCARD SR_GRAPH_NS::UI::Canvas* FindCanvas();
 
     private:
-        SR_UTILS_NS::EntityRef<SR_GRAPH_NS::UI::Canvas> m_canvas;
         SR_UTILS_NS::UI::MaskInfo m_maskInfo;
         SR_GRAPH_NS::RenderScene::Ptr m_renderScene;
 

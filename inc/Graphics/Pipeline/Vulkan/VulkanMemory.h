@@ -90,6 +90,7 @@ namespace SR_GRAPH_NS::VulkanTools {
                 uint32_t w,
                 uint32_t h,
                 VkFormat format,
+                VkSamplerAddressMode addressMode,
                 VkFilter filter,
                 TextureCompression compression,
                 uint8_t mipLevels,

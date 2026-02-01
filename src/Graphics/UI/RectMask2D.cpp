@@ -31,23 +31,6 @@ namespace SR_GRAPH_NS::UI {
         Super::OnMatrixDirty();
     }
 
-    SR_GRAPH_NS::UI::Canvas* RectMask2D::FindCanvas() {
-        if (auto&& pCanvas = m_canvas.Get()) {
-            return pCanvas.Get();
-        }
-
-        SR_UTILS_NS::SceneObject::Ptr pParent = GetSceneObject()->GetParent();
-        while (pParent) {
-            if (auto&& pCanvas = pParent->GetComponent<SR_GRAPH_NS::UI::Canvas>()) {
-                m_canvas.SetEntityId(pCanvas->GetEntityId());
-                return pCanvas.Get();
-            }
-            pParent = pParent->GetParent();
-        }
-
-        return nullptr;
-    }
-
     void RectMask2D::UpdateClipping(bool enable) {
         SR_TRACY_ZONE;
 
@@ -57,9 +40,12 @@ namespace SR_GRAPH_NS::UI {
             maskInfo.scissor = true;
             maskInfo.rect = pTransform->GetLayoutRect().CastToInt();
 
-            if (auto&& pCanvas = FindCanvas()) {
+            if (auto&& pCanvas = FindCanvas(GetSceneObject().Get())) {
                 maskInfo.referenceSize = pCanvas->GetSize().CastToInt();
             }
+
+            /// flip Y axis
+            maskInfo.rect.y = maskInfo.referenceSize.y - (maskInfo.rect.y + maskInfo.rect.h);
 
             if (m_maskInfo == maskInfo) {
                 return;

@@ -303,6 +303,21 @@ namespace SR_GRAPH_NS::VulkanTools {
         return VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM;
     }
 
+    SR_MAYBE_UNUSED static SR_FORCE_INLINE VkSamplerAddressMode AbstractAddressModeToVkAddressMode(const AddressMode& addressMode) {
+        switch (addressMode) {
+            case AddressMode::Repeat: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            case AddressMode::MirroredRepeat: return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+            case AddressMode::ClampToEdge: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            case AddressMode::ClampToBorder: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            case AddressMode::MirrorClampToEdge: return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+            case AddressMode::Unknown:
+            default:
+                break;
+        }
+        return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
+
+    }
+
     SR_MAYBE_UNUSED static SR_FORCE_INLINE VkFormat AbstractTextureFormatToVkFormat(const ImageFormat& format) {
         SR_TRACY_ZONE;
         switch (format) {

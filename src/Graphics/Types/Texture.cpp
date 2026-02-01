@@ -16,6 +16,7 @@
 #include <Enum/TextureCompression.hpp>
 #include <Enum/TextureFilter.hpp>
 #include <Enum/ImageFormat.hpp>
+#include <Enum/AddressMode.hpp>
 
 #include <Codegen/Texture.generated.hpp>
 
@@ -84,6 +85,7 @@ namespace SR_GTYPES_NS {
                     const std::string debugInfo =
                         "\n\tPath: {}"
                         "\n\tOld alpha: {}, New alpha: {}"
+                        "\n\tOld address mode: {}, New address mode: {}"
                         "\n\tOld mip levels: {}, New mip levels: {}"
                         "\n\tOld format: {}, New format: {}"
                         "\n\tOld filter: {}, New filter: {}"
@@ -94,6 +96,7 @@ namespace SR_GTYPES_NS {
                         ""_format(
                             path,
                             pTexture->m_activeImageMetaInfo.alpha, metaInfo.value().alpha,
+                            pTexture->m_activeImageMetaInfo.addressMode, metaInfo.value().addressMode,
                             pTexture->m_activeImageMetaInfo.mipLevels, metaInfo.value().mipLevels,
                             pTexture->m_activeImageMetaInfo.format, metaInfo.value().format,
                             pTexture->m_activeImageMetaInfo.filter, metaInfo.value().filter,
@@ -211,6 +214,7 @@ namespace SR_GTYPES_NS {
         createInfo.format = m_activeImageMetaInfo.format;
         createInfo.mipLevels = m_activeImageMetaInfo.mipLevels;
         createInfo.filter = m_activeImageMetaInfo.filter;
+        createInfo.addressMode = m_activeImageMetaInfo.addressMode;
 
         if (!IsTextureSupportsFormat(createInfo.format) && createInfo.format != ImageFormat::Auto && createInfo.format != ImageFormat::Unknown) {
             SR_WARN("Texture::Calculate() : the texture format {} is not supported! Falling back to Auto format.", createInfo.format);

@@ -39,7 +39,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(SR_SRSL_NS::ShaderMacrosParams());
+        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(SR_SRSL_NS::ShaderMacrosParams::GetDefault());
         if (!pShader || pShader->Use() == ShaderBindResult::Failed) {
             return false;
         }

@@ -726,8 +726,14 @@ namespace SR_GRAPH_NS {
 
         m_state.allocatedMemory += pixelSize * textureCreateInfo.width * textureCreateInfo.height;
 
+        const VkSamplerAddressMode addressMode = VulkanTools::AbstractAddressModeToVkAddressMode(textureCreateInfo.addressMode);
+        if (addressMode == VK_SAMPLER_ADDRESS_MODE_MAX_ENUM) {
+            PipelineError("VulkanPipeline::AllocateTexture() : invalid address mode!");
+            return SR_ID_INVALID;
+        }
+
         auto&& id = m_memory->AllocateTexture(
-            textureCreateInfo.pData, textureCreateInfo.width, textureCreateInfo.height, vkFormat,
+            textureCreateInfo.pData, textureCreateInfo.width, textureCreateInfo.height, vkFormat, addressMode,
             VulkanTools::AbstractTextureFilterToVkFilter(textureCreateInfo.filter),
             textureCreateInfo.compression, textureCreateInfo.mipLevels, textureCreateInfo.cpuUsage
         );
@@ -763,14 +769,14 @@ namespace SR_GRAPH_NS {
 
         auto&& vkDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
 
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+        m_writeDescriptorSets.clear();
 
         for (auto&& info : updateInfo) {
             switch (info.descriptorType) {
                 case DescriptorType::Storage: {
                     auto&& vkStorageBuffer = m_memory->GetSSBO(info.ubo)->GetDescriptorRef();
 
-                    writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
+                    m_writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
                         vkDescriptorSet,
                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                         info.binding,
@@ -782,7 +788,7 @@ namespace SR_GRAPH_NS {
                 case DescriptorType::Uniform: {
                     auto&& vkUBODescriptor = m_memory->GetUBO(info.ubo)->GetDescriptorRef();
 
-                    writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
+                    m_writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
                         vkDescriptorSet,
                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                         info.binding,
@@ -797,12 +803,12 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        if (writeDescriptorSets.empty()) {
+        if (m_writeDescriptorSets.empty()) {
             SRHalt("writeDescriptorSets is empty!");
             return;
         }
 
-        vkUpdateDescriptorSets(*m_kernel->GetDevice(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+        vkUpdateDescriptorSets(*m_kernel->GetDevice(), m_writeDescriptorSets.size(), m_writeDescriptorSets.data(), 0, nullptr);
     }
 
     void VulkanPipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size) {
@@ -2181,6 +2187,8 @@ namespace SR_GRAPH_NS {
 
         if (m_kernel && (m_kernel->IsDirty() || m_kernel->GetSwapchain()->IsDirty())) {
             m_kernel->WaitAllFences();
+            m_kernel->WaitIdle();
+            m_kernel->WaitDeviceIdle();
             m_kernel->ReCreate(EvoVulkan::Core::FrameResult::Dirty);
         }
 

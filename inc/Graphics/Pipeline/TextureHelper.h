@@ -31,6 +31,15 @@ namespace SR_GRAPH_NS {
         None, Depth, Stencil, Color, DepthStencil
     );
 
+    SR_ENUM_NS_CLASS(AddressMode,
+        Unknown,
+        Repeat,
+        MirroredRepeat,
+        ClampToEdge,
+        ClampToBorder,
+        MirrorClampToEdge
+    );
+
     SR_ENUM_NS_CLASS(ImageFormat,
         Unknown,
         None,
