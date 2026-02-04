@@ -23,6 +23,20 @@ namespace SR_GRAPH_UI_NS {
         Super::OnAttached();
     }
 
+    SR_NODISCARD SR_MATH_NS::FVector2 Canvas::ScreenToCanvasSpace(const SR_MATH_NS::FVector2& screenPosition) const {
+        auto&& pWindow = GetWindow();
+        if (!pWindow) {
+            return SR_MATH_NS::FVector2::Zero();
+        }
+
+        SR_MATH_NS::FVector2 clientPos = pWindow->ScreenToClient(screenPosition.CastToInt()).CastToFloat();
+        const SR_MATH_NS::FRect viewportRect = GetViewportRect();
+
+        SR_MATH_NS::FVector2 uiPos = (clientPos - viewportRect.XY()) / viewportRect.Size() * GetSize().CastToFloat();
+        uiPos.y = GetSize().CastToFloat().y - uiPos.y;
+        return uiPos;
+    }
+
     SR_GTYPES_NS::Camera* Canvas::GetCamera() const noexcept {
         return const_cast<SR_GTYPES_NS::Camera*>(m_camera.Get());
     }

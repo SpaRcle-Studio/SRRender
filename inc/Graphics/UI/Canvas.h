@@ -35,6 +35,8 @@ namespace SR_GRAPH_UI_NS {
         void SetViewportRect(const SR_MATH_NS::FRect& rect) { m_viewportRect = rect; }
         SR_NODISCARD const SR_MATH_NS::FRect& GetViewportRect() const noexcept { return m_viewportRect; }
 
+        SR_NODISCARD SR_MATH_NS::FVector2 ScreenToCanvasSpace(const SR_MATH_NS::FVector2& screenPosition) const;
+
         SR_NODISCARD SR_GTYPES_NS::Camera* GetCamera() const noexcept;
         SR_NODISCARD Window* GetWindow() const noexcept;
 
