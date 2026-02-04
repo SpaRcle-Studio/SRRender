@@ -15,7 +15,10 @@
 #elif defined(SR_LINUX)
     //#include <Graphics/Window/X11Window.h>
     #include <Graphics/Window/GLFWWindow.h>
+    #include <Graphics/Window/WaylandWindow.h>
 #endif
+
+#include <Enum/WindowProtocolType.hpp>
 
 namespace SR_GRAPH_NS {
     BasicWindowImpl::~BasicWindowImpl() {
@@ -78,12 +81,28 @@ namespace SR_GRAPH_NS {
         );
     #elif defined (SR_LINUX)
         switch (type) {
-            case WindowType::Auto:
+            case WindowType::Auto: {
+                const auto protocolType = SR_PLATFORM_NS::GetWindowProtocolType();
+                SR_LOG("BasicWindowImpl::CreatePlatformWindow() : detected window protocol type: {}", protocolType);
+                switch (protocolType) {
+                    case SR_PLATFORM_NS::WindowProtocolType::Wayland:
+                        return new WaylandWindow();
+                    default:
+                        break;
+                }
+                SRHalt("Failed to determine window protocol type!");
+                break;
+            }
+            case WindowType::Wayland:
+                return new WaylandWindow();
+        #ifdef SR_RENDER_GLFW
             case WindowType::GLFW:
                 return new GLFWWindow();
+        #endif
             case WindowType::X11:
-                //return new X11Window();
+                SRHalt("X11Window is not implemented yet!");
             default:
+                SRHalt("Unsupported window type for Linux!");
                 break;
         }
 

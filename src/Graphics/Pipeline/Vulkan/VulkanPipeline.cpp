@@ -190,10 +190,10 @@ namespace SR_GRAPH_NS {
         m_kernel->SetMultisampling(m_requiredSampleCount);
         m_kernel->SetSwapchainImagesCount(SR_UTILS_NS::StoreUtils::User::GetInt("SwapchainImages", 3));
 
-        std::vector<const char*>&& validationLayers = { };
-
+        std::vector<const char*> validationLayers = { };
+        std::vector<const char*> instanceExtensions = { };
 #ifndef SR_LINUX
-        std::vector<const char*>&& instanceExtensions = {
+        instanceExtensions = {
             VK_KHR_SURFACE_EXTENSION_NAME,
             /// VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME,
         #ifdef SR_WIN32
@@ -207,7 +207,7 @@ namespace SR_GRAPH_NS {
             #endif
         #endif
         };
-#else
+#elif defined(SR_RENDER_GLFW)
         uint32_t count = 0;
         auto&& glfwInstanceExtensions = glfwGetRequiredInstanceExtensions(&count);
 
@@ -216,7 +216,6 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        std::vector<const char*>&& instanceExtensions = { };
         for (uint32_t i = 0; i < count; ++i) {
             instanceExtensions.emplace_back(glfwInstanceExtensions[i]);
         }
@@ -302,6 +301,7 @@ namespace SR_GRAPH_NS {
             PipelineError("VulkanPipeline::Init() : X11 surface initialization failed!");
             return VK_NULL_HANDLE;*/
 
+            #ifdef SR_RENDER_GLFW
             if (auto&& pImpl = m_window->GetImplementation<GLFWWindow>()) {
                 VkSurfaceKHR surface;
                 VkResult error = glfwCreateWindowSurface(instance, pImpl->GetWindow(), nullptr, &surface);
@@ -317,7 +317,9 @@ namespace SR_GRAPH_NS {
                 PipelineError("VulkanPipeline::Init() : failed to get window implementation!");
                 return VK_NULL_HANDLE;
             }
-
+            #else
+            SRHalt("Unsupported platform!");
+            #endif
         #else
             SRHalt("Unsupported platform!");
             return VK_NULL_HANDLE;

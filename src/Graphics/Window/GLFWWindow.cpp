@@ -4,6 +4,8 @@
 
 #include <Graphics/Window/GLFWWindow.h>
 
+#ifdef SR_RENDER_GLFW
+
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
@@ -202,3 +204,5 @@ namespace SR_GRAPH_NS {
         BasicWindowImpl::SetIcon(path);
     }
 }
+
+#endif

@@ -20,6 +20,7 @@ set(FT_DISABLE_HARFBUZZ ON)
 option(SR_GRAPHICS_DLL_EXPORTS "" ON)
 option(SR_RENDER_USE_GLSL_LANG_LIB "" ON)
 
+option(SR_RENDER_USE_NATIVE_WAYLAND "" ON)
 option(SR_RENDER_GLFW "" OFF)
 option(SR_RENDER_USE_YOGA "" ON)
 
@@ -36,11 +37,18 @@ if (SR_RENDER_USE_VULKAN)
     find_package(Vulkan REQUIRED)
 endif()
 
-if (NOT ANDROID_NDK AND UNIX AND NOT APPLE AND NOT SR_EMSCRIPTEN)
+if (NOT ANDROID_NDK AND UNIX AND NOT APPLE AND NOT SR_EMSCRIPTEN AND NOT SR_RENDER_USE_NATIVE_WAYLAND)
     set(SR_RENDER_GLFW ON)
 endif()
 
+if (SR_RENDER_USE_NATIVE_WAYLAND)
+    add_compile_definitions(SR_RENDER_USE_NATIVE_WAYLAND)
+    include(cmake/wayland-protocols.cmake)
+endif()
+
 if (SR_RENDER_GLFW)
+    message("GLFW will be used as rendering backend")
+    add_compile_definitions(SR_RENDER_GLFW)
     set(SR_RENDER_GLFW ON)
 
     if (SR_HOST_SYSTEM_UNIX)
@@ -159,6 +167,10 @@ if (NOT ANDROID_NDK)
         target_include_directories(Graphics PUBLIC ${X11_xcb_ewmh_INCLUDE_PATH})
         target_link_libraries(Graphics PUBLIC ${X11_xcb_ewmh_LIB} xcb-ewmh xcb-util)
     endif()
+endif()
+
+if (SR_RENDER_USE_NATIVE_WAYLAND)
+    target_include_directories(Graphics PUBLIC ${SR_WAYLAND_GEN_DIR})
 endif()
 
 if (SR_RENDER_USE_YOGA)

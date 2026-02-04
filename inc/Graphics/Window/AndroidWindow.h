@@ -33,7 +33,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD ANativeWindow* GetNativeWindow() const;
 
-        void* GetHandle() const { return GetNativeWindow(); }
+        void* GetHandle() const override { return GetNativeWindow(); }
 
     };
 }

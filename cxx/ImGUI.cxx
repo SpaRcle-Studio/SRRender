@@ -30,7 +30,7 @@
     #include <imgui/backends/imgui_impl_android.cpp>
 #endif
 
-#ifdef SR_LINUX
+#ifdef defined(SR_LINUX) && defined(SR_RENDER_GLFW)
     #include <imgui/backends/imgui_impl_glfw.cpp>
 #endif
 

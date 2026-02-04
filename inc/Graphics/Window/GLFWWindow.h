@@ -6,6 +6,8 @@
 #define SR_ENGINE_GLFW_WINDOW_H
 
 #include <Graphics/Window/BasicWindowImpl.h>
+
+#ifdef SR_RENDER_GLFW
 #include <GLFW/glfw3.h>
 
 namespace SR_GRAPH_NS {
@@ -42,5 +44,6 @@ namespace SR_GRAPH_NS {
         GLFWwindow* m_window = nullptr;
     };
 }
+#endif
 
 #endif //SR_ENGINE_GLFW_WINDOW_H

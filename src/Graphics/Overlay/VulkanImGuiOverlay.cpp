@@ -21,7 +21,7 @@
     extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #endif
 
-#ifdef SR_LINUX
+#ifdef defined(SR_LINUX) && defined(SR_RENDER_GLFW)
     #include <imgui/backends/imgui_impl_glfw.h>
 #endif
 
@@ -226,9 +226,14 @@ namespace SR_GRAPH_NS {
     #elif defined(SR_LINUX)
         //auto&& pWindow = m_pipeline->GetWindow();
         //ImGui_ImplX11_Init(pWindow->GetImplementation<X11Window>()->GetWindow());
-        auto&& pWindow = m_pipeline->GetWindow();
+        [[maybe_unused]] auto&& pWindow = m_pipeline->GetWindow();
         // TODO: check what 'instant callbacks' argument does.
-        ImGui_ImplGlfw_InitForVulkan(pWindow->GetImplementation<GLFWWindow>()->GetWindow(), true);
+        #ifdef SR_RENDER_GLFW
+            ImGui_ImplGlfw_InitForVulkan(pWindow->GetImplementation<GLFWWindow>()->GetWindow(), true);
+        #else
+            SRHalt("Unsupported platform!");
+        #endif
+
         //ImGui_ImplGlfw_InitForVulkan()
     #elif defined(SR_ANDROID)
         auto&& pWindow = m_pipeline->GetWindow();
@@ -353,7 +358,7 @@ namespace SR_GRAPH_NS {
 
         #ifdef SR_WIN32
             ImGui_ImplWin32_NewFrame();
-        #elif defined(SR_LINUX)
+        #elif defined(SR_LINUX) && defined(SR_RENDER_GLFW)
             //ImGui_ImplX11_NewFrame();
             ImGui_ImplGlfw_NewFrame();
         #elif defined(SR_ANDROID)
