@@ -102,7 +102,7 @@ namespace SR_GRAPH_NS {
         //m_submitInfo.waitSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_presentComplete);
         //m_submitInfo.signalSemaphores.emplace_back(m_frameSyncs[m_currentImage].m_renderComplete);
 
-        m_submitInfo.signalSemaphores.emplace_back(frame.renderFinished);
+        m_submitInfo.signalSemaphores.emplace_back(m_renderFinished[m_imageIndex]);
         m_submitInfo.waitSemaphores.emplace_back(frame.imageAvailable);
 
         auto&& pImGuiOverlay = m_pipeline->GetOverlay(OverlayType::ImGui).DynamicCast<VulkanImGuiOverlay>();
@@ -262,6 +262,11 @@ namespace SR_GRAPH_NS {
 
     bool VulkanKernel::SurfaceIsAvailable() const {
         SR_TRACY_ZONE;
+
+        if (!m_swapchain) {
+            return false;
+        }
+
         //return m_swapchain->SurfaceIsAvailable();
         return m_swapchain->GetSurfaceHeight() > 0 && m_swapchain->GetSurfaceWidth() > 0;
     }

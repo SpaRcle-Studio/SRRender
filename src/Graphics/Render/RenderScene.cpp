@@ -18,6 +18,7 @@
 #include <Graphics/Window/Window.h>
 
 #include <Utils/DebugDraw.h>
+#include <Utils/Common/Numeric.h>
 #include <Utils/Types/SafePtrLockGuard.h>
 #include <Utils/Resources/Yaml.h>
 #include <Utils/ECS/GameObject.h>
@@ -89,6 +90,7 @@ namespace SR_GRAPH_NS {
         m_hasDrawData = false;
 
         auto&& pPipeline = GetPipeline();
+
         if (pPipeline->IsDirty()) {
             pPipeline->SetDirty(false);
             m_dirtyFrames.set();
@@ -102,7 +104,7 @@ namespace SR_GRAPH_NS {
             Build();
 
             if (!m_hasDrawData) {
-                RenderBlackScreen();
+                RenderBlackScreen(pPipeline.Get(), false);
             }
 
             m_dirtyFrames.reset(frameIndex);
@@ -243,15 +245,7 @@ namespace SR_GRAPH_NS {
 
         SR_RENDER_TECHNIQUES_CALL(PrepareFrame)
 
-        if (auto&& pPipeline = GetPipeline()) {
-            pPipeline->PrepareFrame();
-        }
-
         m_currentSkeleton = nullptr;
-
-        m_context->PrepareFrame();
-
-        SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_PREPARE_FRAME);
     }
 
     void RenderScene::PrepareRender() {
@@ -438,15 +432,25 @@ namespace SR_GRAPH_NS {
         return GetContext()->GetWindow();
     }
 
-    void RenderScene::RenderBlackScreen() {
+    void RenderScene::RenderBlackScreen(Pipeline* pPipeline, bool randomColor) {
         SR_TRACY_ZONE;
-
-        auto&& pPipeline = GetPipeline();
 
         pPipeline->SetCurrentFrameBuffer(nullptr);
         pPipeline->BindFrameBuffer(nullptr);
 
-        pPipeline->ClearBuffers(0.5f, 0.5f, 0.5f, 1.f, 1.f, 1);
+        if (randomColor) {
+            pPipeline->ClearBuffers(
+                SR_UTILS_NS::Random::Instance().Float(0.f, 1.f),
+                SR_UTILS_NS::Random::Instance().Float(0.f, 1.f),
+                SR_UTILS_NS::Random::Instance().Float(0.f, 1.f),
+                1.f,
+                1.f,
+                1
+            );
+        }
+        else {
+            pPipeline->ClearBuffers(0.5f, 0.5f, 0.5f, 1.f, 1.f, 1);
+        }
 
         pPipeline->BeginCmdBuffer();
         {

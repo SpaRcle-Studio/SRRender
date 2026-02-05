@@ -54,6 +54,7 @@ namespace SR_GRAPH_NS {
         void SetXdgWMBase(xdg_wm_base* pXdgWMBase) { m_xdgWMBase = pXdgWMBase; }
         void SetDecorationMode(zxdg_toplevel_decoration_v1_mode mode) { m_currentDecorationMode = mode; }
         void SetWaylandConfigured(const bool configured) { m_configured = configured; }
+        void SetWaitingForConfigure(const bool waiting) { m_waitingForConfigure = waiting; }
 
         SR_NODISCARD wl_cursor_theme* GetCursorTheme() const { return m_cursorTheme; }
         SR_NODISCARD wl_surface* GetCursorSurface() const { return m_cursorSurface; }
@@ -86,13 +87,17 @@ namespace SR_GRAPH_NS {
 
         uint32_t GetSurfaceWidth() const override { return static_cast<uint32_t>(m_surfaceBuffer.width); }
         uint32_t GetSurfaceHeight() const override { return static_cast<uint32_t>(m_surfaceBuffer.height); }
+        uint32_t GetWidth() const override { return static_cast<uint32_t>(m_internalWidth); }
+        uint32_t GetHeight() const override { return static_cast<uint32_t>(m_internalHeight); }
 
         void PollEvents() override;
         void Close() override;
 
         void InternalSetWindowSize(int width, int height);
+        bool ResizeSurfaceBuffer(SurfaceBuffer* pBuffer, wl_surface* pSurface);
 
     private:
+        bool DoWaylandPollEvents();
         void ThreadFunction();
 
     private:
@@ -103,6 +108,7 @@ namespace SR_GRAPH_NS {
         bool m_useClientDecorations = false;
         bool m_isMaximized = false;
 
+        std::atomic<bool> m_waitingForConfigure = false;
         std::atomic<bool> m_configured = false;
 
         SR_HTYPES_NS::Thread::Ptr m_thread = nullptr;

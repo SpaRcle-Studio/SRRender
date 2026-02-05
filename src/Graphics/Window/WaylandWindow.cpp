@@ -6,6 +6,7 @@
 
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <poll.h>
 
 #define DECORATIONS_BAR_SIZE 8
 #define DECORATIONS_TOPBAR_SIZE 32
@@ -13,6 +14,71 @@
 
 namespace SR_GRAPH_NS {
     namespace Details {
+        std::string_view GetErrnoDescription(int error) {
+            switch (error) {
+                case EACCES:       return "EACCES: Permission denied";
+                case EEXIST:       return "EEXIST: File exists";
+                case EINVAL:       return "EINVAL: Invalid argument";
+                case EMFILE:       return "EMFILE: Too many open files";
+                case ENFILE:       return "ENFILE: File table overflow";
+                case ENOENT:       return "ENOENT: No such file or directory";
+                case ENOSPC:       return "ENOSPC: No space left on device";
+                case EPERM:        return "EPERM: Operation not permitted";
+                case EROFS:        return "EROFS: Read-only file system";
+                case ETXTBSY:      return "ETXTBSY: Text file busy";
+                case ENOMEM:       return "ENOMEM: Out of memory";
+                case EFBIG:        return "EFBIG: File too large";
+                case EIO:          return "EIO: I/O error";
+                case EPIPE:        return "EPIPE: Broken pipe";
+                case EINTR:        return "EINTR: Interrupted system call";
+                case EAGAIN:       return "EAGAIN: Resource temporarily unavailable";
+                case ENOSYS:       return "ENOSYS: Function not implemented";
+                case EBADF:        return "EBADF: Bad file descriptor";
+                case EDEADLK:      return "EDEADLK: Resource deadlock would occur";
+                case ENAMETOOLONG: return "ENAMETOOLONG: File name too long";
+                case ENOLCK:       return "ENOLCK: No record locks available";
+                case ENOTEMPTY:    return "ENOTEMPTY: Directory not empty";
+                case ELOOP:        return "ELOOP: Too many symbolic links encountered";
+                case ENOMSG:       return "ENOMSG: No message of desired type";
+                case EIDRM:        return "EIDRM: Identifier removed";
+                case ECHRNG:       return "ECHRNG: Channel number out of range";
+                case EL2NSYNC:     return "EL2NSYNC: Level 2 not synchronized";
+                case EL3HLT:       return "EL3HLT: Level 3 halted";
+                case EL3RST:       return "EL3RST: Level 3 reset";
+                case ELNRNG:       return "ELNRNG: Link number out of range";
+                case EUNATCH:      return "EUNATCH: Protocol driver not attached";
+                case ENOCSI:       return "ENOCSI: No CSI structure available";
+                case EL2HLT:       return "EL2HLT: Level 2 halted";
+                case EBADE:        return "EBADE: Invalid exchange";
+                case EBADR:        return "EBADR: Invalid request descriptor";
+                case EXFULL:       return "EXFULL: Exchange full";
+                case ENOANO:       return "ENOANO: No anode";
+                case EBADRQC:      return "EBADRQC: Invalid request code";
+                case EBADSLT:      return "EBADSLT: Invalid slot";
+                case EBFONT:       return "EBFONT: Bad font file format";
+                case ENOSTR:       return "ENOSTR: Device not a stream";
+                case ENODATA:      return "ENODATA: No data available";
+                case ETIME:        return "ETIME: Timer expired";
+                case ENOSR:        return "ENOSR: Out of streams resources";
+                case ENONET:       return "ENONET: Machine is not on the network";
+                case ENOPKG:       return "ENOPKG: Package not installed";
+                case EREMOTE:      return "EREMOTE: Object is remote";
+                case ENOLINK:      return "ENOLINK: Link has been severed";
+                case EADV:         return "EADV: Advertise error";
+                case ESRMNT:       return "ESRMNT: Srmount error";
+                case ECOMM:        return "ECOMM: Communication error on send";
+                case EPROTO:       return "EPROTO: Protocol error";
+                case EMULTIHOP:    return "EMULTIHOP: Multihop attempted";
+                case EDOTDOT:      return "EDOTDOT: RFS specific error";
+                case EBADMSG:      return "EBADMSG: Not a data message";
+                case EOVERFLOW:    return "EOVERFLOW: Value too large for defined data type";
+                case ENOTUNIQ:     return "ENOTUNIQ: Name not unique on network";
+                case EBADFD:       return "EBADFD: File descriptor in bad state";
+                case EREMCHG:      return "EREMCHG: Remote address changed";
+                default:           return "Unknown error";
+            }
+        }
+
         uint32_t ToColor(char r, char g, char b, char a) {
             uint32_t result = 0;
             char* c = (char*)&result;
@@ -22,8 +88,6 @@ namespace SR_GRAPH_NS {
             c[3] = a;
             return result;
         }
-
-        int ResizeSurfaceBuffer(WaylandWindow::SurfaceBuffer* buffer, wl_shm* shm, wl_surface* surface);
 
         void registry_add_object(void *data, wl_registry *registry, uint32_t name, const char *interface, uint32_t version);
         void registry_remove_object(void *data, wl_registry *registry, uint32_t name);
@@ -58,6 +122,10 @@ namespace SR_GRAPH_NS {
             }
             else if (strcmp(interface, wl_subcompositor_interface.name) == 0) {
                 pWindow->SetSubCompositor(static_cast<wl_subcompositor *>(wl_registry_bind(registry, name, &wl_subcompositor_interface, 1)));
+            }
+            else if (strcmp(interface, "xdg_wm_base") == 0) {
+                pWindow->SetXdgWMBase(static_cast<xdg_wm_base*>(wl_registry_bind(registry, name, &xdg_wm_base_interface, std::min(version, 2U))));
+                xdg_wm_base_add_listener(pWindow->GetXdgWMBase(), &xdg_wm_base_listener, pData);
             }
             else if (!strcmp(interface,wl_seat_interface.name)) {
                 auto&& pSeat = static_cast<struct wl_seat*>(wl_registry_bind(registry, name, &wl_seat_interface, 1));
@@ -215,6 +283,8 @@ namespace SR_GRAPH_NS {
         void xdg_toplevel_handle_configure(void *data, xdg_toplevel*, int32_t width, int32_t height, wl_array *states) {
             auto&& pWindow = static_cast<WaylandWindow*>(data);
 
+            pWindow->SetWaitingForConfigure(false);
+
             int activated = 0;
             int maximized = 0;
             int fullscreen = 0;
@@ -249,8 +319,10 @@ namespace SR_GRAPH_NS {
             }
 
             // resize window
-            if (activated || resizing || maximized || fullscreen || currentMaximized != pWindow->IsMaximized()) {
+            /*if (activated || resizing || maximized || fullscreen || currentMaximized != pWindow->IsMaximized()) {
                 if (width > 0 && height > 0 && (pWindow->GetCompositeWidth() != width || pWindow->GetCompositeHeight() != height)) {
+                    SR_LOG("xdg_toplevel_handle_configure() : resizing window to {}x{}", width, height);
+
                     int clientWidth = width;
                     int clientHeight = height;
                     if (pWindow->IsUseClientDecorations()) {
@@ -260,12 +332,12 @@ namespace SR_GRAPH_NS {
                     pWindow->InternalSetWindowSize(clientWidth, clientHeight);
 
                     if (pWindow->IsUseClientDecorations()) {
-                        ResizeSurfaceBuffer(&pWindow->GetClientSurfaceBuffer(), pWindow->GetShm(), pWindow->GetClientSurface());
+                        pWindow->ResizeSurfaceBuffer(&pWindow->GetClientSurfaceBuffer(), pWindow->GetClientSurface());
                         wl_surface_damage(pWindow->GetClientSurface(), 0, 0, pWindow->GetClientSurfaceBuffer().width, pWindow->GetClientSurfaceBuffer().height);
                         wl_surface_commit(pWindow->GetClientSurface());
                     }
 
-                    ResizeSurfaceBuffer(&pWindow->GetSurfaceBuffer(), pWindow->GetShm(), pWindow->GetSurface());
+                    pWindow->ResizeSurfaceBuffer(&pWindow->GetSurfaceBuffer(), pWindow->GetSurface());
                     // TODO: if (useClientDecorations)
                     //    DrawButtons();
                     wl_surface_damage(pWindow->GetSurface(), 0, 0, pWindow->GetSurfaceBuffer().width, pWindow->GetSurfaceBuffer().height);
@@ -273,11 +345,7 @@ namespace SR_GRAPH_NS {
 
                     wl_display_flush(pWindow->GetDisplay());
                 }
-            }
-
-            if (width > 0 && height > 0) {
-                pWindow->SetWaylandConfigured(true);
-            }
+            }*/
         }
 
         void xdg_toplevel_handle_close(void* pData, xdg_toplevel*) {
@@ -305,9 +373,10 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        static const struct zxdg_toplevel_decoration_v1_listener decoration_listener = {.configure = decoration_handle_configure};
+        static const zxdg_toplevel_decoration_v1_listener decoration_listener = {.configure = decoration_handle_configure};
 
         bool CreateSurfaceBuffer(WaylandWindow::SurfaceBuffer* buffer, wl_shm* shm, struct wl_surface* surface, const char* name, uint32_t color) {
+            SR_LOG("WaylandWindow::CreateSurfaceBuffer() : creating surface buffer ({}x{}, name={})", buffer->width, buffer->height, name ? name : "unnamed");
             // get buffer sizes
             int oldSize = buffer->size;
             buffer->stride = buffer->width * sizeof(uint32_t);
@@ -345,7 +414,11 @@ namespace SR_GRAPH_NS {
             // map memory
             buffer->pixels = (uint32_t*)mmap(NULL, buffer->size, PROT_READ | PROT_WRITE, MAP_SHARED, buffer->fd, 0);
             shm_unlink(buffer->name);// call after mmap according to docs
-            memset(buffer->pixels, color, buffer->width * buffer->height * sizeof(uint32_t));// clear to color
+
+            /// memset(buffer->pixels, color, buffer->width * buffer->height * sizeof(uint32_t));// clear to color
+            for (int i = 0; i < buffer->width * buffer->height; ++i) {
+                buffer->pixels[i] = color;
+            }
 
             // create pool
             buffer->pool = wl_shm_create_pool(shm, buffer->fd, buffer->size);
@@ -355,20 +428,6 @@ namespace SR_GRAPH_NS {
             wl_surface_attach(surface, buffer->buffer, 0, 0);
             SR_LOG("WaylandWindow::CreateSurfaceBuffer() : created surface buffer ({}x{}, fd={}, size={})", buffer->width, buffer->height, buffer->fd, buffer->size);
             return true;
-        }
-
-        int ResizeSurfaceBuffer(WaylandWindow::SurfaceBuffer* buffer, wl_shm* shm, wl_surface* surface) {
-            // pre-dispose old buffers
-            munmap(buffer->pixels, buffer->size);
-            wl_shm_pool_destroy(buffer->pool);
-            struct wl_buffer* oldBuffer = buffer->buffer;// dispose after new buffer is created
-
-            // create new buffer
-            int result = CreateSurfaceBuffer(buffer, shm, surface, NULL, buffer->color);
-
-            // post-dispose old buffer
-            wl_buffer_destroy(oldBuffer);
-            return result;
         }
     }
 
@@ -413,22 +472,117 @@ namespace SR_GRAPH_NS {
             m_clientSurfaceBuffer.width = -1;
             m_clientSurfaceBuffer.height = -1;
         }
+
+        SR_LOG("WaylandWindow::InternalSetWindowSize() : \n\tInternal size set to {}x{}\n\tComposite size set to {}x{}"
+               "\n\tClient surface buffer size set to {}x{}\n\tSurface buffer size set to {}x{}\n\tDecorations: {}",
+            m_internalWidth, m_internalHeight, m_compositeWidth, m_compositeHeight, m_clientSurfaceBuffer.width, m_clientSurfaceBuffer.height,
+            m_surfaceBuffer.width, m_surfaceBuffer.height, m_useClientDecorations ? "enabled" : "disabled"
+        );
+    }
+
+    bool WaylandWindow::ResizeSurfaceBuffer(SurfaceBuffer* pBuffer, wl_surface* pSurface) {
+        SR_LOG("WaylandWindow::ResizeSurfaceBuffer() : resizing surface buffer to {}x{}", pBuffer->width, pBuffer->height);
+
+        // pre-dispose old buffers
+        munmap(pBuffer->pixels, pBuffer->size);
+        wl_shm_pool_destroy(pBuffer->pool);
+        wl_buffer* oldBuffer = pBuffer->buffer;// dispose after new buffer is created
+
+        // create new buffer
+        const bool result = Details::CreateSurfaceBuffer(pBuffer, m_shm, pSurface, NULL, pBuffer->color);
+
+        // post-dispose old buffer
+        wl_buffer_destroy(oldBuffer);
+
+        if (m_resizeCallback) {
+            m_resizeCallback(this, pBuffer->width, pBuffer->height);
+        }
+
+        return result;
+    }
+
+    auto wait_for_data_on_fd(int filde, int waitms) -> bool {
+        struct pollfd fds;
+        fds.fd = filde;
+        fds.events = POLLIN;
+
+        poll(&fds, 1, waitms);
+
+        if ((fds.revents & (POLLERR | POLLNVAL | POLLHUP)) != 0) {
+            throw std::system_error(EIO, std::generic_category());
+        }
+
+        return (fds.revents & POLLIN) != 0;
+    }
+
+    bool WaylandWindow::DoWaylandPollEvents() {
+        while (wl_display_prepare_read(m_display) != 0)
+            wl_display_dispatch_pending(m_display);
+        wl_display_flush(m_display);
+        wl_display_read_events(m_display);
+        wl_display_dispatch_pending(m_display);
+
+        /*bool isEagain = false;
+        if (const int ret = wl_display_prepare_read(m_display); ret != 0) {
+            const int err = errno;
+            if (err == EAGAIN) {
+                isEagain = true;
+            }
+            else {
+                SR_ERROR("WaylandWindow::DoWaylandPollEvents() : wl_display_prepare_read failed with error \"{}\"!", Details::GetErrnoDescription(err));
+                return false;
+            }
+        }
+
+        if (!isEagain) {
+            wl_display_flush(m_display);
+            wl_display_read_events(m_display);
+        }
+
+        if (const int ret = wl_display_dispatch_pending(m_display); ret < 0) {
+            SR_ERROR("WaylandWindow::DoWaylandPollEvents() : wl_display_dispatch_pending failed with error \"{}\"!", Details::GetErrnoDescription(errno));
+            m_isClosed = true;
+            m_isValid = false;
+            return false;
+        }*/
+
+        /*const auto wl_fd = wl_display_get_fd(m_display);
+        bool in_event = false;
+
+        // prepare to read wayland events
+        while (wl_display_prepare_read(m_display) != 0) {
+            wl_display_dispatch_pending(m_display);
+        }
+        wl_display_flush(m_display);
+
+        try {
+            constexpr int waitms = 100;
+            in_event = wait_for_data_on_fd(wl_fd, waitms);
+        }
+        catch (const std::system_error &err) {
+            SR_ERROR("WaylandWindow::DoWaylandPollEvents() : wait_for_data_on_fd failed with error \"{}\"!", err.what());
+            m_isClosed = true;
+            m_isValid = false;
+            return false;
+        }
+
+        if (in_event) {
+            wl_display_read_events(m_display);
+            wl_display_dispatch_pending(m_display);
+        }
+        else {
+            wl_display_cancel_read(m_display);
+        }*/
+
+        return true;
     }
 
     void WaylandWindow::ThreadFunction() {
         SR_LOG("WaylandWindow::ThreadFunction() : thread started.");
 
         while (m_isValid && !m_isClosed) {
-            //wl_display_dispatch_pending (display);
-
-            if (wl_display_dispatch(m_display) < 0) {
-                SR_ERROR("WaylandWindow::ThreadFunction() : wl_display_dispatch failed!");
-                break;
-            }
+            DoWaylandPollEvents();
         }
-
-        m_isClosed = true;
-        m_isValid = false;
 
         SR_LOG("WaylandWindow::ThreadFunction() : thread finished.");
     }
@@ -461,71 +615,90 @@ namespace SR_GRAPH_NS {
         m_surface = wl_compositor_create_surface(m_compositor);
         m_xdgSurface = xdg_wm_base_get_xdg_surface(m_xdgWMBase, m_surface);
         m_xdgToplevel = xdg_surface_get_toplevel(m_xdgSurface);
+
         xdg_surface_add_listener(m_xdgSurface, &Details::xdg_surface_listener, this);
         xdg_toplevel_add_listener(m_xdgToplevel, &Details::xdg_toplevel_listener, this);
-        xdg_wm_base_add_listener(m_xdgWMBase, &Details::xdg_wm_base_listener, this);
+
         xdg_toplevel_set_title(m_xdgToplevel, "WaylandClientWindow");
         xdg_toplevel_set_app_id(m_xdgToplevel, "WaylandClientWindow");
         xdg_toplevel_set_min_size(m_xdgToplevel, 10, 10);
 
         /// get server-side decorations
-        if (!m_useClientDecorations && m_decorationManager) {
-            m_decoration = zxdg_decoration_manager_v1_get_toplevel_decoration(m_decorationManager, m_xdgToplevel);
-            zxdg_toplevel_decoration_v1_add_listener(m_decoration, &Details::decoration_listener, this);
-        }
+        //if (!m_useClientDecorations && m_decorationManager) {
+        //    m_decoration = zxdg_decoration_manager_v1_get_toplevel_decoration(m_decorationManager, m_xdgToplevel);
+        //    zxdg_toplevel_decoration_v1_add_listener(m_decoration, &Details::decoration_listener, this);
+        //}
 
         // surface buffers
-        uint32_t color = m_useClientDecorations ? Details::ToColor(127, 127, 127, 255) : Details::ToColor(255, 255, 255, 255);
+        uint32_t color = m_useClientDecorations ? Details::ToColor(127, 127, 127, 255) : Details::ToColor(0, 0, 0, 255);
         if (Details::CreateSurfaceBuffer(&m_surfaceBuffer, GetShm(), m_surface, "WaylandClientWindow_Decorations", color) != 1) {
             SR_ERROR("WaylandWindow::Initialize() : failed to create surface buffer!");
             return false;
         }
 
-        if (m_useClientDecorations) {
-            m_clientSurface = wl_compositor_create_surface(m_compositor);
-            m_clientSubSurface = wl_subcompositor_get_subsurface(m_subCompositor, m_clientSurface, m_surface);
-            wl_subsurface_set_desync(m_clientSubSurface);
-            wl_subsurface_set_position(m_clientSubSurface, DECORATIONS_BAR_SIZE, DECORATIONS_TOPBAR_SIZE);
-            if (Details::CreateSurfaceBuffer(&m_clientSurfaceBuffer, GetShm(), m_clientSurface, "WaylandClientWindow_Client", Details::ToColor(255, 255, 255, 255)) != 1) {
-                SR_ERROR("WaylandWindow::Initialize() : failed to create client surface buffer!");
-                return false;
-            }
-            /// TODO: DrawButtons();
-        }
+        wl_surface_commit(m_surface);
+
+        //if (m_useClientDecorations) {
+        //    m_clientSurface = wl_compositor_create_surface(m_compositor);
+        //    m_clientSubSurface = wl_subcompositor_get_subsurface(m_subCompositor, m_clientSurface, m_surface);
+        //    wl_subsurface_set_desync(m_clientSubSurface);
+        //    wl_subsurface_set_position(m_clientSubSurface, DECORATIONS_BAR_SIZE, DECORATIONS_TOPBAR_SIZE);
+        //    if (Details::CreateSurfaceBuffer(&m_clientSurfaceBuffer, GetShm(), m_clientSurface, "WaylandClientWindow_Client", Details::ToColor(255, 255, 255, 255)) != 1) {
+        //        SR_ERROR("WaylandWindow::Initialize() : failed to create client surface buffer!");
+        //        return false;
+        //    }
+        //    /// TODO: DrawButtons();
+        //}
 
         // finalize surfaces
-        if (m_useClientDecorations) {
-            wl_surface_damage(m_clientSurface, 0, 0, m_clientSurfaceBuffer.width, m_clientSurfaceBuffer.height);
-            wl_surface_commit(m_clientSurface);
-        }
-        wl_surface_damage(m_surface, 0, 0, m_surfaceBuffer.width, m_surfaceBuffer.height);
+        //if (m_useClientDecorations) {
+        //    wl_surface_damage(m_clientSurface, 0, 0, m_clientSurfaceBuffer.width, m_clientSurfaceBuffer.height);
+        //    wl_surface_commit(m_clientSurface);
+        //}
+
+        //wl_surface_damage(m_surface, 0, 0, m_surfaceBuffer.width, m_surfaceBuffer.height);
         wl_surface_commit(m_surface);
-        wl_display_flush(m_display);
+        //wl_display_flush(m_display);
 
         m_isValid = true;
 
-        if (!SR_HTYPES_NS::Thread::Factory::Instance().Create(m_thread, &WaylandWindow::ThreadFunction, this)) {
+        m_waitingForConfigure = true;
+        SR_LOG("WaylandWindow::Initialize() : waiting for Wayland configuration...");
+        while (m_waitingForConfigure) {
+            wl_display_roundtrip(m_display);
+        }
+        SR_LOG("WaylandWindow::Initialize() : Wayland configuration received, window is now valid.");
+
+        /*if (!SR_HTYPES_NS::Thread::Factory::Instance().Create(m_thread, &WaylandWindow::ThreadFunction, this)) {
             SRHalt("WaylandWindow::Initialize() : failed to create window thread!");
             return false;
         }
 
-        m_thread->SetName("Wayland window");
-
-        if (!m_configured) {
-            SR_LOG("WaylandWindow::Initialize() : waiting for Wayland configuration...");
-
-            while (!m_configured && m_isValid && !m_isClosed) {
-                SR_NOOP;
-            }
-
-            SR_LOG("WaylandWindow::Initialize() : Wayland configuration received.");
-        }
+        m_thread->SetName("Wayland window");*/
 
         return true;
     }
 
     void WaylandWindow::PollEvents() {
         Super::PollEvents();
+
+        //if (!m_configured) {
+        //    SR_LOG("WaylandWindow::PollEvents() : waiting for Wayland configuration...");
+
+        //    while (!m_configured && m_isValid && !m_isClosed) {
+        //        if (!DoWaylandPollEvents()) {
+        //            SR_ERROR("WaylandWindow::PollEvents() : failed to poll Wayland events during configuration!");
+        //            m_isClosed = true;
+        //            m_isValid = false;
+        //            return;
+        //        }
+        //    }
+
+        //    SR_LOG("WaylandWindow::PollEvents() : Wayland configuration received, window is now valid.");
+        //    return;
+        //}
+
+        DoWaylandPollEvents();
     }
 
     void WaylandWindow::Close() {

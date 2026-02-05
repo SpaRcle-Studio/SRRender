@@ -2202,7 +2202,7 @@ namespace SR_GRAPH_NS {
         //    m_kernel->WaitFences();
         //}
 
-        if (m_kernel && (m_kernel->IsDirty() || m_kernel->GetSwapchain()->IsDirty())) {
+        if (m_kernel && (m_kernel->IsDirty() || (m_kernel->GetSwapchain() && m_kernel->GetSwapchain()->IsDirty()))) {
             m_kernel->WaitAllFences();
             m_kernel->WaitIdle();
             m_kernel->WaitDeviceIdle();
