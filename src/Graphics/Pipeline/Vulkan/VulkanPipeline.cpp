@@ -23,7 +23,6 @@
 
 #ifdef SR_LINUX
     #include <Graphics/Window/GLFWWindow.h>
-    //#include <Graphics/Pipeline/Vulkan/X11SurfaceInit.h>
 #endif
 
 #ifdef SR_WIN32
@@ -32,6 +31,10 @@
 
 #ifdef SR_RENDER_USE_GLSL_LANG_LIB
     #include <Graphics/Pipeline/GLSLDefaultTBuiltInResource.h>
+#endif
+
+#ifdef SR_RENDER_USE_NATIVE_WAYLAND
+    #include <Graphics/Window/WaylandWindow.h>
 #endif
 
 #ifdef SR_ANDROID
@@ -219,6 +222,9 @@ namespace SR_GRAPH_NS {
         for (uint32_t i = 0; i < count; ++i) {
             instanceExtensions.emplace_back(glfwInstanceExtensions[i]);
         }
+#elif defined(SR_RENDER_USE_NATIVE_WAYLAND)
+        instanceExtensions.emplace_back(VK_KHR_SURFACE_EXTENSION_NAME);
+        instanceExtensions.emplace_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #endif //SR_LINUX
 
         if (m_enableValidationLayers) {
@@ -252,7 +258,7 @@ namespace SR_GRAPH_NS {
         SR_GRAPH_LOG("VulkanPipeline::Init() : initializing vulkan...");
 
         auto&& createSurfaceFn = [this](const VkInstance &instance) -> VkSurfaceKHR {
-        #ifdef VK_USE_PLATFORM_WIN32_KHR
+    #ifdef VK_USE_PLATFORM_WIN32_KHR
             if (auto&& pImpl = m_window->GetImplementation<Win32Window>()) {
                 VkWin32SurfaceCreateInfoKHR surfaceInfo = { };
                 surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -273,7 +279,7 @@ namespace SR_GRAPH_NS {
                 PipelineError("VulkanPipeline::Init() : window is not support this architecture!");
                 return VK_NULL_HANDLE;
             }
-        #elif defined(SR_ANDROID)
+    #elif defined(SR_ANDROID)
             if (auto&& pImpl = m_window->GetImplementation<AndroidWindow>()) {
                 VkAndroidSurfaceCreateInfoKHR surfaceInfo = { };
                 surfaceInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
@@ -293,15 +299,8 @@ namespace SR_GRAPH_NS {
                 PipelineError("VulkanPipeline::Init() : window is not support this architecture!");
                 return VK_NULL_HANDLE;
             }
-        #elif defined(SR_LINUX)
-/*            if (auto&& surface = X11SurfaceInit::Init(m_window, instance)) {
-                return surface;
-            }
-
-            PipelineError("VulkanPipeline::Init() : X11 surface initialization failed!");
-            return VK_NULL_HANDLE;*/
-
-            #ifdef SR_RENDER_GLFW
+    #elif defined(SR_LINUX)
+        #ifdef SR_RENDER_GLFW
             if (auto&& pImpl = m_window->GetImplementation<GLFWWindow>()) {
                 VkSurfaceKHR surface;
                 VkResult error = glfwCreateWindowSurface(instance, pImpl->GetWindow(), nullptr, &surface);
@@ -317,13 +316,29 @@ namespace SR_GRAPH_NS {
                 PipelineError("VulkanPipeline::Init() : failed to get window implementation!");
                 return VK_NULL_HANDLE;
             }
-            #else
-            SRHalt("Unsupported platform!");
-            #endif
-        #else
-            SRHalt("Unsupported platform!");
+        #elif defined(SR_RENDER_USE_NATIVE_WAYLAND)
+            if (auto&& pImpl = m_window->GetImplementation<WaylandWindow>()) {
+                VkWaylandSurfaceCreateInfoKHR surfaceInfo = { };
+                surfaceInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+                surfaceInfo.pNext = nullptr;
+                surfaceInfo.flags = 0;
+                surfaceInfo.display = pImpl->GetDisplay();
+                surfaceInfo.surface = pImpl->GetSurface();
+
+                VkSurfaceKHR surface = VK_NULL_HANDLE;
+                VkResult result = vkCreateWaylandSurfaceKHR(instance, &surfaceInfo, nullptr, &surface);
+                if (result != VK_SUCCESS) {
+                    PipelineError("VulkanPipeline::Init() : failed to create wayland surface! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
+                    return VK_NULL_HANDLE;
+                }
+                return surface;
+            }
+            PipelineError("VulkanPipeline::Init() : window is not support this architecture!");
             return VK_NULL_HANDLE;
         #endif
+    #endif
+            SRHalt("Unsupported platform!");
+            return VK_NULL_HANDLE;
         };
 
         if (m_window) {

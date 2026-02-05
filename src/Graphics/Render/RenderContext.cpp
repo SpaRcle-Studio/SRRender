@@ -21,7 +21,6 @@
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Types/Skybox.h>
-#include <Graphics/Material/FileMaterial.h>
 
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Features.h>

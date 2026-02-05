@@ -7,6 +7,7 @@
 
 #include <Graphics/Pipeline/PipelineType.h>
 #include <Graphics/Settings/RenderSettings.h>
+#include <Graphics/Material/FileMaterial.h>
 
 #include <Utils/World/Scene.h>
 #include <Utils/Math/Vector2.h>

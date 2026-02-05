@@ -8,6 +8,7 @@
 #include <Graphics/Window/BasicWindowImpl.h>
 
 #include <Utils/Math/Rect.h>
+#include <Utils/Types/Thread.h>
 
 #include <wayland-util.h>
 #include <wayland-client-core.h>
@@ -51,6 +52,8 @@ namespace SR_GRAPH_NS {
         void SetCursorSurface(wl_surface* pCursorSurface) { m_cursorSurface = pCursorSurface; }
         void SetCursorTheme(wl_cursor_theme* pCursorTheme) { m_cursorTheme = pCursorTheme; }
         void SetXdgWMBase(xdg_wm_base* pXdgWMBase) { m_xdgWMBase = pXdgWMBase; }
+        void SetDecorationMode(zxdg_toplevel_decoration_v1_mode mode) { m_currentDecorationMode = mode; }
+        void SetWaylandConfigured(const bool configured) { m_configured = configured; }
 
         SR_NODISCARD wl_cursor_theme* GetCursorTheme() const { return m_cursorTheme; }
         SR_NODISCARD wl_surface* GetCursorSurface() const { return m_cursorSurface; }
@@ -59,6 +62,19 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD wl_shm* GetShm() const { return m_shm; }
         SR_NODISCARD xdg_wm_base* GetXdgWMBase() const { return m_xdgWMBase; }
         SR_NODISCARD wl_compositor* GetCompositor() const { return m_compositor; }
+        SR_NODISCARD wl_subcompositor* GetSubCompositor() const { return m_subCompositor; }
+        SR_NODISCARD zxdg_decoration_manager_v1* GetDecorationManager() const { return m_decorationManager; }
+        SR_NODISCARD zxdg_toplevel_decoration_v1* GetDecoration() const { return m_decoration; }
+        SR_NODISCARD wl_surface* GetSurface() const { return m_surface; }
+        SR_NODISCARD wl_surface* GetClientSurface() const { return m_clientSurface; }
+        SR_NODISCARD bool IsUseClientDecorations() const { return m_useClientDecorations; }
+        SR_NODISCARD bool IsMaximized() const { return m_isMaximized; }
+        SR_NODISCARD int GetCompositeWidth() const { return m_compositeWidth; }
+        SR_NODISCARD int GetCompositeHeight() const { return m_compositeHeight; }
+        SR_NODISCARD SurfaceBuffer& GetSurfaceBuffer() { return m_surfaceBuffer; }
+        SR_NODISCARD SurfaceBuffer& GetClientSurfaceBuffer() { return m_clientSurfaceBuffer; }
+
+        void SetMaximized(bool isMaximized) { m_isMaximized = isMaximized; }
 
         bool Initialize(const std::string& name,
                         const SR_MATH_NS::IVector2& position,
@@ -66,11 +82,18 @@ namespace SR_GRAPH_NS {
                         bool fullScreen, bool resizable) override;
 
         SR_NODISCARD WindowType GetType() const override { return WindowType::Wayland; }
-        SR_NODISCARD void* GetHandle() const override { return nullptr; }
+        SR_NODISCARD void* GetHandle() const override { return m_surface; }
+
+        uint32_t GetSurfaceWidth() const override { return static_cast<uint32_t>(m_surfaceBuffer.width); }
+        uint32_t GetSurfaceHeight() const override { return static_cast<uint32_t>(m_surfaceBuffer.height); }
 
         void PollEvents() override;
+        void Close() override;
 
         void InternalSetWindowSize(int width, int height);
+
+    private:
+        void ThreadFunction();
 
     private:
         int m_internalWidth = 0;
@@ -78,6 +101,11 @@ namespace SR_GRAPH_NS {
         int m_compositeWidth = 0;
         int m_compositeHeight = 0;
         bool m_useClientDecorations = false;
+        bool m_isMaximized = false;
+
+        std::atomic<bool> m_configured = false;
+
+        SR_HTYPES_NS::Thread::Ptr m_thread = nullptr;
 
         SR_MATH_NS::IRect m_clientRectDragTopBar;
 
@@ -97,6 +125,7 @@ namespace SR_GRAPH_NS {
 
         SurfaceBuffer m_surfaceBuffer;
         SurfaceBuffer m_clientSurfaceBuffer;
+        zxdg_toplevel_decoration_v1_mode m_currentDecorationMode = ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
 
         wl_surface* m_surface = nullptr;
         wl_surface* m_clientSurface = nullptr;

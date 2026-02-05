@@ -234,9 +234,9 @@ namespace SR_GRAPH_NS {
 
     void Pipeline::DestroyOverlay() {
         for (auto&& [type, pOverlay] : m_overlays) {
-            pOverlay.AutoFree([](auto&& pData) {
+            pOverlay.AutoFree([](auto&& pData, auto&& pControl) {
                 pData->Destroy();
-                delete pData;
+                pControl->deleter(static_cast<void*>(pData));
             });
         }
 

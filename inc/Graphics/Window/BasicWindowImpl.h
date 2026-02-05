@@ -44,6 +44,9 @@ namespace SR_GRAPH_NS {
         void SetCloseCallback(const CloseCallback& callback);
         void SetDrawCallback(const DrawCallback& callback);
 
+        void SetValid(const bool valid) { m_isValid = valid; }
+        void SetClosed(const bool closed) { m_isClosed = closed; }
+
         SR_NODISCARD virtual WindowType GetType() const = 0;
 
         SR_NODISCARD virtual WindowState GetState() const { return m_state; }
