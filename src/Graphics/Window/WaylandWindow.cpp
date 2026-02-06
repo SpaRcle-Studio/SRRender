@@ -4,6 +4,9 @@
 
 #include <Graphics/Window/WaylandWindow.h>
 
+#include <Utils/Profile/TracyContext.h>
+#include <Utils/Platform/Platform.h>
+
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <poll.h>
@@ -114,10 +117,31 @@ namespace SR_GRAPH_NS {
         void pointer_axis(void *data, wl_pointer *pointer, uint32_t time, uint32_t axis, wl_fixed_t value);
         wl_pointer_listener pointer_listener = {&pointer_enter, &pointer_leave, &pointer_motion, &pointer_button, &pointer_axis};
 
+        void output_scale(void* pData, wl_output* pOutput, const int32_t scale) {
+            SR_LOG("output_scale() : found output {}, set scale to {}", static_cast<void*>(pOutput), scale);
+            static_cast<WaylandWindow*>(pData)->FindOutput(pOutput).scale = scale;
+        }
+
+        static void output_geometry(void*, wl_output*, int32_t, int32_t, int32_t, int32_t, int32_t, const char*, const char*, int32_t) { }
+        static void output_mode(void*, wl_output*, uint32_t, int32_t, int32_t, int32_t) { }
+        static void output_done(void*, wl_output*) { }
+
+        static const wl_output_listener output_listener = { .geometry = output_geometry, .mode = output_mode, .done = output_done, .scale = output_scale };
+
         void registry_add_object(void* pData, wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
+            SR_TRACY_ZONE;
+
             auto&& pWindow = static_cast<WaylandWindow*>(pData);
 
-            if (!strcmp(interface, wl_compositor_interface.name)) {
+            if (strcmp(interface, wl_output_interface.name) == 0) {
+                wl_output* pOutput = static_cast<wl_output*>(wl_registry_bind(registry, name, &wl_output_interface, 2));
+                wl_output_add_listener(pOutput, &output_listener, pData);
+                pWindow->AddOutput(WaylandWindow::Output{.name = name, .output = pOutput, .scale = 1 });
+            }
+            else if (strcmp(interface, wp_fractional_scale_manager_v1_interface.name) == 0) {
+                pWindow->SetFractionalScaleManager(static_cast<wp_fractional_scale_manager_v1*>(wl_registry_bind(registry, name, &wp_fractional_scale_manager_v1_interface, 1)));
+            }
+            else if (!strcmp(interface, wl_compositor_interface.name)) {
                 pWindow->SetCompositor(static_cast<wl_compositor*>(wl_registry_bind(registry, name, &wl_compositor_interface, 1)));
             }
             else if (strcmp(interface, wl_subcompositor_interface.name) == 0) {
@@ -135,7 +159,7 @@ namespace SR_GRAPH_NS {
             else if (strcmp(interface, wl_shm_interface.name) == 0) {
                 auto&& pShm = static_cast<struct wl_shm*>(wl_registry_bind(registry, name, &wl_shm_interface, 1));
                 pWindow->SetShm(pShm);
-                pWindow->SetCursorTheme(wl_cursor_theme_load(NULL, 32, pShm));
+                //pWindow->SetCursorTheme(wl_cursor_theme_load(NULL, 32, pShm));
             }
             else if (strcmp(interface, xdg_wm_base_interface.name) == 0) {
                 pWindow->SetXdgWMBase(static_cast<xdg_wm_base*>(wl_registry_bind(registry, name, &xdg_wm_base_interface, SR_MIN(version, 2))));
@@ -152,18 +176,35 @@ namespace SR_GRAPH_NS {
         void seat_capabilities(void* pData, wl_seat* pSeat, uint32_t capabilities) {
             auto&& pWindow = static_cast<WaylandWindow*>(pData);
             if (capabilities & WL_SEAT_CAPABILITY_POINTER) {
-                wl_pointer *pointer = wl_seat_get_pointer(pSeat);
+                wl_pointer* pointer = wl_seat_get_pointer(pSeat);
                 wl_pointer_add_listener(pointer, &pointer_listener, pData);
                 pWindow->SetCursorSurface(wl_compositor_create_surface(pWindow->GetCompositor()));
+                pWindow->SetCursorPointer(pointer);
             }
         }
 
-        void pointer_enter(void *data, wl_pointer *pointer, uint32_t serial, wl_surface *surface, wl_fixed_t x, wl_fixed_t y)
+        void pointer_enter(void* pData, wl_pointer *pointer, uint32_t serial, wl_surface *surface, wl_fixed_t x, wl_fixed_t y)
         {
             //mouseHoverSurface = surface;
             //mouseHoverSerial = serial;
             //SetMousePos(x, y);
             //SetCursor(pointer, serial, "left_ptr");
+
+            auto&& pWindow = static_cast<WaylandWindow*>(pData);
+
+            if (!pWindow->GetCursorTheme()) {
+                pWindow->SetCursorTheme(wl_cursor_theme_load(NULL, 24, pWindow->GetShm()));
+            }
+
+            wl_cursor* cursor = wl_cursor_theme_get_cursor(pWindow->GetCursorTheme(), "left_ptr");
+            wl_cursor_image* image = cursor->images[0];
+            wl_buffer* buffer = wl_cursor_image_get_buffer(image);
+
+            wl_surface_attach(pWindow->GetCursorSurface(), buffer, 0, 0);
+            wl_surface_damage(pWindow->GetCursorSurface(), 0, 0, image->width, image->height);
+            wl_surface_commit(pWindow->GetCursorSurface());
+
+            wl_pointer_set_cursor(pointer, serial, pWindow->GetCursorSurface(), image->hotspot_x, image->hotspot_y);
         }
 
         void pointer_leave(void *data, wl_pointer *pointer, uint32_t serial, wl_surface *surface)
@@ -172,13 +213,40 @@ namespace SR_GRAPH_NS {
             //mouseHoverSerial = -1;
         }
 
-        void pointer_motion(void *data, wl_pointer *pointer, uint32_t time, wl_fixed_t x, wl_fixed_t y)
+        void pointer_motion(void* pData, wl_pointer* pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy)
         {
-            //SetMousePos(x, y);
+            const float_t x = wl_fixed_to_double(sx);
+            const float_t y = wl_fixed_to_double(sy);
+
+            auto&& mouseState = SR_PLATFORM_NS::GetOverriddenMouseState();
+            if (!mouseState) {
+                mouseState = SR_PLATFORM_NS::GetMouseState();
+            }
+            mouseState->position = { x, y };
+            SR_PLATFORM_NS::SetOverriddenMouseState(mouseState);
         }
 
-        void pointer_button(void *data, wl_pointer *pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
+        void pointer_button(void* data, wl_pointer *pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
         {
+            auto&& mouseState = SR_PLATFORM_NS::GetOverriddenMouseState();
+            if (!mouseState) {
+                mouseState = SR_PLATFORM_NS::GetMouseState();
+            }
+
+            bool pressed = (state == WL_POINTER_BUTTON_STATE_PRESSED);
+
+            switch (button) {
+                case BTN_LEFT:   mouseState->buttonStates[0] = pressed; break;
+                case BTN_RIGHT:  mouseState->buttonStates[1] = pressed; break;
+                case BTN_MIDDLE: mouseState->buttonStates[2] = pressed; break;
+                case BTN_SIDE:   mouseState->buttonStates[3] = pressed; break;
+                case BTN_EXTRA:  mouseState->buttonStates[4] = pressed; break;
+                default:
+                    break;
+            }
+
+            SR_PLATFORM_NS::SetOverriddenMouseState(mouseState);
+
             /*if (!useClientDecorations) return;
             if (button == BTN_LEFT)
             {
@@ -260,8 +328,25 @@ namespace SR_GRAPH_NS {
             }*/
         }
 
-        void pointer_axis(void*, wl_pointer*, uint32_t, uint32_t, wl_fixed_t) {
-            // TODO
+        void pointer_axis(void* pData, wl_pointer*, uint32_t time, uint32_t axis, wl_fixed_t value) {
+            auto&& pWindow = static_cast<WaylandWindow*>(pData);
+
+            const float_t v = wl_fixed_to_double(value);
+
+            switch (axis) {
+                case WL_POINTER_AXIS_VERTICAL_SCROLL:
+                    if (auto&& callback = pWindow->GetScrollCallback())                   {
+                        callback(pWindow, 0, -v);
+                    }
+                    break;
+                case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
+                    if (auto&& callback = pWindow->GetScrollCallback()) {
+                        callback(pWindow, v, 0);
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
 
         void xdg_surface_handle_configure(void* data, xdg_surface *xdg_surface, uint32_t serial) {
@@ -318,6 +403,8 @@ namespace SR_GRAPH_NS {
                 SR_LOG("xdg_toplevel_handle_configure() : window unmaximized");
             }
 
+            pWindow->SetPendingSize({width, height});
+
             // resize window
             /*if (activated || resizing || maximized || fullscreen || currentMaximized != pWindow->IsMaximized()) {
                 if (width > 0 && height > 0 && (pWindow->GetCompositeWidth() != width || pWindow->GetCompositeHeight() != height)) {
@@ -348,6 +435,23 @@ namespace SR_GRAPH_NS {
             }*/
         }
 
+        void surface_enter(void* pData, wl_surface*, wl_output* output) {
+            auto&& pWindow = static_cast<WaylandWindow*>(pData);
+            pWindow->AddEnteredOutput(output);
+            pWindow->RecalculateScale();
+        }
+
+        void surface_leave(void* pData, wl_surface*, wl_output* output) {
+            auto&& pWindow = static_cast<WaylandWindow*>(pData);
+            pWindow->RemoveEnteredOutput(output);
+            pWindow->RecalculateScale();
+        }
+
+        static const wl_surface_listener surface_listener = {
+            .enter = surface_enter,
+            .leave = surface_leave
+        };
+
         void xdg_toplevel_handle_close(void* pData, xdg_toplevel*) {
             SR_LOG("xdg_toplevel_handle_close() : window close requested by compositor");
             static_cast<WaylandWindow*>(pData)->SetValid(false);
@@ -358,7 +462,7 @@ namespace SR_GRAPH_NS {
             xdg_wm_base_pong(base, serial);
         }
 
-        void decoration_handle_configure(void* data, struct zxdg_toplevel_decoration_v1 *decoration, uint32_t mode) {
+        void decoration_handle_configure(void* data, zxdg_toplevel_decoration_v1*, uint32_t mode) {
             static_cast<WaylandWindow*>(data)->SetDecorationMode(static_cast<zxdg_toplevel_decoration_v1_mode>(mode));
             switch (mode) {
                 case ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE:
@@ -429,6 +533,15 @@ namespace SR_GRAPH_NS {
             SR_LOG("WaylandWindow::CreateSurfaceBuffer() : created surface buffer ({}x{}, fd={}, size={})", buffer->width, buffer->height, buffer->fd, buffer->size);
             return true;
         }
+
+        void fractional_preferred_scale(void* pData, wp_fractional_scale_v1*, const uint32_t scale) {
+            auto&& pWindow = static_cast<WaylandWindow*>(pData);
+            pWindow->SetFractionalScale(scale / 120.0f);
+        }
+
+        static const wp_fractional_scale_v1_listener fractional_listener = {
+            .preferred_scale = fractional_preferred_scale
+        };
     }
 
     void WaylandWindow::InternalSetWindowSize(int width, int height)
@@ -513,6 +626,18 @@ namespace SR_GRAPH_NS {
         }
 
         return (fds.revents & POLLIN) != 0;
+    }
+
+    void WaylandWindow::RecalculateScale() {
+        int max_scale = 1;
+
+        for (wl_output* pOutput : m_enteredOutputs) {
+            max_scale = std::max(max_scale, FindOutput(pOutput).scale);
+        }
+
+        m_scale = max_scale;
+
+        SR_LOG("WaylandWindow::RecalculateScale() : recalculated scale to {}", m_scale);
     }
 
     bool WaylandWindow::DoWaylandPollEvents() {
@@ -616,21 +741,28 @@ namespace SR_GRAPH_NS {
         m_xdgSurface = xdg_wm_base_get_xdg_surface(m_xdgWMBase, m_surface);
         m_xdgToplevel = xdg_surface_get_toplevel(m_xdgSurface);
 
+        wl_surface_add_listener(m_surface, &Details::surface_listener, this);
+
+        if (m_fractionalScaleManager) {
+            m_fractionalScale = wp_fractional_scale_manager_v1_get_fractional_scale(m_fractionalScaleManager, m_surface);
+            wp_fractional_scale_v1_add_listener(m_fractionalScale, &Details::fractional_listener, this);
+        }
+
         xdg_surface_add_listener(m_xdgSurface, &Details::xdg_surface_listener, this);
         xdg_toplevel_add_listener(m_xdgToplevel, &Details::xdg_toplevel_listener, this);
 
-        xdg_toplevel_set_title(m_xdgToplevel, "WaylandClientWindow");
-        xdg_toplevel_set_app_id(m_xdgToplevel, "WaylandClientWindow");
-        xdg_toplevel_set_min_size(m_xdgToplevel, 10, 10);
+        xdg_toplevel_set_title(m_xdgToplevel, name.c_str());
+        xdg_toplevel_set_app_id(m_xdgToplevel, "SREngine");
+        xdg_toplevel_set_min_size(m_xdgToplevel, 300, 300);
 
         /// get server-side decorations
-        //if (!m_useClientDecorations && m_decorationManager) {
-        //    m_decoration = zxdg_decoration_manager_v1_get_toplevel_decoration(m_decorationManager, m_xdgToplevel);
-        //    zxdg_toplevel_decoration_v1_add_listener(m_decoration, &Details::decoration_listener, this);
-        //}
+        if (!m_useClientDecorations && m_decorationManager) {
+            m_decoration = zxdg_decoration_manager_v1_get_toplevel_decoration(m_decorationManager, m_xdgToplevel);
+            zxdg_toplevel_decoration_v1_add_listener(m_decoration, &Details::decoration_listener, this);
+        }
 
         // surface buffers
-        uint32_t color = m_useClientDecorations ? Details::ToColor(127, 127, 127, 255) : Details::ToColor(0, 0, 0, 255);
+        uint32_t color = m_useClientDecorations ? Details::ToColor(127, 127, 127, 255) : Details::ToColor(50, 50, 50, 255);
         if (Details::CreateSurfaceBuffer(&m_surfaceBuffer, GetShm(), m_surface, "WaylandClientWindow_Decorations", color) != 1) {
             SR_ERROR("WaylandWindow::Initialize() : failed to create surface buffer!");
             return false;
@@ -638,29 +770,30 @@ namespace SR_GRAPH_NS {
 
         wl_surface_commit(m_surface);
 
-        //if (m_useClientDecorations) {
-        //    m_clientSurface = wl_compositor_create_surface(m_compositor);
-        //    m_clientSubSurface = wl_subcompositor_get_subsurface(m_subCompositor, m_clientSurface, m_surface);
-        //    wl_subsurface_set_desync(m_clientSubSurface);
-        //    wl_subsurface_set_position(m_clientSubSurface, DECORATIONS_BAR_SIZE, DECORATIONS_TOPBAR_SIZE);
-        //    if (Details::CreateSurfaceBuffer(&m_clientSurfaceBuffer, GetShm(), m_clientSurface, "WaylandClientWindow_Client", Details::ToColor(255, 255, 255, 255)) != 1) {
-        //        SR_ERROR("WaylandWindow::Initialize() : failed to create client surface buffer!");
-        //        return false;
-        //    }
-        //    /// TODO: DrawButtons();
-        //}
+        if (m_useClientDecorations) {
+            m_clientSurface = wl_compositor_create_surface(m_compositor);
+            m_clientSubSurface = wl_subcompositor_get_subsurface(m_subCompositor, m_clientSurface, m_surface);
+            wl_subsurface_set_desync(m_clientSubSurface);
+            wl_subsurface_set_position(m_clientSubSurface, DECORATIONS_BAR_SIZE, DECORATIONS_TOPBAR_SIZE);
+            if (Details::CreateSurfaceBuffer(&m_clientSurfaceBuffer, GetShm(), m_clientSurface, "WaylandClientWindow_Client", Details::ToColor(255, 255, 255, 255)) != 1) {
+                SR_ERROR("WaylandWindow::Initialize() : failed to create client surface buffer!");
+                return false;
+            }
+            /// TODO: DrawButtons();
+        }
 
         // finalize surfaces
-        //if (m_useClientDecorations) {
-        //    wl_surface_damage(m_clientSurface, 0, 0, m_clientSurfaceBuffer.width, m_clientSurfaceBuffer.height);
-        //    wl_surface_commit(m_clientSurface);
-        //}
+        if (m_useClientDecorations) {
+            wl_surface_damage(m_clientSurface, 0, 0, m_clientSurfaceBuffer.width, m_clientSurfaceBuffer.height);
+            wl_surface_commit(m_clientSurface);
+        }
 
-        //wl_surface_damage(m_surface, 0, 0, m_surfaceBuffer.width, m_surfaceBuffer.height);
+        wl_surface_damage(m_surface, 0, 0, m_surfaceBuffer.width, m_surfaceBuffer.height);
         wl_surface_commit(m_surface);
-        //wl_display_flush(m_display);
+        wl_display_flush(m_display);
 
         m_isValid = true;
+        m_isFocused = true;
 
         m_waitingForConfigure = true;
         SR_LOG("WaylandWindow::Initialize() : waiting for Wayland configuration...");
@@ -669,36 +802,48 @@ namespace SR_GRAPH_NS {
         }
         SR_LOG("WaylandWindow::Initialize() : Wayland configuration received, window is now valid.");
 
-        /*if (!SR_HTYPES_NS::Thread::Factory::Instance().Create(m_thread, &WaylandWindow::ThreadFunction, this)) {
-            SRHalt("WaylandWindow::Initialize() : failed to create window thread!");
-            return false;
-        }
-
-        m_thread->SetName("Wayland window");*/
-
         return true;
+    }
+
+    WaylandWindow::Output& WaylandWindow::FindOutput(wl_output* pOutput) {
+        for (auto& output : m_outputs) {
+            if (output.output == pOutput) {
+                return output;
+            }
+        }
+        SRHalt("WaylandWindow::FindOutput() : failed to find output for wl_output {}!", static_cast<void*>(pOutput));
+        static Output dummy;
+        return dummy;
     }
 
     void WaylandWindow::PollEvents() {
         Super::PollEvents();
 
-        //if (!m_configured) {
-        //    SR_LOG("WaylandWindow::PollEvents() : waiting for Wayland configuration...");
-
-        //    while (!m_configured && m_isValid && !m_isClosed) {
-        //        if (!DoWaylandPollEvents()) {
-        //            SR_ERROR("WaylandWindow::PollEvents() : failed to poll Wayland events during configuration!");
-        //            m_isClosed = true;
-        //            m_isValid = false;
-        //            return;
-        //        }
-        //    }
-
-        //    SR_LOG("WaylandWindow::PollEvents() : Wayland configuration received, window is now valid.");
-        //    return;
-        //}
-
         DoWaylandPollEvents();
+
+        if (m_pendingSize && !m_pendingSize->HasZero() && !m_pendingSize->HasNegative() && m_lastSize != *m_pendingSize) {
+            m_lastSize = *m_pendingSize;
+            m_pendingSize.reset();
+
+            const SR_MATH_NS::IVector2 surfaceSize = m_lastSize * GetScale();
+
+            SR_LOG("WaylandWindow::PollEvents() : applying pending configure with size {}x{}...", surfaceSize.x, surfaceSize.y);
+
+            InternalSetWindowSize(surfaceSize.x, surfaceSize.y);
+
+            if (m_useClientDecorations) {
+                ResizeSurfaceBuffer(&m_clientSurfaceBuffer, m_clientSurface);
+                wl_surface_damage(m_clientSurface, 0, 0, m_clientSurfaceBuffer.width, m_clientSurfaceBuffer.height);
+                wl_surface_commit(m_clientSurface);
+            }
+
+            ResizeSurfaceBuffer(&m_surfaceBuffer, m_surface);
+
+            //wl_surface_damage(GetSurface(), 0, 0, GetSurfaceBuffer().width, GetSurfaceBuffer().height);
+            //wl_surface_commit(GetSurface());
+
+            //wl_display_flush(GetDisplay());
+        }
     }
 
     void WaylandWindow::Close() {

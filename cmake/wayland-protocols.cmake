@@ -8,6 +8,8 @@ file(MAKE_DIRECTORY "${SR_WAYLAND_GEN_DIR}")
 message(STATUS "Generating Wayland protocol code in: ${SR_WAYLAND_GEN_DIR}")
 
 function(gen_wayland protocol_xml header_out code_out)
+    message(STATUS "Generating Wayland code for protocol: ${protocol_xml}")
+
     execute_process(
             COMMAND ${WAYLAND_SCANNER} client-header
             "${protocol_xml}"
@@ -33,16 +35,23 @@ endfunction()
 
 # xdg-shell
 gen_wayland(
-        "${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml"
-        "${SR_WAYLAND_GEN_DIR}/xdg-shell-client-protocol.h"
-        "${SR_WAYLAND_GEN_DIR}/xdg-shell-client-protocol.c"
+    "${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml"
+    "${SR_WAYLAND_GEN_DIR}/xdg-shell-client-protocol.h"
+    "${SR_WAYLAND_GEN_DIR}/xdg-shell-client-protocol.c"
+)
+
+# fractional-scale
+gen_wayland(
+    "${WAYLAND_PROTOCOLS_DIR}/staging/fractional-scale/fractional-scale-v1.xml"
+    "${SR_WAYLAND_GEN_DIR}/fractional-scale-v1-client-protocol.h"
+    "${SR_WAYLAND_GEN_DIR}/fractional-scale-v1-client-protocol.c"
 )
 
 # xdg-decoration
 gen_wayland(
-        "${WAYLAND_PROTOCOLS_DIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml"
-        "${SR_WAYLAND_GEN_DIR}/xdg-decoration-unstable-v1.h"
-        "${SR_WAYLAND_GEN_DIR}/xdg-decoration-unstable-v1.c"
+    "${WAYLAND_PROTOCOLS_DIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml"
+    "${SR_WAYLAND_GEN_DIR}/xdg-decoration-unstable-v1.h"
+    "${SR_WAYLAND_GEN_DIR}/xdg-decoration-unstable-v1.c"
 )
 
 function(patch_wl_private file)
@@ -59,6 +68,13 @@ function(patch_wl_private file)
             "${_content}"
     )
 
+    string(REPLACE
+            "WL_PRIVATE const struct wl_interface wp_fractional_scale_manager_v1_interface"
+            "const struct wl_interface wp_fractional_scale_manager_v1_interface"
+            _content
+            "${_content}"
+    )
+
     file(WRITE "${file}" "${_content}")
 
     message(STATUS "Patched WL_PRIVATE in ${file}")
@@ -66,5 +82,6 @@ endfunction()
 
 patch_wl_private("${SR_WAYLAND_GEN_DIR}/xdg-shell-client-protocol.c")
 patch_wl_private("${SR_WAYLAND_GEN_DIR}/xdg-decoration-unstable-v1.c")
+patch_wl_private("${SR_WAYLAND_GEN_DIR}/fractional-scale-v1-client-protocol.c")
 
 message(STATUS "Wayland protocol code generation completed.")

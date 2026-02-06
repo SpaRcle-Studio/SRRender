@@ -28,6 +28,11 @@ namespace SR_GRAPH_NS {
 #endif
 
 namespace SR_GRAPH_GUI_NS {
+    struct PayloadArrayData {
+        void* data = nullptr;
+        uint64_t size = 0;
+    };
+
     SR_ENUM_NS_STRUCT_T(WindowFlags, uint32_t,
         None                      = 0,
         NoTitleBar                = 1 << 0,

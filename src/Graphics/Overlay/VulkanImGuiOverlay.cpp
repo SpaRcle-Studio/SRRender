@@ -220,25 +220,17 @@ namespace SR_GRAPH_NS {
 
         SR_GRAPH_LOG("VulkanImGuiOverlay::Init() : initialization vulkan ImGui overlay...");
 
-    #if defined(SR_WIN32)
-        auto&& pWindow = m_pipeline->GetWindow();
-        ImGui_ImplWin32_Init((HWND)pWindow->GetHandle());
-    #elif defined(SR_LINUX)
-        //auto&& pWindow = m_pipeline->GetWindow();
-        //ImGui_ImplX11_Init(pWindow->GetImplementation<X11Window>()->GetWindow());
         [[maybe_unused]] auto&& pWindow = m_pipeline->GetWindow();
-        // TODO: check what 'instant callbacks' argument does.
-        #ifdef SR_RENDER_GLFW
-            ImGui_ImplGlfw_InitForVulkan(pWindow->GetImplementation<GLFWWindow>()->GetWindow(), true);
-        #else
-            SRHalt("Unsupported platform!");
-        #endif
 
-        //ImGui_ImplGlfw_InitForVulkan()
+    #if defined(SR_WIN32)
+        ImGui_ImplWin32_Init((HWND)pWindow->GetHandle());
+    #elif defined(SR_LINUX) && defined(SR_RENDER_GLFW)
+        ImGui_ImplGlfw_InitForVulkan(pWindow->GetImplementation<GLFWWindow>()->GetWindow(), true);
+    #elif defined(SR_LINUX) && defined(SR_RENDER_USE_NATIVE_WAYLAND)
+        ImGuiIO& io = ImGui::GetIO();
+        io.BackendPlatformName = "imgui_impl_wayland_custom";
     #elif defined(SR_ANDROID)
-        auto&& pWindow = m_pipeline->GetWindow();
         ImGui_ImplAndroid_Init(pWindow->GetImplementation<AndroidWindow>()->GetNativeWindow());
-    #else
     #endif
 
         m_pipeline->UpdateMultiSampling();
@@ -327,11 +319,8 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_initialized) {
-        #ifdef SR_WIN32
+        #if defined(SR_WIN32)
             ImGui_ImplWin32_Shutdown();
-        #endif
-        #ifdef SR_LINUX
-            //ImGui_ImplX11_Shutdown();
         #endif
         }
 
@@ -359,8 +348,23 @@ namespace SR_GRAPH_NS {
         #ifdef SR_WIN32
             ImGui_ImplWin32_NewFrame();
         #elif defined(SR_LINUX) && defined(SR_RENDER_GLFW)
-            //ImGui_ImplX11_NewFrame();
             ImGui_ImplGlfw_NewFrame();
+        #elif defined(SR_LINUX) && defined(SR_RENDER_USE_NATIVE_WAYLAND)
+            ImGuiIO& io = ImGui::GetIO();
+
+            if (auto&& pNativeWindow = m_pipeline->GetWindow()->GetImplementation<WaylandWindow>()) {
+                const float_t scale = pNativeWindow->GetScale();
+                io.DisplayFramebufferScale = ImVec2(scale, scale);
+                io.DisplaySize = ImVec2(pNativeWindow->GetSurfaceWidth() / scale, pNativeWindow->GetSurfaceHeight() / scale);
+            }
+
+            const auto& mouseState = SR_PLATFORM_NS::GetMouseState();
+            io.AddMousePosEvent(mouseState.position.x, mouseState.position.y);
+
+            for (size_t i = 0; i < sizeof(mouseState.buttonStates); i++) {
+                io.AddMouseButtonEvent(i, mouseState.buttonStates[i]);
+            }
+
         #elif defined(SR_ANDROID)
             ImGui_ImplAndroid_NewFrame();
         #endif
