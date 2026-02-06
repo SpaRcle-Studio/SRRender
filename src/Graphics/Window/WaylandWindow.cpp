@@ -6,6 +6,7 @@
 
 #include <Utils/Profile/TracyContext.h>
 #include <Utils/Platform/Platform.h>
+#include <Utils/Input/KeyCodes.h>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -128,6 +129,83 @@ namespace SR_GRAPH_NS {
 
         static const wl_output_listener output_listener = { .geometry = output_geometry, .mode = output_mode, .done = output_done, .scale = output_scale };
 
+        void keyboard_keymap(void* pData, wl_keyboard*, uint32_t format, int fd, uint32_t size) {
+            auto&& pWindow = static_cast<WaylandWindow*>(pData);
+
+            if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
+                close(fd);
+                return;
+            }
+
+            char* map = (char*)mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+
+            xkb_keymap* pXkbKeymap = xkb_keymap_new_from_string(pWindow->GetXkbContext(), map, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+            munmap(map, size);
+            close(fd);
+
+            pWindow->SetXkbKeymap(pXkbKeymap);
+            pWindow->SetXkbState(xkb_state_new(pXkbKeymap));
+        }
+
+        void keyboard_modifiers(void* pData, wl_keyboard*, uint32_t serial, uint32_t depressed, uint32_t latched, uint32_t locked, uint32_t group) {
+            auto&& pWindow = static_cast<WaylandWindow*>(pData);
+
+            xkb_state_update_mask(pWindow->GetXkbState(), depressed, latched, locked, 0, 0, group);
+
+            auto&& keyboardState = SR_PLATFORM_NS::GetOverriddenKeyboardState();
+            if (!keyboardState) {
+                keyboardState = SR_PLATFORM_NS::KeyboardState();
+            }
+
+            keyboardState->Set(SR_UTILS_NS::KeyCode::Ctrl, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE));
+            keyboardState->Set(SR_UTILS_NS::KeyCode::LShift, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE));
+            keyboardState->Set(SR_UTILS_NS::KeyCode::Alt, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_ALT, XKB_STATE_MODS_EFFECTIVE));
+            keyboardState->Set(SR_UTILS_NS::KeyCode::Super, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_LOGO, XKB_STATE_MODS_EFFECTIVE));
+        }
+
+        void keyboard_enter(void* pData, wl_keyboard*, uint32_t serial, wl_surface*, wl_array* keys) {
+            // do nothing...
+        }
+
+        void keyboard_leave(void* pData, wl_keyboard*, uint32_t serial, wl_surface*) {
+            // do nothing...
+        }
+
+        void keyboard_key(void* pData, wl_keyboard*, uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
+            auto&& pWindow = static_cast<WaylandWindow*>(pData);
+
+            auto&& keyboardState = SR_PLATFORM_NS::GetOverriddenKeyboardState();
+            if (!keyboardState) {
+                keyboardState = SR_PLATFORM_NS::KeyboardState();
+            }
+
+            const xkb_keysym_t* syms;
+            int numSyms = xkb_state_key_get_syms(pWindow->GetXkbState(), key + 8, &syms);
+            if (numSyms > 0) {
+                for (int i = 0; i < numSyms; ++i) {
+                    auto keysym = syms[i];
+                    auto keyCode = SR_UTILS_NS::KeyCodeFromXkbKeysym(keysym);
+                    if (keyCode != SR_UTILS_NS::KeyCode::None) {
+                        keyboardState->Set(keyCode, state == WL_KEYBOARD_KEY_STATE_PRESSED);
+                    }
+                }
+            }
+        }
+
+        void keyboard_repeat_info(void* pData, wl_keyboard*, int32_t rate, int32_t delay) {
+            // do nothing...
+        }
+
+        static const wl_keyboard_listener keyboard_listener = {
+            .keymap = keyboard_keymap,
+            .enter  = keyboard_enter,
+            .leave  = keyboard_leave,
+            .key    = keyboard_key,
+            .modifiers = keyboard_modifiers,
+            .repeat_info = keyboard_repeat_info
+        };
+
         void registry_add_object(void* pData, wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
             SR_TRACY_ZONE;
 
@@ -180,6 +258,11 @@ namespace SR_GRAPH_NS {
                 wl_pointer_add_listener(pointer, &pointer_listener, pData);
                 pWindow->SetCursorSurface(wl_compositor_create_surface(pWindow->GetCompositor()));
                 pWindow->SetCursorPointer(pointer);
+            }
+            if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) {
+                auto&& pKeyboard = wl_seat_get_keyboard(pSeat);
+                pWindow->SetKeyboard(pKeyboard);
+                wl_keyboard_add_listener(pKeyboard, &keyboard_listener, pData);
             }
         }
 
@@ -246,86 +329,6 @@ namespace SR_GRAPH_NS {
             }
 
             SR_PLATFORM_NS::SetOverriddenMouseState(mouseState);
-
-            /*if (!useClientDecorations) return;
-            if (button == BTN_LEFT)
-            {
-                if (mouseHoverSurface == window->surface)
-                {
-                    if (state == WL_POINTER_BUTTON_STATE_RELEASED)
-                    {
-                        // buttons
-                        if (WithinRect(window->clientRect_ButtonClose, mouseX, mouseY))
-                        {
-                            running = 0;
-                        }
-                        else if (WithinRect(window->clientRect_ButtonMax, mouseX, mouseY))
-                        {
-                            if (!window->isMaximized)
-                            {
-                                xdg_toplevel_set_maximized(window->xdg_toplevel);
-                                //xdg_toplevel_set_fullscreen(window->xdg_toplevel, NULL);
-                            }
-                            else
-                            {
-                                xdg_toplevel_unset_maximized(window->xdg_toplevel);
-                                //xdg_toplevel_unset_fullscreen(window->xdg_toplevel);
-                            }
-                        }
-                        else if (WithinRect(window->clientRect_ButtonMin, mouseX, mouseY))
-                        {
-                            xdg_toplevel_set_minimized(window->xdg_toplevel);
-                        }
-                    }
-                    else if (state == WL_POINTER_BUTTON_STATE_PRESSED)
-                    {
-                        // drag
-                        if
-                        (
-                            !WithinRect(window->clientRect_ButtonClose, mouseX, mouseY) && !WithinRect(window->clientRect_ButtonMax, mouseX, mouseY) && !WithinRect(window->clientRect_ButtonMin, mouseX, mouseY) &&
-                            !WithinRect(window->clientRect_Resize_BottomBar, mouseX, mouseY) && !WithinRect(window->clientRect_Resize_TopBar, mouseX, mouseY) && !WithinRect(window->clientRect_Resize_LeftBar, mouseX, mouseY) && !WithinRect(window->clientRect_Resize_RightBar, mouseX, mouseY) &&
-                            !WithinRect(window->clientRect_Resize_TopLeft, mouseX, mouseY) && !WithinRect(window->clientRect_Resize_TopRight, mouseX, mouseY) && !WithinRect(window->clientRect_Resize_BottomLeft, mouseX, mouseY) && !WithinRect(window->clientRect_Resize_BottomRight, mouseX, mouseY)
-                        )
-                        {
-                            if (WithinRect(window->clientRect_Drag_TopBar, mouseX, mouseY)) xdg_toplevel_move(window->xdg_toplevel, seat, serial);
-                        }
-                        // resize corners
-                        else if (WithinRect(window->clientRect_Resize_TopLeft, mouseX, mouseY))
-                        {
-                            xdg_toplevel_resize(window->xdg_toplevel, seat, serial, XDG_TOPLEVEL_RESIZE_EDGE_TOP_LEFT);
-                        }
-                        else if (WithinRect(window->clientRect_Resize_TopRight, mouseX, mouseY))
-                        {
-                            xdg_toplevel_resize(window->xdg_toplevel, seat, serial, XDG_TOPLEVEL_RESIZE_EDGE_TOP_RIGHT);
-                        }
-                        else if (WithinRect(window->clientRect_Resize_BottomLeft, mouseX, mouseY))
-                        {
-                            xdg_toplevel_resize(window->xdg_toplevel, seat, serial, XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_LEFT);
-                        }
-                        else if (WithinRect(window->clientRect_Resize_BottomRight, mouseX, mouseY))
-                        {
-                            xdg_toplevel_resize(window->xdg_toplevel, seat, serial, XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT);
-                        }
-                        // resize edges
-                        else if (WithinRect(window->clientRect_Resize_BottomBar, mouseX, mouseY))
-                        {
-                            xdg_toplevel_resize(window->xdg_toplevel, seat, serial, XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM);
-                        }
-                        else if (WithinRect(window->clientRect_Resize_TopBar, mouseX, mouseY))
-                        {
-                            xdg_toplevel_resize(window->xdg_toplevel, seat, serial, XDG_TOPLEVEL_RESIZE_EDGE_TOP);
-                        }
-                        else if (WithinRect(window->clientRect_Resize_LeftBar, mouseX, mouseY))
-                        {
-                            xdg_toplevel_resize(window->xdg_toplevel, seat, serial, XDG_TOPLEVEL_RESIZE_EDGE_LEFT);
-                        }
-                        else if (WithinRect(window->clientRect_Resize_RightBar, mouseX, mouseY))
-                        {
-                            xdg_toplevel_resize(window->xdg_toplevel, seat, serial, XDG_TOPLEVEL_RESIZE_EDGE_RIGHT);
-                        }
-                    }
-                }
-            }*/
         }
 
         void pointer_axis(void* pData, wl_pointer*, uint32_t time, uint32_t axis, wl_fixed_t value) {
@@ -731,6 +734,8 @@ namespace SR_GRAPH_NS {
             SR_LOG("WaylandWindow::Initialize() : using server-side decorations.");
         }
 
+        m_xkbContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+
         /// create window
         m_surfaceBuffer.fd = -1;
         m_clientSurfaceBuffer.fd = -1;
@@ -857,6 +862,21 @@ namespace SR_GRAPH_NS {
         }
 
         SR_LOG("WaylandWindow::Close() : destroying Wayland resources...");
+
+        if (m_pXkbState) {
+            xkb_state_unref(m_pXkbState);
+            m_pXkbState = nullptr;
+        }
+
+        if (m_pXkbKeymap) {
+            xkb_keymap_unref(m_pXkbKeymap);
+            m_pXkbKeymap = nullptr;
+        }
+
+        if (m_xkbContext) {
+            xkb_context_unref(m_xkbContext);
+            m_xkbContext = nullptr;
+        }
 
         // shutdown
         if (m_useClientDecorations) {

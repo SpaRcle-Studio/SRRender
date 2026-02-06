@@ -175,6 +175,94 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    ImGuiKey KeyCodeToImGuiKey(SR_UTILS_NS::KeyCode keyCode) {
+        switch (keyCode) {
+            case SR_UTILS_NS::KeyCode::BackSpace:   return ImGuiKey_Backspace;
+            case SR_UTILS_NS::KeyCode::Tab:         return ImGuiKey_Tab;
+            case SR_UTILS_NS::KeyCode::Enter:       return ImGuiKey_Enter;
+            case SR_UTILS_NS::KeyCode::LShift:      return ImGuiKey_LeftShift;
+            case SR_UTILS_NS::KeyCode::Ctrl:        return ImGuiKey_LeftCtrl;
+            case SR_UTILS_NS::KeyCode::Alt:         return ImGuiKey_LeftAlt;
+            case SR_UTILS_NS::KeyCode::Escape:      return ImGuiKey_Escape;
+            case SR_UTILS_NS::KeyCode::Space:       return ImGuiKey_Space;
+
+            case SR_UTILS_NS::KeyCode::LeftArrow:   return ImGuiKey_LeftArrow;
+            case SR_UTILS_NS::KeyCode::UpArrow:     return ImGuiKey_UpArrow;
+            case SR_UTILS_NS::KeyCode::RightArrow:  return ImGuiKey_RightArrow;
+            case SR_UTILS_NS::KeyCode::DownArrow:   return ImGuiKey_DownArrow;
+
+            case SR_UTILS_NS::KeyCode::Del:         return ImGuiKey_Delete;
+            case SR_UTILS_NS::KeyCode::Insert:      return ImGuiKey_Insert;
+            case SR_UTILS_NS::KeyCode::Home:        return ImGuiKey_Home;
+            case SR_UTILS_NS::KeyCode::End:         return ImGuiKey_End;
+            case SR_UTILS_NS::KeyCode::PageUp:      return ImGuiKey_PageUp;
+            case SR_UTILS_NS::KeyCode::PageDown:    return ImGuiKey_PageDown;
+
+            case SR_UTILS_NS::KeyCode::_0: return ImGuiKey_0;
+            case SR_UTILS_NS::KeyCode::_1: return ImGuiKey_1;
+            case SR_UTILS_NS::KeyCode::_2: return ImGuiKey_2;
+            case SR_UTILS_NS::KeyCode::_3: return ImGuiKey_3;
+            case SR_UTILS_NS::KeyCode::_4: return ImGuiKey_4;
+            case SR_UTILS_NS::KeyCode::_5: return ImGuiKey_5;
+            case SR_UTILS_NS::KeyCode::_6: return ImGuiKey_6;
+            case SR_UTILS_NS::KeyCode::_7: return ImGuiKey_7;
+            case SR_UTILS_NS::KeyCode::_8: return ImGuiKey_8;
+            case SR_UTILS_NS::KeyCode::_9: return ImGuiKey_9;
+
+            case SR_UTILS_NS::KeyCode::A: return ImGuiKey_A;
+            case SR_UTILS_NS::KeyCode::B: return ImGuiKey_B;
+            case SR_UTILS_NS::KeyCode::C: return ImGuiKey_C;
+            case SR_UTILS_NS::KeyCode::D: return ImGuiKey_D;
+            case SR_UTILS_NS::KeyCode::E: return ImGuiKey_E;
+            case SR_UTILS_NS::KeyCode::F: return ImGuiKey_F;
+            case SR_UTILS_NS::KeyCode::G: return ImGuiKey_G;
+            case SR_UTILS_NS::KeyCode::H: return ImGuiKey_H;
+            case SR_UTILS_NS::KeyCode::I: return ImGuiKey_I;
+            case SR_UTILS_NS::KeyCode::J: return ImGuiKey_J;
+            case SR_UTILS_NS::KeyCode::K: return ImGuiKey_K;
+            case SR_UTILS_NS::KeyCode::L: return ImGuiKey_L;
+            case SR_UTILS_NS::KeyCode::M: return ImGuiKey_M;
+            case SR_UTILS_NS::KeyCode::N: return ImGuiKey_N;
+            case SR_UTILS_NS::KeyCode::O: return ImGuiKey_O;
+            case SR_UTILS_NS::KeyCode::P: return ImGuiKey_P;
+            case SR_UTILS_NS::KeyCode::Q: return ImGuiKey_Q;
+            case SR_UTILS_NS::KeyCode::R: return ImGuiKey_R;
+            case SR_UTILS_NS::KeyCode::S: return ImGuiKey_S;
+            case SR_UTILS_NS::KeyCode::T: return ImGuiKey_T;
+            case SR_UTILS_NS::KeyCode::U: return ImGuiKey_U;
+            case SR_UTILS_NS::KeyCode::V: return ImGuiKey_V;
+            case SR_UTILS_NS::KeyCode::W: return ImGuiKey_W;
+            case SR_UTILS_NS::KeyCode::X: return ImGuiKey_X;
+            case SR_UTILS_NS::KeyCode::Y: return ImGuiKey_Y;
+            case SR_UTILS_NS::KeyCode::Z: return ImGuiKey_Z;
+
+            case SR_UTILS_NS::KeyCode::Super: return ImGuiKey_LeftSuper;
+
+            case SR_UTILS_NS::KeyCode::F1:  return ImGuiKey_F1;
+            case SR_UTILS_NS::KeyCode::F2:  return ImGuiKey_F2;
+            case SR_UTILS_NS::KeyCode::F3:  return ImGuiKey_F3;
+            case SR_UTILS_NS::KeyCode::F4:  return ImGuiKey_F4;
+            case SR_UTILS_NS::KeyCode::F5:  return ImGuiKey_F5;
+            case SR_UTILS_NS::KeyCode::F6:  return ImGuiKey_F6;
+            case SR_UTILS_NS::KeyCode::F7:  return ImGuiKey_F7;
+            case SR_UTILS_NS::KeyCode::F8:  return ImGuiKey_F8;
+            case SR_UTILS_NS::KeyCode::F9:  return ImGuiKey_F9;
+            case SR_UTILS_NS::KeyCode::F10: return ImGuiKey_F10;
+            case SR_UTILS_NS::KeyCode::F11: return ImGuiKey_F11;
+            case SR_UTILS_NS::KeyCode::F12: return ImGuiKey_F12;
+
+            case SR_UTILS_NS::KeyCode::Plus:       return ImGuiKey_Equal;
+            case SR_UTILS_NS::KeyCode::Minus:      return ImGuiKey_Minus;
+            case SR_UTILS_NS::KeyCode::Dot:        return ImGuiKey_Period;
+            case SR_UTILS_NS::KeyCode::Slash:      return ImGuiKey_Slash;
+            case SR_UTILS_NS::KeyCode::BackSlash:  return ImGuiKey_Backslash;
+            case SR_UTILS_NS::KeyCode::Tilde:      return ImGuiKey_GraveAccent;
+            case SR_UTILS_NS::KeyCode::CapsLock:   return ImGuiKey_CapsLock;
+            default: break;
+        }
+        return ImGuiKey_None;
+    }
+
     void Replacement_Platform_CreateWindow(ImGuiViewport* vp)
     {
         if (ImGui_Platform_CreateWindow != nullptr) {
@@ -345,31 +433,26 @@ namespace SR_GRAPH_NS {
 
         ImGui_ImplVulkan_NewFrame();
 
-        #ifdef SR_WIN32
-            ImGui_ImplWin32_NewFrame();
-        #elif defined(SR_LINUX) && defined(SR_RENDER_GLFW)
-            ImGui_ImplGlfw_NewFrame();
-        #elif defined(SR_LINUX) && defined(SR_RENDER_USE_NATIVE_WAYLAND)
+    #ifdef SR_WIN32
+        ImGui_ImplWin32_NewFrame();
+    #elif defined(SR_LINUX) && defined(SR_RENDER_GLFW)
+        ImGui_ImplGlfw_NewFrame();
+    #elif defined(SR_LINUX) && defined(SR_RENDER_USE_NATIVE_WAYLAND)
+        if (auto&& pNativeWindow = m_pipeline->GetWindow()->GetImplementation<WaylandWindow>()) {
             ImGuiIO& io = ImGui::GetIO();
-
-            if (auto&& pNativeWindow = m_pipeline->GetWindow()->GetImplementation<WaylandWindow>()) {
-                const float_t scale = pNativeWindow->GetScale();
-                io.DisplayFramebufferScale = ImVec2(scale, scale);
-                io.DisplaySize = ImVec2(pNativeWindow->GetSurfaceWidth() / scale, pNativeWindow->GetSurfaceHeight() / scale);
-            }
-
-            const auto& mouseState = SR_PLATFORM_NS::GetMouseState();
-            io.AddMousePosEvent(mouseState.position.x, mouseState.position.y);
-
-            for (size_t i = 0; i < sizeof(mouseState.buttonStates); i++) {
-                io.AddMouseButtonEvent(i, mouseState.buttonStates[i]);
-            }
-
-        #elif defined(SR_ANDROID)
-            ImGui_ImplAndroid_NewFrame();
-        #endif
+            const float_t scale = pNativeWindow->GetScale();
+            io.DisplayFramebufferScale = ImVec2(scale, scale);
+            io.DisplaySize = ImVec2(pNativeWindow->GetSurfaceWidth() / scale, pNativeWindow->GetSurfaceHeight() / scale);
+        }
+    #elif defined(SR_ANDROID)
+        ImGui_ImplAndroid_NewFrame();
+    #endif
 
         ImGui::NewFrame();
+
+    #if defined(SR_LINUX) && defined(SR_RENDER_USE_NATIVE_WAYLAND)
+        ProcessInput();
+    #endif
 
         return true;
     }
@@ -543,6 +626,35 @@ namespace SR_GRAPH_NS {
             vkDestroyFramebuffer(*m_device, pBuffer, nullptr);
         }
         m_frameBuffs.clear();
+    }
+
+    void VulkanImGuiOverlay::ProcessInput() {
+        SR_TRACY_ZONE;
+
+        auto&& io = ImGui::GetIO();
+
+        const auto& mouseState = SR_PLATFORM_NS::GetMouseState();
+        if (m_mouseState.position.x != mouseState.position.x || m_mouseState.position.y != mouseState.position.y) {
+            io.AddMousePosEvent(mouseState.position.x, mouseState.position.y);
+        }
+
+        for (size_t i = 0; i < mouseState.COUNT; i++) {
+            if (m_mouseState.GetButton(i) != mouseState.GetButton(i)) {
+                io.AddMouseButtonEvent(i, mouseState.buttonStates[i]);
+            }
+        }
+
+        const auto& keyboardState = SR_PLATFORM_NS::GetSystemKeyboardState();
+        for (const SR_UTILS_NS::KeyCode keyCode : SR_UTILS_NS::KeyCodes) {
+            if (m_keyboardState.Get(keyCode) != keyboardState.Get(keyCode)) {
+                if (const ImGuiKey imguiKey = KeyCodeToImGuiKey(keyCode); imguiKey != ImGuiKey_None) {
+                    io.AddKeyEvent(imguiKey, keyboardState.Get(keyCode));
+                }
+            }
+        }
+
+        m_keyboardState = keyboardState;
+        m_mouseState = mouseState;
     }
 
     bool VulkanImGuiOverlay::ReCreate() {

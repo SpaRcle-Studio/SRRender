@@ -16,6 +16,7 @@
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <linux/input.h>
+#include <xkbcommon/xkbcommon.h>
 
 extern "C" {
     #include <xdg-shell-client-protocol.h>
@@ -90,6 +91,9 @@ namespace SR_GRAPH_NS {
         void SetWaitingForConfigure(const bool waiting) { m_waitingForConfigure = waiting; }
         void SetFractionalScaleManager(wp_fractional_scale_manager_v1* pFractionalScaleManager) { m_fractionalScaleManager = pFractionalScaleManager; }
         void SetCursorPointer(wl_pointer* pPointer) { m_pointer = pPointer; }
+        void SetKeyboard(wl_keyboard* pKeyboard) { m_keyboard = pKeyboard; }
+        void SetXkbKeymap(xkb_keymap* pKeymap) { m_pXkbKeymap = pKeymap; }
+        void SetXkbState(xkb_state* pState) { m_pXkbState = pState; }
 
         SR_NODISCARD wl_cursor_theme* GetCursorTheme() const { return m_cursorTheme; }
         SR_NODISCARD wl_surface* GetCursorSurface() const { return m_cursorSurface; }
@@ -110,6 +114,9 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SurfaceBuffer& GetSurfaceBuffer() { return m_surfaceBuffer; }
         SR_NODISCARD SurfaceBuffer& GetClientSurfaceBuffer() { return m_clientSurfaceBuffer; }
         SR_NODISCARD bool HasFractionalScale() const { return m_fractionalScale != nullptr; }
+        SR_NODISCARD xkb_context* GetXkbContext() const { return m_xkbContext; }
+        SR_NODISCARD xkb_keymap* GetXkbKeymap() const { return m_pXkbKeymap; }
+        SR_NODISCARD xkb_state* GetXkbState() const { return m_pXkbState; }
 
         void InternalSetWindowSize(int width, int height);
         void SetFractionalScale(const float scale) { m_fractionalScaleValue = scale; }
@@ -159,6 +166,7 @@ namespace SR_GRAPH_NS {
         SurfaceBuffer m_clientSurfaceBuffer;
         zxdg_toplevel_decoration_v1_mode m_currentDecorationMode = ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
 
+        wl_keyboard* m_keyboard = nullptr;
         wl_pointer* m_pointer = nullptr;
         wl_surface* m_surface = nullptr;
         wl_surface* m_clientSurface = nullptr;
@@ -172,6 +180,10 @@ namespace SR_GRAPH_NS {
         wl_cursor_theme* m_cursorTheme = nullptr;
         wp_fractional_scale_manager_v1* m_fractionalScaleManager = nullptr;
         wp_fractional_scale_v1* m_fractionalScale = nullptr;
+
+        xkb_context* m_xkbContext = nullptr;
+        xkb_keymap* m_pXkbKeymap = nullptr;
+        xkb_state* m_pXkbState = nullptr;
 
         std::vector<Output> m_outputs;
         std::set<wl_output*> m_enteredOutputs;

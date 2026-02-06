@@ -57,6 +57,7 @@ namespace SR_GRAPH_NS {
         bool InitializeRenderer();
         void DeInitializeRenderer();
         void DestroyBuffers();
+        void ProcessInput();
 
         uint32_t GetCountImages() const;
 
@@ -89,6 +90,9 @@ namespace SR_GRAPH_NS {
         PFN_vkCmdEndRendering m_pVkCmdEndRendering = nullptr;
 
         bool m_undockingActive = false;
+
+        SR_PLATFORM_NS::KeyboardState m_keyboardState;
+        SR_PLATFORM_NS::MouseState m_mouseState;
 
     };
 }
