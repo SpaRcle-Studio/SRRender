@@ -17,6 +17,7 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     struct FrustumPlane {
         SR_MATH_NS::FVector3 normal;
+        SR_MATH_NS::FVector3 normalAbs;
         float_t d = 0.f;
 
         FrustumPlane() = default;
@@ -24,12 +25,16 @@ namespace SR_GRAPH_NS {
         FrustumPlane(const SR_MATH_NS::FVector3& norm, float_t distance)
             : normal(norm)
             , d(distance)
-        { }
+        {
+            normalAbs = SR_MATH_NS::FVector3(std::abs(normal.x), std::abs(normal.y), std::abs(normal.z));
+        }
 
         FrustumPlane(const SR_MATH_NS::FVector3& p1, const SR_MATH_NS::FVector3& norm)
             : normal(norm.Normalize())
             , d(normal.Dot(p1))
-        { }
+        {
+            normalAbs = SR_MATH_NS::FVector3(std::abs(normal.x), std::abs(normal.y), std::abs(normal.z));
+        }
 
         SR_NODISCARD float_t Distance(const SR_MATH_NS::FVector3& p) const;
     };

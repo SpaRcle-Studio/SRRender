@@ -21,7 +21,7 @@ namespace SR_GTYPES_NS {
         ProceduralMesh() = default;
 
     public:
-        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Procedural; }
+        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Procedural; }
 
         void SwapIndexedVertices(SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertexAligned>& vertices);
 

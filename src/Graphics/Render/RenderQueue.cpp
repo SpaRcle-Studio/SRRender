@@ -495,7 +495,7 @@ namespace SR_GRAPH_NS {
             for (auto&& meshInfo : queue) {
                 bool isVisible = true;
 
-                if (meshInfo.pMesh->IsFrustumCullingSupported()) {
+                if (!m_checkMeshFrustumSupport || meshInfo.pMesh->IsFrustumCullingSupported()) {
                     const FrustumCullingType type = meshInfo.pMesh->GetFrustumCullingType();
 
                     if (type == FrustumCullingType::None) {

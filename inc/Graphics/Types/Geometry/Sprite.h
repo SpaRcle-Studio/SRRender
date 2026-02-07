@@ -56,7 +56,7 @@ namespace SR_GTYPES_NS {
 
         bool BindMesh() override;
 
-        SR_NODISCARD MeshType GetMeshType() const noexcept override;
+        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override;
 
         SR_NODISCARD uint32_t GetIndicesCount() const override;
         SR_NODISCARD bool IsFlatMesh() const noexcept override;

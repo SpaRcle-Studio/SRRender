@@ -49,6 +49,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     void Text(const char* text, ...) {
+        SR_TRACY_ZONE;
         va_list args;
         va_start(args, text);
         ImGui::TextV(text, args);
@@ -56,6 +57,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     void TextColored(const SR_MATH_NS::FColor& color, const char* text, ...) {
+        SR_TRACY_ZONE;
         va_list args;
         va_start(args, text);
         ImGui::TextColoredV(FCToImC(color), text, args);
@@ -351,14 +353,17 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     bool InputFloat(const char* label, float_t* v, float_t step, float_t stepFast, const char* format, InputTextFlags flags) {
+        SR_TRACY_ZONE;
         return ImGui::InputFloat(label, v, step, stepFast, format, static_cast<ImGuiInputTextFlags>(flags));
     }
 
     bool InputInt(const char* label, int* v, int step, int step_fast, InputTextFlags flags) {
+        SR_TRACY_ZONE;
         return ImGui::InputInt(label, v, step, step_fast, static_cast<ImGuiInputTextFlags>(flags));
     }
 
     bool Combo(const char* label, int* current_item, const char* items_separated_by_zeros) {
+        SR_TRACY_ZONE;
         return ImGui::Combo(label, current_item, items_separated_by_zeros);
     }
 
@@ -677,10 +682,12 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     bool InputText(const char* label, std::string* str, InputTextFlags flags) {
+        SR_TRACY_ZONE;
         return ImGui::InputText(label, str, static_cast<ImGuiInputTextFlags>(flags));
     }
 
     bool MenuItem(const char *label) {
+        SR_TRACY_ZONE;
         return ImGui::MenuItem(label);
     }
 
@@ -697,10 +704,12 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     bool BeginMenu(const char *label) {
+        SR_TRACY_ZONE;
         return ImGui::BeginMenu(label);
     }
 
     void LabelText(const char* label, const char *text, ...) {
+        SR_TRACY_ZONE;
         va_list args;
         va_start(args, text);
         ImGui::LabelTextV(label, text, args);
@@ -719,6 +728,8 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     void BeginDocking() {
+        SR_TRACY_ZONE;
+
         ImGuiViewport* pViewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(pViewport->Pos);
         ImGui::SetNextWindowSize(pViewport->Size);
@@ -739,12 +750,14 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     void EndDocking() {
+        SR_TRACY_ZONE;
         ImGui::DockSpace(ImGui::GetID("Dockspace"), ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
         ImGui::End();
         ImGui::PopStyleVar(3);
     }
 
     void FocusTopMostWindowUnderOne() {
+        SR_TRACY_ZONE;
         ImGuiContext& g = *GImGui;
         if (g.CurrentWindow == g.NavWindow && g.NavLayer == ImGuiNavLayer_Main && !g.NavAnyRequest) {
             ImGui::FocusTopMostWindowUnderOne(g.NavWindow, nullptr);
@@ -752,46 +765,57 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     bool BeginMainMenuBar() {
+        SR_TRACY_ZONE;
         return ImGui::BeginMainMenuBar();
     }
 
     void EndMenuBar() {
+        SR_TRACY_ZONE;
         ImGui::EndMenuBar();
     }
 
     void End() {
+        SR_TRACY_ZONE;
         ImGui::End();
     }
 
     bool SmallButton(const char *label) {
+        SR_TRACY_ZONE;
         return ImGui::SmallButton(label);
     }
 
     void SetCursorPosX(float_t x) {
+        SR_TRACY_ZONE;
         ImGui::SetCursorPosX(x);
     }
 
     void SetCursorPosY(float_t y) {
+        SR_TRACY_ZONE;
         ImGui::SetCursorPosY(y);
     }
 
     SR_MATH_NS::FVector2 GetCursorPos() {
+        SR_TRACY_ZONE;
         return ImV2ToF2(ImGui::GetCursorPos());
     }
 
     SR_MATH_NS::FVector2 GetWindowSize() {
+        SR_TRACY_ZONE;
         return ImV2ToF2(ImGui::GetWindowSize());
     }
 
     bool IsMouseDragging(MouseButton button) {
+        SR_TRACY_ZONE;
         return ImGui::IsMouseDragging(static_cast<ImGuiMouseButton>(button));
     }
 
     bool IsMouseReleased(MouseButton button) {
+        SR_TRACY_ZONE;
         return ImGui::IsMouseReleased(static_cast<ImGuiMouseButton>(button));
     }
 
     bool IsMouseDown(MouseButton button) {
+        SR_TRACY_ZONE;
         return ImGui::IsMouseDown(static_cast<ImGuiMouseButton>(button));
     }
 
@@ -941,6 +965,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     }
 
     bool IsWindowHovered(HoveredFlags flags) {
+        SR_TRACY_ZONE;
         return ImGui::IsWindowHovered(static_cast<ImGuiHoveredFlags>(flags));
     }
 

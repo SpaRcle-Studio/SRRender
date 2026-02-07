@@ -26,7 +26,7 @@ namespace SR_GTYPES_NS {
         typedef Vertices::SkinnedMeshVertex VertexType;
 
     public:
-        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Skinned; }
+        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Skinned; }
 
         void LateUpdate() override;
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;

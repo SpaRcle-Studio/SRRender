@@ -27,7 +27,7 @@ namespace SR_GTYPES_NS {
 
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
 
-        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Line; }
+        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Line; }
 
         SR_NODISCARD uint32_t GetIndicesCount() const override { return 2; }
         SR_NODISCARD bool IsSupportVBO() const override { return false; }

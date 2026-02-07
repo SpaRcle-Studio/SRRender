@@ -119,6 +119,7 @@ namespace SR_GRAPH_NS {
         bool m_rendered = false;
         bool m_isInitialized = false;
         bool m_isFrustumAllowed = true;
+        bool m_checkMeshFrustumSupport = false;
 
         uint64_t m_layersStateHash = 0;
 

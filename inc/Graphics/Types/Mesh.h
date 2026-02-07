@@ -88,7 +88,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const MaterialPtr& GetMaterial() const noexcept { return m_material; }
         SR_NODISCARD MaterialPtr& GetMaterial() noexcept { return m_material; }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
-        SR_NODISCARD virtual MeshType GetMeshType() const noexcept = 0;
+        SR_NODISCARD virtual MeshType GetMeshTypeImpl() const noexcept = 0;
+        SR_NODISCARD MeshType GetMeshType() const noexcept;
         SR_NODISCARD bool IsWaitReRegister() const noexcept { return m_isWaitReRegister; }
         SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
         SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
@@ -167,6 +168,7 @@ namespace SR_GTYPES_NS {
         bool m_dirtyMaterial = false;
 
     private:
+        mutable MeshType m_meshTypeCache = MeshType::Unknown;
         mutable SR_UTILS_NS::UI::MaskInfo m_maskInfo;
         mutable SR_MATH_NS::AABB m_aabb;
         mutable bool m_isAABBDirty = true;

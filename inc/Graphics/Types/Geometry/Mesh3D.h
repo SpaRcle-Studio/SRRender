@@ -27,7 +27,7 @@ namespace SR_GTYPES_NS {
         void OnRawMeshChanged() override;
         bool OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) override;
 
-        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Static; }
+        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Static; }
 
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;

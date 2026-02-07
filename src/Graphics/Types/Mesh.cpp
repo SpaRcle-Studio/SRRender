@@ -467,5 +467,12 @@ namespace SR_GTYPES_NS {
     FrustumCullingType Mesh::GetFrustumCullingType() const noexcept {
         return m_frustumCullingType;
     }
+
+    MeshType Mesh::GetMeshType() const noexcept {
+        if (m_meshTypeCache == MeshType::Unknown) {
+            m_meshTypeCache = GetMeshTypeImpl();
+        }
+        return m_meshTypeCache;
+    }
 }
 

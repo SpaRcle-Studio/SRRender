@@ -80,9 +80,12 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        static const SR_UTILS_NS::StringAtom fontSizeKey = "ImGuiFontSize";
+        static const SR_UTILS_NS::StringAtom iconFontSizeKey = "ImGuiIconFontSize";
+
         const bool isFontChanged =
-            m_fontSize != SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiFontSize", m_fontSize) ||
-            m_iconFontSize != SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiIconFontSize", m_iconFontSize);
+            m_fontSize != SR_UTILS_NS::StoreUtils::User::GetFloat(fontSizeKey, m_fontSize) ||
+            m_iconFontSize != SR_UTILS_NS::StoreUtils::User::GetFloat(iconFontSizeKey, m_iconFontSize);
 
         if (isFontChanged) {
             ReloadFonts();

@@ -73,7 +73,7 @@ namespace SR_GTYPES_NS {
         return false;
     }
 
-    MeshType Sprite::GetMeshType() const noexcept {
+    MeshType Sprite::GetMeshTypeImpl() const noexcept {
         return MeshType::Sprite;
     }
 

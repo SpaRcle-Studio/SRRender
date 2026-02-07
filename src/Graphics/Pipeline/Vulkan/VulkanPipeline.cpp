@@ -2413,6 +2413,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool VulkanPipeline::IsVSyncEnabled() const {
+        SR_TRACY_ZONE;
+
         if (!m_kernel) {
             return false;
         }
@@ -2737,6 +2739,7 @@ namespace SR_GRAPH_NS {
     }
 
     uint16_t VulkanPipeline::GetSwapchainImagesCount() const {
+        SR_TRACY_ZONE;
         return m_kernel ? m_kernel->GetSwapchainImagesCount() : 0;
     }
 

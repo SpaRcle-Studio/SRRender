@@ -30,7 +30,7 @@ namespace SR_GTYPES_NS {
 
         void OnRawMeshChanged() override;
 
-        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Wireframe; }
+        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Wireframe; }
 
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
         SR_NODISCARD std::string GetMeshIdentifier() const override;

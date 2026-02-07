@@ -25,7 +25,7 @@ namespace SR_GTYPES_NS {
 
         void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
 
-        SR_NODISCARD MeshType GetMeshType() const noexcept override { return MeshType::Text; }
+        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Text; }
 
         SR_NODISCARD bool IsFlatMesh() const noexcept override;
 

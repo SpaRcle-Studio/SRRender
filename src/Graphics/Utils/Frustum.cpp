@@ -114,16 +114,28 @@ namespace SR_GRAPH_NS {
         const SR_MATH_NS::FVector3 extents = box.GetExtends();
 
         const float_t r =
-            extents.x * std::abs(plane.normal.x) +
-            extents.y * std::abs(plane.normal.y) +
-            extents.z * std::abs(plane.normal.z);
+            extents.x * plane.normalAbs.x +
+            extents.y * plane.normalAbs.y +
+            extents.z * plane.normalAbs.z;
 
         return -r <= plane.Distance(box.GetCenter());
     }
 
+    bool IsOnOrForwardPlane(const SR_MATH_NS::FVector3& extents, const SR_MATH_NS::FVector3& center, const FrustumPlane& plane) {
+        const float_t r =
+            extents.x * plane.normalAbs.x +
+            extents.y * plane.normalAbs.y +
+            extents.z * plane.normalAbs.z;
+
+        return -r <= plane.Distance(center);
+    }
+
     bool Frustum::IsAABBVisible(const SR_MATH_NS::AABB& box) const {
+        const SR_MATH_NS::FVector3 extents = box.GetExtends();
+        const SR_MATH_NS::FVector3 center = box.GetCenter();
+
         for (const auto& plane : planes) {
-            if (!IsOnOrForwardPlane(box, plane)) {
+            if (!IsOnOrForwardPlane(extents, center, plane)) {
                 return false;
             }
         }
