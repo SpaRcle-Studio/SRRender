@@ -16,6 +16,7 @@
 #include <EvoVulkan/DescriptorManager.h>
 
 #include <Utils/Common/Features.h>
+#include <Utils/Common/SubscriptionMessage.h>
 
 #ifdef SR_WIN32
     extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -181,8 +182,8 @@ namespace SR_GRAPH_NS {
             case SR_UTILS_NS::KeyCode::Tab:         return ImGuiKey_Tab;
             case SR_UTILS_NS::KeyCode::Enter:       return ImGuiKey_Enter;
             case SR_UTILS_NS::KeyCode::LShift:      return ImGuiKey_LeftShift;
-            case SR_UTILS_NS::KeyCode::Ctrl:        return ImGuiKey_LeftCtrl;
-            case SR_UTILS_NS::KeyCode::Alt:         return ImGuiKey_LeftAlt;
+            case SR_UTILS_NS::KeyCode::LCtrl:       return ImGuiKey_LeftCtrl;
+            case SR_UTILS_NS::KeyCode::LAlt:        return ImGuiKey_LeftAlt;
             case SR_UTILS_NS::KeyCode::Escape:      return ImGuiKey_Escape;
             case SR_UTILS_NS::KeyCode::Space:       return ImGuiKey_Space;
 
@@ -191,7 +192,7 @@ namespace SR_GRAPH_NS {
             case SR_UTILS_NS::KeyCode::RightArrow:  return ImGuiKey_RightArrow;
             case SR_UTILS_NS::KeyCode::DownArrow:   return ImGuiKey_DownArrow;
 
-            case SR_UTILS_NS::KeyCode::Del:         return ImGuiKey_Delete;
+            case SR_UTILS_NS::KeyCode::Delete:      return ImGuiKey_Delete;
             case SR_UTILS_NS::KeyCode::Insert:      return ImGuiKey_Insert;
             case SR_UTILS_NS::KeyCode::Home:        return ImGuiKey_Home;
             case SR_UTILS_NS::KeyCode::End:         return ImGuiKey_End;
@@ -307,6 +308,13 @@ namespace SR_GRAPH_NS {
         }
 
         SR_GRAPH_LOG("VulkanImGuiOverlay::Init() : initialization vulkan ImGui overlay...");
+
+        m_inputTextSubscription = SR_UTILS_NS::Input::Instance().Subscribe(SR_UTILS_NS::INPUT_TEXT_EVENT_ID, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+            if (m_inputTextEvents.size() > 64) {
+                m_inputTextEvents.erase(m_inputTextEvents.begin());
+            }
+            m_inputTextEvents.push_back(std::any_cast<SR_UTILS_NS::InputTextEvent>(msg.GetAny(SR_UTILS_NS::INPUT_TEXT_EVENT_DATA_ID)));
+        });
 
         [[maybe_unused]] auto&& pWindow = m_pipeline->GetWindow();
 
@@ -438,12 +446,19 @@ namespace SR_GRAPH_NS {
     #elif defined(SR_LINUX) && defined(SR_RENDER_GLFW)
         ImGui_ImplGlfw_NewFrame();
     #elif defined(SR_LINUX) && defined(SR_RENDER_USE_NATIVE_WAYLAND)
+        ImGuiIO& io = ImGui::GetIO();
+
         if (auto&& pNativeWindow = m_pipeline->GetWindow()->GetImplementation<WaylandWindow>()) {
-            ImGuiIO& io = ImGui::GetIO();
             const float_t scale = pNativeWindow->GetScale();
             io.DisplayFramebufferScale = ImVec2(scale, scale);
             io.DisplaySize = ImVec2(pNativeWindow->GetSurfaceWidth() / scale, pNativeWindow->GetSurfaceHeight() / scale);
         }
+
+        static const SR_UTILS_NS::StringAtom deltaTimeKey = "DeltaTime";
+        constexpr float_t defaultDeltaTime = 1.0f / 60.0f;
+        io.DeltaTime = SR_THIS_THREAD->GetContext()->GetValueDef<float_t>(deltaTimeKey, defaultDeltaTime);
+        io.DeltaTime = io.DeltaTime == 0.0f ? defaultDeltaTime : io.DeltaTime;
+
     #elif defined(SR_ANDROID)
         ImGui_ImplAndroid_NewFrame();
     #endif
@@ -652,6 +667,11 @@ namespace SR_GRAPH_NS {
                 }
             }
         }
+
+        for (auto& event : m_inputTextEvents) {
+            ImGui::GetIO().AddInputCharactersUTF8(event.GetText().data());
+        }
+        m_inputTextEvents.clear();
 
         m_keyboardState = keyboardState;
         m_mouseState = mouseState;

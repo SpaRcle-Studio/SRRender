@@ -11,6 +11,8 @@
 #include <EvoVulkan/Tools/SubmitInfo.h>
 #include <EvoVulkan/Types/RenderPass.h>
 
+#include <Utils/Input/InputSystem.h>
+
 namespace EvoVulkan::Types {
     class Device;
     class Swapchain;
@@ -65,6 +67,9 @@ namespace SR_GRAPH_NS {
         static const std::vector<VkDescriptorPoolSize> POOL_SIZES;
 
     private:
+        SR_UTILS_NS::Subscription m_inputTextSubscription;
+        std::vector<SR_UTILS_NS::InputTextEvent> m_inputTextEvents;
+
         EvoVulkan::SubmitInfo m_submitInfo = { };
 
         bool m_dynamicRendering = false;

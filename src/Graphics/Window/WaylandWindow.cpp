@@ -7,6 +7,7 @@
 #include <Utils/Profile/TracyContext.h>
 #include <Utils/Platform/Platform.h>
 #include <Utils/Input/KeyCodes.h>
+#include <Utils/Input/InputSystem.h>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -158,9 +159,9 @@ namespace SR_GRAPH_NS {
                 keyboardState = SR_PLATFORM_NS::KeyboardState();
             }
 
-            keyboardState->Set(SR_UTILS_NS::KeyCode::Ctrl, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE));
+            keyboardState->Set(SR_UTILS_NS::KeyCode::LCtrl, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE));
             keyboardState->Set(SR_UTILS_NS::KeyCode::LShift, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE));
-            keyboardState->Set(SR_UTILS_NS::KeyCode::Alt, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_ALT, XKB_STATE_MODS_EFFECTIVE));
+            keyboardState->Set(SR_UTILS_NS::KeyCode::LAlt, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_ALT, XKB_STATE_MODS_EFFECTIVE));
             keyboardState->Set(SR_UTILS_NS::KeyCode::Super, xkb_state_mod_name_is_active(pWindow->GetXkbState(), XKB_MOD_NAME_LOGO, XKB_STATE_MODS_EFFECTIVE));
         }
 
@@ -180,17 +181,39 @@ namespace SR_GRAPH_NS {
                 keyboardState = SR_PLATFORM_NS::KeyboardState();
             }
 
-            const xkb_keysym_t* syms;
-            int numSyms = xkb_state_key_get_syms(pWindow->GetXkbState(), key + 8, &syms);
-            if (numSyms > 0) {
-                for (int i = 0; i < numSyms; ++i) {
-                    auto keysym = syms[i];
-                    auto keyCode = SR_UTILS_NS::KeyCodeFromXkbKeysym(keysym);
-                    if (keyCode != SR_UTILS_NS::KeyCode::None) {
-                        keyboardState->Set(keyCode, state == WL_KEYBOARD_KEY_STATE_PRESSED);
-                    }
+            //const xkb_keysym_t* syms;
+            //int numSyms = xkb_state_key_get_syms(pWindow->GetXkbState(), key + 8, &syms);
+            //if (numSyms > 0) {
+            //    for (int i = 0; i < numSyms; ++i) {
+            //        auto keysym = syms[i];
+            //        auto keyCode = SR_UTILS_NS::KeyCodeFromXkbKeysym(keysym);
+            //        if (keyCode != SR_UTILS_NS::KeyCode::None) {
+            //            keyboardState->Set(keyCode, state == WL_KEYBOARD_KEY_STATE_PRESSED);
+            //        }
+            //    }
+            //}
+
+            const bool pressed = (state == WL_KEYBOARD_KEY_STATE_PRESSED);
+
+            const uint32_t xkbKey = key + 8;
+
+            xkb_state_update_key(pWindow->GetXkbState(), xkbKey, pressed ? XKB_KEY_DOWN : XKB_KEY_UP);
+
+            if (auto keyCode = SR_UTILS_NS::KeyCodeFromEvdev(key); keyCode != SR_UTILS_NS::KeyCode::None) {
+                keyboardState->Set(keyCode, pressed);
+            }
+
+            if (pressed) {
+                char utf8[64] = {};
+                if (const int n = xkb_state_key_get_utf8(pWindow->GetXkbState(), xkbKey, utf8, sizeof(utf8)); n > 0) {
+                    SR_UTILS_NS::InputTextEvent event;
+                    event.SetText(std::string_view(utf8, static_cast<size_t>(n)));
+                    event.pSource = pWindow;
+                    SR_UTILS_NS::Input::Instance().AddTextEvent(std::move(event));
                 }
             }
+
+            SR_PLATFORM_NS::SetOverriddenKeyboardState(keyboardState);
         }
 
         void keyboard_repeat_info(void* pData, wl_keyboard*, int32_t rate, int32_t delay) {
