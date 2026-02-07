@@ -38,9 +38,8 @@ namespace SR_GTYPES_NS {
             }
         });
 
-        if (auto&& pRenderScene = GetRenderScene(); pRenderScene.RecursiveLockIfValid()) {
+        if (auto&& pRenderScene = GetRenderScene()) {
             pRenderScene->Register(GetThis().DynamicCast<Camera>());
-            pRenderScene.Unlock();
             m_isRegistered = true;
         }
         else {
@@ -51,9 +50,8 @@ namespace SR_GTYPES_NS {
     void Camera::OnDestroy() {
         RenderScene::Ptr pRenderScene = TryGetRenderScene();
 
-        if (m_isRegistered && pRenderScene.RecursiveLockIfValid()) {
+        if (m_isRegistered && pRenderScene) {
             pRenderScene->Remove(GetThis().DynamicCast<Camera>());
-            pRenderScene.Unlock();
         }
 
         Super::OnDestroy();
@@ -135,8 +133,6 @@ namespace SR_GTYPES_NS {
         if (!scene) {
             return RenderScenePtr();
         }
-
-        SR_HTYPES_NS::SafePtrRecursiveLockGuard m_lock(scene);
 
         if (scene->Valid()) {
             return scene->GetDataStorage().GetValue<RenderScenePtr>();
@@ -272,18 +268,16 @@ namespace SR_GTYPES_NS {
     }
 
     void Camera::OnEnable() {
-        if (auto&& renderScene = TryGetRenderScene(); renderScene.RecursiveLockIfValid()) {
+        if (auto&& renderScene = TryGetRenderScene()) {
             renderScene->SetDirtyCameras();
-            renderScene.Unlock();
         }
 
         Super::OnEnable();
     }
 
     void Camera::OnDisable() {
-        if (auto&& renderScene = GetRenderScene(); renderScene.RecursiveLockIfValid()) {
+        if (auto&& renderScene = GetRenderScene()) {
             renderScene->SetDirtyCameras();
-            renderScene.Unlock();
         }
 
         Super::OnDisable();

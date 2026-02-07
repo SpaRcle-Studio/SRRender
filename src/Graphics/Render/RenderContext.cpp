@@ -315,13 +315,12 @@ namespace SR_GRAPH_NS {
 
         RenderScenePtr pRenderScene;
 
-        if (pScene.RecursiveLockIfValid()) {
+        if (pScene) {
             auto&& dataStorage = pScene->GetDataStorage();
 
             /// У каждой сцены может быть только одна сцена рендера
             if (dataStorage.GetValueDef<RenderScenePtr>(RenderScenePtr())) {
                 SR_ERROR("RenderContext::CreateScene() : render scene is already exists!");
-                pScene.Unlock();
                 return pRenderScene;
             }
 
@@ -334,7 +333,6 @@ namespace SR_GRAPH_NS {
             ));
 
             dataStorage.SetValue<RenderScenePtr>(pRenderScene);
-            pScene.Unlock();
         }
         else {
             SR_ERROR("RenderContext::CreateScene() : scene is invalid!");
