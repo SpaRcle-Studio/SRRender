@@ -122,12 +122,13 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_MATH_NS::UVector2 GetSurfaceSize() const;
         SR_NODISCARD const std::vector<CameraInfo>& GetCameras() { return m_cameras; }
 
+        static void RenderBlackScreen(Pipeline* pPipeline, bool randomColor);
+
     private:
         SR_HTYPES_NS::SharedPtr<IRenderer> AddRenderer(SR_UTILS_NS::StringAtom name);
         void SetMeshMaterial(MeshPtr pMesh);
 
         void SortCameras();
-        void RenderBlackScreen();
 
         void PrepareFrame();
         void Overlay();

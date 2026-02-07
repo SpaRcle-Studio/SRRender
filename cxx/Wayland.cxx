@@ -2,11 +2,20 @@
     extern "C" {
         #include <xdg-shell-client-protocol.h>
         #include <xdg-decoration-unstable-v1.h>
+        #include <fractional-scale-v1-client-protocol.h>
 
         #include "xdg-decoration-unstable-v1.c"
+
         #ifdef WL_PRIVATE
             #undef WL_PRIVATE
         #endif
+
         #include "xdg-shell-client-protocol.c"
+
+        #ifdef WL_PRIVATE
+            #undef WL_PRIVATE
+        #endif
+
+        #include "fractional-scale-v1-client-protocol.c"
     }
 #endif

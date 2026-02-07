@@ -163,7 +163,7 @@ namespace SR_GRAPH_NS::Memory {
         info.destroyed = false;
 
         /// Каждая камера должга иметь сцену рендера, иначе будет непонятно куда рендерить
-        if (auto&& scene = pCamera->GetScene(); scene->RecursiveLockIfValid()) {
+        if (auto&& scene = pCamera->GetScene()) {
             info.pRenderScene = scene->GetDataStorage().GetValueDef<RenderScenePtr>(RenderScenePtr());
             if (info.pRenderScene.Valid()) {
                 info.pRenderScene->SetDirty();
@@ -171,7 +171,6 @@ namespace SR_GRAPH_NS::Memory {
             else {
                 SR_WARN("CameraManager::RegisterCamera() : render scene is invalid!");
             }
-            scene->Unlock();
         }
         else {
             SRHalt("CameraManager::RegisterCamera() : scene is invalid!");
@@ -183,9 +182,8 @@ namespace SR_GRAPH_NS::Memory {
         ));
 
         auto&& renderScene = info.pRenderScene;
-        if (renderScene.RecursiveLockIfValid()) {
+        if (renderScene) {
             renderScene->SetDirty();
-            renderScene.Unlock();
         }
         else {
             m_pipeline->SetDirty(true);

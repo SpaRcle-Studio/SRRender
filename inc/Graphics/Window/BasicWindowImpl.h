@@ -67,6 +67,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual SR_MATH_NS::IVector2 ScreenToClient(const SR_MATH_NS::IVector2& pos) const { return SR_MATH_NS::IVector2(); }
         SR_NODISCARD virtual bool IsVisible() const { return true; }
 
+        SR_NODISCARD const ScrollCallback& GetScrollCallback() const { return m_scrollCallback; }
+
         virtual void Close() { m_isClosed = true;  m_isValid = false; }
 
         virtual void Resize(uint32_t width, uint32_t height) { }

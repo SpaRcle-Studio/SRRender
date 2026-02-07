@@ -10,6 +10,10 @@
 
 #include <X11/Xlib-xcb.h>
 
+#ifdef None /// Fucking X11 headers define None as a macro, which breaks our code. Undefine it.
+    #undef None
+#endif
+
 #include <vulkan/vulkan_xcb.h>
 #include <vulkan/vulkan_xlib.h>
 

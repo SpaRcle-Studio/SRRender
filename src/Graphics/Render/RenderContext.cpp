@@ -315,13 +315,12 @@ namespace SR_GRAPH_NS {
 
         RenderScenePtr pRenderScene;
 
-        if (pScene.RecursiveLockIfValid()) {
+        if (pScene) {
             auto&& dataStorage = pScene->GetDataStorage();
 
             /// У каждой сцены может быть только одна сцена рендера
             if (dataStorage.GetValueDef<RenderScenePtr>(RenderScenePtr())) {
                 SR_ERROR("RenderContext::CreateScene() : render scene is already exists!");
-                pScene.Unlock();
                 return pRenderScene;
             }
 
@@ -334,7 +333,6 @@ namespace SR_GRAPH_NS {
             ));
 
             dataStorage.SetValue<RenderScenePtr>(pRenderScene);
-            pScene.Unlock();
         }
         else {
             SR_ERROR("RenderContext::CreateScene() : scene is invalid!");
@@ -496,6 +494,10 @@ namespace SR_GRAPH_NS {
     void RenderContext::PrepareFrame() {
         SR_TRACY_ZONE;
 
+        if (m_pipeline) {
+            m_pipeline->PrepareFrame();
+        }
+
         for (auto&& pFrameBuffer : m_framebuffers) {
             m_hasChangedFrameBuffers |= pFrameBuffer->IsDirty();
             pFrameBuffer->Update();
@@ -532,6 +534,8 @@ namespace SR_GRAPH_NS {
             SR_GRAPH_NS::DescriptorManager::Instance().CollectUnused();
             m_isNeedGarbageCollection = false;
         }
+
+        SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_PREPARE_FRAME);
     }
 
     const std::vector<SR_GTYPES_NS::Shader::Ptr>& RenderContext::GetShaders() const noexcept {
@@ -736,7 +740,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         SR_LOG("RenderContext::PreInit() : pre-initializing render context...");
 
-        if (SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode()) {
+        if (SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode() || SR_UTILS_NS::Features::Instance().Enabled("HeadlessPipeline", false)) {
             SR_LOG("RenderContext::PreInit() : creating headless pipeline...");
             m_pipeline = new HeadlessPipeline(GetThis());
         }

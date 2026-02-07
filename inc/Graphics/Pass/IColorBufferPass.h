@@ -8,9 +8,7 @@
 #include <Graphics/macros.h>
 
 #include <Utils/Math/Vector4.h>
-#include <Utils/Types/SharedPtr.h>
-#include <unordered_map>
-#include <atomic>
+#include <Utils/Types/WeakPtr.h>
 
 namespace SR_GTYPES_NS {
     class Shader;

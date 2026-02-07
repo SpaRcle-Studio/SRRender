@@ -11,7 +11,7 @@
     #include <Utils/Profile/TracyContext.h>
 
     #include <EvoVulkan/VulkanKernel.h>
-    #include <TracyVulkan.hpp>
+    #include <tracy/TracyVulkan.hpp>
 
     #define SR_TRACY_VK_CREATE(singleTimeCmd, pKernel, name)                                                            \
         auto&& pTracyVkCreateContext = SR_TRACY_GET_CONTEXT(SR_UTILS_NS::TracyType::Vulkan, (void*)nullptr);            \

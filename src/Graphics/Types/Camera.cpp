@@ -21,14 +21,7 @@
 namespace SR_GTYPES_NS {
     Camera::Camera()
         : Super()
-    {
-        m_onRenderSettingsChanged = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID, [this](auto&&) {
-            m_hasErrors = false;
-            if (m_renderTechnique.path.empty()) {
-                RemoveTechnique();
-            }
-        });
-    }
+    { }
 
     Camera::~Camera() {
         m_onRenderSettingsChanged.Reset();
@@ -38,9 +31,15 @@ namespace SR_GTYPES_NS {
     void Camera::OnAttached() {
         Super::OnAttached();
 
-        if (auto&& pRenderScene = GetRenderScene(); pRenderScene.RecursiveLockIfValid()) {
+        m_onRenderSettingsChanged = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID, [this](auto&&) {
+            m_hasErrors = false;
+            if (m_renderTechnique.path.empty()) {
+                RemoveTechnique();
+            }
+        });
+
+        if (auto&& pRenderScene = GetRenderScene()) {
             pRenderScene->Register(GetThis().DynamicCast<Camera>());
-            pRenderScene.Unlock();
             m_isRegistered = true;
         }
         else {
@@ -51,9 +50,8 @@ namespace SR_GTYPES_NS {
     void Camera::OnDestroy() {
         RenderScene::Ptr pRenderScene = TryGetRenderScene();
 
-        if (m_isRegistered && pRenderScene.RecursiveLockIfValid()) {
+        if (m_isRegistered && pRenderScene) {
             pRenderScene->Remove(GetThis().DynamicCast<Camera>());
-            pRenderScene.Unlock();
         }
 
         Super::OnDestroy();
@@ -136,8 +134,6 @@ namespace SR_GTYPES_NS {
             return RenderScenePtr();
         }
 
-        SR_HTYPES_NS::SafePtrRecursiveLockGuard m_lock(scene);
-
         if (scene->Valid()) {
             return scene->GetDataStorage().GetValue<RenderScenePtr>();
         }
@@ -188,7 +184,6 @@ namespace SR_GTYPES_NS {
         m_isInverseDirty = true;
 
         if (m_viewportSize.HasZero()) {
-            SRHalt("Camera::UpdateProjection() : viewport size has zero!");
             m_aspect = 0.f;
         }
         else {
@@ -216,14 +211,15 @@ namespace SR_GTYPES_NS {
         //m_orthogonal[3][1] = 1.0f;
         //m_orthogonal[3][2] = m_near / (m_near - m_far);
 
-        m_pixelOrthogonal = SR_MATH_NS::Matrix4x4::Identity();
-        m_pixelOrthogonal[0][0] =  2.0f / m_viewportSize.x;  // масштабируем X в [-1,1]
-        m_pixelOrthogonal[1][1] = -2.0f / m_viewportSize.y;  // масштабируем Y в [-1,1] и переворачиваем, чтобы (0,0) был в верхнем левом
-        m_pixelOrthogonal[2][2] = 1.f / (m_far - m_near);
-        m_pixelOrthogonal[3][2] = m_near / (m_far - m_near);
-        m_pixelOrthogonal[3][0] = -1.0f;       // смещение X
-        m_pixelOrthogonal[3][1] = 1.0f;        // смещение Y
-
+        if (!m_viewportSize.HasZero()) {
+            m_pixelOrthogonal = SR_MATH_NS::Matrix4x4::Identity();
+            m_pixelOrthogonal[0][0] =  2.0f / m_viewportSize.x;  // масштабируем X в [-1,1]
+            m_pixelOrthogonal[1][1] = -2.0f / m_viewportSize.y;  // масштабируем Y в [-1,1] и переворачиваем, чтобы (0,0) был в верхнем левом
+            m_pixelOrthogonal[2][2] = 1.f / (m_far - m_near);
+            m_pixelOrthogonal[3][2] = m_near / (m_far - m_near);
+            m_pixelOrthogonal[3][0] = -1.0f;       // смещение X
+            m_pixelOrthogonal[3][1] = 1.0f;        // смещение Y
+        }
 
         //////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -272,18 +268,16 @@ namespace SR_GTYPES_NS {
     }
 
     void Camera::OnEnable() {
-        if (auto&& renderScene = TryGetRenderScene(); renderScene.RecursiveLockIfValid()) {
+        if (auto&& renderScene = TryGetRenderScene()) {
             renderScene->SetDirtyCameras();
-            renderScene.Unlock();
         }
 
         Super::OnEnable();
     }
 
     void Camera::OnDisable() {
-        if (auto&& renderScene = GetRenderScene(); renderScene.RecursiveLockIfValid()) {
+        if (auto&& renderScene = GetRenderScene()) {
             renderScene->SetDirtyCameras();
-            renderScene.Unlock();
         }
 
         Super::OnDisable();
@@ -312,7 +306,13 @@ namespace SR_GTYPES_NS {
     void Camera::SetRenderTechnique(const SR_UTILS_NS::Path& path) {
         RemoveTechnique();
         m_hasErrors = false;
-        m_renderTechnique.path = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+
+        if (path.IsEmpty()) {
+            m_renderTechnique.path = SR_UTILS_NS::Path();
+        }
+        else {
+            m_renderTechnique.path = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
+        }
     }
 
     void Camera::SetCameraType(CameraType type) {

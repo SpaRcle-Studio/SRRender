@@ -359,6 +359,9 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        /// Под Wayland'ом нужно самостоятельно отслеживать изменение размеров окна
+        m_kernel->SetAutoSwapChainResize(m_window && m_window->GetImplementation() && m_window->GetImplementation()->GetType() == BasicWindowImpl::WindowType::Wayland);
+
         SR_INFO("VulkanPipeline::Init() : creating vulkan memory manager...");
         m_memory = VulkanTools::MemoryManager::Create(m_kernel);
         if (!m_memory) {
@@ -2202,7 +2205,7 @@ namespace SR_GRAPH_NS {
         //    m_kernel->WaitFences();
         //}
 
-        if (m_kernel && (m_kernel->IsDirty() || m_kernel->GetSwapchain()->IsDirty())) {
+        if (m_kernel && (m_kernel->IsDirty() || (m_kernel->GetSwapchain() && m_kernel->GetSwapchain()->IsDirty()))) {
             m_kernel->WaitAllFences();
             m_kernel->WaitIdle();
             m_kernel->WaitDeviceIdle();
