@@ -2,6 +2,8 @@
 // Created by monika on 2/4/26.
 //
 
+#ifdef SR_RENDER_USE_NATIVE_WAYLAND
+
 #include <Graphics/Window/WaylandWindow.h>
 
 #include <Utils/Profile/TracyContext.h>
@@ -931,3 +933,5 @@ namespace SR_GRAPH_NS {
         SR_LOG("WaylandWindow::Close() : window closed.");
     }
 }
+
+#endif
