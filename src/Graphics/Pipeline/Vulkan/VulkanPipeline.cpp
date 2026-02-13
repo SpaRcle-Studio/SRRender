@@ -346,6 +346,9 @@ namespace SR_GRAPH_NS {
                 m_kernel->SetSize(pImpl->GetSurfaceWidth(), pImpl->GetSurfaceHeight());
             }
         }
+        else {
+            SR_LOG("VulkanPipeline::Init() : window is not exists. Continuing without creating surface...");
+        }
 
         std::vector<const char*> deviceExtensions = {
             //VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME

@@ -223,4 +223,9 @@ namespace SR_GRAPH_NS {
 
         return pShader.Get();
     }
+
+    const MaterialData::Ptr& BaseMaterial::GetMaterialData() const noexcept {
+        static MaterialData::Ptr empty;
+        return empty;
+    }
 }

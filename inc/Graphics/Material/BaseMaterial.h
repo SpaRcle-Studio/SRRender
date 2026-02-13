@@ -25,6 +25,7 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class RenderContext;
 
+    /// @abstract
     class BaseMaterial : public SR_UTILS_NS::Serializable, public SR_UTILS_NS::NonCopyable, public SR_HTYPES_NS::SharedPtr<BaseMaterial> {
         SR_CLASS()
     public:
@@ -48,11 +49,11 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD bool IsValid() const;
         SR_NODISCARD RenderContextPtr GetContext() const { return m_context; }
-        SR_NODISCARD virtual const MaterialData::Ptr& GetMaterialData() const noexcept = 0;
+        SR_NODISCARD virtual const MaterialData::Ptr& GetMaterialData() const noexcept;
         SR_NODISCARD SR_GTYPES_NS::Shader* GetDefaultShader() const noexcept;
         SR_NODISCARD SR_GTYPES_NS::Shader* GetShader(const SR_SRSL_NS::ShaderMacrosParams& macros) const noexcept;
 
-        SR_NODISCARD virtual MaterialType GetMaterialType() const noexcept = 0;
+        SR_NODISCARD virtual MaterialType GetMaterialType() const noexcept { return MaterialType::None; }
 
         SR_NODISCARD virtual uint32_t RegisterMesh(MeshPtr pMesh);
         virtual void UnregisterMesh(uint32_t* pId);
