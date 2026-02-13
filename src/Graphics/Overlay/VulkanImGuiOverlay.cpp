@@ -542,7 +542,7 @@ namespace SR_GRAPH_NS {
             },
             { } /** input attachments */,
             countMSAASamples,
-            VK_IMAGE_ASPECT_NONE /** depth buffer */,
+            EvoVulkan::Tools::Initializers::EVK_IMAGE_ASPECT_NONE /** depth buffer */,
             m_device->GetDepthFormat()
         );
 
