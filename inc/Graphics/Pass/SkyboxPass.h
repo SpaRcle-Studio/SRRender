@@ -24,6 +24,7 @@ namespace SR_GRAPH_NS {
 
         void SetSkybox(const SR_UTILS_NS::Path& path);
         void SetShader(const SR_UTILS_NS::Path& path);
+        void SetIsQuad(bool isQuad);
 
     private:
         bool UpdateParams();

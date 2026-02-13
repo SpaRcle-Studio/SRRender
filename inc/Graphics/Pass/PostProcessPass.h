@@ -17,16 +17,11 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class PostProcessPass : public BasePass {
         SR_CLASS()
-
-        struct Property {
-            SR_UTILS_NS::StringAtom id;
-            ShaderPropertyVariant data = {};
-            ShaderVarType type = ShaderVarType::Unknown;
-        };
-
         using Super = BasePass;
-        using Properties = std::vector<Property>;
         using ShaderPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>;
+    public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<PostProcessPass>;
+
     public:
         ~PostProcessPass() override;
 
@@ -50,7 +45,6 @@ namespace SR_GRAPH_NS {
         int32_t m_virtualDescriptor = SR_ID_INVALID;
         int32_t m_virtualUBO = SR_ID_INVALID;
         bool m_dirtyShader = true;
-        Properties m_properties;
 
         /// @property
         uint32_t m_vertices = 3;

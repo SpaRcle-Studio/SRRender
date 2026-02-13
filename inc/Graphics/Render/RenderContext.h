@@ -7,6 +7,7 @@
 
 #include <Graphics/Pipeline/PipelineType.h>
 #include <Graphics/Settings/RenderSettings.h>
+#include <Graphics/Settings/ActiveGraphicsSettings.h>
 #include <Graphics/Material/FileMaterial.h>
 
 #include <Utils/World/Scene.h>
@@ -79,6 +80,8 @@ namespace SR_GRAPH_NS {
         bool Init();
         void Close();
 
+        void ReloadGraphicsSettings();
+
         void SetDirty();
 
         void OnResize(const SR_MATH_NS::UVector2& size);
@@ -114,6 +117,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const RenderSettingsPreset& GetSettingsPreset() const noexcept;
         SR_NODISCARD Definitions GetShaderMacros() const;
         SR_NODISCARD const RenderSettings& GetSettings() const noexcept;
+        SR_NODISCARD const ActiveGraphicsSettings& GetActiveGraphicsSettings() const noexcept { return m_activeGraphicsSettings; }
+        SR_NODISCARD ActiveGraphicsSettings& GetActiveGraphicsSettings() noexcept { return m_activeGraphicsSettings; }
         SR_NODISCARD SR_UTILS_NS::StringAtom GetActivePreset() const noexcept { return m_activePreset; }
 
         void SetActivePreset(SR_UTILS_NS::StringAtom name);
@@ -149,7 +154,8 @@ namespace SR_GRAPH_NS {
 
         WindowPtr m_window;
 
-        RenderSettings::Ptr m_settings;
+        ActiveGraphicsSettings m_activeGraphicsSettings;
+        RenderSettings::Ptr m_renderSettings;
         SR_UTILS_NS::Subscription m_onSettingsReloaded;
 
         MaterialPtr m_defaultUIMaterial;

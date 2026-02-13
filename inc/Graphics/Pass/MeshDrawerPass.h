@@ -56,6 +56,7 @@ namespace SR_GRAPH_NS {
         SR_CLASS()
         using Super = BasePass;
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<MeshDrawerPass>;
         using RenderQueuePtr = SR_HTYPES_NS::SharedPtr<RenderQueue>;
 
     public:
@@ -84,7 +85,9 @@ namespace SR_GRAPH_NS {
 
         void OnMultisampleChanged() override;
         void OnResize(const SR_MATH_NS::UVector2& size) override;
-        void SetRenderLayers(uint8_t layers) { m_renderLayers = layers; }
+        void SetRenderLayers(uint8_t layers);
+        void SetFrustumCulling(bool enabled) { m_frustumCulling = enabled; }
+        void AddShaderDefine(const std::string& define) { m_shaderDefines.insert(define); }
 
         SR_NODISCARD bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const override;
         SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const override { return true; }
@@ -93,6 +96,10 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const SR_SRSL_NS::ShaderMacrosParams& GetShaderMacros() const noexcept { return m_shaderMacros; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept { return m_renderLayers; }
         SR_NODISCARD const RenderQueuePtr& GetRenderQueue(uint32_t index) const;
+        SR_NODISCARD std::set<SR_UTILS_NS::StringAtom>& GetAllowedLayers() { return m_allowedLayers; }
+        SR_NODISCARD std::set<SR_UTILS_NS::StringAtom>& GetDisallowedLayers() { return m_disallowedLayers; }
+        SR_NODISCARD SamplersPassData& GetSamplersData() { return m_samplers; }
+        SR_NODISCARD MeshDrawerUniforms& GetUniformsData() { return m_uniforms; }
 
     protected:
         SR_NODISCARD virtual const Frustum& GetFrustum(uint32_t renderLayer) const;

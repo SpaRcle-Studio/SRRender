@@ -32,6 +32,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& GetFramebuffer() const noexcept;
         SR_NODISCARD bool IsFrameBufferRendered() const noexcept { return m_isFrameBufferRendered; }
         SR_NODISCARD const ClearColors& GetClearColors() const noexcept { return m_clearColors; }
+        SR_NODISCARD ClearColors& GetClearColors() noexcept { return m_clearColors; }
         SR_NODISCARD std::optional<float_t> GetClearDepth() const noexcept { return m_depth; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept;
 
@@ -59,7 +60,7 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom m_frameBufferName;
         /// @property
-        std::optional<float_t> m_depth;
+        std::optional<float_t> m_depth = 1.f;
 
     };
 }

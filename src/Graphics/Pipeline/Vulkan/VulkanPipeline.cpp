@@ -2236,11 +2236,13 @@ namespace SR_GRAPH_NS {
     }
 
     bool VulkanPipeline::BindDescriptorSet(uint32_t descriptorSet) {
+        SR_TRACY_ZONE;
+
         if (!Super::BindDescriptorSet(descriptorSet)) {
             return false;
         }
 
-        SRAssert2(m_isComputeState || m_isRenderState, "Render or compute state must be active to bind descriptor set!");
+        SRAssert(m_isComputeState || m_isRenderState);
 
         m_currentDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
 

@@ -17,6 +17,9 @@ namespace SR_GRAPH_NS {
         using Super = GroupPass;
         SR_CLASS()
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<FrameBufferPass>;
+
+    public:
         bool Render() override;
         void Update() override;
 
@@ -27,6 +30,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const FrameBufferPassData& GetFrameBufferPassData() const noexcept { return m_data; }
 
         void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
+        void SetFrameBufferName(const SR_UTILS_NS::StringAtom& name) { m_data.SetFrameBufferName(name); }
 
     private:
         /// @property @noHeader

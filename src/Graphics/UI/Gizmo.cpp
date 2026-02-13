@@ -263,7 +263,7 @@ namespace SR_GRAPH_UI_NS {
                     }
                 }
             }
-            else {
+            else if (pColorBufferPass) {
                 m_colorRequest = pColorBufferPass->CreateColorRequest(mousePos);
             }
         }

@@ -26,4 +26,16 @@ namespace SR_GRAPH_NS {
 
         return defaultPreset;
     }
+
+    const ShadowQualityPreset& RenderSettings::GetShadowQualityPreset(Quality quality) const {
+        return FindSuitableQuality(quality, shadowQualityPresets);
+    }
+
+    float_t RenderSettings::GetColorBufferResolutionCoefficient(Quality quality) const {
+        const float_t coefficient = FindSuitableQuality(quality, colorBufferQualityPresets);
+        if (coefficient <= 0.0f) {
+            return 1.0f;
+        }
+        return coefficient;
+    }
 }

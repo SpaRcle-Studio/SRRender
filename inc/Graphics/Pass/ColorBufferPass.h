@@ -27,6 +27,9 @@ namespace SR_GRAPH_NS {
         using Super = MeshDrawerPass;
         friend class ColorBufferRenderQueue;
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<ColorBufferPass>;
+
+    public:
         bool Render() override;
 
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& GetColorFrameBuffer() const noexcept override;

@@ -28,6 +28,7 @@ namespace SR_GRAPH_NS {
         m_renderScene = pStrategy->GetRenderScene();
         m_pipeline = m_renderContext->GetPipeline().Get();
         m_meshes.reserve(512);
+        m_queues.reserve(32);
     }
 
     RenderQueue::~RenderQueue() {
@@ -447,6 +448,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
             m_queues.emplace_back(layer, Queue());
+            m_queues.back().second.Reserve(512);
         }
 
         for (auto&& [layer, queue] : stash) {

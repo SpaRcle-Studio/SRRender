@@ -5,18 +5,15 @@
 #ifndef SR_ENGINE_GRAPHICS_I_RENDER_TECHNIQUE_H
 #define SR_ENGINE_GRAPHICS_I_RENDER_TECHNIQUE_H
 
-#include <Graphics/macros.h>
+#include <Graphics/Memory/UBOManager.h>
+#include <Graphics/Memory/IGraphicsResource.h>
+#include <Graphics/Render/FrameBufferController.h>
+#include <Graphics/Pass/GroupPass.h>
+#include <Graphics/Pass/RenderTechniqueQueue.h>
 
 #include <Utils/Settings.h>
 #include <Utils/Math/Vector2.h>
 #include <Utils/Types/SafePointer.h>
-
-#include <Graphics/Memory/UBOManager.h>
-#include <Graphics/Memory/IGraphicsResource.h>
-#include <Graphics/Render/FrameBufferController.h>
-
-#include <Graphics/Pass/GroupPass.h>
-#include <Graphics/Pass/RenderTechniqueQueue.h>
 
 namespace SR_GTYPES_NS {
     class Camera;

@@ -8,12 +8,12 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Window/Window.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Utils/Types/DataStorage.h>
 #include <Utils/Types/SafePtrLockGuard.h>
 #include <Utils/Platform/Platform.h>
 #include <Utils/Events/Broadcaster.h>
-
 #include <Utils/FileSystem/PathDataAccessor.h>
 
 #include <Codegen/Camera.generated.hpp>
@@ -33,9 +33,7 @@ namespace SR_GTYPES_NS {
 
         m_onRenderSettingsChanged = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID, [this](auto&&) {
             m_hasErrors = false;
-            if (m_renderTechnique.path.empty()) {
-                RemoveTechnique();
-            }
+            RemoveTechnique();
         });
 
         if (auto&& pRenderScene = GetRenderScene()) {
@@ -90,14 +88,16 @@ namespace SR_GTYPES_NS {
 
         SR_UTILS_NS::Path path = GetRenderTechniquePath();
 
+        auto&& pContext = GetRenderScene()->GetContext();
+
         if (path.IsEmpty()) {
             switch (m_type) {
                 case CameraType::Main:
-                    path = GetRenderScene()->GetContext()->GetSettingsPreset().mainCameraRenderTechnique;
+                    path = pContext->GetSettingsPreset().mainCameraRenderTechnique;
                     break;
                 case CameraType::Editor:
                 case CameraType::EditorPrefab:
-                    path = GetRenderScene()->GetContext()->GetSettingsPreset().editorCameraRenderTechnique;
+                    path = pContext->GetSettingsPreset().editorCameraRenderTechnique;
                     break;
                 default:
                     break;
@@ -111,7 +111,13 @@ namespace SR_GTYPES_NS {
             return nullptr;
         }
 
-        m_renderTechnique.pTechnique = FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>();
+        RenderTechniqueLoadParams params;
+        params.instancing = pContext->GetPipeline()->IsShaderViewportIndexLayerSupported();
+        params.editor = IsEditorCamera();
+        params.pRenderSettings = &pContext->GetSettings();
+        params.sceneViewName = pContext->GetSettings().editorSceneImageName;
+        params.activeGraphicsSettings = pContext->GetActiveGraphicsSettings();
+        m_renderTechnique.pTechnique = FileRenderTechnique::Load(path, params).StaticCast<IRenderTechnique>();
 
         if (m_renderTechnique.pTechnique) {
             m_renderTechnique.pTechnique->SetCamera(this);
@@ -449,5 +455,13 @@ namespace SR_GTYPES_NS {
             return *m_viewportRect;
         }
         return SR_MATH_NS::FRect(0.f, 0.f, m_viewportSize.CastToFloat());
+    }
+
+    const RenderTechniqueData &Camera::GetRenderTechniqueData() const {
+        if (!m_renderTechnique.pTechnique) {
+            static const RenderTechniqueData emptyData;
+            return emptyData;
+        }
+        return m_renderTechnique.pTechnique->GetRenderTechniqueData();
     }
 }

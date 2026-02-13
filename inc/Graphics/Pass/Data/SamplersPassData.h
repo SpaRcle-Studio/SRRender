@@ -80,6 +80,8 @@ namespace SR_GRAPH_NS {
         bool PrepareSamplers();
         void SetRenderTechnique(IRenderTechnique* pTechnique) { m_pTechnique = pTechnique; }
 
+        void AddSampler(const SamplerData& data) { m_samplers.emplace_back(data); MarkSamplersDirty(); }
+
     private:
         /// @property
         std::vector<SamplerData> m_samplers;

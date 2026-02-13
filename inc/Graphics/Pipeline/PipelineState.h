@@ -60,7 +60,7 @@ namespace SR_GRAPH_NS {
         uint32_t ubo = 0;
     };
 
-    using SRDescriptorUpdateInfos = std::vector<SRDescriptorUpdateInfo>;
+    using SRDescriptorUpdateInfos = std::initializer_list<SRDescriptorUpdateInfo>;
 
     struct PipelinePreInitInfo {
         uint32_t samplesCount = 0;

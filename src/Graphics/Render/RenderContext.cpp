@@ -26,6 +26,7 @@
 #include <Utils/Common/Features.h>
 #include <Utils/Common/CLIManager.h>
 #include <Utils/Events/Broadcaster.h>
+#include <Utils/Serialization/SRASerialization.h>
 
 namespace SR_GRAPH_NS {
     template<typename T> bool UpdateRenderResource(RenderContext* pRenderContext, T& resourceList) noexcept {
@@ -171,16 +172,18 @@ namespace SR_GRAPH_NS {
 
         m_activePreset = SR_UTILS_NS::StoreUtils::User::GetString("RenderPreset", "Default");
 
+        ReloadGraphicsSettings();
+
         m_isOptimizedUpdateEnabled = SR_UTILS_NS::Features::Instance().Enabled("OptimizedRenderUpdate", true);
 
-        m_settings = RenderSettings::LoadOrCreate<RenderSettings>("Engine/Configs/RenderSettings.sras");
-        if (!m_settings) {
+        m_renderSettings = RenderSettings::LoadOrCreate<RenderSettings>("Engine/Configs/RenderSettings.sras");
+        if (!m_renderSettings) {
             SR_ERROR("RenderContext::Init() : failed to load render settings!");
             return false;
         }
-        m_settings->AddUsePoint();
+        m_renderSettings->AddUsePoint();
 
-        m_onSettingsReloaded = m_settings->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
+        m_onSettingsReloaded = m_renderSettings->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
             ReloadShaders();
         });
 
@@ -262,10 +265,10 @@ namespace SR_GRAPH_NS {
         m_defaultMaterial.Reset();
         m_defaultUIMaterial.Reset();
 
-        if (m_settings) {
+        if (m_renderSettings) {
             m_onSettingsReloaded.Reset();
-            m_settings->RemoveUsePoint();
-            m_settings.Reset();
+            m_renderSettings->RemoveUsePoint();
+            m_renderSettings.Reset();
         }
 
         uint32_t syncStep = 0;
@@ -369,7 +372,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderContext::IsEmpty() const {
-        if (m_defaultTexture || m_noneTexture || m_defaultMaterial || m_defaultUIMaterial || m_settings) {
+        if (m_defaultTexture || m_noneTexture || m_defaultMaterial || m_defaultUIMaterial || m_renderSettings) {
             return false;
         }
 
@@ -633,8 +636,8 @@ namespace SR_GRAPH_NS {
         SR_GRAPH("RenderContext::InitPipeline() : initializing the render pipeline...");
 
         PipelinePreInitInfo pipelinePreInitInfo;
-        pipelinePreInitInfo.appName = m_settings->appName;
-        pipelinePreInitInfo.engineName = m_settings->engineName;
+        pipelinePreInitInfo.appName = m_renderSettings->appName;
+        pipelinePreInitInfo.engineName = m_renderSettings->engineName;
         pipelinePreInitInfo.samplesCount = SR_UTILS_NS::StoreUtils::User::GetInt("MultiSampling", 64);
         pipelinePreInitInfo.multisampling = SR_UTILS_NS::Features::Instance().Enabled("Multisampling", true);
         pipelinePreInitInfo.vsync = false;
@@ -688,8 +691,8 @@ namespace SR_GRAPH_NS {
     }
 
     const RenderSettingsPreset& RenderContext::GetSettingsPreset() const noexcept {
-        SRAssert(m_settings);
-        return m_settings->GetPreset(m_activePreset);
+        SRAssert(m_renderSettings);
+        return m_renderSettings->GetPreset(m_activePreset);
     }
 
     RenderContext::Definitions RenderContext::GetShaderMacros() const {
@@ -702,8 +705,8 @@ namespace SR_GRAPH_NS {
     }
 
     const RenderSettings& RenderContext::GetSettings() const noexcept {
-        SRAssert(m_settings);
-        return *m_settings;
+        SRAssert(m_renderSettings);
+        return *m_renderSettings;
     }
 
     void RenderContext::SetActivePreset(SR_UTILS_NS::StringAtom name) {
@@ -734,6 +737,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::ResourceManager::Instance().ReloadAll(SR_GTYPES_NS::Shader::GetClassStaticName());
         SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
         SetDirty();
+        m_isNeedGarbageCollection = true;
     }
 
     bool RenderContext::PreInit() {
@@ -750,5 +754,18 @@ namespace SR_GRAPH_NS {
         }
 
         return true;
+    }
+
+    void RenderContext::ReloadGraphicsSettings() {
+        if (auto&& path = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat(ActiveGraphicsSettings::SETTINGS_PATH); path.IsFile()) {
+            SR_LOG("RenderContext::ReloadGraphicsSettings() : loading active graphics settings from path: {}", path);
+            SR_UTILS_NS::SRADeserializer deserializer;
+            if (!deserializer.LoadFromFile(path) || !m_activeGraphicsSettings.Load(deserializer)) {
+                SR_ERROR("RenderContext::ReloadGraphicsSettings() : failed to load active graphics settings from path: {}", path);
+            }
+        }
+        else {
+            SR_LOG("RenderContext::ReloadGraphicsSettings() : active graphics settings file not found at path: {}", path);
+        }
     }
 }

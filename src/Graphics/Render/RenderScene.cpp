@@ -217,7 +217,7 @@ namespace SR_GRAPH_NS {
             SetTechnique(IRenderTechnique::Ptr());
             return;
         }
-        SetTechnique(FileRenderTechnique::Load(path).StaticCast<IRenderTechnique>());
+        SetTechnique(FileRenderTechnique::Load(path, SR_GRAPH_NS::RenderTechniqueLoadParams()).StaticCast<IRenderTechnique>());
     }
 
     const RenderScene::WidgetManagers &RenderScene::GetWidgetManagers() const {

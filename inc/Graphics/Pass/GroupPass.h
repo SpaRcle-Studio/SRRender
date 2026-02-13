@@ -12,6 +12,9 @@ namespace SR_GRAPH_NS {
         using Super = BasePass;
         SR_CLASS()
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<GroupPass>;
+
+    public:
         ~GroupPass() override;
 
     public:

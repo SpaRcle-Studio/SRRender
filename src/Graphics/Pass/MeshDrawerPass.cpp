@@ -263,4 +263,8 @@ namespace SR_GRAPH_NS {
     const Frustum& MeshDrawerPass::GetFrustum(uint32_t renderLayer) const {
         return GetCamera()->GetFrustum();
     }
+
+    void MeshDrawerPass::SetRenderLayers(uint8_t layers) {
+        m_renderLayers = layers;
+    }
 }

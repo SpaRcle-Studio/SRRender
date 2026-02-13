@@ -13,10 +13,16 @@ namespace SR_GRAPH_NS {
     class SwapchainPass : public GroupPass {
         SR_CLASS()
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<SwapchainPass>;
+
+    public:
         bool Render() override;
 
         SR_NODISCARD float_t GetClearDepth() const { return m_depth; }
         SR_NODISCARD SR_MATH_NS::FColor GetClearColor() const { return m_color; }
+
+        void SetClearDepth(float_t depth) { m_depth = depth; }
+        void SetClearColor(const SR_MATH_NS::FColor& color) { m_color = color; }
 
     private:
         /// @property @drag(0.01f)

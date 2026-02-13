@@ -58,10 +58,16 @@ namespace SR_GRAPH_NS {
         info.pShaderHandle = pShaderHandle;
         info.descriptorSets[frameIndex] = descriptorSet;
 
-        return m_descriptorPool.Add({ info });
+        std::vector<DescriptorSetInfo> descriptorSetInfos;
+        descriptorSetInfos.reserve(256);
+        descriptorSetInfos.emplace_back(info);
+
+        return m_descriptorPool.Add(std::move(descriptorSetInfos));
     }
 
     DescriptorManager::BindResult DescriptorManager::Bind(DescriptorManager::VirtualDescriptorSet virtualDescriptorSet) {
+        SR_TRACY_ZONE;
+
         if (virtualDescriptorSet == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("DescriptorManager::Bind() : descriptor set is invalid!");
             return BindResult::Failed;
@@ -127,6 +133,8 @@ namespace SR_GRAPH_NS {
     }
 
     DescriptorManager::DescriptorSet DescriptorManager::AllocateMemory(SR_GTYPES_NS::Shader* pShader) const {
+        SR_TRACY_ZONE;
+
         m_allocationTypesCache.clear();
 
         if (pShader->GetUBOBlockSize() > 0) SR_LIKELY_ATTRIBUTE {

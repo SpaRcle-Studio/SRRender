@@ -18,6 +18,7 @@ namespace SR_GRAPH_NS {
     class Window;
     class IRenderTechnique;
     class RenderScene;
+    struct RenderTechniqueData;
 }
 
 namespace SR_GTYPES_NS {
@@ -107,6 +108,8 @@ namespace SR_GTYPES_NS {
         void SetRenderTechnique(const SR_UTILS_NS::Path& path);
         void SetViewportRect(const std::optional<SR_MATH_NS::FRect>& rect) { m_viewportRect = rect; }
 
+        SR_NODISCARD const RenderTechniqueData& GetRenderTechniqueData() const;
+
     protected:
         void UpdateProjection(bool nonResized);
 
@@ -134,7 +137,11 @@ namespace SR_GTYPES_NS {
 
         /// @virtualProperty(renderTechnique) @getter(GetRenderTechniquePath) @setter(SetRenderTechnique)
         /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
-        /// @customArg(filter value: srtech)
+        /// @customArg(filter value: srtech,srptech)
+        SR_VIRTUAL_PROPERTY
+
+        /// @virtualProperty(renderTechniqueInfo) @readOnly @dontSave
+        /// @getter(GetRenderTechniqueData)
         SR_VIRTUAL_PROPERTY
 
         /// @property @readOnly @dontSave

@@ -15,6 +15,9 @@ namespace SR_GRAPH_NS {
         SR_CLASS()
         using Super = MeshDrawerPass;
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<CascadedShadowMapPass>;
+
+    public:
         SR_NODISCARD const std::vector<SR_MATH_NS::Matrix4x4>& GetCascadeMatrices() const { return m_cascadeMatrices; }
         SR_NODISCARD const std::vector<float_t>& GetSplitDepths() const { return m_cascadeSplitDepths; }
 
@@ -27,6 +30,13 @@ namespace SR_GRAPH_NS {
         void UseSharedUniforms(SR_GTYPES_NS::Shader& shader) override;
         void UseConstants(SR_GTYPES_NS::Shader& shader) override;
         void UseUniformsFromAnotherPass(SR_GTYPES_NS::Shader& shader) override;
+
+        void SetCascadeCount(uint32_t count) { m_cascadeCount = count; }
+        void SetInstancing(bool enabled) { m_instancing = enabled; }
+        void SetOneMeterUnit(float_t unit) { m_oneMeterUnit = unit; }
+        void SetMaxShadowDistance(float_t distance) { m_maxShadowDistance = distance; }
+        void SetSplitDepths(float_t split1, float_t split2, float_t split3) { m_split1 = split1; m_split2 = split2; m_split3 = split3; }
+        void SetLightFrustumCount(uint32_t count) { m_lightFrustumCount = count; }
 
         SR_NODISCARD RenderQueuePtr AllocateRenderQueue(uint32_t index) override;
 

@@ -47,6 +47,18 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void SkyboxPass::SetIsQuad(bool isQuad) {
+        SR_TRACY_ZONE;
+
+        m_isQuad = isQuad;
+        m_isSkyboxDirty = true;
+        m_isRendered = false;
+
+        if (auto&& pPipeline = GetPipeline()) {
+            pPipeline->SetDirty(true);
+        }
+    }
+
     bool SkyboxPass::Render() {
         m_isRendered = false;
 
