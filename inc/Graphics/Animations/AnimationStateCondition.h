@@ -20,7 +20,7 @@ namespace SR_ANIMATIONS_NS {
         AnimationStateCondition();
 
     public:
-        SR_NODISCARD virtual bool IsSuitable(const StateConditionContext& context) const noexcept = 0;
+        SR_NODISCARD virtual bool IsSuitable(const StateConditionContext& context) const noexcept { return false; }
 
         SR_NODISCARD virtual bool IsFinished(const StateConditionContext& context) const noexcept {
             return IsSuitable(context);
