@@ -85,20 +85,27 @@ namespace SR_GRAPH_NS {
                 const auto protocolType = SR_PLATFORM_NS::GetWindowProtocolType();
                 SR_LOG("BasicWindowImpl::CreatePlatformWindow() : detected window protocol type: {}", protocolType);
                 switch (protocolType) {
+                #ifdef SR_RENDER_USE_NATIVE_WAYLAND
                     case SR_PLATFORM_NS::WindowProtocolType::Wayland:
                         return new WaylandWindow();
+                #endif
                     default:
                         break;
                 }
                 SRHalt("Failed to determine window protocol type!");
                 break;
             }
+
+        #ifdef SR_RENDER_USE_NATIVE_WAYLAND
             case WindowType::Wayland:
                 return new WaylandWindow();
+        #endif
+
         #ifdef SR_RENDER_GLFW
             case WindowType::GLFW:
                 return new GLFWWindow();
         #endif
+
             case WindowType::X11:
                 SRHalt("X11Window is not implemented yet!");
             default:
