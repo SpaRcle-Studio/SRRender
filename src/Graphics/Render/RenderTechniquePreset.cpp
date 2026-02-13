@@ -8,6 +8,7 @@
 #include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Pass/SwapchainPass.h>
 #include <Graphics/Pass/PostProcessPass.h>
+#include <Graphics/Pass/SkyboxPass.h>
 #include <Graphics/Settings/RenderSettings.h>
 
 #include <Codegen/RenderTechniquePreset.generated.hpp>
@@ -240,6 +241,8 @@ namespace SR_GRAPH_NS {
                 pMainGroupPass->GetPasses().emplace_back(pMeshDrawerPass.StaticCast<BasePass>());
             }
             else if (auto&& pSkyboxLayer = pLayer.DynamicCast<RenderTechniqueLayerSkybox>()) {
+                SkyboxPass::Ptr pSkyboxPass = new SkyboxPass();
+                pMainGroupPass->GetPasses().emplace_back(pSkyboxPass.StaticCast<BasePass>());
             }
             else if (auto&& pClearDepthLayer = pLayer.DynamicCast<RenderTechniqueLayerClearDepth>()) {
                 ClearDepthAttachmentPass::Ptr pClearDepthPass = new ClearDepthAttachmentPass();

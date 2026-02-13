@@ -94,13 +94,6 @@ namespace SR_GRAPH_NS {
         /// @customArg(filter value: srtech)
         SR_UTILS_NS::Path overlayRenderTechnique = "Editor/Render/Overlay.srtech";
         /// @property
-        /// @customArgs(pick: enabled, filter name: Folder with skybox, relative: resources)
-        SR_UTILS_NS::Path editorPrefabSkybox = "Engine/Skyboxes/Gray.png";
-        /// @property
-        /// @customArgs(pick: enabled, filter name: Shader, relative: resources)
-        /// @customArg(filter value: srsl)
-        SR_UTILS_NS::Path editorPrefabSkyboxShader = "Engine/Shaders/skybox.srsl";
-        /// @property
         /// @customArgs(pick: enabled, filter name: Shader, relative: resources)
         /// @customArg(filter value: srsl)
         SR_UTILS_NS::Path defaultShader = "Engine/Shaders/standard.srsl";

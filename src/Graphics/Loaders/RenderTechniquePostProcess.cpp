@@ -50,14 +50,6 @@ namespace SR_GRAPH_NS::Details {
             return;
         }
 
-        if (cameraType == SR_GTYPES_NS::CameraType::EditorPrefab) {
-            if (auto&& pSkyboxPass = dynamic_cast<SkyboxPass*>(pTechnique->FindPass(SkyboxPass::GetClassStaticName()))) {
-                pSkyboxPass->SetSkybox(pContext->GetSettings().editorPrefabSkybox);
-                pSkyboxPass->SetShader(pContext->GetSettings().editorPrefabSkyboxShader);
-                pSkyboxPass->SetIsQuad(false);
-            }
-        }
-
         const bool isEditor = cameraType == SR_GTYPES_NS::CameraType::Editor || cameraType == SR_GTYPES_NS::CameraType::EditorPrefab;
 
         if (isEditor && !pTechnique->FindPass(pContext->GetSettings().editorSceneImageName)) {

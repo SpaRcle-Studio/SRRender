@@ -23,6 +23,18 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void SkyboxPass::SetParams(const SR_UTILS_NS::Path& skyboxPath, const SR_UTILS_NS::Path& shaderPath, bool isQuad) {
+        SR_TRACY_ZONE;
+
+        if (skyboxPath == m_skyboxPath && shaderPath == m_shaderPath && isQuad == m_isQuad) {
+            return;
+        }
+
+        SetSkybox(skyboxPath);
+        SetShader(shaderPath);
+        SetIsQuad(isQuad);
+    }
+
     void SkyboxPass::SetSkybox(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
 
@@ -165,12 +177,16 @@ namespace SR_GRAPH_NS {
                 shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
             }
 
-            if (auto&& pShader = SR_GTYPES_NS::Shader::Load(m_shaderPath, shaderMacros)) {
-                m_skybox->SetShader(pShader);
+            if (!m_shaderPath.empty()) {
+                if (auto&& pShader = SR_GTYPES_NS::Shader::Load(m_shaderPath, shaderMacros)) {
+                    m_skybox->SetShader(pShader);
+                } else {
+                    SR_ERROR("SkyboxPass::UpdateParams() : failed to load shader for skybox!\n\tPath: {}", m_shaderPath);
+                    return false;
+                }
             }
             else {
-                SR_ERROR("SkyboxPass::UpdateParams() : failed to load shader for skybox!\n\tPath: {}", m_shaderPath);
-                return false;
+                m_skybox->SetShader(nullptr);
             }
             m_isShaderDirty = false;
         }

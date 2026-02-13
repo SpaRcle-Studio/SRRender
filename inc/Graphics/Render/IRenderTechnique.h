@@ -94,7 +94,7 @@ namespace SR_GRAPH_NS {
         template<typename T> SR_NODISCARD T* FindPassAs() const {
             SR_TRACY_ZONE;
             if (auto&& pPass = FindPass(T::GetClassStaticName())) {
-                return dynamic_cast<T*>(pPass);
+                return static_cast<T*>(pPass);
             }
             return nullptr;
         }

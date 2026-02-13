@@ -16,11 +16,16 @@ namespace SR_GRAPH_NS {
         using Super = BasePass;
         SR_CLASS()
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<SkyboxPass>;
+
+    public:
         ~SkyboxPass() override;
 
     public:
         bool Render() override;
         void Update() override;
+
+        void SetParams(const SR_UTILS_NS::Path& skyboxPath, const SR_UTILS_NS::Path& shaderPath, bool isQuad);
 
         void SetSkybox(const SR_UTILS_NS::Path& path);
         void SetShader(const SR_UTILS_NS::Path& path);

@@ -3,9 +3,6 @@
 //
 
 #include <Graphics/Window/BasicWindowImpl.h>
-#include <Utils/Debug.h>
-#include <Utils/Common/CLIManager.h>
-
 #include <Graphics/Window/HeadlessWindow.h>
 
 #if defined(SR_WIN32)
@@ -17,6 +14,9 @@
     #include <Graphics/Window/GLFWWindow.h>
     #include <Graphics/Window/WaylandWindow.h>
 #endif
+
+#include <Utils/Debug.h>
+#include <Utils/Common/CLIManager.h>
 
 #include <Enum/WindowProtocolType.hpp>
 
