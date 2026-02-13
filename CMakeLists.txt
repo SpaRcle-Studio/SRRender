@@ -22,7 +22,7 @@ option(SR_RENDER_USE_GLSL_LANG_LIB "" ON)
 
 option(SR_RENDER_USE_NATIVE_WAYLAND "" ON)
 option(SR_RENDER_GLFW "" OFF)
-option(SR_RENDER_USE_YOGA "" ON)
+option(SR_RENDER_USE_YOGA "" OFF)
 
 SRUseAssimpIfPossible(Graphics)
 

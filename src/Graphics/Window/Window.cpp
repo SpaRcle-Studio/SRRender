@@ -2,13 +2,8 @@
 // Created by Nikita on 18.11.2020.
 //
 
-#include <Utils/Math/Vector2.h>
-#include <Utils/Types/Thread.h>
-#include <Utils/Input/InputSystem.h>
-#include <Utils/Platform/Platform.h>
-#include <Utils/Resources/ResourceManager.h>
-
 #include <Graphics/Window/Window.h>
+#include <Graphics/Window/BasicWindowImpl.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Texture.h>
@@ -16,6 +11,11 @@
 #include <Graphics/GUI/Editor/Theme.h>
 #include <Graphics/GUI/WidgetManager.h>
 #include <Graphics/GUI/Widget.h>
+
+#include <Utils/Math/Vector2.h>
+#include <Utils/Types/Thread.h>
+#include <Utils/Input/InputSystem.h>
+#include <Utils/Resources/ResourceManager.h>
 
 namespace SR_GRAPH_NS {
     Window::Window()

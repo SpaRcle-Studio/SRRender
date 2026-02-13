@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_WINDOW_H
 #define SR_ENGINE_WINDOW_H
 
+#include <Graphics/stdInclude.h>
+
 #include <Utils/Math/Vector3.h>
 #include <Utils/Types/Thread.h>
 #include <Utils/Types/Function.h>
@@ -13,8 +15,6 @@
 #include <Utils/Types/SafePointer.h>
 #include <Utils/Types/SharedPtr.h>
 
-#include <Graphics/Window/BasicWindowImpl.h>
-
 namespace SR_GRAPH_NS {
     namespace GUI {
         class WidgetManager;
@@ -22,6 +22,7 @@ namespace SR_GRAPH_NS {
 
     class Render;
     class RenderContext;
+    class BasicWindowImpl;
 
     class Window : public SR_HTYPES_NS::SharedPtr<Window> {
     public:

@@ -5,14 +5,16 @@
 #ifndef SR_ENGINE_GRAPHICS_CANVAS_H
 #define SR_ENGINE_GRAPHICS_CANVAS_H
 
-#include <Graphics/Render/RenderScene.h>
+#include <Graphics/stdInclude.h>
 
 #include <Utils/ECS/Component.h>
+#include <Utils/Math/Rect.h>
 #include <Utils/ECS/EntityRef.h>
 
 namespace SR_GRAPH_NS {
     class RenderContext;
     class RenderScene;
+    class Window;
 }
 
 namespace SR_GTYPES_NS {
