@@ -8,6 +8,11 @@ file(MAKE_DIRECTORY "${SR_WAYLAND_GEN_DIR}")
 message(STATUS "Generating Wayland protocol code in: ${SR_WAYLAND_GEN_DIR}")
 
 function(gen_wayland protocol_xml header_out code_out)
+    if(NOT EXISTS "${protocol_xml}")
+        message(WARNING "Wayland protocol XML not found: ${protocol_xml}, skipping generation")
+        return()
+    endif()
+
     message(STATUS "Generating Wayland code for protocol: ${protocol_xml}")
 
     execute_process(
