@@ -12,12 +12,11 @@
 #include <Utils/Types/FastMemoryArray.h>
 
 namespace SR_GTYPES_NS {
+    /// @abstract
     class IndexedMesh : public Mesh {
         SR_CLASS()
-    protected:
-        IndexedMesh() = default;
-
     public:
+        IndexedMesh() = default;
         ~IndexedMesh() override;
 
     public:

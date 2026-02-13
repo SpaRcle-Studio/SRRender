@@ -36,6 +36,7 @@ namespace SR_GRAPH_NS {
 namespace SR_GTYPES_NS {
     class Shader;
 
+    /// @abstract
     class Mesh : public SR_GTYPES_NS::IRenderComponent {
         SR_CLASS()
         using Super = SR_GTYPES_NS::IRenderComponent;
@@ -79,8 +80,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual int64_t GetSortingPriority() const;
         SR_NODISCARD virtual bool HasSortingPriority() const;
         SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetMeshLayer() const;
-        SR_NODISCARD virtual bool IsSupportVBO() const = 0;
-        SR_NODISCARD virtual uint32_t GetIndicesCount() const = 0;
+        SR_NODISCARD virtual bool IsSupportVBO() const { return false; }
+        SR_NODISCARD virtual uint32_t GetIndicesCount() const { return 0; }
         SR_NODISCARD virtual uint32_t GetVerticesCount() const { return 0; }
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
@@ -88,7 +89,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const MaterialPtr& GetMaterial() const noexcept { return m_material; }
         SR_NODISCARD MaterialPtr& GetMaterial() noexcept { return m_material; }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
-        SR_NODISCARD virtual MeshType GetMeshTypeImpl() const noexcept = 0;
+        SR_NODISCARD virtual MeshType GetMeshTypeImpl() const noexcept { return MeshType::Unknown; }
         SR_NODISCARD MeshType GetMeshType() const noexcept;
         SR_NODISCARD bool IsWaitReRegister() const noexcept { return m_isWaitReRegister; }
         SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
