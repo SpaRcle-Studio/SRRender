@@ -225,5 +225,10 @@ if (SR_RENDER_USE_VULKAN)
     target_include_directories(Graphics PUBLIC libs/EvoVulkan/Core/inc)
 endif()
 
+if (SR_USE_PCH)
+    target_compile_definitions(Graphics PUBLIC SR_USE_PCH)
+    target_precompile_headers(Graphics PUBLIC ${SR_COMMON_PCH_HEADER_PATH})
+endif()
+
 get_property(SR_UTILS_INCLUDE_DIRECTORIES_CONTENT GLOBAL PROPERTY SR_UTILS_INCLUDE_DIRECTORIES)
 target_include_directories(Graphics PUBLIC ${SR_UTILS_INCLUDE_DIRECTORIES_CONTENT})
