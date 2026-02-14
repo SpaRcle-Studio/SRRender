@@ -403,8 +403,8 @@ namespace SR_GRAPH_NS {
             int fullscreen = 0;
             int resizing = 0;
             int floating = 1;
-            const void* state = NULL;
-            wl_array_for_each(state, states) {
+            const uint32_t* state = nullptr;
+            for (state = static_cast<uint32_t*>((states)->data); (states)->size != 0 && (const char*) state < ((const char *)(states)->data + (states)->size); (state)++) {
                 switch (*static_cast<const uint32_t*>(state)) {
                     case XDG_TOPLEVEL_STATE_ACTIVATED: activated = 1; break;
                     case XDG_TOPLEVEL_STATE_RESIZING: resizing = 1; break;
