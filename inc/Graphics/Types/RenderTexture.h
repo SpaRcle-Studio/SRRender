@@ -5,32 +5,32 @@
 #ifndef SR_ENGINE_RENDERTEXTURE_H
 #define SR_ENGINE_RENDERTEXTURE_H
 
-#include <Utils/Settings.h>
-#include <Graphics/Pipeline/TextureHelper.h>
+//#include <Utils/Settings.h>
+//#include <Graphics/Pipeline/TextureHelper.h>
 
 namespace SR_GTYPES_NS {
-    class Framebuffer;
+    //class Framebuffer;
 
-    class RenderTexture : public SR_UTILS_NS::Settings {
-        SR_CLASS()
-    public:
-        using Ptr = SR_HTYPES_NS::SharedPtr<RenderTexture>;
+    //class RenderTexture : public SR_UTILS_NS::Settings {
+    //    SR_CLASS()
+    //public:
+    //    using Ptr = SR_HTYPES_NS::SharedPtr<RenderTexture>;
 
-    public:
-        RenderTexture();
-        ~RenderTexture() override;
+    //public:
+    //    RenderTexture();
+    //    ~RenderTexture() override;
 
-    public:
-        static RenderTexture::Ptr Load(const SR_UTILS_NS::Path& path);
+    //public:
+    //    static RenderTexture::Ptr Load(const SR_UTILS_NS::Path& path);
 
-    protected:
-        void ClearSettings() override;
-        bool LoadSettings(const SR_XML_NS::Node& node) override;
+    //protected:
+    //    void ClearSettings() override;
+    //    bool LoadSettings(const SR_XML_NS::Node& node) override;
 
-    private:
-        Framebuffer* m_fbo = nullptr;
+    //private:
+    //    Framebuffer* m_fbo = nullptr;
 
-    };
+    //};
 }
 
 #endif //SR_ENGINE_RENDERTEXTURE_H

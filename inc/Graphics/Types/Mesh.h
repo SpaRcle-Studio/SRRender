@@ -110,7 +110,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD virtual const SR_MATH_NS::Matrix4x4& GetMatrix() const;
 
-        virtual bool OnResourceReloaded(const SR_UTILS_NS::IResource* pResource);
+        virtual bool OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId);
         virtual bool BindMesh();
 
         virtual void Draw();

@@ -19,6 +19,7 @@
 
 #include <Utils/DebugDraw.h>
 #include <Utils/Common/Numeric.h>
+#include <Utils/Common/SubscriptionMessage.h>
 #include <Utils/Types/SafePtrLockGuard.h>
 #include <Utils/Resources/Yaml.h>
 #include <Utils/ECS/GameObject.h>
@@ -33,6 +34,13 @@ namespace SR_GRAPH_NS {
         , m_context(pContext)
     {
         m_dirtyFrames.set();
+
+        m_onResourceReloaded = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_RESOURCE_RELOADED_ID, [this](const SR_UTILS_NS::SubscriptionMessage& message) {
+            if (m_renderStrategy) {
+                m_renderStrategy->OnResourceReloaded(message.GetStringAtom("Id"));
+            }
+            SetDirty();
+        });
     }
 
     RenderScene::~RenderScene() {
@@ -521,12 +529,6 @@ namespace SR_GRAPH_NS {
 
     SR_MATH_NS::UVector2 RenderScene::GetSurfaceSize() const {
         return m_surfaceSize;
-    }
-
-    void RenderScene::OnResourceReloaded(const SR_UTILS_NS::IResource::Ptr& pResource) {
-        m_renderStrategy->OnResourceReloaded(pResource);
-
-        SetDirty();
     }
 
     void RenderScene::ForEachTechnique(const SR_HTYPES_NS::Function<void(IRenderTechnique*)>& callback) {

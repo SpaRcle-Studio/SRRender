@@ -29,6 +29,7 @@ namespace SR_GRAPH_NS {
 }
 
 namespace SR_GTYPES_NS {
+    /// @extension(srsl)
     class Shader : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         SR_CLASS()
         using ShaderProgram = int32_t;
@@ -41,8 +42,6 @@ namespace SR_GTYPES_NS {
         ~Shader() override;
 
     public:
-        static Shader::Ptr Load(const SR_UTILS_NS::Path& rawPath, const SR_SRSL_NS::ShaderMacrosParams& macros = SR_SRSL_NS::ShaderMacrosParams::GetDefault());
-
         ShaderBindResult Use() noexcept;
 
         bool Init();
@@ -54,6 +53,7 @@ namespace SR_GTYPES_NS {
         void Dispatch(uint32_t x, uint32_t y, uint32_t z);
         void Dispatch();
         void StartWatch() override;
+        void SetVariant(const SR_UTILS_NS::IResourceVariant& variant) override;
 
         bool AttachDescriptorSets();
 
@@ -127,6 +127,7 @@ namespace SR_GTYPES_NS {
         void BindSSBO(SR_UTILS_NS::StringAtom name, uint32_t ssbo) noexcept;
 
         SR_NODISCARD bool HasErrors() const noexcept { return m_hasErrors; }
+        SR_NODISCARD const SR_UTILS_NS::IResourceVariant* GetVariant() const override;
 
     protected:
         bool IsAllowedToRevive() const override;

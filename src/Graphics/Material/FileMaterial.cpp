@@ -70,15 +70,26 @@ namespace SR_GRAPH_NS {
     }
 
     BaseMaterial::Ptr FileMaterial::LoadAsUnique(const SR_UTILS_NS::Path& rawPath) {
-        auto&& pFileMaterial = Load(rawPath);
+        SR_TRACY_ZONE;
+
+        auto&& pFileMaterial = Load(rawPath).DynamicCast<FileMaterial>();
         if (!pFileMaterial) {
-            SR_ERROR("FileMaterial::LoadAsUnique() : failed to load material from file! \n\tPath: " + rawPath.ToString());
+            SR_ERROR("FileMaterial::LoadAsUnique() : failed to load file material! \n\tPath: " + rawPath.ToString());
             return nullptr;
         }
 
+        return pFileMaterial->MakeUnique();
+    }
+
+    BaseMaterial::Ptr FileMaterial::MakeUnique() const {
+        auto&& pData = GetMaterialData();
+        if (!pData) {
+            SR_ERROR("FileMaterial::MakeUnique() : material data is null!");
+            return nullptr;
+        }
         UniqueMaterial::Ptr pUniqueMaterial = SRNew<UniqueMaterial>();
 
-        pFileMaterial->GetMaterialData()->GetDefaultShaderData().CloneTo(
+        pData->GetDefaultShaderData().CloneTo(
             pUniqueMaterial->GetMaterialData()->GetDefaultShaderData()
         );
 

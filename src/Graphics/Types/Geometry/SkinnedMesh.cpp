@@ -101,9 +101,9 @@ namespace SR_GTYPES_NS {
         shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
     }
 
-    bool SkinnedMesh::OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) {
-        bool changed = Mesh::OnResourceReloaded(pResource);
-        if (GetRawMesh().Get() == pResource) {
+    bool SkinnedMesh::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) {
+        bool changed = Mesh::OnResourceReloaded(resourceId);
+        if (GetRawMesh() && GetRawMesh()->GetResourceId() == resourceId) {
             OnRawMeshChanged();
             return true;
         }

@@ -72,7 +72,7 @@ namespace SR_ANIMATIONS_NS {
         SR_HTYPES_NS::RawMeshParams params;
         params.animation = true;
 
-        auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(m_clipPath, params);
+        auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(m_clipPath, &params);
         if (!pRawMesh) {
             SR_ERROR("AnimationClip::Load() : failed to load raw mesh from path: {}", m_clipPath);
             return;
@@ -84,7 +84,7 @@ namespace SR_ANIMATIONS_NS {
             pSkeletonMesh = pRawMesh;
         }
         else if (!m_skeletonPath.empty()) {
-            pSkeletonMesh = SR_HTYPES_NS::RawMesh::Load(m_skeletonPath);
+            pSkeletonMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(m_skeletonPath);
             if (!pSkeletonMesh) {
                 pRawMesh->CheckResourceUsage();
                 SR_ERROR("AnimationClip::Load() : failed to load skeleton raw mesh from path: {}", m_skeletonPath);

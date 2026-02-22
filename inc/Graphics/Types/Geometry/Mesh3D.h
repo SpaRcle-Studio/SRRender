@@ -25,7 +25,7 @@ namespace SR_GTYPES_NS {
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
         void OnRawMeshChanged() override;
-        bool OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) override;
+        bool OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) override;
 
         SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Static; }
 

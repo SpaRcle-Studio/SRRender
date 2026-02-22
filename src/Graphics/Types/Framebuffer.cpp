@@ -6,11 +6,11 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
-#include <Codegen/Framebuffer.generated.hpp>
-
 namespace SR_GTYPES_NS {
-    Framebuffer::Framebuffer() {
-        SR_UTILS_NS::ResourceManager::Instance().RegisterResource(this);
+    Framebuffer::Framebuffer()
+        : SR_HTYPES_NS::SharedPtr<Framebuffer>(this, SR_UTILS_NS::SharedPtrPolicy::Manually)
+    {
+        //SR_UTILS_NS::ResourceManager::Instance().RegisterResource(this);
     }
 
     Framebuffer::~Framebuffer() {
@@ -30,6 +30,16 @@ namespace SR_GTYPES_NS {
             SRAssert(texture == SR_ID_INVALID);
         }
     #endif
+    }
+
+    void Framebuffer::KillFramebuffer() {
+        SRAssert(!m_isDead);
+        m_isDead = true;
+
+        if (!IsGraphicsResourceRegistered()) {
+            AutoFree();
+            return;
+        }
     }
 
     Framebuffer::Ptr Framebuffer::Create(uint32_t images, const SR_MATH_NS::IVector2 &size) {
@@ -269,9 +279,9 @@ namespace SR_GTYPES_NS {
         return m_frameBuffer[SR_MIN(GetPipeline()->GetCurrentImageIndex(), static_cast<uint32_t>(m_frameBuffer.size() - 1))];
     }
 
-    uint64_t Framebuffer::GetFileHash() const {
-        return 0;
-    }
+    //uint64_t Framebuffer::GetFileHash() const {
+    //    return 0;
+    //}
 
     int32_t Framebuffer::GetColorTexture(uint32_t layer, uint8_t frame) {
         SR_TRACY_ZONE;

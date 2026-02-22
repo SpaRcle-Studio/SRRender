@@ -169,22 +169,6 @@ namespace SR_GRAPH_NS::Types {
         IGraphicsResource::FreeVMemory();
     }
 
-    Shader::Ptr Shader::Load(const SR_UTILS_NS::Path& rawPath, const SR_SRSL_NS::ShaderMacrosParams& macros) {
-        SR_TRACY_ZONE;
-
-        if (rawPath.GetExtensionView() != "srsl") {
-            SR_ERROR("Shader::Load() : unknown extension!");
-            return nullptr;
-        }
-
-       return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<Shader>(rawPath,
-            [&macros](Shader& shader) { shader.m_macros = macros; },
-            [&macros]() {
-                return macros.GetHash() != 0 ? macros.GetHashStr() : std::string();
-            }
-       );
-    }
-
     int32_t Shader::GetId() noexcept {
         if (m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
             return SR_ID_INVALID;
@@ -337,7 +321,7 @@ namespace SR_GRAPH_NS::Types {
 
     void Shader::LoadDefaultSampler(SR_UTILS_NS::StringAtom name) {
         if (m_defaultSamplers.count(name) == 1) {
-            if (auto&& pTexture = SR_GTYPES_NS::Texture::Load(name)) {
+            if (auto&& pTexture = CoreResLoader::Load<SR_GTYPES_NS::Texture>(name)) {
                 AddDependency(pTexture.StaticCast<SR_UTILS_NS::ResourceContainer>());
                 m_defaultSamplers[name] = pTexture;
             }
@@ -373,6 +357,10 @@ namespace SR_GRAPH_NS::Types {
         if (path.IsAbs()) {
             SR_ERROR("Shader::Load() : absolute path is not allowed!");
             return false;
+        }
+
+        if (auto&& pContext = GetRenderContext()) {
+            pContext->SetDirty();
         }
 
         auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(path).Concat(m_macros.GetHashStr());
@@ -660,6 +648,10 @@ namespace SR_GRAPH_NS::Types {
         }
     }
 
+    void Shader::SetVariant(const SR_UTILS_NS::IResourceVariant& variant) {
+        m_macros = static_cast<const SR_SRSL_NS::ShaderMacrosParams&>(variant);
+    }
+
     bool Shader::AttachDescriptorSets() {
         SR_TRACY_ZONE;
 
@@ -737,5 +729,9 @@ namespace SR_GRAPH_NS::Types {
             SRAssert(m_shaderProgram != SR_ID_INVALID);
         }
         return IResource::RemoveUsePoint();
+    }
+
+    const SR_UTILS_NS::IResourceVariant* Shader::GetVariant() const {
+        return &m_macros;
     }
 }

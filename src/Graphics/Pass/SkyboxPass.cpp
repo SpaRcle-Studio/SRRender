@@ -160,7 +160,7 @@ namespace SR_GRAPH_NS {
                 m_skybox = nullptr;
             }
 
-            if (!(m_skybox = m_skyboxPath.empty() ? SR_GTYPES_NS::Skybox::CreateEmpty(m_isQuad) : SR_GTYPES_NS::Skybox::Load(m_skyboxPath, m_isQuad))) {
+            if (!(m_skybox = m_skyboxPath.empty() ? SR_GTYPES_NS::Skybox::CreateEmpty(m_isQuad) : CoreResLoader::Load<SR_GTYPES_NS::Skybox>(m_skyboxPath))) {
                 SR_ERROR("SkyboxPass::UpdateParams() : failed to load skybox!\n\tPath: {}", m_skyboxPath);
                 return false;
             }
@@ -178,7 +178,7 @@ namespace SR_GRAPH_NS {
             }
 
             if (!m_shaderPath.empty()) {
-                if (auto&& pShader = SR_GTYPES_NS::Shader::Load(m_shaderPath, shaderMacros)) {
+                if (auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(m_shaderPath, &shaderMacros)) {
                     m_skybox->SetShader(pShader);
                 } else {
                     SR_ERROR("SkyboxPass::UpdateParams() : failed to load shader for skybox!\n\tPath: {}", m_shaderPath);

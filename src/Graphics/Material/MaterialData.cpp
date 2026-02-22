@@ -64,7 +64,7 @@ namespace SR_GRAPH_NS {
             SR_UTILS_NS::Path path;
             SR_UTILS_NS::Serialization::Load(deserializer, path, SR_UTILS_NS::SerializationId::Create("value"));
 
-            SR_GTYPES_NS::Texture::Ptr pTexture = path.empty() ? nullptr : SR_GTYPES_NS::Texture::Load(path);
+            SR_GTYPES_NS::Texture::Ptr pTexture = path.empty() ? nullptr : CoreResLoader::Load<SR_GTYPES_NS::Texture>(path);
 
             if (data) {
                 if (auto&& pOldTextureRef = std::get_if<SR_GTYPES_NS::Texture::Ptr>(&(*data))) {
@@ -205,7 +205,7 @@ namespace SR_GRAPH_NS {
             macros.SetParam(key, value);
         }
 
-        if (auto&& pNewShader = SR_GTYPES_NS::Shader::Load(path, macros)) {
+        if (auto&& pNewShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path, &macros)) {
             SetShader(pNewShader);
         }
         else {
@@ -591,7 +591,7 @@ namespace SR_GRAPH_NS {
     void MaterialData::SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept {
         SR_TRACY_ZONE;
 
-        if (auto&& pTexture = SR_GTYPES_NS::Texture::Load(path)) {
+        if (auto&& pTexture = CoreResLoader::Load<SR_GTYPES_NS::Texture>(path)) {
             SetData(id, pTexture, ShaderVarType::Sampler2D);
         }
         else {

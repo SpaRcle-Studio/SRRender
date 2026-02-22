@@ -58,7 +58,6 @@ namespace SR_GRAPH_NS {
     };
 
     class TextureLoader {
-        using TexturePtr = SR_GTYPES_NS::Texture*;
         static constexpr uint64_t VERSION = 1000;
     public:
         TextureLoader() = delete;

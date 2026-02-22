@@ -113,7 +113,7 @@ namespace SR_GRAPH_NS {
     void BaseMaterial::SetShader(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
 
-        auto&& pShader = SR_GTYPES_NS::Shader::Load(path);
+        auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path);
         if (!pShader) {
             SR_ERROR("BaseMaterial::SetShader() : shader is nullptr!");
             return;
@@ -215,7 +215,7 @@ namespace SR_GRAPH_NS {
             return pIt->second.Get();
         }
 
-        auto&& pShader = SR_GTYPES_NS::Shader::Load(pDefaultShader->GetResourcePath(), *pMacros);
+        auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(pDefaultShader->GetResourcePath(), pMacros);
         if (pShader) {
             m_variants[hash] = pShader;
             pShader->AddUsePoint();

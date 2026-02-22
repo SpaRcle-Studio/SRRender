@@ -216,7 +216,7 @@ namespace SR_GTYPES_NS {
             SetFont(SR_GTYPES_NS::Font::Ptr());
             return;
         }
-        SetFont(SR_GTYPES_NS::Font::Load(path));
+        SetFont(CoreResLoader::Load<Font>(path));
     }
 
     SR_UTILS_NS::Path Text::GetFontPath() const noexcept {

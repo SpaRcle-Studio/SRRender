@@ -2,6 +2,7 @@
 // Created by Monika on 18.07.2022.
 //
 
+/*
 #include <Graphics/Types/RenderTexture.h>
 #include <Graphics/Types/Framebuffer.h>
 
@@ -33,7 +34,7 @@ namespace SR_GTYPES_NS {
 
         auto&& pRenderTexture = RenderTexture::MakeShared<RenderTexture>();
 
-        pRenderTexture->SetId(path.ToStringRef(), false /** auto register */);
+        pRenderTexture->SetId(path.ToStringRef(), false);
 
         if (!pRenderTexture->Reload()) {
             SR_ERROR("RenderTexture::Load() : failed to load render texture!\n\tPath: " + path.ToString());
@@ -83,3 +84,4 @@ namespace SR_GTYPES_NS {
         return Settings::LoadSettings(node);
     }
 }
+*/

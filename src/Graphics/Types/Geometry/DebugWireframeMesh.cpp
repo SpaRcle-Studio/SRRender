@@ -38,9 +38,9 @@ namespace SR_GTYPES_NS {
         return GetRawMesh()->GetIndices(GetMeshId());
     }
 
-    bool DebugWireframeMesh::OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) {
-        bool changed = Mesh::OnResourceReloaded(pResource);
-        if (GetRawMesh().Get() == pResource) {
+    bool DebugWireframeMesh::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) {
+        bool changed = Mesh::OnResourceReloaded(resourceId);
+        if (GetRawMesh() && GetRawMesh()->GetResourceId() == resourceId) {
             OnRawMeshChanged();
             return true;
         }

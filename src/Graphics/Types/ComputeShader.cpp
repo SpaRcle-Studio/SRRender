@@ -41,7 +41,7 @@ namespace SR_GTYPES_NS {
     ComputeShader::Ptr ComputeShader::Load(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
 
-        if (auto&& pShader = SR_GTYPES_NS::Shader::Load(path)) {
+        if (auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path)) {
             ComputeShader::Ptr pComputeShader = std::unique_ptr<ComputeShader>(new ComputeShader());
             pComputeShader->m_pShader = pShader;
             pComputeShader->m_pShader->AddUsePoint();

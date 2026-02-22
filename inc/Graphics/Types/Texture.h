@@ -21,6 +21,7 @@ namespace SR_GRAPH_NS {
 namespace SR_GTYPES_NS {
     class Font;
 
+    /// @extension(png, jpg, jpeg, tga, bmp)
     class Texture : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         SR_CLASS()
         friend class ::SR_GRAPH_NS::TextureLoader;
@@ -33,8 +34,6 @@ namespace SR_GTYPES_NS {
         ~Texture() override;
 
     public:
-        static Texture::Ptr Load(const SR_UTILS_NS::Path& rawPath, std::optional<ImageMetaInfo> config = std::nullopt);
-        static Texture::Ptr LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const ImageMetaInfo& config);
         static Texture::Ptr LoadFromMemory(const std::string& data, const ImageMetaInfo& config);
 
     public:

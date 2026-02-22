@@ -46,7 +46,7 @@ namespace SR_GRAPH_NS {
                 shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
             }
 
-            pShader = SR_GTYPES_NS::Shader::Load(shaderPath, shaderMacros);
+            pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(shaderPath, &shaderMacros);
             if (pShader) {
                 pShader->AddUsePoint();
             }

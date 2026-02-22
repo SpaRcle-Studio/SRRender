@@ -154,11 +154,11 @@ namespace SR_GRAPH_NS {
         //}
     }
 
-    void RenderStrategy::OnResourceReloaded(const SR_UTILS_NS::IResource::Ptr& pResource) const {
+    void RenderStrategy::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) const {
         SR_TRACY_ZONE;
 
-        ForEachMesh([&pResource](auto&& pMesh) {
-            pMesh->OnResourceReloaded(pResource.Get());
+        ForEachMesh([resourceId](auto&& pMesh) {
+            pMesh->OnResourceReloaded(resourceId);
         });
     }
 

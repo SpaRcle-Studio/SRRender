@@ -27,9 +27,7 @@ namespace SR_GTYPES_NS {
     /**
      * \Usage Bing -> BeginRenderBuffer -> BeginRender -> EndRender -> EndRenderBuffer
      * */
-    class Framebuffer : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
-        SR_CLASS()
-        using Super = SR_UTILS_NS::IResource;
+    class Framebuffer : public Memory::IGraphicsResource, public SR_HTYPES_NS::SharedPtr<Framebuffer> {
     public:
         using ClearColors = std::vector<SR_MATH_NS::FColor>;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
@@ -74,8 +72,6 @@ namespace SR_GTYPES_NS {
         void SetRenderAsSingleLayer(bool renderAsSingleLayer) { m_renderAsSingleLayer = renderAsSingleLayer; }
         void SetAccessMode(FrameBufferAccessMode accessMode);
 
-        SR_NODISCARD bool IsFileResource() const noexcept override { return false; }
-        SR_NODISCARD bool IsAllowedMultiInstance() const override { return true; }
         SR_NODISCARD uint8_t GetSamplesCount() const;
         SR_NODISCARD uint32_t GetColorLayersCount() const noexcept { return m_colors.size(); }
         SR_NODISCARD uint32_t GetLayersCount() const noexcept { return m_layersCount; }
@@ -97,9 +93,10 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD uint32_t GetWidth() const;
         SR_NODISCARD uint32_t GetHeight() const;
         SR_NODISCARD SR_MATH_NS::IVector2 GetSize() const { return m_size; }
+        SR_NODISCARD bool IsFramebufferDead() const { return m_isDead; }
 
         void FreeVMemory() override;
-        uint64_t GetFileHash() const override;
+        void KillFramebuffer();
 
     private:
         FrameBufferAccessMode m_accessMode = FrameBufferAccessMode::Read;
@@ -125,6 +122,7 @@ namespace SR_GTYPES_NS {
         uint8_t m_sampleCount = 0;
         uint8_t m_currentSampleCount = 0;
         bool m_depthEnabled = true;
+        bool m_isDead = false;
 
     };
 }

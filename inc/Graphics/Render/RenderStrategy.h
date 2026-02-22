@@ -312,7 +312,7 @@ namespace SR_GRAPH_NS {
         bool UnRegisterMesh(SR_GTYPES_NS::Mesh* pMesh);
         void ReRegisterMesh(const MeshRegistrationInfo& info);
 
-        void OnResourceReloaded(const SR_UTILS_NS::IResource::Ptr& pResource) const;
+        void OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) const;
 
         SR_NODISCARD RenderContext* GetRenderContext() const;
         SR_NODISCARD RenderScene* GetRenderScene() const { return m_renderScene; }

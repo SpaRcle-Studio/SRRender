@@ -27,115 +27,6 @@ namespace SR_GTYPES_NS {
         FreeTextureData();
     }
 
-    Texture::Ptr Texture::LoadRaw(const uint8_t* pData, uint64_t bytes, uint64_t h, uint64_t w, const ImageMetaInfo& metaInfo) {
-        auto&& pTexture = Texture::MakeShared<Texture>();
-
-        auto&& pCopyData = new uint8_t[bytes];
-        memcpy(pCopyData, pData, bytes);
-
-        pTexture->m_textureData = TextureData::Create(w, h, pCopyData, [](const uint8_t* pData) {
-            delete[] pData;
-        });
-
-        pTexture->m_isFromMemory = true;
-        pTexture->m_activeImageMetaInfo = metaInfo;
-        pTexture->SetId("RawTexture");
-
-        return pTexture;
-    }
-
-    Texture::Ptr Texture::Load(const SR_UTILS_NS::Path& rawPath, std::optional<ImageMetaInfo> metaInfo) {
-        SR_TRACY_ZONE;
-
-        if (rawPath.IsEmpty()) {
-            SRHalt("Texture::Load() : path is empty!");
-            return nullptr;
-        }
-
-        auto&& resourceManager = SR_UTILS_NS::ResourceManager::Instance();
-
-        auto&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(resourceManager.GetResPath());
-        if (!resourceManager.GetResPath().Concat(path).Exists(SR_UTILS_NS::Path::Type::File)) {
-            SR_ERROR("Texture::Load() : texture \"{}\" does not exist!", path);
-            return nullptr;
-        }
-
-        if (!metaInfo) {
-            auto&& metaPath = resourceManager.GetResPath().Concat(path).ConcatExt(".meta");
-            if (metaPath.Exists(SR_UTILS_NS::Path::Type::File)) {
-                SR_UTILS_NS::SRADeserializer deserializer;
-                if (deserializer.LoadFromFile(metaPath)) {
-                    metaInfo = ImageMetaInfo();
-                    if (!metaInfo->Load(deserializer)) {
-                        SR_WARN("Texture::Load() : failed to load meta info from file: {}", metaPath);
-                        metaInfo = std::nullopt;
-                    }
-                }
-                else {
-                    SR_WARN("Texture::Load() : failed to load meta info from file: {}", metaPath);
-                }
-            }
-        }
-
-        Texture::Ptr pTexture = nullptr;
-
-        resourceManager.Execute([&]() {
-            if ((pTexture = SR_UTILS_NS::ResourceManager::Instance().Find<Texture>(path))) {
-                if (metaInfo && pTexture->m_activeImageMetaInfo != metaInfo.value()) {
-                    const std::string debugInfo =
-                        "\n\tPath: {}"
-                        "\n\tOld alpha: {}, New alpha: {}"
-                        "\n\tOld address mode: {}, New address mode: {}"
-                        "\n\tOld mip levels: {}, New mip levels: {}"
-                        "\n\tOld format: {}, New format: {}"
-                        "\n\tOld filter: {}, New filter: {}"
-                        "\n\tOld compression: {}, New compression: {}"
-                        "\n\tOld cpu usage: {}, New cpu usage: {}"
-                        "\n\tOld pixels per unit: {}, New pixels per unit: {}"
-                        "\n\tOld border: {}, New border: {}"
-                        ""_format(
-                            path,
-                            pTexture->m_activeImageMetaInfo.alpha, metaInfo.value().alpha,
-                            pTexture->m_activeImageMetaInfo.addressMode, metaInfo.value().addressMode,
-                            pTexture->m_activeImageMetaInfo.mipLevels, metaInfo.value().mipLevels,
-                            pTexture->m_activeImageMetaInfo.format, metaInfo.value().format,
-                            pTexture->m_activeImageMetaInfo.filter, metaInfo.value().filter,
-                            pTexture->m_activeImageMetaInfo.compression, metaInfo.value().compression,
-                            pTexture->m_activeImageMetaInfo.cpuUsage, metaInfo.value().cpuUsage,
-                            pTexture->m_activeImageMetaInfo.m_pixelsPerUnit, metaInfo.value().m_pixelsPerUnit,
-                            pTexture->m_activeImageMetaInfo.m_border, metaInfo.value().m_border
-                    );
-                    SR_WARN("Texture::Load() : copy values do not match load values!" + debugInfo);
-                }
-
-                return;
-            }
-
-            pTexture = Texture::MakeShared<Texture>();
-
-            if (metaInfo) {
-                pTexture->SetImageMetaInfoInternal(metaInfo.value());
-            }
-            else {
-                pTexture->SetImageMetaInfoInternal(ImageMetaInfo());
-            }
-
-            pTexture->SetId(path.ToStringRef(), false /** auto register */);
-
-            if (!pTexture->Load()) {
-                SR_ERROR("Texture::Load() : failed to load texture! \n\tPath: " + path.ToString());
-                pTexture->DeleteResource();
-                pTexture = nullptr;
-                return;
-            }
-
-            /// отложенная ручная регистрация
-            SR_UTILS_NS::ResourceManager::Instance().RegisterResource(pTexture.StaticCast<SR_UTILS_NS::IResource>());
-        });
-
-        return pTexture;
-    }
-
     bool Texture::Unload() {
         bool hasErrors = !IResource::Unload();
 
@@ -157,12 +48,25 @@ namespace SR_GTYPES_NS {
 
         bool hasErrors = !IResource::Load();
 
-        SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(GetResourceId());
-        if (!path.IsAbs()) {
-            path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
+        auto&& fullPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(GetResourcePath());
+
+        ImageMetaInfo metaInfo = ImageMetaInfo();
+        if (auto&& metaPath = fullPath.ConcatExt(".meta"); metaPath.Exists(SR_UTILS_NS::Path::Type::File)) {
+            SR_UTILS_NS::SRADeserializer deserializer;
+            if (deserializer.LoadFromFile(metaPath)) {
+                if (!metaInfo.Load(deserializer)) {
+                    SR_WARN("Texture::Load() : failed to load meta info from file: {}", metaPath);
+                    metaInfo = ImageMetaInfo();
+                }
+            }
+            else {
+                SR_WARN("Texture::Load() : failed to load meta info from file: {}", metaPath);
+            }
         }
 
-        m_textureData = TextureLoader::Load(path);
+        SetImageMetaInfoInternal(metaInfo);
+
+        m_textureData = TextureLoader::Load(fullPath);
         if (!m_textureData) {
             SR_ERROR("Texture::Load() : failed to load texture!");
             hasErrors |= true;
@@ -314,7 +218,6 @@ namespace SR_GTYPES_NS {
         if (!pTexture->m_textureData) {
             SR_ERROR("Texture::LoadFromMemory() : failed to load texture from memory!");
             pTexture->DeleteResource();
-            pTexture = nullptr;
             return nullptr;
         }
 

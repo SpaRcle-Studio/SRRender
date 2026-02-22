@@ -56,6 +56,28 @@ namespace SR_GRAPH_NS {
                 }
             }
         }
+        else if constexpr (std::is_same_v<T, std::vector<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>>>) {
+            for (auto&& pIt = std::begin(resourceList); pIt != std::end(resourceList); ) {
+                SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer> pFramebuffer = *pIt;
+
+                if (!pFramebuffer) {
+                    SRHalt("Framebuffer is nullptr!");
+                    pIt = resourceList.erase(pIt);
+                    dirty |= true;
+                    continue;
+                }
+
+                if (pFramebuffer->IsFramebufferDead()) {
+                    pFramebuffer->DeInitGraphicsResource();
+                    pIt = resourceList.erase(pIt);
+                    pFramebuffer.AutoFree();
+                    dirty |= true;
+                }
+                else {
+                    ++pIt;
+                }
+            }
+        }
         else {
             for (auto pIt = std::begin(resourceList); pIt != std::end(resourceList); ) {
                 if (auto pResource = *pIt) {
@@ -584,16 +606,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderContext::LoadDefaultResources() {
-        ImageMetaInfo imageMetaInfo;
-
-        imageMetaInfo.format = ImageFormat::RGBA8_UNORM;
-        imageMetaInfo.filter = TextureFilter::NEAREST;
-        imageMetaInfo.compression = TextureCompression::None;
-        imageMetaInfo.mipLevels = 1;
-        imageMetaInfo.alpha = SR_UTILS_NS::BoolExt::None;
-        imageMetaInfo.cpuUsage = false;
-
-        if ((m_defaultTexture = SR_GTYPES_NS::Texture::Load("Engine/Textures/default_improved.png", imageMetaInfo))) {
+        if ((m_defaultTexture = CoreResLoader::Load<SR_GTYPES_NS::Texture>("Engine/Textures/default_improved.png"))) {
             m_defaultTexture->AddUsePoint();
         }
         else {

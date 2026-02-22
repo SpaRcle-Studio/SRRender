@@ -43,7 +43,7 @@ namespace SR_GTYPES_NS {
         void UseSSBO() override;
 
     private:
-        bool OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) override;
+        bool OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) override;
         void OnRawMeshChanged() override;
         bool Calculate() override;
 

@@ -34,7 +34,7 @@ namespace SR_GTYPES_NS {
     }
 
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, uint32_t id) {
-        if (auto&& pRawMesh =  SR_HTYPES_NS::RawMesh::Load(path)) {
+        if (auto&& pRawMesh =  CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
             return TryLoad(pRawMesh.Get(), type, id);
         }
 
@@ -44,7 +44,7 @@ namespace SR_GTYPES_NS {
     }
 
     Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
-        if (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path)) {
+        if (auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
             if (auto&& pMesh = TryLoad(pRawMesh.Get(), type, id)) {
                 return pMesh;
             }
@@ -110,7 +110,7 @@ namespace SR_GTYPES_NS {
         std::vector<Mesh::Ptr> meshes;
 
         uint32_t id = 0;
-        auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path);
+        auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path);
         while (pRawMesh) {
             if (auto&& pMesh = TryLoad(pRawMesh.Get(), type, id)) {
                 meshes.emplace_back(pMesh);
@@ -284,7 +284,6 @@ namespace SR_GTYPES_NS {
 
     bool Mesh::HasSortingPriority() const {
         if (auto&& pSO = GetSceneObject()) {
-            //return pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node;
             if (pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::GameObject) {
                 return static_cast<const SR_UTILS_NS::GameObject*>(pSO.Get())->GetTransform()->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
             }
@@ -300,7 +299,7 @@ namespace SR_GTYPES_NS {
         return m_sceneObject->GetLayer();
     }
 
-    bool Mesh::OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) {
+    bool Mesh::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) {
         return false;
     }
 
@@ -309,7 +308,7 @@ namespace SR_GTYPES_NS {
     }
 
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, SR_UTILS_NS::StringAtom name) {
-        if (auto&& pRawMesh = SR_HTYPES_NS::RawMesh::Load(path)) {
+        if (auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
             return Load(path, type, pRawMesh->GetMeshId(name));
         }
         return nullptr;

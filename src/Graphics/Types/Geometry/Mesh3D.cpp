@@ -80,9 +80,9 @@ namespace SR_GTYPES_NS {
         return Super::GetMeshIdentifier();
     }
 
-    bool Mesh3D::OnResourceReloaded(const SR_UTILS_NS::IResource* pResource) {
-        bool changed = Mesh::OnResourceReloaded(pResource);
-        if (GetRawMesh().Get() == pResource) {
+    bool Mesh3D::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) {
+        bool changed = Mesh::OnResourceReloaded(resourceId);
+        if (GetRawMesh() && GetRawMesh()->GetResourceId() == resourceId) {
             OnRawMeshChanged();
             return true;
         }

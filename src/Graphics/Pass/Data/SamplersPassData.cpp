@@ -117,7 +117,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (IsTextureUsage() && !texturePath.empty()) {
-            pTexture = SR_GTYPES_NS::Texture::Load(texturePath);
+            pTexture = CoreResLoader::Load<SR_GTYPES_NS::Texture>(texturePath);
             if (pTexture) {
                 pTexture->AddUsePoint();
             }

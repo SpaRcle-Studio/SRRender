@@ -14,11 +14,6 @@
 namespace SR_GTYPES_NS {
     Font::Font() = default;
 
-    Font::Ptr Font::Load(const SR_UTILS_NS::Path& rawPath) {
-        SR_TRACY_ZONE;
-        return SR_UTILS_NS::ResourceManager::Instance().GetOrLoadResource<Font>(rawPath);
-    }
-
     bool Font::Unload() {
         SR_TRACY_ZONE;
 

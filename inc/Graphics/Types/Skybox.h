@@ -32,7 +32,6 @@ namespace SR_GTYPES_NS {
 
     public:
         static Skybox::Ptr CreateEmpty(bool isQuad);
-        static Skybox::Ptr Load(const SR_UTILS_NS::Path& path, bool isQuad);
 
     public:
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<Shader> GetShader() const noexcept { return m_shader; }
@@ -44,6 +43,9 @@ namespace SR_GTYPES_NS {
 
         void FreeVMemory() override;
         bool Draw();
+
+        bool Load() override;
+        bool Unload() override;
 
         void SetShader(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>& shader);
 

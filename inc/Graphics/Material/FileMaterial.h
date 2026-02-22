@@ -44,6 +44,7 @@ namespace SR_GRAPH_NS {
     public:
         SR_NODISCARD static BaseMaterial::Ptr Load(const SR_UTILS_NS::Path& rawPath);
         SR_NODISCARD static BaseMaterial::Ptr LoadAsUnique(const SR_UTILS_NS::Path& rawPath);
+        SR_NODISCARD BaseMaterial::Ptr MakeUnique() const;
 
     public:
         SR_NODISCARD MaterialType GetMaterialType() const noexcept override { return MaterialType::File; }

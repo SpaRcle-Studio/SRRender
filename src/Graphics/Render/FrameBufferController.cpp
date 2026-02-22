@@ -17,7 +17,7 @@ namespace SR_GRAPH_NS {
 
     FrameBufferController::~FrameBufferController() {
         if (m_framebuffer) {
-            m_framebuffer->RemoveUsePoint();
+            m_framebuffer->KillFramebuffer();
             m_framebuffer = nullptr;
         }
     }
@@ -75,15 +75,12 @@ namespace SR_GRAPH_NS {
             m_framebuffer->SetDepthAspect(m_depthAspect);
             m_framebuffer->SetFeatures(m_features);
             m_framebuffer->SetInstanceForEachFram(m_instanceForEachFrame && forEachSwapchainImage);
-            m_framebuffer->AddUsePoint();
+
+            m_framebuffer->RegisterGraphicsResource();
         }
         else {
             SR_ERROR("FrameBufferController::Init() : failed to create framebuffer!");
             return false;
-        }
-
-        if (m_framebuffer) {
-            m_framebuffer->RegisterGraphicsResource();
         }
 
         return true;

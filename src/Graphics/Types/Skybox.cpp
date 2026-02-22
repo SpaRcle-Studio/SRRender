@@ -2,19 +2,18 @@
 // Created by Nikita on 20.11.2020.
 //
 
+#include <Graphics/Types/Skybox.h>
+#include <Graphics/Types/Shader.h>
+#include <Graphics/Types/Vertices.h>
+#include <Graphics/Memory/UBOManager.h>
+#include <Graphics/Memory/DescriptorManager.h>
+#include <Graphics/Pipeline/Pipeline.h>
+
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Resources/FileWatcher.h>
 #include <Utils/Common/StringUtils.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/Vertices.h>
-
-#include <Graphics/Types/Skybox.h>
-#include <Graphics/Types/Shader.h>
-#include <Graphics/Types/Vertices.h>
-#include <Graphics/Loaders/ObjLoader.h>
-#include <Graphics/Memory/UBOManager.h>
-#include <Graphics/Memory/DescriptorManager.h>
-#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Codegen/Skybox.generated.hpp>
 
@@ -48,65 +47,6 @@ namespace SR_GTYPES_NS {
         pSkybox->m_isFromMemory = true;
         pSkybox->m_isQuad = isQuad;
         pSkybox->SetId("Skybox_From_Memory");
-
-        return pSkybox;
-    }
-
-    Skybox::Ptr Skybox::Load(const SR_UTILS_NS::Path& rawPath, bool isQuad) {
-        SR_GLOBAL_LOCK;
-        SR_TRACY_ZONE;
-
-        SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(rawPath).RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
-
-        if (auto&& pResource = SR_UTILS_NS::ResourceManager::Instance().Find<Skybox>(path)) {
-            if (pResource->m_isQuad != isQuad) {
-                SR_WARN("Skybox::Load() : skybox \"{}\" is already loaded with different type (isQuad = {})!", path, pResource->m_isQuad);
-            }
-            return pResource;
-        }
-
-        auto&& folder = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path.GetWithoutExtension());
-
-        SR_LOG("Skybox::Load() : loading \"" + path.ToString() + "\" skybox...");
-
-        std::array<TextureData::Ptr, 6> sides = { };
-        for (auto&& side : sides) {
-            side = nullptr;
-        }
-
-        static constexpr const char* files[6] { "right", "left", "top", "bottom", "front", "back" };
-
-        int32_t W = 0, H = 0, C = 0;
-
-        for (uint8_t i = 0; i < 6; ++i) {
-            auto&& file = folder.Concat(files[i]).ConcatExt(path.GetExtension());
-            auto&& pTextureData = TextureLoader::Load(file);
-
-            if (!pTextureData) {
-                SR_ERROR("Skybox::Load() : failed to load skybox texture!\n\tPath: " + file.ToString());
-                return nullptr;
-            }
-
-            if (i == 0) {
-                W = pTextureData->GetWidth();
-                H = pTextureData->GetHeight();
-                C = pTextureData->GetChannels();
-            }
-            else if (pTextureData->GetWidth() != W || pTextureData->GetHeight() != H || C != pTextureData->GetChannels()) {
-                SR_WARN("Skybox::Load() : \"" + path.ToString() + "\" skybox has different sizes!");
-            }
-
-            sides[i] = pTextureData;
-        }
-
-        auto&& pSkybox = Skybox::MakeShared<Skybox>();
-
-        pSkybox->m_width = W;
-        pSkybox->m_height = H;
-        pSkybox->m_data = sides;
-        pSkybox->m_isQuad = isQuad;
-
-        pSkybox->SetId(path.ToString());
 
         return pSkybox;
     }
@@ -320,8 +260,6 @@ namespace SR_GTYPES_NS {
     }
 
     void Skybox::StartWatch() {
-        auto&& resourcesManager = SR_UTILS_NS::ResourceManager::Instance();
-
         for (auto&& pTextureData : m_data) {
             if (!pTextureData) {
                 continue;
@@ -335,5 +273,60 @@ namespace SR_GTYPES_NS {
 
             m_watchers.emplace_back(pWatch);
         }
+    }
+
+    bool Skybox::Load() {
+        SR_TRACY_ZONE;
+
+        auto&& path = GetResourcePath();
+        auto&& folder = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path.GetWithoutExtension());
+
+        SR_LOG("Skybox::Load() : loading \"" + path.ToString() + "\" skybox...");
+
+        std::array<TextureData::Ptr, 6> sides = { };
+        for (auto&& side : sides) {
+            side = nullptr;
+        }
+
+        static constexpr const char* files[6] { "right", "left", "top", "bottom", "front", "back" };
+
+        uint32_t width = 0;
+        uint32_t height = 0;
+        uint32_t channels = 0;
+
+        for (uint8_t i = 0; i < 6; ++i) {
+            auto&& file = folder.Concat(files[i]).ConcatExt(path.GetExtension());
+            auto&& pTextureData = TextureLoader::Load(file);
+
+            if (!pTextureData) {
+                SR_ERROR("Skybox::Load() : failed to load skybox texture!\n\tPath: " + file.ToString());
+                return false;
+            }
+
+            if (i == 0) {
+                width = pTextureData->GetWidth();
+                height = pTextureData->GetHeight();
+                channels = pTextureData->GetChannels();
+            }
+            else if (pTextureData->GetWidth() != width || pTextureData->GetHeight() != height || channels != pTextureData->GetChannels()) {
+                SR_WARN("Skybox::Load() : \"" + path.ToString() + "\" skybox has different sizes!");
+            }
+
+            sides[i] = pTextureData;
+        }
+
+        m_width = width;
+        m_height = height;
+        m_data = sides;
+
+        return IResource::Load();
+    }
+
+    bool Skybox::Unload() {
+        for (auto&& img : m_data) {
+            img.Reset();
+        }
+
+        return IResource::Unload();
     }
 }

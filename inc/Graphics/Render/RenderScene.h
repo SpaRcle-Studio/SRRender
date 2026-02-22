@@ -5,18 +5,17 @@
 #ifndef SR_ENGINE_RENDERSCENE_H
 #define SR_ENGINE_RENDERSCENE_H
 
-#include <Graphics/macros.h>
-
-#include <Utils/Common/NonCopyable.h>
-#include <Utils/Types/SafePointer.h>
-#include <Utils/Types/SafeVariable.h>
-
 #include <Graphics/Render/MeshCluster.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/FlatCluster.h>
 #include <Graphics/Render/SortedMeshQueue.h>
 #include <Graphics/GUI/WidgetManager.h>
 #include <Graphics/Pass/RenderTechniqueQueue.h>
+
+#include <Utils/Common/NonCopyable.h>
+#include <Utils/Common/Subscription.h>
+#include <Utils/Types/SafePointer.h>
+#include <Utils/Types/SafeVariable.h>
 
 namespace SR_WORLD_NS {
     class Scene;
@@ -69,7 +68,6 @@ namespace SR_GRAPH_NS {
 
         void Synchronize();
 
-        void OnResourceReloaded(const SR_UTILS_NS::IResource::Ptr& pResource);
         void OnResize(const SR_MATH_NS::UVector2& size);
 
         /// Можно вызывать не синхронно
@@ -139,6 +137,7 @@ namespace SR_GRAPH_NS {
         void PostUpdate();
 
     private:
+        SR_UTILS_NS::Subscription m_onResourceReloaded;
         SR_HTYPES_NS::SharedPtr<RenderStrategy> m_renderStrategy;
 
         SR_ANIMATIONS_NS::Skeleton* m_currentSkeleton = nullptr;
