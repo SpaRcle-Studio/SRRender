@@ -834,11 +834,16 @@ namespace SR_GRAPH_NS {
         vkUpdateDescriptorSets(*m_kernel->GetDevice(), m_writeDescriptorSets.size(), m_writeDescriptorSets.data(), 0, nullptr);
     }
 
-    void VulkanPipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size) {
+    void VulkanPipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size, bool sizesMustBeEqual) {
         SR_TRACY_ZONE;
         SRAssert2(UBO != SR_ID_INVALID, "Invalid UBO ID!");
-        Super::UpdateUBO(UBO, pData, size);
-        m_memory->GetUBO(UBO)->CopyToDevice(pData, size, true);
+        Super::UpdateUBO(UBO, pData, size, sizesMustBeEqual);
+        auto&& pUBO = m_memory->GetUBO(UBO);
+        if (sizesMustBeEqual && pUBO->GetSize() != size) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("VulkanPipeline::UpdateUBO() : UBO size mismatch! Expected: {}, provided: {}", pUBO->GetSize(), size);
+            return;
+        }
+        pUBO->CopyToDevice(pData, size, true);
     }
 
     void VulkanPipeline::UpdateSSBO(uint32_t SSBO, void *pData, uint64_t size) {
@@ -2768,7 +2773,7 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        return (void*)m_memory->GetShaderProgram(shaderProgram)->GetPipeline();
+        return (void*)m_memory->GetShaderProgram(shaderProgram)->GetHandle();
     }
 
     void VulkanPipeline::ResetSubmitQueue() {

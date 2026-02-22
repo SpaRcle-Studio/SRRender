@@ -169,7 +169,7 @@ namespace SR_GRAPH_NS {
         m_state.SSBOId = static_cast<int32_t>(SSBO);
     }
 
-    void Pipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size) {
+    void Pipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size, bool sizesMustBeEqual) {
         SRAssert(pData != nullptr && size > 0);
         ++m_state.operations;
         m_state.transferredMemory += size;
@@ -588,10 +588,6 @@ namespace SR_GRAPH_NS {
             return;
         }
         m_buildStates[frameIndex] = m_state;
-    }
-
-    void Pipeline::UpdateCurrentUBO(void* pData, uint64_t size) {
-        UpdateUBO(m_state.UBOId, pData, size);
     }
 
     void Pipeline::SetDrawInstancesCount(uint32_t count, uint32_t start) {

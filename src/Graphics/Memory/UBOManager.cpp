@@ -36,6 +36,11 @@ namespace SR_GRAPH_NS::Memory {
     UBOManager::VirtualUBO UBOManager::AllocateUBO(VirtualUBO virtualUbo, uint32_t uboSize, bool shared) {
         SR_TRACY_ZONE;
 
+        if (shared) {
+            SRHalt("UBOManager::AllocateUBO() : shared UBOs are not supported yet!");
+            return SR_ID_INVALID;
+        }
+
         auto&& pShaderHandle = m_pipeline->GetCurrentShaderHandle();
         const uint8_t frameIndex = m_multiFrameMode ? m_pipeline->GetCurrentImageIndex() : 0;
         const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();

@@ -152,7 +152,7 @@ namespace SR_GRAPH_NS {
         void ResetSubmitQueue() override;
 
         void UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) override;
-        void UpdateUBO(uint32_t UBO, void* pData, uint64_t size) override;
+        void UpdateUBO(uint32_t UBO, void* pData, uint64_t size, bool sizesMustBeEqual) override;
         void UpdateSSBO(uint32_t SSBO, void* pData, uint64_t size) override;
         void ReadSSBO(uint32_t SSBO, void* pData, uint64_t size) override;
         void FlushSSBO(uint32_t SSBO, uint64_t offset, uint64_t size) override;

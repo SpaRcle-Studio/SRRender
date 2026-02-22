@@ -339,7 +339,7 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        if (auto&& pRenderScene = GetRenderScene()) {
+        if (auto&& pRenderScene = TryGetRenderScene()) {
             pRenderScene->SetDirtyCameras();
         }
     }

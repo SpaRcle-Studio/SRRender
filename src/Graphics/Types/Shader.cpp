@@ -285,7 +285,7 @@ namespace SR_GRAPH_NS::Types {
 
         auto&& ubo = GetPipeline()->GetCurrentUBO();
         if (ubo != SR_ID_INVALID && m_uniformBlock.Valid()) SR_LIKELY_ATTRIBUTE {
-            GetPipeline()->UpdateUBO(ubo, m_uniformBlock.m_memory, m_uniformBlock.m_size);
+            GetPipeline()->UpdateUBO(ubo, m_uniformBlock.m_memory, m_uniformBlock.m_size, true);
         }
 
         return true;
@@ -352,7 +352,9 @@ namespace SR_GRAPH_NS::Types {
 
         const SR_UTILS_NS::Path& path = GetResourcePath();
 
-        SR_LOG("Shader::Load() : loading shader \"{}\"\n\tMacros: {}", path, m_macros.ToString());
+        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
+            SR_LOG("Shader::Load() : loading shader \"{}\"\n\tMacros: {}", path, m_macros.ToString());
+        }
 
         if (path.IsAbs()) {
             SR_ERROR("Shader::Load() : absolute path is not allowed!");
@@ -636,6 +638,7 @@ namespace SR_GRAPH_NS::Types {
 
     void Shader::EndSharedUBO() {
         SR_TRACY_ZONE;
+
         if (!m_sharedUBOMode) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("Shared UBO mode is not enabled!");
             return;
@@ -644,7 +647,8 @@ namespace SR_GRAPH_NS::Types {
         m_sharedUBOMode = false;
 
         if (m_uniformSharedBlock.Valid()) SR_LIKELY_ATTRIBUTE {
-            GetPipeline()->UpdateCurrentUBO(m_uniformSharedBlock.m_memory, m_uniformSharedBlock.m_size);
+            auto&& ubo = GetPipeline()->GetCurrentUBO();
+            GetPipeline()->UpdateUBO(ubo, m_uniformSharedBlock.m_memory, m_uniformSharedBlock.m_size, true);
         }
     }
 
@@ -686,6 +690,11 @@ namespace SR_GRAPH_NS::Types {
         }
 
         if (m_uniformSharedBlock.Valid()) {
+            if (m_virtualUBO.second) SR_UNLIKELY_ATTRIBUTE {
+                SRHalt("Virtual UBO is not allocated!");
+                return false;
+            }
+
             SRDescriptorUpdateInfo updateInfo;
             updateInfo.binding = m_uniformSharedBlock.m_binding;
             updateInfo.ubo = m_uboManager.GetUBO(m_virtualUBO.first);

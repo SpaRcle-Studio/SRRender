@@ -290,8 +290,7 @@ namespace SR_GRAPH_NS {
         virtual void FlushSSBO(uint32_t SSBO, uint64_t offset, uint64_t size);
 
         /// Обеспечивает обновление данных в шейдере
-        virtual void UpdateUBO(uint32_t UBO, void* pData, uint64_t size);
-        void UpdateCurrentUBO(void* pData, uint64_t size);
+        virtual void UpdateUBO(uint32_t UBO, void* pData, uint64_t size, bool sizesMustBeEqual);
 
         /// Обеспечивает обновление данных в шейдере
         virtual void UpdateSSBO(uint32_t SSBO, void* pData, uint64_t size);
