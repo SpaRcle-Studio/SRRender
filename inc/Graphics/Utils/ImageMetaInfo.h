@@ -9,6 +9,7 @@
 
 #include <Utils/Serialization/Serializable.h>
 #include <Utils/Math/Rect.h>
+#include <Utils/Resources/ResourceLoadMode.h>
 
 namespace SR_GRAPH_NS {
     struct ImageMetaInfo : public SR_UTILS_NS::Serializable {
@@ -23,9 +24,11 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD float_t GetPixelsPerUnit() const noexcept { return m_pixelsPerUnit; }
         SR_NODISCARD const SR_MATH_NS::FRect& GetBorder() const noexcept { return m_border; }
         SR_NODISCARD AddressMode GetAddressMode() const noexcept { return addressMode; }
+        SR_NODISCARD SR_UTILS_NS::ResourceLoadMode GetLoadMode() const noexcept { return loadMode; }
 
         bool operator==(const ImageMetaInfo& lrs) const {
             return format == lrs.format
+                   && loadMode == lrs.loadMode
                    && filter == lrs.filter
                    && addressMode == lrs.addressMode
                    && compression == lrs.compression
@@ -41,6 +44,8 @@ namespace SR_GRAPH_NS {
         }
 
     public:
+        /// @property
+        SR_UTILS_NS::ResourceLoadMode loadMode = SR_UTILS_NS::ResourceLoadMode::Async;
         /// @property
         ImageFormat format = ImageFormat::RGBA8_UNORM;
         /// @property

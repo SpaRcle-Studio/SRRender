@@ -256,7 +256,7 @@ namespace SR_GRAPH_NS::Types {
             return;
         }
 
-        if (!pSampler) SR_UNLIKELY_ATTRIBUTE {
+        if (!pSampler || pSampler->IsAsyncLoading()) SR_UNLIKELY_ATTRIBUTE {
             pSampler = GetRenderContext()->GetNoneTexture();
             if (!pSampler) {
                 SRHalt("The none texture is nullptr!");

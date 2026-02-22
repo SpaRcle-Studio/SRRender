@@ -9,6 +9,8 @@
 
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Serialization/SRASerialization.h>
+#include <Utils/Types/WeakPtr.h>
+#include <Utils/TaskManager/TaskManager.h>
 
 #include <EvoVulkan/Tools/VulkanDebug.h>
 
@@ -66,10 +68,24 @@ namespace SR_GTYPES_NS {
 
         SetImageMetaInfoInternal(metaInfo);
 
-        m_textureData = TextureLoader::Load(fullPath);
-        if (!m_textureData) {
-            SR_ERROR("Texture::Load() : failed to load texture!");
-            hasErrors |= true;
+        if (metaInfo.loadMode == SR_UTILS_NS::ResourceLoadMode::Async) {
+            RegisterGraphicsResource();
+            m_asyncLoading = true;
+            m_syncLoadTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pWeak = GetWeakThis<Texture>(), fullPath]() {
+                SR_TRACY_ZONE_N("Texture::LoadAsync");
+                SR_TRACY_ZONE_TEXT(fullPath);
+                if (auto&& pStrong = pWeak.Lock()) {
+                    pStrong->OnAsyncLoaded(TextureLoader::Load(fullPath));
+                }
+            });
+        }
+        else {
+            m_asyncLoading = false;
+            m_textureData = TextureLoader::Load(fullPath);
+            if (!m_textureData) {
+                SR_ERROR("Texture::Load() : failed to load texture!");
+                hasErrors |= true;
+            }
         }
 
         if (auto&& pRenderContext = GetRenderContext()) {
@@ -84,6 +100,11 @@ namespace SR_GTYPES_NS {
 
         if (!m_isDirty) {
             return true;
+        }
+
+        if (m_asyncLoading) {
+            SRHalt("Texture::Calculate() : the texture is still loading asynchronously!");
+            return false;
         }
 
         if (!m_textureData) {
@@ -158,7 +179,7 @@ namespace SR_GTYPES_NS {
             SR_LOG("Texture::FreeVMemory() : free \"" + std::string(GetResourceId()) + "\" texture's video memory...");
         }
 
-        if (!GetPipeline()->FreeTexture(&m_id)) {
+        if (m_id != SR_ID_INVALID && !GetPipeline()->FreeTexture(&m_id)) {
             SR_ERROR("Texture::FreeVMemory() : failed to free texture!");
         }
 
@@ -170,6 +191,25 @@ namespace SR_GTYPES_NS {
 
     void Texture::SetImageMetaInfoInternal(const ImageMetaInfo& meta) {
         m_imageMetaInfo = m_activeImageMetaInfo = meta;
+    }
+
+    void Texture::OnAsyncLoaded(SR_HTYPES_NS::SharedPtr<TextureData>&& pTextureData) {
+        SR_TRACY_ZONE;
+
+        m_textureData = std::move(pTextureData);
+        if (!m_textureData) {
+            SR_ERROR("Texture::OnAsyncLoaded() : failed to load texture asynchronously!");
+            m_hasErrors = true;
+        }
+
+        if (auto&& pRenderContext = GetRenderContext()) {
+            pRenderContext->SetDirty();
+        }
+
+        Broadcast(SR_UTILS_NS::IResource::RELOAD_BEGIN_EVENT);
+        Broadcast(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT);
+
+        m_asyncLoading = false;
     }
 
     void Texture::SetImageMetaInfo(const ImageMetaInfo& meta) {
@@ -244,18 +284,39 @@ namespace SR_GTYPES_NS {
     }
 
     void Texture::FreeTextureData() {
+        SR_TRACY_ZONE;
+        if (m_asyncLoading) {
+            SR_INFO("Texture::FreeTextureData() : the texture is still loading asynchronously! Waiting for the loading to finish...");
+            while (SR_UTILS_NS::TaskManager::Instance().IsActive(m_syncLoadTaskId)) {
+                SR_PLATFORM_NS::Sleep(5);
+            }
+        }
         m_textureData.Reset();
     }
 
     uint32_t Texture::GetWidth() const noexcept {
+        if (m_asyncLoading) {
+            SRHalt("Texture::GetWidth() : the texture is still loading asynchronously!");
+            return 0;
+        }
         return m_textureData ? m_textureData->GetWidth() : 0;
     }
 
     uint32_t Texture::GetHeight() const noexcept {
+        if (m_asyncLoading) {
+            //const_cast<Texture&>(*this).RegisterGraphicsResource();
+            //GetRenderContext()->GetDefaultTexture()->
+            SRHalt("Texture::GetHeight() : the texture is still loading asynchronously!");
+            return 0;
+        }
         return m_textureData ? m_textureData->GetHeight() : 0;
     }
 
     uint32_t Texture::GetChannels() const noexcept {
+        if (m_asyncLoading) {
+            SRHalt("Texture::GetChannels() : the texture is still loading asynchronously!");
+            return 0;
+        }
         return m_textureData ? m_textureData->GetChannels() : 0;
     }
 

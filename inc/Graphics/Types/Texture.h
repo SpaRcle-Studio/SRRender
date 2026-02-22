@@ -48,6 +48,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const ImageMetaInfo& GetImageMetaInfo() const noexcept { return m_imageMetaInfo; }
 
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
+        SR_NODISCARD bool IsAsyncLoading() const { return m_asyncLoading; }
 
         void FreeVMemory() override;
         void SetImageMetaInfo(const ImageMetaInfo& meta);
@@ -61,6 +62,7 @@ namespace SR_GTYPES_NS {
         bool Calculate();
         void FreeTextureData();
         void SetImageMetaInfoInternal(const ImageMetaInfo& meta);
+        void OnAsyncLoaded(SR_HTYPES_NS::SharedPtr<TextureData>&& pTextureData);
 
     private:
         SR_HTYPES_NS::SharedPtr<TextureData> m_textureData;
@@ -69,6 +71,9 @@ namespace SR_GTYPES_NS {
 
         std::atomic<bool> m_hasErrors = false;
         std::atomic<bool> m_isDirty = true;
+
+        std::atomic<bool> m_asyncLoading = false;
+        uint64_t m_syncLoadTaskId = SR_ID_INVALID;
 
         ImageMetaInfo m_imageMetaInfo;
         ImageMetaInfo m_activeImageMetaInfo;

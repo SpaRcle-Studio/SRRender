@@ -434,7 +434,7 @@ namespace SR_GRAPH_NS {
     }
 
     RenderContext::TexturePtr RenderContext::GetDefaultTexture() const {
-        return m_defaultTexture ? m_defaultTexture : m_noneTexture;
+        return m_defaultTexture && !m_defaultTexture->IsAsyncLoading() ? m_defaultTexture : m_noneTexture;
     }
 
     RenderContext::TexturePtr RenderContext::GetNoneTexture() const {

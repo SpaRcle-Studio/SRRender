@@ -41,6 +41,8 @@ namespace SR_GRAPH_NS::WinAPI {
 
 namespace SR_GRAPH_NS {
     LRESULT Win32Window::ReadWmdProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)  {
+        SR_TRACY_ZONE;
+
         switch (msg) {
             case WM_CREATE: {
                 return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -288,6 +290,8 @@ namespace SR_GRAPH_NS {
 
     /// ЭТО ВСЕ НЕ РАБОТАЕТ, ОКНУ ПОХУЙ ОНО РАСТЯГИВАЕТСЯ ТАК КАК ХОЧЕТ, ВИНАПИ ДЕРЬМО
     void Win32Window::Resize(uint32_t w, uint32_t h) {
+        SR_TRACY_ZONE;
+
         SR_LOG("Win32Window::Resize() : set new sizes {}x{}", w, h);
 
         RECT newRect = RECT{
@@ -307,6 +311,8 @@ namespace SR_GRAPH_NS {
     }
 
     LRESULT Win32Window::WndProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+        SR_TRACY_ZONE;
+
         if (ImGui::GetCurrentContext() && !WinAPI::ImGui_WndProcHandler(hWnd, message, wParam, lParam)) {
             auto&& pBackend = ImGui::GetIO().BackendPlatformUserData;
             if (pBackend && ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam)) {
@@ -322,6 +328,7 @@ namespace SR_GRAPH_NS {
     }
 
     SR_MATH_NS::IVector2 Win32Window::GetScreenResolution() const {
+        SR_TRACY_ZONE;
         auto const hMonitor { ::MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONULL) };
 
         MONITORINFOEXW monInfo;
@@ -337,6 +344,7 @@ namespace SR_GRAPH_NS {
     }
 
     void Win32Window::SetIcon(const std::string &path) {
+        SR_TRACY_ZONE;
         SR_LOG("Win32Window::SetIcon() : set icon... \n\tPath: " + path);
 
         HICON hWindowIcon    = NULL;
@@ -353,6 +361,7 @@ namespace SR_GRAPH_NS {
             const SR_MATH_NS::UVector2& size,
             bool fullscreen, bool resizable
     ) {
+        SR_TRACY_ZONE;
         SR_LOG("Win32Window::Initialize() : create WinAPI window...");
 
         m_hInst = GetModuleHandleA(nullptr);
@@ -423,15 +432,19 @@ namespace SR_GRAPH_NS {
     }
 
     void Win32Window::SwapBuffers() const {
+        SR_TRACY_ZONE;
         ::SwapBuffers(m_hDC);
     }
 
     void Win32Window::PollEvents() {
+        SR_TRACY_ZONE;
+
         MSG msg = {};
 
         if (ImGui::GetCurrentContext()) {
             for (auto&& viewport : ImGui::GetPlatformIO().Viewports) {
                 while (::PeekMessage(&msg, (HWND)viewport->PlatformHandle, 0, 0, PM_NOREMOVE)) {
+                    SR_TRACY_ZONE_N("Win32Window::PollEvents() : viewport message loop");
                     if (!::GetMessage(&msg, (HWND)viewport->PlatformHandle, 0, 0))
                         break;
                     ::TranslateMessage(&msg);
@@ -441,6 +454,7 @@ namespace SR_GRAPH_NS {
         }
 
         while (::PeekMessage(&msg, m_hWnd, 0, 0, PM_NOREMOVE)) {
+            SR_TRACY_ZONE_N("Win32Window::PollEvents() : main message loop");
             if (!::GetMessage(&msg, m_hWnd, 0, 0))
                 break;
             ::TranslateMessage(&msg);
@@ -448,6 +462,7 @@ namespace SR_GRAPH_NS {
         }
 
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            SR_TRACY_ZONE_N("Win32Window::PollEvents() : global message loop");
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
@@ -458,6 +473,8 @@ namespace SR_GRAPH_NS {
     }
 
     void Win32Window::Close() {
+        SR_TRACY_ZONE;
+
         if (m_hWnd && IsValid()) {
             DestroyWindow(m_hWnd);
             ::UnregisterClass(nullptr, (HINSTANCE)SR_PLATFORM_NS::GetInstance());
@@ -468,18 +485,21 @@ namespace SR_GRAPH_NS {
     }
 
     SR_MATH_NS::IVector2 Win32Window::ScreenToClient(const SR_MATH_NS::IVector2& pos) const {
+        SR_TRACY_ZONE;
         POINT pt = { static_cast<int32_t>(pos.x), static_cast<int32_t>(pos.y) };
         ::ScreenToClient(m_hWnd, &pt);
         return SR_MATH_NS::IVector2(pt.x, pt.y);
     }
 
     SR_MATH_NS::IVector2 Win32Window::ClientToScreen(const SR_MATH_NS::IVector2& pos) const {
+        SR_TRACY_ZONE;
         POINT pt = { static_cast<int32_t>(pos.x), static_cast<int32_t>(pos.y) };
         ::ClientToScreen(m_hWnd, &pt);
         return SR_MATH_NS::IVector2(pt.x, pt.y);
     }
 
     bool Win32Window::IsVisible() const {
+        SR_TRACY_ZONE;
         return ::IsWindowVisible(m_hWnd);
     }
 }

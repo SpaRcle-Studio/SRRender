@@ -1537,15 +1537,22 @@ namespace SR_GRAPH_NS {
                 shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5); // SPIR-V 1.5 нормально для Vulkan 1.2+
 
                 EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
-                if (!shader.parse(&DefaultTBuiltInResource, 450, false, messages)) {
-                    SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to parse shader: {}\n{}", input, shader.getInfoLog());
-                    return {};
+
+                {
+                    SR_TRACY_ZONE_N("Parse shader");
+                    if (!shader.parse(&DefaultTBuiltInResource, 450, false, messages)) {
+                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to parse shader: {}\n{}", input, shader.getInfoLog());
+                        return {};
+                    }
                 }
 
-                program.addShader(&shader);
-                if (!program.link(messages)) {
-                    SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to link shader program: {}\n{}", input, program.getInfoLog());
-                    return {};
+                {
+                    SR_TRACY_ZONE_N("Link shader program");
+                    program.addShader(&shader);
+                    if (!program.link(messages)) {
+                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to link shader program: {}\n{}", input, program.getInfoLog());
+                        return {};
+                    }
                 }
 
                 // Generate SPIR-V.
@@ -1556,7 +1563,11 @@ namespace SR_GRAPH_NS {
                     SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to get intermediate representation for shader: {}", input);
                     return {};
                 }
-                glslang::GlslangToSpv(*intermediate, spirv);
+
+                {
+                    SR_TRACY_ZONE_N("GlslangToSpv");
+                    glslang::GlslangToSpv(*intermediate, spirv);
+                }
 
                 return spirv;
             #else
