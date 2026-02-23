@@ -13,13 +13,13 @@ namespace SR_SRSL_NS {
     SRSLLexer::Lexems SRSLLexer::Parse(const SR_UTILS_NS::Path& path, uint16_t fileIndex) {
         SR_TRACY_ZONE;
 
-        auto&& text = SR_PLATFORM_NS::ReadFile(path.ToString());
-
-        if (!text || text->empty()) {
-            SR_ERROR("SRSLLexer::Parse() : failed to read file!\n\tPath: {}", path.ToStringRef());
+        std::string buffer;
+        if (!SR_PLATFORM_NS::ReadFile(path, buffer) || buffer.empty()) {
+            SR_ERROR("SRSLLexer::Parse() : failed to read file!\n\tPath: {}", path);
+            return { };
         }
 
-        return ParseInternal(std::move(*text), fileIndex);
+        return ParseInternal(std::move(buffer), fileIndex);
     }
 
     SRSLLexer::Lexems SRSLLexer::ParseString(std::string code, uint16_t fileIndex) {

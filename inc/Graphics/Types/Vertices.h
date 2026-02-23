@@ -409,6 +409,7 @@ namespace SR_GRAPH_NS::Vertices {
     }
 
     template<typename T> static std::vector<T> CastVertices(const std::vector<SR_UTILS_NS::Vertex>& raw) {
+        SR_TRACY_ZONE;
         return CastVertices<T>(raw.data(), raw.size());
     }
 }

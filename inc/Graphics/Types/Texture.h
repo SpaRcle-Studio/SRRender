@@ -49,6 +49,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
         SR_NODISCARD bool IsAsyncLoading() const { return m_asyncLoading; }
+        SR_NODISCARD bool CanBeUsed() const;
 
         void FreeVMemory() override;
         void SetImageMetaInfo(const ImageMetaInfo& meta);

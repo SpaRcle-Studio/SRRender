@@ -703,6 +703,8 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
+        WaitRenderIdle();
+
         SRTextureCreateInfo textureCreateInfo = createInfo;
 
         ++m_state.allocations;
@@ -1914,6 +1916,8 @@ namespace SR_GRAPH_NS {
             SR_ERROR("VulkanPipeline::AllocateCubeMap() : memory manager is nullptr!");
             return SR_ID_INVALID;
         }
+
+        WaitRenderIdle();
 
         ++m_state.operations;
         ++m_state.allocations;

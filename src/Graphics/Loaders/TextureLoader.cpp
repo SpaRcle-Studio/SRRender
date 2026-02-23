@@ -122,14 +122,14 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        auto&& buffer = SR_PLATFORM_NS::ReadFile(path);
-        if (!buffer) {
+        std::string buffer;
+        if (!SR_PLATFORM_NS::ReadFile(path, buffer)) {
             SR_ERROR("TextureLoader::Load() : can not read \"" + path.ToStringRef() + "\" file!");
             return nullptr;
         }
 
         int32_t width = 0, height = 0, numComponents = 0;
-        uint8_t* pImgData = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(buffer->data()), static_cast<int32_t>(buffer->size()), &width, &height, &numComponents, STBI_rgb_alpha);
+        uint8_t* pImgData = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(buffer.data()), static_cast<int32_t>(buffer.size()), &width, &height, &numComponents, STBI_rgb_alpha);
 
         if (!pImgData) {
             std::string reason = stbi_failure_reason() ? stbi_failure_reason() : std::string();

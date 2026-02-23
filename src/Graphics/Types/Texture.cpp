@@ -201,15 +201,6 @@ namespace SR_GTYPES_NS {
             SR_ERROR("Texture::OnAsyncLoaded() : failed to load texture asynchronously!");
             m_hasErrors = true;
         }
-
-        if (auto&& pRenderContext = GetRenderContext()) {
-            pRenderContext->SetDirty();
-        }
-
-        Broadcast(SR_UTILS_NS::IResource::RELOAD_BEGIN_EVENT);
-        Broadcast(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT);
-
-        m_asyncLoading = false;
     }
 
     void Texture::SetImageMetaInfo(const ImageMetaInfo& meta) {
@@ -323,7 +314,13 @@ namespace SR_GTYPES_NS {
     void Texture::PrepareFrame() {
         SR_TRACY_ZONE;
 
-        if (m_imageMetaInfo == m_activeImageMetaInfo) {
+        if (m_asyncLoading) {
+            if (SR_UTILS_NS::TaskManager::Instance().IsActive(m_syncLoadTaskId)) {
+                return;
+            }
+            m_asyncLoading = false;
+        }
+        else if (m_imageMetaInfo == m_activeImageMetaInfo) {
             return;
         }
 
@@ -350,5 +347,13 @@ namespace SR_GTYPES_NS {
 
     SR_MATH_NS::FRect Texture::GetBorder() const noexcept {
         return m_activeImageMetaInfo.GetBorder();
+    }
+
+    bool Texture::CanBeUsed() const {
+        if (m_asyncLoading) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -122,8 +122,11 @@ namespace SR_GRAPH_NS {
             0,
         };
 
+        std::string fontData;
+
         /// Main font
         {
+            SR_TRACY_ZONE_N("Load main font");
             auto&& fontPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/tahoma.ttf");
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: " + fontPath.ToString());
 
@@ -134,12 +137,12 @@ namespace SR_GRAPH_NS {
                 font_config.PixelSnapH = true;
                 font_config.MergeMode = false;
 
-                if (auto&& fontData = SR_PLATFORM_NS::ReadFile(fontPath)) {
+                if (SR_PLATFORM_NS::ReadFile(fontPath, fontData)) {
                     ImFontConfig config;
                     config.FontDataOwnedByAtlas = false;
 
-                    m_smallFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData->c_str(), fontData->size(), m_fontSize * 0.75f, &config, mainFontRanges);
-                    m_mainFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData->c_str(), fontData->size(), m_fontSize, &config, mainFontRanges);
+                    m_smallFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize * 0.75f, &config, mainFontRanges);
+                    m_mainFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize, &config, mainFontRanges);
                 }
                 else {
                     SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to read font data!\n\tPath: " + fontPath.ToString());
@@ -152,6 +155,7 @@ namespace SR_GRAPH_NS {
 
         /// Warning font - for icons like "⚠" merge with main font
         {
+            SR_TRACY_ZONE_N("Load warning font");
             auto&& fontPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/seguisym.ttf");
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load warning font...\n\tPath: " + fontPath.ToString());
             ImFontConfig cfg;
@@ -162,6 +166,7 @@ namespace SR_GRAPH_NS {
 
         /// Icons font
         {
+            SR_TRACY_ZONE_N("Load icons font");
             auto&& iconsFont = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/fa-solid-900.ttf");
 
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load icon font...\n\tPath: " + iconsFont.ToString());
@@ -171,8 +176,8 @@ namespace SR_GRAPH_NS {
                 config.GlyphMinAdvanceX = 13.0f;
                 config.FontDataOwnedByAtlas = false;
                 static const ImWchar icon_ranges[] = { SR_ICON_MIN, SR_ICON_MAX, 0 };
-                if (auto&& fontData = SR_PLATFORM_NS::ReadFile(iconsFont)) {
-                    m_iconFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData->c_str(), fontData->size(), m_iconFontSize, &config, icon_ranges);
+                if (SR_PLATFORM_NS::ReadFile(iconsFont, fontData)) {
+                    m_iconFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_iconFontSize, &config, icon_ranges);
                 }
             }
             else {

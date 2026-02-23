@@ -84,7 +84,7 @@ namespace SR_ANIMATIONS_NS {
         const SR_HTYPES_NS::Function<void(SR_ANIMATIONS_NS::Bone*)> processBone = [&](SR_ANIMATIONS_NS::Bone* pBone) {
         #ifdef SR_DEBUG
             if (m_bonesByName.count(pBone->name) == 1) {
-                SR_WARN("Skeleton::ReCalculateSkeleton() : bone with name \"" + pBone->name.ToStringRef() + "\" already exists in hash table!");
+                SR_INFO("Skeleton::ReCalculateSkeleton() : bone with name \"" + pBone->name.ToStringRef() + "\" already exists in hash table!");
             }
         #endif
 
