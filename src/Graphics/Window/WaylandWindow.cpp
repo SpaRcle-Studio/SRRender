@@ -832,6 +832,13 @@ namespace SR_GRAPH_NS {
         }
         SR_LOG("WaylandWindow::Initialize() : Wayland configuration received, window is now valid.");
 
+        // If Wayland is used, it is better to override the keyboard state right away to avoid quering XWayland each frame for keyboard events.
+        auto&& keyboardState = SR_PLATFORM_NS::GetOverriddenKeyboardState();
+        if (!keyboardState) {
+            keyboardState = SR_PLATFORM_NS::KeyboardState();
+            SR_PLATFORM_NS::SetOverriddenKeyboardState(keyboardState);
+        }
+
         return true;
     }
 
