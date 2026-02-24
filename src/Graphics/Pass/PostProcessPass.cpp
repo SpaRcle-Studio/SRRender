@@ -172,4 +172,12 @@ namespace SR_GRAPH_NS {
         Super::Prepare();
         return m_samplers.PrepareSamplers();
     }
+
+    void PostProcessPass::SetShader(const SR_UTILS_NS::Path& path) {
+        SR_TRACY_ZONE;
+        if (!m_material) {
+            m_material = SRNew<UniqueMaterial>();
+        }
+        m_material->SetShader(path);
+    }
 }

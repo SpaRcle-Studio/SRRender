@@ -139,6 +139,10 @@ namespace SR_GRAPH_NS {
         FrameBufferController::Ptr pColorBufferController = new FrameBufferController();
         pColorBufferController->SetName(colorBufferControllerName);
         pColorBufferController->SetPreScale(colorBufferCoefficient);
+        pColorBufferController->SetSize(SR_MATH_NS::IVector2(1024));
+        pColorBufferController->GetFeatures().colorTransferSrc = true;
+        pColorBufferController->SetSamples(1);
+        pColorBufferController->SetDynamicResizing(false);
 
         data.frameBuffers.emplace_back(pColorBufferController);
 
@@ -148,9 +152,9 @@ namespace SR_GRAPH_NS {
         pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
 
         ColorBufferPass::Ptr pColorBufferPass = new ColorBufferPass();
-        pColorBufferPass->SetCustomName(colorBufferControllerName);
         pColorBufferPass->SetRenderLayers(1);
         pColorBufferPass->AddShaderDefine(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+        pColorBufferPass->SetColorMultiplier(colorMultiplier);
 
         for (auto&& pLayer : technique.GetLayers()) {
             if (auto&& pMeshLayer = pLayer.DynamicCast<RenderTechniqueLayerMesh>()) {
@@ -217,6 +221,10 @@ namespace SR_GRAPH_NS {
             }
 
             if (auto&& pMeshLayer = pLayer.DynamicCast<RenderTechniqueLayerMesh>()) {
+                if (!pMeshLayer->mainRenderer) {
+                    continue;
+                }
+
                 MeshDrawerPass::Ptr pMeshDrawerPass = new MeshDrawerPass();
 
                 if (pMeshLayer->castShadows && params.activeGraphicsSettings.shadowsQuality != Quality::None) {
@@ -243,6 +251,11 @@ namespace SR_GRAPH_NS {
             else if (auto&& pSkyboxLayer = pLayer.DynamicCast<RenderTechniqueLayerSkybox>()) {
                 SkyboxPass::Ptr pSkyboxPass = new SkyboxPass();
                 pMainGroupPass->GetPasses().emplace_back(pSkyboxPass.StaticCast<BasePass>());
+            }
+            else if (auto&& pCustomPass = pLayer.DynamicCast<RenderTechniqueLayerCustomPass>(); pCustomPass && pCustomPass->pass) {
+                BasePass::Ptr& pPass = pMainGroupPass->GetPasses().emplace_back();
+                pPass = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pCustomPass->pass->GetMeta()->GetFactoryName());
+                pCustomPass->pass->CloneTo(*pPass);
             }
             else if (auto&& pClearDepthLayer = pLayer.DynamicCast<RenderTechniqueLayerClearDepth>()) {
                 ClearDepthAttachmentPass::Ptr pClearDepthPass = new ClearDepthAttachmentPass();

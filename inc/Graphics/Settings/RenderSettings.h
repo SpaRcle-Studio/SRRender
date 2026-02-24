@@ -65,11 +65,11 @@ namespace SR_GRAPH_NS {
         std::set<SR_UTILS_NS::StringAtom> shaderDefines;
         /// @property
         /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
-        /// @customArg(filter value: srtech)
+        /// @customArg(filter value: srtech,srptech)
         SR_UTILS_NS::Path mainCameraRenderTechnique;
         /// @property
         /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
-        /// @customArg(filter value: srtech)
+        /// @customArg(filter value: srtech,srptech)
         SR_UTILS_NS::Path editorCameraRenderTechnique;
 
     };
@@ -91,7 +91,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom engineName = "SREngine";
         /// @property
         /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
-        /// @customArg(filter value: srtech)
+        /// @customArg(filter value: srtech,srptech)
         SR_UTILS_NS::Path overlayRenderTechnique = "Editor/Render/Overlay.srtech";
         /// @property
         /// @customArgs(pick: enabled, filter name: Shader, relative: resources)

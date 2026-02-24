@@ -361,6 +361,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void SameLine(float_t offsetFromStartX = 0.0f, float_t spacing = -1.0f);
         SR_GRAPHICS_DLL_API extern bool Button(const char* label, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
         SR_GRAPHICS_DLL_API extern bool ButtonColored(const char* label, const SR_MATH_NS::FColor& color, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
+        SR_GRAPHICS_DLL_API extern bool ButtonColoredText(const char* label, const SR_MATH_NS::FColor& color, const SR_MATH_NS::FVector2& size = { 0.f, 0.f });
         SR_GRAPHICS_DLL_API extern bool Checkbox(const char* label, bool* v);
         SR_GRAPHICS_DLL_API extern bool IsCurrentlyDisabled();
         SR_GRAPHICS_DLL_API extern bool IsItemHovered();

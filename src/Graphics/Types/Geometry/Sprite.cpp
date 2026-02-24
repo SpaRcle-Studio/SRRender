@@ -152,7 +152,7 @@ namespace SR_GTYPES_NS {
         float_t layoutHeight = 0.f;
 
         static const SR_UTILS_NS::StringAtom diffuseAtom("diffuse");
-        auto&& pTexture = GetMaterial()->GetMaterialData()->GetShaderData(SR_UTILS_NS::StringAtom())->GetSamplerTexture(diffuseAtom);
+        auto&& pTexture = GetMaterial()->GetMaterialData()->GetDefaultShaderData().GetSamplerTexture(diffuseAtom);
         if (!pTexture) {
             return;
         }

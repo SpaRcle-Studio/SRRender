@@ -29,11 +29,14 @@ namespace SR_GRAPH_NS {
         bool Init() override;
         void OnResize(const SR_MATH_NS::UVector2& size) override;
         void OnMultisampleChanged() override;
+        void SetShader(const SR_UTILS_NS::Path& path);
 
         bool PreRender() override;
         bool Render() override;
         void Update() override;
         bool Prepare() override;
+
+        SR_NODISCARD const BaseMaterial::Ptr& GetMaterial() const { return m_material; }
 
     protected:
         void UseSamplers(SR_GTYPES_NS::Shader& shader) override;

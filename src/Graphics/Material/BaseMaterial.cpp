@@ -46,6 +46,13 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void BaseMaterial::SetFloat(const SR_UTILS_NS::StringAtom id, float_t v) noexcept {
+        if (auto&& pData = GetMaterialData()) {
+            InitContext();
+            pData->SetData(id, v, ShaderVarType::Float);
+        }
+    }
+
     void BaseMaterial::SetTexture(const SR_UTILS_NS::StringAtom id, const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>& pTexture) noexcept {
         if (auto&& pData = GetMaterialData()) {
             InitContext();
@@ -112,6 +119,13 @@ namespace SR_GRAPH_NS {
 
     void BaseMaterial::SetShader(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
+
+        if (auto&& pData = GetMaterialData()) {
+            auto&& pShader = pData->GetDefaultShaderData().pShader;
+            if (pShader && pShader->GetResourcePath() == path) {
+                return;
+            }
+        }
 
         auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path);
         if (!pShader) {

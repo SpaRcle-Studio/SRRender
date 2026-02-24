@@ -479,6 +479,7 @@ namespace SR_GRAPH_NS {
     }
 
     RenderScene::CameraPtr RenderScene::GetMainCamera() const {
+        SR_TRACY_ZONE;
         if (!m_editorCameras.empty()) {
             return m_editorCameras.front();
         }

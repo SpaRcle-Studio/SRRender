@@ -14,11 +14,44 @@
 
 namespace SR_GRAPH_NS {
     class SkyboxPass;
+    class BaseMaterial;
     class RenderScene;
 }
 
 namespace SR_GTYPES_NS {
     class Camera;
+
+    /// @abstract
+    struct PostProcessModule : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<PostProcessModule> {
+        SR_STRUCT()
+        using Ptr = SR_HTYPES_NS::SharedPtr<PostProcessModule>;
+
+        PostProcessModule()
+            : SR_HTYPES_NS::SharedPtr<PostProcessModule>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+        { }
+
+        virtual void Apply(BaseMaterial& material, PostProcessModule* pFrom, float_t progress) const { }
+    };
+
+    struct PostProcessModuleVignette : public PostProcessModule {
+        SR_STRUCT()
+        using Super = PostProcessModule;
+
+        void Apply(BaseMaterial& material, PostProcessModule* pFrom, float_t progress) const override;
+
+        /// @property
+        float_t m_intensity = 0.5f;
+    };
+
+    struct PostProcessModuleChromaticAberration : public PostProcessModule {
+        SR_STRUCT()
+        using Super = PostProcessModule;
+
+        void Apply(BaseMaterial& material, PostProcessModule* pFrom, float_t progress) const override;
+
+        /// @property
+        float_t m_intensity = 1.0f;
+    };
 
     /// @extension(postprocess)
     class PostProcessSettings : public SR_UTILS_NS::Asset {
@@ -30,6 +63,8 @@ namespace SR_GTYPES_NS {
         /// @customArgs(pick: enabled, filter name: Shader, relative: resources)
         /// @customArg(filter value: srsl)
         SR_UTILS_NS::Path shaderPath;
+        /// @property @notNull
+        std::vector<PostProcessModule::Ptr> modules;
 
     };
 
@@ -38,11 +73,12 @@ namespace SR_GTYPES_NS {
         SR_CLASS()
         using Super = Component;
     public:
-        void Update(float_t dt) override { }
+        void Update(float_t dt) override;
         void OnDisable() override { }
         void OnDetached() override { }
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
+        SR_NODISCARD RenderScene* GetRenderScene() const;
 
     private:
         mutable SR_HTYPES_NS::SharedPtr<RenderScene> m_renderScene;

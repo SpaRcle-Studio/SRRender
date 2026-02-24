@@ -211,6 +211,14 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return result;
     }
 
+    bool ButtonColoredText(const char* label, const SR_MATH_NS::FColor& color, const SR_MATH_NS::FVector2& size) {
+        SR_TRACY_ZONE;
+        PushStyleColor(StyleColor::Text, color);
+        const bool result = ImGui::Button(label, F2ToImV2(size));
+        PopStyleColor(1);
+        return result;
+    }
+
     void PushItemWidth(float_t itemWidth) {
         SR_TRACY_ZONE;
         ImGui::PushItemWidth(itemWidth);

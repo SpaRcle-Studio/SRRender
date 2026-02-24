@@ -576,18 +576,6 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    MaterialShaderData* MaterialData::GetShaderData(SR_UTILS_NS::StringAtom id) noexcept {
-        if (id.empty()) {
-            return &m_defaultShader;
-        }
-
-        return nullptr;
-    }
-
-    const MaterialShaderData* MaterialData::GetShaderData(SR_UTILS_NS::StringAtom id) const noexcept {
-        return const_cast<MaterialData*>(this)->GetShaderData(id);
-    }
-
     void MaterialData::SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept {
         SR_TRACY_ZONE;
 

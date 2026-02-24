@@ -120,6 +120,9 @@ namespace SR_GRAPH_NS {
 
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_SHADOW_STRENGTH = "SHADOW_STRENGTH";
 
+    SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_POST_PROCESS_VIGNETTE_INTENSITY = "vignetteIntensity";
+    SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_POST_PROCESS_CHROMATIC_ABERRATION_INTENSITY = "chromaticAberrationIntensity";
+
     /**
      * 0 - sliced
      * 1 - filled

@@ -51,11 +51,21 @@ namespace SR_GRAPH_NS {
         /// @property
         std::set<SR_UTILS_NS::StringAtom> disallowedLayers;
         /// @property
+        bool mainRenderer = true;
+        /// @property
         bool castShadows = false;
         /// @property
         bool colorBuffer = false;
         /// @property
         bool frustumCulling = true;
+
+    };
+
+    class RenderTechniqueLayerCustomPass : public RenderTechniqueLayerBase {
+        SR_CLASS()
+    public:
+        /// @property @notNull
+        BasePass::Ptr pass;
 
     };
 
@@ -84,6 +94,8 @@ namespace SR_GRAPH_NS {
     public:
         /// @property
         SR_UTILS_NS::StringAtom colorBufferControllerName = "ColorBuffer";
+        /// @property
+        uint32_t colorMultiplier = 5000;
 
     };
 
