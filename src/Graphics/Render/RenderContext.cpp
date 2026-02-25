@@ -732,7 +732,15 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderContext::SetMacro(SR_UTILS_NS::StringAtom define, std::optional<std::string> value) {
-        if (value) {
+        if (auto&& pIt = m_definitions.find(define); pIt != m_definitions.end()) {
+            if (value) {
+                pIt->second = *value;
+            }
+            else {
+                pIt->second.clear();
+            }
+        }
+        else if (value) {
             m_definitions[define] = *value;
         }
         else {
@@ -748,6 +756,13 @@ namespace SR_GRAPH_NS {
 
     void RenderContext::ReloadShaders() {
         SR_UTILS_NS::ResourceManager::Instance().ReloadAll(SR_GTYPES_NS::Shader::GetClassStaticName());
+        SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
+        SetDirty();
+        m_isNeedGarbageCollection = true;
+    }
+
+    void RenderContext::ReloadTextures() {
+        SR_UTILS_NS::ResourceManager::Instance().ReloadAll(SR_GTYPES_NS::Texture::GetClassStaticName());
         SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_RENDER_SETTINGS_CHANGED_ID);
         SetDirty();
         m_isNeedGarbageCollection = true;
@@ -773,12 +788,35 @@ namespace SR_GRAPH_NS {
         if (auto&& path = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat(ActiveGraphicsSettings::SETTINGS_PATH); path.IsFile()) {
             SR_LOG("RenderContext::ReloadGraphicsSettings() : loading active graphics settings from path: {}", path);
             SR_UTILS_NS::SRADeserializer deserializer;
-            if (!deserializer.LoadFromFile(path) || !m_activeGraphicsSettings.Load(deserializer)) {
+            ActiveGraphicsSettings settings;
+            if (!deserializer.LoadFromFile(path) || !settings.Load(deserializer)) {
                 SR_ERROR("RenderContext::ReloadGraphicsSettings() : failed to load active graphics settings from path: {}", path);
+            }
+            else {
+                SetGraphicsSettings(settings, false);
             }
         }
         else {
             SR_LOG("RenderContext::ReloadGraphicsSettings() : active graphics settings file not found at path: {}", path);
+        }
+    }
+
+    void RenderContext::SetGraphicsSettings(const ActiveGraphicsSettings& settings, bool reload) {
+        const bool needReloadTextures = m_activeGraphicsSettings.sRGB != settings.sRGB;
+        const bool needReloadShaders = m_activeGraphicsSettings != settings;
+        m_activeGraphicsSettings = settings;
+
+        SwitchMacro("SR_SRGB", m_activeGraphicsSettings.sRGB);
+
+        if (!reload) {
+            return;
+        }
+
+        if (needReloadShaders) {
+            ReloadShaders();
+        }
+        if (needReloadTextures) {
+            ReloadTextures();
         }
     }
 }

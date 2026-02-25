@@ -10,6 +10,16 @@
 #include <Utils/Common/Enumerations.h>
 
 namespace SR_GRAPH_NS {
+    SR_ENUM_NS_CLASS_T(ImageType, uint8_t,
+        Albedo,
+        Normal,
+        Roughness,
+        Metallic,
+        AmbientOcclusion,
+        Emissive,
+        Height
+    );
+
     SR_ENUM_NS_CLASS_T(ImageLoadFormat, uint8_t,
         Unknown,
         Grey,
@@ -49,6 +59,7 @@ namespace SR_GRAPH_NS {
         BGRA8_UNORM,
         RGBA16_UNORM,
         RGBA16_SFLOAT,
+        B10G11R11_UFLOAT_PACK32,
 
         RGB8_UNORM,
         RGB8_SRGB,

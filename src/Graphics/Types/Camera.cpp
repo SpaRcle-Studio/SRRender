@@ -88,7 +88,12 @@ namespace SR_GTYPES_NS {
 
         SR_UTILS_NS::Path path = GetRenderTechniquePath();
 
-        auto&& pContext = GetRenderScene()->GetContext();
+        auto&& pScene = TryGetRenderScene();
+        if (!pScene) {
+            return nullptr;
+        }
+
+        auto&& pContext = pScene->GetContext();
 
         if (path.IsEmpty()) {
             switch (m_type) {

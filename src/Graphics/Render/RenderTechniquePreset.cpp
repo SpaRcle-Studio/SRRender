@@ -202,8 +202,19 @@ namespace SR_GRAPH_NS {
 
             pMainGroupPass = pFrameBuffer.StaticCast<GroupPass>();
 
+            std::vector<ImageFormat> colorFormats;
+            colorFormats.reserve(mainRenderColorLayers);
+
+            if (params.activeGraphicsSettings.hdr) {
+                colorFormats.emplace_back(ImageFormat::B10G11R11_UFLOAT_PACK32);
+            }
+            else {
+                colorFormats.emplace_back(ImageFormat::RGBA8_UNORM);
+            }
+
             FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
             pFrameBufferController->SetName(fboName);
+            pFrameBufferController->SetColorFormats(colorFormats);
             data.frameBuffers.emplace_back(pFrameBufferController);
         }
         else {

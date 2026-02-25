@@ -153,7 +153,7 @@ namespace SR_GTYPES_NS {
 
         static const SR_UTILS_NS::StringAtom diffuseAtom("diffuse");
         auto&& pTexture = GetMaterial()->GetMaterialData()->GetDefaultShaderData().GetSamplerTexture(diffuseAtom);
-        if (!pTexture) {
+        if (!pTexture || !pTexture->CanBeUsed()) {
             return;
         }
 

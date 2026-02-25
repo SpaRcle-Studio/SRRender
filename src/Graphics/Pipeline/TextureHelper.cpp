@@ -146,6 +146,7 @@ namespace SR_GRAPH_NS {
 
     bool IsTextureSupportsFormat(ImageFormat format) {
         switch (format) {
+            case ImageFormat::RGB8_SRGB:
             case ImageFormat::RGBA8_UNORM:
             case ImageFormat::BGRA8_UNORM:
             case ImageFormat::RGBA16_UNORM:

@@ -374,11 +374,13 @@ namespace SR_GRAPH_NS::Types {
 
         auto&& pShader = SR_SRSL_NS::SRSLShader::Load(path, m_macros);
         if (!pShader) {
+            m_hasErrors = true;
             SR_ERROR("Shader::Load() : failed to load srsl shader!\n\tPath: " + path.ToString());
             return false;
         }
 
         if (!pShader->Export(SRSL2::ShaderLanguage::GLSL)) {
+            m_hasErrors = true;
             SR_ERROR("Shader::Load() : failed to export srsl shader!\n\tPath: " + path.ToString());
             return false;
         }

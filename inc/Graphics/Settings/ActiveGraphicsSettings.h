@@ -18,12 +18,30 @@ namespace SR_GRAPH_NS {
 
         SR_INLINE_STATIC SR_UTILS_NS::Path SETTINGS_PATH = "User/GraphicsSettings.sra";
 
+        bool operator==(const ActiveGraphicsSettings& lrs) const {
+            return instancing == lrs.instancing
+                   && shadowsInstancing == lrs.shadowsInstancing
+                   && postProcess == lrs.postProcess
+                   && hdr == lrs.hdr
+                   && sRGB == lrs.sRGB
+                   && shadowsQuality == lrs.shadowsQuality
+                   && colorBufferQuality == lrs.colorBufferQuality;
+        }
+
+        bool operator!=(const ActiveGraphicsSettings& lrs) const {
+            return !(*this == lrs);
+        }
+
         /// @property
         bool instancing = true;
         /// @property
         bool shadowsInstancing = true;
         /// @property
         bool postProcess = true;
+        /// @property
+        bool hdr = true;
+        /// @property
+        bool sRGB = true;
         /// @property
         Quality shadowsQuality = Quality::High;
         /// @property

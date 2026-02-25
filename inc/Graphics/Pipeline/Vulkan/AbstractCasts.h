@@ -327,11 +327,13 @@ namespace SR_GRAPH_NS::VulkanTools {
             case ImageFormat::BGRA8_UNORM: return VK_FORMAT_B8G8R8A8_UNORM;
             case ImageFormat::RGBA16_UNORM: return VK_FORMAT_R16G16B16A16_UNORM;
             case ImageFormat::RGBA16_SFLOAT: return VK_FORMAT_R16G16B16A16_SFLOAT;
+            case ImageFormat::B10G11R11_UFLOAT_PACK32: return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 
             case ImageFormat::RGB8_UNORM: return VK_FORMAT_R8G8B8_UNORM;
             case ImageFormat::RGB16_UNORM: return VK_FORMAT_R16G16B16_UNORM;
 
             case ImageFormat::RGBA8_SRGB: return VK_FORMAT_R8G8B8A8_SRGB;
+            case ImageFormat::RGB8_SRGB: return VK_FORMAT_R8G8B8_SRGB;
 
             case ImageFormat::R8_UNORM: return VK_FORMAT_R8_UNORM;
             case ImageFormat::R16_UNORM: return VK_FORMAT_R16_UNORM;
@@ -355,6 +357,7 @@ namespace SR_GRAPH_NS::VulkanTools {
             default:
                 break;
         }
+        SR_ERROR("VulkanTools::AbstractTextureFormatToVkFormat() : unknown format! \n\tFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
         return VkFormat::VK_FORMAT_MAX_ENUM;
     }
 

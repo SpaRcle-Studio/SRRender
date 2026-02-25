@@ -712,7 +712,7 @@ namespace SR_GRAPH_NS {
 
         auto vkFormat = VulkanTools::AbstractTextureFormatToVkFormat(textureCreateInfo.format);
         if (vkFormat == VK_FORMAT_MAX_ENUM) {
-            PipelineError("VulkanPipeline::AllocateTexture() : unsupported format!");
+            SRHalt("VulkanPipeline::AllocateTexture() : unsupported format!");
             return SR_ID_INVALID;
         }
 

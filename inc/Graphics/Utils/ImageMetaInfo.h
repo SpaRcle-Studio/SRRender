@@ -29,13 +29,14 @@ namespace SR_GRAPH_NS {
         bool operator==(const ImageMetaInfo& lrs) const {
             return format == lrs.format
                    && loadMode == lrs.loadMode
+                   && imageType == lrs.imageType
                    && filter == lrs.filter
                    && addressMode == lrs.addressMode
                    && compression == lrs.compression
                    && mipLevels == lrs.mipLevels
                    && m_border == lrs.m_border
                    && SR_EQUALS_T(m_pixelsPerUnit, lrs.m_pixelsPerUnit, SR_SCALAR_EPSILON)
-                   && (alpha == lrs.alpha || alpha == SR_UTILS_NS::BoolExt::None || lrs.alpha == SR_UTILS_NS::BoolExt::None)
+                   && alpha == lrs.alpha
                    && cpuUsage == lrs.cpuUsage;
         }
 
@@ -47,7 +48,9 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::ResourceLoadMode loadMode = SR_UTILS_NS::ResourceLoadMode::Async;
         /// @property
-        ImageFormat format = ImageFormat::RGBA8_UNORM;
+        ImageType imageType = ImageType::Albedo;
+        /// @property
+        ImageFormat format = ImageFormat::Auto;
         /// @property
         TextureFilter filter = TextureFilter::LINEAR;
         /// @property

@@ -19,6 +19,7 @@
 #include <Enum/TextureFilter.hpp>
 #include <Enum/ImageFormat.hpp>
 #include <Enum/AddressMode.hpp>
+#include <Enum/ImageType.hpp>
 
 #include <Codegen/Texture.generated.hpp>
 
@@ -119,7 +120,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
+        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Low) {
             SR_LOG("Texture::Calculate() : calculating \"" + std::string(GetResourceId()) + "\" texture...");
         }
 
@@ -140,6 +141,31 @@ namespace SR_GTYPES_NS {
         createInfo.mipLevels = m_activeImageMetaInfo.mipLevels;
         createInfo.filter = m_activeImageMetaInfo.filter;
         createInfo.addressMode = m_activeImageMetaInfo.addressMode;
+
+        if (m_activeImageMetaInfo.format == ImageFormat::Auto) {
+            //const bool hasAlpha = (m_activeImageMetaInfo.alpha == SR_UTILS_NS::BoolExt::None || m_activeImageMetaInfo.alpha == SR_UTILS_NS::BoolExt::True) && m_textureData->GetChannels() == 4;
+            constexpr bool hasAlpha = true;
+            const bool srbgEnabled = GetRenderContext()->IsSrgbEnabled();
+            switch (m_activeImageMetaInfo.imageType) {
+                case ImageType::Albedo:
+                    if (srbgEnabled) {
+                        createInfo.format = hasAlpha ? ImageFormat::RGBA8_SRGB : ImageFormat::RGB8_SRGB;
+                    }
+                    else {
+                        createInfo.format = hasAlpha ? ImageFormat::RGBA8_UNORM : ImageFormat::RGB8_UNORM;
+                    }
+                    break;
+                case ImageType::Normal: createInfo.format = hasAlpha ? ImageFormat::RGBA8_UNORM : ImageFormat::RGB8_UNORM; break;
+                case ImageType::Roughness: createInfo.format = hasAlpha ? ImageFormat::RGBA8_UNORM : ImageFormat::RGB8_UNORM; break;
+                case ImageType::Metallic: createInfo.format = ImageFormat::R8_UNORM; break;
+                case ImageType::AmbientOcclusion: createInfo.format = ImageFormat::R8_UNORM; break;
+                case ImageType::Emissive: createInfo.format = hasAlpha ? ImageFormat::RGBA8_UNORM : ImageFormat::RGB8_UNORM; break;
+                case ImageType::Height: createInfo.format = ImageFormat::R16_UNORM; break;
+                default:
+                    SRHalt("Texture::Calculate() : unsupported image type for auto format! Image type: {}", m_activeImageMetaInfo.imageType);
+                    break;
+            }
+        }
 
         if (!IsTextureSupportsFormat(createInfo.format) && createInfo.format != ImageFormat::Auto && createInfo.format != ImageFormat::Unknown) {
             SR_WARN("Texture::Calculate() : the texture format {} is not supported! Falling back to Auto format.", createInfo.format);

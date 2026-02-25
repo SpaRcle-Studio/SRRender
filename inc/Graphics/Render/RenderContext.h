@@ -120,8 +120,10 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const ActiveGraphicsSettings& GetActiveGraphicsSettings() const noexcept { return m_activeGraphicsSettings; }
         SR_NODISCARD ActiveGraphicsSettings& GetActiveGraphicsSettings() noexcept { return m_activeGraphicsSettings; }
         SR_NODISCARD SR_UTILS_NS::StringAtom GetActivePreset() const noexcept { return m_activePreset; }
+        SR_NODISCARD bool IsSrgbEnabled() const noexcept { return m_activeGraphicsSettings.sRGB; }
 
         void SetActivePreset(SR_UTILS_NS::StringAtom name);
+        void SetGraphicsSettings(const ActiveGraphicsSettings& settings, bool reload = true);
 
         void SetOptimizedRenderUpdateEnabled(bool enabled) noexcept { m_isOptimizedUpdateEnabled = enabled; }
         bool SetCurrentShader(ShaderPtr pShader);
@@ -134,6 +136,7 @@ namespace SR_GRAPH_NS {
         void SwitchMacro(SR_UTILS_NS::StringAtom define, bool enable) { if (enable) { SetMacro(define); } else { RemoveMacro(define); } }
 
         void ReloadShaders();
+        void ReloadTextures();
 
     private:
         bool LoadDefaultResources();

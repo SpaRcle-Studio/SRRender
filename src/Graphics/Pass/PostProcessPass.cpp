@@ -8,6 +8,7 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Render/RenderContext.h>
 #include <Graphics/Lighting/LightSystem.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
@@ -20,11 +21,20 @@ namespace SR_GRAPH_NS {
     }
 
     bool PostProcessPass::Init() {
-        if (auto&& pShader = m_material ? m_material->GetShader(SR_SRSL_NS::ShaderMacrosParams()) : nullptr) {
-            m_onShaderReloaded = pShader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto &&) {
-                m_dirtyShader = true;
-            });
-        }
+        SR_TRACY_ZONE;
+
+        //SR_SRSL_NS::ShaderMacrosParams shaderMacros;
+        //auto&& macros = GetRenderContext()->GetShaderMacros();
+        //for (auto&& [key, value] : macros) {
+        //    shaderMacros.SetParam(key, value);
+        //}
+
+        //if (auto&& pShader = m_material ? m_material->GetShader(shaderMacros) : nullptr) {
+        //    m_onShaderReloaded = pShader->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto &&) {
+        //        m_dirtyShader = true;
+        //    });
+        //}
+
         return Super::Init();
     }
 
@@ -39,7 +49,13 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(SR_SRSL_NS::ShaderMacrosParams::GetDefault());
+        m_shaderMacros.Clear();
+        auto&& macros = GetRenderContext()->GetShaderMacros();
+        for (auto&& [key, value] : macros) {
+            m_shaderMacros.SetParam(key, value);
+        }
+
+        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(m_shaderMacros);
         if (!pShader || pShader->Use() == ShaderBindResult::Failed) {
             return false;
         }
@@ -82,8 +98,7 @@ namespace SR_GRAPH_NS {
 
         SR_TRACY_ZONE;
 
-        static const SR_SRSL_NS::ShaderMacrosParams emptyParams;
-        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(emptyParams);
+        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(m_shaderMacros);
 
         GetPipeline()->SetCurrentShader(pShader);
 
