@@ -33,7 +33,7 @@ namespace SR_GRAPH_NS {
         SR_MATH_NS::FVector3 sunBaseColor = tempColor * m_filter;
 
         // ------------------------------------------------------------
-        // Atmospheric absorption (CRITICAL)
+        // Atmospheric absorption
         // ------------------------------------------------------------
         const float redLoss   = 1.0f;
         const float greenLoss = SR_MATH_NS::Mix(0.7f, 1.0f, sunHeight);
@@ -48,7 +48,7 @@ namespace SR_GRAPH_NS {
         SR_MATH_NS::FVector3 sunColor = sunBaseColor * atmosphereAbsorb;
 
         // ------------------------------------------------------------
-        // Desaturate sun on sunset (VERY IMPORTANT)
+        // Desaturate sun on sunset
         // ------------------------------------------------------------
         const float saturation = SR_MATH_NS::Mix(m_saturationMin, m_saturationMax, sunHeight);
         const float luminance = sunColor.x * 0.2126f + sunColor.y * 0.7152f + sunColor.z * 0.0722f;
@@ -61,7 +61,7 @@ namespace SR_GRAPH_NS {
             // Чем ниже солнце — тем БЕЛЕЕ direct light
             const float skyInfluence = SR_MATH_NS::Curve::SmoothStep(0.0f, 0.35f, sunHeight);
             sunColor = SR_MATH_NS::Mix(
-                SR_MATH_NS::FVector3(1.0f), // почти белый direct
+                SR_MATH_NS::FVector3(1.0f),
                 sunColor,
                 skyInfluence
             );

@@ -395,7 +395,7 @@ namespace SR_GRAPH_NS {
 
         /// Ищем главную камеру и закадровые камеры
         for (auto&& cameraInfo : m_cameras) {
-            if (!cameraInfo.pCamera->IsActive()) {
+            if (!cameraInfo.pCamera->IsCameraActive()) {
                 continue;
             }
 

@@ -78,6 +78,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const SR_MATH_NS::Matrix4x4& GetInverseViewTranslate() const;
 
         SR_NODISCARD bool IsEditorCamera() const;
+        SR_NODISCARD bool IsCameraActive() const;
         SR_NODISCARD CameraType GetCameraType() const { return m_type; }
         SR_NODISCARD const SR_MATH_NS::FVector3& GetViewDirection() const;
         SR_NODISCARD SR_MATH_NS::FVector3 GetViewDirection(const SR_MATH_NS::FVector3& pos) const noexcept;
@@ -144,14 +145,12 @@ namespace SR_GTYPES_NS {
         /// @getter(GetRenderTechniqueData)
         SR_VIRTUAL_PROPERTY
 
-        /// @property @readOnly @dontSave
-        float_t m_aspect = 1.f;
-        /// @property @readOnly @dontSave
-        bool m_hasErrors = false;
-        /// @property @readOnly @dontSave
-        bool m_isRegistered = false;
         /// @property
         CameraType m_type = CameraType::Main;
+
+        float_t m_aspect = 1.f;
+        bool m_hasErrors = false;
+        bool m_isRegistered = false;
 
         SR_UTILS_NS::Subscription m_onRenderSettingsChanged;
 
@@ -161,6 +160,8 @@ namespace SR_GTYPES_NS {
         SR_MATH_NS::Matrix4x4 m_viewMat;
         SR_MATH_NS::Matrix4x4 m_orthogonal;
         SR_MATH_NS::Matrix4x4 m_pixelOrthogonal;
+
+        bool m_isDisabledByEditor = false;
 
         mutable bool m_isInverseDirty = true;
         mutable SR_MATH_NS::Matrix4x4 m_inverseProjection;

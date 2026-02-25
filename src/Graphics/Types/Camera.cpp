@@ -168,24 +168,6 @@ namespace SR_GTYPES_NS {
         m_isInverseDirty = true;
         m_viewMat = m_rotation.RotateX(SR_DEG(SR_PI)).Inverse().ToMat4x4();
 
-        /*auto&& euler = m_rotation.RotateX(SR_DEG(SR_PI)).Inverse().EulerAngle();
-
-        float yr = SR_RAD(euler.y);
-        float sy = sin(yr);
-        float cy = cos(yr);
-
-        float pr = SR_RAD(euler.x);
-        float sx = sin(pr);
-        float cx = cos(pr);
-
-        float rr = SR_RAD(euler.z);
-        float sz = sin(rr);
-        float cz = cos(rr);
-
-        glm::mat3x3 rotation = glm::mat3x3(cy*cz, -cy*sz, sy, sx*sy*cz+cx*sz, -sx*sy*sz+cx*cz, -sx*cy, -cx*sy*cz+sx*sz, cx*sy*sz+sx*cz, cx*cy);
-        m_viewMat = SR_MATH_NS::Matrix4x4(rotation);*/
-
-
         m_viewTranslateMat = m_viewMat.Translate(m_position.Inverse());
         m_viewDirection = m_rotation * SR_MATH_NS::FVector3(0, 0, 1);
         m_frustum = ExtractFrustum(m_projection * m_viewTranslateMat);
@@ -363,7 +345,24 @@ namespace SR_GTYPES_NS {
     }
 
     void Camera::Update(float_t dt) {
+        SR_TRACY_ZONE;
+
         Super::Update(dt);
+
+        if (!IsEditorCamera()) {
+            if (!m_isDisabledByEditor && GetScene()->IsEditorMode()) {
+                if (RenderScene::Ptr pRenderScene = TryGetRenderScene()) {
+                    m_isDisabledByEditor = true;
+                    pRenderScene->SetDirtyCameras();
+                }
+            }
+            else if (m_isDisabledByEditor && !GetScene()->IsEditorMode()) {
+                if (RenderScene::Ptr pRenderScene = TryGetRenderScene()) {
+                    m_isDisabledByEditor = false;
+                    pRenderScene->SetDirtyCameras();
+                }
+            }
+        }
     }
 
     void Camera::Start() {
@@ -468,5 +467,9 @@ namespace SR_GTYPES_NS {
             return emptyData;
         }
         return m_renderTechnique.pTechnique->GetRenderTechniqueData();
+    }
+
+    bool Camera::IsCameraActive() const {
+        return !m_isDisabledByEditor && IsActive();
     }
 }

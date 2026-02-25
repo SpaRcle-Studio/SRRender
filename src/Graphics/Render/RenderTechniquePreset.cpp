@@ -224,6 +224,8 @@ namespace SR_GRAPH_NS {
             pMainGroupPass = pSwapchainPass.StaticCast<GroupPass>();
         }
 
+        auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>();
+
         data.pass.DynamicCast<GroupPass>()->GetPasses().emplace_back(pMainGroupPass.StaticCast<BasePass>());
 
         for (auto&& pLayer : technique.GetLayers()) {
@@ -239,7 +241,7 @@ namespace SR_GRAPH_NS {
                 MeshDrawerPass::Ptr pMeshDrawerPass = new MeshDrawerPass();
 
                 if (pMeshLayer->castShadows && params.activeGraphicsSettings.shadowsQuality != Quality::None) {
-                    if (auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>()) {
+                    if (pShadowIntegration) {
                         pMeshDrawerPass->AddShaderDefine(SHADER_MACRO_SR_DEFINE_USE_CASCADED_SHADOW_MAP);
                         SamplerData shadowSampler;
                         shadowSampler.fboName = pShadowIntegration->shadowMapControllerName;
@@ -303,6 +305,15 @@ namespace SR_GRAPH_NS {
             if (defaultPostProcessPass) {
                 defaultPostProcessPass->CloneTo(*pPostProcessPass);
             }
+
+            if (pShadowIntegration) {
+                SamplerData shadowSampler;
+                shadowSampler.fboName = pShadowIntegration->shadowMapControllerName;
+                shadowSampler.id = pShadowIntegration->shaderVariableName;
+                shadowSampler.usageType = SamplerDataUsageType::FrameBufferDepth;
+                pPostProcessPass->GetSamplersData().AddSampler(shadowSampler);
+            }
+
             pPostProcessGroupPass->GetPasses().emplace_back(pPostProcessPass.StaticCast<BasePass>());
         }
 

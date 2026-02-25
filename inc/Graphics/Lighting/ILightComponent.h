@@ -30,6 +30,7 @@ namespace SR_GRAPH_NS {
         void OnEnable() override;
         void OnDisable() override;
 
+        void OnPostLoad() override;
         void OnMatrixDirty() override;
 
         void UpdateLightParams();

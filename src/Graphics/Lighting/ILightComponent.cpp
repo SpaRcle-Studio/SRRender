@@ -60,7 +60,7 @@ namespace SR_GRAPH_NS {
     void ILightComponent::UpdateLightParams() {
         SR_TRACY_ZONE;
 
-        if (!GetTransform() || !m_isLightRegistered) {
+        if (!m_parent || !GetTransform() || !m_isLightRegistered) {
             return;
         }
 
@@ -69,5 +69,11 @@ namespace SR_GRAPH_NS {
         if (auto&& pRenderScene = TryGetRenderScene()) {
             pRenderScene->GetLightSystem()->OnLightChanged(this);
         }
+    }
+
+    void ILightComponent::OnPostLoad() {
+        SR_TRACY_ZONE;
+        UpdateLightParams();
+        Super::OnPostLoad();
     }
 }

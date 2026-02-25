@@ -324,8 +324,13 @@ namespace SR_GRAPH_NS {
 
             const float_t texelSize = (m_cascadeRadii[i] * 2.0f) / shadowMapSize;
             SR_MATH_NS::FVector3 centerLS = (lightViewTmp * SR_MATH_NS::FVector4(cascadeCenterWSTmp, 1.0f)).XYZ();
-            centerLS.x = std::floor(centerLS.x / texelSize) * texelSize;
-            centerLS.y = std::floor(centerLS.y / texelSize) * texelSize;
+
+            // Стабилизация: снэп к сетке тексёлов относительно предыдущего кадра (как в UE5),
+            // чтобы тени не "прыгали" при повороте камеры — движение только целыми тексёлами.
+            const SR_MATH_NS::FVector3& lastCenterLS = m_lastCascadeData[i].center;
+            centerLS.x = lastCenterLS.x + std::floor((centerLS.x - lastCenterLS.x) / texelSize) * texelSize;
+            centerLS.y = lastCenterLS.y + std::floor((centerLS.y - lastCenterLS.y) / texelSize) * texelSize;
+            m_lastCascadeData[i].center = centerLS;
 
             const SR_MATH_NS::FVector3 cascadeCenterWS = (lightViewTmp.Inverse() * SR_MATH_NS::FVector4(centerLS, 1.0f)).XYZ();
             SR_MATH_NS::FVector3 lightPos = cascadeCenterWS - lightDir * m_cascadeRadii[i] * 2.0f;

@@ -37,6 +37,8 @@ namespace SR_GRAPH_NS {
         bool Prepare() override;
 
         SR_NODISCARD const BaseMaterial::Ptr& GetMaterial() const { return m_material; }
+        SR_NODISCARD const SamplersPassData& GetSamplersData() const { return m_samplers; }
+        SR_NODISCARD SamplersPassData& GetSamplersData() { return m_samplers; }
 
     protected:
         void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
