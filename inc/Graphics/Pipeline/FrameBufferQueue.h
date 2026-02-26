@@ -21,23 +21,13 @@ namespace SR_GRAPH_NS {
         using Queues = std::vector<SR_HTYPES_NS::ArrayVector<FrameBuffer , 64>>;
 
     public:
-        void AddFrameBuffer(FrameBuffer pFrameBuffer, uint32_t layer);
         void AddQueue(FrameBuffer pFrameBuffer, uint32_t queueIndex);
 
         void Clear();
 
-        SR_NODISCARD bool IsAllowMultiFrameBuffers() const;
-
-        SR_NODISCARD bool Contains(FrameBuffer pFrameBuffer);
-        SR_NODISCARD bool Contains(FrameBuffer pFrameBuffer, uint32_t layer);
         SR_NODISCARD const Queues& GetQueues() const;
 
     private:
-        struct FBOInfo {
-            FrameBuffer fbo = nullptr;
-            SR_HTYPES_NS::ArrayVector<Layer, 32> layers;
-        };
-        std::vector<FBOInfo> m_used;
         Queues m_levels;
 
     };

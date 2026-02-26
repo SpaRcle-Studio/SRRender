@@ -802,11 +802,14 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderContext::SetGraphicsSettings(const ActiveGraphicsSettings& settings, bool reload) {
+        SR_TRACY_ZONE;
+
         const bool needReloadTextures = m_activeGraphicsSettings.sRGB != settings.sRGB;
         const bool needReloadShaders = m_activeGraphicsSettings != settings;
         m_activeGraphicsSettings = settings;
 
         SwitchMacro("SR_SRGB", m_activeGraphicsSettings.sRGB);
+        SwitchMacro("SR_SHADOWS_QUALITY_EXTREME", m_activeGraphicsSettings.shadowsQuality == Quality::Extreme);
 
         if (!reload) {
             return;

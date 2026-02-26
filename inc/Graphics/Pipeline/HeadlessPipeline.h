@@ -25,6 +25,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) override;
         SR_NODISCARD int32_t AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) override;
         SR_NODISCARD int32_t AllocateCubeMap(const SRCubeMapCreateInfo& createInfo) override;
+        SR_NODISCARD int32_t AllocateCmdBuffer() override;
 
         bool FreeDescriptorSet(int32_t* id) override { *id = SR_ID_INVALID; return true; }
         bool FreeVBO(int32_t* id) override { *id = SR_ID_INVALID; return true; }
@@ -35,6 +36,7 @@ namespace SR_GRAPH_NS {
         bool FreeCubeMap(int32_t* id) override { *id = SR_ID_INVALID; return true; }
         bool FreeShader(int32_t* id) override { *id = SR_ID_INVALID; return true; }
         bool FreeTexture(int32_t* id) override { *id = SR_ID_INVALID; return true; }
+        bool FreeCmdBuffer(int32_t* id) override { *id = SR_ID_INVALID; return true; }
 
         void GetFBOHandles(std::vector<void*>& handles) const override;
         void GetShaderHandles(std::vector<void*>& handles) const override;

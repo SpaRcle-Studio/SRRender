@@ -953,20 +953,10 @@ namespace SR_GRAPH_NS {
 
             auto&& vkFrameBuffer = layers.at(layerIndex)->GetFramebuffer();
 
-            if (m_fboQueue.Contains(pFBO, layerIndex)) {
-                PipelineError("VulkanPipeline::BindFrameBuffer() : frame buffer (\"" + std::to_string(FBO) + "\") is already added to FBO queue!");
-                SRHalt0();
-                return;
-            }
-
-            if (!m_fboQueue.Contains(pFBO)) {
-                m_fboQueue.AddFrameBuffer(pFBO, layerIndex);
-            }
-
             m_renderPassBI.framebuffer = vkFrameBuffer;
             m_renderPassBI.renderPass  = pFrameBuffer->GetRenderPass();
             m_renderPassBI.renderArea  = pFrameBuffer->GetRenderPassArea();
-            m_currentCmd               = pFrameBuffer->GetCommandBuffer(frameIndex);
+            //m_currentCmd               = pFrameBuffer->GetCommandBuffer(frameIndex);
 
             m_currentVkFrameBuffer = pFrameBuffer;
             m_state.frameBufferId = FBO;
@@ -1035,7 +1025,6 @@ namespace SR_GRAPH_NS {
             info.features.colorTransferDst = createInfo.features.colorTransferDst;
             info.features.depthShaderRead = createInfo.features.depthShaderRead;
             info.features.colorShaderRead = createInfo.features.colorShaderRead;
-            info.features.offscreen = createInfo.features.offscreen;
 
             if ((*createInfo.pFBO)[frame] > 0) {
                 if (!m_memory->ReAllocateFBO(info)) {
@@ -1679,12 +1668,19 @@ namespace SR_GRAPH_NS {
         const auto frameIndex = GetCurrentImageIndex();
 
         if (!m_isComputeState) {
-            if (m_currentVkFrameBuffer) {
-                m_currentCmd = m_currentVkFrameBuffer->GetCommandBuffer(frameIndex);
-            }
-            else {
+            if (m_state.cmdBufferId == SR_ID_INVALID) {
                 m_currentCmd = m_kernel->m_drawCmdBuffs[frameIndex];
             }
+            else {
+                SRHalt("VulkanPipeline::BeginCmdBuffer() : TODO! Support custom command buffers for graphics pipeline!");
+            }
+
+            //if (m_currentVkFrameBuffer) {
+            //    m_currentCmd = m_currentVkFrameBuffer->GetCommandBuffer(frameIndex);
+            //}
+            //else {
+            //    m_currentCmd = m_kernel->m_drawCmdBuffs[frameIndex];
+            //}
         }
 
         if (!m_currentCmd) {

@@ -118,12 +118,6 @@ namespace SR_GRAPH_NS {
 
         pFrameBufferPass->GetPasses().emplace_back(pShadowPass.StaticCast<BasePass>());
         data.pass.DynamicCast<GroupPass>()->GetPasses().emplace_back(pFrameBufferPass.StaticCast<BasePass>());
-
-        if (data.queues.empty()) {
-            data.queues.emplace_back();
-        }
-
-        data.queues.back().frameBuffers.emplace_back(shadowMapControllerName);
     }
 
     void RenderTechniquePresetIntegrationColorBuffer::Integrate(const Technique& technique, const Params& params) const {
@@ -172,12 +166,6 @@ namespace SR_GRAPH_NS {
 
         pFrameBufferPass->GetPasses().emplace_back(pColorBufferPass.StaticCast<BasePass>());
         data.pass.DynamicCast<GroupPass>()->GetPasses().emplace_back(pFrameBufferPass.StaticCast<BasePass>());
-
-        if (data.queues.empty()) {
-            data.queues.emplace_back();
-        }
-
-        data.queues.back().frameBuffers.emplace_back(colorBufferControllerName);
     }
 
     void RenderTechniquePresetIntegrationMainView::Integrate(const Technique& technique, const Params& params) const {
@@ -315,16 +303,6 @@ namespace SR_GRAPH_NS {
             }
 
             pPostProcessGroupPass->GetPasses().emplace_back(pPostProcessPass.StaticCast<BasePass>());
-        }
-
-        if (useOffscreenRender) {
-            data.queues.emplace_back();
-            data.queues.back().frameBuffers.emplace_back(offscreenControllerName);
-        }
-
-        if (params.editor) {
-            data.queues.emplace_back();
-            data.queues.back().frameBuffers.emplace_back(params.sceneViewName);
         }
     }
 }

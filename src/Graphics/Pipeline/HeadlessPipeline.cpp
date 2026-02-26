@@ -71,4 +71,9 @@ namespace SR_GRAPH_NS {
         handles.clear();
         handles.emplace_back(reinterpret_cast<void*>(1));
     }
+
+    int32_t HeadlessPipeline::AllocateCmdBuffer() {
+        static int32_t uniqueId = 0;
+        return ++uniqueId;
+    }
 }

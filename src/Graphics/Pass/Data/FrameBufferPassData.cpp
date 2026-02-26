@@ -33,24 +33,19 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        auto&& pPipeline = GetPipeline();
-
         if (!pFrameBuffer->IsRenderAsSingleLayer() && GetLayersCount() > 1) {
             return RenderFrameBuffer(callback, GetLayersCount());
         }
 
         if (pFrameBuffer->Bind()) {
-            pFrameBuffer->BeginCmdBuffer(pPipeline->GetCurrentImageIndex(), m_clearColors, m_depth);
+            pFrameBuffer->ClearBuffers(m_clearColors, m_depth);
+            pFrameBuffer->BeginRender();
             {
-                pFrameBuffer->BeginRender();
                 pFrameBuffer->SetViewportScissor();
-
                 callback();
                 m_isFrameBufferRendered = true;
-
-                pFrameBuffer->EndRender();
             }
-            pFrameBuffer->EndCmdBuffer();
+            pFrameBuffer->EndRender();
         }
 
         GetPipeline()->SetCurrentFrameBuffer(nullptr);
@@ -65,7 +60,7 @@ namespace SR_GRAPH_NS {
         /// установим кадровый буфер, чтобы BeginCmdBuffer понимал какие значение для очистки ставить
         pPipeline->SetCurrentFrameBuffer(const_cast<Pipeline::FramebufferPtr>(pFrameBuffer.Get()));
 
-        pFrameBuffer->BeginCmdBuffer(pPipeline->GetCurrentImageIndex(), m_clearColors, m_depth);
+        pFrameBuffer->ClearBuffers(m_clearColors, m_depth);
         pFrameBuffer->SetViewportScissor();
 
         for (uint32_t i = 0; i < layers; ++i) {
@@ -80,8 +75,6 @@ namespace SR_GRAPH_NS {
                 pFrameBuffer->EndRender();
             }
         }
-
-        pFrameBuffer->EndCmdBuffer();
 
         GetPipeline()->SetCurrentFrameBuffer(nullptr);
 

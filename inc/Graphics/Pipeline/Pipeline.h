@@ -78,7 +78,7 @@ namespace SR_GRAPH_NS {
         virtual void PrepareFrame();
 
         /// Вызывается в начале построения сцены рендера, чистит очередь рендера.
-        virtual void ClearFrameBuffersQueue();
+        void ClearFrameBuffersQueue();
         virtual void ResetSubmitQueue();
 
         /// Отрисовка кадра на экран
@@ -224,6 +224,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsShaderChanged() const noexcept { return m_isShaderChanged; }
         SR_NODISCARD bool IsRenderState() const noexcept { return m_isRenderState; }
         SR_NODISCARD bool IsFBOQueueValid() const noexcept;
+        SR_NODISCARD const std::vector<uint32_t>& GetCmdBuffersQueue() const noexcept { return m_cmdBuffersQueue; }
 
         /// ------------------------------------------ Работа с памятью ------------------------------------------------
 
@@ -240,6 +241,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) { return SR_ID_INVALID; };
         SR_NODISCARD virtual int32_t AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) { return SR_ID_INVALID; };
         SR_NODISCARD virtual int32_t AllocateCubeMap(const SRCubeMapCreateInfo& createInfo) { return SR_ID_INVALID; };
+        SR_NODISCARD virtual int32_t AllocateCmdBuffer() { return SR_ID_INVALID; }
 
         virtual bool FreeDescriptorSet(int32_t* id) { return false; }
         virtual bool FreeVBO(int32_t* id) { return false; }
@@ -250,6 +252,7 @@ namespace SR_GRAPH_NS {
         virtual bool FreeCubeMap(int32_t* id) { return false; }
         virtual bool FreeShader(int32_t* id) { return false; }
         virtual bool FreeTexture(int32_t* id) { return false; }
+        virtual bool FreeCmdBuffer(int32_t* id) { return false; }
 
         virtual bool IsSamplerValid(int32_t id) const { return false; }
 
@@ -271,6 +274,7 @@ namespace SR_GRAPH_NS {
         virtual void UnUseShader();
 
         virtual void BindFrameBuffer(FramebufferPtr pFBO);
+        virtual void BindCmdBuffer(uint32_t cmdBuffer);
 
         /// Vertex Buffer Object - биндими для рендера вершин
         virtual void BindVBO(uint32_t VBO);
@@ -325,6 +329,7 @@ namespace SR_GRAPH_NS {
         PipelinePreInitInfo m_preInitInfo;
 
         FrameBufferQueue m_fboQueue;
+        std::vector<uint32_t> m_cmdBuffersQueue;
 
         bool m_isComputeState = false;
         bool m_isRenderState = false;

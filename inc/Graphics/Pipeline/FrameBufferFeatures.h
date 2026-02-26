@@ -29,8 +29,6 @@ namespace SR_GRAPH_NS {
         bool depthShaderRead = false;
         /// @property
         bool colorShaderRead = true;
-
-        bool offscreen = false;
     };
 }
 

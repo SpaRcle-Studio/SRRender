@@ -62,13 +62,8 @@ namespace SR_GRAPH_NS {
             return EvoVulkan::Core::RenderResult::Success;
         }
 
-        //auto&& prepareResult = PrepareFrame();
-
         m_submitInfo.Clear();
-        m_offscreenSubmitInfo.Clear();
-
         m_submitInfo.SetWaitDstStageMask(GetSubmitPipelineStages());
-        m_offscreenSubmitInfo.SetWaitDstStageMask(GetSubmitPipelineStages());
 
         FrameSync& frame = m_frames[m_frameIndex];
 
@@ -76,81 +71,50 @@ namespace SR_GRAPH_NS {
 
         auto&& pVulkanPipeline = m_pipeline.DynamicCast<VulkanPipeline>();
 
-        auto&& queues = m_pipeline->GetQueue().GetQueues();
-        for (auto&& queue : queues) {
-            for (auto&& pFrameBuffer : queue) {
-                if (!pFrameBuffer->IsWasRendered()) {
-                    continue;
-                }
+        //auto&& queues = m_pipeline->GetQueue().GetQueues();
+        //for (auto&& queue : queues) {
+        //    for (auto&& pFrameBuffer : queue) {
+        //        if (!pFrameBuffer->IsWasRendered()) {
+        //            continue;
+        //        }
 
-                if (!pFrameBuffer->IsValid()) {
-                    // SR_WARN("VulkanKernel::Render() : frame buffer is not valid! Skipping...");
-                    continue;
-                }
+        //        if (!pFrameBuffer->IsValid()) {
+        //            continue;
+        //        }
 
-                auto&& pFBO = pVulkanPipeline->GetMemoryManager()->GetFBO(pFrameBuffer->GetId() - 1);
+        //        auto&& pFBO = pVulkanPipeline->GetMemoryManager()->GetFBO(pFrameBuffer->GetId() - 1);
 
-                if (pFrameBuffer->GetFeatures().offscreen) {
-                    m_offscreenSubmitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(0));
-                }
-                else {
-                    m_submitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(m_imageIndex));
-                }
+        //        m_submitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(m_imageIndex));
+        //    }
+        //}
+
+        for (uint32_t cmdBufferId : m_pipeline->GetCmdBuffersQueue()) {
+            if (cmdBufferId == SR_ID_INVALID) {
+                m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_imageIndex]);
+            }
+            else {
+                SRHalt("VulkanKernel::Render() : TODO: support custom command buffers!");
             }
         }
-
-        //m_submitInfo.waitSemaphores.emplace_back(m_frameSyncs[m_currentBuffer].m_presentComplete);
-        //m_submitInfo.signalSemaphores.emplace_back(m_frameSyncs[m_currentImage].m_renderComplete);
 
         m_submitInfo.signalSemaphores.emplace_back(m_renderFinished[m_imageIndex]);
         m_submitInfo.waitSemaphores.emplace_back(frame.imageAvailable);
 
         auto&& pImGuiOverlay = m_pipeline->GetOverlay(OverlayType::ImGui).DynamicCast<VulkanImGuiOverlay>();
 
-        //auto&& pFrameCmdPool = GetCurrentFrameCmdPool();
-        //vkResetCommandPool(*GetDevice(), *pFrameCmdPool, 0);
-
         if (m_GUIEnabled && pImGuiOverlay && !pImGuiOverlay->IsSurfaceDirty()) {
-            //auto&& submitInfo = pImGuiOverlay->Render(m_currentImage);
             auto&& submitInfo = pImGuiOverlay->Render(m_imageIndex);
             m_submitInfo.commandBuffers.emplace_back(submitInfo.commandBuffers.front());
         }
-        else {
-            //if (m_pipeline->GetBuildState(m_currentImage).hasRenderData) {
-            //    m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_currentImage]);
-            //}
-           // if (m_pipeline->GetBuildState(m_imageIndex).hasRenderData) {
-                m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_imageIndex]);
-          //  }
-        }
-
-        /*if (!m_offscreenSubmitInfo.commandBuffers.empty())
-        {
-            SR_TRACY_ZONE_S("OffscreenGraphicsQueueSubmit");
-
-            m_submitInfo.waitSemaphores.emplace_back(m_offscreenSemaphore);
-            m_offscreenSubmitInfo.signalSemaphores.emplace_back(m_offscreenSemaphore);
-
-            auto&& vkSubmitInfo = m_offscreenSubmitInfo.ToVk();
-
-            if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
-                VK_ERROR("VulkanKernel::Render() : failed to offscreen queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
-                if (result == VK_ERROR_DEVICE_LOST) {
-                    SR_PLATFORM_NS::Terminate();
-                }
-                return EvoVulkan::Core::RenderResult::Error;
-            }
-
-            WaitIdle();
-        }*/
+        //else {
+        //    m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_imageIndex]);
+        //}
 
         {
             SR_TRACY_ZONE_S("GraphicsQueueSubmit");
 
             auto&& vkSubmitInfo = m_submitInfo.ToVk();
-            //vkResetFences(*m_device, 1, &m_waitFences[m_currentImage]);
 
-            //if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, m_waitFences[m_currentImage]); result != VK_SUCCESS) {
             if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, frame.inFlightFence); result != VK_SUCCESS) {
                 VK_ERROR("VulkanKernel::Render() : failed to queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
                 if (result == VK_ERROR_DEVICE_LOST) {
@@ -161,7 +125,6 @@ namespace SR_GRAPH_NS {
         }
 
         EvoVulkan::Core::FrameResult presentResult = m_isSwapchainSuboptimal ? EvoVulkan::Core::FrameResult::Suboptimal : QueuePresent();
-
         m_frameIndex = (m_frameIndex + 1) % GetMaxFramesInFlight();
 
         if (presentResult == EvoVulkan::Core::FrameResult::DeviceLost) {

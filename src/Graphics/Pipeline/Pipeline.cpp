@@ -577,7 +577,8 @@ namespace SR_GRAPH_NS {
     }
 
     void Pipeline::OnFrameBuildBegin() {
-
+        ++m_state.operations;
+        m_cmdBuffersQueue.clear();
     }
 
     void Pipeline::OnFrameBuildEnd() {
@@ -622,5 +623,17 @@ namespace SR_GRAPH_NS {
             return;
         }
         m_scissorsStack.pop_back();
+    }
+
+    void Pipeline::BindCmdBuffer(uint32_t cmdBuffer) {
+        ++m_state.operations;
+        m_state.cmdBufferId = static_cast<int32_t>(cmdBuffer);
+        for (auto&& buffer : m_cmdBuffersQueue) {
+            if (buffer == cmdBuffer) {
+                SRHalt("Pipeline::BindCmdBuffer() : cmd buffer already binded! CmdBuffer: {}", cmdBuffer);
+                return;
+            }
+        }
+        m_cmdBuffersQueue.emplace_back(cmdBuffer);
     }
 }

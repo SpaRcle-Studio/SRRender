@@ -55,12 +55,6 @@ namespace SR_GRAPH_NS::Details {
         if (isEditor && !pTechnique->FindPass(pContext->GetSettings().editorSceneImageName)) {
             auto&& data = pTechnique->GetRenderTechniqueData();
             if (ReplaceSwapchainPass(data.pass, pContext->GetSettings().editorSceneImageName)) {
-                if (data.queues.empty()) {
-                    data.queues.emplace_back();
-                }
-
-                data.queues.back().frameBuffers.emplace_back(pContext->GetSettings().editorSceneImageName);
-
                 auto&& pFBO = data.frameBuffers.emplace_back(SRNew<FrameBufferController>());
                 pFBO->SetName(pContext->GetSettings().editorSceneImageName);
 

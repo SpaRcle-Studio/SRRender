@@ -22,8 +22,6 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GTYPES_NS {
-    class RenderTexture;
-
     /**
      * \Usage Bing -> BeginRenderBuffer -> BeginRender -> EndRender -> EndRenderBuffer
      * */
@@ -49,14 +47,13 @@ namespace SR_GTYPES_NS {
         bool Update();
         bool Bind();
 
-        bool BeginCmdBuffer(uint32_t frame);
-        bool BeginCmdBuffer(uint32_t frame, const ClearColors& clearColors, std::optional<float_t> depth);
-        bool BeginCmdBuffer(uint32_t frame, const SR_MATH_NS::FColor& clearColor, float_t depth);
+        bool ClearBuffers();
+        bool ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth);
+        bool ClearBuffers(const SR_MATH_NS::FColor& clearColor, float_t depth);
 
         void SetViewportScissor();
         bool BeginRender();
 
-        void EndCmdBuffer();
         void EndRender();
 
         void SetDirty();

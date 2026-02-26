@@ -404,7 +404,7 @@ namespace SR_GRAPH_NS {
 
         m_meshDrawerPass->UseConstants(*pShader);
 
-        if (m_pipeline->IsShaderChanged()) {
+        if (m_pipeline->IsShaderChanged()) { /// TODO: potentially not working
             m_meshDrawerPass->UseSamplers(*pShader);
         }
 

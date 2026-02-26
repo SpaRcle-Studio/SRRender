@@ -18,18 +18,13 @@ namespace SR_GRAPH_NS {
 
         pPipeline->ClearBuffers(m_color.r, m_color.g, m_color.b, m_color.a, m_depth, 1);
 
-        pPipeline->BeginCmdBuffer();
+        pPipeline->BeginRender();
         {
-            pPipeline->BeginRender();
-
             pPipeline->SetViewport();
             pPipeline->SetScissor();
-
             GroupPass::Render();
-
-            pPipeline->EndRender();
         }
-        pPipeline->EndCmdBuffer();
+        pPipeline->EndRender();
 
         return true;
     }

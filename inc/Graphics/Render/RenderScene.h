@@ -10,7 +10,6 @@
 #include <Graphics/Render/FlatCluster.h>
 #include <Graphics/Render/SortedMeshQueue.h>
 #include <Graphics/GUI/WidgetManager.h>
-#include <Graphics/Pass/RenderTechniqueQueue.h>
 
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Common/Subscription.h>
@@ -132,7 +131,6 @@ namespace SR_GRAPH_NS {
         void Overlay();
         void PrepareRender();
         void Build();
-        void BuildQueue();
         void Update();
         void PostUpdate();
 

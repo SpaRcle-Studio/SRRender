@@ -9,9 +9,7 @@
 namespace SR_GTYPES_NS {
     Framebuffer::Framebuffer()
         : SR_HTYPES_NS::SharedPtr<Framebuffer>(this, SR_UTILS_NS::SharedPtrPolicy::Manually)
-    {
-        //SR_UTILS_NS::ResourceManager::Instance().RegisterResource(this);
-    }
+    { }
 
     Framebuffer::~Framebuffer() {
         for (auto&& frameBuffer : m_frameBuffer) {
@@ -212,32 +210,18 @@ namespace SR_GTYPES_NS {
         SetDirty();
     }
 
-    bool Framebuffer::BeginCmdBuffer(uint32_t frame, const ClearColors& clearColors, std::optional<float_t> depth) {
+    bool Framebuffer::ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth) {
         if (IsDepthEnabled() && !depth.has_value()) {
-            SR_ERROR("Framebuffer::BeginCmdBuffer() : depth is not set!");
+            SR_ERROR("Framebuffer::ClearBuffers() : depth is not set!");
             depth = 1.0f;
         }
 
         GetPipeline()->ClearBuffers(clearColors, depth);
-
-        if (!GetPipeline()->BeginCmdBuffer()) {
-            return false;
-        }
-
-        SR_NOOP;
-
         return true;
     }
 
-    bool Framebuffer::BeginCmdBuffer(uint32_t frame) {
+    bool Framebuffer::ClearBuffers() {
         GetPipeline()->ClearBuffers();
-
-        if (!GetPipeline()->BeginCmdBuffer()) {
-            return false;
-        }
-
-        SR_NOOP;
-
         return true;
     }
 
@@ -253,10 +237,6 @@ namespace SR_GTYPES_NS {
 
     void Framebuffer::EndRender() {
         GetPipeline()->EndRender();
-    }
-
-    void Framebuffer::EndCmdBuffer() {
-        GetPipeline()->EndCmdBuffer();
     }
 
     bool Framebuffer::IsValid() const {
@@ -279,10 +259,6 @@ namespace SR_GTYPES_NS {
         return m_frameBuffer[SR_MIN(GetPipeline()->GetCurrentImageIndex(), static_cast<uint32_t>(m_frameBuffer.size() - 1))];
     }
 
-    //uint64_t Framebuffer::GetFileHash() const {
-    //    return 0;
-    //}
-
     int32_t Framebuffer::GetColorTexture(uint32_t layer, uint8_t frame) {
         SR_TRACY_ZONE;
 
@@ -302,8 +278,8 @@ namespace SR_GTYPES_NS {
         return frames[SR_MIN(frame, static_cast<uint8_t>(frames.size() - 1))];
     }
 
-    bool Framebuffer::BeginCmdBuffer(uint32_t frame, const SR_MATH_NS::FColor &clearColor, float_t depth) {
-        return BeginCmdBuffer(frame, Framebuffer::ClearColors{ clearColor }, depth);
+    bool Framebuffer::ClearBuffers(const SR_MATH_NS::FColor &clearColor, float_t depth) {
+        return ClearBuffers(Framebuffer::ClearColors{ clearColor }, depth);
     }
 
     uint32_t Framebuffer::GetWidth() const {

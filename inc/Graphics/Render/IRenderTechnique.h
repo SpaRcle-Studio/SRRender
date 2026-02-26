@@ -9,7 +9,6 @@
 #include <Graphics/Memory/IGraphicsResource.h>
 #include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Pass/GroupPass.h>
-#include <Graphics/Pass/RenderTechniqueQueue.h>
 
 #include <Utils/Settings.h>
 #include <Utils/Math/Vector2.h>
@@ -40,8 +39,6 @@ namespace SR_GRAPH_NS {
         BasePass::Ptr pass;
         /// @property
         std::vector<FrameBufferController::Ptr> frameBuffers;
-        /// @property
-        RenderTechniqueQueues queues;
 
     };
 
@@ -101,8 +98,6 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD const FrameBufferController::Ptr& GetFrameBufferController(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD const std::vector<FrameBufferController::Ptr>& GetFrameBufferControllers() const;
-
-        SR_NODISCARD const RenderTechniqueQueues& GetQueues() const { return m_data.queues; }
 
     private:
         bool Init();

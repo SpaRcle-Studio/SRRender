@@ -108,11 +108,14 @@ namespace SR_GRAPH_NS {
 
         if (m_dirtyFrames[frameIndex]) {
             GetPipeline()->OnFrameBuildBegin();
+            GetPipeline()->BindCmdBuffer(SR_ID_INVALID);
 
-            Build();
-
-            if (!m_hasDrawData) {
-                RenderBlackScreen(pPipeline.Get(), false);
+            if (GetPipeline()->BeginCmdBuffer()) {
+                Build();
+                if (!m_hasDrawData) {
+                    RenderBlackScreen(pPipeline.Get(), false);
+                }
+                GetPipeline()->EndCmdBuffer();
             }
 
             m_dirtyFrames.reset(frameIndex);
@@ -157,27 +160,6 @@ namespace SR_GRAPH_NS {
         return m_context;
     }
 
-    void RenderScene::BuildQueue() {
-        GetPipeline()->ClearFrameBuffersQueue();
-
-        ForEachTechnique([&](IRenderTechnique* pTechnique) {
-            const RenderTechniqueQueues& queues = pTechnique->GetQueues();
-            for (uint32_t depth = 0; depth < queues.size(); ++depth) {
-                for (auto&& frameBufferName : queues[depth].frameBuffers) {
-                    auto&& pController = pTechnique->GetFrameBufferController(frameBufferName);
-                    if (!pController) {
-                        SR_ERROR("RenderScene::BuildQueue() : frame buffer controller for \"{}\" in technique \"{}\" not found!", frameBufferName, pTechnique->GetName());
-                        continue;
-                    }
-
-                    if (auto&& pFrameBuffer = pController->GetFramebuffer()) {
-                        GetPipeline()->GetQueue().AddQueue(pFrameBuffer.Get(), depth);
-                    }
-                }
-            }
-        });
-    }
-
     void RenderScene::Build() {
         SR_TRACY_ZONE_N("Build render");
 
@@ -186,8 +168,6 @@ namespace SR_GRAPH_NS {
         }
 
         SR_RENDER_TECHNIQUES_RETURN_CALL(Render)
-
-        BuildQueue();
     }
 
     void RenderScene::Update() {
@@ -460,14 +440,12 @@ namespace SR_GRAPH_NS {
             pPipeline->ClearBuffers(0.5f, 0.5f, 0.5f, 1.f, 1.f, 1);
         }
 
-        pPipeline->BeginCmdBuffer();
+        pPipeline->BeginRender();
         {
-            pPipeline->BeginRender();
             pPipeline->SetViewport();
             pPipeline->SetScissor();
-            pPipeline->EndRender();
         }
-        pPipeline->EndCmdBuffer();
+        pPipeline->EndRender();
     }
 
     bool RenderScene::IsOverlayEnabled() const {
