@@ -668,6 +668,11 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        const auto& mouseScroll = SR_UTILS_NS::Input::Instance().GetMouseScroll();
+        if (mouseScroll.IsNotEmpty()) {
+            io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
+        }
+
         for (auto& event : m_inputTextEvents) {
             ImGui::GetIO().AddInputCharactersUTF8(event.GetText().data());
         }
