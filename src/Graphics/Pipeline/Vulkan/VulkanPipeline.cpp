@@ -46,6 +46,38 @@
 #include <Utils/Common/StoreUtils.h>
 
 namespace SR_GRAPH_NS {
+    /// Структура для хранения состояния асинхронного запроса пикселей
+    struct PixelRangeRequest {
+        uint32_t textureId = 0;
+        uint32_t x = 0;
+        uint32_t y = 0;
+        uint32_t width = 0;
+        uint32_t height = 0;
+        VkFence fence = VK_NULL_HANDLE;
+        EvoVulkan::Types::VmaBuffer* pBuffer = nullptr;
+        EvoVulkan::Types::CmdBuffer* pCmdBuffer = nullptr;
+        VkImageLayout originalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        bool isReady = false;
+    };
+
+    struct VulkanPipelineInternalData {
+        VkDeviceSize offsets[1] = { 0 };
+        VkViewport viewport = { };
+        VkRect2D scissor = { };
+        VkRect2D activeScissor = { };
+        VkRenderPassBeginInfo renderPassBI = { };
+        VkCommandBufferBeginInfo cmdBufInfo = { };
+
+        VkDescriptorSet currentDescriptorSet = VK_NULL_HANDLE;
+
+        VkCommandBuffer currentCmd  = VK_NULL_HANDLE;
+        VkPipelineLayout currentLayout = VK_NULL_HANDLE;
+
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+        mutable std::unordered_map<uint64_t, PixelRangeRequest> pixelRequests;
+        std::vector<VkClearValue> clearValues;
+    };
+
     namespace Details {
         VkRect2D ToVkRect2D(const SR_MATH_NS::IRect& rect) {
             return EvoVulkan::Tools::Initializers::Rect2D(
@@ -71,8 +103,15 @@ namespace SR_GRAPH_NS {
         return "Invalid";
     }
 
+    VulkanPipeline::VulkanPipeline(const Pipeline::RenderContextPtr& pContext)
+        : Super(pContext)
+    {
+        m_internalData = new VulkanPipelineInternalData();
+    }
+
     VulkanPipeline::~VulkanPipeline() {
         SR_SAFE_DELETE_PTR(m_kernel);
+        SR_SAFE_DELETE_PTR(m_internalData);
     }
 
     bool VulkanPipeline::InitOverlay() {
@@ -106,7 +145,7 @@ namespace SR_GRAPH_NS {
 
         // Освобождаем все активные запросы пикселей
         if (m_kernel && m_kernel->GetDevice()) {
-            for (auto&& [workId, request] : m_pixelRequests) {
+            for (auto&& [workId, request] : m_internalData->pixelRequests) {
                 // Ждем завершения операции перед освобождением ресурсов
                 if (!request.isReady && request.fence != VK_NULL_HANDLE) {
                     vkWaitForFences(*m_kernel->GetDevice(), 1, &request.fence, VK_TRUE, UINT64_MAX);
@@ -122,7 +161,7 @@ namespace SR_GRAPH_NS {
                     EvoVulkan::Tools::DestroyVulkanFence(*m_kernel->GetDevice(), &request.fence);
                 }
             }
-            m_pixelRequests.clear();
+            m_internalData->pixelRequests.clear();
         }
 
         DestroyOverlay();
@@ -185,10 +224,10 @@ namespace SR_GRAPH_NS {
             m_kernel->SetGPUAssistEnabled(true);
         }
 
-        m_viewport = EvoVulkan::Tools::Initializers::Viewport(1, 1, 0, 0);
-        m_scissor = EvoVulkan::Tools::Initializers::Rect2D(0, 0, 0, 0);
-        m_cmdBufInfo = EvoVulkan::Tools::Initializers::CommandBufferBeginInfo();
-        m_renderPassBI = EvoVulkan::Tools::Insert::RenderPassBeginInfo(0, 0, VK_NULL_HANDLE, VK_NULL_HANDLE, nullptr, 0);
+        m_internalData->viewport = EvoVulkan::Tools::Initializers::Viewport(1, 1, 0, 0);
+        m_internalData->scissor = EvoVulkan::Tools::Initializers::Rect2D(0, 0, 0, 0);
+        m_internalData->cmdBufInfo = EvoVulkan::Tools::Initializers::CommandBufferBeginInfo();
+        m_internalData->renderPassBI = EvoVulkan::Tools::Insert::RenderPassBeginInfo(0, 0, VK_NULL_HANDLE, VK_NULL_HANDLE, nullptr, 0);
 
         m_kernel->SetMultisampling(m_requiredSampleCount);
         m_kernel->SetSwapchainImagesCount(SR_UTILS_NS::StoreUtils::User::GetInt("SwapchainImages", 3));
@@ -516,17 +555,17 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::UseShader(uint32_t shaderProgram) {
         Pipeline::UseShader(shaderProgram);
 
-        m_currentDescriptorSet = VK_NULL_HANDLE;
+        m_internalData->currentDescriptorSet = VK_NULL_HANDLE;
 
         m_currentVkShader = m_memory->GetShaderProgram(shaderProgram);
-        m_currentLayout = m_currentVkShader->GetPipelineLayout();
+        m_internalData->currentLayout = m_currentVkShader->GetPipelineLayout();
 
         if (m_currentVkShader == m_lastVkShader) {
             m_isShaderChanged = false;
             return;
         }
 
-        m_currentVkShader->Bind(m_currentCmd);
+        m_currentVkShader->Bind(m_internalData->currentCmd);
 
         m_lastVkShader = m_currentVkShader;
         m_isShaderChanged = true;
@@ -778,7 +817,7 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::UnUseShader() {
         Super::UnUseShader();
         m_currentVkShader = nullptr;
-        m_currentLayout = VK_NULL_HANDLE;
+        m_internalData->currentLayout = VK_NULL_HANDLE;
     }
 
     void VulkanPipeline::UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) {
@@ -794,14 +833,14 @@ namespace SR_GRAPH_NS {
 
         auto&& vkDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
 
-        m_writeDescriptorSets.clear();
+        m_internalData->writeDescriptorSets.clear();
 
         for (auto&& info : updateInfo) {
             switch (info.descriptorType) {
                 case DescriptorType::Storage: {
                     auto&& vkStorageBuffer = m_memory->GetSSBO(info.ubo)->GetDescriptorRef();
 
-                    m_writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
+                    m_internalData->writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
                         vkDescriptorSet,
                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                         info.binding,
@@ -813,7 +852,7 @@ namespace SR_GRAPH_NS {
                 case DescriptorType::Uniform: {
                     auto&& vkUBODescriptor = m_memory->GetUBO(info.ubo)->GetDescriptorRef();
 
-                    m_writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
+                    m_internalData->writeDescriptorSets.emplace_back(EvoVulkan::Tools::Initializers::WriteDescriptorSet(
                         vkDescriptorSet,
                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                         info.binding,
@@ -828,12 +867,12 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        if (m_writeDescriptorSets.empty()) {
+        if (m_internalData->writeDescriptorSets.empty()) {
             SRHalt("writeDescriptorSets is empty!");
             return;
         }
 
-        vkUpdateDescriptorSets(*m_kernel->GetDevice(), m_writeDescriptorSets.size(), m_writeDescriptorSets.data(), 0, nullptr);
+        vkUpdateDescriptorSets(*m_kernel->GetDevice(), m_internalData->writeDescriptorSets.size(), m_internalData->writeDescriptorSets.data(), 0, nullptr);
     }
 
     void VulkanPipeline::UpdateUBO(uint32_t UBO, void* pData, uint64_t size, bool sizesMustBeEqual) {
@@ -877,7 +916,7 @@ namespace SR_GRAPH_NS {
         Super::SetViewport(width, height);
 
         if (width > 0 && height > 0) {
-            m_viewport = EvoVulkan::Tools::Initializers::Viewport(
+            m_internalData->viewport = EvoVulkan::Tools::Initializers::Viewport(
                 static_cast<float_t>(width),
                 static_cast<float_t>(height),
                 0.f, 1.f
@@ -885,10 +924,10 @@ namespace SR_GRAPH_NS {
         }
         else {
             if (m_state.frameBufferId == 0) {
-                m_viewport = m_kernel->GetViewport();
+                m_internalData->viewport = m_kernel->GetViewport();
             }
             else if (m_state.pFrameBuffer && m_currentVkFrameBuffer) {
-                m_viewport = m_currentVkFrameBuffer->GetViewport();
+                m_internalData->viewport = m_currentVkFrameBuffer->GetViewport();
             }
             else {
                 SRHalt("Unresolved situation!");
@@ -896,21 +935,21 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        vkCmdSetViewport(m_currentCmd, 0, 1, &m_viewport);
+        vkCmdSetViewport(m_internalData->currentCmd, 0, 1, &m_internalData->viewport);
     }
 
     void VulkanPipeline::SetScissor(int32_t width, int32_t height) {
         Super::SetScissor(width, height);
 
         if (width > 0 && height > 0) {
-            m_scissor = EvoVulkan::Tools::Initializers::Rect2D(0, 0, width, height);
+            m_internalData->scissor = EvoVulkan::Tools::Initializers::Rect2D(0, 0, width, height);
         }
         else {
             if (m_state.frameBufferId == 0) {
-                m_scissor = m_kernel->GetScissor();
+                m_internalData->scissor = m_kernel->GetScissor();
             }
             else if (m_state.pFrameBuffer && m_currentVkFrameBuffer) {
-                m_scissor = m_currentVkFrameBuffer->GetScissor();
+                m_internalData->scissor = m_currentVkFrameBuffer->GetScissor();
             }
             else {
                 SRHalt("Unresolved situation!");
@@ -918,8 +957,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        vkCmdSetScissor(m_currentCmd, 0, 1, &m_scissor);
-        m_activeScissor = m_scissor;
+        vkCmdSetScissor(m_internalData->currentCmd, 0, 1, &m_internalData->scissor);
+        m_internalData->activeScissor = m_internalData->scissor;
     }
 
     void VulkanPipeline::BindFrameBuffer(Pipeline::FramebufferPtr pFBO) {
@@ -932,9 +971,9 @@ namespace SR_GRAPH_NS {
                 SRHalt("VulkanPipeline::BindFrameBuffer() : frame buffer index out of range! Current build iteration: {}", frameIndex);
                 return;
             }
-            m_renderPassBI.framebuffer = m_kernel->m_frameBuffers[frameIndex];
-            m_renderPassBI.renderPass  = m_kernel->GetRenderPass();
-            m_renderPassBI.renderArea  = m_kernel->GetRenderArea();
+            m_internalData->renderPassBI.framebuffer = m_kernel->m_frameBuffers[frameIndex];
+            m_internalData->renderPassBI.renderPass  = m_kernel->GetRenderPass();
+            m_internalData->renderPassBI.renderArea  = m_kernel->GetRenderArea();
 
             m_currentVkFrameBuffer = nullptr;
             m_state.frameBufferId = 0;
@@ -953,10 +992,10 @@ namespace SR_GRAPH_NS {
 
             auto&& vkFrameBuffer = layers.at(layerIndex)->GetFramebuffer();
 
-            m_renderPassBI.framebuffer = vkFrameBuffer;
-            m_renderPassBI.renderPass  = pFrameBuffer->GetRenderPass();
-            m_renderPassBI.renderArea  = pFrameBuffer->GetRenderPassArea();
-            //m_currentCmd               = pFrameBuffer->GetCommandBuffer(frameIndex);
+            m_internalData->renderPassBI.framebuffer = vkFrameBuffer;
+            m_internalData->renderPassBI.renderPass  = pFrameBuffer->GetRenderPass();
+            m_internalData->renderPassBI.renderArea  = pFrameBuffer->GetRenderPassArea();
+            //m_internalData->currentCmd               = pFrameBuffer->GetCommandBuffer(frameIndex);
 
             m_currentVkFrameBuffer = pFrameBuffer;
             m_state.frameBufferId = FBO;
@@ -1108,9 +1147,9 @@ namespace SR_GRAPH_NS {
 
         PixelRangeRequest* pRequest = nullptr;
 
-        auto it = m_pixelRequests.find(workId);
-        if (it == m_pixelRequests.end()) {
-            auto [iter, _] = m_pixelRequests.emplace(workId, PixelRangeRequest{});
+        auto it = m_internalData->pixelRequests.find(workId);
+        if (it == m_internalData->pixelRequests.end()) {
+            auto [iter, _] = m_internalData->pixelRequests.emplace(workId, PixelRangeRequest{});
             pRequest = &iter->second;
         }
         else {
@@ -1226,8 +1265,8 @@ namespace SR_GRAPH_NS {
     bool VulkanPipeline::IsPixelRangeReady(uint64_t workId) const {
         SR_TRACY_ZONE;
 
-        auto it = m_pixelRequests.find(workId);
-        if (it == m_pixelRequests.end()) {
+        auto it = m_internalData->pixelRequests.find(workId);
+        if (it == m_internalData->pixelRequests.end()) {
             return false;
         }
 
@@ -1265,8 +1304,8 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        auto it = m_pixelRequests.find(workId);
-        if (it == m_pixelRequests.end()) {
+        auto it = m_internalData->pixelRequests.find(workId);
+        if (it == m_internalData->pixelRequests.end()) {
             PipelineError("VulkanPipeline::GetPixelRangeResult() : invalid workId!");
             return false;
         }
@@ -1353,8 +1392,8 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::ReleasePixelRangeRequest(uint64_t workId) {
         SR_TRACY_ZONE;
 
-        auto it = m_pixelRequests.find(workId);
-        if (it == m_pixelRequests.end()) {
+        auto it = m_internalData->pixelRequests.find(workId);
+        if (it == m_internalData->pixelRequests.end()) {
             return;  // Уже удален или не существует
         }
 
@@ -1376,14 +1415,14 @@ namespace SR_GRAPH_NS {
             EvoVulkan::Tools::DestroyVulkanFence(*m_kernel->GetDevice(), &request.fence);
         }
 
-        m_pixelRequests.erase(it);
+        m_internalData->pixelRequests.erase(it);
     }
 
     void VulkanPipeline::CleanupCompletedRequests() {
         SR_TRACY_ZONE;
 
-        auto it = m_pixelRequests.begin();
-        while (it != m_pixelRequests.end()) {
+        auto it = m_internalData->pixelRequests.begin();
+        while (it != m_internalData->pixelRequests.end()) {
             auto&& request = it->second;
 
             // Проверяем статус fence
@@ -1400,7 +1439,7 @@ namespace SR_GRAPH_NS {
                 if (request.fence != VK_NULL_HANDLE) {
                     EvoVulkan::Tools::DestroyVulkanFence(*m_kernel->GetDevice(), &request.fence);
                 }
-                it = m_pixelRequests.erase(it);
+                it = m_internalData->pixelRequests.erase(it);
             }
             else {
                 ++it;
@@ -1506,7 +1545,7 @@ namespace SR_GRAPH_NS {
             return true;
         };
 
-        EvoVulkan::Tools::VkFunctionsHolder::Instance().CompileGLSLtoSPIRV = [](const std::string& input) -> std::vector<uint32_t> {
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().CompileGLSLtoSPIRV = [this](const std::string& input) -> std::vector<uint32_t> {
             SR_TRACY_ZONE_N("Compile GLSL to SPIR-V");
             SR_TRACY_ZONE_TEXT(input);
 
@@ -1528,6 +1567,9 @@ namespace SR_GRAPH_NS {
                 shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5); // SPIR-V 1.5 нормально для Vulkan 1.2+
 
                 EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+                if (m_kernel->IsValidationLayersEnabled()) {
+                    messages = (EShMessages)(messages | EShMsgDebugInfo);
+                }
 
                 {
                     SR_TRACY_ZONE_N("Parse shader");
@@ -1669,21 +1711,21 @@ namespace SR_GRAPH_NS {
 
         if (!m_isComputeState) {
             if (m_state.cmdBufferId == SR_ID_INVALID) {
-                m_currentCmd = m_kernel->m_drawCmdBuffs[frameIndex];
+                m_internalData->currentCmd = m_kernel->m_drawCmdBuffs[frameIndex];
             }
             else {
                 SRHalt("VulkanPipeline::BeginCmdBuffer() : TODO! Support custom command buffers for graphics pipeline!");
             }
 
             //if (m_currentVkFrameBuffer) {
-            //    m_currentCmd = m_currentVkFrameBuffer->GetCommandBuffer(frameIndex);
+            //    m_internalData->currentCmd = m_currentVkFrameBuffer->GetCommandBuffer(frameIndex);
             //}
             //else {
-            //    m_currentCmd = m_kernel->m_drawCmdBuffs[frameIndex];
+            //    m_internalData->currentCmd = m_kernel->m_drawCmdBuffs[frameIndex];
             //}
         }
 
-        if (!m_currentCmd) {
+        if (!m_internalData->currentCmd) {
             PipelineError("VulkanPipeline::BeginCmdBuffer() : cmd buffer is nullptr!");
             return false;
         }
@@ -1693,26 +1735,26 @@ namespace SR_GRAPH_NS {
 
         if (!m_isComputeState && !m_state.hasRenderData) {
             for (uint32_t i = 0; i < m_kernel->GetCountBuildIterations(); ++i) {
-                if (m_kernel->m_drawCmdBuffs[i] == m_currentCmd) {
+                if (m_kernel->m_drawCmdBuffs[i] == m_internalData->currentCmd) {
                     m_state.hasRenderData = true;
                     break;
                 }
             }
         }
 
-        vkBeginCommandBuffer(m_currentCmd, &m_cmdBufInfo);
+        vkBeginCommandBuffer(m_internalData->currentCmd, &m_internalData->cmdBufInfo);
         return Super::BeginCmdBuffer();
     }
 
     void VulkanPipeline::EndCmdBuffer() {
         SR_TRACY_ZONE;
 
-        if (!m_currentCmd) {
+        if (!m_internalData->currentCmd) {
             PipelineError("VulkanPipeline::EndCmdBuffer() : cmd buffer is nullptr!");
             return;
         }
 
-        vkEndCommandBuffer(m_currentCmd);
+        vkEndCommandBuffer(m_internalData->currentCmd);
         Super::EndCmdBuffer();
     }
 
@@ -1723,12 +1765,12 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        if (!m_renderPassBI.pClearValues) {
+        if (!m_internalData->renderPassBI.pClearValues) {
             SRHaltOnce("pClearValues is nullptr! Please, call ClearBuffers before BeginRender");
             return false;
         }
 
-        vkCmdBeginRenderPass(m_currentCmd, &m_renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(m_internalData->currentCmd, &m_internalData->renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
         return true;
     }
 
@@ -1737,12 +1779,12 @@ namespace SR_GRAPH_NS {
 
         Super::EndRender();
 
-        if (!m_currentCmd) {
+        if (!m_internalData->currentCmd) {
             PipelineError("VulkanPipeline::EndRender() : cmd buffer is nullptr!");
             return;
         }
 
-        vkCmdEndRenderPass(m_currentCmd);
+        vkCmdEndRenderPass(m_internalData->currentCmd);
     }
 
     void VulkanPipeline::DrawFrame() {
@@ -1774,8 +1816,8 @@ namespace SR_GRAPH_NS {
         }
         else if (m_state.frameBufferId > 0) {
             int32_t fbo = m_state.frameBufferId - 1;
-            m_renderPassBI.clearValueCount = m_memory->GetFBO(fbo)->GetCountClearValues();
-            m_renderPassBI.pClearValues = m_memory->GetFBO(fbo)->GetClearValues();
+            m_internalData->renderPassBI.clearValueCount = m_memory->GetFBO(fbo)->GetCountClearValues();
+            m_internalData->renderPassBI.pClearValues = m_memory->GetFBO(fbo)->GetClearValues();
         }
         else {
             /// в какой ситуации это может случиться?
@@ -1790,10 +1832,10 @@ namespace SR_GRAPH_NS {
 
         colorCount *= sampleCount > 1 ? 2 : 1;
 
-        m_clearValues.resize(colorCount + 1);
+        m_internalData->clearValues.resize(colorCount + 1);
 
         for (uint8_t i = 0; i < colorCount; ++i) {
-            m_clearValues[i] = { .color = {{ r, g, b, a }} };
+            m_internalData->clearValues[i] = { .color = {{ r, g, b, a }} };
         }
 
         if (depth < 0.0f || depth > 1.0f) {
@@ -1801,10 +1843,10 @@ namespace SR_GRAPH_NS {
             depth = std::clamp(depth, 0.0f, 1.0f);
         }
 
-        m_clearValues[colorCount] = VkClearValue { .depthStencil = { depth, 0 } };
+        m_internalData->clearValues[colorCount] = VkClearValue { .depthStencil = { depth, 0 } };
 
-        m_renderPassBI.clearValueCount = colorCount + 1;
-        m_renderPassBI.pClearValues    = m_clearValues.data();
+        m_internalData->renderPassBI.clearValueCount = colorCount + 1;
+        m_internalData->renderPassBI.pClearValues    = m_internalData->clearValues.data();
     }
 
     void VulkanPipeline::ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth) {
@@ -1817,12 +1859,12 @@ namespace SR_GRAPH_NS {
 
         const bool hasDepth = depth.has_value();
 
-        m_clearValues.resize(colorCount + static_cast<uint8_t>(hasDepth));
+        m_internalData->clearValues.resize(colorCount + static_cast<uint8_t>(hasDepth));
 
         for (uint8_t i = 0; i < colorCount; ++i) {
             auto&& color = clearColors[i / (sampleCount > 1 ? 2 : 1)];
 
-            m_clearValues[i] = {
+            m_internalData->clearValues[i] = {
                 .color = { {
                        static_cast<float_t>(color.r),
                        static_cast<float_t>(color.g),
@@ -1834,11 +1876,11 @@ namespace SR_GRAPH_NS {
         }
 
         if (hasDepth) {
-            m_clearValues[colorCount] = VkClearValue { .depthStencil = { depth.value(), 0 } };
+            m_internalData->clearValues[colorCount] = VkClearValue { .depthStencil = { depth.value(), 0 } };
         }
 
-        m_renderPassBI.clearValueCount = colorCount + static_cast<uint8_t>(hasDepth);
-        m_renderPassBI.pClearValues = m_clearValues.data();
+        m_internalData->renderPassBI.clearValueCount = colorCount + static_cast<uint8_t>(hasDepth);
+        m_internalData->renderPassBI.pClearValues = m_internalData->clearValues.data();
     }
 
     void VulkanPipeline::OnResize(const SR_MATH_NS::UVector2& size) {
@@ -2209,7 +2251,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        vkCmdPushConstants(m_currentCmd, m_currentLayout,
+        vkCmdPushConstants(m_internalData->currentCmd, m_internalData->currentLayout,
             pushConstants.data()->stageFlags,
             0, size, pData
         );
@@ -2263,7 +2305,7 @@ namespace SR_GRAPH_NS {
 
         SRAssert(m_isComputeState || m_isRenderState);
 
-        m_currentDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
+        m_internalData->currentDescriptorSet = m_memory->GetDescriptorSet(descriptorSet).descriptorSet;
 
         return true;
     }
@@ -2302,12 +2344,12 @@ namespace SR_GRAPH_NS {
 
     void VulkanPipeline::BindVBO(uint32_t VBO) {
         Super::BindVBO(VBO);
-        vkCmdBindVertexBuffers(m_currentCmd, 0, 1, m_memory->GetVBO(VBO)->GetCRef(), m_offsets);
+        vkCmdBindVertexBuffers(m_internalData->currentCmd, 0, 1, m_memory->GetVBO(VBO)->GetCRef(), m_internalData->offsets);
     }
 
     void VulkanPipeline::BindIBO(uint32_t IBO) {
         Super::BindIBO(IBO);
-        vkCmdBindIndexBuffer(m_currentCmd, *m_memory->GetIBO(IBO), 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(m_internalData->currentCmd, *m_memory->GetIBO(IBO), 0, VK_INDEX_TYPE_UINT32);
     }
 
     bool VulkanPipeline::IsSamplerValid(int32_t id) const {
@@ -2324,8 +2366,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (!m_isRenderState) SR_UNLIKELY_ATTRIBUTE {
-            PipelineError("VulkanPipeline::UpdateDescriptorSets() : render state isn't active or not in first build iteration!");
+        if (!m_isRenderState && !m_isComputeState) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("VulkanPipeline::UpdateDescriptorSets() : render or compute state isn't active!");
             SRHaltOnce0();
             return;
         }
@@ -2372,17 +2414,17 @@ namespace SR_GRAPH_NS {
 
         Super::Draw(count);
 
-        if (m_currentDescriptorSet) {
-            vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
+        if (m_internalData->currentDescriptorSet) {
+            vkCmdBindDescriptorSets(m_internalData->currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_internalData->currentLayout, 0, 1, &m_internalData->currentDescriptorSet, 0, nullptr);
         }
 
-        const VkRect2D scissor = m_scissorsStack.empty() ? m_scissor : Details::ToVkRect2D(m_scissorsStack.back());
-        if (!Details::CompareVkRect2D(m_activeScissor, scissor)) {
-            m_activeScissor = scissor;
-            vkCmdSetScissor(m_currentCmd, 0, 1, &m_activeScissor);
+        const VkRect2D scissor = m_scissorsStack.empty() ? m_internalData->scissor : Details::ToVkRect2D(m_scissorsStack.back());
+        if (!Details::CompareVkRect2D(m_internalData->activeScissor, scissor)) {
+            m_internalData->activeScissor = scissor;
+            vkCmdSetScissor(m_internalData->currentCmd, 0, 1, &m_internalData->activeScissor);
         }
 
-        vkCmdDraw(m_currentCmd, count, m_drawInstancesCount, 0, m_drawInstancesStart);
+        vkCmdDraw(m_internalData->currentCmd, count, m_drawInstancesCount, 0, m_drawInstancesStart);
     }
 
     void VulkanPipeline::DrawIndices(uint32_t count) {
@@ -2405,17 +2447,17 @@ namespace SR_GRAPH_NS {
         }
     #endif
 
-        if (m_currentDescriptorSet) {
-            vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
+        if (m_internalData->currentDescriptorSet) {
+            vkCmdBindDescriptorSets(m_internalData->currentCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_internalData->currentLayout, 0, 1, &m_internalData->currentDescriptorSet, 0, nullptr);
         }
 
-        const VkRect2D scissor = m_scissorsStack.empty() ? m_scissor : Details::ToVkRect2D(m_scissorsStack.back());
-        if (!Details::CompareVkRect2D(m_activeScissor, scissor)) {
-            m_activeScissor = scissor;
-            vkCmdSetScissor(m_currentCmd, 0, 1, &m_activeScissor);
+        const VkRect2D scissor = m_scissorsStack.empty() ? m_internalData->scissor : Details::ToVkRect2D(m_scissorsStack.back());
+        if (!Details::CompareVkRect2D(m_internalData->activeScissor, scissor)) {
+            m_internalData->activeScissor = scissor;
+            vkCmdSetScissor(m_internalData->currentCmd, 0, 1, &m_internalData->activeScissor);
         }
 
-        vkCmdDrawIndexed(m_currentCmd, count, m_drawInstancesCount, 0, 0, m_drawInstancesStart);
+        vkCmdDrawIndexed(m_internalData->currentCmd, count, m_drawInstancesCount, 0, 0, m_drawInstancesStart);
     }
 
     void VulkanPipeline::SetVSyncEnabled(bool enabled) {
@@ -2503,7 +2545,7 @@ namespace SR_GRAPH_NS {
         barrier.srcAccessMask = srcAccess;
 
         vkCmdPipelineBarrier(
-                m_currentCmd,
+                m_internalData->currentCmd,
                 //VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                 srcStage,
                 VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -2523,7 +2565,7 @@ namespace SR_GRAPH_NS {
         depthStencilValue.stencil = 0;
 
         vkCmdClearDepthStencilImage(
-                m_currentCmd,
+                m_internalData->currentCmd,
                 image,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 &depthStencilValue,
@@ -2544,7 +2586,7 @@ namespace SR_GRAPH_NS {
         //barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
         vkCmdPipelineBarrier(
-                m_currentCmd,
+                m_internalData->currentCmd,
                 //VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 
                 VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -2609,7 +2651,7 @@ namespace SR_GRAPH_NS {
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
             vkCmdPipelineBarrier(
-                    m_currentCmd,
+                    m_internalData->currentCmd,
                     srcStage, VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0,
                     0, nullptr,
@@ -2618,7 +2660,7 @@ namespace SR_GRAPH_NS {
             );
 
             vkCmdClearColorImage(
-                    m_currentCmd,
+                    m_internalData->currentCmd,
                     image,
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     &clearColor,
@@ -2632,7 +2674,7 @@ namespace SR_GRAPH_NS {
             barrier.dstAccessMask = 0;
 
             vkCmdPipelineBarrier(
-                    m_currentCmd,
+                    m_internalData->currentCmd,
                     VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                     0,
                     0, nullptr,
@@ -2680,7 +2722,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (!m_currentCmd) {
+        if (!m_internalData->currentCmd) {
             PipelineError("VulkanPipeline::ClearDepthAttachment() : cmd buffer is nullptr!");
             return;
         }
@@ -2700,12 +2742,12 @@ namespace SR_GRAPH_NS {
 
         // Clear the entire render area
         VkClearRect clearRect = {};
-        clearRect.rect = m_renderPassBI.renderArea;
+        clearRect.rect = m_internalData->renderPassBI.renderArea;
         clearRect.baseArrayLayer = 0;
         clearRect.layerCount = 1;
 
         vkCmdClearAttachments(
-            m_currentCmd,
+            m_internalData->currentCmd,
             1,
             &clearAttachment,
             1,
@@ -2787,6 +2829,82 @@ namespace SR_GRAPH_NS {
         return (void*)m_memory->GetShaderProgram(shaderProgram)->GetHandle();
     }
 
+    void VulkanPipeline::WriteMemoryBarrier(MemoryBarrierType type) {
+        VkMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+
+        switch (type) {
+            case MemoryBarrierType::ReadAttachmentToCompute:
+                barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+                vkCmdPipelineBarrier(
+                    m_internalData->currentCmd,
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                    0,
+                    1, &barrier,
+                    0, nullptr,
+                    0, nullptr
+                );
+                break;
+            case MemoryBarrierType::ComputeToReadAttachment:
+                barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;  // защита от незавершенных записей compute
+                barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;   // для чтения следующими шейдерами
+
+                vkCmdPipelineBarrier(
+                    m_internalData->currentCmd,
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,                  // кто пишет
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, // кто читает
+                    0,
+                    1, &barrier,
+                    0, nullptr,
+                    0, nullptr
+                );
+                break;
+            default:
+                SRHalt("VulkanPipeline::WriteMemoryBarrier() : unsupported memory barrier type!");
+                return;
+        }
+
+
+        //auto&& pTexture = m_memory->GetTexture(textureId);
+        //if (!pTexture) SR_UNLIKELY_ATTRIBUTE {
+        //    SR_ERROR("VulkanPipeline::TransitionImage() : texture is nullptr! Id: {}", textureId);
+        //    return;
+        //}
+
+        //VkImageMemoryBarrier barrier{};
+        //barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+        //barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+        //barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        //// layout НЕ меняем
+        //barrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        //barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        //barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        //barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+        //barrier.image = pTexture->GetImage();
+        //barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        //barrier.subresourceRange.baseMipLevel = 0;
+        //barrier.subresourceRange.levelCount = 1;
+        //barrier.subresourceRange.baseArrayLayer = 0;
+        //barrier.subresourceRange.layerCount = 1;
+
+        //vkCmdPipelineBarrier(
+        //    m_internalData->currentCmd,
+        //    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        //    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        //    0,
+        //    0, nullptr,
+        //    0, nullptr,
+        //    1, &barrier
+        //);
+    }
+
     void VulkanPipeline::ResetSubmitQueue() {
         m_kernel->ClearSubmitQueue();
         //m_kernel->GetWaitSemaphores().emplace_back(m_kernel->GetPresentCompleteSemaphore());
@@ -2797,7 +2915,7 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
         SR_TRACY_ZONE;
 
-        if (!m_currentCmd) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_internalData->currentCmd) SR_UNLIKELY_ATTRIBUTE {
             PipelineError("VulkanPipeline::Dispatch() : cmd buffer is nullptr!");
             return;
         }
@@ -2819,14 +2937,16 @@ namespace SR_GRAPH_NS {
 
         Super::Dispatch(groupCountX, groupCountY, groupCountZ);
 
-        if (m_currentDescriptorSet) {
-            vkCmdBindDescriptorSets(m_currentCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_currentLayout, 0, 1, &m_currentDescriptorSet, 0, nullptr);
+        if (m_internalData->currentDescriptorSet) {
+            vkCmdBindDescriptorSets(m_internalData->currentCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_internalData->currentLayout, 0, 1, &m_internalData->currentDescriptorSet, 0, nullptr);
         }
 
-        vkCmdDispatch(m_currentCmd, groupCountX, groupCountY, groupCountZ);
+        vkCmdDispatch(m_internalData->currentCmd, groupCountX, groupCountY, groupCountZ);
     }
 
     bool VulkanPipeline::BeginCompute() {
+        SR_TRACY_ZONE;
+
         if (!Super::BeginCompute()) {
             return false;
         }
@@ -2834,16 +2954,25 @@ namespace SR_GRAPH_NS {
         m_lastVkShader = nullptr;
         m_isShaderChanged = true;
 
-        m_currentCmd = m_kernel->GetComputeCmdBuffers()[0];
-        vkBeginCommandBuffer(m_currentCmd, &m_cmdBufInfo);
+        if (m_isCmdState) {
+            /// nothing to do, just continue using current command buffer
+        }
+        else {
+            m_internalData->currentCmd = m_kernel->GetComputeCmdBuffers()[0];
+            vkBeginCommandBuffer(m_internalData->currentCmd, &m_internalData->cmdBufInfo);
+        }
 
         return true;
     }
 
     void VulkanPipeline::EndCompute() {
+        if (m_isCmdState) {
+            /// nothing to do, just continue using current command buffer
+        }
+        else {
+            vkEndCommandBuffer(m_internalData->currentCmd);
+        }
         Super::EndCompute();
-
-        vkEndCommandBuffer(m_currentCmd);
     }
 
     bool VulkanPipeline::MapSSBO(uint32_t SSBO, void **ppData) {
@@ -2891,17 +3020,17 @@ namespace SR_GRAPH_NS {
             if (colorTexture == SR_ID_INVALID) {
                 continue;
             }
-            m_memory->GetTexture(colorTexture)->GetImage().TransitionImageLayout(newColorLayout, m_currentCmd);
+            m_memory->GetTexture(colorTexture)->GetImage().TransitionImageLayout(newColorLayout, m_internalData->currentCmd);
         }
 
         //for (auto&& colorAttachment : pLayer->GetColorAttachments()) {
         //    const auto newLayout = (mode == FrameBufferAccessMode::Read && features.colorShaderRead) ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        //    colorAttachment->GetImage().TransitionImageLayout(newLayout, m_currentCmd);
+        //    colorAttachment->GetImage().TransitionImageLayout(newLayout, m_internalData->currentCmd);
         //}
 
         //if (auto&& pDepth = pLayer->GetDepthAttachment()) {
         //    const auto newLayout = (mode == FrameBufferAccessMode::Read && features.depthShaderRead) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        //    pDepth->GetImage().TransitionImageLayout(newLayout, m_currentCmd);
+        //    pDepth->GetImage().TransitionImageLayout(newLayout, m_internalData->currentCmd);
         //}
 
         Super::SetFrameBufferAccessMode(mode);

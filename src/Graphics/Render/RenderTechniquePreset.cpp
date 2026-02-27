@@ -8,6 +8,7 @@
 #include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Pass/SwapchainPass.h>
 #include <Graphics/Pass/PostProcessPass.h>
+#include <Graphics/Pass/AutoExposurePass.h>
 #include <Graphics/Pass/SkyboxPass.h>
 #include <Graphics/Settings/RenderSettings.h>
 
@@ -116,8 +117,8 @@ namespace SR_GRAPH_NS {
             pShadowPass->GetAllowedLayers().insert(layer);
         }
 
-        pFrameBufferPass->GetPasses().emplace_back(pShadowPass.StaticCast<BasePass>());
-        data.pass.DynamicCast<GroupPass>()->GetPasses().emplace_back(pFrameBufferPass.StaticCast<BasePass>());
+        pFrameBufferPass->AddPass(pShadowPass.StaticCast<BasePass>());
+        data.pass.DynamicCast<GroupPass>()->AddPass(pFrameBufferPass.StaticCast<BasePass>());
     }
 
     void RenderTechniquePresetIntegrationColorBuffer::Integrate(const Technique& technique, const Params& params) const {
@@ -164,8 +165,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        pFrameBufferPass->GetPasses().emplace_back(pColorBufferPass.StaticCast<BasePass>());
-        data.pass.DynamicCast<GroupPass>()->GetPasses().emplace_back(pFrameBufferPass.StaticCast<BasePass>());
+        pFrameBufferPass->AddPass(pColorBufferPass.StaticCast<BasePass>());
+        data.pass.DynamicCast<GroupPass>()->AddPass(pFrameBufferPass.StaticCast<BasePass>());
     }
 
     void RenderTechniquePresetIntegrationMainView::Integrate(const Technique& technique, const Params& params) const {
@@ -214,7 +215,7 @@ namespace SR_GRAPH_NS {
 
         auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>();
 
-        data.pass.DynamicCast<GroupPass>()->GetPasses().emplace_back(pMainGroupPass.StaticCast<BasePass>());
+        data.pass.DynamicCast<GroupPass>()->AddPass(pMainGroupPass.StaticCast<BasePass>());
 
         for (auto&& pLayer : technique.GetLayers()) {
             if ((pLayer->editorOnly && !params.editor)) {
@@ -247,20 +248,20 @@ namespace SR_GRAPH_NS {
                 for (auto&& layer : pMeshLayer->disallowedLayers) {
                     pMeshDrawerPass->GetDisallowedLayers().insert(layer);
                 }
-                pMainGroupPass->GetPasses().emplace_back(pMeshDrawerPass.StaticCast<BasePass>());
+                pMainGroupPass->AddPass(pMeshDrawerPass.StaticCast<BasePass>());
             }
             else if (auto&& pSkyboxLayer = pLayer.DynamicCast<RenderTechniqueLayerSkybox>()) {
                 SkyboxPass::Ptr pSkyboxPass = new SkyboxPass();
-                pMainGroupPass->GetPasses().emplace_back(pSkyboxPass.StaticCast<BasePass>());
+                pMainGroupPass->AddPass(pSkyboxPass.StaticCast<BasePass>());
             }
             else if (auto&& pCustomPass = pLayer.DynamicCast<RenderTechniqueLayerCustomPass>(); pCustomPass && pCustomPass->pass) {
-                BasePass::Ptr& pPass = pMainGroupPass->GetPasses().emplace_back();
-                pPass = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pCustomPass->pass->GetMeta()->GetFactoryName());
+                BasePass::Ptr pPass = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pCustomPass->pass->GetMeta()->GetFactoryName());
                 pCustomPass->pass->CloneTo(*pPass);
+                pMainGroupPass->AddPass(pPass);
             }
             else if (auto&& pClearDepthLayer = pLayer.DynamicCast<RenderTechniqueLayerClearDepth>()) {
                 ClearDepthAttachmentPass::Ptr pClearDepthPass = new ClearDepthAttachmentPass();
-                pMainGroupPass->GetPasses().emplace_back(pClearDepthPass.StaticCast<BasePass>());
+                pMainGroupPass->AddPass(pClearDepthPass.StaticCast<BasePass>());
             }
         }
 
@@ -277,7 +278,7 @@ namespace SR_GRAPH_NS {
                 pFrameBufferPass->SetFrameBufferName(params.sceneViewName);
                 pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
 
-                data.pass.DynamicCast<GroupPass>()->GetPasses().emplace_back(pFrameBufferPass.StaticCast<BasePass>());
+                data.pass.DynamicCast<GroupPass>()->AddPass(pFrameBufferPass.StaticCast<BasePass>());
                 pPostProcessGroupPass = pFrameBufferPass.StaticCast<GroupPass>();
             }
             else {
@@ -285,7 +286,7 @@ namespace SR_GRAPH_NS {
                 pSwapchainPass->SetClearColor(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
                 pSwapchainPass->SetCustomName(params.sceneViewName);
 
-                data.pass.DynamicCast<GroupPass>()->GetPasses().emplace_back(pSwapchainPass.StaticCast<BasePass>());
+                data.pass.DynamicCast<GroupPass>()->AddPass(pSwapchainPass.StaticCast<BasePass>());
                 pPostProcessGroupPass = pSwapchainPass.StaticCast<GroupPass>();
             }
 
@@ -302,7 +303,44 @@ namespace SR_GRAPH_NS {
                 pPostProcessPass->GetSamplersData().AddSampler(shadowSampler);
             }
 
-            pPostProcessGroupPass->GetPasses().emplace_back(pPostProcessPass.StaticCast<BasePass>());
+            pPostProcessGroupPass->AddPass(pPostProcessPass.StaticCast<BasePass>());
+        }
+    }
+
+    void RenderTechniquePresetIntegrationAutoExposure::Integrate(const Technique& technique, const Params& params) const {
+        SR_TRACY_ZONE;
+
+        if (!params.activeGraphicsSettings.autoExposure || !params.activeGraphicsSettings.hdr || !params.activeGraphicsSettings.postProcess) {
+            return;
+        }
+
+        auto&& pMainViewIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationMainView>();
+        if (!pMainViewIntegration) {
+            SR_ERROR("RenderTechniquePresetIntegrationAutoExposure::Integrate() : failed to find main view integration for auto exposure integration!");
+            return;
+        }
+
+        auto&& pMainGroup = technique.GetInternalData().pass.DynamicCast<GroupPass>();
+
+        const int32_t index = pMainGroup->IndexOfPass(pMainViewIntegration->offscreenControllerName);
+        if (index >= 0) {
+            AutoExposurePass::Ptr pAutoExposurePass = new AutoExposurePass();
+            SamplerData shadowSampler;
+            shadowSampler.fboName = pMainViewIntegration->offscreenControllerName;
+            shadowSampler.id = "hdrTexture";
+            shadowSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            pAutoExposurePass->GetSamplersData().AddSampler(shadowSampler);
+            pMainGroup->InsertPass(pAutoExposurePass.StaticCast<BasePass>(), index + 1);
+
+            if (auto&& pPostProcessPass = pMainGroup->FindPassAs<PostProcessPass>(PostProcessPass::GetClassStaticName())) {
+                pPostProcessPass->AddSSBOUsageFromPass(AutoExposurePass::GetClassStaticName());
+            }
+            else {
+                SR_ERROR("RenderTechniquePresetIntegrationAutoExposure::Integrate() : failed to find post process pass for auto exposure integration! \n\tController name: {}", pMainViewIntegration->offscreenControllerName);
+            }
+        }
+        else {
+            SRHalt("RenderTechniquePresetIntegrationAutoExposure::Integrate() : failed to find offscreen controller pass for auto exposure integration! \n\tController name: {}", pMainViewIntegration->offscreenControllerName);
         }
     }
 }

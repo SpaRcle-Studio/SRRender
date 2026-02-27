@@ -86,6 +86,7 @@ namespace SR_GRAPH_NS {
         virtual void OnCameraParamsChanged();
 
         virtual void UseUniformsFromAnotherPass(SR_GTYPES_NS::Shader& shader) { }
+        virtual void UseSSBOFromAnotherPass(SR_GTYPES_NS::Shader& shader) { }
         virtual void UseSamplers(SR_GTYPES_NS::Shader& shader);
         virtual void SetRenderTechnique(IRenderTechnique* pRenderTechnique);
 
@@ -100,6 +101,14 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD IRenderTechnique* GetTechnique() const { return m_technique; }
         SR_NODISCARD bool IsInit() const { return m_isInit; }
         SR_NODISCARD virtual BasePass* FindPass(SR_UTILS_NS::StringAtom name);
+
+        template<typename T> T* FindPassAs(SR_UTILS_NS::StringAtom name) {
+            SR_TRACY_ZONE;
+            if (auto&& pPass = FindPass(name)) {
+                return dynamic_cast<T*>(pPass);
+            }
+            return nullptr;
+        }
 
         SR_NODISCARD FrameBufferPass* GetFrameBufferPass() const;
         SR_NODISCARD uint32_t GetColorLayersCount() const;
@@ -126,27 +135,5 @@ namespace SR_GRAPH_NS {
 
     };
 }
-
-//
-// /// TODO: переделать на встраивание в объявление класса
-// #define SR_REGISTER_RENDER_PASS(name)                                                                                   \
-//     static bool SR_CODEGEN_##name##_render_pass_register_result =                                                       \
-//         SR_GRAPH_NS::GetRenderPassMap().insert(std::make_pair(                                                          \
-//             std::move(#name),                                                                                           \
-//             [](const SR_XML_NS::Node& node, IRenderTechnique* pTechnique) -> SR_GRAPH_NS::BasePass* {                   \
-//                 BasePass* pPass = new name();                                                                           \
-//                 pPass->SetRenderTechnique(pTechnique);                                                                  \
-//                 if (!pPass->Load(node)) {                                                                               \
-//                     delete pPass;                                                                                       \
-//                     pPass = nullptr;                                                                                    \
-//                 }                                                                                                       \
-//                 return pPass;                                                                                           \
-//             }                                                                                                           \
-//         )).second;                                                                                                      \
-//
-// #define SR_ALLOCATE_RENDER_PASS(passNode, pTechnique)                                                                   \
-//     (SR_GRAPH_NS::GetRenderPassMap().count(passNode.Name()) == 0 ? nullptr :                                            \
-//         SR_GRAPH_NS::GetRenderPassMap().at(passNode.Name())(passNode, pTechnique))                                      \
-//
 
 #endif //SR_ENGINE_BASE_PASS_H

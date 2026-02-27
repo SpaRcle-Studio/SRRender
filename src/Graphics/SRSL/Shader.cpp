@@ -336,14 +336,24 @@ namespace SR_SRSL_NS {
             if (auto&& pDecorator = pVariable->pDecorators->Find("shared")) {
                 SR_UTILS_NS::StringAtom vaeName = pVariable->pName->ToString(0);
 
-                if (std::find_if(m_shared.begin(), m_shared.end(), [vaeName](const auto& pair) -> bool {
-                    return pair.first == vaeName;
-                }) != m_shared.end()) {
-                    SR_ERROR("SRSLShader::PrepareUniformBlocks() : shared variable already exists! Name: " + vaeName.ToString());
-                    continue;
+                if (pDecorator->args.empty()) {
+                    if (std::find_if(m_shared.begin(), m_shared.end(), [vaeName](const auto& pair) -> bool {
+                        return pair.first == vaeName;
+                    }) != m_shared.end()) {
+                        SR_ERROR("SRSLShader::PrepareUniformBlocks() : shared variable already exists! Name: " + vaeName.ToString());
+                        continue;
+                    }
+                    m_shared.emplace_back(vaeName, pVariable);
                 }
-
-                m_shared.emplace_back(vaeName, pVariable);
+                else if (pDecorator->args[0]->token == "workgroup") {
+                    if (std::find_if(m_sharedWorkgroup.begin(), m_sharedWorkgroup.end(), [vaeName](const auto& pair) -> bool {
+                        return pair.first == vaeName;
+                    }) != m_sharedWorkgroup.end()) {
+                        SR_ERROR("SRSLShader::PrepareUniformBlocks() : shared variable workgroup already exists! Name: " + vaeName.ToString());
+                        continue;
+                    }
+                    m_sharedWorkgroup.emplace_back(vaeName, pVariable);
+                }
             }
             else if ((pDecorator = pVariable->pDecorators->Find("uniform"))) {
                 SRSLUniformBlock::Field field;
@@ -393,6 +403,12 @@ namespace SR_SRSL_NS {
 
         /// sort by type size from less to more
         std::sort(m_shared.begin(), m_shared.end(), [this](const auto& a, const auto& b) -> bool {
+            return SRSLTypeInfo::Instance().GetTypeSize(a.second->pType->ToString(0), m_analyzedTree) <
+                   SRSLTypeInfo::Instance().GetTypeSize(b.second->pType->ToString(0), m_analyzedTree);
+        });
+
+        /// sort by type size from less to more
+        std::sort(m_sharedWorkgroup.begin(), m_sharedWorkgroup.end(), [this](const auto& a, const auto& b) -> bool {
             return SRSLTypeInfo::Instance().GetTypeSize(a.second->pType->ToString(0), m_analyzedTree) <
                    SRSLTypeInfo::Instance().GetTypeSize(b.second->pType->ToString(0), m_analyzedTree);
         });

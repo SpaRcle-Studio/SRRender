@@ -44,6 +44,7 @@ namespace SR_GRAPH_NS {
         void Flush();
 
         bool FreeDescriptorSet(VirtualDescriptorSet* pVirtualDescriptorSet);
+        bool TryFreeDescriptorSet(VirtualDescriptorSet* pVirtualDescriptorSet);
 
         void SetPipeline(SR_HTYPES_NS::SharedPtr<Pipeline> pipeline) noexcept { m_pipeline = std::move(pipeline); }
 

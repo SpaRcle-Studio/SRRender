@@ -40,6 +40,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const SamplersPassData& GetSamplersData() const { return m_samplers; }
         SR_NODISCARD SamplersPassData& GetSamplersData() { return m_samplers; }
 
+        void AddSSBOUsageFromPass(SR_UTILS_NS::StringAtom passName) { m_useSSBOFromPasses.emplace_back(passName); }
+
     protected:
         void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
         void SetRenderTechnique(SR_GRAPH_NS::IRenderTechnique* pRenderTechnique) override;
@@ -58,6 +60,8 @@ namespace SR_GRAPH_NS {
         SamplersPassData m_samplers;
         /// @property
         BaseMaterial::Ptr m_material;
+        /// @property
+        std::vector<SR_UTILS_NS::StringAtom> m_useSSBOFromPasses;
 
     };
 }

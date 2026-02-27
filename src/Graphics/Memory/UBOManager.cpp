@@ -282,4 +282,12 @@ namespace SR_GRAPH_NS::Memory {
         m_multiFrameMode = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameResources", true);
         m_headlessMode = SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode();
     }
+
+    bool UBOManager::TryFreeUBO(UBOManager::VirtualUBO* ubo) {
+        SR_TRACY_ZONE;
+        if (ubo == nullptr || *ubo == SR_ID_INVALID) {
+            return false;
+        }
+        return FreeUBO(ubo);
+    }
 }

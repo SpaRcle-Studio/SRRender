@@ -42,6 +42,11 @@ namespace SR_GRAPH_NS {
         uint32_t texturesCount = 0;
     };
 
+    SR_ENUM_NS_CLASS_T(MemoryBarrierType, uint8_t,
+        ReadAttachmentToCompute,
+        ComputeToReadAttachment
+    );
+
     class Pipeline : public SR_HTYPES_NS::SharedPtr<Pipeline> {
     public:
         using Super = SR_HTYPES_NS::SharedPtr<Pipeline>;
@@ -195,6 +200,9 @@ namespace SR_GRAPH_NS {
 
         virtual void ClearDepthBuffer(float_t depth);
         virtual void ClearColorBuffer(const ClearColors& clearColors);
+
+        //virtual void TransitionImage(uint32_t textureId);
+        virtual void WriteMemoryBarrier(MemoryBarrierType type) { ++m_state.operations; }
 
         /// Clear depth attachment inside active RenderPass using vkCmdClearAttachments
         /// This is the correct way to clear attachments during rendering without ending RenderPass

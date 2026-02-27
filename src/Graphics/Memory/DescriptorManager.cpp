@@ -231,4 +231,12 @@ namespace SR_GRAPH_NS {
         Super::InitSingleton();
         m_multiFrameMode = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameResources", true);
     }
+
+    bool DescriptorManager::TryFreeDescriptorSet(DescriptorManager::VirtualDescriptorSet *pVirtualDescriptorSet) {
+        SR_TRACY_ZONE;
+        if (!pVirtualDescriptorSet || *pVirtualDescriptorSet == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
+        return FreeDescriptorSet(pVirtualDescriptorSet);
+    }
 }

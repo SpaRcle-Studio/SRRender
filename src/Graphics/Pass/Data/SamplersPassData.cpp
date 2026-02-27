@@ -153,6 +153,25 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void SamplersPassData::ForEachSampler(const SR_HTYPES_NS::Function<void(const int32_t&)>& fun) const {
+        for (auto&& sampler : m_samplers) {
+            if (sampler.pTexture) {
+                const uint32_t id = sampler.pTexture->GetId();
+                if (id == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                    continue;
+                }
+                fun(static_cast<int32_t>(id));
+                continue;
+            }
+
+            const uint32_t textureId = sampler.GetTextureId(m_pTechnique->GetPipeline()->GetCurrentImageIndex());
+            if (textureId == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
+            fun(static_cast<int32_t>(textureId));
+        }
+    }
+
     bool SamplersPassData::PrepareSamplers() {
         SR_TRACY_ZONE;
 

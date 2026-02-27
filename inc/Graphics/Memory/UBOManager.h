@@ -98,6 +98,7 @@ namespace SR_GRAPH_NS::Memory {
         SR_NODISCARD VirtualUBO AllocateUBO(VirtualUBO virtualUbo);
 
         bool FreeUBO(VirtualUBO* ubo);
+        bool TryFreeUBO(VirtualUBO* ubo);
 
         BindResult BindUBO(VirtualUBO virtualUbo) noexcept;
         BindResult BindUBO(VirtualUBO virtualUbo, uint32_t uboSize) noexcept;

@@ -224,6 +224,20 @@ namespace SR_SRSL_NS {
                     ++m_currentLexem;
                 }
             }
+            else if (pLexem && pLexem->kind == LexemKind::Identifier && pLexem->value.starts_with('e')) {
+                if (SR_MATH_NS::IsNumber(pBasicExpr->token)) {
+                    pBasicExpr->token += pLexem->value;
+                    ++m_currentLexem;
+                    if (auto&& pNextMinusLexem = GetCurrentLexem(); pNextMinusLexem && pNextMinusLexem->kind == LexemKind::Minus) {
+                        pBasicExpr->token += pNextMinusLexem->value;
+                        ++m_currentLexem;
+                        while (InBounds() && SR_MATH_NS::IsNumber(GetCurrentLexem()->value)) {
+                            pBasicExpr->token += GetCurrentLexem()->value;
+                            ++m_currentLexem;
+                        }
+                    }
+                }
+            }
 
             return pBasicExpr;
         }

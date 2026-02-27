@@ -7,13 +7,6 @@
 
 #include <Graphics/Pipeline/Pipeline.h>
 
-#include <EvoVulkan/Types/VmaBuffer.h>
-#include <EvoVulkan/Types/CmdBuffer.h>
-#include <EvoVulkan/Tools/VulkanTools.h>
-#include <unordered_map>
-#include <atomic>
-#include <mutex>
-
 namespace SR_GRAPH_NS::VulkanTools {
     class MemoryManager;
 }
@@ -22,19 +15,23 @@ namespace EvoVulkan::Core {
     class VulkanKernel;
 }
 
+namespace EvoVulkan::Types {
+    class VmaBuffer;
+    class CmdBuffer;
+}
+
 namespace EvoVulkan::Complexes {
     class FrameBuffer;
     class Shader;
 }
 
 namespace SR_GRAPH_NS {
+    struct VulkanPipelineInternalData;
+
     class VulkanPipeline : public Pipeline {
         using Super = Pipeline;
     public:
-        explicit VulkanPipeline(const RenderContextPtr& pContext)
-            : Super(pContext)
-        { }
-
+        explicit VulkanPipeline(const RenderContextPtr& pContext);
         ~VulkanPipeline() override;
 
     public:
@@ -149,6 +146,8 @@ namespace SR_GRAPH_NS {
         void ClearColorBuffer(const ClearColors& clearColors) override;
         void ClearDepthAttachment(float_t depth) override;
 
+        void WriteMemoryBarrier(MemoryBarrierType type) override;
+
         void ResetSubmitQueue() override;
 
         void UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) override;
@@ -183,38 +182,12 @@ namespace SR_GRAPH_NS {
     private:
         bool InitEvoVulkanHooks();
 
-        /// Структура для хранения состояния асинхронного запроса пикселей
-        struct PixelRangeRequest {
-            uint32_t textureId = 0;
-            uint32_t x = 0;
-            uint32_t y = 0;
-            uint32_t width = 0;
-            uint32_t height = 0;
-            VkFence fence = VK_NULL_HANDLE;
-            EvoVulkan::Types::VmaBuffer* pBuffer = nullptr;
-            EvoVulkan::Types::CmdBuffer* pCmdBuffer = nullptr;
-            VkImageLayout originalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            bool isReady = false;
-        };
-
         void CleanupCompletedRequests();
 
     private:
         bool m_isGlslLangInit = false;
 
-        VkDeviceSize m_offsets[1] = { 0 };
-        VkViewport m_viewport = { };
-        VkRect2D m_scissor = { };
-        VkRect2D m_activeScissor = { };
-        VkRenderPassBeginInfo m_renderPassBI = { };
-        VkCommandBufferBeginInfo m_cmdBufInfo = { };
-
-        VkDescriptorSet m_currentDescriptorSet = VK_NULL_HANDLE;
-
-        VkCommandBuffer m_currentCmd  = VK_NULL_HANDLE;
-        VkPipelineLayout m_currentLayout = VK_NULL_HANDLE;
-
-        std::vector<VkClearValue> m_clearValues;
+        VulkanPipelineInternalData* m_internalData = nullptr;
 
         EvoVulkan::Complexes::FrameBuffer* m_currentVkFrameBuffer = nullptr;
         EvoVulkan::Complexes::Shader* m_currentVkShader = nullptr;
@@ -223,9 +196,7 @@ namespace SR_GRAPH_NS {
 
         VulkanTools::MemoryManager* m_memory = nullptr;
 
-        mutable std::unordered_map<uint64_t, PixelRangeRequest> m_pixelRequests;
         std::atomic<uint64_t> m_nextWorkId;
-        std::vector<VkWriteDescriptorSet> m_writeDescriptorSets;
 
     };
 }

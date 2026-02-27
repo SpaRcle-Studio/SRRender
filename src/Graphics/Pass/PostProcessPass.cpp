@@ -8,6 +8,7 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Lighting/LightSystem.h>
 #include <Graphics/Pipeline/Pipeline.h>
@@ -73,6 +74,15 @@ namespace SR_GRAPH_NS {
         m_uboManager.BindUBO(m_virtualUBO);
 
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
+
+        for (SR_UTILS_NS::StringAtom passName : m_useSSBOFromPasses) {
+            if (auto&& pPass = GetTechnique()->FindPass(passName)) {
+                pPass->UseSSBOFromAnotherPass(*pShader);
+            }
+            else {
+                SR_WARN("PostProcessPass::Render() : pass not found for SSBO binding!\n\tPass name: {}", passName);
+            }
+        }
 
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
             UseSamplers(*pShader);

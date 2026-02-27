@@ -63,6 +63,11 @@ namespace SR_GRAPH_NS {
 
         m_bindedDescriptors.Fill(false);
 
+        if (m_isComputeState) {
+            SRHalt("Pipeline::BeginRender() : is compute state now!");
+            return false;
+        }
+
         if (!m_isCmdState) {
             SRHalt("Pipeline::BeginRender() : missing call \"BeginCmdBuffer\"!");
             return false;
@@ -509,13 +514,13 @@ namespace SR_GRAPH_NS {
     }
 
     bool Pipeline::BeginCompute() {
-        if (m_isCmdState) {
-            SRHalt("Pipeline::BeginCompute() : is cmd state now!");
+        if (m_isRenderState) {
+            SRHalt("Pipeline::BeginCompute() : is render state now!");
             return false;
         }
 
-        if (m_isRenderState) {
-            SRHalt("Pipeline::BeginCompute() : is render state now!");
+        if (!m_isCmdState) {
+            SRHalt("Pipeline::BeginRender() : missing call \"BeginCmdBuffer\"!");
             return false;
         }
 

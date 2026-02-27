@@ -40,15 +40,18 @@ namespace SR_GRAPH_NS {
         void SetRenderTechnique(IRenderTechnique* pRenderTechnique) override;
         void SetParent(BasePass* pParent) override;
 
-        const std::vector<BasePass::Ptr>& GetPasses() const { return m_passes; }
+        SR_NODISCARD const std::vector<BasePass::Ptr>& GetPasses() const { return m_passes; }
         std::vector<BasePass::Ptr>& GetPasses() { return m_passes; }
 
-        void SetPasses(const std::vector<BasePass::Ptr>& passes) { m_passes = passes; }
+        void AddPass(const BasePass::Ptr& pass);
+        void SetPasses(const std::vector<BasePass::Ptr>& passes);
+        void InsertPass(const BasePass::Ptr& pass, uint32_t index);
 
         void ForEachPass(const std::function<void(BasePass&)>& func) override;
         bool UpdateFrustum() override;
 
         SR_NODISCARD BasePass* FindPass(SR_UTILS_NS::StringAtom name) override;
+        SR_NODISCARD int32_t IndexOfPass(SR_UTILS_NS::StringAtom name) const;
 
     protected:
         /// @property

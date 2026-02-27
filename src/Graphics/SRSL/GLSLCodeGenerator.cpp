@@ -87,12 +87,22 @@ namespace SR_SRSL_NS {
             code += vertexLocations + "\n";
         }
 
-        if (auto &&vertexLocations = GenerateOutputLocations(stage); !vertexLocations.empty()) {
+        if (auto&& vertexLocations = GenerateOutputLocations(stage); !vertexLocations.empty()) {
             code += vertexLocations + "\n";
         }
 
         auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(stage);
         if (auto&& pFunctionCallStack = m_shader->GetUseStack()->FindFunction(entryPoint)) {
+            for (auto&& [name, pVariable] : m_shader->GetSharedWorkgroup()) {
+                /// если переменную не передали, значит ее нет
+                if (stage != ShaderStage::Compute || !pFunctionCallStack->IsVariableUsed(name)) {
+                    continue;
+                }
+
+                auto&& type = GenerateVariable(pVariable, 0);
+                code += SR_FORMAT("shared {};\n", type.c_str());
+            }
+
             for (auto&& pUnit : m_shader->GetAnalyzedTree()->pLexicalTree->lexicalTree) {
                 if (auto&& pStructure = dynamic_cast<SRSLStructureStatement*>(pUnit)) {
                     if (!pFunctionCallStack->IsStructUsed(pStructure->pName->token)) {

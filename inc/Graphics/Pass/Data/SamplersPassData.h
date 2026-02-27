@@ -81,6 +81,7 @@ namespace SR_GRAPH_NS {
         void SetRenderTechnique(IRenderTechnique* pTechnique) { m_pTechnique = pTechnique; }
 
         void AddSampler(const SamplerData& data) { m_samplers.emplace_back(data); MarkSamplersDirty(); }
+        void ForEachSampler(const SR_HTYPES_NS::Function<void(const int32_t&)>& fun) const;
 
     private:
         /// @property

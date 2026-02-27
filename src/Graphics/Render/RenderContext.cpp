@@ -809,6 +809,7 @@ namespace SR_GRAPH_NS {
         m_activeGraphicsSettings = settings;
 
         SwitchMacro("SR_SRGB", m_activeGraphicsSettings.sRGB);
+        SwitchMacro("SR_AUTO_EXPOSURE", m_activeGraphicsSettings.autoExposure);
         SwitchMacro("SR_SHADOWS_QUALITY_EXTREME", m_activeGraphicsSettings.shadowsQuality == Quality::Extreme);
 
         if (!reload) {

@@ -182,6 +182,7 @@ namespace SR_SRSL_NS {
     const std::map<std::string, uint64_t> SR_SRSL_TYPE_SIZE_TABLE = { /** NOLINT */
         { "bool",         4         },
 
+        { "uint",         4         },
         { "int",          4         },
         { "float",        4         },
 

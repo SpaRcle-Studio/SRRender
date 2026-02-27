@@ -184,6 +184,20 @@ namespace SR_GRAPH_NS {
         Super::ForEachPass(func);
     }
 
+    void GroupPass::AddPass(const BasePass::Ptr& pPass) {
+        SR_TRACY_ZONE;
+        m_passes.emplace_back(pPass);
+        pPass->SetParent(this);
+    }
+
+    void GroupPass::SetPasses(const std::vector<BasePass::Ptr>& passes) {
+        SR_TRACY_ZONE;
+        m_passes = passes;
+        for (auto&& pPass : m_passes) {
+            pPass->SetParent(this);
+        }
+    }
+
     BasePass* GroupPass::FindPass(SR_UTILS_NS::StringAtom name) {
         for (auto&& pPass : m_passes) {
             if (auto&& pFound = pPass->FindPass(name)) {
@@ -191,5 +205,22 @@ namespace SR_GRAPH_NS {
             }
         }
         return Super::FindPass(name);
+    }
+
+    void GroupPass::InsertPass(const BasePass::Ptr& pPass, uint32_t index) {
+        if (index > m_passes.size()) {
+            index = static_cast<uint32_t>(m_passes.size());
+        }
+        m_passes.insert(m_passes.begin() + index, pPass);
+        pPass->SetParent(this);
+    }
+
+    int32_t GroupPass::IndexOfPass(SR_UTILS_NS::StringAtom name) const {
+        for (uint32_t i = 0; i < m_passes.size(); ++i) {
+            if (m_passes[i]->GetPassName() == name) {
+                return i;
+            }
+        }
+        return SR_ID_INVALID;
     }
 }

@@ -23,6 +23,7 @@ namespace SR_GRAPH_NS {
                    && shadowsInstancing == lrs.shadowsInstancing
                    && postProcess == lrs.postProcess
                    && hdr == lrs.hdr
+                   && autoExposure == lrs.autoExposure
                    && sRGB == lrs.sRGB
                    && shadowsQuality == lrs.shadowsQuality
                    && colorBufferQuality == lrs.colorBufferQuality;
@@ -40,6 +41,8 @@ namespace SR_GRAPH_NS {
         bool postProcess = true;
         /// @property
         bool hdr = true;
+        /// @property
+        bool autoExposure = false;
         /// @property
         bool sRGB = true;
         /// @property

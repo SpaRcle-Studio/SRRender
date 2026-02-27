@@ -99,6 +99,13 @@ namespace SR_GRAPH_NS {
 
     };
 
+    class RenderTechniquePresetIntegrationAutoExposure : public RenderTechniquePresetIntegrationBase {
+        SR_CLASS()
+    public:
+        void Integrate(const Technique& technique, const Params& params) const override;
+
+    };
+
     class RenderTechniquePresetIntegrationMainView : public RenderTechniquePresetIntegrationBase {
         SR_CLASS()
     public:
@@ -150,9 +157,9 @@ namespace SR_GRAPH_NS {
     private:
         mutable RenderTechniqueData m_data;
 
-        /// @property
+        /// @property @notNull
         std::vector<RenderTechniqueLayerBase::Ptr> m_layers;
-        /// @property
+        /// @property @notNull
         std::vector<RenderTechniquePresetIntegrationBase::Ptr> m_integrations;
 
     };

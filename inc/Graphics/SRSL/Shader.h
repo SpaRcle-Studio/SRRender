@@ -90,6 +90,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SRSLSamplers& GetSamplers() const { return m_samplers; }
         SR_NODISCARD const SRShaderCreateInfo& GetCreateInfo() const { return m_createInfo; }
         SR_NODISCARD const std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetShared() const { return m_shared; }
+        SR_NODISCARD const std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetSharedWorkgroup() const { return m_sharedWorkgroup; }
         SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, SRSLVariable*>& GetConstants() const { return m_constants; }
         SR_NODISCARD const std::vector<SR_UTILS_NS::StringAtom>& GetIncludes() const { return m_includes; }
         SR_NODISCARD const SR_MATH_NS::UVector3& GetComputeWorkGroupSize() const { return m_computeWorkGroupSize; }
@@ -124,6 +125,7 @@ namespace SR_SRSL_NS {
         ShaderMacrosParams m_macros;
         std::vector<SR_UTILS_NS::StringAtom> m_includes;
         std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_shared;
+        std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_sharedWorkgroup;
         std::map<SR_UTILS_NS::StringAtom, SRSLVariable*> m_constants;
         SRShaderCreateInfo m_createInfo;
         SRSLAnalyzedTree::Ptr m_analyzedTree;
