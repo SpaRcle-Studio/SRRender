@@ -47,6 +47,8 @@ namespace SR_GRAPH_NS::VulkanTools {
 
     public:
         static MemoryManager* Create(EvoVulkan::Core::VulkanKernel* kernel) {
+            SR_TRACY_ZONE;
+
             auto memory = new MemoryManager();
 
             if (!memory->Initialize(kernel)) {
@@ -147,6 +149,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         EvoVulkan::Types::Device* m_device = nullptr;
         EvoVulkan::Memory::Allocator* m_allocator = nullptr;
         EvoVulkan::Types::CmdPool* m_pool = nullptr;
+        EvoVulkan::Types::VmaBuffer* m_stagingBuffer = nullptr;
 
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::DescriptorSet, int32_t> m_descriptorSetPool;
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Complexes::Shader*, int32_t> m_shaderProgramPool;

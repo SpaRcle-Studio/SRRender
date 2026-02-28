@@ -29,12 +29,12 @@ namespace SR_GRAPH_NS::Vertices {
         INT_R32            = 1 << 7,
     };
 
-    static std::string ToString(const glm::vec3& vec3) {
-        return SR_FORMAT("[ {}, {}, {} ]", vec3.x, vec3.y, vec3.z);
+    static std::string ToString(const SR_MATH_NS::FVector3& vec) {
+        return SR_FORMAT("[ {}, {}, {} ]", vec.x, vec.y, vec.z);
     }
 
-    static std::string ToString(const glm::vec2& vec2) {
-        return SR_FORMAT("[ {}, {} ]", vec2.x, vec2.y);
+    static std::string ToString(const SR_MATH_NS::FVector2& vec) {
+        return SR_FORMAT("[ {}, {} ]", vec.x, vec.y);
     }
 
     struct alignas(16) StaticMeshVertexAligned {
@@ -96,22 +96,22 @@ namespace SR_GRAPH_NS::Vertices {
 
         SR_NODISCARD std::string ToString() const {
             return SR_FORMAT("[ {}, {}, {}, {}, {} ],",
-                    Vertices::ToString(pos.ToGLM()).c_str(),
+                    Vertices::ToString(pos).c_str(),
                     Vertices::ToString(uv.ToGLM()).c_str(),
-                    Vertices::ToString(norm.ToGLM()).c_str(),
-                    Vertices::ToString(bitang.ToGLM()).c_str(),
-                    Vertices::ToString(tang.ToGLM()).c_str()
+                    Vertices::ToString(norm).c_str(),
+                    Vertices::ToString(bitang).c_str(),
+                    Vertices::ToString(tang).c_str()
             );
         }
     };
     typedef std::vector<StaticMeshVertex> StaticMeshVertices;
 
     struct SkinnedMeshVertex {
-        glm::vec3 pos;
-        glm::vec2 uv;
-        glm::vec3 norm;
-        glm::vec3 tang;
-        glm::vec3 bitang;
+        SR_MATH_NS::FVector3 pos;
+        SR_MATH_NS::FVector2 uv;
+        SR_MATH_NS::FVector3 norm;
+        SR_MATH_NS::FVector3 tang;
+        SR_MATH_NS::FVector3 bitang;
 
         uint32_t weightsCount = 0;
 
@@ -185,8 +185,8 @@ namespace SR_GRAPH_NS::Vertices {
     typedef std::vector<SkinnedMeshVertex> SkinnedMeshVertices;
 
     struct UIVertex {
-        glm::vec3 pos;
-        glm::vec2 uv;
+        SR_MATH_NS::FVector3 pos;
+        SR_MATH_NS::FVector2 uv;
 
         static constexpr SR_FORCE_INLINE SR_VERTEX_DESCRIPTION GetDescription() {
             return sizeof(UIVertex);
@@ -241,7 +241,7 @@ namespace SR_GRAPH_NS::Vertices {
     }
 
     struct SimpleVertex {
-        glm::vec3 pos;
+        SR_MATH_NS::FVector3 pos;
 
         static SR_FORCE_INLINE std::vector<std::string> GetNames() {
             return { "VERTEX" };
@@ -358,7 +358,7 @@ namespace SR_GRAPH_NS::Vertices {
         if constexpr (std::is_same<Vertices::SimpleVertex, T>::value) {
             for (uint32_t i = 0; i < count; i++) {
                 vertices.emplace_back(T {
-                        .pos = *reinterpret_cast<glm::vec3*>((void*)&pData[i].position),
+                        .pos = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].position),
                 });
             }
         }
@@ -366,8 +366,8 @@ namespace SR_GRAPH_NS::Vertices {
         if constexpr (std::is_same<Vertices::UIVertex, T>::value) {
             for (uint32_t i = 0; i < count; i++) {
                 vertices.emplace_back(T {
-                        .pos = *reinterpret_cast<glm::vec3*>((void*)&pData[i].position),
-                        .uv  = *reinterpret_cast<glm::vec2*>((void*)&pData[i].uv),
+                        .pos = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].position),
+                        .uv  = *reinterpret_cast<SR_MATH_NS::FVector2*>((void*)&pData[i].uv),
                 });
             }
         }
@@ -375,11 +375,11 @@ namespace SR_GRAPH_NS::Vertices {
         if constexpr (std::is_same<Vertices::StaticMeshVertex, T>::value) {
             for (uint32_t i = 0; i < count; i++) {
                 vertices.emplace_back(T {
-                        .pos    = *reinterpret_cast<glm::vec3*>((void*)&pData[i].position),
-                        .uv     = *reinterpret_cast<glm::vec2*>((void*)&pData[i].uv),
-                        .norm   = *reinterpret_cast<glm::vec3*>((void*)&pData[i].normal),
-                        .tang   = *reinterpret_cast<glm::vec3*>((void*)&pData[i].tangent),
-                        .bitang = *reinterpret_cast<glm::vec3*>((void*)&pData[i].bitangent),
+                        .pos    = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].position),
+                        .uv     = *reinterpret_cast<SR_MATH_NS::FVector2*>((void*)&pData[i].uv),
+                        .norm   = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].normal),
+                        .tang   = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].tangent),
+                        .bitang = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].bitangent),
                 });
             }
         }
@@ -387,11 +387,11 @@ namespace SR_GRAPH_NS::Vertices {
         if constexpr (std::is_same<Vertices::SkinnedMeshVertex, T>::value) {
             for (uint32_t i = 0; i < count; i++) {
                 T vertex;
-                vertex.pos    = *reinterpret_cast<glm::vec3*>((void*)&pData[i].position);
-                vertex.uv     = *reinterpret_cast<glm::vec2*>((void*)&pData[i].uv);
-                vertex.norm   = *reinterpret_cast<glm::vec3*>((void*)&pData[i].normal);
-                vertex.tang   = *reinterpret_cast<glm::vec3*>((void*)&pData[i].tangent);
-                vertex.bitang = *reinterpret_cast<glm::vec3*>((void*)&pData[i].bitangent);
+                vertex.pos    = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].position);
+                vertex.uv     = *reinterpret_cast<SR_MATH_NS::FVector2*>((void*)&pData[i].uv);
+                vertex.norm   = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].normal);
+                vertex.tang   = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].tangent);
+                vertex.bitang = *reinterpret_cast<SR_MATH_NS::FVector3*>((void*)&pData[i].bitangent);
                 vertex.weightsCount = *reinterpret_cast<uint32_t*>((void*)&pData[i].weightsNum);
                 for (uint32_t j = 0; j < SR_MAX_BONES_ON_VERTEX; j++) {
                     vertex.weights[j].x = static_cast<float>(pData[i].weights[j].boneId);

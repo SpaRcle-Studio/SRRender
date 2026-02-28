@@ -103,6 +103,8 @@ namespace SR_GTYPES_NS {
             return true;
         }
 
+        SR_TRACY_ZONE_TEXT(GetResourceId());
+
         if (m_asyncLoading) {
             SRHalt("Texture::Calculate() : the texture is still loading asynchronously!");
             return false;

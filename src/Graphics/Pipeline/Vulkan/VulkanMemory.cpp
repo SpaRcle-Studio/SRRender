@@ -307,6 +307,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         info.pAllocator = m_allocator;
         info.pDevice = m_device;
         info.pDescriptorManager = m_descriptorManager;
+        info.pStagingBuffer = m_stagingBuffer;
 
         auto&& pTexture = EvoVulkan::Types::Texture::LoadCubeMap(info, pixels);
         if (!pTexture) {
@@ -340,6 +341,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         info.pAllocator = m_allocator;
         info.pDevice = m_device;
         info.pDescriptorManager = m_descriptorManager;
+        info.pStagingBuffer = m_stagingBuffer;
 
         EvoVulkan::Types::Texture* pTexture = nullptr;
 
@@ -361,7 +363,12 @@ namespace SR_GRAPH_NS::VulkanTools {
         return m_texturePool.Add(pTexture);
     }
 
-    void SR_GRAPH_NS::VulkanTools::MemoryManager::Free() {
+    void MemoryManager::Free() {
+        if (m_stagingBuffer) {
+            delete m_stagingBuffer;
+            m_stagingBuffer = nullptr;
+        }
+
         SRAssert2(m_fboPool.IsEmpty(), "FBOs are not empty!");
         SRAssert2(m_uboPool.IsEmpty(), "UBOs are not empty!");
         SRAssert2(m_iboPool.IsEmpty(), "IBOs are not empty!");
@@ -385,6 +392,15 @@ namespace SR_GRAPH_NS::VulkanTools {
         m_allocator = m_kernel->GetAllocator();
         m_device = m_kernel->GetDevice();
         m_pool = m_kernel->GetCmdPool();
+
+        if (!m_stagingBuffer) {
+            const uint64_t mb64 = 64ull * 1024ull * 1024ull;
+            m_stagingBuffer = EvoVulkan::Types::VmaBuffer::Create(m_allocator, mb64);
+            if (!m_stagingBuffer) {
+                SR_ERROR("MemoryManager::Initialize() : failed to create staging buffer!");
+                return false;
+            }
+        }
 
         if (!m_descriptorManager || !m_device || !m_pool) {
             SR_ERROR("MemoryManager::Initialize() : failed to get a (descriptor manager/device/cmd pool)!");
