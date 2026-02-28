@@ -73,7 +73,7 @@ if (SR_RENDER_USE_VULKAN)
     message("EvoVulkan will be used")
     set(EVO_VULKAN_USE_OWN_GLFW OFF)
     set(EVO_VULKAN_TRACY_PROFILER_PATH "${SR_UTILS_SOURCE_DIR}/libs/tracy")
-    add_subdirectory(libs/EvoVulkan/Core)
+    add_subdirectory(libs/EvoVulkan)
 endif()
 
 if (ANDROID_NDK)
@@ -222,7 +222,7 @@ target_include_directories(Graphics PUBLIC libs)
 
 if (SR_RENDER_USE_VULKAN)
     target_include_directories(Graphics PUBLIC ${Vulkan_INCLUDE_DIRS})
-    target_include_directories(Graphics PUBLIC libs/EvoVulkan/Core/inc)
+    target_include_directories(Graphics PUBLIC libs/EvoVulkan/inc)
 endif()
 
 if (SR_USE_PCH)

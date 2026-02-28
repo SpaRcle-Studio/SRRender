@@ -16,6 +16,7 @@
 #include <EvoVulkan/Types/CmdBuffer.h>
 #include <EvoVulkan/Types/VmaBuffer.h>
 #include <EvoVulkan/Tools/VulkanTools.h>
+#include <EvoVulkan/Complexes/Shader.h>
 
 #ifdef SR_USE_IMGUI
     #include <Graphics/Overlay/VulkanImGuiOverlay.h>
