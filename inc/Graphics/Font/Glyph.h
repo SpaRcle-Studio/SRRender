@@ -34,7 +34,9 @@ namespace SR_GRAPH_NS {
         using Ptr = std::shared_ptr<Glyph>;
 
     public:
+#ifdef SR_USE_FREETYPE
         Glyph(FT_Glyph pGlyph, FT_Render_Mode renderMode);
+#endif
         ~Glyph() override;
 
     public:
@@ -44,13 +46,18 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetWidth() const noexcept;
         SR_NODISCARD uint32_t GetHeight() const noexcept;
         SR_NODISCARD uint32_t GetPixelSize() const noexcept;
-        SR_NODISCARD FT_Glyph GetGlyph() const noexcept;
         SR_NODISCARD GlyphMetrics& GetMetrics() noexcept;
 
+    #ifdef SR_USE_FREETYPE
+        SR_NODISCARD FT_Glyph GetGlyph() const noexcept;
+    #endif
+
     private:
+    #ifdef SR_USE_FREETYPE
         FT_Render_Mode m_renderMode;
-        GlyphMetrics m_metrics = { };
         FT_Glyph m_glyph = nullptr;
+    #endif
+        GlyphMetrics m_metrics = { };
 
     };
 

@@ -24,8 +24,8 @@ namespace SR_GRAPH_NS {
 namespace SR_GRAPH_NS::GUI {
     class Widget;
 
-    typedef ska::flat_hash_map<std::string, Widget*> Widgets;
-    typedef ska::flat_hash_map<void*, Widget*> ViewportsTable;
+    typedef SR_HTYPES_NS::FlatHashMap<std::string, Widget*> Widgets;
+    typedef SR_HTYPES_NS::FlatHashMap<void*, Widget*> ViewportsTable;
 
     class WidgetManager : public SR_UTILS_NS::NonCopyable, public SR_UTILS_NS::InputHandler {
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;

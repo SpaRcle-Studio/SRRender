@@ -12,7 +12,9 @@
 #include <Utils/Types/WeakPtr.h>
 #include <Utils/TaskManager/TaskManager.h>
 
-#include <EvoVulkan/Tools/VulkanDebug.h>
+#ifdef SR_USE_VULKAN
+    #include <EvoVulkan/Tools/VulkanDebug.h>
+#endif
 
 #include <Enum/BoolExt.hpp>
 #include <Enum/TextureCompression.hpp>
@@ -130,7 +132,9 @@ namespace SR_GTYPES_NS {
             SRVerifyFalse(!GetPipeline()->FreeTexture(&m_id));
         }
 
+    #ifdef SR_USE_VULKAN
         EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
+    #endif
 
         SRTextureCreateInfo createInfo;
         createInfo.pData = m_textureData->GetData();
@@ -185,7 +189,9 @@ namespace SR_GTYPES_NS {
 
         m_id = GetPipeline()->AllocateTexture(createInfo);
 
+    #ifdef SR_USE_VULKAN
         EVK_POP_LOG_LEVEL();
+    #endif
 
         if (m_id == SR_ID_INVALID) {
             SR_ERROR("Texture::Calculate() : failed to calculate the texture!");

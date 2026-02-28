@@ -12,7 +12,7 @@
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Memory/CameraManager.h>
 #include <Graphics/Memory/SSBOManager.h>
-#include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
+
 #include <Graphics/Pipeline/HeadlessPipeline.h>
 #include <Graphics/Pass/FrameBufferPass.h>
 
@@ -21,6 +21,10 @@
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Types/Skybox.h>
+
+#ifdef SR_USE_VULKAN
+    #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
+#endif
 
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Features.h>
@@ -777,8 +781,13 @@ namespace SR_GRAPH_NS {
             m_pipeline = new HeadlessPipeline(GetThis());
         }
         else {
+        #ifdef SR_USE_VULKAN
             SR_LOG("RenderContext::PreInit() : creating vulkan pipeline...");
             m_pipeline = new VulkanPipeline(GetThis());
+        #else
+            SR_WARN("RenderContext::PreInit() : no suitable pipeline found for this platform! Falling back to headless pipeline...");
+            m_pipeline = new HeadlessPipeline(GetThis());
+        #endif
         }
 
         return true;

@@ -9,7 +9,9 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Render/RenderScene.h>
 
-#include <EvoVulkan/Tools/VulkanDebug.h>
+#ifdef SR_USE_VULKAN
+    #include <EvoVulkan/Tools/VulkanDebug.h>
+#endif
 
 #include <Utils/Localization/Encoding.h>
 #include <Utils/ECS/SceneObject.h>
@@ -103,11 +105,15 @@ namespace SR_GTYPES_NS {
         textureCreateInfo.cpuUsage = false;
         textureCreateInfo.alpha = true;
 
+    #ifdef SR_USE_VULKAN
         EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
+    #endif
 
         m_id = m_pipeline->AllocateTexture(textureCreateInfo);
 
+    #ifdef SR_USE_VULKAN
         EVK_POP_LOG_LEVEL();
+    #endif
 
         if (m_id == SR_ID_INVALID) {
             SR_ERROR("Text::BuildAtlas() : failed to build the font atlas!");

@@ -65,7 +65,10 @@ namespace SR_GRAPH_NS {
 
     private:
         FontStyle m_fontStyle = FontStyle::Regular;
+
+    #ifdef SR_USE_FREETYPE
         FT_Render_Mode m_renderMode = FT_RENDER_MODE_NORMAL;
+    #endif
 
         FontPtr m_font = nullptr;
 

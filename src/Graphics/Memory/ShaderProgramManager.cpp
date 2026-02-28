@@ -8,8 +8,6 @@
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
-#include <EvoVulkan/Tools/VulkanDebug.h>
-
 namespace SR_GRAPH_NS::Memory {
     ShaderProgramManager::ShaderProgramManager()
         : SR_UTILS_NS::Singleton<ShaderProgramManager>()

@@ -49,7 +49,7 @@ namespace SR_ANIMATIONS_NS {
     private:
         bool m_isInitialized = false;
 
-        ska::flat_hash_map<SR_UTILS_NS::StringAtom, AnimationData*> m_indices;
+        SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, AnimationData*> m_indices;
         std::vector<std::pair<SR_UTILS_NS::StringAtom, AnimationData*>> m_data;*/
 
     };

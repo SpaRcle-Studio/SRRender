@@ -9,7 +9,9 @@ project(Graphics)
 SR_COMMON_GENERATE_BUILD_SOURCES(${PROJECT_SOURCE_DIR})
 SR_COMMON_GET_SOURCES(Graphics)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 set(BUILD_SHARED_LIBS OFF)
@@ -25,12 +27,6 @@ option(SR_RENDER_GLFW "" OFF)
 option(SR_RENDER_USE_YOGA "" OFF)
 
 SRUseAssimpIfPossible(Graphics)
-
-if (SR_EMSCRIPTEN)
-    set(SR_RENDER_USE_VULKAN OFF)
-else()
-    set(SR_RENDER_USE_VULKAN ON)
-endif()
 
 if (SR_RENDER_USE_VULKAN)
     message("$ENV{VULKAN_SDK}")
@@ -83,6 +79,7 @@ endif()
 
 if (NOT SR_EMSCRIPTEN)
     include(freetype.cmake)
+    add_definitions(-DSR_USE_FREETYPE)
 endif()
 
 if (SR_RENDER_GLFW)
@@ -90,6 +87,7 @@ if (SR_RENDER_GLFW)
 endif()
 
 if (NOT SR_EMSCRIPTEN)
+    add_definitions(-DSR_USE_CMP_CORE)
     add_subdirectory(libs/cmp_core)
 endif()
 

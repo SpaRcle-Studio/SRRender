@@ -7,7 +7,9 @@
 #include <Utils/Debug.h>
 #include <Utils/Profile/TracyContext.h>
 
-#include <cmp_core.h>
+#ifdef SR_USE_CMP_CORE
+    #include <cmp_core.h>
+#endif
 
 namespace SR_GRAPH_NS {
     uint8_t* Compress(uint32_t w, uint32_t h, const uint8_t *pixels, TextureCompression method) {
@@ -19,6 +21,7 @@ namespace SR_GRAPH_NS {
                 uint32_t colOffs = col * 16;
                 uint32_t rowOffs = row * w;
 
+            #ifdef SR_USE_CMP_CORE
                 switch (method) {
                     case TextureCompression::None:
                         return nullptr;
@@ -46,6 +49,9 @@ namespace SR_GRAPH_NS {
                     default:
                         break;
                 }
+            #else
+                SRHalt("Texture compression is not supported! Please enable SR_USE_CMP_CORE and link cmp_core library.");
+            #endif
             }
         }
 

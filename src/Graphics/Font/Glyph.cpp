@@ -5,6 +5,7 @@
 #include <Graphics/Font/Glyph.h>
 
 namespace SR_GRAPH_NS {
+#ifdef SR_USE_FREETYPE
     Glyph::Glyph(FT_Glyph pGlyph, FT_Render_Mode renderMode)
         : Super()
         , m_renderMode(renderMode)
@@ -21,12 +22,15 @@ namespace SR_GRAPH_NS {
         m_metrics.width = bitmap.width;
         m_metrics.height = bitmap.rows;
     }
+#endif
 
     Glyph::~Glyph() {
+    #ifdef SR_USE_FREETYPE
         if (m_glyph) {
             FT_Done_Glyph(m_glyph);
             m_glyph = nullptr;
         }
+    #endif
     }
 
     uint32_t Glyph::GetSize() const noexcept {
@@ -49,9 +53,11 @@ namespace SR_GRAPH_NS {
         return m_metrics.height;
     }
 
+#ifdef SR_USE_FREETYPE
     FT_Glyph Glyph::GetGlyph() const noexcept {
         return m_glyph;
     }
+#endif
 
     int32_t Glyph::GetPosX() const noexcept {
         return m_metrics.posX;
@@ -87,6 +93,7 @@ namespace SR_GRAPH_NS {
 
         m_data = new uint8_t[m_glyph->GetSize()];
 
+    #ifdef SR_USE_FREETYPE
         FT_BitmapGlyph bitmap_glyph = (FT_BitmapGlyph)m_glyph->GetGlyph();
         FT_Bitmap bitmap = bitmap_glyph->bitmap;
 
@@ -117,11 +124,13 @@ namespace SR_GRAPH_NS {
                 }
             }
         }
+    #endif
 
         return true;
     }
 
     void GlyphImage::InsertTo(uint8_t* pTarget, int32_t top, uint32_t sizeX, uint32_t sizeY, bool invertX, bool invertY) {
+    #ifdef SR_USE_FREETYPE
         const int32_t posX = m_glyph->GetPosX();
         const int32_t posY = m_glyph->GetPosY();
 
@@ -178,6 +187,7 @@ namespace SR_GRAPH_NS {
                 }
             }
         }
+    #endif
     }
 
     void GlyphImage::Debug(uint8_t* pTarget, int32_t top, uint32_t sizeX, uint32_t sizeY, bool invertX, bool invertY) {

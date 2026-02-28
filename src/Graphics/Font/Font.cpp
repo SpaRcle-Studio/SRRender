@@ -7,7 +7,9 @@
 
 #include <Utils/Resources/ResourceManager.h>
 
-#include <freetype/include/freetype/ftglyph.h>
+#ifdef SR_USE_FREETYPE
+    #include <freetype/include/freetype/ftglyph.h>
+#endif
 
 #include <Codegen/Font.generated.hpp>
 
@@ -18,7 +20,9 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         if (m_library) {
+        #ifdef SR_USE_FREETYPE
             FT_Done_FreeType(m_library);
+        #endif
             m_library = nullptr;
         }
 
@@ -28,6 +32,7 @@ namespace SR_GTYPES_NS {
     bool Font::Load() {
         SR_TRACY_ZONE;
 
+    #ifdef SR_USE_FREETYPE
         FT_Init_FreeType(&m_library);
 
         SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(GetResourceId());
@@ -51,6 +56,7 @@ namespace SR_GTYPES_NS {
         FT_ULong length = 0;
         FT_Load_Sfnt_Table(m_face, tag, 0, nullptr, &length);
         m_isColorEmoji = length > 0;
+    #endif
 
         return Super::Load();
     }
@@ -60,6 +66,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Font::SetPixelSizes(uint32_t w, uint32_t h) {
+    #ifdef SR_USE_FREETYPE
         if (IsColorEmoji()) {
             if (m_face->num_fixed_sizes == 0) {
                 SR_ERROR("Font::SetPixelSizes() : num fixes sizes is zero!");
@@ -87,19 +94,23 @@ namespace SR_GTYPES_NS {
                 return false;
             }
         }
+    #endif
 
         return true;
     }
 
     bool Font::SetCharSize(uint32_t w, uint32_t h, uint32_t wRes, uint32_t hRes) {
+    #ifdef SR_USE_FREETYPE
         if (auto&& err = FT_Set_Char_Size(m_face, w, h, wRes, hRes)) {
             SR_ERROR("Font::SetCharSize() : failed to set char size!\n\tError: " + SRFreeTypeErrToString(err));
             return false;
         }
+    #endif
 
         return true;
     }
 
+#ifdef SR_USE_FREETYPE
     FT_Pos Font::GetKerning(uint32_t leftCharCode, uint32_t rightCharCode) const {
         if (!FT_HAS_KERNING(m_face)) {
             return 0;
@@ -152,4 +163,5 @@ namespace SR_GTYPES_NS {
 
         return glyph;
     }
+#endif
 }

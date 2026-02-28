@@ -10,6 +10,7 @@
 
 #include <Utils/ECS/Component.h>
 #include <Utils/Types/IRawMeshHolder.h>
+#include <Utils/Types/FlatHashMap.h>
 #include <Utils/Common/Subscription.h>
 
 namespace SR_GRAPH_NS {
@@ -56,7 +57,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD uint64_t GetBoneIndex(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD bool IsDebugEnabled() const noexcept { return m_debugEnabled; }
         SR_NODISCARD bool IsDirtyMatrices() const noexcept { return m_dirtyMatrices; }
-        SR_NODISCARD const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& GetOptimizedBones() const noexcept;
+        SR_NODISCARD const SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, uint16_t>& GetOptimizedBones() const noexcept;
         void SetDebugEnabled(bool enabled) { m_debugEnabled = enabled; }
 
         SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;
@@ -76,8 +77,8 @@ namespace SR_ANIMATIONS_NS {
         void OnRawMeshChanged();
 
     private:
-        ska::flat_hash_map<Bone*, uint64_t> m_debugLines;
-        ska::flat_hash_map<SR_UTILS_NS::StringAtom, Bone*> m_bonesByName;
+        SR_HTYPES_NS::FlatHashMap<Bone*, uint64_t> m_debugLines;
+        SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Bone*> m_bonesByName;
 
         SR_UTILS_NS::Subscription m_prepareFrameSubscription;
 

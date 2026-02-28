@@ -113,6 +113,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool TextBuilder::ParseGlyphs(const StringType& text) {
+    #ifdef SR_USE_FREETYPE
         std::optional<uint32_t> prevCode;
 
         /// Позиция текущего символа в формате 26.6
@@ -187,6 +188,10 @@ namespace SR_GRAPH_NS {
         m_imageHeight = bottom - m_top;
 
         return m_imageHeight * m_imageWidth > 0;
+    #else
+        SRHalt("TextBuilder::ParseGlyphs() : FreeType is not supported!");
+        return false;
+    #endif
     }
 
     void TextBuilder::Clear() {

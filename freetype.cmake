@@ -308,7 +308,9 @@ set(BASE_SRCS
         libs/freetype/src/winfonts/winfnt.c
         )
 
-if (UNIX)
+if (EMSCRIPTEN)
+    # nothing
+elseif (UNIX)
     if (ANDROID_NDK)
         list(APPEND BASE_SRCS "libs/freetype/src/base/ftsystem.c")
     else()

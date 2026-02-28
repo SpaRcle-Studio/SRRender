@@ -7,6 +7,8 @@
 
 #include <Graphics/stdInclude.h>
 
+#ifdef SR_USE_FREETYPE
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <freetype/ftglyph.h>
@@ -43,5 +45,9 @@ namespace SR_GRAPH_NS {
 }
 
 #define SRFreeTypeErrToString(err) (FreeTypeErrToString(err))
+
+#else
+    #define SRFreeTypeErrToString(err)
+#endif
 
 #endif //SR_ENGINE_FREETYPE_H

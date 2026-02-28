@@ -373,11 +373,11 @@ namespace SR_ANIMATIONS_NS {
         return m_matrices;
     }
 
-    const ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t>& Skeleton::GetOptimizedBones() const noexcept {
+    const SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, uint16_t>& Skeleton::GetOptimizedBones() const noexcept {
         if (auto&& pRawMesh = m_skeleton.GetRawMesh()) {
             return pRawMesh->GetOptimizedBones();
         }
-        static ska::flat_hash_map<SR_UTILS_NS::StringAtom, uint16_t> defValue;
+        static SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, uint16_t> defValue;
         return defValue;
     }
 
