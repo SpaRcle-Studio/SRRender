@@ -73,6 +73,7 @@ namespace SR_GRAPH_NS {
             int32_t descriptorSetId = SR_ID_INVALID;
         };
 
+        SR_MATH_NS::FVector2 m_resolution;
         bool m_multiFrameSSBOResources = false;
         uint64_t m_totalPixelCount = 0u;
 

@@ -42,7 +42,7 @@ namespace SR_GRAPH_NS {
         /// @property
         bool hdr = true;
         /// @property
-        bool autoExposure = false;
+        bool autoExposure = true;
         /// @property
         bool sRGB = true;
         /// @property

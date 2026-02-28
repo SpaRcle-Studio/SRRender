@@ -42,7 +42,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        // Load compute shaders (reduction HDR->SSBO, reduction SSBO->SSBO, adaptation).
+        // Load compute shaders (reduction HDR -> SSBO, reduction SSBO -> SSBO, adaptation).
         auto loadShader = [](const SR_UTILS_NS::Path& path) -> SR_GTYPES_NS::Shader::Ptr {
             if (auto pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path)) {
                 pShader->AddUsePoint();
@@ -56,7 +56,7 @@ namespace SR_GRAPH_NS {
         m_pReductionLinearShader = loadShader("Engine/Shaders/AutoExposure/reduction_linear.srsl");
         m_pAdaptationShader = loadShader("Engine/Shaders/AutoExposure/adaptation.srsl");
 
-        m_multiFrameSSBOResources = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameSSBOResources", false);
+        m_multiFrameSSBOResources = false; // SR_UTILS_NS::Features::Instance().Enabled("MultiFrameSSBOResources", false);
 
         if (!m_pReductionShader || !m_pReductionLinearShader || !m_pAdaptationShader) {
             return false;
@@ -131,27 +131,13 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        //const auto maxFrames = m_multiFrameSSBOResources ? GetPipeline()->GetSwapchainImagesCount() : 1;
-        //for (uint32_t i = 0; i < maxFrames; ++i) {
-        //    GetPipeline()->UpdateSSBO(m_reductionSSBOA[i], m_emptyData.data(), static_cast<uint32_t>(m_bufferSize));
-        //    GetPipeline()->UpdateSSBO(m_reductionSSBOB[i], m_emptyData.data(), static_cast<uint32_t>(m_bufferSize));
-        //}
-
         if (m_pReductionShader) {
             GetPipeline()->SetCurrentShader(m_pReductionShader.Get());
-
             if (m_uboManager.BindUBO(m_reductionUBOFirst.uboId) == Memory::UBOManager::BindResult::Failed) {
                 SR_ERROR("AutoExposurePass::Update() : failed to bind UBO!");
             }
             else {
-                SR_MATH_NS::FVector2 resolution;
-                if (auto&& pCamera = GetCamera()) {
-                    resolution = pCamera->GetSize().Cast<float_t>();
-                }
-                else {
-                    resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();
-                }
-                m_pReductionShader->SetVec2(Details::ResolutionAtom, resolution);
+                m_pReductionShader->SetVec2(Details::ResolutionAtom, m_resolution);
                 SR_UNUSED_VARIABLE(m_pReductionShader->Flush());
             }
         }
@@ -188,9 +174,6 @@ namespace SR_GRAPH_NS {
         m_dirtyShader = true;
         m_width = size.x;
         m_height = size.y;
-        if (m_width > 0u && m_height > 0u) {
-            AllocateBuffers(m_width, m_height);
-        }
     }
 
     void AutoExposurePass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
@@ -215,7 +198,7 @@ namespace SR_GRAPH_NS {
         uint32_t groupsY = (height + REDUCTION_FIRST_GROUP_Y - 1u) / REDUCTION_FIRST_GROUP_Y;
         uint32_t elementCount = groupsX * groupsY;
 
-        if (elementCount == m_reductionBufferElementCount && !m_reductionSSBOA.empty()) {
+        if (elementCount == m_reductionBufferElementCount && !m_reductionSSBOA.empty() && !m_dirtyShader) {
             return true;
         }
 
@@ -292,15 +275,11 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        GetPipeline()->WriteMemoryBarrier(MemoryBarrierType::ComputeToReadAttachment);
-
         int32_t luminanceSSBO = ReductionLinear();
         if (luminanceSSBO == SR_ID_INVALID) {
             GetPipeline()->EndCompute();
             return false;
         }
-
-        GetPipeline()->WriteMemoryBarrier(MemoryBarrierType::ComputeToReadAttachment);
 
         if (!Adaptation(luminanceSSBO)) {
             GetPipeline()->EndCompute();
@@ -319,21 +298,16 @@ namespace SR_GRAPH_NS {
     bool AutoExposurePass::Render() {
         SR_TRACY_ZONE;
 
-        SR_MATH_NS::FVector2 resolution;
         if (auto&& pCamera = GetCamera()) {
-            resolution = pCamera->GetSize().Cast<float_t>();
+            m_resolution = pCamera->GetSize().Cast<float_t>();
         }
         else {
-            resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();
+            m_resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();
         }
 
-        //for (uint32_t i = 0; i < m_reductionSSBOA.size(); ++i) {
-        //    GetPipeline()->UpdateSSBO(m_reductionSSBOA[i], m_emptyData.data(), static_cast<uint32_t>(m_bufferSize));
-        //    GetPipeline()->UpdateSSBO(m_reductionSSBOB[i], m_emptyData.data(), static_cast<uint32_t>(m_bufferSize));
-        //}
+        const uint32_t w = SR_MAX(static_cast<uint32_t>(m_resolution.x), 1);
+        const uint32_t h = SR_MAX(static_cast<uint32_t>(m_resolution.y), 1);
 
-        const uint32_t w = SR_MAX(static_cast<uint32_t>(resolution.x), 1);
-        const uint32_t h = SR_MAX(static_cast<uint32_t>(resolution.y), 1);
         return DispatchReductionAndAdaptation(w, h);
     }
 
@@ -431,8 +405,8 @@ namespace SR_GRAPH_NS {
 
         m_pReductionLinearShader->UnUse();
 
-        // Final luminance sum is in readSSBO (after swap, the last write was to writeSSBO; we read from the other).
-        return writeSSBO;
+        // After swap, the last-written buffer is now readSSBO.
+        return readSSBO;
     }
 
     bool AutoExposurePass::Adaptation(int32_t luminanceSSBO) {
