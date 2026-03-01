@@ -7,6 +7,8 @@
 
 #if defined(SR_WIN32)
     #include <Graphics/Window/Win32Window.h>
+#elif defined(SR_EMSCRIPTEN)
+    #include <Graphics/Window/EmscriptenWindow.h>
 #elif defined(SR_ANDROID)
     #include <Graphics/Window/AndroidWindow.h>
 #elif defined(SR_LINUX)
@@ -18,6 +20,7 @@
 #include <Utils/Debug.h>
 #include <Utils/Common/CLIManager.h>
 
+#include <Enum/WindowType.hpp>
 #include <Enum/WindowProtocolType.hpp>
 
 namespace SR_GRAPH_NS {
@@ -49,13 +52,23 @@ namespace SR_GRAPH_NS {
         m_drawCallback = callback;
     }
 
-    BasicWindowImpl* BasicWindowImpl::CreatePlatformWindow(BasicWindowImpl::WindowType type) {
+    BasicWindowImpl* BasicWindowImpl::CreatePlatformWindow(WindowType type) {
         if (SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode()) {
             SR_INFO("BasicWindowImpl::CreatePlatformWindow() : running in headless mode!");
             return new HeadlessWindow();
         }
 
-    #if defined(SR_WIN32)
+    #if defined(SR_RENDER_USE_WEBGPU)
+        switch (type) {
+            case WindowType::Auto:
+            case WindowType::Emscripten:
+                return new EmscriptenWindow();
+            default:
+                break;
+        }
+
+        SR_ERROR("BasicWindowImpl::CreatePlatformWindow() : OS Web does not support \"{}\" window!", type);
+    #elif defined(SR_WIN32)
         switch (type) {
             case WindowType::Auto:
             case WindowType::Win32:

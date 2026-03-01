@@ -17,9 +17,10 @@ namespace SR_GRAPH_NS {
         Default, Collapsed, Maximized, FullScreen
     };
 
+    SR_ENUM_NS_CLASS_T(WindowType, uint8_t, Unknown, Auto, Headless, Android, Win32, X11, Wayland, GLFW, SDL, Emscripten);
+
     class BasicWindowImpl : public SR_UTILS_NS::NonCopyable {
     public:
-        SR_ENUM_CLASS_T(WindowType, uint8_t, Unknown, Auto, Headless, Android, Win32, X11, Wayland, GLFW, SDL);
         using Super = SR_UTILS_NS::NonCopyable;
         using ResizeCallback = SR_HTYPES_NS::Function<void(BasicWindowImpl*, int32_t, int32_t)>;
         using MoveCallback = SR_HTYPES_NS::Function<void(BasicWindowImpl*, int32_t, int32_t)>;

@@ -22,8 +22,10 @@
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Types/Skybox.h>
 
-#ifdef SR_USE_VULKAN
+#if defined(SR_USE_VULKAN)
     #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
+#elif defined(SR_EMSCRIPTEN)
+    #include <Graphics/Pipeline/WebGPU/WebGPUPipeline.h>
 #endif
 
 #include <Utils/Common/StoreUtils.h>
@@ -781,9 +783,12 @@ namespace SR_GRAPH_NS {
             m_pipeline = new HeadlessPipeline(GetThis());
         }
         else {
-        #ifdef SR_USE_VULKAN
+        #if defined(SR_USE_VULKAN)
             SR_LOG("RenderContext::PreInit() : creating vulkan pipeline...");
             m_pipeline = new VulkanPipeline(GetThis());
+        #elif defined(SR_EMSCRIPTEN)
+            SR_LOG("RenderContext::PreInit() : creating webgpu pipeline...");
+            m_pipeline = new WebGPUPipeline(GetThis());
         #else
             SR_WARN("RenderContext::PreInit() : no suitable pipeline found for this platform! Falling back to headless pipeline...");
             m_pipeline = new HeadlessPipeline(GetThis());

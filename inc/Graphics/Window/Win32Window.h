@@ -40,7 +40,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_MATH_NS::IVector2 ClientToScreen(const SR_MATH_NS::IVector2& pos) const override;
         SR_NODISCARD SR_MATH_NS::IVector2 ScreenToClient(const SR_MATH_NS::IVector2& pos) const override;
 
-        SR_NODISCARD WindowType GetType() const override { return BasicWindowImpl::WindowType::Win32; }
+        SR_NODISCARD WindowType GetType() const override { return WindowType::Win32; }
         SR_NODISCARD bool IsVisible() const override;
 
         void SwapBuffers() const override;

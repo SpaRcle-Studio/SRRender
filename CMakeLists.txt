@@ -21,6 +21,7 @@ set(FT_DISABLE_HARFBUZZ ON)
 
 option(SR_GRAPHICS_DLL_EXPORTS "" ON)
 option(SR_RENDER_USE_GLSL_LANG_LIB "" ON)
+option(SR_RENDER_USE_NATIVE_WEBGPU "" OFF)
 
 option(SR_RENDER_USE_NATIVE_WAYLAND "" ON)
 option(SR_RENDER_GLFW "" OFF)
@@ -123,6 +124,23 @@ else()
 
     SR_COPY_SHARED_MODULE_TO_EXECUTABLE_FOLDER(Graphics)
     SR_COPY_STATIC_LIBRARY_TO_LIBRARY_FOLDER(Graphics)
+endif()
+
+if (SR_EMSCRIPTEN)
+    add_definitions(-DSR_RENDER_USE_WEBGPU)
+
+    if (SR_RENDER_USE_NATIVE_WEBGPU)
+        include(cmake/InstallWebGPU.cmake)
+        target_include_directories(Graphics PUBLIC ${SR_RENDER_WEB_GPU_LIB_DIR}/include)
+
+        if (SR_HOST_SYSTEM_WINDOWS)
+            target_link_libraries(Graphics PUBLIC ${SR_RENDER_WEB_GPU_LIB_DIR}/lib/webgpu_dawn.lib)
+        else()
+            target_link_libraries(Graphics PUBLIC ${SR_RENDER_WEB_GPU_LIB_DIR}/lib/libwebgpu_dawn.a)
+        endif()
+    else()
+        # included in Emscripten SDK, no need to link anything
+    endif()
 endif()
 
 if (SR_GRAPHICS_DLL_EXPORTS)

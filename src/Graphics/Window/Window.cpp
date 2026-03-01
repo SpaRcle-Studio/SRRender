@@ -29,7 +29,7 @@ namespace SR_GRAPH_NS {
     bool Window::Initialize(const std::string& name, const SR_MATH_NS::UVector2& size) {
         SR_INFO("Window::Initialize() : initializing the window...");
 
-        m_windowImpl = BasicWindowImpl::CreatePlatformWindow(BasicWindowImpl::WindowType::Auto);
+        m_windowImpl = BasicWindowImpl::CreatePlatformWindow(WindowType::Auto);
         if (!m_windowImpl) {
             SR_ERROR("Window::Initialize() : failed to create window implementation!");
             return false;
@@ -43,7 +43,7 @@ namespace SR_GRAPH_NS {
 
     SR_MATH_NS::UVector2 Window::GetSize() const {
         if (!m_windowImpl) {
-            SR_ERROR("Window::GetSize() : window implementation is nullptr.");
+            SRHaltOnce("Window::GetSize() : window implementation is nullptr.");
             return { };
         }
 
@@ -55,10 +55,18 @@ namespace SR_GRAPH_NS {
     }
 
     bool Window::IsWindowFocus() const {
+        if (!m_windowImpl) {
+            SRHaltOnce("Window::IsWindowFocus() : window implementation is nullptr.");
+            return false;
+        }
         return m_windowImpl->IsFocused();
     }
 
     bool Window::IsWindowCollapsed() const {
+        if (!m_windowImpl) {
+            SRHaltOnce("Window::IsWindowCollapsed() : window implementation is nullptr.");
+            return false;
+        }
         return m_windowImpl->IsCollapsed();
     }
 

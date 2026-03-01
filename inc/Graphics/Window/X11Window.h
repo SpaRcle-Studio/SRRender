@@ -23,7 +23,7 @@ namespace SR_GRAPH_NS {
                         const SR_MATH_NS::UVector2& size,
                         bool fullScreen, bool resizable) override;
 
-        SR_NODISCARD WindowType GetType() const override { return BasicWindowImpl::WindowType::X11; }
+        SR_NODISCARD WindowType GetType() const override { return WindowType::X11; }
     public:
         void PollEvents() override;
 

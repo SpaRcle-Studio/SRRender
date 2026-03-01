@@ -5,11 +5,13 @@
     ],
     "exclude": [
         "src/Graphics/Pipeline/Vulkan/X11SurfaceInit.cpp",
+        "src/Graphics/Window/EmscriptenWindow.cpp",
         "src/Graphics/Window/Win32Window.cpp",
         "src/Graphics/Window/X11Window.cpp",
         "src/Graphics/Window/GLFWWindow.cpp",
         "src/Graphics/Window/AndroidWindow.cpp",
         "src/Graphics/Overlay/ImGuiOverlay.cpp",
+        "src/Graphics/Pipeline/WebGPU/WebGPUPipeline.cpp",
         "src/Graphics/Pipeline/Vulkan/VulkanPipeline.cpp",
         "src/Graphics/Pipeline/Vulkan/VulkanMemory.cpp",
         "src/Graphics/Pipeline/Vulkan/VulkanKernel.cpp",

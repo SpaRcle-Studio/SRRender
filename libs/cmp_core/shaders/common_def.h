@@ -408,7 +408,6 @@ typedef CMP_Vec4f  CGV_Vec4f;
 #define CMP_GLOBAL
 
 #define CMP_KERNEL
-#define __local const
 #define __constant const
 #define CMP_CONSTANT const
 #define INLINE inline

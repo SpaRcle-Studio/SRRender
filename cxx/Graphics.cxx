@@ -22,6 +22,14 @@
     #endif
 #endif
 
+#if defined(SR_RENDER_USE_WEBGPU)
+    #include "../src/Graphics/Pipeline/WebGPU/WebGPUPipeline.cpp"
+#endif
+
+#if defined(SR_EMSCRIPTEN)
+    #include "../src/Graphics/Window/EmscriptenWindow.cpp"
+#endif
+
 #if defined(SR_WIN32)
     #include "../src/Graphics/Window/Win32Window.cpp"
 #endif
