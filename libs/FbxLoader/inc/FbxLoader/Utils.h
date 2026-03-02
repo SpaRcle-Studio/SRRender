@@ -2,6 +2,7 @@
 // Created by Monika on 26.07.2021.
 //
 
+/*
 #ifndef FBXLOADER_UTILS_H
 #define FBXLOADER_UTILS_H
 
@@ -327,4 +328,4 @@ namespace FbxLoader::Tools {
 }
 
 #endif //FBXLOADER_UTILS_H
-
+*/

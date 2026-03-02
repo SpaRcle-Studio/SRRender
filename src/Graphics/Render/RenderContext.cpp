@@ -198,23 +198,10 @@ namespace SR_GRAPH_NS {
 
         SR_INFO("RenderContext::Init() : initializing render context...");
 
-        m_activePreset = SR_UTILS_NS::StoreUtils::User::GetString("RenderPreset", "Default");
-
         ReloadGraphicsSettings();
 
+        m_activePreset = SR_UTILS_NS::StoreUtils::User::GetString("RenderPreset", "Default");
         m_isOptimizedUpdateEnabled = SR_UTILS_NS::Features::Instance().Enabled("OptimizedRenderUpdate", true);
-
-        m_renderSettings = RenderSettings::LoadOrCreate<RenderSettings>("Engine/Configs/RenderSettings.sras");
-        if (!m_renderSettings) {
-            SR_ERROR("RenderContext::Init() : failed to load render settings!");
-            return false;
-        }
-        m_renderSettings->AddUsePoint();
-
-        m_onSettingsReloaded = m_renderSettings->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
-            ReloadShaders();
-        });
-
         m_isFrustumCullingEnabled = SR_UTILS_NS::Features::Instance().Enabled("FrustumCulling");
 
         if (!InitPipeline()) {
@@ -654,29 +641,6 @@ namespace SR_GRAPH_NS {
 
         SR_GRAPH("RenderContext::InitPipeline() : initializing the render pipeline...");
 
-        PipelinePreInitInfo pipelinePreInitInfo;
-        pipelinePreInitInfo.appName = m_renderSettings->appName;
-        pipelinePreInitInfo.engineName = m_renderSettings->engineName;
-        pipelinePreInitInfo.samplesCount = SR_UTILS_NS::StoreUtils::User::GetInt("MultiSampling", 64);
-        pipelinePreInitInfo.multisampling = SR_UTILS_NS::Features::Instance().Enabled("Multisampling", true);
-        pipelinePreInitInfo.vsync = false;
-
-        if (pipelinePreInitInfo.samplesCount < 1) {
-            SR_WARN("Engine::InitPipeline() : invalid multisampling count: {}. Set to 1.", pipelinePreInitInfo.samplesCount);
-            pipelinePreInitInfo.samplesCount = 1;
-        }
-
-    #if defined(SR_WIN32)
-        pipelinePreInitInfo.GLSLCompilerPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Utilities/glslc.exe");
-    #elif defined(SR_LINUX)
-        pipelinePreInitInfo.GLSLCompilerPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Utilities/glslc");
-    #endif
-
-        if (!m_pipeline->PreInit(pipelinePreInitInfo)) {
-            SR_ERROR("Engine::InitializeRender() : failed to pre-initialize the pipeline!");
-            return false;
-        }
-
         if (!m_pipeline->Init()) {
             SR_ERROR("Engine::InitializeRender() : failed to initialize the pipeline!");
             return false;
@@ -795,6 +759,43 @@ namespace SR_GRAPH_NS {
         #endif
         }
 
+        SR_LOG("RenderContext::PreInit() : loading render settings...");
+
+        m_renderSettings = RenderSettings::LoadOrCreate<RenderSettings>("Engine/Configs/RenderSettings.sras");
+        if (!m_renderSettings) {
+            SR_ERROR("RenderContext::PreInit() : failed to load render settings!");
+            return false;
+        }
+        m_renderSettings->AddUsePoint();
+        m_onSettingsReloaded = m_renderSettings->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
+            ReloadShaders();
+        });
+
+        SR_LOG("RenderContext::PreInit() : pre-initializing the pipeline...");
+
+        PipelinePreInitInfo pipelinePreInitInfo;
+        pipelinePreInitInfo.appName = m_renderSettings->appName;
+        pipelinePreInitInfo.engineName = m_renderSettings->engineName;
+        pipelinePreInitInfo.samplesCount = SR_UTILS_NS::StoreUtils::User::GetInt("MultiSampling", 64);
+        pipelinePreInitInfo.multisampling = SR_UTILS_NS::Features::Instance().Enabled("Multisampling", true);
+        pipelinePreInitInfo.vsync = false;
+
+        if (pipelinePreInitInfo.samplesCount < 1) {
+            SR_WARN("Engine::PreInit() : invalid multisampling count: {}. Set to 1.", pipelinePreInitInfo.samplesCount);
+            pipelinePreInitInfo.samplesCount = 1;
+        }
+
+    #if defined(SR_WIN32)
+        pipelinePreInitInfo.GLSLCompilerPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Utilities/glslc.exe");
+    #elif defined(SR_LINUX)
+        pipelinePreInitInfo.GLSLCompilerPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Utilities/glslc");
+    #endif
+
+        if (!m_pipeline->PreInit(pipelinePreInitInfo)) {
+            SR_ERROR("Engine::PreInit() : failed to pre-initialize the pipeline!");
+            return false;
+        }
+
         return true;
     }
 
@@ -836,5 +837,9 @@ namespace SR_GRAPH_NS {
         if (needReloadTextures) {
             ReloadTextures();
         }
+    }
+
+    bool RenderContext::IsAsyncEarlyInit() {
+        return m_pipeline && m_pipeline->IsAsyncEarlyInit();
     }
 }

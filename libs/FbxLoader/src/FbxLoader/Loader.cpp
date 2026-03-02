@@ -2,6 +2,7 @@
 // Created by Monika on 26.07.2021.
 //
 
+/*
 #include <FbxLoader/Loader.h>
 #include <FbxLoader/Utils.h>
 #include <FbxLoader/Parser.h>
@@ -439,4 +440,4 @@ FbxLoader::RawModel FbxLoader::Loader::ParseModel(FbxLoader::Parser::Node *node)
 FbxLoader::NodeAttribute FbxLoader::Loader::ParseNodeAttribute(FbxLoader::Parser::Node *node) {
     return FbxLoader::NodeAttribute();
 }
-
+*/

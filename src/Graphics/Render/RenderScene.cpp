@@ -99,7 +99,7 @@ namespace SR_GRAPH_NS {
 
         auto&& pPipeline = GetPipeline();
 
-        if (pPipeline->IsDirty()) {
+        if (pPipeline->IsDirty() || SR_PLATFORM_NS::GetType() == SR_UTILS_NS::PlatformType::Emscripten) {
             pPipeline->SetDirty(false);
             m_dirtyFrames.set();
         }

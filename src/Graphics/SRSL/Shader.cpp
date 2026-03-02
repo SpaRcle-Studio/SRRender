@@ -540,10 +540,6 @@ namespace SR_SRSL_NS {
     bool SRSLShader::Export(ShaderLanguage shaderLanguage) const {
         SR_TRACY_ZONE;
 
-        //if (IsCacheActual(shaderLanguage)) {
-        //    return true;
-        //}
-
         auto&& [result, stages] = GenerateStages(shaderLanguage);
 
         if (result.HasErrors()) {
@@ -564,8 +560,6 @@ namespace SR_SRSL_NS {
                 return false;
             }
         }
-
-        //SR_UTILS_NS::FileSystem::WriteHashToFile(GetCachePath().ConcatExt("hash").ConcatExt(SR_UTILS_NS::EnumReflector::ToStringAtom(shaderLanguage)), GetHash());
 
         return true;
     }

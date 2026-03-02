@@ -137,7 +137,7 @@ namespace SR_GRAPH_NS {
                 font_config.PixelSnapH = true;
                 font_config.MergeMode = false;
 
-                if (SR_PLATFORM_NS::ReadFile(fontPath, fontData)) {
+                if (SR_UTILS_NS::FileSystem::ReadFile(fontPath, fontData)) {
                     ImFontConfig config;
                     config.FontDataOwnedByAtlas = false;
 
@@ -176,7 +176,7 @@ namespace SR_GRAPH_NS {
                 config.GlyphMinAdvanceX = 13.0f;
                 config.FontDataOwnedByAtlas = false;
                 static const ImWchar icon_ranges[] = { SR_ICON_MIN, SR_ICON_MAX, 0 };
-                if (SR_PLATFORM_NS::ReadFile(iconsFont, fontData)) {
+                if (SR_UTILS_NS::FileSystem::ReadFile(iconsFont, fontData)) {
                     m_iconFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_iconFontSize, &config, icon_ranges);
                 }
             }

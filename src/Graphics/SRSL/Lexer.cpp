@@ -14,7 +14,7 @@ namespace SR_SRSL_NS {
         SR_TRACY_ZONE;
 
         std::string buffer;
-        if (!SR_PLATFORM_NS::ReadFile(path, buffer) || buffer.empty()) {
+        if (!SR_UTILS_NS::FileSystem::ReadFile(path, buffer) || buffer.empty()) {
             SR_ERROR("SRSLLexer::Parse() : failed to read file!\n\tPath: {}", path);
             return { };
         }

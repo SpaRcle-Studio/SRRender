@@ -123,7 +123,7 @@ namespace SR_GRAPH_NS {
         }
 
         std::string buffer;
-        if (!SR_PLATFORM_NS::ReadFile(path, buffer)) {
+        if (!SR_UTILS_NS::FileSystem::ReadFile(path, buffer)) {
             SR_ERROR("TextureLoader::Load() : can not read \"" + path.ToStringRef() + "\" file!");
             return nullptr;
         }

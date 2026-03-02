@@ -66,6 +66,8 @@ namespace SR_GRAPH_NS {
         /// Предназначено для инициализации всех структур и классов
         virtual bool PreInit(const PipelinePreInitInfo& info);
 
+        virtual bool IsAsyncEarlyInit() const { return false; }
+
         /// Подключаем окно и настраиваем взаимодействие рендера с ним
         virtual bool Init();
 

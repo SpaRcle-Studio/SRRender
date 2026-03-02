@@ -17,8 +17,13 @@ namespace SR_GRAPH_NS {
         ~WebGPUPipeline() override;
 
         bool PreInit(const PipelinePreInitInfo& info) override;
+        bool IsAsyncEarlyInit() const override;
         bool Init() override;
         bool PostInit() override;
+
+        void DrawFrame() override;
+        void OnFrameBuildBegin() override;
+        void OnFrameBuildEnd() override;
 
         SR_NODISCARD PipelineType GetType() const noexcept override;
 
@@ -33,16 +38,16 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t AllocateCubeMap(const SRCubeMapCreateInfo& createInfo) override;
         SR_NODISCARD int32_t AllocateCmdBuffer() override;
 
-        bool FreeDescriptorSet(int32_t* id) override { *id = SR_ID_INVALID; return true; }
-        bool FreeVBO(int32_t* id) override { *id = SR_ID_INVALID; return true; }
-        bool FreeIBO(int32_t* id) override { *id = SR_ID_INVALID; return true; }
-        bool FreeUBO(int32_t* id) override { *id = SR_ID_INVALID; return true; }
-        bool FreeFBO(int32_t* id) override { *id = SR_ID_INVALID; return true; }
-        bool FreeSSBO(int32_t* id) override { *id = SR_ID_INVALID; return true; }
-        bool FreeCubeMap(int32_t* id) override { *id = SR_ID_INVALID; return true; }
-        bool FreeShader(int32_t* id) override { *id = SR_ID_INVALID; return true; }
-        bool FreeTexture(int32_t* id) override { *id = SR_ID_INVALID; return true; }
-        bool FreeCmdBuffer(int32_t* id) override { *id = SR_ID_INVALID; return true; }
+        bool FreeDescriptorSet(int32_t* id) override;
+        bool FreeVBO(int32_t* id) override;
+        bool FreeIBO(int32_t* id) override;
+        bool FreeUBO(int32_t* id) override;
+        bool FreeFBO(int32_t* id) override;
+        bool FreeSSBO(int32_t* id) override;
+        bool FreeCubeMap(int32_t* id) override;
+        bool FreeShader(int32_t* id) override;
+        bool FreeTexture(int32_t* id) override;
+        bool FreeCmdBuffer(int32_t* id) override;
 
         void GetFBOHandles(std::vector<void*>& handles) const override;
         void GetShaderHandles(std::vector<void*>& handles) const override;
@@ -53,6 +58,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD void* GetCurrentFBOHandle() const override { return reinterpret_cast<void*>(1); }
 
         SR_NODISCARD uint16_t GetSwapchainImagesCount() const override { return 1; }
+        SR_NODISCARD uint8_t GetCurrentImageIndex() const override { return 0; }
 
     private:
         WebGPUPipelineInternalData* m_internalData = nullptr;

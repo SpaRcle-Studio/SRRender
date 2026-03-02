@@ -77,6 +77,7 @@ namespace SR_GRAPH_NS {
         bool Update() noexcept;
 
         bool PreInit();
+        bool IsAsyncEarlyInit();
         bool Init();
         void Close();
 
