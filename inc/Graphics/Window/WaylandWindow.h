@@ -6,7 +6,6 @@
 #define SR_ENGINE_GRAPHICS_WAYLAND_WINDOW_H
 
 #ifdef SR_RENDER_USE_NATIVE_WAYLAND
-
     #include <Graphics/Window/BasicWindowImpl.h>
 
     #include <Utils/Math/Rect.h>
@@ -205,8 +204,7 @@ namespace SR_GRAPH_NS {
         wp_fractional_scale_v1* m_fractionalScale = nullptr;
 
         xkb_context* m_xkbContext = nullptr;
-        xkb_keymap* m_pXkbKeymap = nullptr;
-        xkb_state* m_pXkbState = nullptr;
+        xkb_keymap* m_pXkbKeymap = nullptr; xkb_state* m_pXkbState = nullptr;
 
         std::vector<Output> m_outputs;
         std::set<wl_output*> m_enteredOutputs;
