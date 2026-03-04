@@ -1557,7 +1557,7 @@ namespace SR_GRAPH_NS {
 
                 // Compile the shader
                 std::string shaderSourceStr;
-                if (SR_UTILS_NS::FileSystem::ReadFile(input, shaderSourceStr)) {
+                if (!SR_UTILS_NS::FileSystem::ReadFile(input, shaderSourceStr)) {
                     SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to read shader file: {}", input);
                     return {};
                 }
