@@ -19,7 +19,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD TextureFilter GetFilter() const noexcept { return filter; }
         SR_NODISCARD TextureCompression GetCompression() const noexcept { return compression; }
         SR_NODISCARD uint32_t GetMipLevels() const noexcept { return mipLevels; }
-        SR_NODISCARD SR_UTILS_NS::BoolExt GetAlpha() const noexcept { return alpha; }
         SR_NODISCARD bool GetCpuUsage() const noexcept { return cpuUsage; }
         SR_NODISCARD float_t GetPixelsPerUnit() const noexcept { return m_pixelsPerUnit; }
         SR_NODISCARD const SR_MATH_NS::FRect& GetBorder() const noexcept { return m_border; }
@@ -36,7 +35,6 @@ namespace SR_GRAPH_NS {
                    && mipLevels == lrs.mipLevels
                    && m_border == lrs.m_border
                    && SR_EQUALS_T(m_pixelsPerUnit, lrs.m_pixelsPerUnit, SR_SCALAR_EPSILON)
-                   && alpha == lrs.alpha
                    && cpuUsage == lrs.cpuUsage;
         }
 
@@ -57,8 +55,6 @@ namespace SR_GRAPH_NS {
         AddressMode addressMode = AddressMode::Repeat;
         /// @property
         TextureCompression compression = TextureCompression::None;
-        /// @property
-        SR_UTILS_NS::BoolExt alpha = SR_UTILS_NS::BoolExt::None;
         /// @property
         float_t m_pixelsPerUnit = 100.f;
         /// @property

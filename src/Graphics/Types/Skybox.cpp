@@ -279,7 +279,7 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         auto&& path = GetResourcePath();
-        auto&& folder = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path.GetWithoutExtension());
+        auto&& folder = SR_UTILS_NS::Path(path.GetWithoutExtension());
 
         SR_LOG("Skybox::Load() : loading \"" + path.ToString() + "\" skybox...");
 
@@ -292,11 +292,15 @@ namespace SR_GTYPES_NS {
 
         uint32_t width = 0;
         uint32_t height = 0;
-        uint32_t channels = 0;
 
         for (uint8_t i = 0; i < 6; ++i) {
             auto&& file = folder.Concat(files[i]).ConcatExt(path.GetExtension());
-            auto&& pTextureData = TextureLoader::Load(file);
+
+            TextureLoadInfo info;
+            info.mips = 1;
+            info.format = ImageFormat::RGBA8_UNORM;
+
+            auto&& pTextureData = TextureLoader::Load(file, info);
 
             if (!pTextureData) {
                 SR_ERROR("Skybox::Load() : failed to load skybox texture!\n\tPath: " + file.ToString());
@@ -306,9 +310,8 @@ namespace SR_GTYPES_NS {
             if (i == 0) {
                 width = pTextureData->GetWidth();
                 height = pTextureData->GetHeight();
-                channels = pTextureData->GetChannels();
             }
-            else if (pTextureData->GetWidth() != width || pTextureData->GetHeight() != height || channels != pTextureData->GetChannels()) {
+            else if (pTextureData->GetWidth() != width || pTextureData->GetHeight() != height) {
                 SR_WARN("Skybox::Load() : \"" + path.ToString() + "\" skybox has different sizes!");
             }
 

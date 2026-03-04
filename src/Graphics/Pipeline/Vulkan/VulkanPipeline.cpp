@@ -759,37 +759,40 @@ namespace SR_GRAPH_NS {
         if (textureCreateInfo.compression != TextureCompression::None) {
             vkFormat = VulkanTools::AbstractTextureCompToVkFormat(textureCreateInfo.compression, vkFormat);
             if (vkFormat == VK_FORMAT_MAX_ENUM) {
-                PipelineError("VulkanPipeline::AllocateTexture() : unsupported format with compression!");
+                SRHalt("VulkanPipeline::AllocateTexture() : unsupported format with compression!");
                 return SR_ID_INVALID;
             }
-
-            if (auto&& size = MakeGoodSizes(textureCreateInfo.width, textureCreateInfo.height); size != std::pair(textureCreateInfo.width, textureCreateInfo.height)) {
-                textureCreateInfo.pData = ResizeToLess(textureCreateInfo.width, textureCreateInfo.height, size.first, size.second, textureCreateInfo.pData);
-                textureCreateInfo.width = size.first;
-                textureCreateInfo.height = size.second;
-            }
-
-            if (textureCreateInfo.pData == nullptr || textureCreateInfo.width == 0 || textureCreateInfo.height == 0) {
-                PipelineError("VulkanPipeline::AllocateTexture() : failed to reconstruct image!");
-                return SR_ID_INVALID;
-            }
-
-            SR_LOG("VulkanPipeline::CalculateTexture() : compress " + SR_UTILS_NS::ToString(textureCreateInfo.width * textureCreateInfo.height * 4 / 1024 / 1024) + "MB source image...");
-
-            textureCreateInfo.pData = Graphics::Compress(textureCreateInfo.width, textureCreateInfo.height, textureCreateInfo.pData, textureCreateInfo.compression);
-            if (textureCreateInfo.pData == nullptr) {
-                PipelineError("VulkanPipeline::AllocateTexture() : failed to compress image!");
-                return SR_ID_INVALID;
-            }
+            //textureCreateInfo.mipLevels = 1; /// Компрессия не поддерживает мипмаппинг, так что принудительно устанавливаем количество уровней в 1
         }
 
-        const auto pixelSize = GetPixelSize(textureCreateInfo.format);
-        if (pixelSize == 0) {
-            PipelineError("VulkanPipeline::AllocateTexture() : unknown pixel size!");
-            return SR_ID_INVALID;
-        }
+        m_state.allocatedMemory += textureCreateInfo.imageSize;
 
-        m_state.allocatedMemory += pixelSize * textureCreateInfo.width * textureCreateInfo.height;
+        //if (textureCreateInfo.compression != TextureCompression::None) {
+        //    vkFormat = VulkanTools::AbstractTextureCompToVkFormat(textureCreateInfo.compression, vkFormat);
+        //    if (vkFormat == VK_FORMAT_MAX_ENUM) {
+        //        PipelineError("VulkanPipeline::AllocateTexture() : unsupported format with compression!");
+        //        return SR_ID_INVALID;
+        //    }
+
+        //    if (auto&& size = MakeGoodSizes(textureCreateInfo.width, textureCreateInfo.height); size != std::pair(textureCreateInfo.width, textureCreateInfo.height)) {
+        //        textureCreateInfo.pData = ResizeToLess(textureCreateInfo.width, textureCreateInfo.height, size.first, size.second, textureCreateInfo.pData);
+        //        textureCreateInfo.width = size.first;
+        //        textureCreateInfo.height = size.second;
+        //    }
+
+        //    if (textureCreateInfo.pData == nullptr || textureCreateInfo.width == 0 || textureCreateInfo.height == 0) {
+        //        PipelineError("VulkanPipeline::AllocateTexture() : failed to reconstruct image!");
+        //        return SR_ID_INVALID;
+        //    }
+
+        //    SR_LOG("VulkanPipeline::CalculateTexture() : compress " + SR_UTILS_NS::ToString(textureCreateInfo.width * textureCreateInfo.height * 4 / 1024 / 1024) + "MB source image...");
+
+        //    textureCreateInfo.pData = Graphics::Compress(textureCreateInfo.width, textureCreateInfo.height, textureCreateInfo.pData, textureCreateInfo.compression);
+        //    if (textureCreateInfo.pData == nullptr) {
+        //        PipelineError("VulkanPipeline::AllocateTexture() : failed to compress image!");
+        //        return SR_ID_INVALID;
+        //    }
+        //}
 
         const VkSamplerAddressMode addressMode = VulkanTools::AbstractAddressModeToVkAddressMode(textureCreateInfo.addressMode);
         if (addressMode == VK_SAMPLER_ADDRESS_MODE_MAX_ENUM) {
@@ -797,15 +800,11 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        auto&& id = m_memory->AllocateTexture(
-            textureCreateInfo.pData, textureCreateInfo.width, textureCreateInfo.height, vkFormat, addressMode,
-            VulkanTools::AbstractTextureFilterToVkFilter(textureCreateInfo.filter),
-            textureCreateInfo.compression, textureCreateInfo.mipLevels, textureCreateInfo.cpuUsage
-        );
+        auto&& id = m_memory->AllocateTexture(textureCreateInfo, vkFormat, addressMode, VulkanTools::AbstractTextureFilterToVkFilter(textureCreateInfo.filter));
 
-        if (textureCreateInfo.compression != TextureCompression::None) {
-            SRFree(const_cast<uint8_t*>(textureCreateInfo.pData)); /// Free compressed data. Original data isn't will be free.
-        }
+        //if (textureCreateInfo.compression != TextureCompression::None) {
+        //    SRFree(const_cast<uint8_t*>(textureCreateInfo.pData)); /// Free compressed data. Original data isn't will be free.
+        //}
 
         if (id < 0) {
             PipelineError("VulkanPipeline::AllocateTexture() : failed to allocate texture!");

@@ -71,29 +71,66 @@ namespace SR_GTYPES_NS {
 
         SetImageMetaInfoInternal(metaInfo);
 
+        RegisterGraphicsResource();
+
+        const bool compressionEnabled = GetRenderContext()->IsTextureCompressionEnabled();
+        const TextureCompression compression = compressionEnabled ? metaInfo.compression : TextureCompression::None;
+
+        TextureLoadInfo loadInfo;
+        loadInfo.compression = compression;
+        loadInfo.format = metaInfo.format;
+        loadInfo.mips = metaInfo.mipLevels;
+
+        if (loadInfo.format == ImageFormat::Auto) {
+            const bool srbgEnabled = GetRenderContext()->IsSrgbEnabled();
+            switch (m_activeImageMetaInfo.imageType) {
+                case ImageType::Albedo:
+                    if (srbgEnabled) {
+                        loadInfo.format = ImageFormat::RGBA8_SRGB;
+                    }
+                    else {
+                        loadInfo.format = ImageFormat::RGBA8_UNORM;
+                    }
+                    break;
+                case ImageType::Normal: loadInfo.format = ImageFormat::RG8_UNORM; break;
+                case ImageType::Roughness: loadInfo.format = ImageFormat::RGBA8_UNORM; break;
+                case ImageType::Metallic: loadInfo.format = ImageFormat::R8_UNORM; break;
+                case ImageType::AmbientOcclusion: loadInfo.format = ImageFormat::R8_UNORM; break;
+                case ImageType::Emissive: loadInfo.format = ImageFormat::RGBA8_UNORM; break;
+                case ImageType::Height: loadInfo.format = ImageFormat::R16_UNORM; break;
+                default:
+                    SRHalt("Texture::Load() : unsupported image type for auto format! Image type: {}", m_activeImageMetaInfo.imageType);
+                    break;
+            }
+        }
+
+        if (!IsTextureSupportsFormat(loadInfo.format) && loadInfo.format != ImageFormat::Auto && loadInfo.format != ImageFormat::Unknown) {
+            SR_WARN("Texture::Load() : the texture format {} is not supported! Falling back to Auto format.", loadInfo.format);
+            loadInfo.format = ImageFormat::Auto;
+        }
+
+        if (loadInfo.format == ImageFormat::Auto || loadInfo.format == ImageFormat::Unknown) {
+            loadInfo.format = ImageFormat::RGBA8_UNORM;
+        }
+
         if (metaInfo.loadMode == SR_UTILS_NS::ResourceLoadMode::Async) {
-            RegisterGraphicsResource();
-            m_asyncLoading = true;
-            m_syncLoadTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pWeak = GetWeakThis<Texture>(), fullPath]() {
+            m_syncLoadTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([loadInfo, pWeak = GetWeakThis<Texture>(), path = GetResourcePath()]() {
                 SR_TRACY_ZONE_N("Texture::LoadAsync");
-                SR_TRACY_ZONE_TEXT(fullPath);
+                SR_TRACY_ZONE_TEXT(path);
                 if (auto&& pStrong = pWeak.Lock()) {
-                    pStrong->OnAsyncLoaded(TextureLoader::Load(fullPath));
+                    pStrong->OnAsyncLoaded(TextureLoader::Load(path, loadInfo));
                 }
-            });
+            }, SR_UTILS_NS::TaskPriority::Normal);
         }
         else {
-            m_asyncLoading = false;
-            m_textureData = TextureLoader::Load(fullPath);
+            m_textureData = TextureLoader::Load(GetResourcePath(), loadInfo);
             if (!m_textureData) {
                 SR_ERROR("Texture::Load() : failed to load texture!");
                 hasErrors |= true;
             }
         }
 
-        if (auto&& pRenderContext = GetRenderContext()) {
-            pRenderContext->SetDirty();
-        }
+        GetRenderContext()->SetDirty();
 
         return !hasErrors;
     }
@@ -107,7 +144,7 @@ namespace SR_GTYPES_NS {
 
         SR_TRACY_ZONE_TEXT(GetResourceId());
 
-        if (m_asyncLoading) {
+        if (m_syncLoadTaskId) {
             SRHalt("Texture::Calculate() : the texture is still loading asynchronously!");
             return false;
         }
@@ -132,60 +169,21 @@ namespace SR_GTYPES_NS {
             SRVerifyFalse(!GetPipeline()->FreeTexture(&m_id));
         }
 
-    #ifdef SR_USE_VULKAN
-        EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
-    #endif
-
         SRTextureCreateInfo createInfo;
+        createInfo.imageSize = m_textureData->GetNumberOfBytes();
         createInfo.pData = m_textureData->GetData();
         createInfo.width = m_textureData->GetWidth();
         createInfo.height = m_textureData->GetHeight();
-        createInfo.compression = m_activeImageMetaInfo.compression;
-        createInfo.cpuUsage = m_activeImageMetaInfo.cpuUsage;
-        createInfo.alpha = m_activeImageMetaInfo.alpha == SR_UTILS_NS::BoolExt::None;
-        createInfo.format = m_activeImageMetaInfo.format;
-        createInfo.mipLevels = m_activeImageMetaInfo.mipLevels;
+        createInfo.compression = m_textureData->GetInfo().compression;
+        createInfo.format = m_textureData->GetInfo().format;
+        createInfo.mipLevels = m_textureData->GetInfo().mips;
         createInfo.filter = m_activeImageMetaInfo.filter;
         createInfo.addressMode = m_activeImageMetaInfo.addressMode;
+        createInfo.cpuUsage = m_activeImageMetaInfo.cpuUsage;
 
-        if (m_activeImageMetaInfo.format == ImageFormat::Auto) {
-            //const bool hasAlpha = (m_activeImageMetaInfo.alpha == SR_UTILS_NS::BoolExt::None || m_activeImageMetaInfo.alpha == SR_UTILS_NS::BoolExt::True) && m_textureData->GetChannels() == 4;
-            constexpr bool hasAlpha = true;
-            const bool srbgEnabled = GetRenderContext()->IsSrgbEnabled();
-            switch (m_activeImageMetaInfo.imageType) {
-                case ImageType::Albedo:
-                    if (srbgEnabled) {
-                        createInfo.format = hasAlpha ? ImageFormat::RGBA8_SRGB : ImageFormat::RGB8_SRGB;
-                    }
-                    else {
-                        createInfo.format = hasAlpha ? ImageFormat::RGBA8_UNORM : ImageFormat::RGB8_UNORM;
-                    }
-                    break;
-                case ImageType::Normal: createInfo.format = hasAlpha ? ImageFormat::RGBA8_UNORM : ImageFormat::RGB8_UNORM; break;
-                case ImageType::Roughness: createInfo.format = hasAlpha ? ImageFormat::RGBA8_UNORM : ImageFormat::RGB8_UNORM; break;
-                case ImageType::Metallic: createInfo.format = ImageFormat::R8_UNORM; break;
-                case ImageType::AmbientOcclusion: createInfo.format = ImageFormat::R8_UNORM; break;
-                case ImageType::Emissive: createInfo.format = hasAlpha ? ImageFormat::RGBA8_UNORM : ImageFormat::RGB8_UNORM; break;
-                case ImageType::Height: createInfo.format = ImageFormat::R16_UNORM; break;
-                default:
-                    SRHalt("Texture::Calculate() : unsupported image type for auto format! Image type: {}", m_activeImageMetaInfo.imageType);
-                    break;
-            }
-        }
-
-        if (!IsTextureSupportsFormat(createInfo.format) && createInfo.format != ImageFormat::Auto && createInfo.format != ImageFormat::Unknown) {
-            SR_WARN("Texture::Calculate() : the texture format {} is not supported! Falling back to Auto format.", createInfo.format);
-            createInfo.format = ImageFormat::Auto;
-        }
-
-        if (createInfo.format == ImageFormat::Auto || createInfo.format == ImageFormat::Unknown) {
-            if (m_textureData->GetChannels() == 4) {
-                createInfo.format = ImageFormat::RGBA8_UNORM;
-            }
-            else {
-                createInfo.format = ImageFormat::RGB8_UNORM;
-            }
-        }
+    #ifdef SR_USE_VULKAN
+        EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
+    #endif
 
         m_id = GetPipeline()->AllocateTexture(createInfo);
 
@@ -242,13 +240,7 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        auto alpha = m_imageMetaInfo.alpha;
         m_imageMetaInfo = meta;
-
-        // TODO: to refactoring
-        if (alpha != SR_UTILS_NS::BoolExt::None) {
-            m_imageMetaInfo.alpha = alpha;
-        }
     }
 
     int32_t Texture::GetId() noexcept {
@@ -310,9 +302,9 @@ namespace SR_GTYPES_NS {
 
     void Texture::FreeTextureData() {
         SR_TRACY_ZONE;
-        if (m_asyncLoading) {
+        if (m_syncLoadTaskId) {
             SR_INFO("Texture::FreeTextureData() : the texture is still loading asynchronously! Waiting for the loading to finish...");
-            while (SR_UTILS_NS::TaskManager::Instance().IsActive(m_syncLoadTaskId)) {
+            while (SR_UTILS_NS::TaskManager::Instance().IsActive(*m_syncLoadTaskId)) {
                 SR_PLATFORM_NS::Sleep(5);
             }
         }
@@ -320,7 +312,7 @@ namespace SR_GTYPES_NS {
     }
 
     uint32_t Texture::GetWidth() const noexcept {
-        if (m_asyncLoading) {
+        if (m_syncLoadTaskId) {
             SRHalt("Texture::GetWidth() : the texture is still loading asynchronously!");
             return 0;
         }
@@ -328,9 +320,7 @@ namespace SR_GTYPES_NS {
     }
 
     uint32_t Texture::GetHeight() const noexcept {
-        if (m_asyncLoading) {
-            //const_cast<Texture&>(*this).RegisterGraphicsResource();
-            //GetRenderContext()->GetDefaultTexture()->
+        if (m_syncLoadTaskId) {
             SRHalt("Texture::GetHeight() : the texture is still loading asynchronously!");
             return 0;
         }
@@ -338,7 +328,7 @@ namespace SR_GTYPES_NS {
     }
 
     uint32_t Texture::GetChannels() const noexcept {
-        if (m_asyncLoading) {
+        if (m_syncLoadTaskId) {
             SRHalt("Texture::GetChannels() : the texture is still loading asynchronously!");
             return 0;
         }
@@ -348,11 +338,11 @@ namespace SR_GTYPES_NS {
     void Texture::PrepareFrame() {
         SR_TRACY_ZONE;
 
-        if (m_asyncLoading) {
-            if (SR_UTILS_NS::TaskManager::Instance().IsActive(m_syncLoadTaskId)) {
+        if (m_syncLoadTaskId) {
+            if (SR_UTILS_NS::TaskManager::Instance().IsActive(*m_syncLoadTaskId)) {
                 return;
             }
-            m_asyncLoading = false;
+            m_syncLoadTaskId = std::nullopt;
         }
         else if (m_imageMetaInfo == m_activeImageMetaInfo) {
             return;
@@ -384,7 +374,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Texture::CanBeUsed() const {
-        if (m_asyncLoading) {
+        if (m_syncLoadTaskId) {
             return false;
         }
 

@@ -122,6 +122,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD ActiveGraphicsSettings& GetActiveGraphicsSettings() noexcept { return m_activeGraphicsSettings; }
         SR_NODISCARD SR_UTILS_NS::StringAtom GetActivePreset() const noexcept { return m_activePreset; }
         SR_NODISCARD bool IsSrgbEnabled() const noexcept { return m_activeGraphicsSettings.sRGB; }
+        SR_NODISCARD bool IsTextureCompressionEnabled() const noexcept { return m_activeGraphicsSettings.textureCompression; }
 
         void SetActivePreset(SR_UTILS_NS::StringAtom name);
         void SetGraphicsSettings(const ActiveGraphicsSettings& settings, bool reload = true);

@@ -42,6 +42,7 @@ namespace SR_GRAPH_NS {
         AddressMode addressMode = AddressMode::Repeat;
         uint32_t width = 0;
         uint32_t height = 0;
+        uint64_t imageSize = 0;
         uint8_t mipLevels = 0;
         bool alpha = false;
         bool cpuUsage = false;

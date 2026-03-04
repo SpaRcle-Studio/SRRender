@@ -319,22 +319,20 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     int32_t MemoryManager::AllocateTexture(
-        const uint8_t *pixels, uint32_t w, uint32_t h,
+        SRTextureCreateInfo createInfo,
         VkFormat format,
         VkSamplerAddressMode addressMode,
-        VkFilter filter,
-        SR_GRAPH_NS::TextureCompression /*compression*/,
-        uint8_t mipLevels,
-        bool cpuUsage)
+        VkFilter filter)
     {
         SR_TRACY_ZONE;
 
         EvoVulkan::Types::TextureLoadInfo info;
-        info.width = w;
-        info.height = h;
+        info.width = createInfo.width;
+        info.height = createInfo.height;
         info.format = format;
-        info.mipLevels = mipLevels;
-        info.cpuUsage = cpuUsage;
+        info.mipLevels = createInfo.mipLevels;
+        info.imageSize = createInfo.imageSize;
+        info.cpuUsage = createInfo.cpuUsage;
         info.filter = filter;
         info.addressMode = addressMode;
         info.pPool = m_pool;
@@ -345,14 +343,14 @@ namespace SR_GRAPH_NS::VulkanTools {
 
         EvoVulkan::Types::Texture* pTexture = nullptr;
 
-        if (mipLevels == 0) {
-            pTexture = EvoVulkan::Types::Texture::LoadAutoMip(info, pixels);
+        if (createInfo.mipLevels == 0) {
+            pTexture = EvoVulkan::Types::Texture::LoadAutoMip(info, createInfo.pData);
         }
-        else if (mipLevels == 1) {
-            pTexture = EvoVulkan::Types::Texture::LoadWithoutMip(info, pixels);
+        else if (createInfo.mipLevels == 1) {
+            pTexture = EvoVulkan::Types::Texture::LoadWithoutMip(info, createInfo.pData);
         }
         else {
-            pTexture = EvoVulkan::Types::Texture::Load(info, pixels);
+            pTexture = EvoVulkan::Types::Texture::Load(info, createInfo.pData);
         }
 
         if (!pTexture) {

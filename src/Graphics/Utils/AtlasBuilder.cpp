@@ -58,7 +58,7 @@ namespace SR_GRAPH_NS {
         m_sprites.reserve(files.size());
 
         for (auto&& filePath : files) {
-            auto&& sprite = SR_GRAPH_NS::TextureData::Load(filePath);
+            TextureData::Ptr sprite = nullptr; //SR_GRAPH_NS::TextureLoader::Load(filePath, TextureCompression::None, 1);
 
             if (!sprite) {
                 continue;
@@ -159,9 +159,9 @@ namespace SR_GRAPH_NS {
         }
 
         // Create the atlas texture
-        m_atlas = TextureData::Create(totalWidth, totalHeight, pGeneralData, [](uint8_t* pData) {
-            delete[] pData;
-        });
+        //m_atlas = TextureData::Create(totalWidth, totalHeight, pGeneralData, [](uint8_t* pData) {
+        //    delete[] pData;
+        //});
 
         // Save the atlas
         if (!Save()) {

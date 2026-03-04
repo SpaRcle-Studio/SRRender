@@ -346,7 +346,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (!m_pool) {
-            m_pool = EvoVulkan::Types::DescriptorPool::Create(*m_device, 1000 * POOL_SIZES.size(), POOL_SIZES);
+            m_pool = EvoVulkan::Types::DescriptorPool::Create(m_device, 1000 * POOL_SIZES.size(), POOL_SIZES);
         }
 
         if (!m_pool) {

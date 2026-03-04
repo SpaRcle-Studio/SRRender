@@ -9,142 +9,193 @@
 
 #include <Utils/Common/StringUtils.h>
 #include <Utils/Common/ToString.h>
+#include <Utils/TaskManager/TaskManager.h>
 #include <Utils/Debug.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Types/Marshal.h>
 #include <Utils/FileSystem/FileSystem.h>
+#include <Utils/Common/CLIManager.h>
+
+#include <Enum/TextureCompression.hpp>
+#include <Enum/ImageFormat.hpp>
 
 #include <stbi/stb_image.c> /// NOLINT
 #include <stbi/stbi_image_write.c> /// NOLINT
 
 namespace SR_GRAPH_NS {
-    TextureData::TextureData(uint32_t width, uint32_t height, uint8_t channels, uint8_t* data, ImageLoadFormat format)
+    TextureData::TextureData()
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
-        , m_width(width)
-        , m_height(height)
-        , m_channels(channels)
-        , m_data(data)
-        , m_format(format)
     { }
 
     TextureData::~TextureData() {
         m_deleter(m_data);
     }
 
-    TextureData::Ptr TextureData::Load(const SR_UTILS_NS::Path& path, ImageLoadFormat format) {
-        int32_t stbiFormat = 0;
-        switch(format) {
-            case ImageLoadFormat::Grey: stbiFormat = STBI_grey; break;
-            case ImageLoadFormat::GreyAlpha: stbiFormat = STBI_grey_alpha; break;
-            case ImageLoadFormat::RGB: stbiFormat = STBI_rgb; break;
-            case ImageLoadFormat::RGBA: stbiFormat = STBI_rgb_alpha; break;
-            default: SRHalt("TextureData::Load() : wrong load format."); return nullptr;
+    uint32_t TextureData::GetNumberOfBytes() const {
+        if (!m_data) {
+            SRHalt("TextureData::GetNumberOfBytes() : m_data is not null!");
+            return 0;
         }
 
-        int width = 0, height = 0, channels = 0;
-        uint8_t* imageData = stbi_load(path.CStr(), &width, &height, &channels, stbiFormat);
-
-        if (!imageData) {
-            auto&& reason = stbi_failure_reason() ? stbi_failure_reason() : std::string();
-            SR_ERROR("TextureData::Load() : cannot load texture by path \"" + path.ToString() + "\".\n\tReason: " + reason);
-            return nullptr;
+        if (m_info.compression != TextureCompression::None) {
+            return GetCompressedImageSize(m_width, m_height, m_info);
         }
 
-        auto&& pTextureData = new TextureData(width, height, channels, imageData, format);
-        pTextureData->m_path = path;
-        pTextureData->m_deleter = [](uint8_t* pData) {
-            if (!TextureLoader::Free(pData)) {
-                SR_ERROR("TextureData::Load() : failed to free pData.");
-            }
-        };
+        const uint32_t bytesPerPixel = TextureLoader::GetAlignedChannels(m_info.format);
+        if (bytesPerPixel == 0) {
+            SRHalt("TextureData::GetNumberOfBytes() : wrong format! Format: {}, path: {}", m_info.format, m_path);
+            return 0;
+        }
 
-        return pTextureData;
+        return m_width * m_height * bytesPerPixel;
     }
 
-    TextureData::Ptr TextureData::Create(uint32_t width, uint32_t height, uint8_t* pData, DeleterFn&& deleter, ImageLoadFormat format) {
+    TextureData::Ptr TextureData::Create(uint32_t width, uint32_t height, uint8_t* pData, DeleterFn&& deleter, TextureLoadInfo info) {
         SR_TRACY_ZONE;
-
-        uint8_t channels = 0;
-        switch(format) {
-            case ImageLoadFormat::Grey: channels = 1; break;
-            case ImageLoadFormat::GreyAlpha: channels = 2; break;
-            case ImageLoadFormat::RGB: channels = 3; break;
-            case ImageLoadFormat::RGBA: channels = 4; break;
-            default: SRHalt("TextureData::Create() : wrong load format."); return nullptr;
-        }
-
-        auto&& pTextureData = new TextureData(width, height, channels, pData, format);
+        TextureData::Ptr pTextureData = new TextureData();
+        pTextureData->m_width = width;
+        pTextureData->m_height = height;
+        pTextureData->m_data = pData;
+        pTextureData->m_info = info;
         pTextureData->m_deleter = std::move(deleter);
-
         return pTextureData;
     }
 
     bool TextureData::Save(const SR_UTILS_NS::Path& path) const {
-        if (!path.Create()) {
-            SR_ERROR("TextureData::Save() : failed to create path! \nPath: \"" + path.GetFolder().ToString() + "\".");
-            return false;
-        }
+        //if (!path.Create()) {
+        //    SR_ERROR("TextureData::Save() : failed to create path! \nPath: \"" + path.GetFolder().ToString() + "\".");
+        //    return false;
+        //}
 
-        if (path.GetExtensionView() == "png") {
-            return stbi_write_png(path.CStr(), m_width, m_height, m_channels, m_data, m_width * m_channels);
-        }
+        //if (path.GetExtensionView() == "png") {
+        //    return stbi_write_png(path.CStr(), m_width, m_height, m_channels, m_data, m_width * m_channels);
+        //}
 
-        SR_ERROR("TextureData::Save() : extension is not supported! \nPath: \"" + path.ToString() + "\".");
+        //SR_ERROR("TextureData::Save() : extension is not supported! \nPath: \"" + path.ToString() + "\".");
+        SRHalt("TextureData::Save() : not implemented yet!");
         return false;
     }
 
+    uint8_t TextureData::GetChannels() const {
+        return TextureLoader::GetAlignedChannels(m_info.format);
+    }
 
-    TextureData::Ptr TextureLoader::Load(const SR_UTILS_NS::Path& path) {
+    TextureData::Ptr TextureLoader::Load(const SR_UTILS_NS::Path& path, TextureLoadInfo info) {
         SR_TRACY_ZONE;
         SR_TRACY_ZONE_TEXT(path);
 
-        bool cacheEnabled = SR_UTILS_NS::Features::Instance().Enabled("TextureCaching", true);
-        cacheEnabled &= !SR_PLATFORM_NS::IsMobilePlatform(); /// временно отключено
+        const bool cacheEnabled = SR_UTILS_NS::Features::Instance().Enabled("TextureCaching", true);
+        const bool compressionEnabled = SR_UTILS_NS::Features::Instance().Enabled("TextureCompression", true);
+
+        auto&& resPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath();
+        SR_UTILS_NS::Path fullPath = resPath.Concat(path);
+        SR_UTILS_NS::Path compressedTexturePath = resPath.Concat(SR_UTILS_NS::Path("Packed").Concat(path).ConcatExt(SR_UTILS_NS::EnumReflector::ToStringAtom(info.compression)));
+
+        const bool isUnitTests = SR_UTILS_NS::CLIManager::Instance().IsFlagPresent(SR_UTILS_NS::CLIFlagsEnumWrappper::UnitTests);
+        const bool canCompress = info.compression != TextureCompression::None && cacheEnabled && !isUnitTests && compressionEnabled;
+        const bool compressedTextureExists = canCompress && compressedTexturePath.Exists(SR_UTILS_NS::Path::Type::File);
 
         auto&& cache = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Textures");
 
-        const uint64_t hashName = cacheEnabled ? SR_HASH(path.ConvertToFileName()) : 0;
-        uint64_t fileHash = cacheEnabled ? path.GetFileHash() : 0;
+        uint64_t fileHash = 0;
 
         if (cacheEnabled) {
-            auto&& stringHash = SR_UTILS_NS::ToString(hashName);
-            auto&& cachePath = cache.Concat(path.GetBaseNameAndExt() + "." + stringHash);
-            auto&& cacheHashPath = cachePath.ConcatExt(".cache.hash");
+            fileHash = fullPath.GetFileHash();
+            fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.format));
+            fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.mips));
 
-            if (cacheHashPath.Exists(SR_UTILS_NS::Path::Type::File)) {
-                if (SR_UTILS_NS::FileSystem::ReadHashFromFile(cacheHashPath) == fileHash) {
-                    auto&& pTextureData = LoadFromCache(cachePath.ConcatExt(".cache"));
-                    if (pTextureData) {
+            auto&& cacheHashPath = cache.Concat(path).ConcatExt(".cache.hash");
+
+            if (cacheHashPath.Exists(SR_UTILS_NS::Path::Type::File) && SR_UTILS_NS::FileSystem::ReadHashFromFile(cacheHashPath) == fileHash) {
+                if (compressedTextureExists) {
+                    if (auto&& pTextureData = LoadFromCache(compressedTexturePath)) {
                         return pTextureData;
                     }
                 }
+
+                if (auto&& pTextureData = LoadFromCache(cacheHashPath.GetWithoutExtension())) {
+                    if (canCompress) {
+                        AsyncCompressTexture(pTextureData, info.compression);
+                    }
+                    return pTextureData;
+                }
+            }
+        }
+        else if (compressedTextureExists) {
+            if (auto&& pTextureData = LoadFromCache(compressedTexturePath)) {
+                return pTextureData;
             }
         }
 
         std::string buffer;
-        if (!SR_UTILS_NS::FileSystem::ReadFile(path, buffer)) {
+        if (!SR_UTILS_NS::FileSystem::ReadFile(fullPath, buffer)) {
             SR_ERROR("TextureLoader::Load() : can not read \"" + path.ToStringRef() + "\" file!");
             return nullptr;
         }
 
-        int32_t width = 0, height = 0, numComponents = 0;
-        uint8_t* pImgData = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(buffer.data()), static_cast<int32_t>(buffer.size()), &width, &height, &numComponents, STBI_rgb_alpha);
+        const uint8_t alignedChannels = GetAlignedChannels(info.format);
+        if (alignedChannels == 0) {
+            SRHalt("TextureLoader::Load() : wrong load format! Format: {}, path: {}", info.format, path);
+            return nullptr;
+        }
 
-        if (!pImgData) {
+        int32_t width = 0, height = 0, channels = 0;
+
+        stbi_set_unpremultiply_on_load(0);
+        stbi_convert_iphone_png_to_rgb(0);
+        uint8_t* pImgDataOriginal = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(buffer.data()), static_cast<int32_t>(buffer.size()), &width, &height, &channels, 4);
+
+        if (!pImgDataOriginal) {
             std::string reason = stbi_failure_reason() ? stbi_failure_reason() : std::string();
             SR_ERROR("TextureLoader::Load() : can not load \"" + path.ToStringRef() + "\" file!\n\tReason: " + reason);
             return nullptr;
         }
 
-        const ImageLoadFormat format = numComponents == 4 ? ImageLoadFormat::RGBA : ImageLoadFormat::RGB;
+        uint8_t* pImgData = pImgDataOriginal;
+
+        if (alignedChannels != 4) {
+            pImgData = (uint8_t*)SRMalloc(width * height * alignedChannels * sizeof(uint8_t));
+        }
+
+        uint8_t* src = pImgDataOriginal;
+        uint8_t* dst = pImgData;
+        const int pixelCount = width * height;
+
+        switch (alignedChannels) {
+            case 1:
+                for (int i = 0; i < pixelCount; ++i) {
+                    dst[i] = src[i * 4];
+                }
+                break;
+            case 2:
+                for (int i = 0; i < pixelCount; ++i) {
+                    dst[i * 2 + 0] = src[i * 4 + 0];
+                    dst[i * 2 + 1] = src[i * 4 + 1];
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (alignedChannels != 4) {
+            TextureLoader::Free(pImgDataOriginal);
+        }
+
+        const uint32_t autoMips = std::floor(std::log2(std::max(width, height))) + 1;
+        if (info.mips > autoMips) {
+            SR_WARN("TextureLoader::Load() : requested mip levels count is greater than possible! Requested: {}, possible: {}. Path: {}", info.mips, autoMips, path);
+            info.mips = autoMips;
+        }
+        else {
+            info.mips = info.mips > 0 ? info.mips : autoMips;
+        }
 
         if (cacheEnabled) {
             SRAssert2(!path.empty(), "TextureLoader::Load() : path is empty!");
             SR_LOG("TextureLoader::Load() : save texture to cache...\n\tPath: {}", path);
 
-            auto&& stringHash = SR_UTILS_NS::ToString(hashName);
-            auto&& cachePath = cache.Concat(path.GetBaseNameAndExt() + "." + stringHash);
+            auto&& cachePath = cache.Concat(path);
             auto&& cacheHashPath = cachePath.ConcatExt(".cache.hash");
             auto&& cacheFilePath = cachePath.ConcatExt(".cache");
 
@@ -157,28 +208,42 @@ namespace SR_GRAPH_NS {
             marshal.Reserve(
                 1024 + // overhead
                 path.ToStringRef().size() + // path
-                width * height * 4 * sizeof(uint8_t) // data
+                width * height * alignedChannels * sizeof(uint8_t) // data
             );
 
             marshal.Write<uint64_t>(TextureLoader::VERSION);
             marshal.Write<std::string>(path.ToStringRef());
             marshal.Write<uint32_t>(width);
             marshal.Write<uint32_t>(height);
-            marshal.Write(static_cast<uint8_t>(format));
-            marshal.WriteBlock(pImgData, width * height * 4 * sizeof(uint8_t));
+            marshal.Write<uint32_t>(info.mips);
+            marshal.Write(static_cast<uint8_t>(info.format));
+            marshal.Write(static_cast<uint8_t>(TextureCompression::None));
+            marshal.WriteBlock(pImgData, width * height * alignedChannels * sizeof(uint8_t));
 
             if (!marshal.Save(cacheFilePath)) {
                 SR_ERROR("TextureLoader::Load() : failed to save marshal to file \"" + cacheFilePath.ToStringRef() + "\"!");
             }
         }
 
-        auto&& pTextureData = TextureData::Create(width, height, pImgData, [](uint8_t* pData) {
-            TextureLoader::Free(pData);
-        }, format);
+        auto&& pTextureData = TextureData::Create(width, height, pImgData, [alignedChannels](uint8_t* pData) {
+            if (alignedChannels != 4) {
+                SRFree(pData);
+            }
+            else {
+                TextureLoader::Free(pData);
+            }
+        }, info);
+
+        if (!pTextureData) {
+            SR_ERROR("TextureLoader::Load() : failed to create TextureData for path \"" + path.ToStringRef() + "\"!");
+            return nullptr;
+        }
 
         pTextureData->SetPath(path);
 
-        SRAssert2(pTextureData, "TextureLoader::Load() : failed to create TextureData!");
+        if (canCompress) {
+            AsyncCompressTexture(pTextureData, info.compression);
+        }
 
         return pTextureData;
     }
@@ -204,13 +269,19 @@ namespace SR_GRAPH_NS {
     TextureData::Ptr TextureLoader::LoadFromMemory(const std::string& data, const ImageMetaInfo& config) {
         SR_TRACY_ZONE;
 
-        int32_t width = 0, height = 0, numComponents = 0;
+        int32_t width = 0, height = 0, channels = 0;
 
-        const uint8_t requireComponents = GetChannelCount(config.format);
+        const uint8_t requireChannels = GetAlignedChannels(config.format);
+        if (requireChannels == 0) {
+            SRHalt("TextureLoader::LoadFromMemory() : wrong load format! Format: ", config.format);
+            return nullptr;
+        }
 
+        stbi_set_unpremultiply_on_load(0);
+        stbi_convert_iphone_png_to_rgb(0);
         uint8_t* pImgData = stbi_load_from_memory(
             reinterpret_cast<const stbi_uc*>(data.c_str()),
-            static_cast<int32_t>(data.size()), &width, &height, &numComponents, requireComponents
+            static_cast<int32_t>(data.size()), &width, &height, &channels, requireChannels
         );
 
         if (!pImgData) {
@@ -225,11 +296,12 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        const ImageLoadFormat format = numComponents == 4 ? ImageLoadFormat::RGBA : ImageLoadFormat::RGB;
+        TextureLoadInfo info;
+        info.format = config.format;
 
         auto&& pTextureData = TextureData::Create(width, height, pImgData, [](uint8_t* pData) {
             TextureLoader::Free(pData);
-        }, format);
+        }, info);
 
         return pTextureData;
     }
@@ -252,7 +324,11 @@ namespace SR_GRAPH_NS {
         auto&& sourcePath = marshal.Read<std::string>();
         auto&& width = marshal.Read<uint32_t>();
         auto&& height = marshal.Read<uint32_t>();
-        auto&& format = static_cast<ImageLoadFormat>(marshal.Read<uint8_t>());
+
+        TextureLoadInfo info;
+        info.mips = marshal.Read<uint32_t>();
+        info.format = static_cast<ImageFormat>(marshal.Read<uint8_t>());
+        info.compression = static_cast<TextureCompression>(marshal.Read<uint8_t>());
 
         auto&& size = marshal.Read<uint64_t>();
         if (size == 0) {
@@ -267,11 +343,94 @@ namespace SR_GRAPH_NS {
 
         auto&& pTextureData = TextureData::Create(width, height, pData, [pOriginData](uint8_t*) {
             SRFree(pOriginData);
-        }, format);
+        }, info);
 
         pTextureData->SetPath(sourcePath);
 
         return pTextureData;
+    }
+
+    void TextureLoader::AsyncCompressTexture(const TextureData::Ptr& pData, TextureCompression compression) {
+        SR_TRACY_ZONE;
+
+        if (compression == TextureCompression::None) {
+            SRHalt("TextureLoader::AsyncCompressTexture() : compression is None!");
+            return;
+        }
+
+        SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pCopyData = pData, compression] {
+            CompressTexture(pCopyData, compression);
+        }, SR_UTILS_NS::TaskPriority::Discardable);
+    }
+
+    void TextureLoader::CompressTexture(const TextureData::Ptr& pData, TextureCompression compression) {
+        SR_TRACY_ZONE;
+
+        SR_LOG("TextureLoader::CompressTexture() : compress texture...\n\tPath: {}", pData->GetPath());
+
+        uint64_t compressedSize = 0;
+        uint8* pCompressedData = nullptr;
+
+        TextureLoadInfo info = pData->GetInfo();
+        info.compression = compression;
+
+    #ifdef SR_USE_CMP_CORE
+        compressedSize = GetCompressedImageSize(pData->GetWidth(), pData->GetHeight(), info);
+        pCompressedData = CompressImage(pData->GetWidth(), pData->GetHeight(), pData->GetData(), info);
+    #else
+        return;
+    #endif
+
+        if (!pCompressedData || compressedSize == 0) {
+            SR_ERROR("TextureLoader::AsyncCompressTexture() : failed to compress texture!");
+            return;
+        }
+
+        const SR_UTILS_NS::Path& resFolder = SR_UTILS_NS::ResourceManager::Instance().GetResPathRef();
+        const SR_UTILS_NS::Path relativePath = pData->GetPath().RemoveSubPath(resFolder);
+
+        auto&& compressedTexturePath = resFolder.Concat("Packed").Concat(relativePath).ConcatExt(SR_UTILS_NS::EnumReflector::ToStringAtom(info.compression));
+
+        auto&& marshal = SR_HTYPES_NS::Marshal();
+
+        marshal.Reserve(
+            1024 + // overhead
+            pData->GetPath().ToStringRef().size() + // path
+            compressedSize // data
+        );
+
+        marshal.Write<uint64_t>(TextureLoader::VERSION);
+        marshal.Write<std::string>(pData->GetPath().ToStringRef());
+        marshal.Write<uint32_t>(pData->GetWidth());
+        marshal.Write<uint32_t>(pData->GetHeight());
+        marshal.Write<uint32_t>(info.mips);
+        marshal.Write(static_cast<uint8_t>(info.format));
+        marshal.Write(static_cast<uint8_t>(info.compression));
+        marshal.WriteBlock(pCompressedData, compressedSize);
+
+        SRFree(pCompressedData);
+
+        if (!marshal.Save(compressedTexturePath)) {
+            SR_ERROR("TextureLoader::AsyncCompressTexture() : failed to save marshal to file \"" + compressedTexturePath.ToStringRef() + "\"!");
+            return;
+        }
+
+        SR_LOG("TextureLoader::CompressTexture() : compressed texture saved to cache.\n\tPath: {}", compressedTexturePath);
+
+        SR_UTILS_NS::StringAtom resourceId = relativePath.ToStringRef();
+        SR_UTILS_NS::ResourceManager::Instance().ReloadResource(resourceId, SR_GTYPES_NS::Texture::GetClassStaticName());
+    }
+
+    int TextureLoader::GetAlignedChannels(ImageFormat format) {
+        const int channels = GetChannelCount(format);
+        switch (channels) {
+            case 1: return STBI_grey;
+            case 2: return STBI_grey_alpha;
+            case 4: return STBI_rgb_alpha;
+            default:
+                SRHalt("TextureLoader::GetAlignedChannels() : unsupported number of channels! Number of channels must be 1, 2 or 4! Format: {}", format);
+                return 0;
+        }
     }
 }
 

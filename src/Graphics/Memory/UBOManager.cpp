@@ -248,6 +248,7 @@ namespace SR_GRAPH_NS::Memory {
         m_pipeline->GetShaderHandles(m_handles);
 
         uint32_t count = 0;
+        uint64_t memoryFreed = 0;
 
         const uint8_t maxFramesInFlight = m_pipeline->GetSwapchainImagesCount();
 
@@ -260,6 +261,7 @@ namespace SR_GRAPH_NS::Memory {
                         for (uint8_t i = 0; i < maxFramesInFlight; ++i) {
                             if (data.ubos[i] != SR_ID_INVALID) {
                                 m_pipeline->FreeUBO(&data.ubos[i]);
+                                memoryFreed += data.uboSize;
                             }
                         }
                     }
@@ -273,7 +275,8 @@ namespace SR_GRAPH_NS::Memory {
         });
 
         if (count > 0) {
-            SR_LOG("UBOManager::CollectUnused() : collected {} unused UBO.", count);
+            const float_t memoryFreedKB = static_cast<float_t>(memoryFreed) / 1024.0f;
+            SR_LOG("UBOManager::CollectUnused() : collected {} unused UBOs, freed {:.2f} KB of memory.", count, memoryFreedKB);
         }
     }
 

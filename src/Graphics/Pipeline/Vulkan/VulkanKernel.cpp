@@ -214,6 +214,8 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanKernel::PollWindowEvents() {
+        SR_TRACY_ZONE;
+
         if (!m_pipeline) {
             return;
         }

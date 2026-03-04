@@ -7,55 +7,171 @@
 #include <Utils/Debug.h>
 #include <Utils/Profile/TracyContext.h>
 
+#include <Enum/TextureCompression.hpp>
+#include <Enum/ImageFormat.hpp>
+
 #ifdef SR_USE_CMP_CORE
     #include <cmp_core.h>
 #endif
 
 namespace SR_GRAPH_NS {
-    uint8_t* Compress(uint32_t w, uint32_t h, const uint8_t *pixels, TextureCompression method) {
-        SR_TRACY_ZONE;
-        uint32_t blockCount = (w / 4) * (h / 4);
-        auto* cmpBuffer = (uint8_t*)SRMalloc(16 * blockCount * 4);
-        for (uint32_t col = 0; col < w / 4; col++) {
-            for (uint32_t row = 0; row < h / 4; row++) {
-                uint32_t colOffs = col * 16;
-                uint32_t rowOffs = row * w;
+    void DownscaleImage2x(const uint8_t* src, uint32_t srcW, uint32_t srcH, uint8_t* dst) {
+        const uint32_t dstW = std::max(1u, srcW / 2);
+        const uint32_t dstH = std::max(1u, srcH / 2);
 
-            #ifdef SR_USE_CMP_CORE
-                switch (method) {
-                    case TextureCompression::None:
-                        return nullptr;
-                    case TextureCompression::BC1:
-                    case TextureCompression::BC4:
-                        //! BC1, BC4 - has 8-byte cmp buffer
-                        CompressBlockBC1(
-                                pixels + colOffs + rowOffs * 16,            // source
-                                4 * w,                                      // count bytes
-                                cmpBuffer + colOffs / 2 + (rowOffs * 4) / 2 // dst
-                        );
-                        break;
-                    case TextureCompression::BC2:
-                    case TextureCompression::BC3:
-                    case TextureCompression::BC5:
-                    case TextureCompression::BC6:
-                    case TextureCompression::BC7:
-                        //! other BC has 16-byte cmp buffer
-                        CompressBlockBC7(
-                                pixels + colOffs + rowOffs * 16,    // source
-                                4 * w,                              // count bytes
-                                cmpBuffer + colOffs+ (rowOffs * 4)  // dst
-                        );
-                        break;
-                    default:
-                        break;
+        for (uint32_t y = 0; y < dstH; ++y) {
+            for (uint32_t x = 0; x < dstW; ++x) {
+                uint32_t r = 0, g = 0, b = 0, a = 0;
+
+                for (uint32_t ky = 0; ky < 2; ++ky) {
+                    for (uint32_t kx = 0; kx < 2; ++kx) {
+                        uint32_t sx = std::min(srcW - 1, x * 2 + kx);
+                        uint32_t sy = std::min(srcH - 1, y * 2 + ky);
+
+                        const uint8_t* p = src + (sy * srcW + sx) * 4;
+
+                        r += p[0];
+                        g += p[1];
+                        b += p[2];
+                        a += p[3];
+                    }
                 }
-            #else
-                SRHalt("Texture compression is not supported! Please enable SR_USE_CMP_CORE and link cmp_core library.");
-            #endif
+
+                uint8_t* d = dst + (y * dstW + x) * 4;
+                d[0] = uint8_t(r / 4);
+                d[1] = uint8_t(g / 4);
+                d[2] = uint8_t(b / 4);
+                d[3] = uint8_t(a / 4);
+            }
+        }
+    }
+
+    uint64_t GetCompressedImageSize(uint32_t w, uint32_t h, TextureLoadInfo info) {
+        SR_TRACY_ZONE;
+
+        info.mips = info.mips > 0 ? info.mips : static_cast<uint32_t>(std::floor(std::log2(std::max(w, h)))) + 1;
+
+        uint64_t totalSize = 0;
+        uint32_t currentWidth  = w;
+        uint32_t currentHeight = h;
+
+        const size_t bytesPerBlock = (info.compression == TextureCompression::BC1 || info.compression == TextureCompression::BC4) ? 8 : 16;
+
+        for (uint32_t i = 0; i < info.mips; ++i) {
+            uint32_t blockCols = std::max(1u, (currentWidth  + 3) / 4);
+            uint32_t blockRows = std::max(1u, (currentHeight + 3) / 4);
+
+            totalSize += uint64_t(blockCols) * blockRows * bytesPerBlock;
+
+            currentWidth  = std::max(1u, currentWidth  / 2);
+            currentHeight = std::max(1u, currentHeight / 2);
+        }
+
+        return totalSize;
+    }
+
+    uint8_t* CompressImageMultithread(uint32_t w, uint32_t h, const uint8_t* pixels, TextureLoadInfo info, uint32_t maxThreads) {
+        SR_TRACY_ZONE;
+
+        if (info.compression == TextureCompression::None) {
+            SRHalt("Texture compression method is None! Cannot compress image!");
+            return nullptr;
+        }
+
+        if (info.mips == 0) {
+            SRHalt("TextureLoadInfo.mips is zero! Cannot compress image! Please specify the number of mip levels to generate.");
+            return nullptr;
+        }
+
+        SR_LOG("CompressImageMultithread() : compressing {} image {}x{} with method {} and {} mip levels using up to {} threads...", info.format, w, h, info.compression, info.mips, maxThreads);
+
+        const size_t bytesPerBlock = (info.compression == TextureCompression::BC1 || info.compression == TextureCompression::BC4) ? 8 : 16;
+        const uint32_t threadCount = std::min(maxThreads, std::max(1u, std::thread::hardware_concurrency() / 2));
+
+        uint8_t* pCmpBuffer = (uint8_t*)SRMalloc(GetCompressedImageSize(w, h, info));
+        uint64_t dstOffset = 0;
+
+        uint32_t currentWidth  = w;
+        uint32_t currentHeight = h;
+
+        std::vector<uint8_t> currentPixels(pixels, pixels + w * h * 4);
+        std::vector<uint8_t> nextPixels;
+
+        for (uint32_t mip = 0; mip < info.mips; ++mip) {
+            SR_LOG("CompressImageMultithread() : compressing mip level {} ({}x{})...", mip, currentWidth, currentHeight);
+            SR_TRACY_ZONE_N("Compress Mip Level");
+
+            const uint32_t blockCols = std::max(1u, (currentWidth  + 3) / 4);
+            const uint32_t blockRows = std::max(1u, (currentHeight + 3) / 4);
+
+            const uint32_t rowsPerThread = blockRows / threadCount;
+            const uint32_t remainder     = blockRows % threadCount;
+
+            std::vector<std::thread> threads;
+            uint32_t startRow = 0;
+
+            for (uint32_t t = 0; t < threadCount; ++t) {
+                uint32_t count  = rowsPerThread + (t < remainder ? 1 : 0);
+                uint32_t endRow = startRow + count;
+
+                threads.emplace_back([=, &currentPixels]() {
+                    SR_TRACY_ZONE;
+                    for (uint32_t row = startRow; row < endRow; ++row) {
+                        for (uint32_t col = 0; col < blockCols; ++col) {
+                            const uint8_t* blockPtr = currentPixels.data() + (row * 4) * currentWidth * 4 + (col * 4) * 4;
+
+                            uint64_t blockIndex = row * blockCols + col;
+                            uint8_t* dst = pCmpBuffer + dstOffset + blockIndex * bytesPerBlock;
+
+                        #ifdef SR_USE_CMP_CORE
+                            switch (info.compression) {
+                                case TextureCompression::BC1:
+                                case TextureCompression::BC4:
+                                    CompressBlockBC1(blockPtr, 4 * currentWidth, dst);
+                                    break;
+                                default:
+                                    CompressBlockBC7(blockPtr, 4 * currentWidth, dst);
+                                    break;
+                            }
+                        #else
+                            SRHalt("Texture compression is not supported! Please enable SR_USE_CMP_CORE and link cmp_core library.");
+                        #endif
+                        }
+                    }
+                });
+
+                startRow = endRow;
+            }
+
+            for (auto& th : threads)
+                th.join();
+
+            dstOffset += uint64_t(blockCols) * blockRows * bytesPerBlock;
+
+            // генерим следующий mip
+            if (mip + 1 < info.mips) {
+                uint32_t nextW = std::max(1u, currentWidth / 2);
+                uint32_t nextH = std::max(1u, currentHeight / 2);
+
+                nextPixels.resize(nextW * nextH * 4);
+                DownscaleImage2x(currentPixels.data(), currentWidth, currentHeight, nextPixels.data());
+                currentPixels.swap(nextPixels);
+
+                currentWidth  = nextW;
+                currentHeight = nextH;
             }
         }
 
-        return cmpBuffer;
+        return pCmpBuffer;
+    }
+
+    uint8_t* CompressImage(uint32_t w, uint32_t h, const uint8_t *pixels, TextureLoadInfo info) {
+        SR_TRACY_ZONE;
+    #if defined(SR_WIN32) || defined(SR_LINUX)
+        return CompressImageMultithread(w, h, pixels, info, 16);
+    #else
+        return CompressImageMultithread(w, h, pixels, info, 1);
+    #endif
     }
 
     uint32_t Find4(uint32_t i) {
@@ -104,11 +220,11 @@ namespace SR_GRAPH_NS {
             case ImageFormat::R16_UINT:
             case ImageFormat::R32_UINT:
             case ImageFormat::R64_UINT:
-                SR_ERROR("GetChannelCount : unsupported color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
+                SRHalt("GetChannelCount : unsupported color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
                 return 0;
             case ImageFormat::Unknown:
             default:
-                SR_ERROR("GetChannelCount : unknown color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
+                SRHalt("GetChannelCount : unknown color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
                 return 0;
         }
     }

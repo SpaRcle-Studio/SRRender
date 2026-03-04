@@ -231,7 +231,6 @@ namespace SR_GRAPH_NS {
         imageMetaInfo.filter = TextureFilter::NEAREST;
         imageMetaInfo.compression = TextureCompression::None;
         imageMetaInfo.mipLevels = 1;
-        imageMetaInfo.alpha = SR_UTILS_NS::BoolExt::None;
         imageMetaInfo.cpuUsage = false;
 
         /// так как вписать в код данные текстуры невозможно, то она хранится в виде base64, текстура размером 1x1 белого цвета формата png
@@ -819,11 +818,14 @@ namespace SR_GRAPH_NS {
     void RenderContext::SetGraphicsSettings(const ActiveGraphicsSettings& settings, bool reload) {
         SR_TRACY_ZONE;
 
-        const bool needReloadTextures = m_activeGraphicsSettings.sRGB != settings.sRGB;
+        const bool needReloadTextures = m_activeGraphicsSettings.sRGB != settings.sRGB
+            || m_activeGraphicsSettings.textureCompression != settings.textureCompression;
+
         const bool needReloadShaders = m_activeGraphicsSettings != settings;
         m_activeGraphicsSettings = settings;
 
         SwitchMacro("SR_SRGB", m_activeGraphicsSettings.sRGB);
+        SwitchMacro("SR_HDR", m_activeGraphicsSettings.hdr);
         SwitchMacro("SR_AUTO_EXPOSURE", m_activeGraphicsSettings.autoExposure);
         SwitchMacro("SR_SHADOWS_QUALITY_EXTREME", m_activeGraphicsSettings.shadowsQuality == Quality::Extreme);
 

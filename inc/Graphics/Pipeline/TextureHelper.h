@@ -17,15 +17,8 @@ namespace SR_GRAPH_NS {
         Metallic,
         AmbientOcclusion,
         Emissive,
-        Height
-    );
-
-    SR_ENUM_NS_CLASS_T(ImageLoadFormat, uint8_t,
-        Unknown,
-        Grey,
-        GreyAlpha,
-        RGB,
-        RGBA
+        Height,
+        UI
     );
 
     SR_ENUM_NS_CLASS_T(Antialiasing, uint8_t,
@@ -111,6 +104,12 @@ namespace SR_GRAPH_NS {
         None = 0, BC1 = 1, BC2 = 2, BC3 = 3, BC4 = 4, BC5 = 5, BC6 = 6, BC7 = 7
     );
 
+    struct TextureLoadInfo {
+        TextureCompression compression = TextureCompression::None;
+        uint32_t mips = 0;
+        ImageFormat format = ImageFormat::Auto;
+    };
+
     uint32_t Find4(uint32_t i);
 
     std::pair<uint32_t, uint32_t> MakeGoodSizes(uint32_t w, uint32_t h);
@@ -119,7 +118,8 @@ namespace SR_GRAPH_NS {
 
     uint32_t GetPixelSize(ImageFormat format);
 
-    uint8_t* Compress(uint32_t w, uint32_t h, const uint8_t* pixels, SR_GRAPH_NS::TextureCompression method);
+    uint64_t GetCompressedImageSize(uint32_t w, uint32_t h, TextureLoadInfo info);
+    uint8_t* CompressImage(uint32_t w, uint32_t h, const uint8_t* pixels, TextureLoadInfo info);
 }
 
 #endif //SR_ENGINE_TEXTUREHELPER_H

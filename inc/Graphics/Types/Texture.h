@@ -48,7 +48,6 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const ImageMetaInfo& GetImageMetaInfo() const noexcept { return m_imageMetaInfo; }
 
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
-        SR_NODISCARD bool IsAsyncLoading() const { return m_asyncLoading; }
         SR_NODISCARD bool CanBeUsed() const;
 
         void FreeVMemory() override;
@@ -73,8 +72,7 @@ namespace SR_GTYPES_NS {
         std::atomic<bool> m_hasErrors = false;
         std::atomic<bool> m_isDirty = true;
 
-        std::atomic<bool> m_asyncLoading = false;
-        uint64_t m_syncLoadTaskId = SR_ID_INVALID;
+        std::optional<uint64_t> m_syncLoadTaskId;
 
         ImageMetaInfo m_imageMetaInfo;
         ImageMetaInfo m_activeImageMetaInfo;

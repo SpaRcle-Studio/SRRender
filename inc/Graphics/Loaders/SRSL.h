@@ -46,6 +46,13 @@ namespace SR_SRSL_NS {
             m_initialized = false;
         }
 
+        void RemoveDefine(SR_UTILS_NS::StringAtom define) {
+            if (auto&& pIt = m_params.find(define); pIt != m_params.end()) {
+                m_params.erase(pIt);
+                m_initialized = false;
+            }
+        }
+
         SR_NODISCARD std::string ToString() const {
             std::string result;
             for (const auto& [key, value] : m_params) {
