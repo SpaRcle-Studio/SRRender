@@ -1005,7 +1005,7 @@ namespace SR_GRAPH_NS {
         wl_pointer_set_cursor(m_pointer, m_pointerEnterSerial, NULL, 0, 0);
 
         m_cursorLocked = true;
-        SR_PLATFORM_NS::SetWaylandCursorLockActive(true);
+        SR_PLATFORM_NS::SetCursorLockActive(true);
 
         SR_LOG("WaylandWindow::LockPointer() : pointer locked");
     }
@@ -1042,7 +1042,7 @@ namespace SR_GRAPH_NS {
         }
 
         m_cursorLocked = false;
-        SR_PLATFORM_NS::SetWaylandCursorLockActive(false);
+        SR_PLATFORM_NS::SetCursorLockActive(false);
         SR_PLATFORM_NS::ConsumeAccumulatedMouseDelta(); /// discard stale deltas
 
         SR_LOG("WaylandWindow::UnlockPointer() : pointer unlocked");
