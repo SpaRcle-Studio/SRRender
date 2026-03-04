@@ -7,28 +7,31 @@
 
 #ifdef SR_RENDER_USE_NATIVE_WAYLAND
 
-#include <Graphics/Window/BasicWindowImpl.h>
+    #include <Graphics/Window/BasicWindowImpl.h>
 
-#include <Utils/Math/Rect.h>
-#include <Utils/Types/Thread.h>
+    #include <Utils/Math/Rect.h>
+    #include <Utils/Types/Thread.h>
 
-#include <wayland-util.h>
-#include <wayland-client-core.h>
-#include <wayland-client-protocol.h>
-#include <wayland-client.h>
-#include <wayland-cursor.h>
-#include <linux/input.h>
-#include <xkbcommon/xkbcommon.h>
+    #include <linux/input.h>
+    #include <wayland-client-core.h>
+    #include <wayland-client-protocol.h>
+    #include <wayland-client.h>
+    #include <wayland-cursor.h>
+    #include <wayland-util.h>
+    #include <xkbcommon/xkbcommon.h>
 
 extern "C" {
-    #include <xdg-shell-client-protocol.h>
-    #include <xdg-decoration-unstable-v1.h>
     #include <fractional-scale-v1-client-protocol.h>
+    #include <pointer-constraints-unstable-v1.h>
+    #include <relative-pointer-unstable-v1.h>
+    #include <xdg-decoration-unstable-v1.h>
+    #include <xdg-shell-client-protocol.h>
 }
 
 namespace SR_GRAPH_NS {
     class WaylandWindow : public BasicWindowImpl {
         using Super = BasicWindowImpl;
+
     public:
         struct SurfaceBuffer {
             int width = 0, height = 0;
@@ -47,16 +50,16 @@ namespace SR_GRAPH_NS {
             int width = -1;              // физическая ширина монитора
             int height = -1;             // физическая высота
         };
-    public:
-        explicit WaylandWindow()
-            : Super()
-        { }
 
     public:
-        bool Initialize(const std::string& name,
-                        const SR_MATH_NS::IVector2& position,
-                        const SR_MATH_NS::UVector2& size,
-                        bool fullScreen, bool resizable) override;
+        explicit WaylandWindow()
+            : Super() {}
+
+    public:
+        bool Initialize(
+            const std::string& name, const SR_MATH_NS::IVector2& position, const SR_MATH_NS::UVector2& size,
+            bool fullScreen, bool resizable
+        ) override;
 
         SR_NODISCARD WindowType GetType() const override { return WindowType::Wayland; }
         SR_NODISCARD void* GetHandle() const override { return m_surface; }
@@ -80,7 +83,9 @@ namespace SR_GRAPH_NS {
 
         void SetCompositor(struct wl_compositor* pCompositor) { m_compositor = pCompositor; }
         void SetSubCompositor(struct wl_subcompositor* pSubCompositor) { m_subCompositor = pSubCompositor; }
-        void SetDecorationManager(zxdg_decoration_manager_v1* pDecorationManager) { m_decorationManager = pDecorationManager; }
+        void SetDecorationManager(zxdg_decoration_manager_v1* pDecorationManager) {
+            m_decorationManager = pDecorationManager;
+        }
         void SetDecoration(zxdg_toplevel_decoration_v1* pDecoration) { m_decoration = pDecoration; }
         void SetDisplay(wl_display* pDisplay) { m_display = pDisplay; }
         void SetSeat(wl_seat* pSeat) { m_seat = pSeat; }
@@ -91,11 +96,18 @@ namespace SR_GRAPH_NS {
         void SetDecorationMode(zxdg_toplevel_decoration_v1_mode mode) { m_currentDecorationMode = mode; }
         void SetWaylandConfigured(const bool configured) { m_configured = configured; }
         void SetWaitingForConfigure(const bool waiting) { m_waitingForConfigure = waiting; }
-        void SetFractionalScaleManager(wp_fractional_scale_manager_v1* pFractionalScaleManager) { m_fractionalScaleManager = pFractionalScaleManager; }
+        void SetFractionalScaleManager(wp_fractional_scale_manager_v1* pFractionalScaleManager) {
+            m_fractionalScaleManager = pFractionalScaleManager;
+        }
         void SetCursorPointer(wl_pointer* pPointer) { m_pointer = pPointer; }
         void SetKeyboard(wl_keyboard* pKeyboard) { m_keyboard = pKeyboard; }
         void SetXkbKeymap(xkb_keymap* pKeymap) { m_pXkbKeymap = pKeymap; }
         void SetXkbState(xkb_state* pState) { m_pXkbState = pState; }
+        void SetPointerConstraints(zwp_pointer_constraints_v1* pConstraints) { m_pointerConstraints = pConstraints; }
+        void SetRelativePointerManager(zwp_relative_pointer_manager_v1* pManager) {
+            m_relativePointerManager = pManager;
+        }
+        void SetPointerEnterSerial(uint32_t serial) { m_pointerEnterSerial = serial; }
 
         SR_NODISCARD wl_cursor_theme* GetCursorTheme() const { return m_cursorTheme; }
         SR_NODISCARD wl_surface* GetCursorSurface() const { return m_cursorSurface; }
@@ -119,6 +131,13 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD xkb_context* GetXkbContext() const { return m_xkbContext; }
         SR_NODISCARD xkb_keymap* GetXkbKeymap() const { return m_pXkbKeymap; }
         SR_NODISCARD xkb_state* GetXkbState() const { return m_pXkbState; }
+        SR_NODISCARD wl_pointer* GetPointer() const { return m_pointer; }
+        SR_NODISCARD zwp_pointer_constraints_v1* GetPointerConstraints() const { return m_pointerConstraints; }
+        SR_NODISCARD zwp_relative_pointer_manager_v1* GetRelativePointerManager() const {
+            return m_relativePointerManager;
+        }
+        SR_NODISCARD uint32_t GetPointerEnterSerial() const { return m_pointerEnterSerial; }
+        SR_NODISCARD bool IsCursorLocked() const { return m_cursorLocked; }
 
         void InternalSetWindowSize(int width, int height);
         void SetFractionalScale(const float scale) { m_fractionalScaleValue = scale; }
@@ -131,6 +150,8 @@ namespace SR_GRAPH_NS {
     private:
         bool DoWaylandPollEvents();
         void ThreadFunction();
+        void LockPointer();
+        void UnlockPointer();
 
     private:
         std::optional<SR_MATH_NS::IVector2> m_pendingSize;
@@ -199,9 +220,15 @@ namespace SR_GRAPH_NS {
         zxdg_decoration_manager_v1* m_decorationManager = nullptr;
         zxdg_toplevel_decoration_v1* m_decoration = nullptr;
 
+        zwp_pointer_constraints_v1* m_pointerConstraints = nullptr;
+        zwp_relative_pointer_manager_v1* m_relativePointerManager = nullptr;
+        zwp_locked_pointer_v1* m_lockedPointer = nullptr;
+        zwp_relative_pointer_v1* m_relativePointer = nullptr;
+        uint32_t m_pointerEnterSerial = 0;
+        bool m_cursorLocked = false;
     };
-}
+} // namespace SR_GRAPH_NS
 
 #endif
 
-#endif //SR_ENGINE_GRAPHICS_WAYLAND_WINDOW_H
+#endif // SR_ENGINE_GRAPHICS_WAYLAND_WINDOW_H

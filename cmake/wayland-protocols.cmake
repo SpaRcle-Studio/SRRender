@@ -65,6 +65,22 @@ gen_wayland(
     is_xdg_decoration_generated
 )
 
+# pointer-constraints
+gen_wayland(
+    "${WAYLAND_PROTOCOLS_DIR}/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml"
+    "${SR_WAYLAND_GEN_DIR}/pointer-constraints-unstable-v1.h"
+    "${SR_WAYLAND_GEN_DIR}/pointer-constraints-unstable-v1.c"
+    is_pointer_constraints_generated
+)
+
+# relative-pointer
+gen_wayland(
+    "${WAYLAND_PROTOCOLS_DIR}/unstable/relative-pointer/relative-pointer-unstable-v1.xml"
+    "${SR_WAYLAND_GEN_DIR}/relative-pointer-unstable-v1.h"
+    "${SR_WAYLAND_GEN_DIR}/relative-pointer-unstable-v1.c"
+    is_relative_pointer_generated
+)
+
 function(patch_wl_private file)
     if (NOT EXISTS "${file}")
         message(WARNING "Wayland generated file not found: ${file}")
@@ -95,6 +111,8 @@ endfunction()
 patch_wl_private("${SR_WAYLAND_GEN_DIR}/xdg-shell-client-protocol.c")
 patch_wl_private("${SR_WAYLAND_GEN_DIR}/xdg-decoration-unstable-v1.c")
 patch_wl_private("${SR_WAYLAND_GEN_DIR}/fractional-scale-v1-client-protocol.c")
+patch_wl_private("${SR_WAYLAND_GEN_DIR}/pointer-constraints-unstable-v1.c")
+patch_wl_private("${SR_WAYLAND_GEN_DIR}/relative-pointer-unstable-v1.c")
 
 if (is_xdg_shell_generated)
     set(SR_WAYLAND_HAS_XDG_SHELL ON CACHE BOOL "" FORCE)
@@ -112,6 +130,18 @@ if (is_xdg_decoration_generated)
     set(SR_WAYLAND_HAS_XDG_DECORATION ON CACHE BOOL "" FORCE)
 else()
     set(SR_WAYLAND_HAS_XDG_DECORATION OFF CACHE BOOL "" FORCE)
+endif()
+
+if (is_pointer_constraints_generated)
+    set(SR_WAYLAND_HAS_POINTER_CONSTRAINTS ON CACHE BOOL "" FORCE)
+else()
+    set(SR_WAYLAND_HAS_POINTER_CONSTRAINTS OFF CACHE BOOL "" FORCE)
+endif()
+
+if (is_relative_pointer_generated)
+    set(SR_WAYLAND_HAS_RELATIVE_POINTER ON CACHE BOOL "" FORCE)
+else()
+    set(SR_WAYLAND_HAS_RELATIVE_POINTER OFF CACHE BOOL "" FORCE)
 endif()
 
 message(STATUS "Wayland protocol code generation completed.")

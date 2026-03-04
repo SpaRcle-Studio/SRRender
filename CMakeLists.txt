@@ -196,6 +196,7 @@ endif()
 
 if (SR_RENDER_USE_NATIVE_WAYLAND_SUPPORTED)
     target_include_directories(Graphics PUBLIC ${SR_WAYLAND_GEN_DIR})
+    target_link_libraries(Graphics PUBLIC wayland-client wayland-cursor xkbcommon)
 endif()
 
 if (SR_RENDER_USE_YOGA)
