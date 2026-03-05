@@ -13,11 +13,14 @@ namespace SR_GRAPH_NS {
     SR_ENUM_NS_CLASS_T(ImageType, uint8_t,
         Albedo,
         Normal,
+        Direction,
         Roughness,
         Metallic,
         AmbientOcclusion,
         Emissive,
         Height,
+        Mask,
+        SSS,
         UI
     );
 

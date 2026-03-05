@@ -97,6 +97,8 @@ namespace SR_GRAPH_NS {
         const bool compressedTextureExists = canCompress && compressedTexturePath.Exists(SR_UTILS_NS::Path::Type::File);
 
         auto&& cache = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Textures");
+        auto&& cacheHashPath = cache.Concat("Hashes").Concat(path).ConcatExt(".cache.hash");
+        auto&& cacheFilePath = cache.Concat("Dump").Concat(path).ConcatExt(".cache");
 
         uint64_t fileHash = 0;
 
@@ -105,8 +107,6 @@ namespace SR_GRAPH_NS {
             fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.format));
             fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.mips));
 
-            auto&& cacheHashPath = cache.Concat(path).ConcatExt(".cache.hash");
-
             if (cacheHashPath.Exists(SR_UTILS_NS::Path::Type::File) && SR_UTILS_NS::FileSystem::ReadHashFromFile(cacheHashPath) == fileHash) {
                 if (compressedTextureExists) {
                     if (auto&& pTextureData = LoadFromCache(compressedTexturePath)) {
@@ -114,7 +114,7 @@ namespace SR_GRAPH_NS {
                     }
                 }
 
-                if (auto&& pTextureData = LoadFromCache(cacheHashPath.GetWithoutExtension())) {
+                if (auto&& pTextureData = LoadFromCache(cacheFilePath)) {
                     if (canCompress) {
                         AsyncCompressTexture(pTextureData, info.compression);
                     }
@@ -194,10 +194,6 @@ namespace SR_GRAPH_NS {
         if (cacheEnabled) {
             SRAssert2(!path.empty(), "TextureLoader::Load() : path is empty!");
             SR_LOG("TextureLoader::Load() : save texture to cache...\n\tPath: {}", path);
-
-            auto&& cachePath = cache.Concat(path);
-            auto&& cacheHashPath = cachePath.ConcatExt(".cache.hash");
-            auto&& cacheFilePath = cachePath.ConcatExt(".cache");
 
             if (!SR_UTILS_NS::FileSystem::WriteHashToFile(cacheHashPath, fileHash)) {
                 SR_ERROR("TextureLoader::Load() : failed to write hash to file \"" + cacheHashPath.ToStringRef() + "\"!");

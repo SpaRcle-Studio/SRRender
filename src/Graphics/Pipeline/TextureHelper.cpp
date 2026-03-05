@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/Pipeline/TextureHelper.h>
+#include <Graphics/Loaders/TextureLoader.h>
 
 #include <Utils/Debug.h>
 #include <Utils/Profile/TracyContext.h>
@@ -15,33 +16,30 @@
 #endif
 
 namespace SR_GRAPH_NS {
-    void DownscaleImage2x(const uint8_t* src, uint32_t srcW, uint32_t srcH, uint8_t* dst) {
+    void DownscaleImage2x(const uint8_t* src, uint32_t srcW, uint32_t srcH, uint8_t* dst, uint8_t channels) {
         const uint32_t dstW = std::max(1u, srcW / 2);
         const uint32_t dstH = std::max(1u, srcH / 2);
 
         for (uint32_t y = 0; y < dstH; ++y) {
             for (uint32_t x = 0; x < dstW; ++x) {
-                uint32_t r = 0, g = 0, b = 0, a = 0;
+                uint32_t sum[4] = { 0, 0, 0, 0 };
 
                 for (uint32_t ky = 0; ky < 2; ++ky) {
                     for (uint32_t kx = 0; kx < 2; ++kx) {
                         uint32_t sx = std::min(srcW - 1, x * 2 + kx);
                         uint32_t sy = std::min(srcH - 1, y * 2 + ky);
 
-                        const uint8_t* p = src + (sy * srcW + sx) * 4;
-
-                        r += p[0];
-                        g += p[1];
-                        b += p[2];
-                        a += p[3];
+                        const uint8_t* p = src + (sy * srcW + sx) * static_cast<uint32_t>(channels);
+                        for (uint8_t c = 0; c < channels; ++c) {
+                            sum[c] += p[c];
+                        }
                     }
                 }
 
-                uint8_t* d = dst + (y * dstW + x) * 4;
-                d[0] = uint8_t(r / 4);
-                d[1] = uint8_t(g / 4);
-                d[2] = uint8_t(b / 4);
-                d[3] = uint8_t(a / 4);
+                uint8_t* d = dst + (y * dstW + x) * channels;
+                for (uint32_t c = 0; c < channels; ++c) {
+                    d[c] = static_cast<uint8_t>(sum[c] / 4);
+                }
             }
         }
     }
@@ -49,7 +47,11 @@ namespace SR_GRAPH_NS {
     uint64_t GetCompressedImageSize(uint32_t w, uint32_t h, TextureLoadInfo info) {
         SR_TRACY_ZONE;
 
-        info.mips = info.mips > 0 ? info.mips : static_cast<uint32_t>(std::floor(std::log2(std::max(w, h)))) + 1;
+        const uint8_t autoMips = static_cast<uint32_t>(std::floor(std::log2(std::max(w, h)))) + 1;
+        if (info.mips == 0 || info.mips > autoMips) {
+            SRHalt("GetCompressedImageSize() : invalid mip levels! Mips: {}, auto mips: {}. Please specify the number of mip levels to generate.", info.mips, autoMips);
+            return 0;
+        }
 
         uint64_t totalSize = 0;
         uint32_t currentWidth  = w;
@@ -83,6 +85,8 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
+        uint32_t alignedChannels = TextureLoader::GetAlignedChannels(info.format);
+
         SR_LOG("CompressImageMultithread() : compressing {} image {}x{} with method {} and {} mip levels using up to {} threads...", info.format, w, h, info.compression, info.mips, maxThreads);
 
         const size_t bytesPerBlock = (info.compression == TextureCompression::BC1 || info.compression == TextureCompression::BC4) ? 8 : 16;
@@ -94,7 +98,7 @@ namespace SR_GRAPH_NS {
         uint32_t currentWidth  = w;
         uint32_t currentHeight = h;
 
-        std::vector<uint8_t> currentPixels(pixels, pixels + w * h * 4);
+        std::vector<uint8_t> currentPixels(pixels, pixels + w * h * alignedChannels);
         std::vector<uint8_t> nextPixels;
 
         for (uint32_t mip = 0; mip < info.mips; ++mip) {
@@ -118,6 +122,7 @@ namespace SR_GRAPH_NS {
                     SR_TRACY_ZONE;
                     for (uint32_t row = startRow; row < endRow; ++row) {
                         for (uint32_t col = 0; col < blockCols; ++col) {
+                            //const uint8_t* blockPtr = currentPixels.data() + (row * 4 * currentWidth + col * 4) * alignedChannels;
                             const uint8_t* blockPtr = currentPixels.data() + (row * 4) * currentWidth * 4 + (col * 4) * 4;
 
                             uint64_t blockIndex = row * blockCols + col;
@@ -153,8 +158,8 @@ namespace SR_GRAPH_NS {
                 uint32_t nextW = std::max(1u, currentWidth / 2);
                 uint32_t nextH = std::max(1u, currentHeight / 2);
 
-                nextPixels.resize(nextW * nextH * 4);
-                DownscaleImage2x(currentPixels.data(), currentWidth, currentHeight, nextPixels.data());
+                nextPixels.resize(nextW * nextH * alignedChannels);
+                DownscaleImage2x(currentPixels.data(), currentWidth, currentHeight, nextPixels.data(), alignedChannels);
                 currentPixels.swap(nextPixels);
 
                 currentWidth  = nextW;

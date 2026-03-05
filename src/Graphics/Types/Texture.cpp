@@ -92,12 +92,23 @@ namespace SR_GTYPES_NS {
                         loadInfo.format = ImageFormat::RGBA8_UNORM;
                     }
                     break;
-                case ImageType::Normal: loadInfo.format = ImageFormat::RG8_UNORM; break;
-                case ImageType::Roughness: loadInfo.format = ImageFormat::RGBA8_UNORM; break;
-                case ImageType::Metallic: loadInfo.format = ImageFormat::R8_UNORM; break;
-                case ImageType::AmbientOcclusion: loadInfo.format = ImageFormat::R8_UNORM; break;
-                case ImageType::Emissive: loadInfo.format = ImageFormat::RGBA8_UNORM; break;
-                case ImageType::Height: loadInfo.format = ImageFormat::R16_UNORM; break;
+                case ImageType::Direction:
+                    loadInfo.format = ImageFormat::RGBA8_UNORM;
+                    break;
+                case ImageType::Normal:
+                    loadInfo.format = ImageFormat::RG8_UNORM;
+                    break;
+                case ImageType::Roughness:
+                case ImageType::Metallic:
+                case ImageType::AmbientOcclusion:
+                case ImageType::Emissive:
+                case ImageType::SSS:
+                case ImageType::Mask:
+                    loadInfo.format = ImageFormat::R8_UNORM;
+                    break;
+                case ImageType::Height:
+                    loadInfo.format = ImageFormat::R16_UNORM;
+                    break;
                 default:
                     SRHalt("Texture::Load() : unsupported image type for auto format! Image type: {}", m_activeImageMetaInfo.imageType);
                     break;
@@ -120,7 +131,7 @@ namespace SR_GTYPES_NS {
                 if (auto&& pStrong = pWeak.Lock()) {
                     pStrong->OnAsyncLoaded(TextureLoader::Load(path, loadInfo));
                 }
-            }, SR_UTILS_NS::TaskPriority::Normal);
+            }, SR_UTILS_NS::TaskPriority::Critical);
         }
         else {
             m_textureData = TextureLoader::Load(GetResourcePath(), loadInfo);
