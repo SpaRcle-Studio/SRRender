@@ -295,7 +295,7 @@ namespace SR_GRAPH_NS {
     bool VulkanImGuiOverlay::Init() {
         SR_TRACY_ZONE;
 
-        auto&& pKernel = m_pipeline.DynamicCast<VulkanPipeline>()->GetKernel();
+        auto&& pKernel = SR_UTILS_NS::DynamicPointerCast<VulkanPipeline>(m_pipeline)->GetKernel();
         if (!pKernel->GetDevice() || !pKernel->GetDevice()->IsReady()) {
             SR_ERROR("VulkanImGuiOverlay::Init() : device is nullptr or not ready!");
             return false;
@@ -551,7 +551,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        auto&& pKernel = m_pipeline.DynamicCast<VulkanPipeline>()->GetKernel();
+        auto&& pKernel = SR_UTILS_NS::DynamicPointerCast<VulkanPipeline>(m_pipeline)->GetKernel();
 
         ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
 
@@ -889,7 +889,7 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        auto&& pMemoryManager = m_pipeline.DynamicCast<VulkanPipeline>()->GetMemoryManager();
+        auto&& pMemoryManager = SR_UTILS_NS::DynamicPointerCast<VulkanPipeline>(m_pipeline)->GetMemoryManager();
 
         if (auto&& pTexture = pMemoryManager->GetTexture(textureId)) {
             auto&& layout = ((ImGui_ImplVulkan_Data*)ImGui::GetIO().BackendRendererUserData)->DescriptorSetLayout;
@@ -904,7 +904,7 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanImGuiOverlay::ResetSubmitInfo() {
-        auto&& pKernel = m_pipeline.DynamicCast<VulkanPipeline>()->GetKernel();
+        auto&& pKernel = SR_UTILS_NS::DynamicPointerCast<VulkanPipeline>(m_pipeline)->GetKernel();
         if (!pKernel) {
             SR_ERROR("VulkanImGuiOverlay::ResetSubmitInfo() : kernel is nullptr!");
             return;

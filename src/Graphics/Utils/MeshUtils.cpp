@@ -14,16 +14,11 @@
 namespace SR_GRAPH_NS {
     SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> CreateMeshByType(MeshType type) {
         switch (type) {
-        case MeshType::Static:
-                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::Mesh3D>().StaticCast<SR_GTYPES_NS::Mesh>();
-            case MeshType::Sprite:
-                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::Sprite>().StaticCast<SR_GTYPES_NS::Mesh>();
-            case MeshType::Skinned:
-                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::SkinnedMesh>().StaticCast<SR_GTYPES_NS::Mesh>();
-            case MeshType::Procedural:
-                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::ProceduralMesh>().StaticCast<SR_GTYPES_NS::Mesh>();
-            case MeshType::Wireframe:
-                return SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::DebugWireframeMesh>().StaticCast<SR_GTYPES_NS::Mesh>();
+        case MeshType::Static: return SR_UTILS_NS::StaticPointerCast<SR_GTYPES_NS::Mesh>(SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::Mesh3D>());
+        case MeshType::Sprite: return SR_UTILS_NS::StaticPointerCast<SR_GTYPES_NS::Mesh>(SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::Sprite>());
+        case MeshType::Skinned: return SR_UTILS_NS::StaticPointerCast<SR_GTYPES_NS::Mesh>(SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::SkinnedMesh>());
+        case MeshType::Procedural: return SR_UTILS_NS::StaticPointerCast<SR_GTYPES_NS::Mesh>(SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::ProceduralMesh>());
+        case MeshType::Wireframe: return SR_UTILS_NS::StaticPointerCast<SR_GTYPES_NS::Mesh>(SR_UTILS_NS::Factory::Instance().Create<SR_GTYPES_NS::DebugWireframeMesh>());
             case MeshType::Unknown:
             default:
                 break;

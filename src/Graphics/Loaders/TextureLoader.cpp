@@ -42,13 +42,16 @@ namespace SR_GRAPH_NS {
             return GetCompressedImageSize(m_width, m_height, m_info);
         }
 
-        const uint32_t bytesPerPixel = TextureLoader::GetAlignedChannels(m_info.format);
-        if (bytesPerPixel == 0) {
-            SRHalt("TextureData::GetNumberOfBytes() : wrong format! Format: {}, path: {}", m_info.format, m_path);
+        if (!TextureLoader::IsAllowedChannelsCount(m_info.channels)) {
+            SRHalt("TextureData::GetNumberOfBytes() : wrong channels count! Channels: {}, path: {}", m_info.channels, m_path);
             return 0;
         }
 
-        return m_width * m_height * bytesPerPixel;
+        return m_width * m_height * m_info.channels;
+    }
+
+    bool TextureLoader::IsAllowedChannelsCount(uint8_t channels) {
+        return channels == 1 || channels == 2 || channels == 4;
     }
 
     TextureData::Ptr TextureData::Create(uint32_t width, uint32_t height, uint8_t* pData, DeleterFn&& deleter, TextureLoadInfo info) {
@@ -78,7 +81,7 @@ namespace SR_GRAPH_NS {
     }
 
     uint8_t TextureData::GetChannels() const {
-        return TextureLoader::GetAlignedChannels(m_info.format);
+        return m_info.channels;
     }
 
     TextureData::Ptr TextureLoader::Load(const SR_UTILS_NS::Path& path, TextureLoadInfo info) {
@@ -104,7 +107,7 @@ namespace SR_GRAPH_NS {
 
         if (cacheEnabled) {
             fileHash = fullPath.GetFileHash();
-            fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.format));
+            fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.channels));
             fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.mips));
 
             if (cacheHashPath.Exists(SR_UTILS_NS::Path::Type::File) && SR_UTILS_NS::FileSystem::ReadHashFromFile(cacheHashPath) == fileHash) {
@@ -134,9 +137,8 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        const uint8_t alignedChannels = GetAlignedChannels(info.format);
-        if (alignedChannels == 0) {
-            SRHalt("TextureLoader::Load() : wrong load format! Format: {}, path: {}", info.format, path);
+        if (!TextureLoader::IsAllowedChannelsCount(info.channels)) {
+            SRHalt("TextureLoader::Load() : wrong channels count! Channels: {}, path: {}", info.channels, path);
             return nullptr;
         }
 
@@ -154,15 +156,15 @@ namespace SR_GRAPH_NS {
 
         uint8_t* pImgData = pImgDataOriginal;
 
-        if (alignedChannels != 4) {
-            pImgData = (uint8_t*)SRMalloc(width * height * alignedChannels * sizeof(uint8_t));
+        if (info.channels != 4) {
+            pImgData = (uint8_t*)SRMalloc(width * height * info.channels * sizeof(uint8_t));
         }
 
         uint8_t* src = pImgDataOriginal;
         uint8_t* dst = pImgData;
         const int pixelCount = width * height;
 
-        switch (alignedChannels) {
+        switch (info.channels) {
             case 1:
                 for (int i = 0; i < pixelCount; ++i) {
                     dst[i] = src[i * 4];
@@ -178,7 +180,7 @@ namespace SR_GRAPH_NS {
                 break;
         }
 
-        if (alignedChannels != 4) {
+        if (info.channels != 4) {
             TextureLoader::Free(pImgDataOriginal);
         }
 
@@ -204,7 +206,7 @@ namespace SR_GRAPH_NS {
             marshal.Reserve(
                 1024 + // overhead
                 path.ToStringRef().size() + // path
-                width * height * alignedChannels * sizeof(uint8_t) // data
+                width * height * info.channels * sizeof(uint8_t) // data
             );
 
             marshal.Write<uint64_t>(TextureLoader::VERSION);
@@ -212,17 +214,17 @@ namespace SR_GRAPH_NS {
             marshal.Write<uint32_t>(width);
             marshal.Write<uint32_t>(height);
             marshal.Write<uint32_t>(info.mips);
-            marshal.Write(static_cast<uint8_t>(info.format));
+            marshal.Write<uint8_t>(info.channels);
             marshal.Write(static_cast<uint8_t>(TextureCompression::None));
-            marshal.WriteBlock(pImgData, width * height * alignedChannels * sizeof(uint8_t));
+            marshal.WriteBlock(pImgData, width * height * info.channels * sizeof(uint8_t));
 
             if (!marshal.Save(cacheFilePath)) {
                 SR_ERROR("TextureLoader::Load() : failed to save marshal to file \"" + cacheFilePath.ToStringRef() + "\"!");
             }
         }
 
-        auto&& pTextureData = TextureData::Create(width, height, pImgData, [alignedChannels](uint8_t* pData) {
-            if (alignedChannels != 4) {
+        auto&& pTextureData = TextureData::Create(width, height, pImgData, [channels = info.channels](uint8_t* pData) {
+            if (channels != 4) {
                 SRFree(pData);
             }
             else {
@@ -293,7 +295,7 @@ namespace SR_GRAPH_NS {
         }
 
         TextureLoadInfo info;
-        info.format = config.format;
+        info.channels = requireChannels;
 
         auto&& pTextureData = TextureData::Create(width, height, pImgData, [](uint8_t* pData) {
             TextureLoader::Free(pData);
@@ -323,7 +325,7 @@ namespace SR_GRAPH_NS {
 
         TextureLoadInfo info;
         info.mips = marshal.Read<uint32_t>();
-        info.format = static_cast<ImageFormat>(marshal.Read<uint8_t>());
+        info.channels = marshal.Read<uint8_t>();
         info.compression = static_cast<TextureCompression>(marshal.Read<uint8_t>());
 
         auto&& size = marshal.Read<uint64_t>();
@@ -400,7 +402,7 @@ namespace SR_GRAPH_NS {
         marshal.Write<uint32_t>(pData->GetWidth());
         marshal.Write<uint32_t>(pData->GetHeight());
         marshal.Write<uint32_t>(info.mips);
-        marshal.Write(static_cast<uint8_t>(info.format));
+        marshal.Write<uint8_t>(info.channels);
         marshal.Write(static_cast<uint8_t>(info.compression));
         marshal.WriteBlock(pCompressedData, compressedSize);
 

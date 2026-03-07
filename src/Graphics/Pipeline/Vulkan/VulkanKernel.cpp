@@ -69,7 +69,7 @@ namespace SR_GRAPH_NS {
 
         vkResetFences(*m_device, 1, &frame.inFlightFence);
 
-        auto&& pVulkanPipeline = m_pipeline.DynamicCast<VulkanPipeline>();
+        auto&& pVulkanPipeline = SR_UTILS_NS::DynamicPointerCast<VulkanPipeline>(m_pipeline);
 
         //auto&& queues = m_pipeline->GetQueue().GetQueues();
         //for (auto&& queue : queues) {
@@ -100,7 +100,7 @@ namespace SR_GRAPH_NS {
         m_submitInfo.signalSemaphores.emplace_back(m_renderFinished[m_imageIndex]);
         m_submitInfo.waitSemaphores.emplace_back(frame.imageAvailable);
 
-        auto&& pImGuiOverlay = m_pipeline->GetOverlay(OverlayType::ImGui).DynamicCast<VulkanImGuiOverlay>();
+        auto&& pImGuiOverlay = SR_UTILS_NS::DynamicPointerCast<VulkanImGuiOverlay>(m_pipeline->GetOverlay(OverlayType::ImGui));
 
         if (m_GUIEnabled && pImGuiOverlay && !pImGuiOverlay->IsSurfaceDirty()) {
             auto&& submitInfo = pImGuiOverlay->Render(m_imageIndex);

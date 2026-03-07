@@ -66,13 +66,13 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        return pFileMaterial.StaticCast<BaseMaterial>();
+        return SR_UTILS_NS::StaticPointerCast<BaseMaterial>(pFileMaterial);
     }
 
     BaseMaterial::Ptr FileMaterial::LoadAsUnique(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
 
-        auto&& pFileMaterial = Load(rawPath).DynamicCast<FileMaterial>();
+        auto&& pFileMaterial = SR_UTILS_NS::DynamicPointerCast<FileMaterial>(Load(rawPath));
         if (!pFileMaterial) {
             SR_ERROR("FileMaterial::LoadAsUnique() : failed to load file material! \n\tPath: " + rawPath.ToString());
             return nullptr;
@@ -93,7 +93,7 @@ namespace SR_GRAPH_NS {
             pUniqueMaterial->GetMaterialData()->GetDefaultShaderData()
         );
 
-        return pUniqueMaterial.StaticCast<BaseMaterial>();
+        return SR_UTILS_NS::StaticPointerCast<BaseMaterial>(pUniqueMaterial);
     }
 
     const MaterialData::Ptr& FileMaterial::GetMaterialData() const noexcept {

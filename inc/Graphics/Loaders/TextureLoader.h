@@ -56,7 +56,7 @@ namespace SR_GRAPH_NS {
     };
 
     class TextureLoader {
-        static constexpr uint64_t VERSION = 1002;
+        static constexpr uint64_t VERSION = 1003;
     public:
         TextureLoader() = delete;
         TextureLoader(const TextureLoader&) = delete;
@@ -69,6 +69,7 @@ namespace SR_GRAPH_NS {
 
         static bool Free(unsigned char* data);
         static int GetAlignedChannels(ImageFormat format);
+        static bool IsAllowedChannelsCount(uint8_t channels);
 
     private:
         static void AsyncCompressTexture(const TextureData::Ptr& pData, TextureCompression compression);

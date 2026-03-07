@@ -110,7 +110,7 @@ namespace SR_GRAPH_NS {
     struct TextureLoadInfo {
         TextureCompression compression = TextureCompression::None;
         uint32_t mips = 0;
-        ImageFormat format = ImageFormat::Auto;
+        uint8_t channels = 0;
     };
 
     uint32_t Find4(uint32_t i);

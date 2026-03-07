@@ -102,7 +102,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD MeshDrawerUniforms& GetUniformsData() { return m_uniforms; }
 
     protected:
-        SR_NODISCARD virtual const Frustum& GetFrustum(uint32_t renderLayer) const;
+        SR_NODISCARD virtual const Frustum& GetFrustum(uint32_t renderLayer, bool& isAvailable) const;
         SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
         SR_NODISCARD virtual RenderQueuePtr AllocateRenderQueue(uint32_t index);
         virtual void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const { }

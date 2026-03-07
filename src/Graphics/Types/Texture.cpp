@@ -76,27 +76,24 @@ namespace SR_GTYPES_NS {
         const bool compressionEnabled = GetRenderContext()->IsTextureCompressionEnabled();
         const TextureCompression compression = compressionEnabled ? metaInfo.compression : TextureCompression::None;
 
-        TextureLoadInfo loadInfo;
-        loadInfo.compression = compression;
-        loadInfo.format = metaInfo.format;
-        loadInfo.mips = metaInfo.mipLevels;
+        m_format = metaInfo.format;
 
-        if (loadInfo.format == ImageFormat::Auto) {
+        if (m_format == ImageFormat::Auto) {
             const bool srbgEnabled = GetRenderContext()->IsSrgbEnabled();
             switch (m_activeImageMetaInfo.imageType) {
                 case ImageType::Albedo:
                     if (srbgEnabled) {
-                        loadInfo.format = ImageFormat::RGBA8_SRGB;
+                        m_format = ImageFormat::RGBA8_SRGB;
                     }
                     else {
-                        loadInfo.format = ImageFormat::RGBA8_UNORM;
+                        m_format = ImageFormat::RGBA8_UNORM;
                     }
                     break;
                 case ImageType::Direction:
-                    loadInfo.format = ImageFormat::RGBA8_UNORM;
+                    m_format = ImageFormat::RGBA8_UNORM;
                     break;
                 case ImageType::Normal:
-                    loadInfo.format = ImageFormat::RG8_UNORM;
+                    m_format = ImageFormat::RG8_UNORM;
                     break;
                 case ImageType::Roughness:
                 case ImageType::Metallic:
@@ -104,10 +101,10 @@ namespace SR_GTYPES_NS {
                 case ImageType::Emissive:
                 case ImageType::SSS:
                 case ImageType::Mask:
-                    loadInfo.format = ImageFormat::R8_UNORM;
+                    m_format = ImageFormat::R8_UNORM;
                     break;
                 case ImageType::Height:
-                    loadInfo.format = ImageFormat::R16_UNORM;
+                    m_format = ImageFormat::R16_UNORM;
                     break;
                 default:
                     SRHalt("Texture::Load() : unsupported image type for auto format! Image type: {}", m_activeImageMetaInfo.imageType);
@@ -115,14 +112,19 @@ namespace SR_GTYPES_NS {
             }
         }
 
-        if (!IsTextureSupportsFormat(loadInfo.format) && loadInfo.format != ImageFormat::Auto && loadInfo.format != ImageFormat::Unknown) {
-            SR_WARN("Texture::Load() : the texture format {} is not supported! Falling back to Auto format.", loadInfo.format);
-            loadInfo.format = ImageFormat::Auto;
+        if (!IsTextureSupportsFormat(m_format) && m_format != ImageFormat::Auto && m_format!= ImageFormat::Unknown) {
+            SR_WARN("Texture::Load() : the texture format {} is not supported! Falling back to Auto format.", m_format);
+            m_format = ImageFormat::Auto;
         }
 
-        if (loadInfo.format == ImageFormat::Auto || loadInfo.format == ImageFormat::Unknown) {
-            loadInfo.format = ImageFormat::RGBA8_UNORM;
+        if (m_format == ImageFormat::Auto || m_format == ImageFormat::Unknown) {
+            m_format = ImageFormat::RGBA8_UNORM;
         }
+
+        TextureLoadInfo loadInfo;
+        loadInfo.compression = compression;
+        loadInfo.mips = metaInfo.mipLevels;
+        loadInfo.channels = TextureLoader::GetAlignedChannels(m_format);
 
         if (metaInfo.loadMode == SR_UTILS_NS::ResourceLoadMode::Async) {
             m_syncLoadTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([loadInfo, pWeak = GetWeakThis<Texture>(), path = GetResourcePath()]() {
@@ -186,7 +188,7 @@ namespace SR_GTYPES_NS {
         createInfo.width = m_textureData->GetWidth();
         createInfo.height = m_textureData->GetHeight();
         createInfo.compression = m_textureData->GetInfo().compression;
-        createInfo.format = m_textureData->GetInfo().format;
+        createInfo.format = m_format;
         createInfo.mipLevels = m_textureData->GetInfo().mips;
         createInfo.filter = m_activeImageMetaInfo.filter;
         createInfo.addressMode = m_activeImageMetaInfo.addressMode;
@@ -290,6 +292,7 @@ namespace SR_GTYPES_NS {
         }
 
         pTexture->m_isFromMemory = true;
+        pTexture->m_format = meta.format;
 
         pTexture->SetImageMetaInfo(meta);
         pTexture->SetId("TextureFromMemory");

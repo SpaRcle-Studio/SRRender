@@ -26,10 +26,10 @@ namespace SR_GRAPH_NS {
         IFileRenderTechniqueResource::Ptr pResource;
 
         if (path.GetExtensionView() == FileRenderTechniqueResource::GetMetaStatic()->GetExtension()) {
-            pResource = FileRenderTechniqueResource::Load(path).StaticCast<IFileRenderTechniqueResource>();
+            pResource = SR_UTILS_NS::StaticPointerCast<IFileRenderTechniqueResource>(FileRenderTechniqueResource::Load(path));
         }
         else if (path.GetExtensionView() == FileRenderTechniquePresetResource::GetMetaStatic()->GetExtension()) {
-            pResource = FileRenderTechniquePresetResource::Load(path).StaticCast<IFileRenderTechniqueResource>();
+            pResource = SR_UTILS_NS::StaticPointerCast<IFileRenderTechniqueResource>(FileRenderTechniquePresetResource::Load(path));
         }
         else {
             SR_ERROR("FileRenderTechnique::Load() : unsupported file extension for render technique resource: {}", path.GetExtensionView());

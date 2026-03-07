@@ -88,7 +88,11 @@ namespace SR_GRAPH_NS {
         bool changed = false;
 
         for (uint32_t i = 0; i < m_renderQueues.size(); ++i) {
-            const auto& frustum = GetFrustum(i);
+            bool isAvailable = false;
+            const auto& frustum = GetFrustum(i, isAvailable);
+            if (!isAvailable) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
             changed |= m_renderQueues[i]->UpdateFrustumCulling(frustum);
         }
 
@@ -260,7 +264,8 @@ namespace SR_GRAPH_NS {
         return m_valid;
     }
 
-    const Frustum& MeshDrawerPass::GetFrustum(uint32_t renderLayer) const {
+    const Frustum& MeshDrawerPass::GetFrustum(uint32_t renderLayer, bool& isAvailable) const {
+        isAvailable = true;
         return GetCamera()->GetFrustum();
     }
 

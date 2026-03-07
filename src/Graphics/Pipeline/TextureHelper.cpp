@@ -85,9 +85,7 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        uint32_t alignedChannels = TextureLoader::GetAlignedChannels(info.format);
-
-        SR_LOG("CompressImageMultithread() : compressing {} image {}x{} with method {} and {} mip levels using up to {} threads...", info.format, w, h, info.compression, info.mips, maxThreads);
+        SR_LOG("CompressImageMultithread() : compressing image {}x{}x{} with method {} and {} mip levels using up to {} threads...",  w, h, info.channels, info.compression, info.mips, maxThreads);
 
         const size_t bytesPerBlock = (info.compression == TextureCompression::BC1 || info.compression == TextureCompression::BC4) ? 8 : 16;
         const uint32_t threadCount = std::min(maxThreads, std::max(1u, std::thread::hardware_concurrency() / 2));
@@ -98,7 +96,7 @@ namespace SR_GRAPH_NS {
         uint32_t currentWidth  = w;
         uint32_t currentHeight = h;
 
-        std::vector<uint8_t> currentPixels(pixels, pixels + w * h * alignedChannels);
+        std::vector<uint8_t> currentPixels(pixels, pixels + w * h * info.channels);
         std::vector<uint8_t> nextPixels;
 
         for (uint32_t mip = 0; mip < info.mips; ++mip) {
@@ -158,8 +156,8 @@ namespace SR_GRAPH_NS {
                 uint32_t nextW = std::max(1u, currentWidth / 2);
                 uint32_t nextH = std::max(1u, currentHeight / 2);
 
-                nextPixels.resize(nextW * nextH * alignedChannels);
-                DownscaleImage2x(currentPixels.data(), currentWidth, currentHeight, nextPixels.data(), alignedChannels);
+                nextPixels.resize(nextW * nextH * info.channels);
+                DownscaleImage2x(currentPixels.data(), currentWidth, currentHeight, nextPixels.data(), info.channels);
                 currentPixels.swap(nextPixels);
 
                 currentWidth  = nextW;

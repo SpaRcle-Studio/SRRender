@@ -44,6 +44,8 @@ namespace SR_GRAPH_NS {
         /// @property
         uint8_t cascadesCount = 4;
         /// @property
+        uint8_t frustumCount = 2;
+        /// @property
         float_t oneMeterUnit = 0.1f;
         /// @property
         float_t maxShadowDistance = 500.f;

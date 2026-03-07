@@ -228,7 +228,7 @@ namespace SR_ANIMATIONS_NS {
             auto&& pGameObject = pBone->gameObject;
 
             if (pGameObject || pBone->hasError || pBone->Initialize()) {
-                m_transforms[index] = pGameObject ? pGameObject->GetTransform().DynamicCast<SR_UTILS_NS::Transform3D>() : nullptr;
+                m_transforms[index] = pGameObject ? SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::Transform3D>(pGameObject->GetTransform()) : nullptr;
             }
             m_hasInvalidBones |= !m_transforms[index];
 

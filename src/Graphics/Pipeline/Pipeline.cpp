@@ -519,11 +519,6 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        if (!m_isCmdState) {
-            SRHalt("Pipeline::BeginRender() : missing call \"BeginCmdBuffer\"!");
-            return false;
-        }
-
         if (m_isComputeState) {
             SRHalt("Pipeline::BeginCompute() : missing call \"EndCompute\"!");
             return false;

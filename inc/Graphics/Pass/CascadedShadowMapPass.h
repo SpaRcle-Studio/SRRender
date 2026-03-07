@@ -48,7 +48,7 @@ namespace SR_GRAPH_NS {
         void OnCameraParamsChanged() override;
         void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const override;
 
-        SR_NODISCARD const Frustum& GetFrustum(uint32_t renderLayer) const override;
+        SR_NODISCARD const Frustum& GetFrustum(uint32_t renderLayer, bool& isAvailable) const override;
         SR_NODISCARD float_t GetCascadedMapResolution() const;
 
     protected:

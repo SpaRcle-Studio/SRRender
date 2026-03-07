@@ -74,6 +74,7 @@ namespace SR_GTYPES_NS {
 
         std::optional<uint64_t> m_syncLoadTaskId;
 
+        ImageFormat m_format = ImageFormat::Unknown;
         ImageMetaInfo m_imageMetaInfo;
         ImageMetaInfo m_activeImageMetaInfo;
 

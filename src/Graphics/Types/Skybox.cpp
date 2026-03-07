@@ -228,7 +228,7 @@ namespace SR_GTYPES_NS {
         m_dirtyShader = true;
 
         if (m_shader) {
-            RemoveDependency(m_shader.StaticCast<SR_UTILS_NS::ResourceContainer>());
+            RemoveDependency(SR_UTILS_NS::StaticPointerCast<SR_UTILS_NS::ResourceContainer>(m_shader));
             m_shader = nullptr;
         }
 
@@ -236,7 +236,7 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        AddDependency(m_shader.StaticCast<SR_UTILS_NS::ResourceContainer>());
+        AddDependency(SR_UTILS_NS::StaticPointerCast<SR_UTILS_NS::ResourceContainer>(m_shader));
     }
 
     int32_t Skybox::GetVBO() {
@@ -298,7 +298,7 @@ namespace SR_GTYPES_NS {
 
             TextureLoadInfo info;
             info.mips = 1;
-            info.format = ImageFormat::RGBA8_UNORM;
+            info.channels = 4;
 
             auto&& pTextureData = TextureLoader::Load(file, info);
 

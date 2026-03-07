@@ -18,9 +18,9 @@ namespace SR_GRAPH_NS::Details {
             return false;
         }
 
-        if (auto pSwapchain = pPass.DynamicCast<SwapchainPass>()) {
+        if (auto pSwapchain = SR_UTILS_NS::DynamicPointerCast<SwapchainPass>(pPass)) {
             pPass = SRNew<FrameBufferPass>();
-            auto&& pFrameBufferPass = pPass.StaticCast<FrameBufferPass>();
+            auto&& pFrameBufferPass = SR_UTILS_NS::StaticPointerCast<FrameBufferPass>(pPass);
 
             pFrameBufferPass->SetPasses(pSwapchain->GetPasses());
             pFrameBufferPass->SetCustomName(name);
@@ -32,7 +32,7 @@ namespace SR_GRAPH_NS::Details {
             return true;
         }
 
-        if (auto&& pGroupPass = pPass.DynamicCast<GroupPass>()) {
+        if (auto&& pGroupPass = SR_UTILS_NS::DynamicPointerCast<GroupPass>(pPass)) {
             for (auto&& pChild : pGroupPass->GetPasses()) {
                 if (ReplaceSwapchainPass(pChild, name)) {
                     return true;

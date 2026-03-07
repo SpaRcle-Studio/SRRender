@@ -86,8 +86,8 @@ namespace SR_GRAPH_NS {
         pShadowPass->SetSplitDepths(shadowPreset.split1, shadowPreset.split2, shadowPreset.split3);
         pShadowPass->SetMaxShadowDistance(shadowPreset.maxShadowDistance);
         pShadowPass->SetOneMeterUnit(shadowPreset.oneMeterUnit);
-        pShadowPass->SetLightFrustumCount(0);
-        pShadowPass->SetFrustumCulling(false);
+        pShadowPass->SetLightFrustumCount(shadowPreset.frustumCount);
+        pShadowPass->SetFrustumCulling(shadowPreset.frustumCount > 0);
         pShadowPass->AddShaderDefine(SHADER_MACRO_SR_DEFINE_CASCADED_SHADOW_MAP_PASS);
 
         if (instancing) {
@@ -100,7 +100,7 @@ namespace SR_GRAPH_NS {
         }
 
         for (auto&& pLayer : technique.GetLayers()) {
-            if (auto&& pMeshLayer = pLayer.DynamicCast<RenderTechniqueLayerMesh>()) {
+            if (auto&& pMeshLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerMesh>(pLayer)) {
                 if (!pMeshLayer->castShadows || (pMeshLayer->editorOnly && !params.editor)) {
                     continue;
                 }
@@ -117,8 +117,8 @@ namespace SR_GRAPH_NS {
             pShadowPass->GetAllowedLayers().insert(layer);
         }
 
-        pFrameBufferPass->AddPass(pShadowPass.StaticCast<BasePass>());
-        data.pass.DynamicCast<GroupPass>()->AddPass(pFrameBufferPass.StaticCast<BasePass>());
+        pFrameBufferPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pShadowPass));
+        SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass));
     }
 
     void RenderTechniquePresetIntegrationColorBuffer::Integrate(const Technique& technique, const Params& params) const {
@@ -152,7 +152,7 @@ namespace SR_GRAPH_NS {
         pColorBufferPass->SetColorMultiplier(colorMultiplier);
 
         for (auto&& pLayer : technique.GetLayers()) {
-            if (auto&& pMeshLayer = pLayer.DynamicCast<RenderTechniqueLayerMesh>()) {
+            if (auto&& pMeshLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerMesh>(pLayer)) {
                 if (!pMeshLayer->colorBuffer || (pMeshLayer->editorOnly && !params.editor)) {
                     continue;
                 }
@@ -165,8 +165,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        pFrameBufferPass->AddPass(pColorBufferPass.StaticCast<BasePass>());
-        data.pass.DynamicCast<GroupPass>()->AddPass(pFrameBufferPass.StaticCast<BasePass>());
+        pFrameBufferPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pColorBufferPass));
+        SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass));
     }
 
     void RenderTechniquePresetIntegrationMainView::Integrate(const Technique& technique, const Params& params) const {
@@ -189,7 +189,7 @@ namespace SR_GRAPH_NS {
                 pFrameBuffer->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
             }
 
-            pMainGroupPass = pFrameBuffer.StaticCast<GroupPass>();
+            pMainGroupPass = SR_UTILS_NS::StaticPointerCast<GroupPass>(pFrameBuffer);
 
             std::vector<ImageFormat> colorFormats;
             colorFormats.reserve(mainRenderColorLayers);
@@ -210,19 +210,19 @@ namespace SR_GRAPH_NS {
             SwapchainPass::Ptr pSwapchainPass = new SwapchainPass();
             pSwapchainPass->SetClearColor(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
             pSwapchainPass->SetCustomName(params.sceneViewName);
-            pMainGroupPass = pSwapchainPass.StaticCast<GroupPass>();
+            pMainGroupPass = SR_UTILS_NS::StaticPointerCast<GroupPass>(pSwapchainPass);
         }
 
         auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>();
 
-        data.pass.DynamicCast<GroupPass>()->AddPass(pMainGroupPass.StaticCast<BasePass>());
+        SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pMainGroupPass));
 
         for (auto&& pLayer : technique.GetLayers()) {
             if ((pLayer->editorOnly && !params.editor)) {
                 continue;
             }
 
-            if (auto&& pMeshLayer = pLayer.DynamicCast<RenderTechniqueLayerMesh>()) {
+            if (auto&& pMeshLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerMesh>(pLayer)) {
                 if (!pMeshLayer->mainRenderer) {
                     continue;
                 }
@@ -248,20 +248,20 @@ namespace SR_GRAPH_NS {
                 for (auto&& layer : pMeshLayer->disallowedLayers) {
                     pMeshDrawerPass->GetDisallowedLayers().insert(layer);
                 }
-                pMainGroupPass->AddPass(pMeshDrawerPass.StaticCast<BasePass>());
+                pMainGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pMeshDrawerPass));
             }
-            else if (auto&& pSkyboxLayer = pLayer.DynamicCast<RenderTechniqueLayerSkybox>()) {
+            else if (auto&& pSkyboxLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerSkybox>(pLayer)) {
                 SkyboxPass::Ptr pSkyboxPass = new SkyboxPass();
-                pMainGroupPass->AddPass(pSkyboxPass.StaticCast<BasePass>());
+                pMainGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pSkyboxPass));
             }
-            else if (auto&& pCustomPass = pLayer.DynamicCast<RenderTechniqueLayerCustomPass>(); pCustomPass && pCustomPass->pass) {
+            else if (auto&& pCustomPass = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerCustomPass>(pLayer); pCustomPass && pCustomPass->pass) {
                 BasePass::Ptr pPass = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pCustomPass->pass->GetMeta()->GetFactoryName());
                 pCustomPass->pass->CloneTo(*pPass);
                 pMainGroupPass->AddPass(pPass);
             }
-            else if (auto&& pClearDepthLayer = pLayer.DynamicCast<RenderTechniqueLayerClearDepth>()) {
+            else if (auto&& pClearDepthLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerClearDepth>(pLayer)) {
                 ClearDepthAttachmentPass::Ptr pClearDepthPass = new ClearDepthAttachmentPass();
-                pMainGroupPass->AddPass(pClearDepthPass.StaticCast<BasePass>());
+                pMainGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pClearDepthPass));
             }
         }
 
@@ -278,16 +278,16 @@ namespace SR_GRAPH_NS {
                 pFrameBufferPass->SetFrameBufferName(params.sceneViewName);
                 pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
 
-                data.pass.DynamicCast<GroupPass>()->AddPass(pFrameBufferPass.StaticCast<BasePass>());
-                pPostProcessGroupPass = pFrameBufferPass.StaticCast<GroupPass>();
+                SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass));
+                pPostProcessGroupPass = SR_UTILS_NS::StaticPointerCast<GroupPass>(pFrameBufferPass);
             }
             else {
                 SwapchainPass::Ptr pSwapchainPass = new SwapchainPass();
                 pSwapchainPass->SetClearColor(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
                 pSwapchainPass->SetCustomName(params.sceneViewName);
 
-                data.pass.DynamicCast<GroupPass>()->AddPass(pSwapchainPass.StaticCast<BasePass>());
-                pPostProcessGroupPass = pSwapchainPass.StaticCast<GroupPass>();
+                SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pSwapchainPass));
+                pPostProcessGroupPass = SR_UTILS_NS::StaticPointerCast<GroupPass>(pSwapchainPass);
             }
 
             PostProcessPass::Ptr pPostProcessPass = new PostProcessPass();
@@ -303,7 +303,7 @@ namespace SR_GRAPH_NS {
                 pPostProcessPass->GetSamplersData().AddSampler(shadowSampler);
             }
 
-            pPostProcessGroupPass->AddPass(pPostProcessPass.StaticCast<BasePass>());
+            pPostProcessGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pPostProcessPass));
         }
     }
 
@@ -320,7 +320,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        auto&& pMainGroup = technique.GetInternalData().pass.DynamicCast<GroupPass>();
+        auto&& pMainGroup = SR_UTILS_NS::DynamicPointerCast<GroupPass>(technique.GetInternalData().pass);
 
         const int32_t index = pMainGroup->IndexOfPass(pMainViewIntegration->offscreenControllerName);
         if (index >= 0) {
@@ -330,7 +330,7 @@ namespace SR_GRAPH_NS {
             shadowSampler.id = "hdrTexture";
             shadowSampler.usageType = SamplerDataUsageType::FrameBufferColor;
             pAutoExposurePass->GetSamplersData().AddSampler(shadowSampler);
-            pMainGroup->InsertPass(pAutoExposurePass.StaticCast<BasePass>(), index + 1);
+            pMainGroup->InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pAutoExposurePass), index + 1);
 
             if (auto&& pPostProcessPass = pMainGroup->FindPassAs<PostProcessPass>(PostProcessPass::GetClassStaticName())) {
                 pPostProcessPass->AddSSBOUsageFromPass(AutoExposurePass::GetClassStaticName());

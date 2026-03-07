@@ -71,7 +71,7 @@ namespace SR_GTYPES_NS {
             return nullptr;
         }
 
-        if (auto&& pRawMeshHolder = pMesh.DynamicCast<SR_HTYPES_NS::IRawMeshHolder>()) {
+        if (auto&& pRawMeshHolder = SR_UTILS_NS::DynamicPointerCast<SR_HTYPES_NS::IRawMeshHolder>(pMesh)) {
             pRawMeshHolder->SetRawMesh(pRawMesh);
             pRawMeshHolder->SetMeshId(id);
         }

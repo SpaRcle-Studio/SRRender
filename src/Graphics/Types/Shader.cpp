@@ -57,12 +57,14 @@ namespace SR_GRAPH_NS::Types {
             }
         }
 
-        if (m_shaderCreateInfo.shaderType != SRSL2::ShaderType::PostProcessing && GetRenderContext()->IsMacroDefined("SR_DEFINE_WIREFRAME")) {
-            m_shaderCreateInfo.polygonMode = PolygonMode::Line;
+        if (GetRenderContext()->IsMacroDefined("SR_DEFINE_WIREFRAME")) {
+            if (m_shaderCreateInfo.polygonMode != PolygonMode::Unknown && m_shaderCreateInfo.shaderType != SRSL2::ShaderType::PostProcessing) {
+                m_shaderCreateInfo.polygonMode = PolygonMode::Line;
+            }
         }
 
         if (!m_shaderCreateInfo.Validate()) {
-            SR_ERROR("Shader::Init() : failed to validate shader!\n\tPath: " + GetResourcePath().ToString());
+            SRHalt("Shader::Init() : failed to validate shader!\n\tPath: " + GetResourcePath().ToString());
             m_hasErrors = true;
             return false;
         }
@@ -322,7 +324,7 @@ namespace SR_GRAPH_NS::Types {
     void Shader::LoadDefaultSampler(SR_UTILS_NS::StringAtom name) {
         if (m_defaultSamplers.count(name) == 1) {
             if (auto&& pTexture = CoreResLoader::Load<SR_GTYPES_NS::Texture>(name)) {
-                AddDependency(pTexture.StaticCast<SR_UTILS_NS::ResourceContainer>());
+                AddDependency(SR_UTILS_NS::StaticPointerCast<SR_UTILS_NS::ResourceContainer>(pTexture));
                 m_defaultSamplers[name] = pTexture;
             }
             else {
@@ -340,7 +342,7 @@ namespace SR_GRAPH_NS::Types {
             if (!pTexture) {
                 continue;
             }
-            RemoveDependency(pTexture.StaticCast<SR_UTILS_NS::ResourceContainer>());
+            RemoveDependency(SR_UTILS_NS::StaticPointerCast<SR_UTILS_NS::ResourceContainer>(pTexture));
         }
         m_defaultSamplers.clear();
     }

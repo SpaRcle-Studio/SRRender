@@ -146,7 +146,7 @@ namespace SR_GRAPH_NS {
         template<typename T> SR_NODISCARD SR_HTYPES_NS::SharedPtr<T> FindIntegration() const noexcept {
             for (auto&& pIntegration : m_integrations) {
                 if (pIntegration && pIntegration->GetMeta() == T::GetMetaStatic()) {
-                    return pIntegration.StaticCast<T>();
+                    return SR_UTILS_NS::StaticPointerCast<T>(pIntegration);
                 }
             }
             return nullptr;
