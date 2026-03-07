@@ -15,6 +15,7 @@
 #include <EvoVulkan/Types/DescriptorPool.h>
 #include <EvoVulkan/DescriptorManager.h>
 
+#include <Utils/Types/Time.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/SubscriptionMessage.h>
 
@@ -454,9 +455,8 @@ namespace SR_GRAPH_NS {
             io.DisplaySize = ImVec2(pNativeWindow->GetSurfaceWidth() / scale, pNativeWindow->GetSurfaceHeight() / scale);
         }
 
-        static const SR_UTILS_NS::StringAtom deltaTimeKey = "DeltaTime";
         constexpr float_t defaultDeltaTime = 1.0f / 60.0f;
-        io.DeltaTime = SR_THIS_THREAD->GetContext()->GetValueDef<float_t>(deltaTimeKey, defaultDeltaTime);
+        io.DeltaTime = SR_HTYPES_NS::Time::Instance().DeltaTime();
         io.DeltaTime = io.DeltaTime == 0.0f ? defaultDeltaTime : io.DeltaTime;
 
     #elif defined(SR_ANDROID)
