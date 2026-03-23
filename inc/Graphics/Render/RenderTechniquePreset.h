@@ -55,6 +55,8 @@ namespace SR_GRAPH_NS {
         /// @property
         bool castShadows = false;
         /// @property
+        bool applyShadows = false;
+        /// @property
         bool colorBuffer = false;
         /// @property
         bool frustumCulling = true;

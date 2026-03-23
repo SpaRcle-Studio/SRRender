@@ -229,7 +229,7 @@ namespace SR_GRAPH_NS {
 
                 MeshDrawerPass::Ptr pMeshDrawerPass = new MeshDrawerPass();
 
-                if (pMeshLayer->castShadows && params.activeGraphicsSettings.shadowsQuality != Quality::None) {
+                if (pMeshLayer->applyShadows && params.activeGraphicsSettings.shadowsQuality != Quality::None) {
                     if (pShadowIntegration) {
                         pMeshDrawerPass->AddShaderDefine(SHADER_MACRO_SR_DEFINE_USE_CASCADED_SHADOW_MAP);
                         SamplerData shadowSampler;

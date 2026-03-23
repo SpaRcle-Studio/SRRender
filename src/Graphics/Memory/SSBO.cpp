@@ -47,7 +47,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_size == 0) {
-            SR_ERROR("SSBOInstance::ReAllocate() : SSBO size is zero!");
+            SRHalt("SSBOInstance::ReAllocate() : SSBO size is zero!");
             return false;
         }
 
