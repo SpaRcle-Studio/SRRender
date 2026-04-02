@@ -2266,6 +2266,15 @@ namespace SR_GRAPH_NS {
         );
     }
 
+    void VulkanPipeline::CrashDriver() {
+        if (m_kernel) {
+            m_kernel->GetDevice()->SimulateDeviceLost();
+        }
+        else {
+            SRHalt("VulkanPipeline::CrashDriver() : kernel is nullptr!");
+        }
+    }
+
     void VulkanPipeline::PrepareFrame() {
         SR_TRACY_ZONE;
 

@@ -131,6 +131,8 @@ namespace SR_GRAPH_NS {
         void PrepareFrame() override;
         void DrawFrame() override;
 
+        void CrashDriver() override;
+
         void OnMultiSampleChanged() override;
         void SetCurrentFrameBuffer(FramebufferPtr pFrameBuffer) override;
         void SetSwapchainImagesCount(uint16_t count) override;

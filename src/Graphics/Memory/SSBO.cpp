@@ -289,7 +289,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         if (!m_mappedData) {
-            SR_ERROR("SSBOInstance::Flush() : SSBO is not mapped!");
+            SRHalt("SSBOInstance::Flush() : SSBO is not mapped!");
             return;
         }
 

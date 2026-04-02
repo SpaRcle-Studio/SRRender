@@ -118,6 +118,7 @@ namespace SR_GRAPH_NS {
             if (auto&& result = vkQueueSubmit(m_device->GetQueues()->GetGraphicsQueue(), 1, &vkSubmitInfo, frame.inFlightFence); result != VK_SUCCESS) {
                 VK_ERROR("VulkanKernel::Render() : failed to queue submit! Reason: " + EvoVulkan::Tools::Convert::result_to_description(result));
                 if (result == VK_ERROR_DEVICE_LOST) {
+                    m_device->OnDeviceLost();
                     SR_PLATFORM_NS::Terminate();
                 }
                 return EvoVulkan::Core::RenderResult::Error;
@@ -128,6 +129,7 @@ namespace SR_GRAPH_NS {
         m_frameIndex = (m_frameIndex + 1) % GetMaxFramesInFlight();
 
         if (presentResult == EvoVulkan::Core::FrameResult::DeviceLost) {
+            m_device->OnDeviceLost();
             SR_PLATFORM_NS::Terminate();
         }
 

@@ -194,6 +194,8 @@ namespace SR_GRAPH_NS {
 
         virtual void OnResize(const SR_MATH_NS::UVector2& size);
 
+        virtual void CrashDriver() { }
+
         /// Очистка кадрового буфера цветом. Если у буфера несколько attachment'ов,
         /// то в colorCount нужно задать их количество
         virtual void ClearBuffers();
