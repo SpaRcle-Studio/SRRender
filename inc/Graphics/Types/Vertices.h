@@ -15,7 +15,7 @@
 #include <Utils/Profile/TracyContext.h>
 
 namespace SR_GRAPH_NS::Vertices {
-    enum class Attribute {
+    enum class Attribute : uint32_t {
         Unknown            = 0,
 
         FLOAT_R32G32B32A32 = 1 << 0,
@@ -27,6 +27,7 @@ namespace SR_GRAPH_NS::Vertices {
         INT_R32G32         = 1 << 5,
         UINT_R32           = 1 << 6,
         INT_R32            = 1 << 7,
+        SFLOAT_R32         = 1 << 8,
     };
 
     static std::string ToString(const SR_MATH_NS::FVector3& vec) {
@@ -270,13 +271,79 @@ namespace SR_GRAPH_NS::Vertices {
     };
     typedef std::vector<SimpleVertex> SimpleVertices;
 
+    struct TriplanarMeshVertex {
+        SR_MATH_NS::FVector3 pos;
+        SR_MATH_NS::FVector3 norm;
+        SR_MATH_NS::FVector3 tang;
+        SR_MATH_NS::FVector3 bitang;
+        uint32_t materialId;
+        uint32_t materialId2;
+        float_t blend;
+
+        static constexpr SR_FORCE_INLINE SR_VERTEX_DESCRIPTION GetDescription() {
+            return sizeof(TriplanarMeshVertex);
+        }
+
+        static SR_FORCE_INLINE std::vector<std::string> GetNames() {
+            return { "VERTEX", "NORMAL", "TANGENT", "BITANGENT", "MATERIAL_ID", "MATERIAL_ID2", "BLEND" };
+        }
+
+        static SR_FORCE_INLINE std::vector<std::pair<Attribute, size_t>> GetAttributes(bool asTypes) {
+            auto descriptions = std::vector<std::pair<Attribute, size_t>>();
+
+            if (asTypes) {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, 1));
+                descriptions.emplace_back(std::pair(Attribute::UINT_R32, 1));
+                descriptions.emplace_back(std::pair(Attribute::UINT_R32, 1));
+                descriptions.emplace_back(std::pair(Attribute::SFLOAT_R32, 1));
+            }
+            else {
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(TriplanarMeshVertex, pos)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(TriplanarMeshVertex, norm)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(TriplanarMeshVertex, tang)));
+                descriptions.emplace_back(std::pair(Attribute::FLOAT_R32G32B32, offsetof(TriplanarMeshVertex, bitang)));
+                descriptions.emplace_back(std::pair(Attribute::UINT_R32, offsetof(TriplanarMeshVertex, materialId)));
+                descriptions.emplace_back(std::pair(Attribute::UINT_R32, offsetof(TriplanarMeshVertex, materialId2)));
+                descriptions.emplace_back(std::pair(Attribute::SFLOAT_R32, offsetof(TriplanarMeshVertex, blend)));
+            }
+
+            return descriptions;
+        }
+
+        bool operator==(const TriplanarMeshVertex& other) const {
+            return pos       == other.pos
+                   && norm   == other.norm
+                   && bitang == other.bitang
+                   && tang   == other.tang
+                   && materialId == other.materialId
+                   && materialId2 == other.materialId2
+                   && blend == other.blend;
+        }
+
+        SR_NODISCARD std::string ToString() const {
+            return SR_FORMAT("[ {}, {}, {}, {}, {}, {}, {} ],",
+                             Vertices::ToString(pos).c_str(),
+                             Vertices::ToString(norm).c_str(),
+                             Vertices::ToString(tang).c_str(),
+                             Vertices::ToString(bitang).c_str(),
+                             materialId,
+                             materialId2,
+                             blend
+            );
+        }
+    };
+
     SR_ENUM_NS_CLASS(VertexType,
         Unknown,
         None,
         StaticMeshVertex,
         SkinnedMeshVertex,
         SimpleVertex,
-        UIVertex
+        UIVertex,
+        TriplanarMeshVertex
     )
 
     SR_MAYBE_UNUSED static uint32_t GetVertexSize(VertexType type) {
@@ -289,6 +356,8 @@ namespace SR_GRAPH_NS::Vertices {
                 return sizeof(SimpleVertex);
             case VertexType::UIVertex:
                 return sizeof(UIVertex);
+            case VertexType::TriplanarMeshVertex:
+                return sizeof(TriplanarMeshVertex);
             default:
                 SRHalt0();
                 return 0;
@@ -318,6 +387,12 @@ namespace SR_GRAPH_NS::Vertices {
                 info.m_types = SkinnedMeshVertex::GetAttributes(true);
                 info.m_descriptions = { SkinnedMeshVertex::GetDescription() };
                 info.m_names = SkinnedMeshVertex::GetNames();
+                break;
+            case VertexType::TriplanarMeshVertex:
+                info.m_attributes = TriplanarMeshVertex::GetAttributes(false);
+                info.m_types = TriplanarMeshVertex::GetAttributes(true);
+                info.m_descriptions = { TriplanarMeshVertex::GetDescription() };
+                info.m_names = TriplanarMeshVertex::GetNames();
                 break;
             case VertexType::StaticMeshVertex:
                 info.m_attributes = StaticMeshVertex::GetAttributes(false);

@@ -126,6 +126,48 @@ namespace SR_GTYPES_NS {
         }
     }
 
+    bool IndexedMesh::CalculateVBO(const void* pData, uint64_t count, Vertices::VertexType vertexType) {
+        SR_TRACY_ZONE;
+
+        SRAssert(m_pipeline);
+        SRAssert(m_VBO == SR_ID_INVALID);
+
+        using namespace Memory;
+
+        if (!IsUniqueMesh()) {
+            m_VBO = MeshManager::Instance().CopyIfExists<MeshMemoryType::VBO>(GetMeshIdentifier(), vertexType);
+        }
+
+        if (m_VBO == SR_ID_INVALID) {
+            if (count == 0) {
+                SR_ERROR("IndexedMesh::CalculateVBO() : invalid vertices! \n\tIdentifier: " + GetMeshIdentifier());
+                return false;
+            }
+
+            if (m_VBO = m_pipeline->AllocateVBO(pData, vertexType, count); m_VBO == SR_ID_INVALID) {
+                SR_ERROR("IndexedMesh::CalculateVBO() : failed calculate VBO \"" + GetMeshIdentifier() + "\" mesh!");
+                m_hasErrors = true;
+                return false;
+            }
+            else if (IsUniqueMesh()) {
+                return Mesh::Calculate();
+            }
+
+            return MeshManager::Instance().Register<MeshMemoryType::VBO>(
+                GetMeshIdentifier(),
+                count,
+                m_VBO,
+                vertexType
+            );
+        }
+
+        if (!IsUniqueMesh()) {
+            m_countVertices = MeshManager::Instance().Size<MeshMemoryType::VBO>(GetMeshIdentifier(), vertexType);
+        }
+
+        return true;
+    }
+
     int32_t IndexedMesh::GetVBO() {
         if (!IsCalculated() && !Calculate()) SR_UNLIKELY_ATTRIBUTE {
             return SR_ID_INVALID;

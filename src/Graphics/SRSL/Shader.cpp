@@ -195,6 +195,10 @@ namespace SR_SRSL_NS {
     }
 
     Vertices::VertexType SRSLShader::GetVertexType() const {
+        if (m_createInfo.vertexType != Vertices::VertexType::Unknown) {
+            return m_createInfo.vertexType;
+        }
+
         switch (GetType()) {
             case ShaderType::Spatial:
             case ShaderType::SpatialCustom:
@@ -231,6 +235,9 @@ namespace SR_SRSL_NS {
 
                 if (varName == "ShaderType") {
                     m_createInfo.shaderType = SR_UTILS_NS::EnumReflector::FromString<SR_SRSL_NS::ShaderType>(varValue);
+                }
+                else if (varName == "VertexType") {
+                    m_createInfo.vertexType = SR_UTILS_NS::EnumReflector::FromString<Vertices::VertexType>(varValue);
                 }
                 else if (varName == "PolygonMode") {
                     m_createInfo.polygonMode = SR_UTILS_NS::EnumReflector::FromString<PolygonMode>(varValue);

@@ -329,7 +329,12 @@ namespace SR_SRSL_NS {
             std::string arraySize = vertexInfo.m_types[vertexInputIndex].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[vertexInputIndex].second) : std::string();
 
             if (isUsed && stage != ShaderStage::Vertex) {
-                code += SR_FORMAT("layout (location = {}) in {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                if (IsFlatType(type)) {
+                    code += SR_FORMAT("layout (location = {}) flat in {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                }
+                else {
+                    code += SR_FORMAT("layout (location = {}) in {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                }
             }
             else if (stage == ShaderStage::Vertex) {
                 code += SR_FORMAT("layout (location = {}) in {} {}_INPUT{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
@@ -401,7 +406,12 @@ namespace SR_SRSL_NS {
                 std::string arraySize = vertexInfo.m_types[vertexInputIndex].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[vertexInputIndex].second) : std::string();
 
                 if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, vertexAttribute)) {
-                    code += SR_FORMAT("layout (location = {}) out {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                    if (IsFlatType(type)) {
+                        code += SR_FORMAT("layout (location = {}) flat out {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                    }
+                    else {
+                        code += SR_FORMAT("layout (location = {}) out {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                    }
                     location += vertexInfo.m_types[vertexInputIndex].second * GetLocationMultiplier(type);
                 }
                 else {
@@ -414,7 +424,12 @@ namespace SR_SRSL_NS {
             for (auto&& [name, pVariable] : m_shader->GetShared()) {
                 if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, name)) {
                     auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
-                    code += SR_FORMAT("layout (location = {}) out {} {};\n", location, type.c_str(), name.c_str());
+                    if (IsFlatType(type)) {
+                        code += SR_FORMAT("layout (location = {}) flat out {} {};\n", location, type.c_str(), name.c_str());
+                    }
+                    else {
+                        code += SR_FORMAT("layout (location = {}) out {} {};\n", location, type.c_str(), name.c_str());
+                    }
                     location += GetLocationMultiplier(type);
                 }
                 else if (pFunction->IsVariableUsed(name)) {
@@ -837,6 +852,7 @@ namespace SR_SRSL_NS {
             case Vertices::Attribute::INT_R32G32: return "ivec2";
             case Vertices::Attribute::UINT_R32: return "uint";
             case Vertices::Attribute::INT_R32: return "uint";
+            case Vertices::Attribute::SFLOAT_R32: return "float";
             case Vertices::Attribute::Unknown:
             default:
                 SRHalt0();
@@ -942,5 +958,9 @@ namespace SR_SRSL_NS {
             return "int";
         }
         return token;
+    }
+
+    bool GLSLCodeGenerator::IsFlatType(const std::string_view type) const {
+        return type == "int" || type == "uint" || type == "bool";
     }
 }

@@ -23,16 +23,10 @@ namespace SR_GTYPES_NS {
     public:
         SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Procedural; }
 
-        void SwapIndexedVertices(SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertexAligned>& vertices);
-
-        void SwapIndexedVertices(SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertex>& vertices);
         void SwapIndices(SR_HTYPES_NS::FastMemoryArray<uint32_t>& indices);
-
-        void SetIndexedVertices(void* pData, uint64_t count);
         void SetIndices(void* pData, uint64_t count);
 
-        void SetVertices(const std::vector<Vertices::StaticMeshVertex>& vertices);
-        void SetVertices(const SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertex>& vertices);
+        void SetIndexedVertices(void* pData, uint64_t count, Vertices::VertexType vertexType);
 
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
@@ -58,9 +52,10 @@ namespace SR_GTYPES_NS {
         int32_t m_ssbo = SR_ID_INVALID;
         uint32_t m_ssboSize = 0;
 
-        SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertexAligned> m_verticesAligned;
+        SR_HTYPES_NS::FastMemoryArray<char*> m_verticesData;
+        uint32_t m_countVertices = 0;
+        Vertices::VertexType m_verticesType = Vertices::VertexType::Unknown;
 
-        SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertex> m_vertices;
         SR_HTYPES_NS::FastMemoryArray<uint32_t> m_indices;
 
     };

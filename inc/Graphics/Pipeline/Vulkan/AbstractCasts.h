@@ -32,6 +32,7 @@ namespace SR_GRAPH_NS::VulkanTools {
             case Vertices::Attribute::FLOAT_R32G32:       return VK_FORMAT_R32G32_SFLOAT;
             case Vertices::Attribute::INT_R32:            return VK_FORMAT_R32_SINT;
             case Vertices::Attribute::UINT_R32:           return VK_FORMAT_R32_UINT;
+            case Vertices::Attribute::SFLOAT_R32:         return VK_FORMAT_R32_SFLOAT;
             default:                                      return VK_FORMAT_UNDEFINED;
         }
     }

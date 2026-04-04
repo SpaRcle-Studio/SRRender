@@ -264,6 +264,7 @@ namespace SR_GRAPH_NS {
         std::map<ShaderStage, SRShaderStageInfo> stages;
 
         SR_SRSL_NS::ShaderType shaderType = SR_SRSL_NS::ShaderType::Unknown;
+        Vertices::VertexType vertexType = Vertices::VertexType::Unknown;
 
         PolygonMode       polygonMode       = PolygonMode::Unknown;
         CullMode          cullMode          = CullMode::Unknown;

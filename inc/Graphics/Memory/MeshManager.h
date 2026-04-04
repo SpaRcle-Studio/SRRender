@@ -130,6 +130,7 @@ namespace SR_GRAPH_NS {
 
             template<MeshMemoryType memType> int32_t CopyIfExists(const std::string_view& identifier, Vertices::VertexType vertexType);
             template<Vertices::VertexType vertexType, MeshMemoryType memType> int32_t CopyIfExists(const std::string_view& identifier);
+            template<MeshMemoryType memType> uint32_t Size(const std::string_view& identifier, Vertices::VertexType vertexType);
             template<Vertices::VertexType vertexType, MeshMemoryType memType> uint32_t Size(const std::string_view& identifier);
 
         private:
@@ -222,8 +223,11 @@ namespace SR_GRAPH_NS {
             return CopyIfExists<memType>(identifier, vertexType);
         }
 
-        template<Vertices::VertexType vertexType, MeshMemoryType memType>
-        uint32_t MeshManager::Size(const std::string_view& identifier) {
+        template<Vertices::VertexType vertexType, MeshMemoryType memType> uint32_t MeshManager::Size(const std::string_view& identifier) {
+            return Size<memType>(identifier, vertexType);
+        }
+
+        template<MeshMemoryType memType> uint32_t MeshManager::Size(const std::string_view& identifier, Vertices::VertexType vertexType) {
             SR_TRACY_ZONE;
             SR_LOCK_GUARD;
 

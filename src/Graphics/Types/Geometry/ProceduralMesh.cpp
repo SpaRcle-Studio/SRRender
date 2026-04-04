@@ -10,72 +10,6 @@
 #include <Codegen/ProceduralMesh.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    void ProceduralMesh::SetVertices(const std::vector<Vertices::StaticMeshVertex>& vertices) {
-        SR_TRACY_ZONE;
-
-        SRAssert(!m_useSSBOInsteadOfVertices);
-
-        m_indices.clear();
-        m_vertices.clear();
-
-        m_vertices.reserve(vertices.size());
-        m_indices.reserve(vertices.size());
-
-        m_countVertices = 0;
-        m_countIndices = 0;
-
-        SetDirtyMesh();
-
-        std::unordered_map<Vertices::StaticMeshVertex, uint32_t> uniqueVertices;
-
-        for (const auto& vertex : vertices) {
-            if (uniqueVertices.count(vertex) == 0) {
-                uniqueVertices[vertex] = static_cast<uint32_t>(m_vertices.size());
-                m_vertices.push_back(vertex);
-            }
-
-            m_indices.push_back(uniqueVertices[vertex]);
-        }
-
-        m_countVertices = m_vertices.size();
-        m_countIndices = m_indices.size();
-    }
-
-    void ProceduralMesh::SetVertices(const SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertex>& vertices) {
-        SR_TRACY_ZONE;
-
-        if (m_useSSBOInsteadOfVertices) {
-            SRHalt("ProceduralMesh::SetVertices() : cannot set vertices when using SSBO!");
-            return;
-        }
-
-        m_indices.clear();
-        m_vertices.clear();
-
-        m_vertices.reserve(vertices.size());
-        m_indices.reserve(vertices.size());
-
-        m_countVertices = 0;
-        m_countIndices = 0;
-
-        SetDirtyMesh();
-
-        std::unordered_map<Vertices::StaticMeshVertex, uint32_t> uniqueVertices;
-
-        for (uint32_t i = 0; i < vertices.size(); ++i) {
-            auto& vertex = vertices[i];
-            if (uniqueVertices.count(vertex) == 0) {
-                uniqueVertices[vertex] = static_cast<uint32_t>(m_vertices.size());
-                m_vertices.push_back(vertex);
-            }
-
-            m_indices.push_back(uniqueVertices[vertex]);
-        }
-
-        m_countVertices = m_vertices.size();
-        m_countIndices = m_indices.size();
-    }
-
     bool ProceduralMesh::Calculate()  {
         SR_TRACY_ZONE;
 
@@ -105,14 +39,14 @@ namespace SR_GTYPES_NS {
                 m_ssbo = oldSSBO;
             }
 
-            GetPipeline()->UpdateSSBO(m_ssbo, (void*)m_verticesAligned.data(), size);
+            GetPipeline()->UpdateSSBO(m_ssbo, (void*)m_verticesData.data(), size);
 
             m_isCalculated = true;
             /// чтобы в случае перезагрузки обновить все связанные данные
             MarkMaterialDirty();
         }
         else {
-            if (!CalculateVBO<Vertices::VertexType::StaticMeshVertex>(m_vertices)) {
+            if (!CalculateVBO((void*)m_verticesData.data(), m_countVertices, m_verticesType)) {
                 return false;
             }
 
@@ -131,21 +65,6 @@ namespace SR_GTYPES_NS {
         return m_countVertices > 0;
     }
 
-    void ProceduralMesh::SwapIndexedVertices(SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertexAligned>& vertices) {
-        SRAssert(m_useSSBOInsteadOfVertices);
-        std::swap(m_verticesAligned, vertices);
-        m_countVertices = static_cast<uint32_t>(m_verticesAligned.size());
-        m_countIndices = m_countVertices;
-        SetDirtyMesh();
-    }
-
-    void ProceduralMesh::SwapIndexedVertices(SR_HTYPES_NS::FastMemoryArray<Vertices::StaticMeshVertex>& vertices) {
-        SRAssert(!m_useSSBOInsteadOfVertices);
-        std::swap(m_vertices, vertices);
-        m_countVertices = static_cast<uint32_t>(m_vertices.size());
-        SetDirtyMesh();
-    }
-
     void ProceduralMesh::SwapIndices(SR_HTYPES_NS::FastMemoryArray<uint32_t>& indices) {
         SRAssert(!m_useSSBOInsteadOfVertices);
         std::swap(m_indices, indices);
@@ -153,19 +72,23 @@ namespace SR_GTYPES_NS {
         SetDirtyMesh();
     }
 
-    void ProceduralMesh::SetIndexedVertices(void *pData, uint64_t count) {
+    void ProceduralMesh::SetIndexedVertices(void* pData, uint64_t count, Vertices::VertexType vertexType) {
         SR_TRACY_ZONE;
 
         SRAssert(!m_useSSBOInsteadOfVertices);
 
+        m_countVertices = count;
+        m_verticesType = vertexType;
+
+        const auto vertexSize = Vertices::GetVertexSize(vertexType);
+
         if (!pData || count == 0) {
-            m_vertices.clear();
+            m_verticesData.clear();
         }
         else {
-            m_vertices.resize((m_countVertices = count));
-            memcpy(m_vertices.data(), pData, count * sizeof(Vertices::StaticMeshVertex));
+            m_verticesData.resize(m_countVertices * vertexSize);
+            memcpy(m_verticesData.data(), pData, count * vertexSize);
         }
-        m_countVertices = static_cast<uint32_t>(m_vertices.size());
 
         SetDirtyMesh();
     }
@@ -246,25 +169,26 @@ namespace SR_GTYPES_NS {
         content += "# Exported IndexedMesh\n";
         content += "o " + GetMeshIdentifier() + "\n";
 
-        for (uint64_t i = 0; i < GetVerticesCount(); ++i) {
-            const auto& vertex = m_vertices[i];
-            content += "v " + std::to_string(vertex.pos.x) + " " +
-                       std::to_string(vertex.pos.y) + " " +
-                       std::to_string(vertex.pos.z) + "\n";
-        }
+        SRHalt("ProceduralMesh::Export() : not implemented yet!");
+        //for (uint64_t i = 0; i < GetVerticesCount(); ++i) {
+        //    const auto& vertex = m_vertices[i];
+        //    content += "v " + std::to_string(vertex.pos.x) + " " +
+        //               std::to_string(vertex.pos.y) + " " +
+        //               std::to_string(vertex.pos.z) + "\n";
+        //}
 
-        for (uint64_t i = 0; i < GetVerticesCount(); ++i) {
-            const auto& vertex = m_vertices[i];
-            content += "vn " + std::to_string(vertex.norm.x) + " " +
-                       std::to_string(vertex.norm.y) + " " +
-                       std::to_string(vertex.norm.z) + "\n";
-        }
+        //for (uint64_t i = 0; i < GetVerticesCount(); ++i) {
+        //    const auto& vertex = m_vertices[i];
+        //    content += "vn " + std::to_string(vertex.norm.x) + " " +
+        //               std::to_string(vertex.norm.y) + " " +
+        //               std::to_string(vertex.norm.z) + "\n";
+        //}
 
-        for (uint64_t i = 0; i < GetIndicesCount() / 3; ++i) {
-            content += "f " + std::to_string(m_indices[i * 3] + 1) + " " +
-                       std::to_string(m_indices[i * 3 + 1] + 1) + " " +
-                       std::to_string(m_indices[i * 3 + 2] + 1) + "\n";
-        }
+        //for (uint64_t i = 0; i < GetIndicesCount() / 3; ++i) {
+        //    content += "f " + std::to_string(m_indices[i * 3] + 1) + " " +
+        //               std::to_string(m_indices[i * 3 + 1] + 1) + " " +
+        //               std::to_string(m_indices[i * 3 + 2] + 1) + "\n";
+        //}
 
         if (path.IsFile()) {
             SR_PLATFORM_NS::Delete(path);

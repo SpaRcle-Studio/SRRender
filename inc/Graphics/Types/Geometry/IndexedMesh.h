@@ -41,6 +41,7 @@ namespace SR_GTYPES_NS {
 
         template<Vertices::VertexType type, typename Vertex> bool CalculateVBO(const SR_HTYPES_NS::FastMemoryArray<Vertex>& vertices);
         template<Vertices::VertexType type, typename Vertex> bool CalculateVBO(const SR_HTYPES_NS::Function<SR_HTYPES_NS::FastMemoryArray<Vertex>()>& getter);
+        bool CalculateVBO(const void* pData, uint64_t count, Vertices::VertexType vertexType);
 
         bool FreeVBO();
         bool FreeIBO();
