@@ -766,7 +766,6 @@ namespace SR_GRAPH_NS {
                 SRHalt("VulkanPipeline::AllocateTexture() : unsupported format with compression!");
                 return SR_ID_INVALID;
             }
-            //textureCreateInfo.mipLevels = 1; /// Компрессия не поддерживает мипмаппинг, так что принудительно устанавливаем количество уровней в 1
         }
 
         m_state.allocatedMemory += textureCreateInfo.imageSize;

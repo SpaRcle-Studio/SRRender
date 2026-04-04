@@ -97,7 +97,7 @@ namespace SR_GRAPH_NS {
 
         const bool isUnitTests = SR_UTILS_NS::CLIManager::Instance().IsFlagPresent(SR_UTILS_NS::CLIFlagsEnumWrappper::UnitTests);
         const bool canCompress = info.compression != TextureCompression::None && cacheEnabled && !isUnitTests && compressionEnabled;
-        const bool compressedTextureExists = canCompress && compressedTexturePath.Exists(SR_UTILS_NS::Path::Type::File);
+        const bool compressedTextureExists = info.compression != TextureCompression::None && compressedTexturePath.Exists(SR_UTILS_NS::Path::Type::File);
 
         auto&& cache = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Textures");
         auto&& cacheHashPath = cache.Concat("Hashes").Concat(path).ConcatExt(".cache.hash");
@@ -223,6 +223,11 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        TextureLoadInfo infoCopy = info;
+        if (!compressedTextureExists) {
+            infoCopy.compression = TextureCompression::None;
+        }
+
         auto&& pTextureData = TextureData::Create(width, height, pImgData, [channels = info.channels](uint8_t* pData) {
             if (channels != 4) {
                 SRFree(pData);
@@ -230,7 +235,7 @@ namespace SR_GRAPH_NS {
             else {
                 TextureLoader::Free(pData);
             }
-        }, info);
+        }, infoCopy);
 
         if (!pTextureData) {
             SR_ERROR("TextureLoader::Load() : failed to create TextureData for path \"" + path.ToStringRef() + "\"!");

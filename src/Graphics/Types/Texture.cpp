@@ -11,6 +11,7 @@
 #include <Utils/Serialization/SRASerialization.h>
 #include <Utils/Types/WeakPtr.h>
 #include <Utils/TaskManager/TaskManager.h>
+#include <Utils/Common/Features.h>
 
 #ifdef SR_USE_VULKAN
     #include <EvoVulkan/Tools/VulkanDebug.h>
@@ -121,12 +122,14 @@ namespace SR_GTYPES_NS {
             m_format = ImageFormat::RGBA8_UNORM;
         }
 
+        const bool asyncLoadSupport = SR_UTILS_NS::Features::Instance().Enabled("TextureAsyncLoad", true);
+
         TextureLoadInfo loadInfo;
         loadInfo.compression = compression;
         loadInfo.mips = metaInfo.mipLevels;
         loadInfo.channels = TextureLoader::GetAlignedChannels(m_format);
 
-        if (metaInfo.loadMode == SR_UTILS_NS::ResourceLoadMode::Async) {
+        if (metaInfo.loadMode == SR_UTILS_NS::ResourceLoadMode::Async && asyncLoadSupport) {
             m_syncLoadTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([loadInfo, pWeak = GetWeakThis<Texture>(), path = GetResourcePath()]() {
                 SR_TRACY_ZONE_N("Texture::LoadAsync");
                 SR_TRACY_ZONE_TEXT(path);
