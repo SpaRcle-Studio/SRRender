@@ -62,7 +62,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint64_t GetTimedObjectPoolSize() const noexcept { return m_timedObjects.GetAliveCount(); }
         SR_NODISCARD uint64_t GetEmptyIdsPoolSize() const noexcept { return m_timedObjects.GetCapacity(); }
         SR_NODISCARD SR_HTYPES_NS::ObjectPool<DebugTimedObject>& GetTimedObjects() noexcept { return m_timedObjects; }
-        SR_NODISCARD SR_FORCE_INLINE const Memory::BakedMesh& GetMeshUnchecked(uint32_t index) const noexcept { return m_meshes[index].GetUncheckedRef(); }
+        SR_NODISCARD SR_FORCE_INLINE const BakedMesh& GetMeshUnchecked(uint32_t index) const noexcept { return m_meshes[index].GetUncheckedRef(); }
         SR_NODISCARD SR_FORCE_INLINE bool IsMeshValid(uint32_t index) const noexcept { return m_meshes[index].Valid(); }
         SR_NODISCARD bool IsRenderSceneChanged() const noexcept { return m_renderSceneChanged; }
         SR_NODISCARD virtual bool IsOverlayRenderer() const noexcept { return false; }
@@ -81,7 +81,7 @@ namespace SR_GRAPH_NS {
 
         SR_HTYPES_NS::ObjectPool<DebugTimedObject> m_timedObjects;
 
-        std::vector<Memory::BakedMesh::Ptr> m_meshes;
+        std::vector<BakedMesh::Ptr> m_meshes;
     };
 
     class DebugOverlayRenderer : public DebugRenderer {

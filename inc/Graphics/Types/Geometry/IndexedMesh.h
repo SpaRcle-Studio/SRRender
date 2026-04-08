@@ -14,6 +14,7 @@
 namespace SR_GTYPES_NS {
     /// @abstract
     class IndexedMesh : public Mesh {
+        using Super = Mesh;
         SR_CLASS()
     public:
         IndexedMesh() = default;
@@ -31,17 +32,19 @@ namespace SR_GTYPES_NS {
             return empty;
         }
 
+        SR_NODISCARD virtual const SR_UTILS_NS::VertexDataBuffer& GetVertices() const {
+            static SR_UTILS_NS::VertexDataBuffer empty;
+            return empty;
+        }
+
         SR_NODISCARD bool IsSupportVBO() const override { return true; }
 
         bool Calculate() override;
 
         bool CalculateIBO();
+        bool CalculateVBO();
 
         void FreeVMemory() override;
-
-        template<Vertices::VertexType type, typename Vertex> bool CalculateVBO(const SR_HTYPES_NS::FastMemoryArray<Vertex>& vertices);
-        template<Vertices::VertexType type, typename Vertex> bool CalculateVBO(const SR_HTYPES_NS::Function<SR_HTYPES_NS::FastMemoryArray<Vertex>()>& getter);
-        bool CalculateVBO(const void* pData, uint64_t count, Vertices::VertexType vertexType);
 
         bool FreeVBO();
         bool FreeIBO();
@@ -51,79 +54,9 @@ namespace SR_GTYPES_NS {
         int32_t m_VBO = SR_ID_INVALID;
         uint32_t m_countIndices = 0;
         uint32_t m_countVertices = 0;
+        bool m_isUniqueMesh = false;
 
     };
-
-    /// ----------------------------------------------------------------------------------------------------------------
-
-    template<Vertices::VertexType type, typename Vertex> bool IndexedMesh::CalculateVBO(const SR_HTYPES_NS::Function<SR_HTYPES_NS::FastMemoryArray<Vertex>()>& getter) {
-        SR_TRACY_ZONE;
-
-        SRAssert(m_pipeline);
-        SRAssert(m_VBO == SR_ID_INVALID);
-
-        using namespace Memory;
-
-        if (!IsUniqueMesh()) {
-            m_VBO = MeshManager::Instance().CopyIfExists<type, MeshMemoryType::VBO>(GetMeshIdentifier());
-        }
-
-        if (m_VBO == SR_ID_INVALID) {
-            auto&& vertices = getter();
-            return CalculateVBO<type>(vertices);
-        }
-
-        if (!IsUniqueMesh()) {
-            m_countVertices = MeshManager::Instance().Size<type, MeshMemoryType::VBO>(
-                GetMeshIdentifier()
-            );
-        }
-
-        return true;
-    }
-
-    template<Vertices::VertexType type, typename Vertex> bool IndexedMesh::CalculateVBO(const SR_HTYPES_NS::FastMemoryArray<Vertex>& vertices) {
-        SR_TRACY_ZONE;
-
-        SRAssert(m_pipeline);
-        SRAssert(m_VBO == SR_ID_INVALID);
-
-        using namespace Memory;
-
-        if (!IsUniqueMesh()) {
-            m_VBO = MeshManager::Instance().CopyIfExists<type, MeshMemoryType::VBO>(GetMeshIdentifier());
-        }
-
-        if (m_VBO == SR_ID_INVALID) {
-            if ((m_countVertices = vertices.size()) == 0) {
-                SR_ERROR("IndexedMesh::CalculateVBO() : invalid vertices! \n\tIdentifier: " + GetMeshIdentifier());
-                return false;
-            }
-
-            if (m_VBO = m_pipeline->AllocateVBO(static_cast<const void*>(vertices.data()), type, m_countVertices); m_VBO == SR_ID_INVALID) {
-                SR_ERROR("IndexedMesh::CalculateVBO() : failed calculate VBO \"" + GetMeshIdentifier() + "\" mesh!");
-                m_hasErrors = true;
-                return false;
-            }
-            else if (IsUniqueMesh()) {
-                return true;
-            }
-
-            return MeshManager::Instance().Register<type, MeshMemoryType::VBO>(
-                GetMeshIdentifier(),
-                m_countVertices,
-                m_VBO
-            );
-        }
-
-        if (!IsUniqueMesh()) {
-            m_countVertices = MeshManager::Instance().Size<type, MeshMemoryType::VBO>(
-                GetMeshIdentifier()
-            );
-        }
-
-        return true;
-    }
 }
 
 #endif //SR_ENGINE_GRAPHICS_INDEXEDMESH_H

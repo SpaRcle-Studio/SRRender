@@ -21,17 +21,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
-            SR_LOG("DebugWireframeMesh::Calculate() : calculating \"" + GetMeshIdentifier() + "\"...");
-        }
-
-        if (!CalculateVBO<Vertices::VertexType::SimpleVertex, Vertices::SimpleVertex>([this]() {
-            return Vertices::CastVertices<Vertices::SimpleVertex>(GetVertices());
-        })) {
-            return false;
-        }
-
-        return IndexedMesh::Calculate();
+        return Super::Calculate();
     }
 
     const SR_HTYPES_NS::FastMemoryArray<uint32_t>& DebugWireframeMesh::GetIndices() const {
@@ -59,14 +49,6 @@ namespace SR_GTYPES_NS {
         MarkUniformsDirty();
     }
 
-    std::string DebugWireframeMesh::GetMeshIdentifier() const {
-        if (auto&& pRawMesh = GetRawMesh()) {
-            return SR_FORMAT("{}|{}|{}", pRawMesh->GetResourceId().c_str(), GetMeshId(), pRawMesh->GetReloadCount());
-        }
-
-        return Super::GetMeshIdentifier();
-    }
-
     void DebugWireframeMesh::SetMatrix(const SR_MATH_NS::Matrix4x4& matrix) {
         m_modelMatrix = matrix;
         Super::SetMatrix(matrix);
@@ -75,5 +57,9 @@ namespace SR_GTYPES_NS {
     void DebugWireframeMesh::OnRawMeshChanged() {
         IRawMeshHolder::OnRawMeshChanged();
         ReRegisterMesh();
+    }
+
+    const SR_UTILS_NS::VertexDataBuffer& DebugWireframeMesh::GetVertices() const {
+        return GetRawMesh()->GetVertexBuffer(GetMeshId(), GetVertexLayoutDescription());
     }
 }

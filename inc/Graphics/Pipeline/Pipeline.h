@@ -242,9 +242,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD virtual UsedVideoMemoryInfo GetUsedVideoMemoryInfo() const { return UsedVideoMemoryInfo(); }
 
-        SR_NODISCARD virtual int32_t AllocateVBO(const void* pVertices, Vertices::VertexType type, size_t count) { return SR_ID_INVALID; }
-        /// Продвинутая версия AllocateVBO, может сама выполнить преобразование типа памяти базовых вершин к нужному выравниванию.
-        SR_NODISCARD virtual int32_t AllocateVBO(const SR_UTILS_NS::Vertex* pVertices, Vertices::VertexType type, size_t count);
+        SR_NODISCARD virtual int32_t AllocateVBO(uint64_t size, const void* pData) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateUBO(uint32_t uboSize) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) { return SR_ID_INVALID; }

@@ -271,13 +271,12 @@ namespace SR_GRAPH_NS {
         }
 
         if (!pMesh->GetMaterial()) {
-            SR_ERROR("RenderScene::Register() : mesh material and default material are nullptr! Mesh: " + pMesh->GetMeshIdentifier());
+            SR_ERROR("RenderScene::Register() : mesh material and default material are nullptr!");
             return;
         }
 
         if (!pMesh->GetMaterial()->IsValid()) {
-            SR_ERROR("RenderScene::Register() : mesh have invalid material! Mesh: {}\n\tGameObject: {}",
-                 pMesh->GetMeshIdentifier(),
+            SR_ERROR("RenderScene::Register() : mesh have invalid material!\n\tGameObject: {}",
                  (pMesh->GetSceneObject() ? pMesh->GetSceneObject()->GetName() : "nullptr")
             );
             return;
@@ -554,7 +553,8 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderScene::SetMeshMaterial(RenderScene::MeshPtr pMesh) {
-        if (pMesh->IsFlatMesh()) {
+        auto&& pTransform = pMesh->GetTransform();
+        if (pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
             if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh)) {
                 UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
                 pMaterial->SetShader("Engine/Shaders/UI/text.srsl");

@@ -127,7 +127,12 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path);
+        SR_SRSL_NS::ShaderParams params;
+        params.SetVertexLayoutDescription(SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
+            SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
+        ));
+
+        auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path, &params);
         if (!pShader) {
             SR_ERROR("BaseMaterial::SetShader() : shader is nullptr!");
             return;
@@ -187,7 +192,7 @@ namespace SR_GRAPH_NS {
         return pData->GetDefaultShaderData().pShader.Get();
     }
 
-    SR_GTYPES_NS::Shader* BaseMaterial::GetShader(const SR_SRSL_NS::ShaderMacrosParams& macros) const noexcept {
+    SR_GTYPES_NS::Shader* BaseMaterial::GetShader(const SR_SRSL_NS::ShaderParams& params) const noexcept {
         SR_TRACY_ZONE;
 
         auto&& pData = GetMaterialData();
@@ -200,14 +205,14 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        const SR_SRSL_NS::ShaderMacrosParams* pMacros = &macros;
+        const SR_SRSL_NS::ShaderParams* pMacros = &params;
 
         if (!pData->GetShaderDefines().empty()) {
-            const auto baseHash = macros.GetHash();
+            const auto baseHash = params.GetHash();
             auto&& pBaseIt = m_hashRedirect.find(baseHash);
 
             if (pBaseIt == m_hashRedirect.end()) {
-                SR_SRSL_NS::ShaderMacrosParams clone = macros;
+                SR_SRSL_NS::ShaderParams clone = params;
                 for (auto&& [key, value] : pData->GetShaderDefines()) {
                     clone.SetParam(key, value);
                 }

@@ -15,11 +15,6 @@
 #include <Codegen/Sprite.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    std::string Sprite::GetMeshIdentifier() const {
-        static const std::string id = "SpriteFromMemory";
-        return id;
-    }
-
     bool Sprite::Calculate() {
         if (IsCalculated()) {
             return true;
@@ -79,10 +74,6 @@ namespace SR_GTYPES_NS {
 
     uint32_t Sprite::GetIndicesCount() const {
         return 4;
-    }
-
-    bool Sprite::IsFlatMesh() const noexcept {
-        return true;
     }
 
     SR_MATH_NS::FRect Sprite::GetTextureBorder() const {

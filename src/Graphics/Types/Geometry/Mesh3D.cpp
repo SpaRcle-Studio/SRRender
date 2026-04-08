@@ -30,16 +30,6 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Full) {
-            SR_LOG("Mesh3D::Calculate() : calculating \"" + GetMeshIdentifier() + "\"...");
-        }
-
-        if (!CalculateVBO<Vertices::VertexType::StaticMeshVertex, Vertices::StaticMeshVertex>([this]() {
-            return Vertices::CastVertices<Vertices::StaticMeshVertex>(GetVertices());
-        })) {
-            return false;
-        }
-
         return IndexedMesh::Calculate();
     }
 
@@ -70,16 +60,6 @@ namespace SR_GTYPES_NS {
         m_isCalculated = false;
     }
 
-    std::string Mesh3D::GetMeshIdentifier() const {
-        SR_TRACY_ZONE;
-
-        if (auto&& pRawMesh = GetRawMesh()) {
-            return SR_FORMAT("{}|{}|{}", pRawMesh->GetResourceId().c_str(), GetMeshId(), pRawMesh->GetReloadCount());
-        }
-
-        return Super::GetMeshIdentifier();
-    }
-
     bool Mesh3D::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) {
         bool changed = Mesh::OnResourceReloaded(resourceId);
         if (GetRawMesh() && GetRawMesh()->GetResourceId() == resourceId) {
@@ -87,5 +67,10 @@ namespace SR_GTYPES_NS {
             return true;
         }
         return changed;
+    }
+
+    const SR_UTILS_NS::VertexDataBuffer& Mesh3D::GetVertices() const {
+        SR_TRACY_ZONE;
+        return GetRawMesh()->GetVertexBuffer(GetMeshId(), GetVertexLayoutDescription());
     }
 }

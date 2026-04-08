@@ -7,6 +7,7 @@
 
 #include <Graphics/Utils/MeshUtils.h>
 #include <Graphics/Utils/Frustum.h>
+#include <Graphics/Loaders/SRSL.h>
 
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/SortedVector.h>
@@ -130,6 +131,8 @@ namespace SR_GRAPH_NS {
         SR_HTYPES_NS::SortedVector<SR_GTYPES_NS::Shader*> m_shaders;
         SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_meshes;
         SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_tempMeshes;
+
+        SR_SRSL_NS::ShaderParams m_cachedShaderParams;
 
         MeshDrawerPass* m_meshDrawerPass = nullptr;
         RenderContext* m_renderContext = nullptr;

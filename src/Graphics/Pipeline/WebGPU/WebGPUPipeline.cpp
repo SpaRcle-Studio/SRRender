@@ -199,13 +199,13 @@ namespace SR_GRAPH_NS {
         return PipelineType::WebGPU;
     }
 
-    SR_NODISCARD int32_t WebGPUPipeline::AllocateVBO(const void* pVertices, Vertices::VertexType type, size_t count) {
-        if (!pVertices || count == 0) {
+    SR_NODISCARD int32_t WebGPUPipeline::AllocateVBO(uint64_t size, const void* pData) {
+        if (!pData || size == 0) {
             return SR_ID_INVALID;
         }
 
         wgpu::BufferDescriptor desc{};
-        desc.size  = Vertices::GetVertexSize(type) * count;
+        desc.size  = size;
         desc.usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst;
 
         wgpu::Buffer pBuffer = m_internalData->device.CreateBuffer(&desc);
@@ -213,7 +213,7 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        m_internalData->queue.WriteBuffer(pBuffer, 0, pVertices, desc.size);
+        m_internalData->queue.WriteBuffer(pBuffer, 0, pData, desc.size);
 
         ++m_state.operations;
         ++m_state.allocations;

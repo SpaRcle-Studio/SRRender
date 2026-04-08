@@ -57,7 +57,15 @@ namespace SR_GRAPH_NS {
             SRHalt("RenderQueue::Register() : mesh already registered!");
             return;
         }
-        pNewQueue->pShader = info.pMaterial ? info.pMaterial->GetShader(m_meshDrawerPass->GetShaderMacros()) : nullptr;
+
+        if (info.pMaterial) {
+            m_cachedShaderParams.SetFrom(m_meshDrawerPass->GetShaderParams());
+            m_cachedShaderParams.SetVertexLayoutDescription(info.pMesh->GetVertexLayoutDescription());
+            pNewQueue->pShader = info.pMaterial->GetShader(m_cachedShaderParams);
+        }
+        else {
+            pNewQueue->pShader = nullptr;
+        }
 
         MeshInfo meshInfo;
         meshInfo.pMesh = info.pMesh;

@@ -93,7 +93,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const override { return true; }
 
         SR_NODISCARD const std::vector<RenderQueuePtr>& GetRenderQueues() const noexcept { return m_renderQueues; }
-        SR_NODISCARD const SR_SRSL_NS::ShaderMacrosParams& GetShaderMacros() const noexcept { return m_shaderMacros; }
+        SR_NODISCARD const SR_SRSL_NS::ShaderParams& GetShaderParams() const noexcept { return m_shaderParams; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept { return m_renderLayers; }
         SR_NODISCARD const RenderQueuePtr& GetRenderQueue(uint32_t index) const;
         SR_NODISCARD std::set<SR_UTILS_NS::StringAtom>& GetAllowedLayers() { return m_allowedLayers; }
@@ -105,10 +105,10 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual const Frustum& GetFrustum(uint32_t renderLayer, bool& isAvailable) const;
         SR_NODISCARD RenderStrategy* GetRenderStrategy() const;
         SR_NODISCARD virtual RenderQueuePtr AllocateRenderQueue(uint32_t index);
-        virtual void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const { }
+        virtual void UpdateShaderDefines(SR_SRSL_NS::ShaderParams& defines) const { }
 
     protected:
-        SR_SRSL_NS::ShaderMacrosParams m_shaderMacros;
+        SR_SRSL_NS::ShaderParams m_shaderParams;
 
     private:
         std::vector<RenderQueuePtr> m_renderQueues;

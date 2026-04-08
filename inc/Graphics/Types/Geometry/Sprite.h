@@ -10,15 +10,6 @@
 #include <Utils/Math/Rect.h>
 
 namespace SR_GTYPES_NS {
-    const std::vector<uint32_t> SR_SPRITE_INDICES = { 0, 1, 2, 0, 2, 3 }; /// NOLINT
-
-    const std::vector<Vertices::UIVertex> SR_SPRITE_VERTICES = { /// NOLINT
-        { {  1.000000,  1.000000,  0.000000 }, { 0.000000, 1.000000 } },
-        { { -1.000000,  1.000000, -0.000000 }, { 1.000000, 1.000000 } },
-        { { -1.000000, -1.000000, -0.000000 }, { 1.000000, 0.000000 } },
-        { {  1.000000, -1.000000,  0.000000 }, { 0.000000, 0.000000 } }
-    };
-
     SR_ENUM_NS_CLASS_T(SliceMode, uint8_t,
         None,
         Auto,
@@ -46,9 +37,6 @@ namespace SR_GTYPES_NS {
         SR_CLASS()
         using Super = SR_GTYPES_NS::Mesh;
     public:
-        typedef Vertices::UIVertex VertexType;
-
-    public:
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
@@ -59,8 +47,6 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override;
 
         SR_NODISCARD uint32_t GetIndicesCount() const override;
-        SR_NODISCARD bool IsFlatMesh() const noexcept override;
-        SR_NODISCARD std::string GetMeshIdentifier() const override;
 
         SR_NODISCARD SR_MATH_NS::FRect GetTextureBorder() const;
         SR_NODISCARD SR_MATH_NS::FRect GetWindowBorder() const;

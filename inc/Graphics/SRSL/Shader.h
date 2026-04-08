@@ -66,7 +66,7 @@ namespace SR_SRSL_NS {
         explicit SRSLShader(SR_UTILS_NS::Path path);
 
     public:
-        SR_NODISCARD static SRSLShader::Ptr Load(const SR_UTILS_NS::Path& path, const ShaderMacrosParams& macros);
+        SR_NODISCARD static SRSLShader::Ptr Load(const SR_UTILS_NS::Path& path, const ShaderParams& params);
         static void ClearShadersCache();
 
     public:
@@ -79,7 +79,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SRSLStructureStatement* FindStructure(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD const SRSLUniformBlock* FindUniformBlock(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD const SRSLUniformBlock::Field* FindField(const SR_UTILS_NS::StringAtom& name) const;
-        SR_NODISCARD Vertices::VertexType GetVertexType() const;
+        //SR_NODISCARD Vertices::VertexType GetVertexType() const;
         SR_NODISCARD SR_SRSL_NS::ShaderType GetType() const;
         SR_NODISCARD SR_UTILS_NS::Path GetPath() const { return m_path; }
         SR_NODISCARD const SRSLAnalyzedTree::Ptr GetAnalyzedTree() const;
@@ -122,7 +122,7 @@ namespace SR_SRSL_NS {
         SR_UTILS_NS::Path m_path;
 
         bool m_gLayerUsed = false;
-        ShaderMacrosParams m_macros;
+        ShaderParams m_params;
         std::vector<SR_UTILS_NS::StringAtom> m_includes;
         std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_shared;
         std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_sharedWorkgroup;

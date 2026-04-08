@@ -57,7 +57,7 @@ namespace SR_SRSL_NS {
         return str;
     }
 
-    bool SRSLUseStack::IsVariableUsed(const std::string& name) const {
+    bool SRSLUseStack::IsVariableUsed(const std::string_view& name) const {
         SR_TRACY_ZONE;
 
         for (auto&& nameInForce : forceUsedVariables) {
@@ -89,7 +89,7 @@ namespace SR_SRSL_NS {
         return false;
     }
 
-    bool SRSLUseStack::IsFunctionUsed(const std::string &name) const {
+    bool SRSLUseStack::IsFunctionUsed(const std::string_view& name) const {
         for (auto&& nameInForce : forceUsedFunctions) {
             if (nameInForce == name) {
                 return true;
@@ -118,13 +118,12 @@ namespace SR_SRSL_NS {
         return false;
     }
 
-    bool SRSLUseStack::IsStructUsed(const std::string& name) const {
+    bool SRSLUseStack::IsStructUsed(const std::string_view& name) const {
         // TODO: Monika will handle this <3
-
         return true;
     }
 
-    SRSLUseStack::Ptr SRSLUseStack::FindFunction(const std::string &name) const {
+    SRSLUseStack::Ptr SRSLUseStack::FindFunction(const std::string_view &name) const {
         SR_TRACY_ZONE;
 
         for (auto&& function : functions) {
@@ -136,7 +135,7 @@ namespace SR_SRSL_NS {
         return nullptr;
     }
 
-    bool SRSLUseStack::IsVariableUsedInEntryPoint(SR_GRAPH_NS::ShaderStage stage, const std::string& name) const {
+    bool SRSLUseStack::IsVariableUsedInEntryPoint(SR_GRAPH_NS::ShaderStage stage, const std::string_view& name) const {
         SR_TRACY_ZONE;
 
         if (auto&& it = SR_SRSL_ENTRY_POINTS.find(stage); it != SR_SRSL_ENTRY_POINTS.end()) {
@@ -147,7 +146,7 @@ namespace SR_SRSL_NS {
         return false;
     }
 
-    bool SRSLUseStack::IsVariableUsedInEntryPoints(const std::string &name) const {
+    bool SRSLUseStack::IsVariableUsedInEntryPoints(const std::string_view& name) const {
         SR_TRACY_ZONE;
 
         for (auto&& [stage, entryPoint] : SR_SRSL_ENTRY_POINTS) {
@@ -159,7 +158,7 @@ namespace SR_SRSL_NS {
         return false;
     }
 
-    std::set<ShaderStage> SRSLUseStack::IsVariableUsedInEntryPointsExt(const std::string& name) const {
+    std::set<ShaderStage> SRSLUseStack::IsVariableUsedInEntryPointsExt(const std::string_view& name) const {
         std::set<ShaderStage> stages;
 
         for (auto&& [stage, entryPoint] : SR_SRSL_ENTRY_POINTS) {
@@ -182,14 +181,14 @@ namespace SR_SRSL_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    SRSLUseStack::Ptr SRSLRefAnalyzer::Analyze(const SRSLAnalyzedTree::Ptr& pAnalyzedTree, const SR_SRSL_NS::ShaderMacrosParams& macros) {
+    SRSLUseStack::Ptr SRSLRefAnalyzer::Analyze(const SRSLAnalyzedTree::Ptr& pAnalyzedTree, const SR_SRSL_NS::ShaderParams& params) {
         SR_TRACY_ZONE;
         SR_GLOBAL_LOCK
         m_analyzedTree = pAnalyzedTree;
         std::list<std::string> stack;
         auto&& pUseStack = AnalyzeTree(stack, pAnalyzedTree->pLexicalTree);
         if (pUseStack) {
-            PreprocessUseStack(pUseStack, macros);
+            PreprocessUseStack(pUseStack, params);
         }
 
         pUseStack->SetRoot(pUseStack.get());
@@ -199,8 +198,9 @@ namespace SR_SRSL_NS {
         return pUseStack;
     }
 
-    void SRSLRefAnalyzer::PreprocessUseStack(SRSLUseStack::Ptr& pUseStack, const SR_SRSL_NS::ShaderMacrosParams& macros) {
-        const bool isColorPassDefined = macros.IsDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+    void SRSLRefAnalyzer::PreprocessUseStack(SRSLUseStack::Ptr& pUseStack, const SR_SRSL_NS::ShaderParams& params) {
+        const bool isColorPassDefined = params.IsDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+        const bool isCascadedMapPassDefined = params.IsDefined(SHADER_MACRO_SR_DEFINE_CASCADED_SHADOW_MAP_PASS);
 
         if (isColorPassDefined) {
             auto&& pFragmentEntryPoint = pUseStack->FindFunction(SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment));
@@ -209,6 +209,13 @@ namespace SR_SRSL_NS {
 
             if (pUseStack->FindFunction("fragment_color_buffer_discard")) {
                 pFragmentEntryPoint->forceUsedFunctions.insert("fragment_color_buffer_discard");
+            }
+        }
+        else if (isCascadedMapPassDefined) {
+            auto&& pFragmentEntryPoint = pUseStack->FindFunction(SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment));
+
+            if (pUseStack->FindFunction("fragment_depth_buffer_discard")) {
+                pFragmentEntryPoint->forceUsedFunctions.insert("fragment_depth_buffer_discard");
             }
         }
     }

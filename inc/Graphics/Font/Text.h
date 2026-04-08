@@ -27,8 +27,6 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Text; }
 
-        SR_NODISCARD bool IsFlatMesh() const noexcept override;
-
         SR_NODISCARD uint32_t GetIndicesCount() const override { return 4; }
 
         SR_NODISCARD bool IsCalculatable() const override;

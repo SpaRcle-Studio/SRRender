@@ -20,11 +20,6 @@ namespace SR_GTYPES_NS {
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<SkinnedMesh>;
 
-        SkinnedMesh();
-
-    public:
-        typedef Vertices::SkinnedMeshVertex VertexType;
-
     public:
         SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Skinned; }
 
@@ -34,7 +29,6 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD bool IsUpdatable() const noexcept override { return true; }
-        SR_NODISCARD std::string GetMeshIdentifier() const override;
         SR_NODISCARD const SkeletonRef& GetSkeletonRef() const noexcept { return m_skeleton; }
         SR_NODISCARD SkeletonRef& GetSkeletonRef() noexcept { return m_skeleton; }
 
@@ -50,6 +44,7 @@ namespace SR_GTYPES_NS {
         void FreeSSBO();
 
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
+        SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;
 
     private:
         /// @property

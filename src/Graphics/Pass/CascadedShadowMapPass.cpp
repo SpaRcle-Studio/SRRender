@@ -39,14 +39,14 @@ namespace SR_GRAPH_NS {
         return pQueue;
     }
 
-    void CascadedShadowMapPass::UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const {
+    void CascadedShadowMapPass::UpdateShaderDefines(SR_SRSL_NS::ShaderParams& params) const {
         if (m_instancing) {
-            defines.AddDefine("CASCADES_INSTANCING");
+            params.AddDefine("CASCADES_INSTANCING");
             if (IsFrustumCullingEnabled()) {
-                defines.AddDefine("CASCADES_FRUSTUM_CULLING");
+                params.AddDefine("CASCADES_FRUSTUM_CULLING");
             }
         }
-        Super::UpdateShaderDefines(defines);
+        Super::UpdateShaderDefines(params);
     }
 
     bool CascadedShadowMapPass::Init() {

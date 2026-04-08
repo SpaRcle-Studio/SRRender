@@ -15,12 +15,6 @@ namespace SR_GTYPES_NS {
         using Super = IndexedMesh;
         SR_CLASS()
     public:
-        Mesh3D() = default;
-
-    public:
-        typedef Vertices::StaticMeshVertex VertexType;
-
-    public:
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
@@ -31,7 +25,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
-        SR_NODISCARD std::string GetMeshIdentifier() const override;
+        SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;
 
     private:
         bool Calculate() override;

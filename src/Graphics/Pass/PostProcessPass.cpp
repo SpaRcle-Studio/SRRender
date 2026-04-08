@@ -50,13 +50,13 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_shaderMacros.Clear();
+        m_shaderParams.Clear();
         auto&& macros = GetRenderContext()->GetShaderMacros();
         for (auto&& [key, value] : macros) {
-            m_shaderMacros.SetParam(key, value);
+            m_shaderParams.SetParam(key, value);
         }
 
-        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(m_shaderMacros);
+        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(m_shaderParams);
         if (!pShader || pShader->Use() == ShaderBindResult::Failed) {
             return false;
         }
@@ -108,7 +108,7 @@ namespace SR_GRAPH_NS {
 
         SR_TRACY_ZONE;
 
-        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(m_shaderMacros);
+        SR_GTYPES_NS::Shader* pShader = m_material->GetShader(m_shaderParams);
 
         GetPipeline()->SetCurrentShader(pShader);
 

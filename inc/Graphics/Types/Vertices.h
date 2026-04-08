@@ -15,6 +15,12 @@
 #include <Utils/Profile/TracyContext.h>
 
 namespace SR_GRAPH_NS::Vertices {
+    extern const SR_UTILS_NS::VertexLayoutDescription StaticMeshVertexLayout;
+    extern const SR_UTILS_NS::VertexLayoutDescription WireframeMeshVertexLayout;
+    extern const SR_UTILS_NS::VertexLayoutDescription SimpleMeshVertexLayout;
+    extern const SR_UTILS_NS::VertexLayoutDescription SkinnedMeshVertexLayout;
+    extern const SR_UTILS_NS::VertexLayoutDescription SkyboxVertexLayout;
+
     enum class Attribute : uint32_t {
         Unknown            = 0,
 
@@ -38,7 +44,7 @@ namespace SR_GRAPH_NS::Vertices {
         return SR_FORMAT("[ {}, {} ]", vec.x, vec.y);
     }
 
-    struct alignas(16) StaticMeshVertexAligned {
+    /*struct alignas(16) StaticMeshVertexAligned {
         SR_MATH_NS::FVector3 pos;
         float _pad0;               // выравнивание после vec3
         SR_MATH_NS::FVector2 uv;
@@ -362,7 +368,7 @@ namespace SR_GRAPH_NS::Vertices {
                 SRHalt0();
                 return 0;
         }
-    }
+    }*/
 
     template<typename V> SR_MATH_NS::FVector3 Barycenter(const std::vector<V>& vertices) {
         auto x = [vertices]() { float sum = 0.f; for (const auto& v : vertices) sum += v.pos.x; return sum; }();
@@ -379,7 +385,7 @@ namespace SR_GRAPH_NS::Vertices {
         std::vector<std::string> m_names;
     };
 
-    SR_MAYBE_UNUSED static VertexInfo GetVertexInfo(VertexType type) {
+    /*SR_MAYBE_UNUSED static VertexInfo GetVertexInfo(VertexType type) {
         VertexInfo info = {};
         switch (type) {
             case VertexType::SkinnedMeshVertex:
@@ -486,11 +492,11 @@ namespace SR_GRAPH_NS::Vertices {
     template<typename T> static std::vector<T> CastVertices(const std::vector<SR_UTILS_NS::Vertex>& raw) {
         SR_TRACY_ZONE;
         return CastVertices<T>(raw.data(), raw.size());
-    }
+    }*/
 }
 
 namespace std {
-    template <class T> static inline void hash_combine(std::size_t & s, const T & v) {
+    /*template <class T> static inline void hash_combine(std::size_t & s, const T & v) {
         std::hash<T> h;
         s ^= h(v) + 0x9e3779b9 + (s << 6) + (s >> 2);
     }
@@ -533,7 +539,7 @@ namespace std {
             hash_combine<float>(res, vertex.pos.z);
             return res;
         }
-    };
+    };*/
 }
 
 #endif //SR_ENGINE_VERTICES_H

@@ -17,48 +17,25 @@ namespace SR_GTYPES_NS {
             return true;
         }
 
-        const uint32_t size = m_countVertices * sizeof(Vertices::StaticMeshVertexAligned);
-        int32_t oldSSBO = SR_ID_INVALID;
-        if (m_ssboSize >= size && m_useSSBOInsteadOfVertices) {
-            std::swap(m_ssbo, oldSSBO);
-        }
-
         FreeVMemory();
 
         if (!IsCalculatable()) {
             return false;
         }
 
-        if (m_useSSBOInsteadOfVertices) {
-            if (oldSSBO == SR_ID_INVALID) {
-                SRAssert(m_ssbo == SR_ID_INVALID);
-                m_ssbo = GetPipeline()->AllocateSSBO(size, SSBOUsage::CPUToGPU);
-                m_ssboSize = size;
-            }
-            else {
-                m_ssbo = oldSSBO;
-            }
-
-            GetPipeline()->UpdateSSBO(m_ssbo, (void*)m_verticesData.data(), size);
-
-            m_isCalculated = true;
-            /// чтобы в случае перезагрузки обновить все связанные данные
-            MarkMaterialDirty();
-        }
-        else {
-            if (!CalculateVBO((void*)m_verticesData.data(), m_countVertices, m_verticesType)) {
-                return false;
-            }
-
-            return Super::Calculate();
-        }
-
-        return true;
+        return Super::Calculate();
     }
 
     const SR_HTYPES_NS::FastMemoryArray<uint32_t>& ProceduralMesh::GetIndices() const {
-        static SR_HTYPES_NS::FastMemoryArray<uint32_t> empty;
-        return m_useSSBOInsteadOfVertices ? empty : m_indices;
+        return m_indices;
+    }
+
+    const SR_UTILS_NS::VertexDataBuffer& ProceduralMesh::GetVertices() const {
+        if (!m_vertices) {
+            static SR_UTILS_NS::VertexDataBuffer empty;
+            return empty;
+        }
+        return *m_vertices;
     }
 
     bool ProceduralMesh::IsCalculatable() const {
@@ -66,37 +43,26 @@ namespace SR_GTYPES_NS {
     }
 
     void ProceduralMesh::SwapIndices(SR_HTYPES_NS::FastMemoryArray<uint32_t>& indices) {
-        SRAssert(!m_useSSBOInsteadOfVertices);
         std::swap(m_indices, indices);
         m_countIndices = static_cast<uint32_t>(m_indices.size());
         SetDirtyMesh();
     }
 
-    void ProceduralMesh::SetIndexedVertices(void* pData, uint64_t count, Vertices::VertexType vertexType) {
+    void ProceduralMesh::SetIndexedVertices(const SR_UTILS_NS::VertexDataBuffer& vertices) {
         SR_TRACY_ZONE;
 
-        SRAssert(!m_useSSBOInsteadOfVertices);
-
-        m_countVertices = count;
-        m_verticesType = vertexType;
-
-        const auto vertexSize = Vertices::GetVertexSize(vertexType);
-
-        if (!pData || count == 0) {
-            m_verticesData.clear();
+        if (!m_vertices) {
+            m_vertices = new SR_UTILS_NS::VertexDataBuffer();
         }
-        else {
-            m_verticesData.resize(m_countVertices * vertexSize);
-            memcpy(m_verticesData.data(), pData, count * vertexSize);
-        }
+        m_vertices->CopyFrom(vertices);
+        m_countVertices = vertices.GetVertexCount();
 
+        SetVertexLayoutDescription(vertices.GetLayout());
         SetDirtyMesh();
     }
 
-    void ProceduralMesh::SetIndices(void *pData, uint64_t count) {
+    void ProceduralMesh::SetIndices(void* pData, uint64_t count) {
         SR_TRACY_ZONE;
-
-        SRAssert(!m_useSSBOInsteadOfVertices);
 
         if (!pData || count == 0) {
             m_indices.clear();
@@ -130,20 +96,14 @@ namespace SR_GTYPES_NS {
     }
 
     bool ProceduralMesh::IsSupportVBO() const {
-        return !m_useSSBOInsteadOfVertices;
+        return true;
     }
 
     void ProceduralMesh::UseSSBO() {
-        if (m_useSSBOInsteadOfVertices && m_ssbo != SR_ID_INVALID) {
-            GetPipeline()->GetCurrentShader()->BindSSBO("ssboVertices", m_ssbo);
-        }
         Super::UseSSBO();
     }
 
     void ProceduralMesh::FreeVMemory() {
-        if (m_ssbo != SR_ID_INVALID) {
-            GetPipeline()->FreeSSBO(&m_ssbo);
-        }
         Super::FreeVMemory();
     }
 
@@ -167,7 +127,7 @@ namespace SR_GTYPES_NS {
 
         std::string content;
         content += "# Exported IndexedMesh\n";
-        content += "o " + GetMeshIdentifier() + "\n";
+        //content += "o " + GetMeshIdentifier() + "\n";
 
         SRHalt("ProceduralMesh::Export() : not implemented yet!");
         //for (uint64_t i = 0; i < GetVerticesCount(); ++i) {

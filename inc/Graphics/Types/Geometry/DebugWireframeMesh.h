@@ -17,9 +17,6 @@ namespace SR_GTYPES_NS {
         SR_CLASS()
         using Super = IndexedMesh;
     public:
-        typedef Vertices::SimpleVertex VertexType;
-
-    public:
         DebugWireframeMesh() = default;
         ~DebugWireframeMesh() override = default;
 
@@ -33,7 +30,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Wireframe; }
 
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
-        SR_NODISCARD std::string GetMeshIdentifier() const override;
+        SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;
 
         SR_NODISCARD SR_UTILS_NS::StringAtom GetMeshLayer() const override {
             const static SR_UTILS_NS::StringAtom debugLayer = "Debug";

@@ -217,7 +217,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         return m_descriptorSetPool.Add(pDescriptorSet);
     }
 
-    int32_t MemoryManager::AllocateVBO(uint32_t buffSize, const void *data) {
+    int32_t MemoryManager::AllocateVBO(uint64_t size, const void* pData) {
         SR_TRACY_ZONE;
 
         VkBufferUsageFlags bufferUsageFlagBits = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -230,7 +230,7 @@ namespace SR_GRAPH_NS::VulkanTools {
             m_kernel->GetAllocator(),
             bufferUsageFlagBits,
             VMA_MEMORY_USAGE_CPU_TO_GPU,
-            buffSize, data
+            size, pData
         );
 
         if (!pVBO) {

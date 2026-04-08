@@ -83,31 +83,24 @@ namespace SR_GTYPES_NS {
         }
 
         if (!m_isQuad) {
-            auto&& indexedVertices = Vertices::CastVertices<Vertices::SimpleVertex>(SR_UTILS_NS::SKYBOX_INDEXED_VERTICES);
-
-            if (GetPipeline()->GetType() == PipelineType::Vulkan || GetPipeline()->GetType() == PipelineType::Headless) {
-                auto&& indices = SR_UTILS_NS::SKYBOX_INDICES;
-
-                if (m_VBO = GetPipeline()->AllocateVBO(indexedVertices.data(), Vertices::VertexType::SimpleVertex, indexedVertices.size()); m_VBO == SR_ID_INVALID) {
-                    SR_ERROR("Skybox::Calculate() : failed to calculate VBO!");
-                    m_hasErrors = true;
-                    return false;
-                }
-
-                if (m_IBO = GetPipeline()->AllocateIBO((void *) indices.data(), sizeof(uint32_t), indices.size(), SR_ID_INVALID); m_IBO == SR_ID_INVALID) {
-                    SR_ERROR("Skybox::Calculate() : failed to calculate IBO!");
-                    m_hasErrors = true;
-                    return false;
-                }
+            SR_UTILS_NS::VertexDataBuffer indexedVertices;
+            indexedVertices.layout = Vertices::SkyboxVertexLayout;
+            indexedVertices.Allocate(SR_UTILS_NS::SKYBOX_INDEXED_VERTICES.size());
+            for (size_t i = 0; i < SR_UTILS_NS::SKYBOX_INDEXED_VERTICES.size(); ++i) {
+                indexedVertices.SetVertex(i, SR_UTILS_NS::VertexAttribute::Position, &SR_UTILS_NS::SKYBOX_INDEXED_VERTICES[i]);
             }
-            else {
-                auto&& vertices = SR_UTILS_NS::IndexedVerticesToNonIndexed(indexedVertices, SR_UTILS_NS::SKYBOX_INDICES);
 
-                if (m_VBO = GetPipeline()->AllocateVBO(vertices.data(), Vertices::VertexType::SimpleVertex, vertices.size()); m_VBO == SR_ID_INVALID) {
-                    SR_ERROR("Skybox::Calculate() : failed to calculate VBO!");
-                    m_hasErrors = true;
-                    return false;
-                }
+            if (m_VBO = GetPipeline()->AllocateVBO(indexedVertices.GetDataSize(), indexedVertices.GetRawData()); m_VBO == SR_ID_INVALID) {
+                SR_ERROR("Skybox::Calculate() : failed to calculate VBO!");
+                m_hasErrors = true;
+                return false;
+            }
+
+            auto&& indices = SR_UTILS_NS::SKYBOX_INDICES;
+            if (m_IBO = GetPipeline()->AllocateIBO((void *) indices.data(), sizeof(uint32_t), indices.size(), SR_ID_INVALID); m_IBO == SR_ID_INVALID) {
+                SR_ERROR("Skybox::Calculate() : failed to calculate IBO!");
+                m_hasErrors = true;
+                return false;
             }
         }
 

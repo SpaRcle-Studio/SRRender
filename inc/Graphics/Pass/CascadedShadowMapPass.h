@@ -46,7 +46,7 @@ namespace SR_GRAPH_NS {
         void UpdateCascadesUnityStyle(SR_GTYPES_NS::Camera* pCamera);
 
         void OnCameraParamsChanged() override;
-        void UpdateShaderDefines(SR_SRSL_NS::ShaderMacrosParams& defines) const override;
+        void UpdateShaderDefines(SR_SRSL_NS::ShaderParams& params) const override;
 
         SR_NODISCARD const Frustum& GetFrustum(uint32_t renderLayer, bool& isAvailable) const override;
         SR_NODISCARD float_t GetCascadedMapResolution() const;

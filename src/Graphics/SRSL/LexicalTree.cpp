@@ -232,11 +232,11 @@ namespace SR_SRSL_NS {
         SR_SAFE_DELETE_PTR(pLexicalTree);
     }
 
-    void SRSLAnalyzedTree::PostProcess(const ShaderMacrosParams& macros) {
+    void SRSLAnalyzedTree::PostProcess(const ShaderParams& params) {
         SR_TRACY_ZONE;
 
-        const bool isColorPassDefined = macros.IsDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
-        const bool isCascadedMapPassDefined = macros.IsDefined(SHADER_MACRO_SR_DEFINE_CASCADED_SHADOW_MAP_PASS);
+        const bool isColorPassDefined = params.IsDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+        const bool isCascadedMapPassDefined = params.IsDefined(SHADER_MACRO_SR_DEFINE_CASCADED_SHADOW_MAP_PASS);
 
         const bool isNeedRemoveFragmentEntryPoint = isColorPassDefined || isCascadedMapPassDefined;
 

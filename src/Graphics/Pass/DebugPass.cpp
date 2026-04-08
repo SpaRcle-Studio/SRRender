@@ -34,19 +34,21 @@ namespace SR_GRAPH_NS {
                 pShader->RemoveUsePoint();
             }
 
-            SR_SRSL_NS::ShaderMacrosParams shaderMacros;
+            SR_SRSL_NS::ShaderParams params;
 
             auto&& macros = pPass->GetRenderContext()->GetShaderMacros();
             for (auto&& [key, value] : macros) {
-                shaderMacros.SetParam(key, value);
+                params.SetParam(key, value);
             }
 
             const uint32_t layers = pPass->GetColorLayersCount();
             for (uint32_t i = 0; i < layers; ++i) {
-                shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
+                params.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
             }
 
-            pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(shaderPath, &shaderMacros);
+            params.SetVertexLayoutDescription(Vertices::SimpleMeshVertexLayout);
+
+            pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(shaderPath, &params);
             if (pShader) {
                 pShader->AddUsePoint();
             }
@@ -107,7 +109,10 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            pShader->Use();
+            if (pShader->Use() == ShaderBindResult::Failed) {
+                SR_ERROR("DebugPass::Render() : failed to use shader \"{}\"!", id);
+                continue;
+            }
 
             for (auto& queue : shaderInfo.drawQueues) {
                 if (queue.empty()) {
@@ -130,7 +135,7 @@ namespace SR_GRAPH_NS {
                     continue;
                 }
 
-                const Memory::BakedMesh& mesh = pDebugRenderer->GetMeshUnchecked(meshId);
+                const BakedMesh& mesh = pDebugRenderer->GetMeshUnchecked(meshId);
 
                 pPipeline->BindVBO(mesh.GetVBO());
                 pPipeline->BindIBO(mesh.GetIBO());

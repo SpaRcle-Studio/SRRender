@@ -20,7 +20,7 @@ namespace SR_SRSL_NS {
         using OutResult = std::pair<std::vector<Lexem>, SRSLResult>;
 
     public:
-        SR_NODISCARD OutResult Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderMacrosParams& macros);
+        SR_NODISCARD OutResult Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderParams& params);
 
     private:
         void Clear();
@@ -34,7 +34,7 @@ namespace SR_SRSL_NS {
 
     private:
         SRSLResult m_result;
-        ShaderMacrosParams* m_macros = nullptr;
+        ShaderParams* m_params = nullptr;
 
         std::vector<Lexem> m_lexems;
         int64_t m_currentLexem = 0;

@@ -14,9 +14,6 @@ namespace SR_GTYPES_NS {
         friend class Mesh;
         using Super = Mesh;
     public:
-        typedef Vertices::SimpleVertex VertexType;
-
-    public:
         DebugLine() = default;
         DebugLine(SR_MATH_NS::FVector3 startPoint, SR_MATH_NS::FVector3 endPoint, SR_MATH_NS::FVector4 color);
 

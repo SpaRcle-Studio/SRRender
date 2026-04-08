@@ -200,6 +200,34 @@ namespace SR_SRSL_NS {
             return ssbo;
         }
 
+        void SaveVertexLayoutDescription(SR_HTYPES_NS::Marshal& marshal, const SR_UTILS_NS::VertexLayoutDescription& description) {
+            SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, description.attributesCount);
+            for (size_t i = 0; i < description.attributesCount; ++i) {
+                const auto& attribute = description.attributes[i];
+                SR_UTILS_NS::MarshalUtils::SaveValue<uint32_t>(marshal, static_cast<uint32_t>(attribute.attribute));
+                SR_UTILS_NS::MarshalUtils::SaveValue<uint8_t>(marshal, static_cast<uint32_t>(attribute.format));
+                SR_UTILS_NS::MarshalUtils::SaveValue<uint8_t>(marshal, attribute.count);
+                SR_UTILS_NS::MarshalUtils::SaveValue<uint16_t>(marshal, attribute.offset);
+            }
+        }
+
+        SR_UTILS_NS::VertexLayoutDescription LoadVertexLayoutDescription(SR_HTYPES_NS::Marshal& marshal) {
+            SR_UTILS_NS::VertexLayoutDescription description;
+
+            const auto attributesCount = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+            for (size_t i = 0; i < attributesCount; ++i) {
+                SR_UTILS_NS::VertexAttributeDescription attribute;
+                attribute.attribute = static_cast<SR_UTILS_NS::VertexAttribute>(SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal));
+                attribute.format = static_cast<SR_UTILS_NS::VertexAttributeFormat>(SR_UTILS_NS::MarshalUtils::LoadValue<uint8_t>(marshal));
+                attribute.count = SR_UTILS_NS::MarshalUtils::LoadValue<uint8_t>(marshal);
+                attribute.offset = SR_UTILS_NS::MarshalUtils::LoadValue<uint16_t>(marshal);
+                description.attributes[i] = attribute;
+            }
+            description.attributesCount = static_cast<uint8_t>(attributesCount);
+
+            return description;
+        }
+
         void SaveCreateInfo(SR_HTYPES_NS::Marshal& marshal, const SRShaderCreateInfo& createInfo) {
             SR_UTILS_NS::MarshalUtils::SaveValue(marshal, static_cast<uint32_t>(createInfo.shaderType));
             SR_UTILS_NS::MarshalUtils::SaveValue(marshal, static_cast<uint32_t>(createInfo.polygonMode));
@@ -211,9 +239,11 @@ namespace SR_SRSL_NS {
             SR_UTILS_NS::MarshalUtils::SaveValue<bool>(marshal, createInfo.depthTest);
             SR_UTILS_NS::MarshalUtils::SaveValue<bool>(marshal, createInfo.alphaCoverage);
 
-            SR_UTILS_NS::MarshalUtils::SaveVector(marshal, createInfo.vertexAttributes);
-            SR_UTILS_NS::MarshalUtils::SaveVector(marshal, createInfo.vertexDescriptions);
             SR_UTILS_NS::MarshalUtils::SaveVector(marshal, createInfo.uniforms);
+
+            if (createInfo.stages.empty()) {
+                SRHalt("SRShaderCreateInfo::SaveCreateInfo() : stages size is 0!");
+            }
 
             SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, createInfo.stages.size());
             for (const auto &[stage, info]: createInfo.stages) {
@@ -221,6 +251,8 @@ namespace SR_SRSL_NS {
                 SR_UTILS_NS::MarshalUtils::SaveString(marshal, info.path.ToStringView());
                 SR_UTILS_NS::MarshalUtils::SaveVector(marshal, info.pushConstants);
             }
+
+            SaveVertexLayoutDescription(marshal, createInfo.vertexLayoutDescription);
         }
 
         SRShaderCreateInfo LoadCreateInfo(SR_HTYPES_NS::Marshal& marshal) {
@@ -236,11 +268,13 @@ namespace SR_SRSL_NS {
             createInfo.depthTest = SR_UTILS_NS::MarshalUtils::LoadValue<bool>(marshal);
             createInfo.alphaCoverage = SR_UTILS_NS::MarshalUtils::LoadValue<bool>(marshal);
 
-            createInfo.vertexAttributes = SR_UTILS_NS::MarshalUtils::LoadVector<VertexAttributes>(marshal);
-            createInfo.vertexDescriptions = SR_UTILS_NS::MarshalUtils::LoadVector<VertexDescriptions>(marshal);
             createInfo.uniforms = SR_UTILS_NS::MarshalUtils::LoadVector<UBOInfo>(marshal);
 
             const auto stagesSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+            if (stagesSize == 0) {
+                SRHalt("SRShaderCreateInfo::LoadCreateInfo() : stages size is 0!");
+            }
+
             for (size_t i = 0; i < stagesSize; ++i) {
                 const auto stage = static_cast<ShaderStage>(SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal));
                 SRShaderStageInfo info;
@@ -248,6 +282,8 @@ namespace SR_SRSL_NS {
                 info.pushConstants = SR_UTILS_NS::MarshalUtils::LoadVector<std::vector<SRShaderPushConstant>>(marshal);
                 createInfo.stages[stage] = info;
             }
+
+            createInfo.vertexLayoutDescription = LoadVertexLayoutDescription(marshal);
 
             return createInfo;
         }
@@ -483,6 +519,11 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         SR_TRACY_ZONE_TEXT(cachePath);
 
+        if (!pShader->m_shaderCreateInfo.Validate()) {
+            SRHalt("Invalid shader create info! Path: {}", cachePath);
+            return;
+        }
+
         uint64_t hash = 0;
 
         for (auto&& include : pShader->m_includes) {
@@ -615,6 +656,11 @@ namespace SR_GRAPH_NS {
 
         pShader->m_isGLayerUsed = marshal.Read<bool>();
 
+        if (!pShader->m_shaderCreateInfo.Validate()) {
+            SRHalt("Invalid shader create info loaded from cache!");
+            return false;
+        }
+
         return true;
     }
 
@@ -684,6 +730,6 @@ namespace SR_GRAPH_NS {
     }
 
     uint64_t ShaderCache::GetVersion() {
-        return 0xDEADBEEF;
+        return 0xDEADB00B;
     }
 }

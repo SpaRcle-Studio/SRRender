@@ -698,8 +698,14 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& semaphoreCI = EvoVulkan::Tools::Initializers::SemaphoreCreateInfo();
-        if (vkCreateSemaphore(*m_device, &semaphoreCI, nullptr, &m_semaphore) != VK_SUCCESS) {
-            VK_ERROR("VkImGUI::Init() : failed to create vulkan semaphore!");
+        if (VkResult result = vkCreateSemaphore(*m_device, &semaphoreCI, nullptr, &m_semaphore); result != VK_SUCCESS) {
+            SR_VULKAN_ERROR("VkImGUI::Init() : failed to create vulkan semaphore!\n\tResult: {}\n\tReason: {}",
+                EvoVulkan::Tools::Convert::result_to_string(result),
+                EvoVulkan::Tools::Convert::result_to_description(result)
+            );
+            if (result == VK_ERROR_DEVICE_LOST) {
+                m_device->OnDeviceLost();
+            }
             return false;
         }
 

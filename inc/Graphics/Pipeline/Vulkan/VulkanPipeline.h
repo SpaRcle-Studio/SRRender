@@ -84,7 +84,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD UsedVideoMemoryInfo GetUsedVideoMemoryInfo() const override;
 
         SR_NODISCARD int32_t AllocateUBO(uint32_t uboSize) override;
-        SR_NODISCARD int32_t AllocateVBO(const void* pVertices, Vertices::VertexType type, size_t count) override;
+        SR_NODISCARD int32_t AllocateVBO(uint64_t size, const void* pData) override;
         SR_NODISCARD int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) override;
         SR_NODISCARD int32_t AllocDescriptorSet(const std::vector<DescriptorType>& types) override;
         SR_NODISCARD int32_t AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) override;

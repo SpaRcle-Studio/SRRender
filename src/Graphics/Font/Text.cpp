@@ -146,11 +146,6 @@ namespace SR_GTYPES_NS {
         Mesh::UseSamplers(shader);
     }
 
-    bool Text::IsFlatMesh() const noexcept {
-        auto&& pTransform = GetTransform();
-        return pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D;
-    }
-
     void Text::SetFont(const SR_GTYPES_NS::Font::Ptr& pFont) {
         if (pFont == m_font) {
             return;

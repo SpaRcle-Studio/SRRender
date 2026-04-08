@@ -171,14 +171,15 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_skybox && m_isShaderDirty) {
-            SR_SRSL_NS::ShaderMacrosParams shaderMacros;
+            SR_SRSL_NS::ShaderParams params;
             const uint32_t layers = GetColorLayersCount();
             for (uint32_t i = 0; i < layers; ++i) {
-                shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
+                params.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
             }
+            params.SetVertexLayoutDescription(Vertices::SkyboxVertexLayout);
 
             if (!m_shaderPath.empty()) {
-                if (auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(m_shaderPath, &shaderMacros)) {
+                if (auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(m_shaderPath, &params)) {
                     m_skybox->SetShader(pShader);
                 } else {
                     SR_ERROR("SkyboxPass::UpdateParams() : failed to load shader for skybox!\n\tPath: {}", m_shaderPath);

@@ -2,15 +2,16 @@
 // Created by Monika on 20.09.2022.
 //
 
-#include <Utils/DebugDraw.h>
-#include <Utils/Types/Time.h>
-#include <Utils/Types/RawMesh.h>
-
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Types/Geometry/DebugWireframeMesh.h>
 #include <Graphics/Types/Geometry/DebugLine.h>
 #include <Graphics/Material/FileMaterial.h>
+
+#include <Utils/DebugDraw.h>
+#include <Utils/Types/Time.h>
+#include <Utils/Types/RawMesh.h>
+#include <Utils/Common/Features.h>
 
 #include <Codegen/DebugRenderer.generated.hpp>
 
@@ -22,17 +23,19 @@ namespace SR_GRAPH_NS {
     void DebugRenderer::Init() {
         SR_INFO("DebugRenderer::Init() : initializing debug renderer...");
 
-        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/cubeWireframe.obj", 0, Vertices::VertexType::SimpleVertex));
-        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/planeWireframe.obj", 0, Vertices::VertexType::SimpleVertex));
-        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/sphere_circle.obj", 0, Vertices::VertexType::SimpleVertex));
-        m_meshes.emplace_back(Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/capsule_circle.obj", 0, Vertices::VertexType::SimpleVertex));
+        if (SR_UTILS_NS::Features::Instance().Enabled("DebugRendererMeshes", true)) {
+            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/cubeWireframe.obj", 0, Vertices::SimpleMeshVertexLayout));
+            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/planeWireframe.obj", 0, Vertices::SimpleMeshVertexLayout));
+            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/sphere_circle.obj", 0, Vertices::SimpleMeshVertexLayout));
+            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/capsule_circle.obj", 0, Vertices::SimpleMeshVertexLayout));
 
-        for (uint64_t i = 0; i < m_meshes.size(); ++i) {
-            if (!m_meshes[i]) {
-                SR_ERROR("DebugRenderer::Init() : failed to load debug mesh on index {}!", i);
-            }
-            else {
-                m_meshes[i]->AddUsePoint();
+            for (uint64_t i = 0; i < m_meshes.size(); ++i) {
+                if (!m_meshes[i]) {
+                    SR_ERROR("DebugRenderer::Init() : failed to load debug mesh on index {}!", i);
+                }
+                else {
+                    m_meshes[i]->AddUsePoint();
+                }
             }
         }
 
@@ -97,7 +100,7 @@ namespace SR_GRAPH_NS {
             m_renderSceneChanged = true;
             GetRenderScene()->GetPipeline()->SetDirty(true);
 
-            if (timed.drawInfo.type >= DrawType::Mesh) {
+            if (timed.drawInfo.type >= DrawType::Mesh && m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]) {
                 m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]->RemoveUsePoint();
             }
         });
@@ -137,7 +140,9 @@ namespace SR_GRAPH_NS {
         SR_LOCK_GUARD;
 
         if (meshId >= m_meshes.size()) {
-            SRHalt("DebugRenderer::DrawMesh() : invalid mesh id \"{}\"!", meshId);
+            if (SR_UTILS_NS::Features::Instance().Enabled("DebugRendererMeshes", true)) {
+                SRHalt("DebugRenderer::DrawMesh() : invalid mesh id \"{}\"!", meshId);
+            }
             return SR_ID_INVALID;
         }
 
@@ -192,7 +197,7 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        Memory::BakedMesh::Ptr pMesh = Memory::BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), pRawMesh, meshIndex, Vertices::VertexType::SimpleVertex);
+        auto&& pMesh = BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), pRawMesh, meshIndex, Vertices::SimpleMeshVertexLayout);
 
         if (freeIndex == SR_ID_INVALID) {
             pMesh->AddUsePoint();

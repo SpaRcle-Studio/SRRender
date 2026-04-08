@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD RenderContextPtr GetContext() const { return m_context; }
         SR_NODISCARD virtual const MaterialData::Ptr& GetMaterialData() const noexcept;
         SR_NODISCARD SR_GTYPES_NS::Shader* GetDefaultShader() const noexcept;
-        SR_NODISCARD SR_GTYPES_NS::Shader* GetShader(const SR_SRSL_NS::ShaderMacrosParams& macros) const noexcept;
+        SR_NODISCARD SR_GTYPES_NS::Shader* GetShader(const SR_SRSL_NS::ShaderParams& params) const noexcept;
 
         SR_NODISCARD virtual MaterialType GetMaterialType() const noexcept { return MaterialType::None; }
 
@@ -82,7 +82,7 @@ namespace SR_GRAPH_NS {
         mutable SR_UTILS_NS::Subscription m_propertyChangedSubscription;
 
         mutable std::map<SR_UTILS_NS::SRHashType, SR_GTYPES_NS::Shader::Ptr> m_variants;
-        mutable std::map<SR_UTILS_NS::SRHashType, SR_SRSL_NS::ShaderMacrosParams> m_hashRedirect;
+        mutable std::map<SR_UTILS_NS::SRHashType, SR_SRSL_NS::ShaderParams> m_hashRedirect;
 
     };
 }

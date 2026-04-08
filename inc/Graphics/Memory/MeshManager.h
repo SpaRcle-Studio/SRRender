@@ -5,14 +5,15 @@
 #ifndef SR_ENGINE_GRAPHICS_MEMORY_MESH_MANAGER_H
 #define SR_ENGINE_GRAPHICS_MEMORY_MESH_MANAGER_H
 
+#include <Graphics/Types/Vertices.h>
+#include <Graphics/Pipeline/PipelineType.h>
+
 #include <Utils/Common/Singleton.h>
 #include <Utils/Common/Enumerations.h>
 #include <Utils/Types/Thread.h>
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/RawMesh.h>
-
-#include <Graphics/Types/Vertices.h>
-#include <Graphics/Pipeline/PipelineType.h>
+#include <Utils/Types/SortedVector.h>
 
 namespace SR_GTYPES_NS {
     class Mesh3D;
@@ -21,240 +22,155 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class Pipeline;
 
-    namespace Memory {
-        class MeshManager;
+    class MeshVideoMemoryInfo {
+    public:
+        struct RegistrationInfo {
+            SR_UTILS_NS::StringAtom resourceId;
+            uint64_t meshIndex = SR_ID_INVALID;
+            uint64_t reloadCount = 0;
+            bool isVBO = false;
 
-        enum class MeshMemoryType {
-            Unknown, VBO, IBO
+            SR_NODISCARD uint64_t GetHash() const noexcept {
+                uint64_t hash = resourceId.GetHash();
+                hash = SR_UTILS_NS::HashCombine(hash, meshIndex);
+                hash = SR_UTILS_NS::HashCombine(hash, reloadCount);
+                return hash;
+            }
+
+            SR_NODISCARD bool operator<(const RegistrationInfo& other) const {
+                return GetHash() < other.GetHash();
+            }
+            SR_NODISCARD bool operator==(const RegistrationInfo& other) const {
+                return GetHash() == other.GetHash();
+            }
         };
 
-        class MeshVidMemInfo {
-            friend class MeshManager;
-        public:
-            MeshVidMemInfo() = default;
+    public:
+        MeshVideoMemoryInfo() = default;
+        explicit MeshVideoMemoryInfo(RegistrationInfo info)
+            : m_info(info)
+        { }
+        MeshVideoMemoryInfo(RegistrationInfo info, uint32_t size, uint32_t memoryId)
+            : m_info(info)
+            , m_size(size)
+            , m_memoryId(memoryId)
+        { }
 
-            explicit MeshVidMemInfo(uint32_t size, uint32_t id, MeshMemoryType type)
-                : m_vidId(id)
-                , m_usages(1)
-                , m_size(size)
-                , m_type(type)
-            { }
+    public:
+        void Use();
+        void UnUse();
 
-        public:
-            SR_NODISCARD uint32_t Copy();
-            SR_NODISCARD uint32_t Size() { return m_size; }
+        SR_NODISCARD uint32_t Copy();
+        SR_NODISCARD uint32_t GetUsages() const noexcept { return m_usages; }
+        SR_NODISCARD uint32_t Size() const noexcept { return m_size; }
 
-            SR_NODISCARD uint32_t GetUsages() const noexcept { return m_usages; }
+        SR_NODISCARD bool operator<(const MeshVideoMemoryInfo& other) const { return m_info < other.m_info; }
+        SR_NODISCARD bool operator==(const MeshVideoMemoryInfo& other) const { return m_info == other.m_info; }
 
-        private:
-            uint32_t m_vidId = SR_UINT32_MAX;
-            uint32_t m_usages = 0;
-            uint32_t m_size = 0;
-            MeshMemoryType m_type = MeshMemoryType::Unknown;
+    private:
+        uint32_t m_memoryId = SR_ID_INVALID;
+        uint32_t m_usages = 0;
+        uint32_t m_size = 0;
+        RegistrationInfo m_info;
 
+    };
+
+    class MeshManager;
+
+    class BakedMesh : public SR_HTYPES_NS::SharedPtr<BakedMesh> {
+        using Super = SR_HTYPES_NS::SharedPtr<BakedMesh>;
+        friend MeshManager;
+    public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<BakedMesh>;
+
+    public:
+        BakedMesh()
+            : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+        { }
+
+        ~BakedMesh() override;
+
+    public:
+        void Destroy();
+
+        SR_NODISCARD int32_t GetVBO() const noexcept { return m_VBO; }
+        SR_NODISCARD int32_t GetIBO() const noexcept { return m_IBO; }
+        SR_NODISCARD uint32_t GetCountIndices() const noexcept { return m_countIndices; }
+        SR_NODISCARD uint32_t GetCountVertices() const noexcept { return m_countVertices; }
+        SR_NODISCARD uint32_t GetUsages() const noexcept { return m_usages; }
+        SR_NODISCARD uint64_t GetMeshIndex() const noexcept { return m_index; }
+        SR_NODISCARD Pipeline* GetPipeline() const noexcept { return m_pipeline; }
+        SR_NODISCARD SR_HTYPES_NS::RawMesh* GetRawMesh() const noexcept { return m_pRawMesh; }
+
+        void AddUsePoint() {
+            m_usages++;
+        }
+
+        void RemoveUsePoint() {
+            if (m_usages > 0) {
+                m_usages--;
+                return;
+            }
+            SRHalt("BakedMesh::RemoveUsePoint() : usages is less than 0!");
+        }
+
+        static Ptr Bake(Pipeline* pPipeline, std::string_view path, uint32_t index, SR_UTILS_NS::VertexLayoutDescription layout);
+        static Ptr Bake(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, SR_UTILS_NS::VertexLayoutDescription layout);
+
+    private:
+        uint32_t m_usages = 0;
+        SR_HTYPES_NS::RawMesh* m_pRawMesh = nullptr;
+        uint64_t m_index = 0;
+        int32_t m_VBO = SR_ID_INVALID;
+        int32_t m_IBO = SR_ID_INVALID;
+        uint32_t m_countIndices = 0;
+        uint32_t m_countVertices = 0;
+        Pipeline* m_pipeline = nullptr;
+    };
+
+    class MeshManager : public SR_UTILS_NS::Singleton<MeshManager> {
+        SR_REGISTER_SINGLETON(MeshManager)
+        using RegistrationInfo = MeshVideoMemoryInfo::RegistrationInfo;
+    public:
+        enum class FreeResult {
+            Unknown, Freed, EndUse, NotFound, UnknownMemory, Invalid
         };
 
-        class BakedMesh : public SR_HTYPES_NS::SharedPtr<BakedMesh> {
-            using Super = SR_HTYPES_NS::SharedPtr<BakedMesh>;
-            friend MeshManager;
-        public:
-            using Ptr = SR_HTYPES_NS::SharedPtr<BakedMesh>;
+    private:
+        MeshManager();
+        ~MeshManager() override = default;
 
-        public:
-            BakedMesh()
-                : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
-            { }
+    public:
+        SR_NODISCARD BakedMesh::Ptr BakeMesh(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, SR_UTILS_NS::VertexLayoutDescription layout);
 
-            ~BakedMesh() override;
+        bool Register(RegistrationInfo info, uint32_t size, uint32_t memoryId, SR_UTILS_NS::VertexLayoutDescription layout);
+        bool Register(RegistrationInfo info, uint32_t size, uint32_t memoryId);
+        FreeResult Free(bool isVBO, int32_t memoryId);
+        int32_t CopyIfExists(RegistrationInfo info, SR_UTILS_NS::VertexLayoutDescription layout);
+        int32_t CopyIfExists(RegistrationInfo info);
+        uint32_t Size(RegistrationInfo info);
+        uint32_t Size(RegistrationInfo info, SR_UTILS_NS::VertexLayoutDescription layout);
+        MeshVideoMemoryInfo* Find(RegistrationInfo info, SR_UTILS_NS::VertexLayoutDescription layout);
 
-        public:
-            void Destroy();
+    private:
+        void OnSingletonDestroy() override;
 
-            SR_NODISCARD int32_t GetVBO() const noexcept { return m_VBO; }
-            SR_NODISCARD int32_t GetIBO() const noexcept { return m_IBO; }
-            SR_NODISCARD uint32_t GetCountIndices() const noexcept { return m_countIndices; }
-            SR_NODISCARD uint32_t GetCountVertices() const noexcept { return m_countVertices; }
-            SR_NODISCARD uint32_t GetUsages() const noexcept { return m_usages; }
-            SR_NODISCARD uint64_t GetMeshIndex() const noexcept { return m_index; }
-            SR_NODISCARD Pipeline* GetPipeline() const noexcept { return m_pipeline; }
-            SR_NODISCARD SR_HTYPES_NS::RawMesh* GetRawMesh() const noexcept { return m_pRawMesh; }
-
-            void AddUsePoint() {
-                m_usages++;
-            }
-
-            void RemoveUsePoint() {
-                if (m_usages > 0) {
-                    m_usages--;
-                    return;
-                }
-                SRHalt("BakedMesh::RemoveUsePoint() : usages is less than 0!");
-            }
-
-            static Ptr Bake(Pipeline* pPipeline, std::string_view path, uint32_t index, Vertices::VertexType vertexType);
-            static Ptr Bake(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, Vertices::VertexType vertexType);
-
-        private:
-            uint32_t m_usages = 0;
-            SR_HTYPES_NS::RawMesh* m_pRawMesh = nullptr;
-            uint64_t m_index = 0;
-            int32_t m_VBO = SR_ID_INVALID;
-            int32_t m_IBO = SR_ID_INVALID;
-            uint32_t m_countIndices = 0;
-            uint32_t m_countVertices = 0;
-            Pipeline* m_pipeline = nullptr;
+    private:
+        struct VertexBufferInfo {
+            SR_HTYPES_NS::SortedVector<MeshVideoMemoryInfo> buffers;
+            SR_UTILS_NS::VertexLayoutDescription layout;
         };
+        std::vector<VertexBufferInfo> m_vertexBuffers;
+        SR_HTYPES_NS::SortedVector<MeshVideoMemoryInfo> m_indexBuffers;
 
-        class MeshManager : public SR_UTILS_NS::Singleton<MeshManager> {
-            SR_REGISTER_SINGLETON(MeshManager)
-            using HashTable = std::vector<SR_UTILS_NS::StringAtom>;
-        public:
-            typedef std::unordered_map<SR_UTILS_NS::StringAtom, MeshVidMemInfo> VideoResources;
-            typedef std::optional<VideoResources::iterator> VideoResourcesIter;
-
-            enum class FreeResult {
-                Unknown, Freed, EndUse, NotFound, UnknownMem
-            };
-
-        private:
-            MeshManager();
-            ~MeshManager() override = default;
-
-        public:
-            SR_NODISCARD BakedMesh::Ptr BakeMesh(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, Vertices::VertexType vertexType);
-
-            template<MeshMemoryType memType> bool Register(const std::string_view& identifier, uint32_t size, uint32_t id, Vertices::VertexType vertexType);
-            template<Vertices::VertexType vertexType, MeshMemoryType memType> bool Register(const std::string_view& identifier, uint32_t size, uint32_t id);
-
-            template<MeshMemoryType memType> FreeResult Free(int32_t id);
-
-            template<MeshMemoryType memType> int32_t CopyIfExists(const std::string_view& identifier, Vertices::VertexType vertexType);
-            template<Vertices::VertexType vertexType, MeshMemoryType memType> int32_t CopyIfExists(const std::string_view& identifier);
-            template<MeshMemoryType memType> uint32_t Size(const std::string_view& identifier, Vertices::VertexType vertexType);
-            template<Vertices::VertexType vertexType, MeshMemoryType memType> uint32_t Size(const std::string_view& identifier);
-
-        private:
-            VideoResourcesIter FindById(int32_t id, MeshMemoryType memType);
-            VideoResourcesIter FindImpl(SR_UTILS_NS::StringAtom id, MeshMemoryType memType);
-
-            bool RegisterImpl(const std::string_view& identifier, MeshMemoryType memType, uint32_t size, uint32_t id);
-            FreeResult FreeImpl(VideoResourcesIter iter, MeshMemoryType memType);
-
-            void OnSingletonDestroy() override;
-
-            template<MeshMemoryType memType> VideoResourcesIter Find(const std::string_view& identifier, Vertices::VertexType vertexType);
-
-        private:
-            VideoResources m_IBOs;
-            VideoResources m_VBOs;
-
-            HashTable m_IBOTable;
-            HashTable m_VBOTable;
-
+        struct Registration {
+            SR_UTILS_NS::VertexLayoutDescription vertexLayout;
+            std::optional<MeshVideoMemoryInfo::RegistrationInfo> vertexBuffer;
+            std::optional<MeshVideoMemoryInfo::RegistrationInfo> indexBuffer;
         };
+        SR_HTYPES_NS::FastMemoryArray<Registration> m_registration;
 
-        /// ------------------------------------------------------------------------------------------------------------
-
-        template<MeshMemoryType memType>
-        bool MeshManager::Register(const std::string_view& identifier, uint32_t size, uint32_t id, Vertices::VertexType vertexType) {
-            SR_TRACY_ZONE;
-            SR_LOCK_GUARD;
-
-            if (auto iter = Find<memType>(std::string(identifier), vertexType); iter.has_value()) {
-                SRHalt("MeshManager::Register() : memory already registered!");
-                return false;
-            }
-
-            if constexpr (memType == MeshMemoryType::VBO) {
-                return RegisterImpl(std::string(identifier)
-                    + SR_UTILS_NS::EnumReflector::ToStringAtom(vertexType).ToStringRef(), memType, size, id);
-            }
-            else {
-                return RegisterImpl(identifier, memType, size, id);
-            }
-        }
-
-        template<Vertices::VertexType vertexType, MeshMemoryType memType>
-        bool MeshManager::Register(const std::string_view& identifier, uint32_t size, uint32_t id) {
-            SR_TRACY_ZONE;
-            SR_LOCK_GUARD;
-
-            if (Find<memType>(identifier, vertexType).has_value()) {
-                SRHalt("MeshManager::Register() : memory already registered!");
-                return false;
-            }
-
-            if constexpr (memType == MeshMemoryType::VBO) {
-                return RegisterImpl(std::string(identifier)
-                    + SR_UTILS_NS::EnumReflector::ToStringAtom(vertexType).ToStringRef(), memType, size, id);
-            }
-            else {
-                return RegisterImpl(identifier, memType, size, id);
-            }
-        }
-
-        template<MeshMemoryType memType> MeshManager::FreeResult MeshManager::Free(int32_t id) {
-            SR_TRACY_ZONE;
-            SR_LOCK_GUARD;
-
-            if (auto iter = FindById(id, memType); !iter.has_value()) {
-                SRHalt("Memory isn't registered!");
-                return FreeResult::NotFound;
-            }
-            else {
-                return FreeImpl(iter, memType);
-            }
-        }
-
-        template<MeshMemoryType memType>
-        int32_t MeshManager::CopyIfExists(const std::string_view &identifier, Vertices::VertexType vertexType) {
-            SR_LOCK_GUARD;
-            SR_TRACY_ZONE;
-
-            if (auto memory = Find<memType>(identifier, vertexType); memory.has_value()) {
-                return memory.value()->second.Copy();
-            }
-
-            return SR_ID_INVALID;
-        }
-
-        template<Vertices::VertexType vertexType, MeshMemoryType memType>
-        int32_t MeshManager::CopyIfExists(const std::string_view& identifier) {
-            return CopyIfExists<memType>(identifier, vertexType);
-        }
-
-        template<Vertices::VertexType vertexType, MeshMemoryType memType> uint32_t MeshManager::Size(const std::string_view& identifier) {
-            return Size<memType>(identifier, vertexType);
-        }
-
-        template<MeshMemoryType memType> uint32_t MeshManager::Size(const std::string_view& identifier, Vertices::VertexType vertexType) {
-            SR_TRACY_ZONE;
-            SR_LOCK_GUARD;
-
-            if (auto memory = Find<memType>(std::string(identifier), vertexType); memory.has_value()) {
-                return memory.value()->second.Size();
-            }
-
-            return 0;
-        }
-
-        template<MeshMemoryType memType>
-        MeshManager::VideoResourcesIter MeshManager::Find(const std::string_view& identifier, Vertices::VertexType vertexType) {
-            SR_TRACY_ZONE;
-
-            if constexpr (memType == MeshMemoryType::VBO) {
-                SR_UTILS_NS::StringAtom id = (std::string(identifier) + SR_UTILS_NS::EnumReflector::ToStringAtom(vertexType).ToStringRef());
-                return FindImpl(id, memType);
-            }
-
-            if constexpr (memType == MeshMemoryType::IBO) {
-                return FindImpl(identifier, memType);
-            }
-
-            SRHalt("Unknown memory type!");
-            return std::nullopt;
-        }
-    }
+    };
 }
 
 

@@ -196,23 +196,23 @@ namespace SR_GRAPH_NS {
     bool MeshDrawerPass::Init() {
         SR_TRACY_ZONE;
 
-        m_shaderMacros.Clear();
+        m_shaderParams.Clear();
 
         for (auto&& definition : m_shaderDefines) {
-            m_shaderMacros.AddDefine(definition);
+            m_shaderParams.AddDefine(definition);
         }
 
         const uint32_t layers = GetColorLayersCount();
         for (uint32_t i = 0; i < layers; ++i) {
-            m_shaderMacros.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
+            m_shaderParams.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
         }
 
         auto&& macros = GetRenderContext()->GetShaderMacros();
         for (auto&& [key, value] : macros) {
-            m_shaderMacros.SetParam(key, value);
+            m_shaderParams.SetParam(key, value);
         }
 
-        UpdateShaderDefines(m_shaderMacros);
+        UpdateShaderDefines(m_shaderParams);
 
         if (m_renderLayers == 0) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("MeshDrawerPass::Init() : layers count is 0!");

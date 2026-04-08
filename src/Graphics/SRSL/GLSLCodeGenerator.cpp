@@ -7,6 +7,9 @@
 #include <Graphics/SRSL/TypeInfo.h>
 #include <Graphics/SRSL/ShaderVariables.h>
 
+#include <Enum/VertexAttribute.hpp>
+#include <Enum/VertexAttributeFormat.hpp>
+
 namespace SR_SRSL_NS {
     ISRSLCodeGenerator::SRSLCodeGenRes GLSLCodeGenerator::GenerateStages(const SRSLShader* pShader) {
         SR_GLOBAL_LOCK
@@ -158,9 +161,11 @@ namespace SR_SRSL_NS {
             preCode += GenerateTab(1) + "vec4 OUT_POSITION;\n";
         }
 
-        auto&& vertexInfo = Vertices::GetVertexInfo(m_shader->GetVertexType());
-        for (auto&& vertexAttribute : vertexInfo.m_names) {
-            preCode += SR_FORMAT("{}{} = {}_INPUT;\n", GenerateTab(1).c_str(), vertexAttribute.c_str(), vertexAttribute.c_str());
+        auto&& vertexLayoutDescription = m_shader->GetCreateInfo().vertexLayoutDescription;
+        for (uint32_t i = 0; i < vertexLayoutDescription.attributesCount; ++i) {
+            auto&& vertexAttribute = vertexLayoutDescription.attributes[i];
+            std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
+            preCode += SR_FORMAT("{}{} = {}_INPUT;\n", GenerateTab(1).c_str(), attributeName, attributeName);
         }
 
         if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("VERTEX_INDEX")) {
@@ -172,7 +177,7 @@ namespace SR_SRSL_NS {
         if (isOutPositionUsed) {
             postCode += GenerateTab(1) + "gl_Position = OUT_POSITION;\n";
         }
-        else if (!vertexInfo.m_names.empty()) {
+        else if (vertexLayoutDescription.Find(SR_UTILS_NS::VertexAttribute::Position)) {
             postCode += GenerateTab(1) + "gl_Position = vec4(VERTEX, 1.0);\n";
         }
 
@@ -190,6 +195,7 @@ namespace SR_SRSL_NS {
         }
 
         const bool isColorPassDefined = m_shader->IsMacroDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+        const bool isCascadedMapPassDefined = m_shader->IsMacroDefined(SHADER_MACRO_SR_DEFINE_CASCADED_SHADOW_MAP_PASS);
         const bool isColorUsed = isColorPassDefined || pUseStackFunction->IsVariableUsed("COLOR");
         const bool isFragCoordUsed = pUseStackFunction->IsVariableUsed("FRAG_COORD");
 
@@ -246,6 +252,12 @@ namespace SR_SRSL_NS {
             }
             preCode += GenerateTab(1) + "COLOR = vec4({}, 1.0);\n"_format(SHADER_PC_COLOR_BUFFER_VALUE);
         }
+        else if (isCascadedMapPassDefined) {
+            const bool discardExists = m_shader->GetAnalyzedTree()->pLexicalTree->FindFunction("fragment_depth_buffer_discard") != nullptr;
+            if (discardExists) {
+                postCode += GenerateTab(1) + "fragment_depth_buffer_discard();\n";
+            }
+        }
 
         code += GenerateFunction(pStageFunction, 0, preCode, postCode);
 
@@ -292,7 +304,7 @@ namespace SR_SRSL_NS {
         return "450";
     }
 
-    uint32_t GLSLCodeGenerator::GetLocationMultiplier(const std::string& type) const {
+    uint32_t GLSLCodeGenerator::GetLocationMultiplier(const std::string_view& type) const {
         if (type == "mat4") {
             return 4;
         }
@@ -305,10 +317,73 @@ namespace SR_SRSL_NS {
         return 1;
     }
 
+    std::string_view ToGLSLType(SR_UTILS_NS::VertexAttributeFormat format, uint8_t count) {
+        switch (format) {
+            // -------- float --------
+            case SR_UTILS_NS::VertexAttributeFormat::Float32:
+            case SR_UTILS_NS::VertexAttributeFormat::Float16:
+            case SR_UTILS_NS::VertexAttributeFormat::R11G11B10_Float: {
+                switch (count) {
+                    case 1: return "float"sv;
+                    case 2: return "vec2"sv;
+                    case 3: return "vec3"sv;
+                    case 4: return "vec4"sv;
+                }
+                break;
+            }
+
+                // -------- unsigned int --------
+            case SR_UTILS_NS::VertexAttributeFormat::UInt32:
+            case SR_UTILS_NS::VertexAttributeFormat::UInt16:
+            case SR_UTILS_NS::VertexAttributeFormat::UInt8: {
+                switch (count) {
+                    case 1: return "uint"sv;
+                    case 2: return "uvec2"sv;
+                    case 3: return "uvec3"sv;
+                    case 4: return "uvec4"sv;
+                }
+                break;
+            }
+
+                // -------- signed int --------
+            case SR_UTILS_NS::VertexAttributeFormat::Int32:
+            case SR_UTILS_NS::VertexAttributeFormat::Int16:
+            case SR_UTILS_NS::VertexAttributeFormat::Int8: {
+                switch (count) {
+                    case 1: return "int"sv;
+                    case 2: return "ivec2"sv;
+                    case 3: return "ivec3"sv;
+                    case 4: return "ivec4"sv;
+                }
+                break;
+            }
+
+                // -------- normalized (→ float в GLSL!) --------
+            case SR_UTILS_NS::VertexAttributeFormat::UNorm8:
+            case SR_UTILS_NS::VertexAttributeFormat::UNorm16:
+            case SR_UTILS_NS::VertexAttributeFormat::SNorm8:
+            case SR_UTILS_NS::VertexAttributeFormat::SNorm16:
+            case SR_UTILS_NS::VertexAttributeFormat::R10G10B10A2_UNorm: {
+                switch (count) {
+                    case 1: return "float"sv;
+                    case 2: return "vec2"sv;
+                    case 3: return "vec3"sv;
+                    case 4: return "vec4"sv;
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        SRHalt("ToGLSLType() : unknown vertex attribute format! Format: {}, Count: {}", format, count);
+        return "unknown"sv;
+    }
+
     std::string GLSLCodeGenerator::GenerateInputLocations(ShaderStage stage) const {
         std::string code;
 
-        auto&& vertexInfo = Vertices::GetVertexInfo(m_shader->GetVertexType());
         auto&& pFunction = m_shader->GetUseStack()->FindFunction(SR_SRSL_ENTRY_POINTS.at(stage));
 
         for (auto&& [name, pVariable] : m_shader->GetConstants()) {
@@ -323,28 +398,32 @@ namespace SR_SRSL_NS {
         uint32_t location = 0;
         uint32_t vertexInputIndex = 0;
 
-        for (auto&& vertexAttribute : vertexInfo.m_names) {
-            const bool isUsed = pFunction->IsVariableUsed(vertexAttribute);
-            std::string type = VertexAttributeToString(vertexInfo.m_types[vertexInputIndex].first);
-            std::string arraySize = vertexInfo.m_types[vertexInputIndex].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[vertexInputIndex].second) : std::string();
+        const SR_UTILS_NS::VertexLayoutDescription& description = m_shader->GetCreateInfo().vertexLayoutDescription;
+
+        for (uint32_t i = 0; i < description.attributesCount; ++i) {
+            auto&& vertexAttribute = description.attributes[i];
+            std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
+            std::string_view attributeType = ToGLSLType(vertexAttribute.format, vertexAttribute.count);
+
+            const bool isUsed = pFunction->IsVariableUsed(attributeName);
 
             if (isUsed && stage != ShaderStage::Vertex) {
-                if (IsFlatType(type)) {
-                    code += SR_FORMAT("layout (location = {}) flat in {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                if (IsFlatType(attributeType)) {
+                    code += SR_FORMAT("layout (location = {}) flat in {} {};\n", location, attributeType, attributeName);
                 }
                 else {
-                    code += SR_FORMAT("layout (location = {}) in {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                    code += SR_FORMAT("layout (location = {}) in {} {};\n", location, attributeType, attributeName);
                 }
             }
             else if (stage == ShaderStage::Vertex) {
-                code += SR_FORMAT("layout (location = {}) in {} {}_INPUT{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                code += SR_FORMAT("layout (location = {}) in {} {}_INPUT;\n", location, attributeType, attributeName);
             }
             else {
                 ++vertexInputIndex;
                 continue;
             }
 
-            location += vertexInfo.m_types[vertexInputIndex].second * GetLocationMultiplier(type);
+            location += GetLocationMultiplier(attributeType);
             ++vertexInputIndex;
         }
 
@@ -394,28 +473,30 @@ namespace SR_SRSL_NS {
     std::string GLSLCodeGenerator::GenerateOutputLocations(ShaderStage stage) const {
         std::string code;
 
-        auto&& vertexInfo = Vertices::GetVertexInfo(m_shader->GetVertexType());
         auto&& pFunction = m_shader->GetUseStack()->FindFunction(SR_SRSL_ENTRY_POINTS.at(stage));
 
         uint32_t location = 0;
         uint32_t vertexInputIndex = 0;
 
         if (stage == ShaderStage::Vertex) {
-            for (auto&& vertexAttribute : vertexInfo.m_names) {
-                std::string type = VertexAttributeToString(vertexInfo.m_types[vertexInputIndex].first);
-                std::string arraySize = vertexInfo.m_types[vertexInputIndex].second > 1 ? SR_FORMAT("[{}]", vertexInfo.m_types[vertexInputIndex].second) : std::string();
+            const SR_UTILS_NS::VertexLayoutDescription& description = m_shader->GetCreateInfo().vertexLayoutDescription;
 
-                if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, vertexAttribute)) {
-                    if (IsFlatType(type)) {
-                        code += SR_FORMAT("layout (location = {}) flat out {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+            for (uint32_t i = 0; i < description.attributesCount; ++i) {
+                auto&& vertexAttribute = description.attributes[i];
+                std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
+                std::string_view attributeType = ToGLSLType(vertexAttribute.format, vertexAttribute.count);
+
+                if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, attributeName)) {
+                    if (IsFlatType(attributeType)) {
+                        code += SR_FORMAT("layout (location = {}) flat out {} {};\n", location, attributeType, attributeName);
                     }
                     else {
-                        code += SR_FORMAT("layout (location = {}) out {} {}{};\n", location, type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                        code += SR_FORMAT("layout (location = {}) out {} {};\n", location, attributeType, attributeName);
                     }
-                    location += vertexInfo.m_types[vertexInputIndex].second * GetLocationMultiplier(type);
+                    location += GetLocationMultiplier(attributeType);
                 }
                 else {
-                    code += SR_FORMAT("{} {}{};\n",type.c_str(), vertexAttribute.c_str(), arraySize.c_str());
+                    code += SR_FORMAT("{} {};\n", attributeType, attributeName);
                 }
 
                 ++vertexInputIndex;

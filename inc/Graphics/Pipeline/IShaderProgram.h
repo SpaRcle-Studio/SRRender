@@ -247,11 +247,29 @@ namespace SR_GRAPH_NS {
     struct SR_GRAPHICS_DLL_API SRShaderCreateInfo {
     public:
         SR_NODISCARD bool Validate() const noexcept {
+            if (stages.empty()) {
+                SRHalt("SRShaderCreateInfo::Validate() : stages is empty!");
+                return false;
+            }
+
             if (shaderType == SR_SRSL_NS::ShaderType::Compute) {
                 return polygonMode          == PolygonMode::Unknown
                        && cullMode          == CullMode::Unknown
                        && depthCompare      == DepthCompare::Unknown
                        && primitiveTopology == PrimitiveTopology::Unknown;
+            }
+
+            if (vertexLayoutDescription.attributesCount == 0) {
+                static const std::set<SR_SRSL_NS::ShaderType> shaderTypesRequiringVertexLayout = {
+                    SR_SRSL_NS::ShaderType::Spatial,
+                    SR_SRSL_NS::ShaderType::Skybox,
+                    SR_SRSL_NS::ShaderType::Skinned,
+                    SR_SRSL_NS::ShaderType::Simple,
+                };
+                if (shaderTypesRequiringVertexLayout.count(shaderType) == 1) {
+                    SRHalt("SRShaderCreateInfo::Validate() : vertex layout description is required for shader!");
+                    return false;
+                }
             }
 
             return polygonMode          != PolygonMode::Unknown
@@ -264,15 +282,14 @@ namespace SR_GRAPH_NS {
         std::map<ShaderStage, SRShaderStageInfo> stages;
 
         SR_SRSL_NS::ShaderType shaderType = SR_SRSL_NS::ShaderType::Unknown;
-        Vertices::VertexType vertexType = Vertices::VertexType::Unknown;
+
+        SR_UTILS_NS::VertexLayoutDescription vertexLayoutDescription;
 
         PolygonMode       polygonMode       = PolygonMode::Unknown;
         CullMode          cullMode          = CullMode::Unknown;
         DepthCompare      depthCompare      = DepthCompare::Unknown;
         PrimitiveTopology primitiveTopology = PrimitiveTopology::Unknown;
 
-        VertexAttributes vertexAttributes;
-        VertexDescriptions vertexDescriptions;
         UBOInfo uniforms;
 
         bool blendEnabled = false;

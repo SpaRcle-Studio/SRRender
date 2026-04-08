@@ -200,12 +200,16 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        SR_SRSL_NS::ShaderMacrosParams macros;
+        SR_SRSL_NS::ShaderParams params;
         for (auto&& [key, value] : pOwnedMaterialData->GetShaderDefines()) {
-            macros.SetParam(key, value);
+            params.SetParam(key, value);
         }
 
-        if (auto&& pNewShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path, &macros)) {
+        params.SetVertexLayoutDescription(SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
+            SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
+        ));
+
+        if (auto&& pNewShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path, &params)) {
             SetShader(pNewShader);
         }
         else {

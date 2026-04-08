@@ -15,7 +15,6 @@ namespace SR_GTYPES_NS {
         SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<ProceduralMesh>;
-        typedef Vertices::StaticMeshVertex VertexType;
 
     public:
         ProceduralMesh() = default;
@@ -26,12 +25,11 @@ namespace SR_GTYPES_NS {
         void SwapIndices(SR_HTYPES_NS::FastMemoryArray<uint32_t>& indices);
         void SetIndices(void* pData, uint64_t count);
 
-        void SetIndexedVertices(void* pData, uint64_t count, Vertices::VertexType vertexType);
+        void SetIndexedVertices(const SR_UTILS_NS::VertexDataBuffer& vertices);
 
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
-        SR_NODISCARD bool IsUniqueMesh() const override { return true; }
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD bool IsSupportVBO() const override;
 
@@ -44,18 +42,10 @@ namespace SR_GTYPES_NS {
         void UseSSBO() override;
 
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
+        SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;
 
     private:
-        /// @property @onChanged(SetDirtyMesh)
-        bool m_useSSBOInsteadOfVertices = false;
-
-        int32_t m_ssbo = SR_ID_INVALID;
-        uint32_t m_ssboSize = 0;
-
-        SR_HTYPES_NS::FastMemoryArray<char*> m_verticesData;
-        uint32_t m_countVertices = 0;
-        Vertices::VertexType m_verticesType = Vertices::VertexType::Unknown;
-
+        SR_UTILS_NS::VertexDataBuffer::Ptr m_vertices;
         SR_HTYPES_NS::FastMemoryArray<uint32_t> m_indices;
 
     };

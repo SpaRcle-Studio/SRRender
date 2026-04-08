@@ -12,6 +12,7 @@
 #include <Utils/Math/AABB.h>
 #include <Utils/UI/MaskInfo.h>
 #include <Utils/Common/Enumerations.h>
+#include <Utils/Common/Vertices.h>
 #include <Utils/Types/Function.h>
 #include <Utils/Types/SortedVector.h>
 
@@ -72,11 +73,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual int32_t GetVBO() { return SR_ID_INVALID; }
 
         SR_NODISCARD virtual bool IsCalculatable() const;
-        SR_NODISCARD virtual bool IsUniqueMesh() const { return false; }
 
         SR_NODISCARD bool IsActive() const noexcept override;
-        SR_NODISCARD virtual SR_FORCE_INLINE bool IsFlatMesh() const noexcept { return false; }
-        SR_NODISCARD virtual std::string GetMeshIdentifier() const;
         SR_NODISCARD virtual int64_t GetSortingPriority() const;
         SR_NODISCARD virtual bool HasSortingPriority() const;
         SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetMeshLayer() const;
@@ -100,8 +98,10 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsFrustumCullingSupported() const noexcept;
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
         SR_NODISCARD const SR_UTILS_NS::UI::MaskInfo& GetMaskInfo() const;
+        SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescription& GetVertexLayoutDescription() const noexcept;
 
         void SetFrustumCullingType(FrustumCullingType type) { m_frustumCullingType = type; }
+        void SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description);
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
         void SetPipeline(Pipeline* pPipeline) { m_pipeline = pPipeline; }
@@ -177,6 +177,7 @@ namespace SR_GTYPES_NS {
         bool m_isDestroyingState = false;
         std::optional<MeshRegistrationInfo> m_registrationInfo;
         uint32_t m_materialRegisterId = SR_ID_INVALID;
+        SR_UTILS_NS::VertexLayoutDescription m_vertexLayoutDescription;
 
     };
 

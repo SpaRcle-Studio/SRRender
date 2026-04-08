@@ -6,14 +6,14 @@
 #include <Graphics/SRSL/Lexer.h>
 
 namespace SR_SRSL_NS {
-    SRSLPreProcessor::OutResult SRSLPreProcessor::Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderMacrosParams& macros) {
+    SRSLPreProcessor::OutResult SRSLPreProcessor::Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderParams& params) {
         SR_TRACY_ZONE;
 
         Clear();
 
         m_lexems = SR_UTILS_NS::Exchange(lexems, { });
         m_includes = std::move(includes);
-        m_macros = &macros;
+        m_params = &params;
 
         while (InBounds() && !IsHasErrors()) {
             ProcessMain();
@@ -121,14 +121,14 @@ namespace SR_SRSL_NS {
                     else if (value == "define") {
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                         std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
-                        m_macros->AddDefine(macroName);
+                        m_params->AddDefine(macroName);
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                         m_state = PPState::Idle;
                     }
                     else if (value == "undef") {
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                         std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
-                        m_macros->RemoveDefine(macroName);
+                        m_params->RemoveDefine(macroName);
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                         m_state = PPState::Idle;
                     }
@@ -145,12 +145,12 @@ namespace SR_SRSL_NS {
                         if (value == "ifdef") {
                             std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
                             m_lexems.erase(m_lexems.begin() + m_currentLexem);
-                            m_ifStack.push(m_macros->IsDefined(macroName) && m_ifStack.top());
+                            m_ifStack.push(m_params->IsDefined(macroName) && m_ifStack.top());
                         }
                         else if (value == "ifndef") {
                             std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
                             m_lexems.erase(m_lexems.begin() + m_currentLexem);
-                            m_ifStack.push(!m_macros->IsDefined(macroName) && m_ifStack.top());
+                            m_ifStack.push(!m_params->IsDefined(macroName) && m_ifStack.top());
                         }
                         else {
                             SRHalt("Not implemented!");

@@ -41,7 +41,7 @@ namespace SR_SRSL_NS {
         , m_path(std::move(path))
     { }
 
-    SRSLShader::Ptr SRSLShader::Load(const SR_UTILS_NS::Path& path, const ShaderMacrosParams& macros) {
+    SRSLShader::Ptr SRSLShader::Load(const SR_UTILS_NS::Path& path, const ShaderParams& params) {
         SR_TRACY_ZONE;
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Full) {
@@ -56,7 +56,7 @@ namespace SR_SRSL_NS {
         }
 
         auto&& pShader = SRSLShader::Ptr(new SRSLShader(path));
-        pShader->m_macros = macros;
+        pShader->m_params = params;
 
         auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(absPath, 0);
         if (lexems.empty()) {
@@ -66,7 +66,7 @@ namespace SR_SRSL_NS {
 
         SRSLPreProcessor::Includes includes = { path.ToStringRef() };
 
-        auto&& [preProcessedLexems, preProcessResult] = SRSLPreProcessor::Instance().Process(std::move(lexems), includes, pShader->m_macros);
+        auto&& [preProcessedLexems, preProcessResult] = SRSLPreProcessor::Instance().Process(std::move(lexems), includes, pShader->m_params);
         if (preProcessResult.HasErrors()) {
             SR_ERROR("SRSLShader::Load() : failed to pre-process shader!" + preProcessResult.ToString(includes));
             return nullptr;
@@ -85,7 +85,7 @@ namespace SR_SRSL_NS {
         pShader->m_includes = std::move(includes);
 
         if (pShader->m_analyzedTree) {
-            pShader->m_analyzedTree->PostProcess(macros);
+            pShader->m_analyzedTree->PostProcess(params);
         }
 
         if (!pShader->Prepare()) {
@@ -102,7 +102,7 @@ namespace SR_SRSL_NS {
 
     SR_UTILS_NS::Path SRSLShader::GetCachePath() const {
         auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(m_path);
-        return cachedPath.Concat(m_macros.GetHashStr());
+        return cachedPath.Concat(m_params.GetHashStr());
     }
 
     bool SRSLShader::IsCacheActual() const {
@@ -161,7 +161,7 @@ namespace SR_SRSL_NS {
     bool SRSLShader::Prepare() {
         SR_TRACY_ZONE;
 
-        m_useStack = SRSLRefAnalyzer::Instance().Analyze(m_analyzedTree, m_macros);
+        m_useStack = SRSLRefAnalyzer::Instance().Analyze(m_analyzedTree, m_params);
         if (!m_useStack) {
             SR_ERROR("SRSLShader::Prepare() : failed to analyze shader refs!");
             return false;
@@ -194,38 +194,39 @@ namespace SR_SRSL_NS {
         return m_createInfo.shaderType;
     }
 
-    Vertices::VertexType SRSLShader::GetVertexType() const {
-        if (m_createInfo.vertexType != Vertices::VertexType::Unknown) {
-            return m_createInfo.vertexType;
-        }
+    //Vertices::VertexType SRSLShader::GetVertexType() const {
+    //    if (m_createInfo.vertexType != Vertices::VertexType::Unknown) {
+    //        return m_createInfo.vertexType;
+    //    }
 
-        switch (GetType()) {
-            case ShaderType::Spatial:
-            case ShaderType::SpatialCustom:
-                return Vertices::VertexType::StaticMeshVertex;
-            case ShaderType::Skinned:
-                return Vertices::VertexType::SkinnedMeshVertex;
-            case ShaderType::PostProcessing:
-                return Vertices::VertexType::None;
-            case ShaderType::Skybox:
-            case ShaderType::Simple:
-                return Vertices::VertexType::SimpleVertex;
-            case ShaderType::Compute:
-            case ShaderType::Canvas:
-            case ShaderType::Line:
-                return Vertices::VertexType::None;
-            case ShaderType::Custom:
-            case ShaderType::Particles:
-            case ShaderType::Unknown:
-            default:
-                SRHalt0();
-                return Vertices::VertexType::Unknown;
-        }
-    }
+    //    switch (GetType()) {
+    //        case ShaderType::Spatial:
+    //        case ShaderType::SpatialCustom:
+    //            return Vertices::VertexType::StaticMeshVertex;
+    //        case ShaderType::Skinned:
+    //            return Vertices::VertexType::SkinnedMeshVertex;
+    //        case ShaderType::PostProcessing:
+    //            return Vertices::VertexType::None;
+    //        case ShaderType::Skybox:
+    //        case ShaderType::Simple:
+    //            return Vertices::VertexType::SimpleVertex;
+    //        case ShaderType::Compute:
+    //        case ShaderType::Canvas:
+    //        case ShaderType::Line:
+    //            return Vertices::VertexType::None;
+    //        case ShaderType::Custom:
+    //        case ShaderType::Particles:
+    //        case ShaderType::Unknown:
+    //        default:
+    //            SRHalt0();
+    //            return Vertices::VertexType::Unknown;
+    //    }
+    //}
 
     bool SRSLShader::PrepareSettings() {
         SR_TRACY_ZONE;
 
+        m_createInfo.vertexLayoutDescription = m_params.GetVertexLayoutDescription();
         m_gLayerUsed = GetUseStack()->IsVariableUsed("gl_Layer");
 
         for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
@@ -236,9 +237,10 @@ namespace SR_SRSL_NS {
                 if (varName == "ShaderType") {
                     m_createInfo.shaderType = SR_UTILS_NS::EnumReflector::FromString<SR_SRSL_NS::ShaderType>(varValue);
                 }
-                else if (varName == "VertexType") {
-                    m_createInfo.vertexType = SR_UTILS_NS::EnumReflector::FromString<Vertices::VertexType>(varValue);
-                }
+                /// TODO: VERTICES
+                //else if (varName == "VertexType") {
+                //    m_createInfo.vertexType = SR_UTILS_NS::EnumReflector::FromString<Vertices::VertexType>(varValue);
+                //}
                 else if (varName == "PolygonMode") {
                     m_createInfo.polygonMode = SR_UTILS_NS::EnumReflector::FromString<PolygonMode>(varValue);
                 }
@@ -624,7 +626,7 @@ namespace SR_SRSL_NS {
                 }
             }
 
-            m_createInfo.stages[stage].path = m_path.ToString() + "/" + m_macros.GetHashStr() + "/shader." + SR_SRSL_STAGE_EXTENSIONS.at(stage);
+            m_createInfo.stages[stage].path = m_path.ToString() + "/" + m_params.GetHashStr() + "/shader." + SR_SRSL_STAGE_EXTENSIONS.at(stage);
 
             /// блоки юниформ
 
@@ -688,10 +690,6 @@ namespace SR_SRSL_NS {
                 m_createInfo.stages[stage].pushConstants.emplace_back(pushConstant);
             }
         }
-
-        auto&& vertexInfo = Vertices::GetVertexInfo(GetVertexType());
-        m_createInfo.vertexAttributes = vertexInfo.m_attributes;
-        m_createInfo.vertexDescriptions = vertexInfo.m_descriptions;
 
         return true;
     }
@@ -882,6 +880,6 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLShader::IsMacroDefined(const SR_UTILS_NS::StringAtom& name) const {
-        return m_macros.IsDefined(name);
+        return m_params.IsDefined(name);
     }
 }

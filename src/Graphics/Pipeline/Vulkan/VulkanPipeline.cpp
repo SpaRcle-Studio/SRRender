@@ -45,6 +45,7 @@
 #include <Utils/Events/EventManager.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/StoreUtils.h>
+#include <Utils/Common/Vertices.h>
 
 namespace SR_GRAPH_NS {
     /// Структура для хранения состояния асинхронного запроса пикселей
@@ -576,6 +577,90 @@ namespace SR_GRAPH_NS {
         m_isShaderChanged = true;
     }
 
+    VkFormat ToVkFormat(SR_UTILS_NS::VertexAttributeFormat format, uint8_t count) {
+        switch (format) {
+            case SR_UTILS_NS::VertexAttributeFormat::Float32:
+                switch (count) {
+                    case 1: return VK_FORMAT_R32_SFLOAT;
+                    case 2: return VK_FORMAT_R32G32_SFLOAT;
+                    case 3: return VK_FORMAT_R32G32B32_SFLOAT;
+                    case 4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+                }
+                break;
+
+            case SR_UTILS_NS::VertexAttributeFormat::Float16:
+                switch (count) {
+                    case 1: return VK_FORMAT_R16_SFLOAT;
+                    case 2: return VK_FORMAT_R16G16_SFLOAT;
+                    case 3: return VK_FORMAT_R16G16B16_SFLOAT;
+                    case 4: return VK_FORMAT_R16G16B16A16_SFLOAT;
+                }
+                break;
+
+            case SR_UTILS_NS::VertexAttributeFormat::UInt32:
+                switch (count) {
+                    case 1: return VK_FORMAT_R32_UINT;
+                    case 2: return VK_FORMAT_R32G32_UINT;
+                    case 3: return VK_FORMAT_R32G32B32_UINT;
+                    case 4: return VK_FORMAT_R32G32B32A32_UINT;
+                }
+                break;
+
+            case SR_UTILS_NS::VertexAttributeFormat::UInt8:
+            case SR_UTILS_NS::VertexAttributeFormat::UNorm8:
+                if (count == 4)
+                    return VK_FORMAT_R8G8B8A8_UNORM;
+                break;
+
+            case SR_UTILS_NS::VertexAttributeFormat::SNorm8:
+                if (count == 4)
+                    return VK_FORMAT_R8G8B8A8_SNORM;
+                break;
+
+            case SR_UTILS_NS::VertexAttributeFormat::R10G10B10A2_UNorm:
+                return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+
+            default:
+                break;
+        }
+
+        SRHalt("Unsupported vertex format!");
+        return VK_FORMAT_UNDEFINED;
+    }
+
+    void BuildVkVertexInput(const SR_UTILS_NS::VertexLayoutDescription& layout,
+        std::vector<VkVertexInputBindingDescription>& bindings,
+        std::vector<VkVertexInputAttributeDescription>& attributes
+    ) {
+        bindings.clear();
+        attributes.clear();
+
+        if (layout.attributesCount == 0) {
+            return;
+        }
+
+        VkVertexInputBindingDescription binding{};
+        binding.binding = 0;
+        binding.stride = static_cast<uint32_t>(layout.GetStride());
+        binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        bindings.push_back(binding);
+
+        uint32_t location = 0;
+
+        for (uint32_t i = 0; i < layout.attributesCount; ++i) {
+            const auto& attr = layout.attributes[i];
+
+            VkVertexInputAttributeDescription vkAttr{};
+            vkAttr.binding = 0;
+            vkAttr.location = location++;
+            vkAttr.format = ToVkFormat(attr.format, attr.count);
+            vkAttr.offset = static_cast<uint32_t>(attr.offset);
+
+            attributes.push_back(vkAttr);
+        }
+    }
+
     int32_t VulkanPipeline::AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) {
         if (!m_memory) {
             SR_ERROR("VulkanPipeline::AllocateShaderProgram() : memory manager is nullptr!");
@@ -681,13 +766,17 @@ namespace SR_GRAPH_NS {
             EVK_POP_LOG_LEVEL();
         }
         else {
-            auto&& vkVertexDescriptions = VulkanTools::AbstractVertexDescriptionsToVk(createInfo.vertexDescriptions);
-            auto&& vkVertexAttributes = VulkanTools::AbstractAttributesToVkAttributes(createInfo.vertexAttributes);
-            if (vkVertexAttributes.size() != createInfo.vertexAttributes.size()) {
-                PipelineError("VulkanPipeline::LinkShader() : vkVertexDescriptions size != vertexDescriptions size!");
-                FreeShader(&shaderProgram);
-                return SR_ID_INVALID;
-            }
+            //auto&& vkVertexDescriptions = VulkanTools::AbstractVertexDescriptionsToVk(createInfo.vertexDescriptions);
+            //auto&& vkVertexAttributes = VulkanTools::AbstractAttributesToVkAttributes(createInfo.vertexAttributes);
+            //if (vkVertexAttributes.size() != createInfo.vertexAttributes.size()) {
+            //    PipelineError("VulkanPipeline::LinkShader() : vkVertexDescriptions size != vertexDescriptions size!");
+            //    FreeShader(&shaderProgram);
+            //    return SR_ID_INVALID;
+            //}
+
+            std::vector<VkVertexInputBindingDescription> vkVertexDescriptions;
+            std::vector<VkVertexInputAttributeDescription> vkVertexAttributes;
+            BuildVkVertexInput(createInfo.vertexLayoutDescription, vkVertexDescriptions, vkVertexAttributes);
 
             if (!pShaderProgram->SetVertexDescriptions(vkVertexDescriptions, vkVertexAttributes)) {
                 PipelineError("VulkanPipeline::LinkShader() : failed to set vertex descriptions!");
@@ -1996,7 +2085,7 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    int32_t VulkanPipeline::AllocateVBO(const void* pVertices, Vertices::VertexType type, size_t count) {
+    int32_t VulkanPipeline::AllocateVBO(uint64_t size, const void* pData) {
         SR_TRACY_ZONE;
 
         if (!m_memory) {
@@ -2004,13 +2093,16 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        const auto size = Vertices::GetVertexSize(type);
+        if (size == 0 || !pData) {
+            SRHalt("VulkanPipeline::AllocateVBO() : size is zero or pData is nullptr!");
+            return SR_ID_INVALID;
+        }
 
         ++m_state.operations;
         ++m_state.allocations;
-        m_state.allocatedMemory += size * count;
+        m_state.allocatedMemory += size;
 
-        if (auto&& id = m_memory->AllocateVBO(size * count, pVertices); id >= 0) {
+        if (auto&& id = m_memory->AllocateVBO(size, pData); id >= 0) {
             return id;
         }
 

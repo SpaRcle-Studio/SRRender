@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS {
         int32_t m_virtualDescriptor = SR_ID_INVALID;
         int32_t m_virtualUBO = SR_ID_INVALID;
         bool m_dirtyShader = true;
-        SR_SRSL_NS::ShaderMacrosParams m_shaderMacros;
+        SR_SRSL_NS::ShaderParams m_shaderParams;
 
         /// @property
         uint32_t m_vertices = 3;

@@ -262,11 +262,6 @@ namespace SR_GTYPES_NS {
         m_material->UseSamplers(shader);
     }
 
-    std::string Mesh::GetMeshIdentifier() const {
-        static const std::string empty;
-        return empty;
-    }
-
     int64_t Mesh::GetSortingPriority() const {
         if (auto&& pSO = GetSceneObject()) {
             //if (pSO->GetSceneObjectType() == SR_UTILS_NS::SceneObjectType::Node) {
@@ -472,6 +467,27 @@ namespace SR_GTYPES_NS {
             m_meshTypeCache = GetMeshTypeImpl();
         }
         return m_meshTypeCache;
+    }
+
+    const SR_UTILS_NS::VertexLayoutDescription& Mesh::GetVertexLayoutDescription() const noexcept {
+        if (m_vertexLayoutDescription.attributesCount == 0) {
+            switch (GetMeshType()) {
+                case MeshType::Static:
+                    return Vertices::StaticMeshVertexLayout;
+                case MeshType::Wireframe:
+                    return Vertices::WireframeMeshVertexLayout;
+                case MeshType::Skinned:
+                    return Vertices::SkinnedMeshVertexLayout;
+                default:
+                    SRHalt("IndexedMesh::CalculateVBO() : unknown mesh type!");
+            }
+        }
+        return m_vertexLayoutDescription;
+    }
+
+    void Mesh::SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description) {
+        m_vertexLayoutDescription = description;
+        m_isCalculated = false;
     }
 }
 

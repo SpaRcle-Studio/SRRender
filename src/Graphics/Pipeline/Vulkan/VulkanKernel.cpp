@@ -191,6 +191,9 @@ namespace SR_GRAPH_NS {
             }
             case EvoVulkan::Core::FrameResult::Success:
                 break;
+            case EvoVulkan::Core::FrameResult::DeviceLost:
+                m_device->OnDeviceLost();
+                SR_PLATFORM_NS::Terminate();
             default:
                 SRHalt("SRVulkan::Render() : unexcepted behaviour!");
                 return EvoVulkan::Core::FrameResult::Error;

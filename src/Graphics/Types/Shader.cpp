@@ -355,7 +355,7 @@ namespace SR_GRAPH_NS::Types {
         const SR_UTILS_NS::Path& path = GetResourcePath();
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
-            SR_LOG("Shader::Load() : loading shader \"{}\"\n\tMacros: {}", path, m_macros.ToString());
+            SR_LOG("Shader::Load() : loading shader \"{}\"\n\tMacros: {}", path, m_params.ToString());
         }
 
         if (path.IsAbs()) {
@@ -367,14 +367,14 @@ namespace SR_GRAPH_NS::Types {
             pContext->SetDirty();
         }
 
-        auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(path).Concat(m_macros.GetHashStr());
+        auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(path).Concat(m_params.GetHashStr());
         if (ShaderCache::Instance().LoadShaderFromCache(cachedPath, this)) {
             StopWatch();
             StartWatch();
             return IResource::Load();
         }
 
-        auto&& pShader = SR_SRSL_NS::SRSLShader::Load(path, m_macros);
+        auto&& pShader = SR_SRSL_NS::SRSLShader::Load(path, m_params);
         if (!pShader) {
             m_hasErrors = true;
             SR_ERROR("Shader::Load() : failed to load srsl shader!\n\tPath: " + path.ToString());
@@ -657,7 +657,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Shader::SetVariant(const SR_UTILS_NS::IResourceVariant& variant) {
-        m_macros = static_cast<const SR_SRSL_NS::ShaderMacrosParams&>(variant);
+        m_params = static_cast<const SR_SRSL_NS::ShaderParams&>(variant);
     }
 
     bool Shader::AttachDescriptorSets() {
@@ -745,6 +745,6 @@ namespace SR_GRAPH_NS::Types {
     }
 
     const SR_UTILS_NS::IResourceVariant* Shader::GetVariant() const {
-        return &m_macros;
+        return &m_params;
     }
 }

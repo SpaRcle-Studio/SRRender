@@ -363,7 +363,7 @@ namespace SR_SRSL_NS {
             SR_SAFE_DELETE_PTR(pLexicalTree);
         }
 
-        void PostProcess(const ShaderMacrosParams& macros);
+        void PostProcess(const ShaderParams& params);
 
         SRSLLexicalTree* pLexicalTree = nullptr;
     };

@@ -12,11 +12,7 @@
 #include <Codegen/SkinnedMesh.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    SkinnedMesh::SkinnedMesh()
-        : Super()
-    { }
-
-    bool SkinnedMesh::Calculate()  {
+    bool SkinnedMesh::Calculate() {
         SR_TRACY_ZONE;
 
         if (IsCalculated()) {
@@ -26,12 +22,6 @@ namespace SR_GTYPES_NS {
         FreeVMemory();
 
         if (!IsCalculatable()) {
-            return false;
-        }
-
-        if (!CalculateVBO<Vertices::VertexType::SkinnedMeshVertex, Vertices::SkinnedMeshVertex>([this]() {
-            return Vertices::CastVertices<Vertices::SkinnedMeshVertex>(GetVertices());
-        })) {
             return false;
         }
 
@@ -119,14 +109,6 @@ namespace SR_GTYPES_NS {
         m_isCalculated = false;
     }
 
-    std::string SkinnedMesh::GetMeshIdentifier() const {
-        if (auto&& pRawMesh = GetRawMesh()) {
-            return SR_FORMAT("{}|{}|{}", pRawMesh->GetResourceId().c_str(), GetMeshId(), pRawMesh->GetReloadCount());
-        }
-
-        return Super::GetMeshIdentifier();
-    }
-
     void SkinnedMesh::FreeVMemory() {
         Super::FreeVMemory();
         FreeSSBO();
@@ -157,5 +139,9 @@ namespace SR_GTYPES_NS {
         }
 
         Super::UseSSBO();
+    }
+
+    const SR_UTILS_NS::VertexDataBuffer& SkinnedMesh::GetVertices() const {
+        return GetRawMesh()->GetVertexBuffer(GetMeshId(), GetVertexLayoutDescription());
     }
 }
