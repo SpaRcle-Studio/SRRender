@@ -9,7 +9,7 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Geometry/IndexedMesh.h>
 #include <Graphics/Types/Framebuffer.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/RenderContext.h>
@@ -46,7 +46,9 @@ namespace SR_GRAPH_NS {
                 params.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
             }
 
-            params.SetVertexLayoutDescription(Vertices::SimpleMeshVertexLayout);
+            params.SetVertexLayoutDescription(SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
+                SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
+            ));
 
             pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(shaderPath, &params);
             if (pShader) {

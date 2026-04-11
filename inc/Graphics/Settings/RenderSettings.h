@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_RENDER_SETTINGS_H
 #define SR_ENGINE_GRAPHICS_RENDER_SETTINGS_H
 
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/SRSL/ShaderVariables.h>
 #include <Graphics/Settings/Quality.h>
 

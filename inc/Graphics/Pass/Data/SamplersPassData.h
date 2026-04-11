@@ -6,7 +6,7 @@
 #define SR_ENGINE_GRAPHICS_I_SAMPLERS_PASS_H
 
 #include <Graphics/Types/Texture.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 
 #include <Utils/Types/StringAtom.h>
 

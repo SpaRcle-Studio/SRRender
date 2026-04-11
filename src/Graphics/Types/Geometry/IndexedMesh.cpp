@@ -181,4 +181,9 @@ namespace SR_GTYPES_NS {
         }
         return m_IBO;
     }
+
+    const SR_UTILS_NS::VertexLayoutDescription& IndexedMesh::GetShaderVertexLayoutDescription() const noexcept {
+        auto&& buffer = GetVertices();
+        return buffer.layout.attributesCount > 0 ? buffer.layout : Super::GetShaderVertexLayoutDescription();
+    }
 }

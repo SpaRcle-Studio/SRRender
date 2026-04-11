@@ -7,6 +7,7 @@
 
 #include <Utils/Common/SubscriptionMessage.h>
 #include <Utils/FileSystem/PathDataAccessor.h>
+#include <Utils/Resources/ResourceManager.h>
 
 #include <Enum/ShaderVarType.hpp>
 

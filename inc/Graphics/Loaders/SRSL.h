@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_SRSL_H
 #define SR_ENGINE_SRSL_H
 
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Loaders/ShaderProperties.h>
 #include <Graphics/Loaders/SRSLParser.h>
 #include <Graphics/SRSL/ShaderType.h>

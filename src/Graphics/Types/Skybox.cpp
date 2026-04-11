@@ -84,7 +84,10 @@ namespace SR_GTYPES_NS {
 
         if (!m_isQuad) {
             SR_UTILS_NS::VertexDataBuffer indexedVertices;
-            indexedVertices.layout = Vertices::SkyboxVertexLayout;
+
+            indexedVertices.layout = SR_UTILS_NS::VertexLayoutDescription()
+                .AddAttribute(SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3);
+
             indexedVertices.Allocate(SR_UTILS_NS::SKYBOX_INDEXED_VERTICES.size());
             for (size_t i = 0; i < SR_UTILS_NS::SKYBOX_INDEXED_VERTICES.size(); ++i) {
                 indexedVertices.SetVertex(i, SR_UTILS_NS::VertexAttribute::Position, &SR_UTILS_NS::SKYBOX_INDEXED_VERTICES[i]);

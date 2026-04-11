@@ -22,8 +22,7 @@
 
 namespace SR_GTYPES_NS {
     Mesh::Mesh()
-        : m_uboManager(Memory::UBOManager::Instance())
-        , m_descriptorManager(SR_GRAPH_NS::DescriptorManager::Instance())
+        : Super()
     { }
 
     Mesh::~Mesh() {
@@ -137,17 +136,9 @@ namespace SR_GTYPES_NS {
     }
 
     void Mesh::FreeVMemory() {
-        //if (m_pipeline) {
-        //    m_pipeline->WaitRenderIdle();
-        //    m_pipeline->WaitDeviceIdle();
-        //}
-
-        if (m_virtualUBO != SR_ID_INVALID && !m_uboManager.FreeUBO(&m_virtualUBO)) {
-            SR_ERROR("Mesh::FreeVideoMemory() : failed to free virtual uniform buffer object!");
-        }
-
-        if (m_virtualDescriptor != SR_ID_INVALID) {
-            m_descriptorManager.FreeDescriptorSet(&m_virtualDescriptor);
+        if (m_pipeline) {
+            m_pipeline->GetUBOManager().TryFreeUBO(&m_virtualUBO);
+            m_pipeline->GetDescriptorManager().TryFreeDescriptorSet(&m_virtualDescriptor);
         }
     }
 
@@ -219,29 +210,29 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        SRAssert(IRenderComponent::IsActive());
+        SRAssert(m_pipeline && IRenderComponent::IsActive());
 
         if (m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
-            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
+            m_virtualUBO = m_pipeline->GetUBOManager().AllocateUBO(m_virtualUBO);
             if (m_virtualUBO == SR_INVALID_UBO) SR_UNLIKELY_ATTRIBUTE {
                 m_hasErrors = true;
                 return;
             }
 
-            m_virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
+            m_virtualDescriptor = m_pipeline->GetDescriptorManager().AllocateDescriptorSet(m_virtualDescriptor);
         }
 
         SRAssert(m_virtualUBO != SR_INVALID_UBO);
 
-        m_uboManager.BindUBO(m_virtualUBO);
+        m_pipeline->GetUBOManager().BindUBO(m_virtualUBO);
 
-        const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
+        const auto result = m_pipeline->GetDescriptorManager().Bind(m_virtualDescriptor);
 
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
             UseSamplers(*m_pipeline->GetCurrentShader());
             UseSSBO();
             MarkUniformsDirty();
-            m_descriptorManager.Flush();
+            m_pipeline->GetDescriptorManager().Flush();
         }
         GetPipeline()->GetCurrentShader()->FlushConstants();
 
@@ -428,8 +419,9 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        auto pStart = m_renderQueues.data();
-        auto pEnd = pStart + m_renderQueues.size();
+        auto&& renderQueues = GetRenderQueues();
+        auto pStart = renderQueues.data();
+        auto pEnd = pStart + renderQueues.size();
         for (auto pElement = pStart; pElement != pEnd; ++pElement) {
             if (!pElement->pRenderQueue) SR_LIKELY_ATTRIBUTE {
                 continue;
@@ -470,24 +462,25 @@ namespace SR_GTYPES_NS {
     }
 
     const SR_UTILS_NS::VertexLayoutDescription& Mesh::GetVertexLayoutDescription() const noexcept {
-        if (m_vertexLayoutDescription.attributesCount == 0) {
-            switch (GetMeshType()) {
-                case MeshType::Static:
-                    return Vertices::StaticMeshVertexLayout;
-                case MeshType::Wireframe:
-                    return Vertices::WireframeMeshVertexLayout;
-                case MeshType::Skinned:
-                    return Vertices::SkinnedMeshVertexLayout;
-                default:
-                    SRHalt("IndexedMesh::CalculateVBO() : unknown mesh type!");
-            }
-        }
         return m_vertexLayoutDescription;
     }
 
     void Mesh::SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description) {
         m_vertexLayoutDescription = description;
         m_isCalculated = false;
+    }
+
+    Mesh::RenderQueues& Mesh::GetRenderQueues() noexcept {
+        if (!m_pRenderQueues) {
+            SR_TRACY_ZONE;
+            m_pRenderQueues = new RenderQueues();
+        }
+        return *m_pRenderQueues;
+    }
+
+    const SR_UTILS_NS::VertexLayoutDescription& Mesh::GetShaderVertexLayoutDescription() const noexcept {
+        static SR_UTILS_NS::VertexLayoutDescription emptyDescription;
+        return emptyDescription;
     }
 }
 

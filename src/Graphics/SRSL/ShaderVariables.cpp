@@ -3,7 +3,7 @@
 //
 
 #include <Graphics/SRSL/ShaderVariables.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 
 #include <Enum/ShaderStage.hpp>
 

@@ -6,7 +6,7 @@
 #define SR_ENGINE_ICODEGENERATOR_H
 
 #include <Graphics/SRSL/LexicalTree.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 
 namespace SR_SRSL_NS {
     class SRSLShader;

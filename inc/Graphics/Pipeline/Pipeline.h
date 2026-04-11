@@ -7,9 +7,7 @@
 
 #include <Graphics/Pipeline/PipelineState.h>
 #include <Graphics/Pipeline/FrameBufferQueue.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
 #include <Graphics/Overlay/OverlayType.h>
-#include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Memory/SSBOUsage.h>
 #include <Graphics/Utils/FrameBufferAccessMode.h>
 
@@ -28,6 +26,13 @@ namespace SR_GRAPH_NS {
     class RenderContext;
     class Overlay;
     class Window;
+    class DescriptorManager;
+
+    struct SRShaderCreateInfo;
+
+    namespace Memory {
+        class UBOManager;
+    }
 
     struct UsedVideoMemoryInfo {
         uint64_t videoMemoryUsed = 0;
@@ -156,6 +161,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD FrameBufferQueue& GetQueue() noexcept { ++m_state.operations; return m_fboQueue; }
         SR_NODISCARD RenderStrategy* GetCurrentRenderStrategy() const noexcept { ++m_state.operations; return m_state.pRenderStrategy; }
         SR_NODISCARD SR_GTYPES_NS::Camera* GetCurrentCamera() const { ++m_state.operations; return m_state.pCamera; }
+        SR_NODISCARD SR_FORCE_INLINE DescriptorManager& GetDescriptorManager() const noexcept { return *m_descriptorManager; }
+        SR_NODISCARD SR_FORCE_INLINE Memory::UBOManager& GetUBOManager() const noexcept { return *m_uboManager; }
 
         SR_NODISCARD virtual uint8_t GetCurrentFrameIndex() const { return 0; }
         SR_NODISCARD virtual uint8_t GetCurrentImageIndex() const { return 0; }
@@ -334,6 +341,9 @@ namespace SR_GRAPH_NS {
         void ResetDrawInstancesCount();
 
     protected:
+        Memory::UBOManager* m_uboManager = nullptr;
+        DescriptorManager* m_descriptorManager = nullptr;
+
         std::map<OverlayType, SR_HTYPES_NS::SharedPtr<Overlay>> m_overlays;
 
         PipelinePreInitInfo m_preInitInfo;

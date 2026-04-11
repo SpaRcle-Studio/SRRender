@@ -7,7 +7,7 @@
 
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Utils/MeshUtils.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Render/RenderPredicates.h>
 
 #include <Utils/ECS/Transform.h>

@@ -6,7 +6,7 @@
 #define SR_ENGINE_GRAPHICS_RENDER_PREDICATES_H
 
 #include <Graphics/macros.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 
 #include <Utils/Types/StringAtom.h>
 

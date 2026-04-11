@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_RENDER_STAGES_SETTINGS_H
 #define SR_ENGINE_GRAPHICS_RENDER_STAGES_SETTINGS_H
 
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 
 #include <Utils/Resources/Asset.h>
 

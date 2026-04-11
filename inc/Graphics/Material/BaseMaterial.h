@@ -6,7 +6,7 @@
 #define SR_ENGINE_GRAPHICS_BASE_MATERIAL_H
 
 #include <Graphics/Loaders/ShaderProperties.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Material/MaterialType.h>
 #include <Graphics/Material/MaterialData.h>
 

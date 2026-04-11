@@ -29,6 +29,7 @@
 #endif
 
 #include <Utils/Common/StoreUtils.h>
+#include <Utils/Common/StringUtils.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/CLIManager.h>
 #include <Utils/Events/Broadcaster.h>

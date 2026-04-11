@@ -14,6 +14,7 @@
 
 #include <Utils/Platform/Platform.h>
 #include <Utils/Common/LexicalCast.h>
+#include <Utils/FileSystem/FileSystem.h>
 
 namespace SR_SRSL_NS {
     void SRSLUniformBlock::Align(const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {

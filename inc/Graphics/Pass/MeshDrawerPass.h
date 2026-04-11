@@ -7,7 +7,7 @@
 
 #include <Graphics/Pass/BasePass.h>
 #include <Graphics/Render/RenderPredicates.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/SRSL/ShaderType.h>
 #include <Graphics/Loaders/SRSL.h>
 

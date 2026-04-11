@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_SHADERPROGRAMMANAGER_H
 #define SR_ENGINE_SHADERPROGRAMMANAGER_H
 
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 
 #include <Utils/Common/Singleton.h>
 #include <Utils/Types/Map.h>
@@ -146,6 +146,8 @@ namespace SR_GRAPH_NS::Memory {
         SRShaderCreateInfo m_createInfo;
 
     };
+
+    constexpr auto VIRTUAL_PROGRAM_INFO_SIZE_OF = sizeof(VirtualProgramInfo);
 
     /**
      * Класс реализует возможность рендера одного объекта в несколько кадровых буферов

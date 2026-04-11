@@ -2,8 +2,10 @@
 // Created by Monika on 12.04.2022.
 //
 
-#include <Utils/Common/VectorUtils.h>
 #include <Graphics/Loaders/SRSLParser.h>
+
+#include <Utils/Common/VectorUtils.h>
+#include <Utils/Common/StringUtils.h>
 
 bool SR_GRAPH_NS::SRSL::RemoveComments(SR_GRAPH_NS::SRSL::SRSLCode &code) {
     bool multiple = false;

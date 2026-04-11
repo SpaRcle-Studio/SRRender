@@ -766,14 +766,6 @@ namespace SR_GRAPH_NS {
             EVK_POP_LOG_LEVEL();
         }
         else {
-            //auto&& vkVertexDescriptions = VulkanTools::AbstractVertexDescriptionsToVk(createInfo.vertexDescriptions);
-            //auto&& vkVertexAttributes = VulkanTools::AbstractAttributesToVkAttributes(createInfo.vertexAttributes);
-            //if (vkVertexAttributes.size() != createInfo.vertexAttributes.size()) {
-            //    PipelineError("VulkanPipeline::LinkShader() : vkVertexDescriptions size != vertexDescriptions size!");
-            //    FreeShader(&shaderProgram);
-            //    return SR_ID_INVALID;
-            //}
-
             std::vector<VkVertexInputBindingDescription> vkVertexDescriptions;
             std::vector<VkVertexInputAttributeDescription> vkVertexAttributes;
             BuildVkVertexInput(createInfo.vertexLayoutDescription, vkVertexDescriptions, vkVertexAttributes);

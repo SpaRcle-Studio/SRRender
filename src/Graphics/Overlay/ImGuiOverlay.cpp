@@ -10,6 +10,7 @@
 
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Features.h>
+#include <Utils/FileSystem/FileSystem.h>
 #include <Utils/Resources/ResourceManager.h>
 
 namespace SR_GRAPH_NS {

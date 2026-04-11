@@ -923,24 +923,6 @@ namespace SR_SRSL_NS {
         return code;
     }
 
-    std::string GLSLCodeGenerator::VertexAttributeToString(Vertices::Attribute attribute) const {
-        switch (attribute) {
-            case Vertices::Attribute::FLOAT_R32G32B32A32: return "vec4";
-            case Vertices::Attribute::FLOAT_R32G32B32: return "vec3";
-            case Vertices::Attribute::FLOAT_R32G32: return "vec2";
-            case Vertices::Attribute::INT_R32G32B32A32: return "ivec4";
-            case Vertices::Attribute::INT_R32G32B32: return "ivec3";
-            case Vertices::Attribute::INT_R32G32: return "ivec2";
-            case Vertices::Attribute::UINT_R32: return "uint";
-            case Vertices::Attribute::INT_R32: return "uint";
-            case Vertices::Attribute::SFLOAT_R32: return "float";
-            case Vertices::Attribute::Unknown:
-            default:
-                SRHalt0();
-                return std::string();
-        }
-    }
-
     std::string GLSLCodeGenerator::GenerateIfStatement(SRSLIfStatement* pIfStatement, int32_t deep) const {
         std::string code;
 

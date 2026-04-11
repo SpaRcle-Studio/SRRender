@@ -24,10 +24,14 @@ namespace SR_GRAPH_NS {
         SR_INFO("DebugRenderer::Init() : initializing debug renderer...");
 
         if (SR_UTILS_NS::Features::Instance().Enabled("DebugRendererMeshes", true)) {
-            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/cubeWireframe.obj", 0, Vertices::SimpleMeshVertexLayout));
-            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/planeWireframe.obj", 0, Vertices::SimpleMeshVertexLayout));
-            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/sphere_circle.obj", 0, Vertices::SimpleMeshVertexLayout));
-            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/capsule_circle.obj", 0, Vertices::SimpleMeshVertexLayout));
+            static const auto layout = SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
+                SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
+            );
+
+            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/cubeWireframe.obj", 0, layout));
+            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/planeWireframe.obj", 0, layout));
+            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/sphere_circle.obj", 0, layout));
+            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/capsule_circle.obj", 0, layout));
 
             for (uint64_t i = 0; i < m_meshes.size(); ++i) {
                 if (!m_meshes[i]) {
@@ -197,7 +201,11 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        auto&& pMesh = BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), pRawMesh, meshIndex, Vertices::SimpleMeshVertexLayout);
+        auto&& pMesh = BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), pRawMesh, meshIndex,
+            SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
+                SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
+            )
+        );
 
         if (freeIndex == SR_ID_INVALID) {
             pMesh->AddUsePoint();

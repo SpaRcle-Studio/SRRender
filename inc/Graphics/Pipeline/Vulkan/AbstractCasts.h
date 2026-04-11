@@ -6,7 +6,7 @@
 #define SR_ENGINE_ABSTRACTCASTS_H
 
 #include <EvoVulkan/Memory/Allocator.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Types/Descriptors.h>
 
 #include <Utils/Debug.h>
@@ -25,18 +25,6 @@ namespace SR_GRAPH_NS::VulkanTools {
         }
     }
 
-    SR_MAYBE_UNUSED static SR_FORCE_INLINE VkFormat AttributeToVkFormat(const Vertices::Attribute& attr) {
-        switch (attr) {
-            case Vertices::Attribute::FLOAT_R32G32B32A32: return VK_FORMAT_R32G32B32A32_SFLOAT;
-            case Vertices::Attribute::FLOAT_R32G32B32:    return VK_FORMAT_R32G32B32_SFLOAT;
-            case Vertices::Attribute::FLOAT_R32G32:       return VK_FORMAT_R32G32_SFLOAT;
-            case Vertices::Attribute::INT_R32:            return VK_FORMAT_R32_SINT;
-            case Vertices::Attribute::UINT_R32:           return VK_FORMAT_R32_UINT;
-            case Vertices::Attribute::SFLOAT_R32:         return VK_FORMAT_R32_SFLOAT;
-            default:                                      return VK_FORMAT_UNDEFINED;
-        }
-    }
-
     SR_MAYBE_UNUSED static SR_FORCE_INLINE VkFilter AbstractTextureFilterToVkFilter(const TextureFilter& filter) {
         switch (filter) {
             case TextureFilter::NEAREST: return VK_FILTER_NEAREST;
@@ -50,15 +38,6 @@ namespace SR_GRAPH_NS::VulkanTools {
             default:
                 return VK_FILTER_MAX_ENUM;
         }
-    }
-
-    SR_MAYBE_UNUSED static SR_FORCE_INLINE std::vector<VkVertexInputBindingDescription> AbstractVertexDescriptionsToVk(const std::vector<SR_VERTEX_DESCRIPTION>& descriptions) {
-        auto vkDescriptions = std::vector<VkVertexInputBindingDescription>();
-
-        for (uint32_t i = 0; i < descriptions.size(); i++)
-            vkDescriptions.push_back(EvoVulkan::Tools::Initializers::VertexInputBindingDescription(i, descriptions[i], VK_VERTEX_INPUT_RATE_VERTEX));
-
-        return vkDescriptions;
     }
 
     SR_MAYBE_UNUSED static std::vector<VkPushConstantRange> AbstractPushConstantToVkPushConstants(const SRShaderCreateInfo& createInfo) {
@@ -148,24 +127,6 @@ namespace SR_GRAPH_NS::VulkanTools {
                 SR_ERROR("VulkanTools::VkShaderStageToShaderType() : unknown stage!");
                 return ShaderStage::Unknown;
         }
-    }
-
-    SR_MAYBE_UNUSED static SR_FORCE_INLINE std::vector<VkVertexInputAttributeDescription> AbstractAttributesToVkAttributes(
-            const std::vector<std::pair<Vertices::Attribute, size_t>>& attributes)
-    {
-        auto vkDescrs = std::vector<VkVertexInputAttributeDescription>();
-
-        for (uint32_t i = 0; i < attributes.size(); i++) {
-            auto format = AttributeToVkFormat(attributes[i].first);
-            if (format == VK_FORMAT_UNDEFINED) {
-                SR_ERROR("VulkanTools::AbstractDescriptionsToVkDescriptions() : unknown attribute!");
-                return { };
-            }
-
-            vkDescrs.emplace_back(EvoVulkan::Tools::Initializers::VertexInputAttributeDescription(0, i, format, attributes[i].second));
-        }
-
-        return vkDescrs;
     }
 
     SR_MAYBE_UNUSED static SR_FORCE_INLINE std::vector<std::pair<std::string, ShaderStage>> VkModulesToAbstractModules(

@@ -7,7 +7,7 @@
 
 #include <Graphics/Loaders/ShaderProperties.h>
 #include <Utils/Types/Map.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 
 namespace SR_GRAPH_NS {
     class ShaderCache;

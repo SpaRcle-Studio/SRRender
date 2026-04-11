@@ -7,6 +7,7 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Render/RenderContext.h>
+#include <Graphics/Memory/DescriptorManager.h>
 
 #include <Utils/Types/Time.h>
 #include <Utils/Common/Features.h>
@@ -26,7 +27,10 @@ namespace SR_GRAPH_NS {
     Pipeline::Pipeline(const RenderContextPtr& pContext)
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Manually)
         , m_renderContext(pContext)
-    { }
+    {
+        m_uboManager = &Memory::UBOManager::Instance();
+        m_descriptorManager = &DescriptorManager::Instance();
+    }
 
     Pipeline::~Pipeline() {
         SRAssert(m_overlays.empty());

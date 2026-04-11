@@ -7,6 +7,8 @@
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Utils/FileSystem/FileSystem.h>
+
 #include <Codegen/ProceduralMesh.generated.hpp>
 
 namespace SR_GTYPES_NS {

@@ -6,13 +6,15 @@
 #include <Graphics/Types/Skybox.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Camera.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/SRSL/ShaderVariables.h>
 #include <Graphics/Lighting/LightSystem.h>
 
 #include <Utils/FileSystem/PathDataAccessor.h>
+#include <Utils/Resources/ResourceManager.h>
+#include <Utils/Common/Vertices.h>
 
 #include <Codegen/SkyboxPass.generated.hpp>
 
@@ -176,7 +178,10 @@ namespace SR_GRAPH_NS {
             for (uint32_t i = 0; i < layers; ++i) {
                 params.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
             }
-            params.SetVertexLayoutDescription(Vertices::SkyboxVertexLayout);
+
+            params.SetVertexLayoutDescription(SR_UTILS_NS::VertexLayoutDescription()
+                .AddAttribute(SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
+            );
 
             if (!m_shaderPath.empty()) {
                 if (auto&& pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(m_shaderPath, &params)) {

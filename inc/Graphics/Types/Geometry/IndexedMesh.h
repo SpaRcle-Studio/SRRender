@@ -37,6 +37,8 @@ namespace SR_GTYPES_NS {
             return empty;
         }
 
+        SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescription& GetShaderVertexLayoutDescription() const noexcept override;
+
         SR_NODISCARD bool IsSupportVBO() const override { return true; }
 
         bool Calculate() override;

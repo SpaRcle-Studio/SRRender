@@ -6,7 +6,7 @@
 #define SR_ENGINE_GRAPHICS_POST_PROCESS_PASS_H
 
 #include <Graphics/Pass/BasePass.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Material/MaterialData.h>
 #include <Graphics/Material/UniqueMaterial.h>
 

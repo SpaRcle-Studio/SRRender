@@ -8,7 +8,7 @@
 
 #include <Graphics/Pass/BasePass.h>
 #include <Graphics/Pass/Data/SamplersPassData.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 
 namespace SR_GTYPES_NS {
     class Shader;

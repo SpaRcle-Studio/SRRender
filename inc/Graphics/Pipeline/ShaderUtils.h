@@ -2,18 +2,14 @@
 // Created by Nikita on 29.03.2021.
 //
 
-#ifndef SR_ENGINE_GRAPHICS_I_SHADER_PROGRAM_H
-#define SR_ENGINE_GRAPHICS_I_SHADER_PROGRAM_H
+#ifndef SR_ENGINE_GRAPHICS_SHADER_UTILS_H
+#define SR_ENGINE_GRAPHICS_SHADER_UTILS_H
 
 #include <Graphics/Types/Uniforms.h>
-#include <Graphics/Types/Vertices.h>
 #include <Graphics/SRSL/ShaderType.h>
 
-#include <Utils/FileSystem/FileSystem.h>
-#include <Utils/Resources/ResourceManager.h>
-#include <Utils/Common/StringUtils.h>
-#include <Utils/Common/Hashes.h>
 #include <Utils/Common/Enumerations.h>
+#include <Utils/Common/Vertices.h>
 
 namespace SR_GTYPES_NS {
     class Texture;
@@ -27,29 +23,6 @@ namespace SR_GRAPH_NS {
         Uniforms,
         Samplers
     );
-
-    //struct ShaderUseInfo {
-    //    ShaderUseInfo() = default;
-//
-    //    explicit ShaderUseInfo(SR_GTYPES_NS::Shader* pShader)
-     //       : pShader(pShader)
-            //, ignoreReplace(false)
-            //, useMaterialUniforms(true)
-            //, useMaterialSamplers(true)
-    //    { }
-
-        //ShaderUseInfo(SR_GTYPES_NS::Shader* pShader, MaterialStageUseType useType)
-        //    : pShader(pShader)
-            //, useType(useType)
-            //, ignoreReplace(false)
-            //, useMaterialUniforms(true)
-            //, useMaterialSamplers(true)
-        //{ }
-
-   //     SR_GTYPES_NS::Shader* pShader = nullptr;
-        //MaterialStageUseType useType = MaterialStageUseType::Full;
-        //bool ignoreReplace       : 4; /// возможно лишнее
-  //  };
 
     SR_ENUM_NS_CLASS_T(ShaderBindResult, uint8_t,
         Failed = 0,  /// false
@@ -169,12 +142,6 @@ namespace SR_GRAPH_NS {
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_MACRO_SR_DEFINE_HAS_ALPHA_MASK = "HAS_ALPHA_MASK";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_MACRO_SR_DEFINE_HAS_EMISSION = "HAS_EMISSION";
 
-    typedef std::vector<std::pair<Vertices::Attribute, size_t>> VertexAttributes;
-    typedef std::vector<SR_VERTEX_DESCRIPTION> VertexDescriptions;
-
-    SR_DEPRECATED
-    typedef std::variant<glm::mat4, glm::mat3, glm::mat2, float, int, glm::vec2, glm::vec3, glm::vec4, glm::ivec2, glm::ivec3, glm::ivec4> ShaderVariable;
-
     SR_ENUM_NS_CLASS_T(ShaderStage, uint8_t,
         Unknown,
         Vertex,
@@ -190,27 +157,23 @@ namespace SR_GRAPH_NS {
         MissSecondary
     );
 
-    //SR_INLINE_STATIC std::map<ShaderStage, std::set<SR_UTILS_NS::StringAtom>> SR_SHADER_ALWAYS_USED_VARIABLES = {
-    //    { ShaderStage::Fragment, { SHADER_RGBA_VALUE, SHADER_RENDER_PASS_TYPE } },
-    //    { ShaderStage::Vertex, { SHADER_RENDER_PASS_TYPE } }
-    //};
-
     SR_ENUM_NS_CLASS(LayoutBinding, Unknown = 0, Uniform, Sampler2D, Attachhment, SSBO)
     SR_ENUM_NS_CLASS(PolygonMode, Unknown, Fill, Line, Point)
     SR_ENUM_NS_CLASS(CullMode, Unknown, None, Front, Back, FrontAndBack)
+
     SR_ENUM_NS_CLASS(PrimitiveTopology,
-            Unknown,
-            PointList,
-            LineList,
-            LineStrip,
-            TriangleList,
-            TriangleStrip,
-            TriangleFan,
-            LineListWithAdjacency,
-            LineStripWithAdjacency,
-            TriangleListWithAdjacency,
-            TriangleStripWithAdjacency,
-            PathList)
+        Unknown,
+        PointList,
+        LineList,
+        LineStrip,
+        TriangleList,
+        TriangleStrip,
+        TriangleFan,
+        LineListWithAdjacency,
+        LineStripWithAdjacency,
+        TriangleListWithAdjacency,
+        TriangleStripWithAdjacency,
+        PathList)
 
     SR_ENUM_NS_CLASS(DepthCompare,
         Unknown,
@@ -246,39 +209,15 @@ namespace SR_GRAPH_NS {
 
     struct SR_GRAPHICS_DLL_API SRShaderCreateInfo {
     public:
-        SR_NODISCARD bool Validate() const noexcept {
-            if (stages.empty()) {
-                SRHalt("SRShaderCreateInfo::Validate() : stages is empty!");
-                return false;
-            }
-
-            if (shaderType == SR_SRSL_NS::ShaderType::Compute) {
-                return polygonMode          == PolygonMode::Unknown
-                       && cullMode          == CullMode::Unknown
-                       && depthCompare      == DepthCompare::Unknown
-                       && primitiveTopology == PrimitiveTopology::Unknown;
-            }
-
-            if (vertexLayoutDescription.attributesCount == 0) {
-                static const std::set<SR_SRSL_NS::ShaderType> shaderTypesRequiringVertexLayout = {
-                    SR_SRSL_NS::ShaderType::Spatial,
-                    SR_SRSL_NS::ShaderType::Skybox,
-                    SR_SRSL_NS::ShaderType::Skinned,
-                    SR_SRSL_NS::ShaderType::Simple,
-                };
-                if (shaderTypesRequiringVertexLayout.count(shaderType) == 1) {
-                    SRHalt("SRShaderCreateInfo::Validate() : vertex layout description is required for shader!");
-                    return false;
-                }
-            }
-
-            return polygonMode          != PolygonMode::Unknown
-                   && cullMode          != CullMode::Unknown
-                   && depthCompare      != DepthCompare::Unknown
-                   && primitiveTopology != PrimitiveTopology::Unknown;
-        }
+        SR_NODISCARD bool Validate() const noexcept;
 
     public:
+        SRShaderCreateInfo() = default;
+        SRShaderCreateInfo(SRShaderCreateInfo&& ref) noexcept;
+        SRShaderCreateInfo& operator=(SRShaderCreateInfo&& ref) noexcept;
+        SRShaderCreateInfo(const SRShaderCreateInfo&) = default;
+        SRShaderCreateInfo& operator=(const SRShaderCreateInfo&) = default;
+
         std::map<ShaderStage, SRShaderStageInfo> stages;
 
         SR_SRSL_NS::ShaderType shaderType = SR_SRSL_NS::ShaderType::Unknown;
@@ -310,36 +249,6 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    SR_MAYBE_UNUSED static LayoutBinding GetBindingType(const std::string& line) {
-        //! first check sampler, after that check uniform
-
-        if (SR_UTILS_NS::StringUtils::Contains(line, "sampler2DArray"))
-            return LayoutBinding::Sampler2D;
-
-        if (SR_UTILS_NS::StringUtils::Contains(line, "sampler2D"))
-            return LayoutBinding::Sampler2D;
-
-        if (SR_UTILS_NS::StringUtils::Contains(line, "sampler2DMS"))
-            return LayoutBinding::Sampler2D;
-
-        if (SR_UTILS_NS::StringUtils::Contains(line, "samplerCube"))
-            return LayoutBinding::Sampler2D;
-
-        if (SR_UTILS_NS::StringUtils::Contains(line, "subpassInputMS"))
-            return LayoutBinding::Attachhment;
-
-        if (SR_UTILS_NS::StringUtils::Contains(line, "subpassInput"))
-            return LayoutBinding::Attachhment;
-
-        if (SR_UTILS_NS::StringUtils::Contains(line, "uniform"))
-            return LayoutBinding::Uniform;
-
-        if (SR_UTILS_NS::StringUtils::Contains(line, "ssbo"))
-            return LayoutBinding::SSBO;
-
-        return LayoutBinding::Unknown;
-    }
-
     struct SourceShader {
         std::string m_path;
         ShaderStage m_stage;
@@ -351,4 +260,4 @@ namespace SR_GRAPH_NS {
     };
 }
 
-#endif //SR_ENGINE_GRAPHICS_I_SHADER_PROGRAM_H
+#endif //SR_ENGINE_GRAPHICS_SHADER_UTILS_H

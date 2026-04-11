@@ -10,7 +10,7 @@
 #include <Graphics/SRSL/ICodeGenerator.h>
 #include <Graphics/SRSL/ShaderType.h>
 #include <Graphics/Types/Vertices.h>
-#include <Graphics/Pipeline/IShaderProgram.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 
 namespace SR_SRSL_NS {
     SR_ENUM_NS_CLASS_T(ShaderLanguage, uint8_t,

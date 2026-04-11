@@ -92,13 +92,14 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsWaitReRegister() const noexcept { return m_isWaitReRegister; }
         SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
         SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
-        SR_NODISCARD RenderQueues& GetRenderQueues() noexcept { return m_renderQueues; }
+        SR_NODISCARD RenderQueues& GetRenderQueues() noexcept;
         SR_NODISCARD FrustumCullingType GetFrustumCullingType() const noexcept;
         SR_NODISCARD bool IsCalculated() const noexcept { return m_isCalculated; }
         SR_NODISCARD bool IsFrustumCullingSupported() const noexcept;
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
         SR_NODISCARD const SR_UTILS_NS::UI::MaskInfo& GetMaskInfo() const;
         SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescription& GetVertexLayoutDescription() const noexcept;
+        SR_NODISCARD virtual const SR_UTILS_NS::VertexLayoutDescription& GetShaderVertexLayoutDescription() const noexcept;
 
         void SetFrustumCullingType(FrustumCullingType type) { m_frustumCullingType = type; }
         void SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description);
@@ -137,12 +138,8 @@ namespace SR_GTYPES_NS {
         virtual bool Calculate();
 
     protected:
-        RenderQueues m_renderQueues;
-
-        Memory::UBOManager& m_uboManager;
+        SR_HTYPES_NS::RawPointerHolder<RenderQueues> m_pRenderQueues;
         Pipeline* m_pipeline = nullptr;
-        SR_GRAPH_NS::DescriptorManager& m_descriptorManager;
-
         int32_t m_virtualUBO = SR_ID_INVALID;
         int32_t m_virtualDescriptor = SR_ID_INVALID;
 
