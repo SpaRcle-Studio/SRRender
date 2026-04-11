@@ -607,6 +607,9 @@ namespace SR_GRAPH_NS {
                 break;
 
             case SR_UTILS_NS::VertexAttributeFormat::UInt8:
+                if (count == 4)
+                    return VK_FORMAT_R8G8B8A8_UINT;
+                break;
             case SR_UTILS_NS::VertexAttributeFormat::UNorm8:
                 if (count == 4)
                     return VK_FORMAT_R8G8B8A8_UNORM;

@@ -202,6 +202,7 @@ namespace SR_SRSL_NS {
 
         void SaveVertexLayoutDescription(SR_HTYPES_NS::Marshal& marshal, const SR_UTILS_NS::VertexLayoutDescription& description) {
             SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, description.attributesCount);
+            SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, description.stride);
             for (size_t i = 0; i < description.attributesCount; ++i) {
                 const auto& attribute = description.attributes[i];
                 SR_UTILS_NS::MarshalUtils::SaveValue<uint32_t>(marshal, static_cast<uint32_t>(attribute.attribute));
@@ -215,6 +216,7 @@ namespace SR_SRSL_NS {
             SR_UTILS_NS::VertexLayoutDescription description;
 
             const auto attributesCount = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+            description.stride = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
             for (size_t i = 0; i < attributesCount; ++i) {
                 SR_UTILS_NS::VertexAttributeDescription attribute;
                 attribute.attribute = static_cast<SR_UTILS_NS::VertexAttribute>(SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal));
@@ -730,6 +732,6 @@ namespace SR_GRAPH_NS {
     }
 
     uint64_t ShaderCache::GetVersion() {
-        return 0xDEADB00B;
+        return 0xDEADBA0B;
     }
 }

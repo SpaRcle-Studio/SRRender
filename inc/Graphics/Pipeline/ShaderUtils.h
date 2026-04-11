@@ -143,6 +143,7 @@ namespace SR_GRAPH_NS {
 
     SR_ENUM_NS_CLASS_T(ShaderStage, uint8_t,
         Unknown,
+        All,
         Vertex,
         Fragment,
         Geometry,

@@ -6,6 +6,7 @@
 #include <Graphics/SRSL/Lexer.h>
 #include <Graphics/SRSL/PseudoCodeGenerator.h>
 #include <Graphics/SRSL/GLSLCodeGenerator.h>
+#include <Graphics/SRSL/WGSLCodeGenerator.h>
 #include <Graphics/SRSL/AssignExpander.h>
 #include <Graphics/SRSL/PreProcessor.h>
 #include <Graphics/SRSL/LexicalAnalyzer.h>
@@ -822,6 +823,9 @@ namespace SR_SRSL_NS {
                 break;
             case ShaderLanguage::GLSL:
                 codeGenRes = GLSLCodeGenerator::Instance().GenerateStages(this);
+                break;
+            case ShaderLanguage::WGSL:
+                codeGenRes = WGSLCodeGenerator::Instance().GenerateStages(this);
                 break;
             case ShaderLanguage::HLSL:
             case ShaderLanguage::Metal:

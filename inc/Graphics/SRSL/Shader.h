@@ -13,7 +13,7 @@
 
 namespace SR_SRSL_NS {
     SR_ENUM_NS_CLASS_T(ShaderLanguage, uint8_t,
-        PseudoCode, GLSL, HLSL, Metal
+        PseudoCode, GLSL, WGSL, HLSL, Metal
     );
 
     struct SRSLSampler {
@@ -88,6 +88,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SRSLUniformBlock& GetPushConstants() const { return m_pushConstants; }
         SR_NODISCARD const SRSLSamplers& GetSamplers() const { return m_samplers; }
         SR_NODISCARD const SRShaderCreateInfo& GetCreateInfo() const { return m_createInfo; }
+        SR_NODISCARD SRShaderCreateInfo& GetCreateInfo() { return m_createInfo; }
         SR_NODISCARD const std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetShared() const { return m_shared; }
         SR_NODISCARD const std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetSharedWorkgroup() const { return m_sharedWorkgroup; }
         SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, SRSLVariable*>& GetConstants() const { return m_constants; }
