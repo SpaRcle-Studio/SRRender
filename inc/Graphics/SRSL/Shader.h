@@ -9,7 +9,6 @@
 #include <Graphics/SRSL/RefAnalyzer.h>
 #include <Graphics/SRSL/ICodeGenerator.h>
 #include <Graphics/SRSL/ShaderType.h>
-#include <Graphics/Types/Vertices.h>
 #include <Graphics/Pipeline/ShaderUtils.h>
 
 namespace SR_SRSL_NS {

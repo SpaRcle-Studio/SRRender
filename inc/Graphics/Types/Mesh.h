@@ -54,11 +54,11 @@ namespace SR_GTYPES_NS {
         ~Mesh() override;
 
     public:
-        static std::vector<Mesh::Ptr> Load(const SR_UTILS_NS::Path& path, MeshType type);
-        static Mesh::Ptr TryLoad(SR_HTYPES_NS::RawMesh* pRawMesh, MeshType type, uint32_t id);
-        static Mesh::Ptr TryLoad(const SR_UTILS_NS::Path& path, MeshType type, uint32_t id);
-        static Mesh::Ptr Load(const SR_UTILS_NS::Path& path, MeshType type, uint32_t id);
-        static Mesh::Ptr Load(const SR_UTILS_NS::Path& path, MeshType type, SR_UTILS_NS::StringAtom name);
+        static std::vector<Mesh::Ptr> Load(const SR_UTILS_NS::Path& path);
+        static Mesh::Ptr TryLoad(SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t id);
+        static Mesh::Ptr TryLoad(const SR_UTILS_NS::Path& path, uint32_t id);
+        static Mesh::Ptr Load(const SR_UTILS_NS::Path& path, uint32_t id);
+        static Mesh::Ptr Load(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom name);
 
     public:
         void OnDestroy() override;
@@ -87,21 +87,19 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const MaterialPtr& GetMaterial() const noexcept { return m_material; }
         SR_NODISCARD MaterialPtr& GetMaterial() noexcept { return m_material; }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
-        SR_NODISCARD virtual MeshType GetMeshTypeImpl() const noexcept { return MeshType::Unknown; }
-        SR_NODISCARD MeshType GetMeshType() const noexcept;
         SR_NODISCARD bool IsWaitReRegister() const noexcept { return m_isWaitReRegister; }
         SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
         SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
         SR_NODISCARD RenderQueues& GetRenderQueues() noexcept;
-        SR_NODISCARD FrustumCullingType GetFrustumCullingType() const noexcept;
         SR_NODISCARD bool IsCalculated() const noexcept { return m_isCalculated; }
-        SR_NODISCARD bool IsFrustumCullingSupported() const noexcept;
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
         SR_NODISCARD const SR_UTILS_NS::UI::MaskInfo& GetMaskInfo() const;
         SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescription& GetVertexLayoutDescription() const noexcept;
         SR_NODISCARD virtual const SR_UTILS_NS::VertexLayoutDescription& GetShaderVertexLayoutDescription() const noexcept;
 
-        void SetFrustumCullingType(FrustumCullingType type) { m_frustumCullingType = type; }
+        SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const noexcept { return FrustumCullingType::None; }
+        virtual void SetFrustumCullingType(FrustumCullingType type) { }
+
         void SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description);
 
         void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
@@ -144,29 +142,24 @@ namespace SR_GTYPES_NS {
         int32_t m_virtualDescriptor = SR_ID_INVALID;
 
     protected:
-        /// @virtualProperty(meshType) @getter(GetMeshType) @readOnly @dontSave
+        /// @virtualProperty(verticesCount) @getter(GetVerticesCount) @readOnly @dontSave @debugOnly
         SR_VIRTUAL_PROPERTY
-        /// @virtualProperty(verticesCount) @getter(GetVerticesCount) @readOnly @dontSave
-        SR_VIRTUAL_PROPERTY
-        /// @virtualProperty(indicesCount) @getter(GetIndicesCount) @readOnly @dontSave
+        /// @virtualProperty(indicesCount) @getter(GetIndicesCount) @readOnly @dontSave @debugOnly
         SR_VIRTUAL_PROPERTY
         /// @property @setter(SetMaterial) @getter(GetMaterial) @inspector(MaterialPropertyDrawer)
         MaterialPtr m_material;
-        /// @property @propertyCondition(This.IsFrustumCullingSupported())
-        FrustumCullingType m_frustumCullingType = FrustumCullingType::AABB;
-        /// @property @readOnly @dontSave
+        /// @property @readOnly @dontSave @debugOnly
         bool m_isWaitReRegister = false;
-        /// @virtualProperty(isRegistered) @getter(IsMeshRegistered) @readOnly @dontSave
+        /// @virtualProperty(isRegistered) @getter(IsMeshRegistered) @readOnly @dontSave @debugOnly
         SR_VIRTUAL_PROPERTY
-        /// @property @readOnly @dontSave
+        /// @property @readOnly @dontSave @debugOnly
         bool m_isCalculated = false;
-        /// @property @readOnly @dontSave
+        /// @property @readOnly @dontSave @debugOnly
         bool m_hasErrors = false;
-        /// @property @readOnly @dontSave
+        /// @property @readOnly @dontSave @debugOnly
         bool m_dirtyMaterial = false;
 
     private:
-        mutable MeshType m_meshTypeCache = MeshType::Unknown;
         mutable SR_UTILS_NS::UI::MaskInfo m_maskInfo;
         mutable SR_MATH_NS::AABB m_aabb;
         mutable bool m_isAABBDirty = true;

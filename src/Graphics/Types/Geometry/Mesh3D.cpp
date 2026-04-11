@@ -8,7 +8,6 @@
 
 #include <Graphics/Types/Geometry/Mesh3D.h>
 #include <Graphics/Material/BaseMaterial.h>
-#include <Graphics/Types/Uniforms.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Utils/MeshUtils.h>
 
@@ -17,22 +16,6 @@
 #include <Codegen/Mesh3D.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    bool Mesh3D::Calculate()  {
-        if (IsCalculated()) {
-            return true;
-        }
-
-        SR_TRACY_ZONE;
-
-        FreeVMemory();
-
-        if (!IsCalculatable()) {
-            return false;
-        }
-
-        return IndexedMesh::Calculate();
-    }
-
     const SR_HTYPES_NS::FastMemoryArray<uint32_t>& Mesh3D::GetIndices() const {
         SR_TRACY_ZONE;
         return GetRawMesh()->GetIndices(GetMeshId());

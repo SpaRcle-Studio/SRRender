@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_PROCEDURALMESH_H
 #define SR_ENGINE_PROCEDURALMESH_H
 
-#include <Graphics/Types/Geometry/MeshComponent.h>
+#include <Graphics/Types/Geometry/IndexedMesh.h>
 
 #include <Utils/Types/FastMemoryArray.h>
 
@@ -20,8 +20,6 @@ namespace SR_GTYPES_NS {
         ProceduralMesh() = default;
 
     public:
-        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Procedural; }
-
         void SwapIndices(SR_HTYPES_NS::FastMemoryArray<uint32_t>& indices);
         void SetIndices(void* pData, uint64_t count);
 
@@ -36,8 +34,6 @@ namespace SR_GTYPES_NS {
         bool Export(const SR_UTILS_NS::Path& path) const;
 
     private:
-        void FreeVMemory() override;
-        bool Calculate() override;
         void SetDirtyMesh();
         void UseSSBO() override;
 

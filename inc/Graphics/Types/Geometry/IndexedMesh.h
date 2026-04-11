@@ -5,9 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_INDEXEDMESH_H
 #define SR_ENGINE_GRAPHICS_INDEXEDMESH_H
 
-#include <Graphics/Memory/MeshManager.h>
 #include <Graphics/Types/Mesh.h>
-#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Utils/Types/FastMemoryArray.h>
 
@@ -41,6 +39,9 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsSupportVBO() const override { return true; }
 
+        SR_NODISCARD FrustumCullingType GetFrustumCullingType() const noexcept override { return m_frustumCullingType; }
+        void SetFrustumCullingType(FrustumCullingType type) override { m_frustumCullingType = type; }
+
         bool Calculate() override;
 
         bool CalculateIBO();
@@ -50,6 +51,10 @@ namespace SR_GTYPES_NS {
 
         bool FreeVBO();
         bool FreeIBO();
+
+    public:
+        /// @property
+        FrustumCullingType m_frustumCullingType = FrustumCullingType::AABB;
 
     protected:
         int32_t m_IBO = SR_ID_INVALID;

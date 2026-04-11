@@ -3,8 +3,9 @@
 //
 
 #include <Graphics/Types/Geometry/IndexedMesh.h>
+#include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Memory/MeshManager.h>
 
-#include <Utils/Types/RawMesh.h>
 #include <Utils/Types/IRawMeshHolder.h>
 
 #include <Codegen/IndexedMesh.generated.hpp>
@@ -16,6 +17,16 @@ namespace SR_GTYPES_NS {
 
     bool IndexedMesh::Calculate() {
         SR_TRACY_ZONE;
+
+        if (IsCalculated()) {
+            return true;
+        }
+
+        FreeVMemory();
+
+        if (!IsCalculatable()) {
+            return false;
+        }
 
         m_isUniqueMesh = true;
         if (dynamic_cast<SR_HTYPES_NS::IRawMeshHolder*>(this)) {

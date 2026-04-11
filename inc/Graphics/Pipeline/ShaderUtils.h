@@ -5,7 +5,6 @@
 #ifndef SR_ENGINE_GRAPHICS_SHADER_UTILS_H
 #define SR_ENGINE_GRAPHICS_SHADER_UTILS_H
 
-#include <Graphics/Types/Uniforms.h>
 #include <Graphics/SRSL/ShaderType.h>
 
 #include <Utils/Common/Enumerations.h>

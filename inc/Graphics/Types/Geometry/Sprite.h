@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_SPRITE_H
 #define SR_ENGINE_SPRITE_H
 
-#include <Graphics/Types/Geometry/MeshComponent.h>
+#include <Graphics/Types/Mesh.h>
 
 #include <Utils/Math/Rect.h>
 
@@ -43,8 +43,6 @@ namespace SR_GTYPES_NS {
         bool IsSupportVBO() const override;
 
         bool BindMesh() override;
-
-        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override;
 
         SR_NODISCARD uint32_t GetIndicesCount() const override;
 

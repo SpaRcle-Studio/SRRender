@@ -4,10 +4,10 @@
 
 #include <Graphics/Types/Geometry/Sprite.h>
 #include <Graphics/Material/BaseMaterial.h>
-#include <Graphics/Types/Uniforms.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Utils/MeshUtils.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Utils/ECS/GameObject.h>
 #include <Utils/ECS/TransformRect.h>
@@ -66,10 +66,6 @@ namespace SR_GTYPES_NS {
 
     bool Sprite::IsSupportVBO() const {
         return false;
-    }
-
-    MeshType Sprite::GetMeshTypeImpl() const noexcept {
-        return MeshType::Sprite;
     }
 
     uint32_t Sprite::GetIndicesCount() const {

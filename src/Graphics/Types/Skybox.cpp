@@ -4,7 +4,6 @@
 
 #include <Graphics/Types/Skybox.h>
 #include <Graphics/Types/Shader.h>
-#include <Graphics/Types/Vertices.h>
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Memory/DescriptorManager.h>
 #include <Graphics/Pipeline/Pipeline.h>

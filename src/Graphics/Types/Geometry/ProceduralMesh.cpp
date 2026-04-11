@@ -12,22 +12,6 @@
 #include <Codegen/ProceduralMesh.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    bool ProceduralMesh::Calculate()  {
-        SR_TRACY_ZONE;
-
-        if (IsCalculated()) {
-            return true;
-        }
-
-        FreeVMemory();
-
-        if (!IsCalculatable()) {
-            return false;
-        }
-
-        return Super::Calculate();
-    }
-
     const SR_HTYPES_NS::FastMemoryArray<uint32_t>& ProceduralMesh::GetIndices() const {
         return m_indices;
     }
@@ -103,10 +87,6 @@ namespace SR_GTYPES_NS {
 
     void ProceduralMesh::UseSSBO() {
         Super::UseSSBO();
-    }
-
-    void ProceduralMesh::FreeVMemory() {
-        Super::FreeVMemory();
     }
 
     bool ProceduralMesh::Export(const SR_UTILS_NS::Path& path) const {

@@ -28,15 +28,6 @@ namespace SR_SRSL_NS {
         //Intersection        /// трасировка лучей. проверка пересечения луча и геометрии
         RayTrace           /// шейдер трассировки лучей
     );
-
-    enum VertexAttribute {
-        SRSL_VERTEX_ATTRIBUTE_AUTO = 0,
-        SRSL_VERTEX_ATTRIBUTE_POSITION = 1 << 0,
-        SRSL_VERTEX_ATTRIBUTE_UV = 1 << 1,
-        SRSL_VERTEX_ATTRIBUTE_NORMAL = 1 << 2,
-        SRSL_VERTEX_ATTRIBUTE_TANGENT = 1 << 3,
-        SRSL_VERTEX_ATTRIBUTE_BITANGENT = 1 << 4,
-    };
 }
 
 #endif //SR_ENGINE_SRSL_SHADERTYPE_H

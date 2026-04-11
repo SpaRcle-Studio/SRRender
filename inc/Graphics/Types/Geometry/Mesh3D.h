@@ -7,7 +7,7 @@
 
 #include <Utils/Types/IRawMeshHolder.h>
 
-#include <Graphics/Types/Geometry/MeshComponent.h>
+#include <Graphics/Types/Geometry/IndexedMesh.h>
 
 namespace SR_GTYPES_NS {
     /// @category(Render)
@@ -21,14 +21,9 @@ namespace SR_GTYPES_NS {
         void OnRawMeshChanged() override;
         bool OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) override;
 
-        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Static; }
-
         SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
         SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;
-
-    private:
-        bool Calculate() override;
 
     private:
         /// @virtualProperty(geometryName) @getter(GetGeometryName) @dontSave @readOnly

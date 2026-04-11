@@ -5,11 +5,11 @@
 #ifndef SR_ENGINE_GRAPHICS_SKINNED_MESH_H
 #define SR_ENGINE_GRAPHICS_SKINNED_MESH_H
 
+#include <Graphics/Types/Geometry/IndexedMesh.h>
+#include <Graphics/Animations/Skeleton.h>
+
 #include <Utils/Types/IRawMeshHolder.h>
 #include <Utils/ECS/EntityRef.h>
-
-#include <Graphics/Types/Geometry/MeshComponent.h>
-#include <Graphics/Animations/Skeleton.h>
 
 namespace SR_GTYPES_NS {
     /// @category(Render)
@@ -21,9 +21,6 @@ namespace SR_GTYPES_NS {
         using Ptr = SR_HTYPES_NS::SharedPtr<SkinnedMesh>;
 
     public:
-        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Skinned; }
-
-        void LateUpdate() override;
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
@@ -32,16 +29,11 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const SkeletonRef& GetSkeletonRef() const noexcept { return m_skeleton; }
         SR_NODISCARD SkeletonRef& GetSkeletonRef() noexcept { return m_skeleton; }
 
-        void FreeVMemory() override;
-
         void UseSSBO() override;
 
     private:
         bool OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) override;
         void OnRawMeshChanged() override;
-        bool Calculate() override;
-
-        void FreeSSBO();
 
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
         SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;

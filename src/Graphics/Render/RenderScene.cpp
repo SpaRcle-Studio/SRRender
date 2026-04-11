@@ -8,7 +8,6 @@
 #include <Graphics/Memory/CameraManager.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Font/Text.h>
-#include <Graphics/Types/Geometry/DebugLine.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Material/UniqueMaterial.h>
@@ -20,7 +19,6 @@
 #include <Utils/DebugDraw.h>
 #include <Utils/Common/Numeric.h>
 #include <Utils/Common/SubscriptionMessage.h>
-#include <Utils/Types/SafePtrLockGuard.h>
 #include <Utils/Resources/Yaml.h>
 #include <Utils/ECS/GameObject.h>
 #include <Utils/TypeTraits/Factory.h>

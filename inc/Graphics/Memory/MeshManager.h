@@ -5,7 +5,6 @@
 #ifndef SR_ENGINE_GRAPHICS_MEMORY_MESH_MANAGER_H
 #define SR_ENGINE_GRAPHICS_MEMORY_MESH_MANAGER_H
 
-#include <Graphics/Types/Vertices.h>
 #include <Graphics/Pipeline/PipelineType.h>
 
 #include <Utils/Common/Singleton.h>

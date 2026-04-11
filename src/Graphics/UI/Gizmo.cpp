@@ -5,6 +5,7 @@
 #include <Graphics/Material/UniqueMaterial.h>
 #include <Graphics/UI/Gizmo.h>
 #include <Graphics/Types/Camera.h>
+#include <Graphics/Types/Mesh.h>
 #include <Graphics/Render/RenderTechnique.h>
 
 #include <Utils/ECS/ComponentManager.h>
@@ -43,7 +44,7 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        auto&& pMesh = SR_GTYPES_NS::Mesh::Load(path, MeshType::Static, name);
+        auto&& pMesh = SR_GTYPES_NS::Mesh::Load(path, name);
         if (!pMesh) {
             SR_ERROR("Gizmo::LoadMesh() : failed to load mesh!\n\tPath: {}\n\tName: {}", path.ToStringRef(), name.ToStringRef());
             return;

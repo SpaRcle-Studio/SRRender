@@ -4,8 +4,7 @@
 
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Render/RenderScene.h>
-#include <Graphics/Types/Geometry/DebugWireframeMesh.h>
-#include <Graphics/Types/Geometry/DebugLine.h>
+#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Material/FileMaterial.h>
 
 #include <Utils/DebugDraw.h>

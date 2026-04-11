@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/Types/Mesh.h>
+#include <Graphics/Types/Geometry/SkinnedMesh.h>
+#include <Graphics/Types/Geometry/Mesh3D.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/RenderQueue.h>
@@ -32,9 +34,9 @@ namespace SR_GTYPES_NS {
         SRAssert2(!m_isWaitReRegister, "Application may will crash if you delete mesh with waiting re-register!");
     }
 
-    Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, uint32_t id) {
+    Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, uint32_t id) {
         if (auto&& pRawMesh =  CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
-            return TryLoad(pRawMesh.Get(), type, id);
+            return TryLoad(pRawMesh.Get(), id);
         }
 
         SR_ERROR("Mesh::Load() : failed to load mesh!\n\tPath: " + path.ToStringRef() + "\n\tId: " + std::to_string(id));
@@ -42,9 +44,9 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
-    Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path &path, MeshType type, uint32_t id) {
+    Mesh::Ptr Mesh::TryLoad(const SR_UTILS_NS::Path& path, uint32_t id) {
         if (auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
-            if (auto&& pMesh = TryLoad(pRawMesh.Get(), type, id)) {
+            if (auto&& pMesh = TryLoad(pRawMesh.Get(), id)) {
                 return pMesh;
             }
             pRawMesh->CheckResourceUsage();
@@ -52,23 +54,22 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
-    Mesh::Ptr Mesh::TryLoad(SR_HTYPES_NS::RawMesh* pRawMesh, MeshType type, uint32_t id) {
-        Mesh::Ptr pMesh = nullptr;
-        bool exists = false;
-
+    Mesh::Ptr Mesh::TryLoad(SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t id) {
         /// Проверяем существование меша
         if (pRawMesh) {
-            exists = id < pRawMesh->GetMeshesCount();
+            if (id >= pRawMesh->GetMeshesCount()) {
+                pRawMesh->CheckResourceUsage();
+                return nullptr;
+            }
         }
         else {
             SRHalt("Mesh::TryLoad() : raw mesh is nullptr!");
             return nullptr;
         }
 
-        if (!exists || !((pMesh = CreateMeshByType(type)))) {
-            pRawMesh->CheckResourceUsage();
-            return nullptr;
-        }
+        Mesh::Ptr pMesh = pRawMesh->HasBones(id)
+            ? SR_UTILS_NS::Factory::Instance().Create<SkinnedMesh>().StaticCast<Mesh>()
+            : SR_UTILS_NS::Factory::Instance().Create<Mesh3D>().StaticCast<Mesh>();
 
         if (auto&& pRawMeshHolder = SR_UTILS_NS::DynamicPointerCast<SR_HTYPES_NS::IRawMeshHolder>(pMesh)) {
             pRawMeshHolder->SetRawMesh(pRawMesh);
@@ -105,13 +106,13 @@ namespace SR_GTYPES_NS {
         return identity;
     }
 
-    std::vector<Mesh::Ptr> Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type) {
+    std::vector<Mesh::Ptr> Mesh::Load(const SR_UTILS_NS::Path& path) {
         std::vector<Mesh::Ptr> meshes;
 
         uint32_t id = 0;
         auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path);
         while (pRawMesh) {
-            if (auto&& pMesh = TryLoad(pRawMesh.Get(), type, id)) {
+            if (auto&& pMesh = TryLoad(pRawMesh.Get(), id)) {
                 meshes.emplace_back(pMesh);
                 ++id;
             }
@@ -293,9 +294,9 @@ namespace SR_GTYPES_NS {
         m_dirtyMaterial = true;
     }
 
-    Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, MeshType type, SR_UTILS_NS::StringAtom name) {
+    Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom name) {
         if (auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
-            return Load(path, type, pRawMesh->GetMeshId(name));
+            return Load(path, pRawMesh->GetMeshId(name));
         }
         return nullptr;
     }
@@ -438,27 +439,6 @@ namespace SR_GTYPES_NS {
             pElement->inUpdateQueue = true;
             pElement->pRenderQueue->OnMeshDirty(this, pElement);
         }
-    }
-
-    bool Mesh::IsFrustumCullingSupported() const noexcept {
-        switch (GetMeshType()) {
-            case MeshType::Text:
-            case MeshType::Sprite:
-                return false;
-            default:
-                return true;
-        }
-    }
-
-    FrustumCullingType Mesh::GetFrustumCullingType() const noexcept {
-        return m_frustumCullingType;
-    }
-
-    MeshType Mesh::GetMeshType() const noexcept {
-        if (m_meshTypeCache == MeshType::Unknown) {
-            m_meshTypeCache = GetMeshTypeImpl();
-        }
-        return m_meshTypeCache;
     }
 
     const SR_UTILS_NS::VertexLayoutDescription& Mesh::GetVertexLayoutDescription() const noexcept {

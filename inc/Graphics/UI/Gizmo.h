@@ -5,7 +5,6 @@
 #ifndef SR_ENGINE_GRAPHICS_MANIPULATION_TOOL_H
 #define SR_ENGINE_GRAPHICS_MANIPULATION_TOOL_H
 
-#include <Graphics/Types/Geometry/MeshComponent.h>
 #include <Graphics/Types/IRenderComponent.h>
 #include <Graphics/Pass/ColorBufferPass.h>
 

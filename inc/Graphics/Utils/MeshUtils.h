@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_MESH_UTILS_H
 #define SR_ENGINE_MESH_UTILS_H
 
-#include <Graphics/Utils/MeshTypes.h>
+#include <Graphics/stdInclude.h>
 
 #include <Utils/Types/SharedPtr.h>
 
@@ -41,8 +41,6 @@ namespace SR_GRAPH_NS {
 
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_MESH_FORMATS = "obj,pmx,fbx,blend,stl,dae,3ds";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_FONT_FORMATS = "ttf";
-
-    SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> CreateMeshByType(MeshType type);
 }
 
 #endif //SR_ENGINE_MESH_UTILS_H

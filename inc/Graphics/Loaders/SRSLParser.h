@@ -5,10 +5,9 @@
 #ifndef SR_ENGINE_SRSLPARSER_H
 #define SR_ENGINE_SRSLPARSER_H
 
-#include <Utils/Common/Singleton.h>
-
-#include <Graphics/Types/Vertices.h>
 #include <Graphics/Pipeline/ShaderUtils.h>
+
+#include <Utils/Common/Singleton.h>
 
 namespace SR_GRAPH_NS::SRSL {
     struct SRSLFunc {

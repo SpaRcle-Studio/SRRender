@@ -5,8 +5,8 @@
 #ifndef SR_ENGINE_TEXT_H
 #define SR_ENGINE_TEXT_H
 
-#include <Graphics/Types/Vertices.h>
 #include <Graphics/Types/Mesh.h>
+
 #include <Utils/Types/UnicodeString.h>
 
 namespace SR_GTYPES_NS {
@@ -24,8 +24,6 @@ namespace SR_GTYPES_NS {
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
         void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
-
-        SR_NODISCARD MeshType GetMeshTypeImpl() const noexcept override { return MeshType::Text; }
 
         SR_NODISCARD uint32_t GetIndicesCount() const override { return 4; }
 

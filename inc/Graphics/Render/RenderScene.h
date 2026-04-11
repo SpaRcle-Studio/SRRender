@@ -8,7 +8,6 @@
 #include <Graphics/Render/MeshCluster.h>
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/FlatCluster.h>
-#include <Graphics/Render/SortedMeshQueue.h>
 #include <Graphics/GUI/WidgetManager.h>
 
 #include <Utils/Common/NonCopyable.h>

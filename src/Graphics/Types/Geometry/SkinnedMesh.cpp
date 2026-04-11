@@ -5,46 +5,15 @@
 #include <Graphics/Types/Geometry/SkinnedMesh.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Utils/Common/Features.h>
+#include <Utils/Types/RawMesh.h>
 #include <Utils/FileSystem/PathDataAccessor.h>
 
 #include <Codegen/SkinnedMesh.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    bool SkinnedMesh::Calculate() {
-        SR_TRACY_ZONE;
-
-        if (IsCalculated()) {
-            return true;
-        }
-
-        FreeVMemory();
-
-        if (!IsCalculatable()) {
-            return false;
-        }
-
-        //const uint32_t sizeBones = GetRawMesh()->GetOptimizedBones().size() * sizeof(SR_MATH_NS::Matrix4x4);
-        //const uint8_t maxFrames = SR_UTILS_NS::Features::Instance().Enabled("MultiFrameSSBOResources", true) ? GetPipeline()->GetSwapchainImagesCount() : 1;
-        //
-        //m_ssboBones.resize(maxFrames, SR_ID_INVALID);
-        //for (uint8_t frame = 0; frame < maxFrames; ++frame) {
-        //    m_ssboBones[frame] = GetPipeline()->AllocateSSBO(sizeBones, SSBOUsage::CPUToGPU);
-        //}
-
-        return IndexedMesh::Calculate();
-    }
-
-    void SkinnedMesh::FreeSSBO() {
-        //for (auto& ssbo : m_ssboBones) {
-        //    if (ssbo != SR_ID_INVALID) {
-        //        GetPipeline()->FreeSSBO(&ssbo);
-        //    }
-        //}
-        //m_ssboBones.clear();
-    }
-
     const SR_HTYPES_NS::FastMemoryArray<uint32_t>& SkinnedMesh::GetIndices() const {
         return GetRawMesh()->GetIndices(GetMeshId());
     }
@@ -52,35 +21,6 @@ namespace SR_GTYPES_NS {
     bool SkinnedMesh::IsCalculatable() const {
         return IsValidMeshId() && Mesh::IsCalculatable();
     }
-
-    void SkinnedMesh::LateUpdate() {
-        SR_TRACY_ZONE;
-
-        /*auto&& pSkeleton = m_skeleton.Get();
-
-        if (m_skeletonIsBroken && !pSkeleton) {
-            return Super::LateUpdate();
-        }
-
-        if (!m_skeletonIsBroken && pSkeleton && !m_ssboBones.empty()) {
-            const uint8_t frame = GetPipeline()->GetCurrentImageIndex();
-            const auto ssbo = m_ssboBones[SR_MIN(frame, m_ssboBones.size() - 1)];
-            if (ssbo == SR_ID_INVALID) {
-                return Super::LateUpdate();
-            }
-
-            if (auto&& matrices = pSkeleton->GetMatrices(); !matrices.empty()) {
-                GetPipeline()->UpdateSSBO(ssbo, (void*)matrices.data(), matrices.size() * sizeof(SR_MATH_NS::Matrix4x4));
-            }
-
-            return Super::LateUpdate();
-        }
-
-        m_skeletonIsBroken = !pSkeleton;
-        m_renderScene->SetDirty();*/
-
-        return Super::LateUpdate();
-    };
 
     void SkinnedMesh::UseMaterial(SR_GTYPES_NS::Shader& shader) {
         Super::UseMaterial(shader);
@@ -107,11 +47,6 @@ namespace SR_GTYPES_NS {
 
         MarkMaterialDirty();
         m_isCalculated = false;
-    }
-
-    void SkinnedMesh::FreeVMemory() {
-        Super::FreeVMemory();
-        FreeSSBO();
     }
 
     void SkinnedMesh::UseSSBO() {

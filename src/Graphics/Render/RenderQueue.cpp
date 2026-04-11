@@ -505,15 +505,13 @@ namespace SR_GRAPH_NS {
             for (auto&& meshInfo : queue) {
                 bool isVisible = true;
 
-                if (!m_checkMeshFrustumSupport || meshInfo.pMesh->IsFrustumCullingSupported()) {
-                    const FrustumCullingType type = meshInfo.pMesh->GetFrustumCullingType();
+                const FrustumCullingType type = meshInfo.pMesh->GetFrustumCullingType();
 
-                    if (type == FrustumCullingType::None) {
-                        /// nothing
-                    }
-                    else { /// TODO: support other types of frustum culling
-                        isVisible = frustum.IsAABBVisible(meshInfo.pMesh->GetAABB());
-                    }
+                if (type == FrustumCullingType::None) {
+                    /// nothing
+                }
+                else { /// TODO: support other types of frustum culling
+                    isVisible = frustum.IsAABBVisible(meshInfo.pMesh->GetAABB());
                 }
 
                 if (meshInfo.pInfo->isVisible != isVisible) {

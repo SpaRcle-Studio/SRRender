@@ -5,8 +5,6 @@
 #ifndef SR_ENGINE_GRAPHICS_SHADER_H
 #define SR_ENGINE_GRAPHICS_SHADER_H
 
-#include <Graphics/Types/Vertices.h>
-#include <Graphics/Types/Uniforms.h>
 #include <Graphics/Memory/ShaderUBOBlock.h>
 #include <Graphics/Loaders/SRSL.h>
 #include <Graphics/Memory/ShaderProgramManager.h>
