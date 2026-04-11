@@ -86,7 +86,7 @@ namespace SR_SRSL_NS {
     void ShaderParams::Clear() {
         m_params.clear();
         m_buffer.clear();
-        m_vertexLayoutDescription = {};
+        m_vertexLayoutDescription.Reset();
         m_hash = 0;
         m_initialized = false;
     }
