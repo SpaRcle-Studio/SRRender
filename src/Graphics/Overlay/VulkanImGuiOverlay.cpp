@@ -23,7 +23,7 @@
     extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #endif
 
-#ifdef defined(SR_LINUX) && defined(SR_RENDER_GLFW)
+#if defined(SR_LINUX) && defined(SR_RENDER_GLFW)
     #include <imgui/backends/imgui_impl_glfw.h>
 #endif
 

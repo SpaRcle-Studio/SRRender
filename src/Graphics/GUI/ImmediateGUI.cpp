@@ -438,7 +438,7 @@ namespace SR_GRAPH_GUI_NS::Immediate {
 
         ImGuiID id = pWindow->GetID(label.c_str());
         flags |= ImGuiTreeNodeFlags_CollapsingHeader;
-        flags |= ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_ClipLabelForTrailingButton;
+        flags |= ImGuiTreeNodeFlags_AllowItemOverlap | static_cast<ImGuiTreeNodeFlags>(ImGuiTreeNodeFlags_ClipLabelForTrailingButton);
 
         return ImGui::TreeNodeBehavior(id, flags, label.c_str());
     }
@@ -866,7 +866,19 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImGui::IsItemDeactivatedAfterEdit();
     }
 
-    bool BeginChild(const char *str_id, const Utils::Math::FVector2 &size, bool border, WindowFlags flags) {
+    bool BeginChild(const char* str_id) {
+        return BeginChild(str_id, SR_MATH_NS::FVector2(0, 0), false, WindowFlags::None);
+    }
+
+    bool BeginChild(const char* str_id, const SR_MATH_NS::FVector2& size) {
+        return BeginChild(str_id, size, false, WindowFlags::None);
+    }
+
+    bool BeginChild(const char* str_id, const SR_MATH_NS::FVector2& size, bool border) {
+        return BeginChild(str_id, size, border, WindowFlags::None);
+    }
+
+    bool BeginChild(const char* str_id, const SR_MATH_NS::FVector2& size, bool border, WindowFlags flags) {
         return ImGui::BeginChild(str_id, F2ToImV2(size), border, static_cast<ImGuiWindowFlags>(flags));
     }
 
