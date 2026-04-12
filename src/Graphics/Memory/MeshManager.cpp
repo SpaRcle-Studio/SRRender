@@ -32,7 +32,7 @@ namespace SR_GRAPH_NS {
         m_vertexBuffers.reserve(32);
     }
 
-    MeshVideoMemoryInfo* MeshManager::Find(RegistrationInfo info, SR_UTILS_NS::VertexLayoutDescription layout) {
+    MeshVideoMemoryInfo* MeshManager::Find(RegistrationInfo info, const SR_UTILS_NS::VertexLayoutDescription& layout) {
         SR_TRACY_ZONE;
         SR_LOCK_GUARD;
 
@@ -84,7 +84,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    BakedMesh::Ptr BakedMesh::Bake(Pipeline* pPipeline, std::string_view path, uint32_t index, SR_UTILS_NS::VertexLayoutDescription layout) {
+    BakedMesh::Ptr BakedMesh::Bake(Pipeline* pPipeline, std::string_view path, uint32_t index, const SR_UTILS_NS::VertexLayoutDescription& layout) {
         if (auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
             return Bake(pPipeline, pRawMesh.Get(), index, layout);
         }
@@ -92,11 +92,11 @@ namespace SR_GRAPH_NS {
         return nullptr;
     }
 
-    BakedMesh::Ptr BakedMesh::Bake(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, SR_UTILS_NS::VertexLayoutDescription layout) {
+    BakedMesh::Ptr BakedMesh::Bake(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, const SR_UTILS_NS::VertexLayoutDescription& layout) {
         return MeshManager::Instance().BakeMesh(pPipeline, pRawMesh, index, layout);
     }
 
-    BakedMesh::Ptr MeshManager::BakeMesh(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, SR_UTILS_NS::VertexLayoutDescription layout)  {
+    BakedMesh::Ptr MeshManager::BakeMesh(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, const SR_UTILS_NS::VertexLayoutDescription& layout)  {
         SR_TRACY_ZONE;
         SR_LOCK_GUARD;
 
@@ -180,7 +180,7 @@ namespace SR_GRAPH_NS {
         return pBakedMesh;
     }
 
-    bool MeshManager::Register(RegistrationInfo info, uint32_t size, uint32_t memoryId, SR_UTILS_NS::VertexLayoutDescription layout) {
+    bool MeshManager::Register(RegistrationInfo info, uint32_t size, uint32_t memoryId, const SR_UTILS_NS::VertexLayoutDescription& layout) {
         SR_TRACY_ZONE;
         SR_LOCK_GUARD;
 
@@ -251,7 +251,7 @@ namespace SR_GRAPH_NS {
 
         MeshVideoMemoryInfo* pMemoryInfo = isVBO ?
             Find(registration.vertexBuffer.value(), registration.vertexLayout) :
-            Find(registration.indexBuffer.value(), {});
+            Find(registration.indexBuffer.value(), SR_UTILS_NS::VertexLayoutDescription());
 
         if (!pMemoryInfo) {
             SRHalt("MeshManager::Free() : memory info not found!");
@@ -278,7 +278,7 @@ namespace SR_GRAPH_NS {
                     m_vertexBuffers.erase(pLayoutIt);
                 }
                 m_registration[memoryId].vertexBuffer.reset();
-                m_registration[memoryId].vertexLayout = {};
+                m_registration[memoryId].vertexLayout = SR_UTILS_NS::VertexLayoutDescription();
             }
             return FreeResult::Freed;
         }
@@ -291,7 +291,7 @@ namespace SR_GRAPH_NS {
         return FreeResult::Freed;
     }
 
-    int32_t MeshManager::CopyIfExists(RegistrationInfo info, SR_UTILS_NS::VertexLayoutDescription layout) {
+    int32_t MeshManager::CopyIfExists(RegistrationInfo info, const SR_UTILS_NS::VertexLayoutDescription& layout) {
         SR_LOCK_GUARD;
         SR_TRACY_ZONE;
 
@@ -305,7 +305,7 @@ namespace SR_GRAPH_NS {
         return SR_ID_INVALID;
     }
 
-    uint32_t MeshManager::Size(RegistrationInfo info, SR_UTILS_NS::VertexLayoutDescription layout) {
+    uint32_t MeshManager::Size(RegistrationInfo info, const SR_UTILS_NS::VertexLayoutDescription& layout) {
         SR_TRACY_ZONE;
         SR_LOCK_GUARD;
         if (auto&& pMemoryInfo = Find(info, layout)) {
@@ -330,7 +330,7 @@ namespace SR_GRAPH_NS {
             SRHalt("MeshManager::CopyIfExists() : vertex buffer layout is required for VBO!");
             return SR_ID_INVALID;
         }
-        return CopyIfExists(info, {});
+        return CopyIfExists(info, SR_UTILS_NS::VertexLayoutDescription());
     }
 
     bool MeshManager::Register(MeshManager::RegistrationInfo info, uint32_t size, uint32_t memoryId) {
@@ -338,7 +338,7 @@ namespace SR_GRAPH_NS {
             SRHalt("MeshManager::Register() : vertex buffer layout is required for VBO!");
             return false;
         }
-        return Register(info, size, memoryId, {});
+        return Register(info, size, memoryId, SR_UTILS_NS::VertexLayoutDescription());
     }
 
     uint32_t MeshManager::Size(MeshManager::RegistrationInfo info) {
@@ -346,6 +346,6 @@ namespace SR_GRAPH_NS {
             SRHalt("MeshManager::Size() : vertex buffer layout is required for VBO!");
             return 0;
         }
-        return Size(info, {});
+        return Size(info, SR_UTILS_NS::VertexLayoutDescription());
     }
 }

@@ -113,8 +113,8 @@ namespace SR_GRAPH_NS {
             SRHalt("BakedMesh::RemoveUsePoint() : usages is less than 0!");
         }
 
-        static Ptr Bake(Pipeline* pPipeline, std::string_view path, uint32_t index, SR_UTILS_NS::VertexLayoutDescription layout);
-        static Ptr Bake(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, SR_UTILS_NS::VertexLayoutDescription layout);
+        static Ptr Bake(Pipeline* pPipeline, std::string_view path, uint32_t index, const SR_UTILS_NS::VertexLayoutDescription& layout);
+        static Ptr Bake(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, const SR_UTILS_NS::VertexLayoutDescription& layout);
 
     private:
         uint32_t m_usages = 0;
@@ -140,16 +140,16 @@ namespace SR_GRAPH_NS {
         ~MeshManager() override = default;
 
     public:
-        SR_NODISCARD BakedMesh::Ptr BakeMesh(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, SR_UTILS_NS::VertexLayoutDescription layout);
+        SR_NODISCARD BakedMesh::Ptr BakeMesh(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, const SR_UTILS_NS::VertexLayoutDescription& layout);
 
-        bool Register(RegistrationInfo info, uint32_t size, uint32_t memoryId, SR_UTILS_NS::VertexLayoutDescription layout);
+        bool Register(RegistrationInfo info, uint32_t size, uint32_t memoryId, const SR_UTILS_NS::VertexLayoutDescription& layout);
         bool Register(RegistrationInfo info, uint32_t size, uint32_t memoryId);
         FreeResult Free(bool isVBO, int32_t memoryId);
-        int32_t CopyIfExists(RegistrationInfo info, SR_UTILS_NS::VertexLayoutDescription layout);
+        int32_t CopyIfExists(RegistrationInfo info, const SR_UTILS_NS::VertexLayoutDescription& layout);
         int32_t CopyIfExists(RegistrationInfo info);
         uint32_t Size(RegistrationInfo info);
-        uint32_t Size(RegistrationInfo info, SR_UTILS_NS::VertexLayoutDescription layout);
-        MeshVideoMemoryInfo* Find(RegistrationInfo info, SR_UTILS_NS::VertexLayoutDescription layout);
+        uint32_t Size(RegistrationInfo info, const SR_UTILS_NS::VertexLayoutDescription& layout);
+        MeshVideoMemoryInfo* Find(RegistrationInfo info, const SR_UTILS_NS::VertexLayoutDescription& layout);
 
     private:
         void OnSingletonDestroy() override;
