@@ -69,10 +69,10 @@ namespace SR_SRSL_NS {
         std::string_view GenerateFunction(
             SRSLFunction* pFunction,
             const int32_t deep,
-            const std::string& preArgs = std::string(),
-            const std::string& preCode = std::string(),
-            const std::string& postCode = std::string(),
-            const std::string& returnType = std::string()
+            const std::string_view& preArgs = std::string_view(),
+            const std::string_view& preCode = std::string_view(),
+            const std::string_view& postCode = std::string_view(),
+            const std::string_view& returnType = std::string_view()
         ) {
             static std::string result;
             result.clear();
@@ -101,12 +101,13 @@ namespace SR_SRSL_NS {
                 }
             }
 
-            result += ") -> ";
-            if (!returnType.empty()) {
-                result += returnType;
+            std::string_view returnTypeFn = returnType.empty() ? GenerateType(pFunction->pType->ToString(0)) : returnType;
+            if (!returnTypeFn.empty() && returnTypeFn != "void") {
+                result += ") -> ";
+                result += returnTypeFn;
             }
             else {
-                result += GenerateType(pFunction->pType->ToString(0));
+                result += ") ";
             }
             result += " {\n";
 
@@ -206,10 +207,10 @@ namespace SR_SRSL_NS {
             const bool isOutPositionUsed = pUseStackFunction->IsVariableUsed("OUT_POSITION");
 
             preCode += GenerateTab(1);
-            preCode += "var output : VertexOutput;\n";
+            preCode += "var vsOut : VertexOutput;\n";
             if (isOutPositionUsed) {
                 preCode += GenerateTab(1);
-                preCode += "vec4<f32> OUT_POSITION;\n";
+                preCode += "var OUT_POSITION : vec4<f32>;\n";
             }
 
             auto&& vertexLayoutDescription = pShader->GetCreateInfo().vertexLayoutDescription;
@@ -235,19 +236,19 @@ namespace SR_SRSL_NS {
             for (uint32_t i = 0; i < vertexLayoutDescription.attributesCount; ++i) {
                 auto&& vertexAttribute = vertexLayoutDescription.attributes[i];
                 std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
-                preCode += SR_FORMAT("{}output.{} = {};\n", GenerateTab(1), attributeName, attributeName);
+                preCode += SR_FORMAT("{}vsOut.{} = {};\n", GenerateTab(1), attributeName, attributeName);
             }
 
             if (isOutPositionUsed) {
                 postCode += GenerateTab(1);
-                postCode += "output.position = OUT_POSITION;\n";
+                postCode += "vsOut.position = OUT_POSITION;\n";
             }
             else if (vertexLayoutDescription.Find(SR_UTILS_NS::VertexAttribute::Position)) {
                 postCode += GenerateTab(1);
-                postCode += "output.position = vec4<f32>(VERTEX, 1.0);\n";
+                postCode += "vsOut.position = vec4<f32>(VERTEX, 1.0);\n";
             }
             postCode += GenerateTab(1);
-            postCode += "return output;\n";
+            postCode += "return vsOut;\n";
 
             resultCode += "@vertex\n";
 
@@ -255,6 +256,165 @@ namespace SR_SRSL_NS {
             resultCode += GenerateFunction(pStageFunction, 0, preArgs, preCode, postCode, vertexOutputId);
 
             return resultCode;
+        }
+
+        std::optional<std::string_view> GenerateFragmentStage(const SRSLShader* pShader, SRSLResult& result) {
+            static std::string code;
+            static std::string variablesCode;
+            static std::string preCode;
+            static std::string postCode;
+
+            code.clear();
+            variablesCode.clear();
+            preCode.clear();
+            postCode.clear();
+
+            auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment);
+            auto&& pStageFunction = pShader->GetAnalyzedTree()->pLexicalTree->FindFunction(entryPoint);
+            auto&& pUseStackFunction = pShader->GetUseStack()->FindFunction(entryPoint);
+            if (!pStageFunction || !pUseStackFunction) {
+                return std::optional<std::string>();
+            }
+
+            const bool isColorPassDefined = pShader->IsMacroDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+            const bool isCascadedMapPassDefined = pShader->IsMacroDefined(SHADER_MACRO_SR_DEFINE_CASCADED_SHADOW_MAP_PASS);
+            const bool isColorUsed = isColorPassDefined || pUseStackFunction->IsVariableUsed("COLOR");
+            const bool isFragCoordUsed = pUseStackFunction->IsVariableUsed("FRAG_COORD");
+
+            code = GenerateStage(pShader, result, ShaderStage::Fragment, variablesCode);
+
+            uint64_t outLocation = 0;
+            for (auto&& layer : SR_SRSL_DEFAULT_OUT_LAYERS) {
+                const bool isNeedMain = layer == SR_SRSL_MAIN_OUT_LAYER && isColorUsed;
+                if (isNeedMain || pUseStackFunction->IsVariableUsed(layer)) {
+                    preCode += GenerateTab(1);
+                    preCode += SR_FORMAT("var {} : vec4<f32>; /// location {}\n", layer.c_str(), outLocation);
+                }
+                ++outLocation;
+            }
+
+            preCode += GenerateTab(1);
+            preCode += "var fsOut : FragmentOutput;\n";
+
+            if (isFragCoordUsed) {
+                preCode += GenerateTab(1);
+                preCode += "FRAG_COORD = gl_FragCoord;\n\n";
+            }
+
+            if (isColorUsed) {
+                postCode += GenerateTab(1);
+                postCode += SR_SRSL_MAIN_OUT_LAYER;
+                postCode += " = COLOR;\n";
+            }
+
+            /// color buffer pass code
+            if (isColorPassDefined) {
+                const bool discardExists = pShader->GetAnalyzedTree()->pLexicalTree->FindFunction("fragment_color_buffer_discard") != nullptr;
+                if (discardExists) {
+                    postCode += GenerateTab(1);
+                    postCode += "fragment_color_buffer_discard();\n";
+                }
+                preCode += GenerateTab(1);
+                preCode += "COLOR = vec4<f32>({}, 1.0);\n"_format(SHADER_PC_COLOR_BUFFER_VALUE);
+            }
+            else if (isCascadedMapPassDefined) {
+                const bool discardExists = pShader->GetAnalyzedTree()->pLexicalTree->FindFunction("fragment_depth_buffer_discard") != nullptr;
+                if (discardExists) {
+                    postCode += GenerateTab(1);
+                    postCode += "fragment_depth_buffer_discard();\n";
+                }
+            }
+
+            outLocation = 0;
+            for (auto&& layer : SR_SRSL_DEFAULT_OUT_LAYERS) {
+                const bool isNeedMain = layer == SR_SRSL_MAIN_OUT_LAYER && isColorUsed;
+                if (isNeedMain || pUseStackFunction->IsVariableUsed(layer)) {
+                    if (pShader->IsMacroDefined(SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[outLocation])) {
+                        postCode += GenerateTab(1);
+                        postCode += SR_FORMAT("fsOut.{} = {};\n", layer.c_str(), layer.c_str());
+                    }
+                }
+                ++outLocation;
+            }
+
+            postCode += GenerateTab(1);
+            postCode += "return fsOut;\n";
+
+            code += GenerateFunction(pStageFunction, 0, std::string_view(), preCode, postCode);
+
+            return code;
+        }
+
+        std::optional<std::string_view> GenerateComputeStage(const SRSLShader* pShader, SRSLResult& result) {
+            static std::string code;
+            static std::string preCode;
+            static std::string preArgs;
+
+            code.clear();
+            preCode.clear();
+            preArgs.clear();
+
+            auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(ShaderStage::Compute);
+            auto&& pStageFunction = pShader->GetAnalyzedTree()->pLexicalTree->FindFunction(entryPoint);
+            auto&& pUseStackFunction = pShader->GetUseStack()->FindFunction(entryPoint);
+            if (!pStageFunction || !pUseStackFunction) {
+                return std::optional<std::string_view>();
+            }
+
+            if (pShader->GetUseStack()->IsVariableUsedInEntryPoints("GLOBAL_INVOCATION_ID")) {
+                preCode += GenerateTab(1);
+                preCode += "var GLOBAL_INVOCATION_ID : vec3<u32> = global_id;\n";
+
+                if (!preArgs.empty()) {
+                    preArgs += ", ";
+                }
+                preArgs += "@builtin(global_invocation_id) global_id : vec3<u32>";
+            }
+
+            if (pShader->GetUseStack()->IsVariableUsedInEntryPoints("WORK_GROUP_ID")) {
+                preCode += GenerateTab(1);
+                preCode += "var WORK_GROUP_ID : vec<u32> = workgroup_id;\n";
+
+                if (!preArgs.empty()) {
+                    preArgs += ", ";
+                }
+                preArgs += "@builtin(workgroup_id) workgroup_id : vec3<u32>";
+            }
+
+            if (pShader->GetUseStack()->IsVariableUsedInEntryPoints("NUM_WORK_GROUPS")) {
+                preCode += GenerateTab(1);
+                preCode += "var NUM_WORK_GROUPS : vec<u32> = num_workgroups;\n";
+
+                if (!preArgs.empty()) {
+                    preArgs += ", ";
+                }
+                preArgs += "@builtin(num_workgroups) num_workgroups : vec3<u32>";
+            }
+
+            if (pShader->GetUseStack()->IsVariableUsedInEntryPoints("LOCAL_INVOCATION_ID")) {
+                preCode += GenerateTab(1);
+                preCode += "var LOCAL_INVOCATION_ID : vec<u32> = local_id;\n";
+
+                if (!preArgs.empty()) {
+                    preArgs += ", ";
+                }
+                preArgs += "@builtin(local_invocation_id) local_id : vec3<u32>";
+            }
+
+            if (pShader->GetUseStack()->IsVariableUsedInEntryPoints("LOCAL_INVOCATION_INDEX")) {
+                preCode += GenerateTab(1);
+                preCode += "var LOCAL_INVOCATION_INDEX : u32 = local_index;\n";
+
+                if (!preArgs.empty()) {
+                    preArgs += ", ";
+                }
+                preArgs += "@builtin(local_invocation_index) local_index : u32";
+            }
+
+            code = GenerateStage(pShader, result, ShaderStage::Compute, preCode);
+            code += GenerateFunction(pStageFunction, 0, std::string_view(), preCode);
+
+            return code;
         }
     }
 
@@ -308,18 +468,49 @@ namespace SR_SRSL_NS {
             code += "\n";
         }
 
+        auto&& fragmentEntryPoint = SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment);
+        auto&& pFragmentStageFunction = pShader->GetAnalyzedTree()->pLexicalTree->FindFunction(fragmentEntryPoint);
+
+        if (pFragmentStageFunction) {
+            code += "struct FragmentOutput {\n";
+            uint64_t outLocation = 0;
+            for (auto&& layer : SR_SRSL_DEFAULT_OUT_LAYERS) {
+                if (pShader->IsMacroDefined(SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[outLocation])) {
+                    code += "\t@location({}) {} : vec4<f32>,\n"_format(outLocation, layer.c_str());
+                }
+                ++outLocation;
+            }
+            code += "};\n\n";
+        }
+
+        auto&& pFragmentUseStackFunction = pShader->GetUseStack()->FindFunction(fragmentEntryPoint);
+        if (pFragmentStageFunction && pFragmentUseStackFunction) {
+            const bool isColorPassDefined = pShader->IsMacroDefined(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
+            const bool isColorUsed = isColorPassDefined || pFragmentUseStackFunction->IsVariableUsed("COLOR");
+            const bool isFragCoordUsed = pFragmentUseStackFunction->IsVariableUsed("FRAG_COORD");
+
+            if (isColorUsed) {
+                code += "var<private> COLOR : vec4<f32>;\n\n";
+            }
+
+            if (isFragCoordUsed) {
+                code += "var<private> FRAG_COORD : vec4<f32>;\n\n";
+            }
+        }
+
         if (auto&& stageCode = WGSLDetail::GenerateVertexStage(pShader, result)) {
             code += stageCode.value();
+            code += "\n";
         }
 
-        /*if (auto&& code = GenerateFragmentStage()) {
-            stages[ShaderStage::Fragment] = code.value();
+        if (auto&& stageCode = WGSLDetail::GenerateFragmentStage(pShader, result)) {
+            code += stageCode.value();
+            code += "\n";
         }
 
-        if (auto&& code = GenerateComputeStage()) {
-            stages[ShaderStage::Compute] = code.value();
+        if (auto&& stageCode = WGSLDetail::GenerateComputeStage(pShader, result)) {
+            code += stageCode.value();
         }
-        */
 
         result = SR_UTILS_NS::Exchange(m_result, { });
 
