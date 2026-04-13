@@ -83,14 +83,6 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    //bool RenderStrategy::IsPriorityAllowed(int64_t priority) const {
-    //    return !m_priorityFilter || m_priorityFilter->IsPriorityAllowed(priority);
-    //}
-
-    //ShaderUseInfo RenderStrategy::ReplaceShader(RenderStrategy::ShaderPtr pShader) const {
-    //    return m_shaderReplace ? m_shaderReplace->ReplaceShader(pShader) : ShaderUseInfo(pShader);
-    //}
-
     void RenderStrategy::RemoveQueue(RenderQueue* pQueue) {
         for (auto pIt = m_queues.begin(); pIt != m_queues.end(); ++pIt) {
             if (pIt->Get() == pQueue) {
@@ -146,20 +138,8 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    void RenderStrategy::ForEachMesh(const SR_HTYPES_NS::Function<void(MeshPtr)>& callback) const {
-        SR_TRACY_ZONE;
-
-        //for (auto&& [layer, pStage] : m_layers) {
-        //    pStage->ForEachMesh(callback);
-        //}
-    }
-
     void RenderStrategy::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) const {
         SR_TRACY_ZONE;
-
-        ForEachMesh([resourceId](auto&& pMesh) {
-            pMesh->OnResourceReloaded(resourceId);
-        });
     }
 
     void RenderStrategy::SetDebugMode(bool value) {
@@ -189,7 +169,6 @@ namespace SR_GRAPH_NS {
         info.pMesh = pMesh;
         info.pMaterial = pMesh->GetMaterial().Get();
         info.layer = pMesh->GetMeshLayer();
-        info.pScene = GetRenderScene();
         info.poolId = m_meshPool.Add(pMesh);
 
         if (pMesh->IsSupportVBO()) {

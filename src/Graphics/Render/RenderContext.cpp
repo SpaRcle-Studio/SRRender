@@ -534,14 +534,6 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_hasChangedFrameBuffers) {
-            if (m_isOptimizedUpdateEnabled) {
-                for (auto&& [pScene, pRenderScene] : m_scenes) {
-                    pRenderScene->GetRenderStrategy()->ForEachMesh([](SR_GTYPES_NS::Mesh* pMesh) {
-                        pMesh->MarkUniformsDirty();
-                    });
-                }
-            }
-
             m_hasChangedFrameBuffers = false;
             m_isNeedGarbageCollection = true;
         }

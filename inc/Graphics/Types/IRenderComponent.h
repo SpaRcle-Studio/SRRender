@@ -23,6 +23,9 @@ namespace SR_GTYPES_NS {
     public:
         using RenderScenePtr = RenderScene*;
         using CameraPtr = SR_HTYPES_NS::SharedPtr<Camera>;
+        using DrawFn = void(*)();
+        using UpdateFn = void(*)();
+        using BindFn = void(*)();
 
     public:
         void OnEnable() override;
@@ -36,6 +39,8 @@ namespace SR_GTYPES_NS {
         mutable RenderScenePtr m_renderScene = nullptr;
 
     };
+
+    constexpr static size_t SIZE_OF_I_RENDER_COMPONENT_CLASS = sizeof(IRenderComponent);
 }
 
 #endif //SR_ENGINE_I_RENDER_COMPONENT_H

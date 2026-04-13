@@ -52,6 +52,8 @@ namespace SR_GTYPES_NS {
         SR_VIRTUAL_PROPERTY
 
     };
+
+    constexpr static size_t SIZE_OF_SKINNED_MESH_CLASS = sizeof(SkinnedMesh);
 }
 
 #endif //SR_ENGINE_GRAPHICS_SKINNED_MESH_H

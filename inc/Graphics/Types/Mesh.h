@@ -37,6 +37,16 @@ namespace SR_GRAPH_NS {
 namespace SR_GTYPES_NS {
     class Shader;
 
+    namespace Details {
+        struct MeshInternalData {
+            SR_MATH_NS::AABB aabb;
+            SR_UTILS_NS::VertexLayoutDescription vertexLayoutDescription;
+            std::optional<MeshRegistrationInfo> registrationInfo;
+            uint32_t materialRegisterId = SR_ID_INVALID;
+            MeshRenderQueues renderQueues;
+        };
+    }
+
     /// @abstract
     class Mesh : public SR_GTYPES_NS::IRenderComponent {
         SR_CLASS()
@@ -61,14 +71,6 @@ namespace SR_GTYPES_NS {
         static Mesh::Ptr Load(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom name);
 
     public:
-        void OnDestroy() override;
-        void OnMatrixDirty() override;
-        void OnMaskDirty() override;
-        void OnLayerChanged() override;
-        void OnPriorityChanged() override;
-        void OnEnable() override;
-        void OnDisable() override;
-
         SR_NODISCARD virtual int32_t GetIBO() { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t GetVBO() { return SR_ID_INVALID; }
 
@@ -88,8 +90,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD MaterialPtr& GetMaterial() noexcept { return m_material; }
         SR_NODISCARD int32_t GetVirtualUBO() const { return m_virtualUBO; }
         SR_NODISCARD bool IsWaitReRegister() const noexcept { return m_isWaitReRegister; }
-        SR_NODISCARD bool IsMeshRegistered() const noexcept { return m_registrationInfo.has_value(); }
-        SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept { return m_registrationInfo.value(); }
+        SR_NODISCARD bool IsMeshRegistered() const noexcept;
+        SR_NODISCARD const MeshRegistrationInfo& GetMeshRegistrationInfo() const noexcept;
         SR_NODISCARD RenderQueues& GetRenderQueues() noexcept;
         SR_NODISCARD bool IsCalculated() const noexcept { return m_isCalculated; }
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
@@ -102,10 +104,8 @@ namespace SR_GTYPES_NS {
 
         void SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description);
 
-        void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) { m_registrationInfo = info; }
+        void SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info);
         void SetPipeline(Pipeline* pPipeline) { m_pipeline = pPipeline; }
-
-        virtual void SetMatrix(const SR_MATH_NS::Matrix4x4& matrix);
 
         SR_NODISCARD virtual const SR_MATH_NS::Matrix4x4& GetMatrix() const;
 
@@ -129,14 +129,24 @@ namespace SR_GTYPES_NS {
         void SetMaterial(const MaterialPtr& pMaterial);
         void SetMaterial(const SR_UTILS_NS::Path& path);
 
+    protected:
+        void OnDestroy() override;
+        void OnMatrixDirty() override;
+        void OnMaskDirty() override;
+        void OnLayerChanged() override;
+        void OnPriorityChanged() override;
+        void OnEnable() override;
+        void OnDisable() override;
+
         void SetErrorsClean() { m_hasErrors = false; }
 
-    protected:
         virtual void FreeVMemory();
         virtual bool Calculate();
 
+    private:
+        Details::MeshInternalData& GetInternalData() const;
+
     protected:
-        SR_HTYPES_NS::RawPointerHolder<RenderQueues> m_pRenderQueues;
         Pipeline* m_pipeline = nullptr;
         int32_t m_virtualUBO = SR_ID_INVALID;
         int32_t m_virtualDescriptor = SR_ID_INVALID;
@@ -146,28 +156,23 @@ namespace SR_GTYPES_NS {
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(indicesCount) @getter(GetIndicesCount) @readOnly @dontSave @debugOnly
         SR_VIRTUAL_PROPERTY
-        /// @property @setter(SetMaterial) @getter(GetMaterial) @inspector(MaterialPropertyDrawer)
-        MaterialPtr m_material;
-        /// @property @readOnly @dontSave @debugOnly
-        bool m_isWaitReRegister = false;
         /// @virtualProperty(isRegistered) @getter(IsMeshRegistered) @readOnly @dontSave @debugOnly
         SR_VIRTUAL_PROPERTY
-        /// @property @readOnly @dontSave @debugOnly
-        bool m_isCalculated = false;
-        /// @property @readOnly @dontSave @debugOnly
-        bool m_hasErrors = false;
-        /// @property @readOnly @dontSave @debugOnly
-        bool m_dirtyMaterial = false;
+        /// @property @setter(SetMaterial) @getter(GetMaterial) @inspector(MaterialPropertyDrawer)
+        MaterialPtr m_material;
+
+        bool m_isCalculated          : 1 = false;
+        bool m_hasErrors             : 1 = false;
+        bool m_dirtyMaterial         : 1 = false;
 
     private:
+        mutable bool m_isAABBDirty   : 1 = true;
+        mutable bool m_isMaskDirty   : 1 = true;
+        bool m_isDestroyingState     : 1 = false;
+        bool m_isWaitReRegister      : 2 = false;
+
+        mutable SR_HTYPES_NS::RawPointerHolder<Details::MeshInternalData> m_pInternalData;
         mutable SR_UTILS_NS::UI::MaskInfo m_maskInfo;
-        mutable SR_MATH_NS::AABB m_aabb;
-        mutable bool m_isAABBDirty = true;
-        mutable bool m_isMaskDirty = true;
-        bool m_isDestroyingState = false;
-        std::optional<MeshRegistrationInfo> m_registrationInfo;
-        uint32_t m_materialRegisterId = SR_ID_INVALID;
-        SR_UTILS_NS::VertexLayoutDescription m_vertexLayoutDescription;
 
     };
 

@@ -36,7 +36,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom layer;
         std::optional<int32_t> VBO;
         std::optional<int64_t> priority;
-        SR_GRAPH_NS::RenderScene* pScene = nullptr;
+        //SR_GRAPH_NS::RenderScene* pScene = nullptr;
     };
 
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_MESH_FORMATS = "obj,pmx,fbx,blend,stl,dae,3ds";

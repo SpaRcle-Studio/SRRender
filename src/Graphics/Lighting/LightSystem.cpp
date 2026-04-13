@@ -79,9 +79,6 @@ namespace SR_GRAPH_NS {
         }
 
         m_renderScene->SetDirty();
-        m_renderScene->GetRenderStrategy()->ForEachMesh([](SR_GTYPES_NS::Mesh* pMesh) {
-            pMesh->MarkUniformsDirty();
-        });
     }
 
     const DirectionalLightParams& LightSystem::GetDirectionalLightParams() const noexcept {

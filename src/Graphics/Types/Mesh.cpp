@@ -30,7 +30,7 @@ namespace SR_GTYPES_NS {
     Mesh::~Mesh() {
         SRAssert(m_isDestroyingState || !m_isCalculated);
         SRAssert(m_virtualUBO == SR_ID_INVALID);
-        SRAssert(!m_registrationInfo.has_value());
+        SRAssert(!GetInternalData().registrationInfo.has_value());
         SRAssert2(!m_isWaitReRegister, "Application may will crash if you delete mesh with waiting re-register!");
     }
 
@@ -82,10 +82,6 @@ namespace SR_GTYPES_NS {
         }
 
         return pMesh;
-    }
-
-    void Mesh::SetMatrix(const SR_MATH_NS::Matrix4x4& /* matrix */) {
-        MarkUniformsDirty();
     }
 
     const SR_MATH_NS::Matrix4x4& Mesh::GetMatrix() const {
@@ -165,17 +161,18 @@ namespace SR_GTYPES_NS {
         MarkMaterialDirty();
         SetErrorsClean();
 
+        auto&& internalData = GetInternalData();
         if (m_material) {
-            m_material->UnregisterMesh(&m_materialRegisterId);
+            m_material->UnregisterMesh(&internalData.materialRegisterId);
         }
 
         m_material = pMaterial;
 
         if (m_material) {
-            m_materialRegisterId = m_material->RegisterMesh(this);
+            internalData.materialRegisterId = m_material->RegisterMesh(this);
         }
 
-        if (m_registrationInfo.has_value()) {
+        if (internalData.registrationInfo.has_value()) {
             ReRegisterMesh();
         }
     }
@@ -279,11 +276,10 @@ namespace SR_GTYPES_NS {
     }
 
     SR_UTILS_NS::StringAtom Mesh::GetMeshLayer() const {
-        if (!m_sceneObject) {
-            return SR_UTILS_NS::StringAtom();
+        if (auto&& pSO = GetSceneObject()) {
+            return pSO->GetLayer();
         }
-
-        return m_sceneObject->GetLayer();
+        return SR_UTILS_NS::StringAtom();
     }
 
     bool Mesh::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) {
@@ -351,18 +347,20 @@ namespace SR_GTYPES_NS {
     }
 
     const SR_MATH_NS::AABB& Mesh::GetAABB() const {
+        auto&& internalData = GetInternalData();
         if (m_isAABBDirty) {
             if (auto&& pTransform = GetTransform()) {
-                m_aabb = pTransform->GetAABB();
+                internalData.aabb = pTransform->GetAABB();
                 m_isAABBDirty = false;
             }
         }
-        return m_aabb;
+        return internalData.aabb;
     }
 
     void Mesh::UnRegisterMesh() {
         if (IsMeshRegistered()) {
-            m_registrationInfo.value().pScene->Remove(this);
+            //GetInternalData().registrationInfo.value().pScene->Remove(this);
+            GetRenderScene()->Remove(this);
         }
     }
 
@@ -377,17 +375,19 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        if (m_registrationInfo.has_value()) {
+        auto&& pRenderScene = TryGetRenderScene();
+        auto&& internalData = GetInternalData();
+        if (internalData.registrationInfo.has_value()) {
             if (m_isWaitReRegister) {
                 return;
             }
 
             m_isWaitReRegister = true;
 
-            const auto pRenderScene = m_registrationInfo.value().pScene;
-            pRenderScene->ReRegister(m_registrationInfo.value());
+            //const auto pRenderScene = internalData.registrationInfo.value().pScene;
+            pRenderScene->ReRegister(internalData.registrationInfo.value());
         }
-        else if (auto&& pRenderScene = TryGetRenderScene()) {
+        else if (pRenderScene) {
             pRenderScene->Register(this);
         }
     }
@@ -397,10 +397,8 @@ namespace SR_GTYPES_NS {
 
         const bool isRegistered = IsMeshRegistered();
         if (isRegistered) {
-            //for (auto& renderQueue : m_renderQueues) {
-            //    renderQueue.inUpdateQueue = false;
-            //}
-            m_registrationInfo.value().pScene->Remove(this);
+            //GetInternalData().registrationInfo.value().pScene->Remove(this);
+            GetRenderScene()->Remove(this);
         }
 
         FreeVMemory();
@@ -442,25 +440,40 @@ namespace SR_GTYPES_NS {
     }
 
     const SR_UTILS_NS::VertexLayoutDescription& Mesh::GetVertexLayoutDescription() const noexcept {
-        return m_vertexLayoutDescription;
+        return GetInternalData().vertexLayoutDescription;
     }
 
     void Mesh::SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description) {
-        m_vertexLayoutDescription = description;
+        GetInternalData().vertexLayoutDescription = description;
         m_isCalculated = false;
     }
 
     Mesh::RenderQueues& Mesh::GetRenderQueues() noexcept {
-        if (!m_pRenderQueues) {
-            SR_TRACY_ZONE;
-            m_pRenderQueues = new RenderQueues();
-        }
-        return *m_pRenderQueues;
+        return GetInternalData().renderQueues;
     }
 
     const SR_UTILS_NS::VertexLayoutDescription& Mesh::GetShaderVertexLayoutDescription() const noexcept {
         static SR_UTILS_NS::VertexLayoutDescription emptyDescription;
         return emptyDescription;
+    }
+
+    void Mesh::SetMeshRegistrationInfo(const std::optional<MeshRegistrationInfo>& info) {
+        GetInternalData().registrationInfo = info;
+    }
+
+    Details::MeshInternalData& Mesh::GetInternalData() const {
+        if (!m_pInternalData) {
+            m_pInternalData = new Details::MeshInternalData();
+        }
+        return *m_pInternalData;
+    }
+
+    bool Mesh::IsMeshRegistered() const noexcept {
+        return GetInternalData().registrationInfo.has_value();
+    }
+
+    const MeshRegistrationInfo& Mesh::GetMeshRegistrationInfo() const noexcept {
+        return GetInternalData().registrationInfo.value();
     }
 }
 
