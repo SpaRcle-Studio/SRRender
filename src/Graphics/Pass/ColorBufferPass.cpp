@@ -21,14 +21,14 @@ namespace SR_GRAPH_NS {
     void ColorBufferRenderQueue::CustomDrawMesh(const MeshInfo& info) {
         auto pColorBuffer = static_cast<ColorBufferPass*>(GetMeshDrawerPass());
         pColorBuffer->IncrementColorIndex();
-        pColorBuffer->SetMeshIndex(info.pMesh);
+        pColorBuffer->SetMeshIndex(info.pObject);
         info.pShader->SetConstVec3(SHADER_PC_COLOR_BUFFER_VALUE, pColorBuffer->GetMeshColor());
-        info.pMesh->Draw();
+        info.pObject->Draw();
     }
 
-    void ColorBufferPass::UseUniforms(SR_GTYPES_NS::Shader& shader, MeshPtr pMesh) {
+    void ColorBufferPass::UseUniforms(SR_GTYPES_NS::Shader& shader, SR_GTYPES_NS::IRenderComponent* pObject) {
         SR_TRACY_ZONE;
-        Super::UseUniforms(shader, pMesh);
+        Super::UseUniforms(shader, pObject);
     }
 
     MeshDrawerPass::RenderQueuePtr ColorBufferPass::AllocateRenderQueue(uint32_t index) {

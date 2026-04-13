@@ -29,7 +29,6 @@ namespace SR_GTYPES_NS {
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
         SR_NODISCARD bool IsCalculatable() const override;
-        SR_NODISCARD bool IsSupportVBO() const override;
 
         bool Export(const SR_UTILS_NS::Path& path) const;
 

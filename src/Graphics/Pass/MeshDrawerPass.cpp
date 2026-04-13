@@ -99,14 +99,14 @@ namespace SR_GRAPH_NS {
         return changed;
     }
 
-    void MeshDrawerPass::UseUniforms(SR_GTYPES_NS::Shader& shader, MeshPtr pMesh) {
+    void MeshDrawerPass::UseUniforms(SR_GTYPES_NS::Shader& shader, SR_GTYPES_NS::IRenderComponent* pObject) {
         SR_TRACY_ZONE;
 
         if (m_uniforms.material.useMaterial) {
-            pMesh->UseMaterial(shader);
+            pObject->UseMaterial(shader);
         }
         else if (m_uniforms.material.modelMatrix) {
-            pMesh->UseModelMatrix(shader);
+            pObject->UseModelMatrix(shader);
         }
     }
 

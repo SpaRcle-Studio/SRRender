@@ -11,6 +11,10 @@
 #include <Graphics/SRSL/ShaderType.h>
 #include <Graphics/Loaders/SRSL.h>
 
+namespace SR_GTYPES_NS {
+    class IRenderComponent;
+}
+
 namespace SR_GRAPH_NS {
     struct Frustum;
 
@@ -78,7 +82,7 @@ namespace SR_GRAPH_NS {
 
         void SetRenderTechnique(SR_GRAPH_NS::IRenderTechnique* pRenderTechnique) override;
 
-        virtual void UseUniforms(SR_GTYPES_NS::Shader& shader, MeshPtr pMesh);
+        virtual void UseUniforms(SR_GTYPES_NS::Shader& shader, SR_GTYPES_NS::IRenderComponent* pObject);
         virtual void UseSharedUniforms(SR_GTYPES_NS::Shader& shader);
         virtual void UseConstants(SR_GTYPES_NS::Shader& shader);
         void UseSamplers(SR_GTYPES_NS::Shader& shader) override;

@@ -27,7 +27,7 @@ namespace SR_GRAPH_NS {
         m_renderContext = pStrategy->GetRenderContext();
         m_renderScene = pStrategy->GetRenderScene();
         m_pipeline = m_renderContext->GetPipeline().Get();
-        m_meshes.reserve(512);
+        m_renderObjects.reserve(512);
         m_queues.reserve(32);
     }
 
@@ -38,12 +38,12 @@ namespace SR_GRAPH_NS {
 
         for (auto&& [layer, queue] : m_queues) {
             for (auto&& meshInfo : queue) {
-                meshInfo.pMesh->GetRenderQueues().Remove(this);
+                meshInfo.pObject->GetRenderQueues().Remove(this);
             }
         }
     }
 
-    void RenderQueue::Register(const MeshRegistrationInfo& info) {
+    void RenderQueue::Register(const RenderObjectRegistrationInfo& info) {
         SR_TRACY_ZONE;
 
         if (!IsSuitable(info)) SR_UNLIKELY_ATTRIBUTE {
@@ -52,43 +52,43 @@ namespace SR_GRAPH_NS {
 
         PrepareLayers();
 
-        auto&& pNewQueue = info.pMesh->GetRenderQueues().Add(this);
+        auto&& pNewQueue = info.pObject->GetRenderQueues().Add(this);
         if (!pNewQueue) SR_UNLIKELY_ATTRIBUTE {
             SRHalt("RenderQueue::Register() : mesh already registered!");
             return;
         }
 
-        if (info.pMaterial) {
+        if (info.internal.pMaterial) {
             m_cachedShaderParams.SetFrom(m_meshDrawerPass->GetShaderParams());
-            m_cachedShaderParams.SetVertexLayoutDescription(info.pMesh->GetShaderVertexLayoutDescription());
-            pNewQueue->pShader = info.pMaterial->GetShader(m_cachedShaderParams);
+            m_cachedShaderParams.SetVertexLayoutDescription(info.pObject->GetShaderVertexLayoutDescription());
+            pNewQueue->pShader = info.internal.pMaterial->GetShader(m_cachedShaderParams);
         }
         else {
             pNewQueue->pShader = nullptr;
         }
 
         MeshInfo meshInfo;
-        meshInfo.pMesh = info.pMesh;
+        meshInfo.pObject = info.pObject;
         meshInfo.pShader = pNewQueue->pShader;
         meshInfo.pInfo = pNewQueue;
-        meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
-        meshInfo.priority = info.priority.value_or(0);
+        meshInfo.vbo = info.internal.VBO;
+        meshInfo.priority = info.internal.priority.value_or(0);
 
         for (auto&& [layer, queue] : m_queues) {
-            if (layer == info.layer) {
+            if (layer == info.internal.layer) {
                 queue.Add(meshInfo);
                 break;
             }
         }
     }
 
-    void RenderQueue::UnRegister(const MeshRegistrationInfo& info) {
+    void RenderQueue::UnRegister(const RenderObjectRegistrationInfo& info) {
         SR_TRACY_ZONE;
 
         RenderQueue::Queue* pQueue = nullptr;
 
         for (auto&& [layer, queue] : m_queues) {
-            if (layer == info.layer) {
+            if (layer == info.internal.layer) {
                 pQueue = &queue;
                 break;
             }
@@ -98,18 +98,18 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (info.priority.has_value() && !m_meshDrawerPass->IsPriorityAllowed(info.priority.value())) {
+        if (info.internal.priority.has_value() && !m_meshDrawerPass->IsPriorityAllowed(info.internal.priority.value())) {
             return;
         }
 
-        auto&& queues = info.pMesh->GetRenderQueues();
+        auto&& queues = info.pObject->GetRenderQueues();
 
         auto removedInfo = queues.Remove(this);
 
         MeshInfo meshInfo;
-        meshInfo.pMesh = info.pMesh;
-        meshInfo.vbo = info.VBO.has_value() ? info.VBO.value() : SR_ID_INVALID;
-        meshInfo.priority = info.priority.value_or(0);
+        meshInfo.pObject = info.pObject;
+        meshInfo.vbo = info.internal.VBO;
+        meshInfo.priority = info.internal.priority.value_or(0);
         meshInfo.pShader = removedInfo.pShader;
 
         if (!pQueue->Remove(meshInfo)) {
@@ -117,9 +117,9 @@ namespace SR_GRAPH_NS {
         }
 
         if (removedInfo.inUpdateQueue) {
-            for (auto it = m_meshes.begin(); it != m_meshes.end();) {
-                if (it->pMesh == meshInfo.pMesh) {
-                    it = m_meshes.erase(it);
+            for (auto it = m_renderObjects.begin(); it != m_renderObjects.end();) {
+                if (it->pObject == meshInfo.pObject) {
+                    it = m_renderObjects.erase(it);
                 } else {
                     ++it;
                 }
@@ -170,8 +170,8 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void RenderQueue::OnMeshDirty(SR_GTYPES_NS::Mesh* pMesh, RenderQueueInfo* pInfo) {
-        m_meshes.emplace_back(MeshShaderPair { .pMesh = pMesh, .pInfo = pInfo });
+    void RenderQueue::OnObjectDirty(SR_GTYPES_NS::IRenderComponent* pObject, RenderQueueInfo* pInfo) {
+        m_renderObjects.emplace_back(MeshShaderPair { .pObject = pObject, .pInfo = pInfo });
     }
 
     void RenderQueue::UpdateShaders() {
@@ -191,13 +191,13 @@ namespace SR_GRAPH_NS {
     void RenderQueue::UpdateMeshes() {
         SR_TRACY_ZONE;
 
-        m_tempMeshes.clear();
+        m_tempRenderObjects.clear();
 
         const uint8_t frameIndex = m_pipeline->GetCurrentImageIndex();
         const uint8_t maxFrames = m_pipeline->GetSwapchainImagesCount();
 
-        auto pStart = m_meshes.data();
-        auto pEnd = pStart + m_meshes.size();
+        auto pStart = m_renderObjects.data();
+        auto pEnd = pStart + m_renderObjects.size();
 
         for (auto* pElement = pStart; pElement < pEnd; ++pElement) {
             if (!pElement->pInfo->isVisible) SR_UNLIKELY_ATTRIBUTE {
@@ -205,7 +205,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            const auto pMesh = pElement->pMesh;
+            const auto pObject = pElement->pObject;
 
             bool isNeedReUpdate = false;
 
@@ -223,10 +223,10 @@ namespace SR_GRAPH_NS {
                 pElement->pInfo->inUpdateQueue = false;
             }
             else {
-                m_tempMeshes.emplace_back(*pElement);
+                m_tempRenderObjects.emplace_back(*pElement);
             }
 
-            auto&& virtualUbo = pMesh->GetVirtualUBO();
+            auto&& virtualUbo = pObject->GetVirtualUBO();
             if (virtualUbo == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
@@ -236,26 +236,26 @@ namespace SR_GRAPH_NS {
 
             /// Если меш не был отрисован, то бинд не пройдет
             if (m_uboManager.BindNoDublicateUBO(virtualUbo) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
-                m_meshDrawerPass->UseUniforms(*pShader, pMesh);
+                m_meshDrawerPass->UseUniforms(*pShader, pObject);
                 SR_MAYBE_UNUSED_VAR pShader->Flush();
             }
         }
 
-        m_meshes.clear();
+        m_renderObjects.clear();
 
         if (m_multiFrameMode) {
-            std::swap(m_tempMeshes, m_meshes);
+            std::swap(m_tempRenderObjects, m_renderObjects);
         }
     }
 
-    bool RenderQueue::IsSuitable(const MeshRegistrationInfo &info) const {
+    bool RenderQueue::IsSuitable(const RenderObjectRegistrationInfo &info) const {
         SR_TRACY_ZONE;
 
-        if (!m_meshDrawerPass->IsLayerAllowed(info.layer)) SR_UNLIKELY_ATTRIBUTE {
+        if (!m_meshDrawerPass->IsLayerAllowed(info.internal.layer)) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
-        if (info.priority.has_value() && !m_meshDrawerPass->IsPriorityAllowed(info.priority.value())) SR_UNLIKELY_ATTRIBUTE {
+        if (info.internal.priority.has_value() && !m_meshDrawerPass->IsPriorityAllowed(info.internal.priority.value())) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
 
@@ -290,7 +290,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            if (info.pMesh->IsWaitReRegister()) SR_UNLIKELY_ATTRIBUTE {
+            if (info.pObject->IsWaitReRegister()) SR_UNLIKELY_ATTRIBUTE {
                 pElement->state = QUEUE_STATE_WAIT_REGISTER;
                 ++pElement;
                 continue;
@@ -302,7 +302,7 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
-            const bool invalidVBO = info.vbo == SR_INVALID_VBO && info.pMesh->IsSupportVBO();
+            const bool invalidVBO = info.vbo == SR_INVALID_VBO;
             if (invalidVBO) SR_UNLIKELY_ATTRIBUTE {
                 pElement->state = QUEUE_STATE_VBO_ERROR;
                 ++pElement;
@@ -315,7 +315,7 @@ namespace SR_GRAPH_NS {
                 currentVBO = SR_ID_INVALID;
                 if (!shaderOk) SR_UNLIKELY_ATTRIBUTE {
                     pElement->state = QUEUE_STATE_SHADER_ERROR;
-                    pElement->pMesh->MarkMaterialDirty();
+                    pElement->pObject->MarkMaterialDirty();
                     pElement = FindNextShader(queue, pElement);
                     continue;
                 }
@@ -327,15 +327,15 @@ namespace SR_GRAPH_NS {
             }
 
             if (info.vbo != currentVBO) SR_UNLIKELY_ATTRIBUTE {
-                if (!info.pMesh->BindMesh()) SR_UNLIKELY_ATTRIBUTE {
+                if (!info.pObject->Bind()) SR_UNLIKELY_ATTRIBUTE {
                     pElement->state = QUEUE_STATE_VBO_ERROR;
                     pElement = FindNextVBO(queue, pElement);
                     continue;
                 }
-                currentVBO = info.vbo;
+                currentVBO = info.vbo.value_or(SR_INVALID_VBO);
             }
 
-            const SR_UTILS_NS::UI::MaskInfo& mask = info.pMesh->GetMaskInfo();
+            const SR_UTILS_NS::UI::MaskInfo& mask = info.pObject->GetMaskInfo();
             const bool hasMask = mask.hasMask && mask.scissor;
             if (hasMask) {
                 SR_MATH_NS::FVector2 multiplier = viewportSize.CastToFloat() / mask.referenceSize.CastToFloat();
@@ -350,7 +350,7 @@ namespace SR_GRAPH_NS {
                 CustomDrawMesh(info);
             }
             else {
-                info.pMesh->Draw();
+                info.pObject->Draw();
             }
 
             if (hasMask) {
@@ -472,11 +472,11 @@ namespace SR_GRAPH_NS {
     void RenderQueue::UpdateAllMeshes() {
         SR_TRACY_ZONE;
 
-        m_meshes.clear();
+        m_renderObjects.clear();
 
         for (auto&& [layer, queue] : m_queues) {
             for (auto&& meshInfo : queue) {
-                auto&& virtualUbo = meshInfo.pMesh->GetVirtualUBO();
+                auto&& virtualUbo = meshInfo.pObject->GetVirtualUBO();
                 if (virtualUbo == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                     continue;
                 }
@@ -485,7 +485,7 @@ namespace SR_GRAPH_NS {
 
                 /// Если меш не был отрисован, то бинд не пройдет
                 if (m_uboManager.BindNoDublicateUBO(virtualUbo) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
-                    m_meshDrawerPass->UseUniforms(*meshInfo.pShader, meshInfo.pMesh);
+                    m_meshDrawerPass->UseUniforms(*meshInfo.pShader, meshInfo.pObject);
                     SR_MAYBE_UNUSED_VAR meshInfo.pShader->Flush();
                 }
             }
@@ -505,13 +505,13 @@ namespace SR_GRAPH_NS {
             for (auto&& meshInfo : queue) {
                 bool isVisible = true;
 
-                const FrustumCullingType type = meshInfo.pMesh->GetFrustumCullingType();
+                const FrustumCullingType type = meshInfo.pObject->GetFrustumCullingType();
 
                 if (type == FrustumCullingType::None) {
                     /// nothing
                 }
                 else { /// TODO: support other types of frustum culling
-                    isVisible = frustum.IsAABBVisible(meshInfo.pMesh->GetAABB());
+                    isVisible = frustum.IsAABBVisible(meshInfo.pObject->GetAABB());
                 }
 
                 if (meshInfo.pInfo->isVisible != isVisible) {
@@ -519,7 +519,7 @@ namespace SR_GRAPH_NS {
                     if (isVisible) {
                         meshInfo.pInfo->dirtyUniformsFrames.set();
                         if (!meshInfo.pInfo->inUpdateQueue) {
-                            meshInfo.pInfo->pRenderQueue->OnMeshDirty(meshInfo.pMesh, meshInfo.pInfo);
+                            meshInfo.pInfo->pRenderQueue->OnObjectDirty(meshInfo.pObject, meshInfo.pInfo);
                         }
                     }
                     changed = true;
@@ -533,7 +533,7 @@ namespace SR_GRAPH_NS {
         return
             pShader == other.pShader &&
             vbo == other.vbo &&
-            pMesh == other.pMesh &&
+            pObject == other.pObject &&
             priority == other.priority;
     }
 
@@ -554,6 +554,6 @@ namespace SR_GRAPH_NS {
         }
 
         /// Если и VBO одинаковые, сравниваем указатели на меши
-        return left.pMesh < right.pMesh;
+        return left.pObject < right.pObject;
     }
 }

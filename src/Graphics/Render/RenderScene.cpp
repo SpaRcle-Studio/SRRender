@@ -258,36 +258,35 @@ namespace SR_GRAPH_NS {
         m_widgetManagers.emplace_back(pWidgetManager);
     }
 
-    void RenderScene::Register(RenderScene::MeshPtr pMesh) {
-        if (!pMesh) {
+    void RenderScene::Register(SR_GTYPES_NS::IRenderComponent* pObject) {
+        if (!pObject) {
             SRHalt("RenderScene::Register() : mesh is nullptr!");
             return;
         }
 
-        if (!pMesh->GetMaterial()) {
-            SetMeshMaterial(pMesh);
+        if (!pObject->GetMaterial()) {
+            SetObjectMaterial(pObject);
         }
 
-        if (!pMesh->GetMaterial()) {
+        if (!pObject->GetMaterial()) {
             SR_ERROR("RenderScene::Register() : mesh material and default material are nullptr!");
             return;
         }
 
-        if (!pMesh->GetMaterial()->IsValid()) {
+        if (!pObject->GetMaterial()->IsValid()) {
             SR_ERROR("RenderScene::Register() : mesh have invalid material!\n\tGameObject: {}",
-                 (pMesh->GetSceneObject() ? pMesh->GetSceneObject()->GetName() : "nullptr")
+                 (pObject->GetSceneObject() ? pObject->GetSceneObject()->GetName() : "nullptr")
             );
             return;
         }
 
-        if (auto&& pText = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh); pText && !pText->GetFont()) {
+        if (auto&& pText = dynamic_cast<SR_GTYPES_NS::Text*>(pObject); pText && !pText->GetFont()) {
             pText->SetFont("Engine/Fonts/CalibriL.ttf");
         }
 
         /// Меш мог быть зарегистрирован при инициализации дефолтных материалов
-        if (!pMesh->IsMeshRegistered()) {
-            pMesh->SetPipeline(GetPipeline().Get());
-            m_renderStrategy->RegisterMesh(pMesh);
+        if (!pObject->IsRenderObjectRegistered()) {
+            m_renderStrategy->Register(pObject);
         }
 
         SetDirty();
@@ -403,6 +402,10 @@ namespace SR_GRAPH_NS {
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Full) {
             SR_LOG("RenderScene::SortCameras() : cameras was sorted");
         }
+    }
+
+    const RenderScene::PipelinePtr& RenderScene::GetPipelineRef() const {
+        return GetContext()->GetPipeline();
     }
 
     const RenderScene::PipelinePtr& RenderScene::GetPipeline() const {
@@ -550,37 +553,37 @@ namespace SR_GRAPH_NS {
         return nullptr;
     }
 
-    void RenderScene::SetMeshMaterial(RenderScene::MeshPtr pMesh) {
-        auto&& pTransform = pMesh->GetTransform();
+    void RenderScene::SetObjectMaterial(SR_GTYPES_NS::IRenderComponent* pObject) {
+        auto&& pTransform = pObject->GetTransform();
         if (pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
-            if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh)) {
+            if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::Text*>(pObject)) {
                 UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
                 pMaterial->SetShader("Engine/Shaders/UI/text.srsl");
                 pText2D->SetMaterial(pMaterial.StaticCast<BaseMaterial>());
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultUIMaterial()) {
-                pMesh->SetMaterial(pDefaultMat);
+                pObject->SetMaterial(pDefaultMat);
             }
         }
         else {
-            if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::Text*>(pMesh)) {
+            if (auto&& pText3D = dynamic_cast<SR_GTYPES_NS::Text*>(pObject)) {
                 UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
                 pMaterial->SetShader("Engine/Shaders/UI/text.srsl");
                 pText3D->SetMaterial(pMaterial.StaticCast<BaseMaterial>());
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultMaterial()) {
-                pMesh->SetMaterial(pDefaultMat);
+                pObject->SetMaterial(pDefaultMat);
             }
         }
     }
 
-    void RenderScene::Remove(RenderScene::MeshPtr pMesh) {
-        m_renderStrategy->UnRegisterMesh(pMesh);
+    void RenderScene::Remove(SR_GTYPES_NS::IRenderComponent* pObject) {
+        m_renderStrategy->UnRegister(pObject);
         SetDirty();
     }
 
-    void RenderScene::ReRegister(const MeshRegistrationInfo& info) {
-        m_renderStrategy->ReRegisterMesh(info);
+    void RenderScene::ReRegister(const RenderObjectRegistrationInfo& info) {
+        m_renderStrategy->ReRegister(info);
         SetDirty();
     }
 }

@@ -60,7 +60,7 @@ namespace SR_GRAPH_NS {
         return SR_MATH_NS::FColor();
     }
 
-    SR_GTYPES_NS::Mesh* ColorBufferPassRequest::GetMesh(bool release) {
+    SR_GTYPES_NS::IRenderComponent* ColorBufferPassRequest::GetMesh(bool release) {
         SR_TRACY_ZONE;
         return m_pPass ? m_pPass->GetMeshByColor(FetchColor(release)) : nullptr;
     }
@@ -100,7 +100,7 @@ namespace SR_GRAPH_NS {
         DestroyRequests();
     }
 
-    void IColorBufferPass::SetMeshIndex(SR_GTYPES_NS::Mesh* pMesh) {
+    void IColorBufferPass::SetMeshIndex(SR_GTYPES_NS::IRenderComponent* pMesh) {
         SR_TRACY_ZONE;
 
         uint64_t colorIndex = m_colorId / m_multiplier;
@@ -124,7 +124,7 @@ namespace SR_GRAPH_NS {
     void IColorBufferPass::ClearTable() {
         SR_TRACY_ZONE;
 
-        memset(m_table.data(), 0, m_table.size() * sizeof(SR_GTYPES_NS::Mesh*));
+        memset(m_table.data(), 0, m_table.size() * sizeof(SR_GTYPES_NS::IRenderComponent*));
     }
 
     void IColorBufferPass::IncrementColorIndex() noexcept {
@@ -186,7 +186,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    SR_GTYPES_NS::Mesh* IColorBufferPass::GetMeshByColor(const SR_MATH_NS::FColor& color) const {
+    SR_GTYPES_NS::IRenderComponent* IColorBufferPass::GetMeshByColor(const SR_MATH_NS::FColor& color) const {
         SR_TRACY_ZONE;
 
         auto&& colorIndex = SR_MATH_NS::BGRToHEX(SR_MATH_NS::IVector3(

@@ -7,11 +7,13 @@
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Render/RenderTechnique.h>
+#include <Graphics/Render/RenderScene.h>
 
 #include <Utils/ECS/ComponentManager.h>
 #include <Utils/ECS/Transform3D.h>
 #include <Utils/Input/InputSystem.h>
 #include <Utils/DebugDraw.h>
+#include <Utils/World/Scene.h>
 
 #include <Enum/Axis.hpp>
 
@@ -273,26 +275,26 @@ namespace SR_GRAPH_UI_NS {
             m_activeOperation = m_hoveredOperation;
 
             auto&& translationNormal = SR_MATH_NS::CalcTranslationPlanNormal(
-                    m_modelMatrix,
-                    GetCamera()->GetCameraEye(),
-                    GetCamera()->GetCameraDir(),
-                    GetAxis()
+                m_modelMatrix,
+                pCamera->GetCameraEye(),
+                pCamera->GetCameraDir(),
+                GetAxis()
             );
             m_translationPlan = SR_MATH_NS::BuildPlan(m_modelMatrix.v.position, translationNormal);
 
             if (SR_MATH_NS::IsMaskIncludedSubMask(m_activeOperation, GizmoOperation::Rotate)) {
                 auto&& rotationNormal = IsLocal() ? SR_MATH_NS::CalcRotationPlanNormal(
-                        m_modelMatrix,
-                        GetCamera()->GetCameraDir(),
-                        GetAxis()
-                ) : SR_MATH_NS::CalcRotationPlanNormal(GetCamera()->GetCameraDir(), GetAxis());
+                    m_modelMatrix,
+                    pCamera->GetCameraDir(),
+                    GetAxis()
+                ) : SR_MATH_NS::CalcRotationPlanNormal(pCamera->GetCameraDir(), GetAxis());
 
                 m_rotationPlan = SR_MATH_NS::BuildPlan(m_modelMatrix.v.position, rotationNormal);
             }
 
-            auto&& screenRay = GetCamera()->GetScreenRay(mousePos, IsGizmo2DSpace());
+            auto&& screenRay = pCamera->GetScreenRay(mousePos, IsGizmo2DSpace());
 
-            const float_t screenFactor = GetCamera()->CalculateScreenFactor(m_modelMatrix, m_moveFactor, IsGizmo2DSpace());
+            const float_t screenFactor = pCamera->CalculateScreenFactor(m_modelMatrix, m_moveFactor, IsGizmo2DSpace());
 
             m_translationPlanOrigin = screenRay.IntersectPlane(m_translationPlan);
             m_relativeOrigin = (m_translationPlanOrigin - m_modelMatrix.v.position.XYZ()) * (1.f / screenFactor);
@@ -315,8 +317,9 @@ namespace SR_GRAPH_UI_NS {
             return;
         }
 
-        auto&& screenRay = GetCamera()->GetScreenRay(mousePos, IsGizmo2DSpace());
-        const float_t screenFactor = GetCamera()->CalculateScreenFactor(m_modelMatrix, m_moveFactor, IsGizmo2DSpace());
+        auto&& pCamera = GetCamera();
+        auto&& screenRay = pCamera->GetScreenRay(mousePos, IsGizmo2DSpace());
+        const float_t screenFactor = pCamera->CalculateScreenFactor(m_modelMatrix, m_moveFactor, IsGizmo2DSpace());
 
         auto&& newPos = screenRay.IntersectPlane(m_translationPlan);
         auto&& newOrigin = newPos - m_relativeOrigin * screenFactor;
@@ -433,6 +436,7 @@ namespace SR_GRAPH_UI_NS {
         SR_TRACY_ZONE;
 
         m_modelMatrix = GetGizmoMatrix();
+        auto&& pCamera = GetCamera();
 
         const bool isScaleOperation = m_activeOperation & GizmoOperation::Scale;
 
@@ -453,7 +457,7 @@ namespace SR_GRAPH_UI_NS {
 
         if (m_zoomFactor > 0.f) {
             auto&& modelMatrix = SR_MATH_NS::Matrix4x4::FromTranslate(GetTransform()->GetTranslation());
-            const float_t screenFactor = GetCamera()->CalculateScreenFactor(modelMatrix, m_zoomFactor, IsGizmo2DSpace());
+            const float_t screenFactor = pCamera->CalculateScreenFactor(modelMatrix, m_zoomFactor, IsGizmo2DSpace());
             GetTransform()->SetScale(screenFactor);
         }
 
@@ -470,7 +474,7 @@ namespace SR_GRAPH_UI_NS {
                 continue;
             }
 
-            auto&& direction = GetCamera()->GetPosition() - GetTransform()->GetTranslation();
+            auto&& direction = pCamera->GetPosition() - GetTransform()->GetTranslation();
 
             auto&& right = IsLocal() ? GetTransform()->Right() : SR_MATH_NS::FVector3::Right();
             auto&& up = IsLocal() ? GetTransform()->Up() : SR_MATH_NS::FVector3::Up();
@@ -534,5 +538,17 @@ namespace SR_GRAPH_UI_NS {
 
     void Gizmo::OnGizmoScaled(const SR_MATH_NS::FVector3& delta) {
         GetTransform()->Scale(delta);
+    }
+
+    SR_GTYPES_NS::Camera* Gizmo::GetCamera() const {
+        auto&& pScene = TryGetScene();
+        if (!pScene) {
+            return nullptr;
+        }
+
+        if (auto&& pRenderScene = pScene->GetDataStorage().GetPointer<RenderScene>()) {
+            return pRenderScene->GetMainCamera().Get();
+        }
+        return nullptr;
     }
 }

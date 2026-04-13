@@ -21,10 +21,6 @@
 #include <Codegen/Text.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    Text::Text()
-        : Super()
-    { }
-
     Text::~Text() {
         SetFont(SR_GTYPES_NS::Font::Ptr());
     }
@@ -35,7 +31,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Text::Calculate() {
-        if (IsCalculated()) {
+        if (m_isCalculated) {
             return true;
         }
 
@@ -48,17 +44,18 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        return Super::Calculate();
+        m_isCalculated = true;
+        return true;
     }
 
-    void Text::FreeVMemory() {
+    void Text::FreeVideoMemory() {
         SetFont(SR_GTYPES_NS::Font::Ptr());
 
         if (m_id != SR_ID_INVALID) {
-            SRVerifyFalse(!m_pipeline->FreeTexture(&m_id));
+            SRVerifyFalse(!GetPipeline()->FreeTexture(&m_id));
         }
 
-        Super::FreeVMemory();
+        Super::FreeVideoMemory();
     }
 
     void Text::OnTextDirty() {
@@ -75,7 +72,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_id != SR_ID_INVALID) {
-            SRVerifyFalse(!m_pipeline->FreeTexture(&m_id));
+            SRVerifyFalse(!GetPipeline()->FreeTexture(&m_id));
         }
 
         TextBuilder textBuilder(m_font.Get());
@@ -102,6 +99,7 @@ namespace SR_GTYPES_NS {
         textureCreateInfo.filter = TextureFilter::NEAREST;
         textureCreateInfo.addressMode = AddressMode::ClampToEdge;
         textureCreateInfo.mipLevels = 1;
+        textureCreateInfo.imageSize = textBuilder.GetSize();
         textureCreateInfo.cpuUsage = false;
         textureCreateInfo.alpha = true;
 
@@ -109,7 +107,7 @@ namespace SR_GTYPES_NS {
         EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
     #endif
 
-        m_id = m_pipeline->AllocateTexture(textureCreateInfo);
+        m_id = GetPipeline()->AllocateTexture(textureCreateInfo);
 
     #ifdef SR_USE_VULKAN
         EVK_POP_LOG_LEVEL();
@@ -129,8 +127,6 @@ namespace SR_GTYPES_NS {
     }
 
     void Text::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
-        shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-
         if (auto&& pTransformRect = SR_UTILS_NS::ExtractTransformAs<SR_UTILS_NS::TransformRect>(GetSceneObject().Get())) SR_LIKELY_ATTRIBUTE {
             SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
             shader.SetVec4(SHADER_NDC_RECT, layout.vec4);
@@ -143,7 +139,7 @@ namespace SR_GTYPES_NS {
 
     void Text::UseSamplers(SR_GTYPES_NS::Shader& shader) {
         shader.SetSampler2D(SHADER_TEXT_ATLAS_TEXTURE, m_id);
-        Mesh::UseSamplers(shader);
+        Super::UseSamplers(shader);
     }
 
     void Text::SetFont(const SR_GTYPES_NS::Font::Ptr& pFont) {
@@ -199,7 +195,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Text::IsCalculatable() const {
-        return Super::IsCalculatable() && !m_text.empty() && m_font;
+        return !m_text.empty() && m_font;
     }
 
     void Text::SetKerning(bool enabled) {
@@ -225,5 +221,15 @@ namespace SR_GTYPES_NS {
             return m_font->GetResourcePath();
         }
         return SR_UTILS_NS::Path();
+    }
+
+    void Text::Draw() {
+        SR_TRACY_ZONE;
+
+        if (!Calculate() || m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
+
+        DrawRenderObject(this, 4, m_virtualUBO, m_virtualDescriptor, m_dirtyMaterial, m_hasErrors);
     }
 }

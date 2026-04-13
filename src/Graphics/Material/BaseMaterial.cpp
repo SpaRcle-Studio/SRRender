@@ -17,7 +17,7 @@ namespace SR_GRAPH_NS {
     { }
 
     BaseMaterial::~BaseMaterial() {
-        SRAssert2(m_meshes.IsEmpty(), "Material is not unregistered from all meshes!");
+        SRAssert2(m_registerObjects.IsEmpty(), "Material is not unregistered from all render objects! Application may will crash!");
 
         for (auto&& pVariant : m_variants | std::views::values) {
             pVariant->RemoveUsePoint();
@@ -66,13 +66,13 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    uint32_t BaseMaterial::RegisterMesh(MeshPtr pMesh) {
-        SRAssert(pMesh);
-        return m_meshes.Add(pMesh);
+    uint32_t BaseMaterial::Register(SR_GTYPES_NS::IRenderComponent* pObject) {
+        SRAssert(pObject);
+        return m_registerObjects.Add(pObject);
     }
 
-    void BaseMaterial::UnregisterMesh(uint32_t* pId) {
-        m_meshes.RemoveByIndex(*pId);
+    void BaseMaterial::Unregister(uint32_t* pId) {
+        m_registerObjects.RemoveByIndex(*pId);
         *pId = SR_ID_INVALID;
     }
 
@@ -80,13 +80,13 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         if (onlyUniforms) {
-            m_meshes.ForEach([](uint32_t, auto&& pMesh) {
-                pMesh->MarkUniformsDirty();
+            m_registerObjects.ForEach([](uint32_t, auto&& pObject) {
+                pObject->MarkUniformsDirty();
             });
         }
         else {
-            m_meshes.ForEach([](uint32_t, auto&& pMesh) {
-                pMesh->MarkMaterialDirty();
+            m_registerObjects.ForEach([](uint32_t, auto&& pObject) {
+                pObject->MarkMaterialDirty();
             });
             GetContext().Do([](RenderContext* ptr) {
                 ptr->SetDirty();
@@ -104,8 +104,8 @@ namespace SR_GRAPH_NS {
 
         m_hashRedirect.clear();
 
-        m_meshes.ForEach([](uint32_t, auto&& pMesh) {
-            pMesh->ReRegisterMesh();
+        m_registerObjects.ForEach([](uint32_t, auto&& pObject) {
+            pObject->ReRegisterRenderObject();
         });
     }
 

@@ -5,10 +5,14 @@
 #ifndef SR_ENGINE_GRAPHICS_MANIPULATION_TOOL_H
 #define SR_ENGINE_GRAPHICS_MANIPULATION_TOOL_H
 
-#include <Graphics/Types/IRenderComponent.h>
 #include <Graphics/Pass/ColorBufferPass.h>
 
 #include <Utils/ECS/GameObject.h>
+#include <Utils/ECS/Component.h>
+
+namespace SR_GTYPES_NS {
+    class Camera;
+}
 
 namespace SR_GRAPH_UI_NS {
     SR_ENUM_NS_CLASS_T(GizmoMode, uint8_t, Local, Global);
@@ -60,9 +64,9 @@ namespace SR_GRAPH_UI_NS {
     );
 
     /// @category(Render)
-    class Gizmo : public SR_GTYPES_NS::IRenderComponent {
+    class Gizmo : public SR_UTILS_NS::Component {
         SR_CLASS()
-        using Super = SR_GTYPES_NS::IRenderComponent;
+        using Super = SR_UTILS_NS::Component;
         enum class GizmoMeshLoadMode {
             Visual, Selection, All
         };
@@ -116,6 +120,7 @@ namespace SR_GRAPH_UI_NS {
         SR_NODISCARD virtual SR_MATH_NS::Matrix4x4 GetGizmoMatrix() const;
         SR_NODISCARD bool IsLocal() const { return GetMode() == GizmoMode::Local; }
 
+        SR_NODISCARD SR_GTYPES_NS::Camera* GetCamera() const;
         SR_NODISCARD GameObjectPtr GetGameObjectByOperation(GizmoMeshLoadMode mode, GizmoOperation operation) const;
 
         SR_NODISCARD SR_MATH_NS::Axis GetAxis() const;

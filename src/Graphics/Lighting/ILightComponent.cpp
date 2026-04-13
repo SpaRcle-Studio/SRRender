@@ -6,6 +6,8 @@
 #include <Graphics/Lighting/ILightComponent.h>
 #include <Graphics/Render/RenderScene.h>
 
+#include <Utils/World/Scene.h>
+
 #include <Enum/LightType.hpp>
 
 #include <Codegen/ILightComponent.generated.hpp>
@@ -76,4 +78,30 @@ namespace SR_GRAPH_NS {
         UpdateLightParams();
         Super::OnPostLoad();
     }
+
+    ILightComponent::RenderScenePtr ILightComponent::TryGetRenderScene() const {
+        if (m_renderScene) {
+            return m_renderScene;
+        }
+
+        auto&& pScene = TryGetScene();
+        if (!pScene) {
+            return m_renderScene;
+        }
+
+        m_renderScene = pScene->GetDataStorage().GetPointer<RenderScene>();
+
+        return m_renderScene;
+    }
+
+    ILightComponent::RenderScenePtr ILightComponent::GetRenderScene() const {
+        if (auto&& pRenderScene = TryGetRenderScene()) {
+            return pRenderScene;
+        }
+
+        SRHalt("Invalid render scene!");
+
+        return RenderScenePtr();
+    }
+
 }

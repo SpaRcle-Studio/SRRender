@@ -26,7 +26,7 @@
 */
 
 namespace SR_GTYPES_NS {
-    class Mesh;
+    class IRenderComponent;
     class Shader;
 }
 
@@ -40,7 +40,7 @@ namespace SR_GRAPH_NS {
     class RenderStrategy : public SR_UTILS_NS::NonCopyable {
         using Super = SR_UTILS_NS::NonCopyable;
         using ShaderPtr = SR_GTYPES_NS::Shader*;
-        using MeshPtr = SR_GTYPES_NS::Mesh*;
+        using RenderObjectPtr = SR_GTYPES_NS::IRenderComponent*;
         using RenderQueuePtr = SR_HTYPES_NS::SharedPtr<RenderQueue>;
     public:
         explicit RenderStrategy(RenderScene* pRenderScene);
@@ -49,9 +49,9 @@ namespace SR_GRAPH_NS {
     public:
         void Prepare();
 
-        void RegisterMesh(SR_GTYPES_NS::Mesh* pMesh);
-        bool UnRegisterMesh(SR_GTYPES_NS::Mesh* pMesh);
-        void ReRegisterMesh(const MeshRegistrationInfo& info);
+        void Register(RenderObjectPtr pObject);
+        bool UnRegister(RenderObjectPtr pObject);
+        void ReRegister(const RenderObjectRegistrationInfo& info);
 
         void OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) const;
 
@@ -61,11 +61,10 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsDebugModeEnabled() const noexcept { return m_enableDebugMode; }
         SR_NODISCARD bool IsUniformsDirty() const noexcept { return m_isUniformsDirty; }
         SR_NODISCARD const std::set<SR_UTILS_NS::StringAtom>& GetErrors() const noexcept { return m_errors; }
-        SR_NODISCARD const std::set<SR_GTYPES_NS::Mesh*>& GetProblemMeshes() const noexcept { return m_problemMeshes; }
+        SR_NODISCARD const std::set<RenderObjectPtr>& GetProblemObjects() const noexcept { return m_problemObjects; }
 
         void ClearErrors();
         void AddError(SR_UTILS_NS::StringAtom error) { m_errors.insert(error); }
-        void AddProblemMesh(SR_GTYPES_NS::Mesh* pMesh) { m_problemMeshes.insert(pMesh); }
         void SetDebugMode(bool value);
 
         void MarkUniformsDirty() { m_isUniformsDirty = true; }
@@ -74,12 +73,11 @@ namespace SR_GRAPH_NS {
         void RemoveQueue(RenderQueue* pQueue);
 
     private:
-        void RegisterMesh(const MeshRegistrationInfo& info);
-        bool UnRegisterMesh(const MeshRegistrationInfo& info);
+        void Register(const RenderObjectRegistrationInfo& info);
+        bool UnRegisterImpl(RenderObjectPtr pObject, const RenderObjectRegistrationInfoInternal& info);
 
         SR_NODISCARD bool BuildQueueImpl(const RenderQueuePtr& pQueue);
-
-        MeshRegistrationInfo CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh);
+        RenderObjectRegistrationInfo CreateRegistrationInfo(RenderObjectPtr pObject);
 
     private:
         std::vector<RenderQueuePtr> m_queues;
@@ -87,16 +85,16 @@ namespace SR_GRAPH_NS {
         RenderScene* m_renderScene = nullptr;
 
         std::set<SR_UTILS_NS::StringAtom> m_errors;
-        std::set<SR_GTYPES_NS::Mesh*> m_problemMeshes;
+        std::set<RenderObjectPtr> m_problemObjects;
 
         bool m_isNeedCheckMeshActivity = true;
         bool m_enableDebugMode = false;
         bool m_isUniformsDirty = true;
 
-        std::vector<MeshRegistrationInfo> m_reRegisterMeshes;
+        std::vector<RenderObjectRegistrationInfo> m_reRegisterQueue;
         bool m_prepareState = false;
 
-        SR_HTYPES_NS::ObjectPool<MeshPtr, uint32_t> m_meshPool;
+        SR_HTYPES_NS::ObjectPool<RenderObjectPtr, uint32_t> m_objectPool;
 
     };
 

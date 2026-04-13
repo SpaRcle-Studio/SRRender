@@ -10,7 +10,7 @@
 #include <Utils/Types/SharedPtr.h>
 
 namespace SR_GTYPES_NS {
-    class Mesh;
+    class IRenderComponent;
     class Shader;
 }
 
@@ -25,22 +25,32 @@ namespace SR_GRAPH_NS {
     );
 
     class RenderScene;
-    class MeshRenderStage;
     class BaseMaterial;
     class RenderQueue;
 
-    struct MeshRegistrationInfo {
+    struct RenderObjectRegistrationInfoInternal {
         uint32_t poolId = static_cast<uint32_t>(SR_ID_INVALID);
-        SR_GTYPES_NS::Mesh* pMesh = nullptr;
         BaseMaterial* pMaterial = nullptr;
         SR_UTILS_NS::StringAtom layer;
         std::optional<int32_t> VBO;
         std::optional<int64_t> priority;
-        //SR_GRAPH_NS::RenderScene* pScene = nullptr;
+    };
+
+    struct RenderObjectRegistrationInfo {
+        SR_GTYPES_NS::IRenderComponent* pObject = nullptr;
+        RenderObjectRegistrationInfoInternal internal;
     };
 
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_MESH_FORMATS = "obj,pmx,fbx,blend,stl,dae,3ds";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SR_SUPPORTED_FONT_FORMATS = "ttf";
+
+    void DrawRenderObject(SR_GTYPES_NS::IRenderComponent* pObject,
+        uint32_t indices,
+        int32_t& ubo,
+        int32_t& descriptor,
+        bool& dirtyMaterial,
+        bool& hasErrors
+   );
 }
 
 #endif //SR_ENGINE_MESH_UTILS_H

@@ -15,18 +15,14 @@
 #include <Codegen/Sprite.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    bool Sprite::Calculate() {
-        if (IsCalculated()) {
-            return true;
+    void Sprite::Draw() {
+        SR_TRACY_ZONE;
+
+        if (m_hasErrors) SR_UNLIKELY_ATTRIBUTE {
+            return;
         }
 
-        FreeVMemory();
-
-        if (!IsCalculatable()) {
-            return false;
-        }
-
-        return Super::Calculate();
+        DrawRenderObject(this, 4, m_virtualUBO, m_virtualDescriptor, m_dirtyMaterial, m_hasErrors);
     }
 
     void Sprite::UseMaterial(SR_GTYPES_NS::Shader& shader) {
@@ -43,7 +39,6 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
         shader.SetInt(SHADER_SPRITE_MODE, static_cast<int32_t>(m_spriteMode));
         switch (m_spriteMode) {
             case SpriteMode::Filled:
@@ -58,18 +53,6 @@ namespace SR_GTYPES_NS {
         }
 
         Super::UseModelMatrix(shader);
-    }
-
-    bool Sprite::BindMesh() {
-        return true;
-    }
-
-    bool Sprite::IsSupportVBO() const {
-        return false;
-    }
-
-    uint32_t Sprite::GetIndicesCount() const {
-        return 4;
     }
 
     SR_MATH_NS::FRect Sprite::GetTextureBorder() const {

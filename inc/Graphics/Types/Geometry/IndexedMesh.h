@@ -19,10 +19,9 @@ namespace SR_GTYPES_NS {
         ~IndexedMesh() override;
 
     public:
-        SR_NODISCARD int32_t GetIBO() override;
-        SR_NODISCARD int32_t GetVBO() override;
+        SR_NODISCARD std::optional<int32_t> GetIBO() const override;
+        SR_NODISCARD std::optional<int32_t> GetVBO() const override;
 
-        SR_NODISCARD uint32_t GetVerticesCount() const override { return m_countVertices; }
         SR_NODISCARD uint32_t GetIndicesCount() const override { return m_countIndices; }
 
         SR_NODISCARD virtual const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const {
@@ -37,8 +36,6 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescription& GetShaderVertexLayoutDescription() const noexcept override;
 
-        SR_NODISCARD bool IsSupportVBO() const override { return true; }
-
         SR_NODISCARD FrustumCullingType GetFrustumCullingType() const noexcept override { return m_frustumCullingType; }
         void SetFrustumCullingType(FrustumCullingType type) override { m_frustumCullingType = type; }
 
@@ -47,8 +44,9 @@ namespace SR_GTYPES_NS {
         bool CalculateIBO();
         bool CalculateVBO();
 
-        void FreeVMemory() override;
+        void FreeVideoMemory() override;
 
+    private:
         bool FreeVBO();
         bool FreeIBO();
 

@@ -5,15 +5,17 @@
 #ifndef SR_ENGINE_ILIGHTCOMPONENT_H
 #define SR_ENGINE_ILIGHTCOMPONENT_H
 
-#include <Graphics/Types/IRenderComponent.h>
 #include <Graphics/Lighting/LightType.h>
+
+#include <Utils/ECS/Component.h>
 
 namespace SR_GRAPH_NS {
     class RenderScene;
 
     /// @hidden @abstract @category(Render.Light)
-    class ILightComponent : public SR_GTYPES_NS::IRenderComponent {
-        using Super = SR_GTYPES_NS::IRenderComponent;
+    class ILightComponent : public SR_UTILS_NS::Component {
+        using Super = SR_UTILS_NS::Component;
+        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::RenderScene>;
         SR_CLASS()
     public:
         SR_NODISCARD SR_FORCE_INLINE bool ExecuteInEditMode() const override { return true; }
@@ -40,6 +42,9 @@ namespace SR_GRAPH_NS {
         void UnregisterLight();
         virtual void UpdateLightParamsImpl() { }
 
+        SR_NODISCARD RenderScenePtr TryGetRenderScene() const;
+        SR_NODISCARD RenderScenePtr GetRenderScene() const;
+
     protected:
         /// @property @onChanged(UpdateLightParams)
         float_t m_intensity = 1.f;
@@ -52,7 +57,7 @@ namespace SR_GRAPH_NS {
 
     protected:
         bool m_isLightRegistered = false;
-
+        mutable RenderScenePtr m_renderScene;
 
     };
 }

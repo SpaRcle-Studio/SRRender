@@ -36,9 +36,7 @@ namespace SR_GTYPES_NS {
 
     void Mesh3D::OnRawMeshChanged() {
         IRawMeshHolder::OnRawMeshChanged();
-
-        ReRegisterMesh();
-
+        ReRegisterRenderObject();
         MarkMaterialDirty();
         m_isCalculated = false;
     }

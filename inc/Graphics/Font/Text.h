@@ -12,30 +12,23 @@
 namespace SR_GTYPES_NS {
     class Font;
 
-    class Text : public Mesh {
+    class Text : public UIRenderComponent {
         SR_CLASS()
-        using Super = Mesh;
+        using Super = UIRenderComponent;
     public:
-        Text();
         ~Text() override;
 
     public:
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
-
         void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
 
-        SR_NODISCARD uint32_t GetIndicesCount() const override { return 4; }
-
-        SR_NODISCARD bool IsCalculatable() const override;
         SR_NODISCARD SR_FORCE_INLINE bool GetKerning() const noexcept { return m_kerning; }
         SR_NODISCARD SR_FORCE_INLINE bool IsDebugEnabled() const noexcept { return m_debug; }
         SR_NODISCARD SR_FORCE_INLINE bool IsPreprocessorEnabled() const noexcept { return m_preprocessor; }
         SR_NODISCARD SR_FORCE_INLINE bool IsLocalizationEnabled() const noexcept { return m_localization; }
         SR_NODISCARD SR_FORCE_INLINE const SR_HTYPES_NS::SharedPtr<Font>& GetFont() const noexcept { return m_font; }
         SR_NODISCARD SR_FORCE_INLINE uint16_t GetFontSize() const noexcept { return m_fontSize; }
-
-        SR_NODISCARD bool IsSupportVBO() const override { return false; }
 
         SR_NODISCARD SR_UTILS_NS::Path GetFontPath() const noexcept;
         SR_NODISCARD uint32_t GetAtlasWidth() const noexcept { return m_atlasSize.x; }
@@ -54,12 +47,14 @@ namespace SR_GTYPES_NS {
         void SetUseLocalization(bool enabled);
         void SetUsePreprocessor(bool enabled);
 
-        bool Calculate() override;
-        void FreeVMemory() override;
+        void Draw() override;
+        void FreeVideoMemory() override;
 
     protected:
+        bool Calculate();
         void OnTextDirty();
         SR_NODISCARD bool BuildAtlas();
+        SR_NODISCARD bool IsCalculatable() const;
 
     protected:
         /// @property @setter(SetText) @getter(GetText)

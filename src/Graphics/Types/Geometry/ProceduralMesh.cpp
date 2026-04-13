@@ -64,7 +64,7 @@ namespace SR_GTYPES_NS {
     void ProceduralMesh::SetDirtyMesh() {
         m_isCalculated = false;
         MarkMaterialDirty();
-        ReRegisterMesh();
+        ReRegisterRenderObject();
 
         if (auto&& renderScene = TryGetRenderScene()) {
             renderScene->SetDirty();
@@ -79,10 +79,6 @@ namespace SR_GTYPES_NS {
     void ProceduralMesh::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
         Super::UseModelMatrix(shader);
         shader.SetMat4(SHADER_MODEL_MATRIX, GetMatrix());
-    }
-
-    bool ProceduralMesh::IsSupportVBO() const {
-        return true;
     }
 
     void ProceduralMesh::UseSSBO() {

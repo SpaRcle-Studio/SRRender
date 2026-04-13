@@ -17,7 +17,7 @@
 #include <Utils/Serialization/Serializable.h>
 
 namespace SR_GTYPES_NS {
-    class Mesh;
+    class IRenderComponent;
     class Texture;
     class Shader;
 }
@@ -34,7 +34,6 @@ namespace SR_GRAPH_NS {
     protected:
         using RenderContextPtr = SR_HTYPES_NS::SafePtr<RenderContext>;
         using ShaderPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>;
-        using MeshPtr = SR_GTYPES_NS::Mesh*;
         using TexturePtr = SR_GTYPES_NS::Texture*;
 
     public:
@@ -56,8 +55,8 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD virtual MaterialType GetMaterialType() const noexcept { return MaterialType::None; }
 
-        SR_NODISCARD virtual uint32_t RegisterMesh(MeshPtr pMesh);
-        virtual void UnregisterMesh(uint32_t* pId);
+        SR_NODISCARD virtual uint32_t Register(SR_GTYPES_NS::IRenderComponent* pObject);
+        virtual void Unregister(uint32_t* pId);
 
         virtual void SetShader(ShaderPtr pShader);
         void SetShader(const SR_UTILS_NS::Path& path);
@@ -76,7 +75,7 @@ namespace SR_GRAPH_NS {
     protected:
         mutable RenderContextPtr m_context;
 
-        SR_HTYPES_NS::ObjectPool<MeshPtr, uint32_t> m_meshes;
+        SR_HTYPES_NS::ObjectPool<SR_GTYPES_NS::IRenderComponent*, uint32_t> m_registerObjects;
 
         mutable SR_UTILS_NS::Subscription m_shaderChangedSubscription;
         mutable SR_UTILS_NS::Subscription m_propertyChangedSubscription;

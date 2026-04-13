@@ -22,7 +22,7 @@ namespace SR_GTYPES_NS {
             return true;
         }
 
-        FreeVMemory();
+        FreeVideoMemory();
 
         if (!IsCalculatable()) {
             return false;
@@ -33,21 +33,15 @@ namespace SR_GTYPES_NS {
             m_isUniqueMesh = false;
         }
 
-        if (!CalculateIBO()) {
+        if (!CalculateIBO() || !CalculateVBO()) {
             return false;
         }
-
-        if (!CalculateVBO()) {
-            return false;
-        }
-
         return Super::Calculate();
     }
 
     bool IndexedMesh::CalculateIBO() {
         SR_TRACY_ZONE;
 
-        SRAssert(m_pipeline);
         if (!SRVerify2(m_IBO == SR_ID_INVALID, "IBO already calculated!")) SR_UNLIKELY_ATTRIBUTE {
             return false;
         }
@@ -59,7 +53,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_isUniqueMesh) {
-            if (m_IBO = m_pipeline->AllocateIBO((void *)indices.data(), sizeof(uint32_t), m_countIndices, m_VBO); m_IBO == SR_ID_INVALID) {
+            if (m_IBO = GetPipeline()->AllocateIBO((void *)indices.data(), sizeof(uint32_t), m_countIndices, m_VBO); m_IBO == SR_ID_INVALID) {
                 SR_ERROR("IndexedMesh::CalculateIBO() : failed calculate IBO for mesh!");
                 m_hasErrors = true;
                 return false;
@@ -81,7 +75,7 @@ namespace SR_GTYPES_NS {
 
         m_IBO = MeshManager::Instance().CopyIfExists(registrationInfo);
         if (m_IBO == SR_ID_INVALID) {
-            if (m_IBO = m_pipeline->AllocateIBO((void *) indices.data(), sizeof(uint32_t), m_countIndices, m_VBO); m_IBO == SR_ID_INVALID) {
+            if (m_IBO = GetPipeline()->AllocateIBO((void *) indices.data(), sizeof(uint32_t), m_countIndices, m_VBO); m_IBO == SR_ID_INVALID) {
                 SR_ERROR("IndexedMesh::CalculateIBO() : failed calculate IBO for mesh!");
                 m_hasErrors = true;
                 return false;
@@ -93,39 +87,33 @@ namespace SR_GTYPES_NS {
     }
 
     bool IndexedMesh::FreeIBO() {
-        if (m_IBO == SR_ID_INVALID) {
-            return true;
+        if (m_IBO != SR_ID_INVALID) {
+            const bool isAllowFree = m_isUniqueMesh || MeshManager::Instance().Free(false, m_IBO) == MeshManager::FreeResult::Freed;
+            if (isAllowFree && !GetPipeline()->FreeIBO(&m_IBO)) {
+                SR_ERROR("IndexedMesh:FreeIBO() : failed free IBO! Something went wrong...");
+                return false;
+            }
+            m_IBO = SR_ID_INVALID;
         }
-
-        const bool isAllowFree = m_isUniqueMesh || MeshManager::Instance().Free(false, m_IBO) == MeshManager::FreeResult::Freed;
-        if (isAllowFree && !m_pipeline->FreeIBO(&m_IBO)) {
-            SR_ERROR("IndexedMesh:FreeIBO() : failed free IBO! Something went wrong...");
-            return false;
-        }
-
-        m_IBO = SR_ID_INVALID;
         return true;
     }
 
     bool IndexedMesh::FreeVBO() {
-        if (m_VBO == SR_ID_INVALID) {
-            return true;
+        if (m_VBO != SR_ID_INVALID) {
+            const bool isAllowFree = m_isUniqueMesh || MeshManager::Instance().Free(true, m_VBO) == MeshManager::FreeResult::Freed;
+            if (isAllowFree && !GetPipeline()->FreeVBO(&m_VBO)) {
+                SR_ERROR("IndexedMesh::FreeVBO() : failed free VBO! Something went wrong...");
+                return false;
+            }
+            m_VBO = SR_ID_INVALID;
         }
-
-        const bool isAllowFree = m_isUniqueMesh || MeshManager::Instance().Free(true, m_VBO) == MeshManager::FreeResult::Freed;
-        if (isAllowFree && !m_pipeline->FreeVBO(&m_VBO)) {
-            SR_ERROR("IndexedMesh::FreeVBO() : failed free VBO! Something went wrong...");
-            return false;
-        }
-
-        m_VBO = SR_ID_INVALID;
         return true;
     }
 
-    void IndexedMesh::FreeVMemory() {
+    void IndexedMesh::FreeVideoMemory() {
         SR_TRACY_ZONE;
 
-        Super::FreeVMemory();
+        Super::FreeVideoMemory();
 
         if (!FreeVBO()) {
             SR_ERROR("IndexedMesh::FreeVideoMemory() : failed to free VBO!");
@@ -139,7 +127,6 @@ namespace SR_GTYPES_NS {
     bool IndexedMesh::CalculateVBO() {
         SR_TRACY_ZONE;
 
-        SRAssert(m_pipeline);
         SRAssert(m_VBO == SR_ID_INVALID);
 
         const SR_UTILS_NS::VertexLayoutDescription& vertexLayout = GetVertexLayoutDescription();
@@ -150,7 +137,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_isUniqueMesh) {
-            if (m_VBO = m_pipeline->AllocateVBO(buffer.GetDataSize(), buffer.GetRawData()); m_VBO == SR_ID_INVALID) {
+            if (m_VBO = GetPipeline()->AllocateVBO(buffer.GetDataSize(), buffer.GetRawData()); m_VBO == SR_ID_INVALID) {
                 SR_ERROR("IndexedMesh::CalculateVBO() : failed calculate VBO for mesh!");
                 m_hasErrors = true;
                 return false;
@@ -168,7 +155,7 @@ namespace SR_GTYPES_NS {
 
         m_VBO = MeshManager::Instance().CopyIfExists(registrationInfo, vertexLayout);
         if (m_VBO == SR_ID_INVALID) {
-            if (m_VBO = m_pipeline->AllocateVBO(buffer.GetDataSize(), buffer.GetRawData()); m_VBO == SR_ID_INVALID) {
+            if (m_VBO = GetPipeline()->AllocateVBO(buffer.GetDataSize(), buffer.GetRawData()); m_VBO == SR_ID_INVALID) {
                 SR_ERROR("IndexedMesh::CalculateVBO() : failed calculate VBO for mesh!");
                 m_hasErrors = true;
                 return false;
@@ -179,16 +166,16 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    int32_t IndexedMesh::GetVBO() {
-        if (!IsCalculated() && !Calculate()) SR_UNLIKELY_ATTRIBUTE {
-            return SR_ID_INVALID;
+    std::optional<int32_t> IndexedMesh::GetVBO() const {
+        if (!IsCalculated() && !const_cast<IndexedMesh*>(this)->Calculate()) SR_UNLIKELY_ATTRIBUTE {
+            return SR_INVALID_VBO;
         }
         return m_VBO;
     }
 
-    int32_t IndexedMesh::GetIBO() {
-        if (!IsCalculated() && !Calculate()) SR_UNLIKELY_ATTRIBUTE {
-            return SR_ID_INVALID;
+    std::optional<int32_t> IndexedMesh::GetIBO() const {
+        if (!IsCalculated() && !const_cast<IndexedMesh*>(this)->Calculate()) SR_UNLIKELY_ATTRIBUTE {
+            return SR_INVALID_IBO;
         }
         return m_IBO;
     }

@@ -23,7 +23,6 @@ namespace SR_GRAPH_NS {
     class ColorBufferPass : public IColorBufferPass, public MeshDrawerPass {
         SR_CLASS()
         using ShaderPtr = SR_GTYPES_NS::Shader*;
-        using MeshPtr = SR_GTYPES_NS::Mesh*;
         using Super = MeshDrawerPass;
         friend class ColorBufferRenderQueue;
     public:
@@ -39,7 +38,7 @@ namespace SR_GRAPH_NS {
         void OnResize(const SR_MATH_NS::UVector2& size) override;
 
     protected:
-        void UseUniforms(SR_GTYPES_NS::Shader& shader, MeshPtr pMesh) override;
+        void UseUniforms(SR_GTYPES_NS::Shader& shader, SR_GTYPES_NS::IRenderComponent* pObject) override;
 
         SR_NODISCARD RenderQueuePtr AllocateRenderQueue(uint32_t index) override;
 

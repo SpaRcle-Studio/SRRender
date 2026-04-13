@@ -33,18 +33,12 @@ namespace SR_GTYPES_NS {
     );
 
     /// @category(UI)
-    class SR_GRAPHICS_DLL_API Sprite : public SR_GTYPES_NS::Mesh {
+    class SR_GRAPHICS_DLL_API Sprite : public SR_GTYPES_NS::UIRenderComponent {
         SR_CLASS()
-        using Super = SR_GTYPES_NS::Mesh;
+        using Super = SR_GTYPES_NS::UIRenderComponent;
     public:
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
-
-        bool IsSupportVBO() const override;
-
-        bool BindMesh() override;
-
-        SR_NODISCARD uint32_t GetIndicesCount() const override;
 
         SR_NODISCARD SR_MATH_NS::FRect GetTextureBorder() const;
         SR_NODISCARD SR_MATH_NS::FRect GetWindowBorder() const;
@@ -61,7 +55,7 @@ namespace SR_GTYPES_NS {
         void SetFillClockwise(bool clockwise);
 
     protected:
-        bool Calculate() override;
+        void Draw() override;
         void ApplyFillModeParams(Shader* pShader);
         void ApplySliceModeParams(Shader* pShader);
 

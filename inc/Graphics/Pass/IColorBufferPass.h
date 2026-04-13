@@ -13,7 +13,7 @@
 namespace SR_GTYPES_NS {
     class Shader;
     class Framebuffer;
-    class Mesh;
+    class IRenderComponent;
 }
 
 namespace SR_GRAPH_NS {
@@ -31,7 +31,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD bool IsReady() const;
         SR_NODISCARD SR_MATH_NS::FColor FetchColor(bool release);
-        SR_NODISCARD SR_GTYPES_NS::Mesh* GetMesh(bool release);
+        SR_NODISCARD SR_GTYPES_NS::IRenderComponent* GetMesh(bool release);
 
         bool ChangeRequest(const SR_MATH_NS::FVector2& pos);
 
@@ -56,7 +56,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD ColorBufferPassRequest::Ptr CreateColorRequest(float_t x, float_t y);
         SR_NODISCARD ColorBufferPassRequest::Ptr CreateColorRequest(const SR_MATH_NS::FVector2& pos) { return CreateColorRequest(pos.x, pos.y); }
 
-        SR_NODISCARD SR_GTYPES_NS::Mesh* GetMeshByColor(const SR_MATH_NS::FColor& color) const;
+        SR_NODISCARD SR_GTYPES_NS::IRenderComponent* GetMeshByColor(const SR_MATH_NS::FColor& color) const;
 
         SR_NODISCARD uint32_t GetColorIndex() const noexcept;
         SR_NODISCARD SR_MATH_NS::FVector3 GetMeshColor() const noexcept;
@@ -69,12 +69,12 @@ namespace SR_GRAPH_NS {
 
     protected:
         void ClearTable();
-        void SetMeshIndex(SR_GTYPES_NS::Mesh* pMesh);
+        void SetMeshIndex(SR_GTYPES_NS::IRenderComponent* pObject);
         void IncrementColorIndex() noexcept;
         void ResetColorIndex() noexcept { m_colorId = 0; }
 
     private:
-        std::vector<SR_GTYPES_NS::Mesh*> m_table;
+        std::vector<SR_GTYPES_NS::IRenderComponent*> m_table;
         uint32_t m_colorId = 0;
         uint32_t m_multiplier = 1;
 

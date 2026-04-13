@@ -37,7 +37,7 @@ namespace SR_GRAPH_NS {
         using Layer = SR_UTILS_NS::StringAtom;
 
         struct MeshShaderPair {
-            SR_GTYPES_NS::Mesh* pMesh;
+            SR_GTYPES_NS::IRenderComponent* pObject;
             RenderQueueInfo* pInfo;
         };
     public:
@@ -56,8 +56,8 @@ namespace SR_GRAPH_NS {
 
         struct MeshInfo {
             RenderQueueInfo* pInfo = nullptr;
-            VBO vbo = 0;
-            SR_GTYPES_NS::Mesh* pMesh = nullptr;
+            std::optional<VBO> vbo;
+            SR_GTYPES_NS::IRenderComponent* pObject = nullptr;
             SR_GTYPES_NS::Shader* pShader = nullptr;
             int64_t priority = 0;
             QueueStateFlags state = QUEUE_STATE_NOT_RENDERED;
@@ -75,8 +75,8 @@ namespace SR_GRAPH_NS {
         RenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer);
         ~RenderQueue() override;
 
-        void Register(const MeshRegistrationInfo& info);
-        void UnRegister(const MeshRegistrationInfo& info);
+        void Register(const RenderObjectRegistrationInfo& info);
+        void UnRegister(const RenderObjectRegistrationInfo& info);
 
         void Init();
 
@@ -86,7 +86,7 @@ namespace SR_GRAPH_NS {
         bool UpdateFrustumCulling(const Frustum& frustum);
         void SetFrustumCullingAllowed(bool allowed) { m_isFrustumAllowed = allowed; }
 
-        void OnMeshDirty(SR_GTYPES_NS::Mesh* pMesh, RenderQueueInfo* pInfo);
+        void OnObjectDirty(SR_GTYPES_NS::IRenderComponent* pObject, RenderQueueInfo* pInfo);
 
         SR_NODISCARD const std::vector<std::pair<Layer, Queue>>& GetQueues() const noexcept { return m_queues; }
 
@@ -100,7 +100,7 @@ namespace SR_GRAPH_NS {
         void UpdateMeshes();
         void UpdateAllMeshes();
 
-        SR_NODISCARD bool IsSuitable(const MeshRegistrationInfo& info) const;
+        SR_NODISCARD bool IsSuitable(const RenderObjectRegistrationInfo& info) const;
 
         void Render(const SR_UTILS_NS::StringAtom& layer, Queue& queue);
 
@@ -128,8 +128,8 @@ namespace SR_GRAPH_NS {
         std::vector<std::pair<Layer, Queue>> m_queues;
 
         SR_HTYPES_NS::SortedVector<SR_GTYPES_NS::Shader*> m_shaders;
-        SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_meshes;
-        SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_tempMeshes;
+        SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_renderObjects;
+        SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_tempRenderObjects;
 
         SR_SRSL_NS::ShaderParams m_cachedShaderParams;
 

@@ -19,7 +19,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool SkinnedMesh::IsCalculatable() const {
-        return IsValidMeshId() && Mesh::IsCalculatable();
+        return IsValidMeshId() && Super::IsCalculatable();
     }
 
     void SkinnedMesh::UseMaterial(SR_GTYPES_NS::Shader& shader) {
@@ -32,7 +32,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool SkinnedMesh::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) {
-        bool changed = Mesh::OnResourceReloaded(resourceId);
+        bool changed = Super::OnResourceReloaded(resourceId);
         if (GetRawMesh() && GetRawMesh()->GetResourceId() == resourceId) {
             OnRawMeshChanged();
             return true;
@@ -42,9 +42,7 @@ namespace SR_GTYPES_NS {
 
     void SkinnedMesh::OnRawMeshChanged() {
         IRawMeshHolder::OnRawMeshChanged();
-
-        ReRegisterMesh();
-
+        ReRegisterRenderObject();
         MarkMaterialDirty();
         m_isCalculated = false;
     }

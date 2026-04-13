@@ -25,7 +25,7 @@ namespace SR_ANIMATIONS_NS {
 
 namespace SR_GTYPES_NS {
     class Camera;
-    class Mesh;
+    class IRenderComponent;
 }
 
 namespace SR_GRAPH_NS {
@@ -46,7 +46,6 @@ namespace SR_GRAPH_NS {
         using ScenePtr = SR_HTYPES_NS::SharedPtr<SR_WORLD_NS::Scene>;
         using WindowPtr = SR_HTYPES_NS::SharedPtr<Window>;
         using CameraPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Camera>;
-        using MeshPtr = SR_GTYPES_NS::Mesh*;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;
         using Ptr = SR_HTYPES_NS::SharedPtr<RenderScene>;
 
@@ -78,13 +77,13 @@ namespace SR_GRAPH_NS {
 
         void Register(const CameraPtr& pCamera);
         void Register(WidgetManagerPtr pWidgetManager);
-        void Register(MeshPtr pMesh);
+        void Register(SR_GTYPES_NS::IRenderComponent* pObject);
 
         void Remove(const CameraPtr& pCamera);
         void Remove(WidgetManagerPtr pWidgetManager);
-        void Remove(MeshPtr pMesh);
+        void Remove(SR_GTYPES_NS::IRenderComponent* pObject);
 
-        void ReRegister(const MeshRegistrationInfo& info);
+        void ReRegister(const RenderObjectRegistrationInfo& info);
 
         void SetOverlayEnabled(bool enabled);
         void SetCurrentSkeleton(SR_ANIMATIONS_NS::Skeleton* pSkeleton) { m_currentSkeleton = pSkeleton;}
@@ -108,6 +107,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD RenderContext* GetContext() const;
         SR_NODISCARD LightSystem* GetLightSystem() const { return m_lightSystem; }
         SR_NODISCARD SR_ANIMATIONS_NS::Skeleton* GetCurrentSkeleton() const { return m_currentSkeleton; }
+        SR_NODISCARD const RenderScene::PipelinePtr& GetPipelineRef() const;
         SR_NODISCARD const RenderScene::PipelinePtr& GetPipeline() const;
         SR_NODISCARD RenderScene::PipelinePtr GetPipeline();
         SR_NODISCARD WindowPtr GetWindow() const;
@@ -122,7 +122,7 @@ namespace SR_GRAPH_NS {
 
     private:
         SR_HTYPES_NS::SharedPtr<IRenderer> AddRenderer(SR_UTILS_NS::StringAtom name);
-        void SetMeshMaterial(MeshPtr pMesh);
+        void SetObjectMaterial(SR_GTYPES_NS::IRenderComponent* pObject);
 
         void SortCameras();
 

@@ -8,7 +8,7 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Pass/MeshDrawerPass.h>
-#include <Graphics/Types/Mesh.h>
+#include <Graphics/Types/IRenderComponent.h>
 
 #include <Utils/ECS/LayerManager.h>
 
@@ -19,9 +19,9 @@ namespace SR_GRAPH_NS {
     { }
 
     RenderStrategy::~RenderStrategy() {
-        SRAssert(m_meshPool.IsEmpty());
+        SRAssert(m_objectPool.IsEmpty());
         SRAssert(m_queues.empty());
-        SRAssert(m_reRegisterMeshes.empty());
+        SRAssert(m_reRegisterQueue.empty());
     }
 
     RenderContext* RenderStrategy::GetRenderContext() const {
@@ -31,7 +31,7 @@ namespace SR_GRAPH_NS {
     void RenderStrategy::Prepare() {
         SR_TRACY_ZONE;
 
-        if (m_reRegisterMeshes.empty()) {
+        if (m_reRegisterQueue.empty()) {
             return;
         }
 
@@ -39,46 +39,46 @@ namespace SR_GRAPH_NS {
 
         m_prepareState = true;
 
-        for (auto&& info : m_reRegisterMeshes) {
+        for (auto&& info : m_reRegisterQueue) {
             for (auto&& pQueue : m_queues) {
                 SRAssert(pQueue);
                 pQueue->UnRegister(info);
             }
 
-            m_meshPool.RemoveByIndex(info.poolId);
+            m_objectPool.RemoveByIndex(info.internal.poolId);
 
-            RegisterMesh(CreateMeshRegistrationInfo(info.pMesh));
-            info.pMesh->OnReRegistered();
+            Register(CreateRegistrationInfo(info.pObject));
+            info.pObject->OnReRegistered();
         }
-        m_reRegisterMeshes.clear();
+        m_reRegisterQueue.clear();
 
         m_prepareState = false;
     }
 
-    void RenderStrategy::RegisterMesh(SR_GTYPES_NS::Mesh* pMesh) {
+    void RenderStrategy::Register(RenderObjectPtr pObject) {
         SR_TRACY_ZONE;
 
-        if (pMesh->IsMeshRegistered()) {
-            SRHalt("Double mesh registration!");
+        if (pObject->IsRenderObjectRegistered()) {
+            SRHalt("Double registration!");
             return;
         }
 
-        RegisterMesh(CreateMeshRegistrationInfo(pMesh));
+        Register(CreateRegistrationInfo(pObject));
     }
 
-    bool RenderStrategy::UnRegisterMesh(SR_GTYPES_NS::Mesh* pMesh) {
+    bool RenderStrategy::UnRegister(RenderObjectPtr pObject) {
         SR_TRACY_ZONE;
 
-        if (IsDebugModeEnabled() && m_problemMeshes.count(pMesh) == 1) {
-            m_problemMeshes.erase(pMesh);
+        if (IsDebugModeEnabled() && m_problemObjects.count(pObject) == 1) {
+            m_problemObjects.erase(pObject);
         }
 
-        if (!pMesh->IsMeshRegistered()) {
-            SRHalt("Mesh is not registered!");
+        if (!pObject->IsRenderObjectRegistered()) {
+            SRHalt("Object is not registered!");
             return false;
         }
 
-        UnRegisterMesh(pMesh->GetMeshRegistrationInfo());
+        UnRegisterImpl(pObject, pObject->GetRegistrationInfo());
 
         return true;
     }
@@ -93,47 +93,54 @@ namespace SR_GRAPH_NS {
         SRHalt("Queue not found!");
     }
 
-    void RenderStrategy::RegisterMesh(const MeshRegistrationInfo& info) {
+    void RenderStrategy::Register(const RenderObjectRegistrationInfo& info) {
         for (auto&& pQueue : m_queues) {
             SRAssert(pQueue);
             pQueue->Register(info);
         }
 
-        info.pMesh->SetMeshRegistrationInfo(info);
+        info.pObject->SetRegistrationInfo(info.internal);
     }
 
-    bool RenderStrategy::UnRegisterMesh(const MeshRegistrationInfo& info) {
-        SRAssert2(!m_prepareState, "UnRegisterMesh() is not allowed during Prepare()!");
+    bool RenderStrategy::UnRegisterImpl(RenderObjectPtr pObject, const RenderObjectRegistrationInfoInternal& info) {
+        SRAssert2(!m_prepareState, "UnRegisterImpl() is not allowed during Prepare()!");
 
-        if (info.pMesh->IsWaitReRegister()) {
+        if (pObject->IsWaitReRegister()) {
             SR_MAYBE_UNUSED bool isFound = false;
-            for (auto pIt = m_reRegisterMeshes.begin(); pIt != m_reRegisterMeshes.end(); ++pIt) {
-                if (pIt->pMesh == info.pMesh) {
-                    m_reRegisterMeshes.erase(pIt);
+            for (auto pIt = m_reRegisterQueue.begin(); pIt != m_reRegisterQueue.end(); ++pIt) {
+                if (pIt->pObject == pObject) {
+                    m_reRegisterQueue.erase(pIt);
                     isFound = true;
-                    info.pMesh->OnReRegistered();
+                    pObject->OnReRegistered();
                     break;
                 }
             }
             SRAssert2(isFound, "Mesh is not found in re-register list, but it is waiting for re-register!");
         }
 
+        RenderObjectRegistrationInfo infoEx;
+        infoEx.pObject = pObject;
+        infoEx.internal = info;
+
         for (auto&& pQueue : m_queues) {
             SRAssert(pQueue);
-            pQueue->UnRegister(info);
+            pQueue->UnRegister(infoEx);
         }
 
-        m_meshPool.RemoveByIndex(info.poolId);
-
-        info.pMesh->SetMeshRegistrationInfo(std::nullopt);
+        m_objectPool.RemoveByIndex(info.poolId);
+        pObject->SetRegistrationInfo(std::nullopt);
 
         return true;
     }
 
     bool RenderStrategy::BuildQueueImpl(const RenderQueuePtr& pQueue) {
+        SR_TRACY_ZONE;
         pQueue->Init();
-        m_meshPool.ForEach([pQueue](uint32_t id, const MeshPtr& pMesh) {
-            pQueue->Register(pMesh->GetMeshRegistrationInfo());
+        m_objectPool.ForEach([pQueue](uint32_t id, const RenderObjectPtr& pObject) {
+            RenderObjectRegistrationInfo info;
+            info.pObject = pObject;
+            info.internal = pObject->GetRegistrationInfo();
+            pQueue->Register(info);
         });
         return true;
     }
@@ -153,32 +160,19 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderStrategy::ClearErrors() {
-        m_problemMeshes.clear();
+        m_problemObjects.clear();
         m_errors.clear();
     }
 
-    void RenderStrategy::ReRegisterMesh(const MeshRegistrationInfo& info) {
+    void RenderStrategy::ReRegister(const RenderObjectRegistrationInfo& info) {
         SR_TRACY_ZONE;
         SRAssert2(!m_prepareState, "ReRegisterMesh() is not allowed during Prepare()!");
-        m_reRegisterMeshes.emplace_back(info);
+        m_reRegisterQueue.emplace_back(info);
     }
 
-    MeshRegistrationInfo RenderStrategy::CreateMeshRegistrationInfo(SR_GTYPES_NS::Mesh* pMesh) {
-        MeshRegistrationInfo info = { };
-
-        info.pMesh = pMesh;
-        info.pMaterial = pMesh->GetMaterial().Get();
-        info.layer = pMesh->GetMeshLayer();
-        info.poolId = m_meshPool.Add(pMesh);
-
-        if (pMesh->IsSupportVBO()) {
-            info.VBO = pMesh->GetVBO();
-        }
-
-        if (pMesh->HasSortingPriority()) {
-            info.priority = pMesh->GetSortingPriority();
-        }
-
+    RenderObjectRegistrationInfo RenderStrategy::CreateRegistrationInfo(RenderObjectPtr pObject) {
+        RenderObjectRegistrationInfo info = pObject->CreateRegistrationInfo();
+        info.internal.poolId = m_objectPool.Add(pObject);
         return info;
     }
 }
