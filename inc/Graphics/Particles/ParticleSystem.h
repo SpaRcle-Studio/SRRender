@@ -10,6 +10,7 @@
 #include <Utils/ECS/Component.h>
 
 namespace SR_GRAPH_NS {
+    /// @category(Render.Particles)
     class ParticleSystem : public SR_UTILS_NS::Component {
         SR_CLASS()
     };

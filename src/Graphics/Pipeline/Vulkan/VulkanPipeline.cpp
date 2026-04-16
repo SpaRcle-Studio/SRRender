@@ -1712,7 +1712,7 @@ namespace SR_GRAPH_NS {
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().IsExists = [](const std::string& path) -> bool {
-            return SR_PLATFORM_NS::IsExists(path);
+            return SR_UTILS_NS::FileSystem::IsFileExists(path);
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().Copy = [](const std::string& from, const std::string& to) -> bool {

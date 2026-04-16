@@ -10,6 +10,7 @@
 
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Features.h>
+#include <Utils/Common/CLIManager.h>
 #include <Utils/FileSystem/FileSystem.h>
 #include <Utils/Resources/ResourceManager.h>
 
@@ -54,17 +55,30 @@ namespace SR_GRAPH_NS {
 
         auto&& resourcesManager = SR_UTILS_NS::ResourceManager::Instance();
 
-        m_iniPathEditor = resourcesManager.GetCachePath().Concat("Editor/Configs/ImGuiEditor.config");
-        m_iniPathWidgets = resourcesManager.GetCachePath().Concat("Editor/Configs/EditorWidgets.xml");
+        static std::string_view editorConfigPath = "Editor/Configs/ImGuiEditor.config";
+        static std::string_view widgetsConfigPath = "Editor/Configs/EditorWidgets.xml";
+
+        m_iniPathEditor = resourcesManager.GetCachePath().Concat(editorConfigPath);
+        m_iniPathWidgets = resourcesManager.GetCachePath().Concat(widgetsConfigPath);
 
         if (!m_iniPathEditor.Exists()) {
-            m_iniPathEditor.Create();
-            SR_UTILS_NS::Platform::Copy(resourcesManager.GetResPath().Concat("Editor/Configs/ImGuiEditor.config"), m_iniPathEditor);
+            SR_UTILS_NS::Path engineEditorConfigPath = resourcesManager.GetEngineCachePath().Concat(editorConfigPath);
+            if (engineEditorConfigPath.Exists()) {
+                SR_PLATFORM_NS::Copy(engineEditorConfigPath, m_iniPathEditor);
+            }
+            else {
+                SR_UTILS_NS::Platform::Copy(resourcesManager.GetResPath().Concat(editorConfigPath), m_iniPathEditor);
+            }
         }
 
         if (!m_iniPathWidgets.Exists()) {
-            m_iniPathWidgets.Create();
-            SR_UTILS_NS::Platform::Copy(resourcesManager.GetResPath().Concat("Editor/Configs/EditorWidgets.xml"), m_iniPathWidgets);
+            SR_UTILS_NS::Path engineWidgetsConfigPath = resourcesManager.GetEngineCachePath().Concat(widgetsConfigPath);
+            if (engineWidgetsConfigPath.Exists()) {
+                SR_PLATFORM_NS::Copy(engineWidgetsConfigPath, m_iniPathWidgets);
+            }
+            else {
+                SR_UTILS_NS::Platform::Copy(resourcesManager.GetResPath().Concat(widgetsConfigPath), m_iniPathWidgets);
+            }
         }
 
         io.IniFilename = m_iniPathEditor.CStr();
@@ -159,10 +173,13 @@ namespace SR_GRAPH_NS {
             SR_TRACY_ZONE_N("Load warning font");
             auto&& fontPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/seguisym.ttf");
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load warning font...\n\tPath: " + fontPath.ToString());
-            ImFontConfig cfg;
-            cfg.MergeMode = true;
+            ImFontConfig config;
+            config.MergeMode = true;
+            config.FontDataOwnedByAtlas = false;
             static const ImWchar ranges[] = { 0x26A0, 0x26A0, 0 };
-            io.Fonts->AddFontFromFileTTF(fontPath.CStr(), m_fontSize, &cfg, ranges);
+            if (SR_UTILS_NS::FileSystem::ReadFile(fontPath, fontData)) {
+                io.Fonts->AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize, &config, ranges);
+            }
         }
 
         /// Icons font

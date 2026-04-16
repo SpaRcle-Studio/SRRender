@@ -274,7 +274,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (!pObject->GetMaterial()->IsValid()) {
-            SR_ERROR("RenderScene::Register() : mesh have invalid material!\n\tGameObject: {}",
+            SR_ERROR("RenderScene::Register() : object have invalid material!\n\tScene object: {}",
                  (pObject->GetSceneObject() ? pObject->GetSceneObject()->GetName() : "nullptr")
             );
             return;

@@ -805,6 +805,7 @@ namespace SR_GRAPH_NS {
         }
         else {
             SR_LOG("RenderContext::ReloadGraphicsSettings() : active graphics settings file not found at path: {}", path);
+            SetGraphicsSettings(ActiveGraphicsSettings(), false);
         }
     }
 
