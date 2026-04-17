@@ -22,8 +22,8 @@ namespace SR_GRAPH_NS {
         void LoadShader(const DebugPass* pPass);
 
         struct MemInfo {
-            Memory::UBOManager::VirtualUBO virtualUBO;
-            DescriptorManager::VirtualDescriptorSet virtualDescriptor;
+            Memory::UBOManager::VirtualUBO virtualUBO = SR_ID_INVALID;
+            DescriptorManager::VirtualDescriptorSet virtualDescriptor = SR_ID_INVALID;
             bool isDirty = true;
         };
 
@@ -31,6 +31,8 @@ namespace SR_GRAPH_NS {
         uint32_t uboUsed = 0;
         std::vector<MemInfo> UBOs;
         std::vector<std::vector<DebugRenderer::DrawInfo>> drawQueues;
+
+        void Reset();
 
         /// @property
         /// @customArgs(pick: enabled, filter name: Shader, relative: resources)

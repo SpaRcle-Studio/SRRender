@@ -424,6 +424,7 @@ namespace SR_GRAPH_NS {
         for (auto&& [pScene, pRenderScene] : m_scenes) {
             pRenderScene->SetDirty();
         }
+        m_pipeline->SetDirty(true);
     }
 
     RenderContext::TexturePtr RenderContext::GetDefaultTexture() const {

@@ -35,6 +35,7 @@ namespace SR_GRAPH_NS {
         //        m_dirtyShader = true;
         //    });
         //}
+        m_dirtyShader = true;
 
         return Super::Init();
     }
@@ -166,6 +167,7 @@ namespace SR_GRAPH_NS {
         if (m_virtualDescriptor != SR_ID_INVALID) {
             SR_GRAPH_NS::DescriptorManager::Instance().FreeDescriptorSet(&m_virtualDescriptor);
         }
+        m_samplers.MarkSamplersDirty();
         Super::DeInit();
     }
 

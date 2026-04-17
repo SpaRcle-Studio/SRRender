@@ -264,6 +264,20 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         ImGui::EndGroup();
     }
 
+    void EndGroupIfCan() {
+        SR_TRACY_ZONE;
+
+        if (GImGui->GroupStack.empty()) {
+            return;
+        }
+
+        if (GImGui->GroupStack.back().WindowID != GImGui->CurrentWindow->ID) {
+            return;
+        }
+
+        ImGui::EndGroup();
+    }
+
     float_t GetFrameHeight() {
         return ImGui::GetFrameHeight();
     }
@@ -1047,6 +1061,10 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ImGui::SliderFloat(label, v, min, max, format);
     }
 
+    bool SliderInt(const char *label, int *v, int min, int max, const char *format) {
+        return ImGui::SliderInt(label, v, min, max, format);
+    }
+
     bool InputText(const char *label, char *str, size_t strSize, InputTextFlags flags) {
         return ImGui::InputText(label, str, strSize, static_cast<ImGuiInputTextFlags>(flags));
     }
@@ -1391,5 +1409,40 @@ namespace SR_GRAPH_GUI_NS::Immediate {
     bool IsItemVisible() {
         return ImGui::IsItemVisible();
     }
+
+    float GetStyleVarFloat(StyleVar idx) {
+        auto&& style = ImGui::GetStyle();
+        switch (idx) {
+            case StyleVar::Alpha: return style.Alpha;
+            case StyleVar::DisabledAlpha: return style.DisabledAlpha;
+            case StyleVar::WindowRounding: return style.WindowRounding;
+            case StyleVar::ChildRounding: return style.ChildRounding;
+            case StyleVar::PopupRounding: return style.PopupRounding;
+            case StyleVar::FrameRounding: return style.FrameRounding;
+            case StyleVar::GrabRounding: return style.GrabRounding;
+            case StyleVar::TabRounding: return style.TabRounding;
+            default:
+                SRHalt("Unsupported StyleVar!");
+                return 0.0f;
+        }
+    }
+
+    SR_MATH_NS::FVector2 GetStyleVarVec2(StyleVar idx) {
+        auto&& style = ImGui::GetStyle();
+        switch (idx) {
+            case StyleVar::WindowPadding: return ImV2ToF2(style.WindowPadding);
+            case StyleVar::WindowMinSize: return ImV2ToF2(style.WindowMinSize);
+            case StyleVar::WindowTitleAlign: return ImV2ToF2(style.WindowTitleAlign);
+            case StyleVar::FramePadding: return ImV2ToF2(style.FramePadding);
+            case StyleVar::ItemSpacing: return ImV2ToF2(style.ItemSpacing);
+            case StyleVar::ItemInnerSpacing: return ImV2ToF2(style.ItemInnerSpacing);
+            case StyleVar::ButtonTextAlign: return ImV2ToF2(style.ButtonTextAlign);
+            case StyleVar::SelectableTextAlign: return ImV2ToF2(style.SelectableTextAlign);
+            default:
+                SRHalt("Unsupported StyleVar!");
+                return SR_MATH_NS::FVector2(0.0f, 0.0f);
+        }
+    }
+
 #endif
 }

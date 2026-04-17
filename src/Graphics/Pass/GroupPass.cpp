@@ -223,4 +223,20 @@ namespace SR_GRAPH_NS {
         }
         return SR_ID_INVALID;
     }
+
+    void GroupPass::RemovePass(SpaRcle::Utils::StringAtom name) {
+        SR_TRACY_ZONE;
+
+        auto pIt = std::find_if(m_passes.begin(), m_passes.end(), [name](const BasePass::Ptr& pPass) {
+            return pPass->GetPassName() == name;
+        });
+        if (pIt != m_passes.end()) {
+            (*pIt)->DeInit();
+            (*pIt).AutoFree();
+            m_passes.erase(pIt);
+        }
+        else {
+            SR_ERROR("GroupPass::RemovePass() : pass with name {} not found!", name);
+        }
+    }
 }

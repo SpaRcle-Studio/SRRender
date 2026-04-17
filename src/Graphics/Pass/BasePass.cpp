@@ -64,8 +64,7 @@ namespace SR_GRAPH_NS {
     }
 
     void BasePass::DeInit() {
-        SRAssert2(m_isInit, "Pass isn't initialized!");
-
+        //SRAssert2(m_isInit, "Pass isn't initialized!");
         m_isInit = false;
     }
 

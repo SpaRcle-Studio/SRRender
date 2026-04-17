@@ -117,6 +117,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD CameraPtr GetFirstOffScreenCamera() const;
         SR_NODISCARD SR_MATH_NS::UVector2 GetSurfaceSize() const;
         SR_NODISCARD const std::vector<CameraInfo>& GetCameras() { return m_cameras; }
+        SR_NODISCARD CameraPtr GetCameraByIndex(uint32_t index) const;
 
         static void RenderBlackScreen(Pipeline* pPipeline, bool randomColor);
 
@@ -144,6 +145,7 @@ namespace SR_GRAPH_NS {
 
         std::vector<CameraPtr> m_editorCameras;
         std::vector<CameraPtr> m_offScreenCameras;
+
         std::vector<CameraInfo> m_cameras;
 
         WidgetManagers m_widgetManagers;

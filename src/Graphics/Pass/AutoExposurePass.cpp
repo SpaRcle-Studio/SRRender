@@ -84,6 +84,8 @@ namespace SR_GRAPH_NS {
     void AutoExposurePass::DeInit() {
         SR_TRACY_ZONE;
 
+        m_samplers.MarkSamplersDirty();
+        m_dirtyShader = true;
         FreeBuffers();
 
         for (int32_t& SSBOId : m_exposureSSBO) {
@@ -172,8 +174,6 @@ namespace SR_GRAPH_NS {
         Super::OnResize(size);
         m_samplers.MarkSamplersDirty();
         m_dirtyShader = true;
-        m_width = size.x;
-        m_height = size.y;
     }
 
     void AutoExposurePass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
@@ -325,7 +325,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_reductionUBOFirst.uboId == SR_ID_INVALID || m_reductionUBOFirst.descriptorSetId == SR_ID_INVALID) {
-            SR_ERROR("AutoExposurePass::ReductionFirst() : failed to allocate UBO or descriptor set for first reduction pass");
+            SRHalt("AutoExposurePass::ReductionFirst() : failed to allocate UBO or descriptor set for first reduction pass");
             return false;
         }
 
@@ -402,6 +402,13 @@ namespace SR_GRAPH_NS {
 
             GetPipeline()->WriteMemoryBarrier(MemoryBarrierType::ComputeToReadAttachment);
         }
+
+        /// лишние m_reductionUBOLinear удаляем
+        for (size_t i = index; i < m_reductionUBOLinear.size(); ++i) {
+            DescriptorManager::Instance().TryFreeDescriptorSet(&m_reductionUBOLinear[i].descriptorSetId);
+            Memory::UBOManager::Instance().TryFreeUBO(&m_reductionUBOLinear[i].uboId);
+        }
+        m_reductionUBOLinear.resize(index);
 
         m_pReductionLinearShader->UnUse();
 

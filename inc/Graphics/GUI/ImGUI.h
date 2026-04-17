@@ -14,13 +14,18 @@
 #include <Utils/Debug.h>
 #include <Utils/Math/Vector2.h>
 
+namespace SR_GRAPH_GUI_NS {
+    extern std::atomic<bool> gIgnoreImGuiAsserts;
+    extern void SetIgnoreImGuiAsserts(bool ignore);
+}
+
 #ifdef SR_USE_IMGUI
     #define IMGUI_UNLIMITED_FRAME_RATE
     #define IMGUI_DEFINE_MATH_OPERATORS
     #define IMGUI_USE_WCHAR32
 
     #ifndef IM_ASSERT
-        #define IM_ASSERT(_EXP) SRAssert1Once(_EXP)
+        #define IM_ASSERT(_EXP) SRAssert1Once(SR_GRAPH_GUI_NS::gIgnoreImGuiAsserts || (_EXP))
     #endif
 
     #ifndef IM_ASSERT_USER_ERROR

@@ -47,6 +47,8 @@ namespace SR_GRAPH_NS {
     }
 
     bool FrameBufferController::InitializeFramebuffer(RenderContext* pContext) {
+        SR_TRACY_ZONE;
+
         /// fix zero size
         if (m_size.x == 0) {
             m_size.x = static_cast<int32_t>(pContext->GetWindowSize().x);
@@ -62,7 +64,10 @@ namespace SR_GRAPH_NS {
                 static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(m_size.y) * m_preScale.y),
         };
 
-        SRAssert(!m_framebuffer);
+        if (m_framebuffer) {
+            m_framebuffer->KillFramebuffer();
+            m_framebuffer = nullptr;
+        }
 
         const bool forEachSwapchainImage = SR_UTILS_NS::Features::Instance().Enabled("FBOForEachSwapchainImage", false);
 

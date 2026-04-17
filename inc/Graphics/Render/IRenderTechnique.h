@@ -16,6 +16,7 @@
 
 namespace SR_GTYPES_NS {
     class Camera;
+    class RenderTarget;
     class Framebuffer;
 }
 
@@ -28,6 +29,7 @@ namespace SR_GRAPH_NS {
         SR_STRUCT()
 
         void SetRenderStagesSettingsPath(const SR_UTILS_NS::Path& path);
+        void AddPass(BasePass::Ptr pPass);
 
         /// @property
         SR_UTILS_NS::StringAtom name;
@@ -70,6 +72,8 @@ namespace SR_GRAPH_NS {
         void SetCamera(CameraPtr pCamera);
         void SetRenderScene(const RenderScenePtr& pRScene);
         void SetRenderTechniqueData(RenderTechniqueData&& data);
+        void AttachRenderTarget(SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::RenderTarget> pRenderTarget);
+        void DetachRenderTarget(SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::RenderTarget> pRenderTarget);
 
         SR_NODISCARD const RenderTechniqueData& GetRenderTechniqueData() const noexcept { return m_data; }
         SR_NODISCARD RenderTechniqueData& GetRenderTechniqueData() noexcept { return m_data; }
@@ -110,6 +114,7 @@ namespace SR_GRAPH_NS {
 
     protected:
         std::optional<SR_MATH_NS::UVector2> m_surfaceSize;
+        std::set<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::RenderTarget>> m_attachedRenderTargets;
         RenderTechniqueData m_data;
         RenderScenePtr m_renderScene;
         CameraPtr m_camera = nullptr;

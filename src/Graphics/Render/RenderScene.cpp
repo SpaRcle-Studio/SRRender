@@ -350,13 +350,8 @@ namespace SR_GRAPH_NS {
         m_dirtyCameras = false;
         m_mainCamera = nullptr;
 
-        const uint64_t offScreenCamerasCount = m_offScreenCameras.size();
         m_offScreenCameras.clear();
-        m_offScreenCameras.reserve(offScreenCamerasCount);
-
-        const uint64_t editorCamerasCount = m_editorCameras.size();
         m_editorCameras.clear();
-        m_editorCameras.reserve(editorCamerasCount);
 
         /// Удаляем уничтоженные камеры
         for (auto pIt = m_cameras.begin(); pIt != m_cameras.end(); ) {
@@ -375,11 +370,13 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
+            const auto priority = cameraInfo.pCamera->GetPriority();
+
             if (cameraInfo.pCamera->IsEditorCamera()) {
                 m_editorCameras.emplace_back(cameraInfo.pCamera);
             }
 
-            if (cameraInfo.pCamera->GetPriority() < 0) {
+            if (priority < 0) {
                 m_offScreenCameras.emplace_back(cameraInfo.pCamera);
                 continue;
             }
@@ -585,5 +582,12 @@ namespace SR_GRAPH_NS {
     void RenderScene::ReRegister(const RenderObjectRegistrationInfo& info) {
         m_renderStrategy->ReRegister(info);
         SetDirty();
+    }
+
+    RenderScene::CameraPtr RenderScene::GetCameraByIndex(uint32_t index) const {
+        if (index < m_cameras.size()) {
+            return m_cameras[index].pCamera;
+        }
+        return nullptr;
     }
 }

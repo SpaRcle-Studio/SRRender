@@ -90,8 +90,6 @@ namespace SR_GRAPH_NS {
         UBOInfo m_adaptationUBO;
 
         uint32_t m_reductionBufferElementCount = 0u;
-        uint32_t m_width = 0u;
-        uint32_t m_height = 0u;
 
         bool m_dirtyShader = true;
 

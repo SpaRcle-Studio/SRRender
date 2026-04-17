@@ -13,6 +13,7 @@
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Loaders/RenderTechniquePostProcess.h>
 #include <Graphics/Types/Camera.h>
+#include <Graphics/Types/RenderTarget.h>
 
 #include <Utils/FileSystem/PathDataAccessor.h>
 
@@ -23,11 +24,25 @@ namespace SR_GRAPH_NS {
         renderStagesSettings = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
     }
 
+    void RenderTechniqueData::AddPass(BasePass::Ptr pPass) {
+        if (!pPass) {
+            SRHalt("RenderTechniqueData::AddPass() : pPass is nullptr!");
+            return;
+        }
+
+        if (!pass) {
+            pass = new GroupPass();
+        }
+
+        pass.StaticCast<GroupPass>()->AddPass(pPass);
+    }
+
     IRenderTechnique::IRenderTechnique()
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
     { }
 
     IRenderTechnique::~IRenderTechnique() {
+        SRAssert(m_attachedRenderTargets.empty());
         m_data.pass.AutoFree();
         ReleaseFrameBuffers();
     }
@@ -101,8 +116,15 @@ namespace SR_GRAPH_NS {
     }
 
     void IRenderTechnique::KillTechnique() {
+        SR_TRACY_ZONE;
+
         SRAssert(!m_isDead);
         m_isDead = true;
+
+        for (auto&& pRenderTarget : m_attachedRenderTargets) {
+            pRenderTarget->Deactivate();
+        }
+        m_attachedRenderTargets.clear();
 
         if (!IsGraphicsResourceRegistered()) {
             AutoFree();
@@ -251,6 +273,10 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        if (m_data.pass && m_data.pass->IsInit()) {
+            m_data.pass->DeInit();
+        }
+
         if (m_data.pass && !m_data.pass->PreInit()) {
             SR_ERROR("RenderTechnique::Init() : failed to pre-initialize pass \"{}\"!", m_data.pass->GetPassName());
             m_hasErrors = true;
@@ -309,6 +335,24 @@ namespace SR_GRAPH_NS {
         m_data = std::move(data);
         m_modulesApplied = false;
 
+        OnHierarchyChanged();
+    }
+
+    void IRenderTechnique::AttachRenderTarget(SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::RenderTarget> pRenderTarget) {
+        if (SRVerify(pRenderTarget)) {
+            if (!m_attachedRenderTargets.insert(pRenderTarget).second) {
+                SRHalt("IRenderTechnique::AttachRenderTarget() : render target \"{}\" is already attached to technique \"{}\"!", pRenderTarget->GetName(), m_data.name);
+            }
+        }
+        OnHierarchyChanged();
+    }
+
+    void IRenderTechnique::DetachRenderTarget(SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::RenderTarget> pRenderTarget) {
+        if (SRVerify(pRenderTarget))  {
+            if (m_attachedRenderTargets.erase(pRenderTarget) == 0) {
+                SRHalt("IRenderTechnique::DetachRenderTarget() : render target \"{}\" is not attached to technique \"{}\"!", pRenderTarget->GetName(), m_data.name);
+            }
+        }
         OnHierarchyChanged();
     }
 

@@ -356,6 +356,8 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void PushStyleVar(StyleVar idx, float val);
         SR_GRAPHICS_DLL_API extern void PushStyleVar(StyleVar idx, const SR_MATH_NS::FVector2& val);
         SR_GRAPHICS_DLL_API extern void PopStyleVar(uint32_t count = 1);
+        SR_GRAPHICS_DLL_API extern float GetStyleVarFloat(StyleVar idx);
+        SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetStyleVarVec2(StyleVar idx);
         SR_GRAPHICS_DLL_API extern bool BeginPopup(const char* name);
         SR_GRAPHICS_DLL_API extern void EndPopup();
         SR_GRAPHICS_DLL_API extern void SameLine(float_t offsetFromStartX = 0.0f, float_t spacing = -1.0f);
@@ -373,6 +375,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void PopStyleColor(uint32_t count = 1);
         SR_GRAPHICS_DLL_API extern void BeginGroup();
         SR_GRAPHICS_DLL_API extern void EndGroup();
+        SR_GRAPHICS_DLL_API extern void EndGroupIfCan();
         SR_GRAPHICS_DLL_API extern void TreePop();
         SR_GRAPHICS_DLL_API extern bool BeginDragDropSource(DragDropFlags flags = DragDropFlags::None);
         SR_GRAPHICS_DLL_API extern float_t GetFrameHeight();
@@ -487,6 +490,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern bool DragFloat2(const char* label, float_t v[2], float_t vSpeed, float_t min = 0.f, float_t max = 0.f, const char* format = "%.3f");
         SR_GRAPHICS_DLL_API extern bool DragFloat3(const char* label, float_t v[3], float_t vSpeed, float_t min = 0.f, float_t max = 0.f, const char* format = "%.3f");
         SR_GRAPHICS_DLL_API extern bool SliderFloat(const char* label, float_t* v, float_t min, float_t max, const char* format = "%.3f");
+        SR_GRAPHICS_DLL_API extern bool SliderInt(const char* label, int* v, int min, int max, const char* format = "%d");
         SR_GRAPHICS_DLL_API extern float_t GetFramerate();
         SR_GRAPHICS_DLL_API extern float_t GetFrameHeightWithSpacing();
 

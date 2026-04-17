@@ -53,9 +53,16 @@ namespace SR_GTYPES_NS {
         m_isDirty = true;
 
         bool hasErrors = !IResource::Load();
+        m_isRenderTarget = GetResourcePath().View().starts_with("RenderTarget/");
+
+        if (m_isRenderTarget) {
+            SR_LOG("Texture::Load() : loading render target texture: {}", GetResourcePath());
+            RegisterGraphicsResource();
+            GetRenderContext()->SetDirty();
+            return !hasErrors;
+        }
 
         auto&& fullPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(GetResourcePath());
-
         ImageMetaInfo metaInfo = ImageMetaInfo();
         if (auto&& metaPath = fullPath.ConcatExt(".meta"); metaPath.Exists(SR_UTILS_NS::Path::Type::File)) {
             SR_UTILS_NS::SRADeserializer deserializer;
@@ -165,7 +172,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (!m_textureData) {
+        if (!m_textureData && !m_isRenderTarget) {
             SR_ERROR("Texture::Calculate() : data is invalid!");
             return false;
         }
@@ -179,6 +186,11 @@ namespace SR_GTYPES_NS {
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Low) {
             SR_LOG("Texture::Calculate() : calculating \"" + std::string(GetResourceId()) + "\" texture...");
+        }
+
+        if (m_isRenderTarget) {
+            m_isDirty = false;
+            return true;
         }
 
         if (m_id != SR_ID_INVALID) {
@@ -392,6 +404,10 @@ namespace SR_GTYPES_NS {
 
     bool Texture::CanBeUsed() const {
         if (m_syncLoadTaskId) {
+            return false;
+        }
+
+        if (m_id == SR_ID_INVALID && m_isRenderTarget) {
             return false;
         }
 

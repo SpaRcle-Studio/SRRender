@@ -44,6 +44,7 @@ namespace SR_GRAPH_NS {
         std::vector<BasePass::Ptr>& GetPasses() { return m_passes; }
 
         void AddPass(const BasePass::Ptr& pass);
+        void RemovePass(SR_UTILS_NS::StringAtom name);
         void SetPasses(const std::vector<BasePass::Ptr>& passes);
         void InsertPass(const BasePass::Ptr& pass, uint32_t index);
 

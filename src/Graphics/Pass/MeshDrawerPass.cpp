@@ -184,6 +184,8 @@ namespace SR_GRAPH_NS {
             pRenderQueue.AutoFree();
         }
         m_renderQueues.clear();
+        m_samplers.MarkSamplersDirty();
+        m_useSharedFromPass.clear();
         Super::DeInit();
     }
 
@@ -219,7 +221,10 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        SRAssert(m_renderQueues.empty());
+        for (auto&& pRenderQueue : m_renderQueues) {
+            pRenderQueue.AutoFree();
+        }
+        m_renderQueues.clear();
 
         m_renderQueues.resize(m_renderLayers);
         for (uint8_t i = 0; i < m_renderLayers; ++i) {

@@ -5,6 +5,10 @@
 #include <Graphics/GUI/ImGUI.h>
 #include <Graphics/Pipeline/PipelineType.h>
 
-namespace SR_GRAPH_GUI_NS {
 
+namespace SR_GRAPH_GUI_NS {
+    std::atomic<bool> gIgnoreImGuiAsserts = false;
+    void SetIgnoreImGuiAsserts(bool ignore) {
+        gIgnoreImGuiAsserts = ignore;
+    }
 }

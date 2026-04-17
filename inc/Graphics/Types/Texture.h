@@ -67,6 +67,7 @@ namespace SR_GTYPES_NS {
     private:
         SR_HTYPES_NS::SharedPtr<TextureData> m_textureData;
 
+        bool m_isRenderTarget = false;
         int32_t m_id = SR_ID_INVALID;
 
         std::atomic<bool> m_hasErrors = false;

@@ -64,6 +64,16 @@ namespace SR_GRAPH_NS {
         shaderPath = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
     }
 
+    void DebugPassShaderInfo::Reset() {
+        if (pShader) {
+            pShader->RemoveUsePoint();
+            pShader = nullptr;
+        }
+        uboUsed = 0;
+        UBOs.clear();
+        drawQueues.clear();
+    }
+
     bool DebugPass::Prepare() {
         SR_TRACY_ZONE;
 
@@ -203,8 +213,8 @@ namespace SR_GRAPH_NS {
                 m_uboManager.FreeUBO(&UBO.virtualUBO);
                 m_descriptorManager.FreeDescriptorSet(&UBO.virtualDescriptor);
             }
+            shaderInfo.Reset();
         }
-        m_shaders.clear();
 
         Super::DeInit();
     }
