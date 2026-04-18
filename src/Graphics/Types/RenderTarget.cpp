@@ -7,6 +7,7 @@
 #include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/IRenderTechnique.h>
+#include <Graphics/Render/RenderContext.h>
 
 #include <Utils/FileSystem/PathDataAccessor.h>
 #include <Utils/World/Scene.h>
@@ -70,6 +71,13 @@ namespace SR_GTYPES_NS {
             return;
         }
 
+        auto&& pRenderContext = GetRenderScene()->GetContext();
+        if (pRenderContext->FindRenderTarget(m_name)) {
+            SR_ERROR("RenderTarget::Activate() : render context already has render target with name: {}", m_name);
+            return;
+        }
+        pRenderContext->RegisterRenderTarget(this);
+
         auto&& data = pRenderTechnique->GetRenderTechniqueData();
 
         FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
@@ -110,7 +118,7 @@ namespace SR_GTYPES_NS {
             }
             pFrameBufferPass->GetFrameBufferPassData().SetClearDepth(m_clearDepth);
             m_cachedPasses.clear();
-            data.AddPass(pFrameBufferPass.StaticCast<BasePass>());
+            data.AddPassFront(pFrameBufferPass.StaticCast<BasePass>());
         }
 
         pRenderTechnique->AttachRenderTarget(this);
@@ -140,6 +148,7 @@ namespace SR_GTYPES_NS {
         if (auto&& pGroupPass = data.pass.DynamicCast<GroupPass>()) {
             pGroupPass->RemovePass(m_name);
         }
+        GetRenderScene()->GetContext()->UnRegisterRenderTarget(this);
 
         m_usedRenderTechnique->DetachRenderTarget(this);
         m_usedRenderTechnique = nullptr;
@@ -157,5 +166,19 @@ namespace SR_GTYPES_NS {
             }
         }
         return pCamera->GetRenderTechnique();
+    }
+
+    Framebuffer* RenderTarget::GetFramebuffer() const {
+        if (!m_usedRenderTechnique) {
+            return nullptr;
+        }
+
+        auto&& data = m_usedRenderTechnique->GetRenderTechniqueData();
+        for (auto&& pController : data.frameBuffers) {
+            if (pController && pController->GetName() == m_name) {
+                return pController->GetFramebuffer().Get();
+            }
+        }
+        return nullptr;
     }
 }

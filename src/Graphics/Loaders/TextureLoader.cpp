@@ -29,7 +29,9 @@ namespace SR_GRAPH_NS {
     { }
 
     TextureData::~TextureData() {
-        m_deleter(m_data);
+        if (m_deleter) {
+            m_deleter(m_data);
+        }
     }
 
     uint32_t TextureData::GetNumberOfBytes() const {
@@ -82,6 +84,18 @@ namespace SR_GRAPH_NS {
 
     uint8_t TextureData::GetChannels() const {
         return m_info.channels;
+    }
+
+    TextureData::Ptr TextureData::CreateEmpty() {
+        return new TextureData();
+    }
+
+    void TextureData::SetData(uint32_t width, uint32_t height, uint8_t* pData, TextureData::DeleterFn&& deleter, TextureLoadInfo info) {
+        m_width = width;
+        m_height = height;
+        m_data = pData;
+        m_info = info;
+        m_deleter = std::move(deleter);
     }
 
     TextureData::Ptr TextureLoader::Load(const SR_UTILS_NS::Path& path, TextureLoadInfo info) {

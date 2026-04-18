@@ -10,6 +10,8 @@
 
 namespace SR_GRAPH_NS {
     bool FrameBufferPass::Render() {
+        SR_MAYBE_UNUSED auto frameBufferDebugName = m_data.GetFrameBufferName().c_str();
+
         if (m_data.RenderFrameBuffer([this]() { return GroupPass::Render(); })) {
             return true;
         }

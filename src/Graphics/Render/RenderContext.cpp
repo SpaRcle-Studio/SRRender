@@ -21,6 +21,7 @@
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/Types/Skybox.h>
+#include <Graphics/Types/RenderTarget.h>
 
 #if defined(SR_USE_VULKAN)
     #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
@@ -357,6 +358,37 @@ namespace SR_GRAPH_NS {
         }
 
         return pRenderScene;
+    }
+
+    void RenderContext::RegisterRenderTarget(SR_GTYPES_NS::RenderTarget* pRenderTarget) {
+        if (auto&& pIt = std::ranges::find_if(m_renderTargets, [pRenderTarget](const auto pExistingRenderTarget) {
+            return pExistingRenderTarget == pRenderTarget;
+        }); pIt != m_renderTargets.end()) {
+            SRHalt("RenderContext::RegisterRenderTarget() : render target {} is already registered!", pRenderTarget->GetName());
+            return;
+        }
+        m_renderTargets.emplace_back(pRenderTarget);
+    }
+
+    void RenderContext::UnRegisterRenderTarget(SR_GTYPES_NS::RenderTarget* pRenderTarget) {
+        auto&& pIt = std::ranges::find_if(m_renderTargets, [pRenderTarget](const auto pExistingRenderTarget) {
+            return pExistingRenderTarget == pRenderTarget;
+        });
+        if (pIt != m_renderTargets.end()) {
+            m_renderTargets.erase(pIt);
+        }
+        else {
+            SRHalt("RenderContext::UnRegisterRenderTarget() : render target {} is not registered!", pRenderTarget->GetName());
+        }
+    }
+
+    SR_GTYPES_NS::RenderTarget* RenderContext::FindRenderTarget(SR_UTILS_NS::StringAtom name) const {
+        for (auto&& pRenderTarget : m_renderTargets) {
+            if (pRenderTarget->GetName() == name) {
+                return pRenderTarget;
+            }
+        }
+        return nullptr;
     }
 
     void RenderContext::Register(Memory::IGraphicsResource* pResource, SR_UTILS_NS::PassKey<Memory::IGraphicsResource>) {

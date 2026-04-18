@@ -21,6 +21,7 @@ namespace SR_GTYPES_NS {
     class Camera;
     class Texture;
     class Skybox;
+    class RenderTarget;
 }
 
 namespace SR_GRAPH_NS {
@@ -93,6 +94,10 @@ namespace SR_GRAPH_NS {
 
         void Register(Memory::IGraphicsResource* pResource, SR_UTILS_NS::PassKey<Memory::IGraphicsResource>);
 
+        void RegisterRenderTarget(SR_GTYPES_NS::RenderTarget* pRenderTarget);
+        void UnRegisterRenderTarget(SR_GTYPES_NS::RenderTarget* pRenderTarget);
+        SR_NODISCARD SR_GTYPES_NS::RenderTarget* FindRenderTarget(SR_UTILS_NS::StringAtom name) const;
+
         SR_NODISCARD bool IsOptimizedRenderUpdateEnabled() const noexcept { return m_isOptimizedUpdateEnabled; }
         SR_NODISCARD bool IsFrustumCullingEnabled() const noexcept { return m_isFrustumCullingEnabled; }
         SR_NODISCARD bool IsEmpty() const;
@@ -154,6 +159,8 @@ namespace SR_GRAPH_NS {
         std::vector<TexturePtr> m_textures;
         std::vector<SkyboxPtr> m_skyboxes;
         Definitions m_definitions;
+
+        std::vector<SR_GTYPES_NS::RenderTarget*> m_renderTargets;
 
         RenderScenes m_scenes;
 

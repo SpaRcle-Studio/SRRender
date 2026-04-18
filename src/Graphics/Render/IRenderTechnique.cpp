@@ -24,17 +24,22 @@ namespace SR_GRAPH_NS {
         renderStagesSettings = path.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
     }
 
-    void RenderTechniqueData::AddPass(BasePass::Ptr pPass) {
-        if (!pPass) {
-            SRHalt("RenderTechniqueData::AddPass() : pPass is nullptr!");
-            return;
+    void RenderTechniqueData::AddPassBack(BasePass::Ptr pPass) {
+        if (SRVerify(pPass)) {
+            if (!pass) {
+                pass = new GroupPass();
+            }
+            pass.StaticCast<GroupPass>()->InsertPass(pPass, pass.StaticCast<GroupPass>()->GetPasses().size());
         }
+    }
 
-        if (!pass) {
-            pass = new GroupPass();
+    void RenderTechniqueData::AddPassFront(BasePass::Ptr pPass) {
+        if (SRVerify(pPass)) {
+            if (!pass) {
+                pass = new GroupPass();
+            }
+            pass.StaticCast<GroupPass>()->InsertPass(pPass, 0);
         }
-
-        pass.StaticCast<GroupPass>()->AddPass(pPass);
     }
 
     IRenderTechnique::IRenderTechnique()
@@ -121,10 +126,12 @@ namespace SR_GRAPH_NS {
         SRAssert(!m_isDead);
         m_isDead = true;
 
-        for (auto&& pRenderTarget : m_attachedRenderTargets) {
-            pRenderTarget->Deactivate();
+        if (!m_attachedRenderTargets.empty()) {
+            SR_LOG("IRenderTechnique::KillTechnique() : technique \"{}\" has attached render targets, deactivating them...", m_data.name);
+            while (!m_attachedRenderTargets.empty()) {
+                (*m_attachedRenderTargets.begin())->Deactivate();
+            }
         }
-        m_attachedRenderTargets.clear();
 
         if (!IsGraphicsResourceRegistered()) {
             AutoFree();

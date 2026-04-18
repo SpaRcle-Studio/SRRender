@@ -20,6 +20,7 @@ namespace SR_GRAPH_NS {
 
 namespace SR_GTYPES_NS {
     class Camera;
+    class Framebuffer;
 
     struct RenderTargetLayer : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
@@ -44,6 +45,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
         SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const { return m_name; }
+        SR_NODISCARD Framebuffer* GetFramebuffer() const;
 
     private:
         SR_NODISCARD RenderScene* GetRenderScene() const;

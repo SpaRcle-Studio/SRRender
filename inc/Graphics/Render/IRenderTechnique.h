@@ -29,7 +29,8 @@ namespace SR_GRAPH_NS {
         SR_STRUCT()
 
         void SetRenderStagesSettingsPath(const SR_UTILS_NS::Path& path);
-        void AddPass(BasePass::Ptr pPass);
+        void AddPassBack(BasePass::Ptr pPass);
+        void AddPassFront(BasePass::Ptr pPass);
 
         /// @property
         SR_UTILS_NS::StringAtom name;

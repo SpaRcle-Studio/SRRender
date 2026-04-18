@@ -35,6 +35,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD ClearColors& GetClearColors() noexcept { return m_clearColors; }
         SR_NODISCARD std::optional<float_t> GetClearDepth() const noexcept { return m_depth; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept;
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetFrameBufferName() const noexcept { return m_frameBufferName; }
 
         bool RenderFrameBuffer(const FBRenderCallback& callback);
         void UpdateFrameBuffer(const FBUpdateCallback& callback);

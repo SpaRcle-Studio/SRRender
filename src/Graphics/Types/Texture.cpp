@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/Types/Texture.h>
+#include <Graphics/Types/Framebuffer.h>
+#include <Graphics/Types/RenderTarget.h>
 #include <Graphics/Loaders/TextureLoader.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Pipeline/Pipeline.h>
@@ -12,6 +14,8 @@
 #include <Utils/Types/WeakPtr.h>
 #include <Utils/TaskManager/TaskManager.h>
 #include <Utils/Common/Features.h>
+#include <Utils/Common/StringUtils.h>
+#include <Utils/Common/LexicalCast.h>
 
 #ifdef SR_USE_VULKAN
     #include <EvoVulkan/Tools/VulkanDebug.h>
@@ -53,10 +57,26 @@ namespace SR_GTYPES_NS {
         m_isDirty = true;
 
         bool hasErrors = !IResource::Load();
-        m_isRenderTarget = GetResourcePath().View().starts_with("RenderTarget/");
+        if (GetResourcePath().View().starts_with("RenderTarget/")) {
+            auto&& parts = SR_UTILS_NS::StringUtils::SplitView(GetResourcePath().View(), "/");
+            if (parts.size() != 3) {
+                SR_ERROR("Texture::Load() : invalid render target texture path! Path: {}", GetResourcePath());
+                return false;
+            }
+            m_renderTargetInfo = Texture::RTInfo();
+            m_renderTargetInfo->name = parts[1];
+            if (parts[2] == "Depth") {
+                m_renderTargetInfo->depth = true;
+                m_renderTargetInfo->layer = -1;
+            }
+            else {
+                m_renderTargetInfo->layer = SR_UTILS_NS::LexicalCast<uint32_t>(parts[2]);
+            }
+        }
 
-        if (m_isRenderTarget) {
+        if (m_renderTargetInfo) {
             SR_LOG("Texture::Load() : loading render target texture: {}", GetResourcePath());
+            m_textureData = TextureData::CreateEmpty();
             RegisterGraphicsResource();
             GetRenderContext()->SetDirty();
             return !hasErrors;
@@ -172,8 +192,8 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (!m_textureData && !m_isRenderTarget) {
-            SR_ERROR("Texture::Calculate() : data is invalid!");
+        if (!m_textureData) {
+            SRHalt("Texture::Calculate() : data is invalid!");
             return false;
         }
 
@@ -188,7 +208,7 @@ namespace SR_GTYPES_NS {
             SR_LOG("Texture::Calculate() : calculating \"" + std::string(GetResourceId()) + "\" texture...");
         }
 
-        if (m_isRenderTarget) {
+        if (m_renderTargetInfo) {
             m_isDirty = false;
             return true;
         }
@@ -239,7 +259,7 @@ namespace SR_GTYPES_NS {
             SR_LOG("Texture::FreeVMemory() : free \"" + std::string(GetResourceId()) + "\" texture's video memory...");
         }
 
-        if (m_id != SR_ID_INVALID && !GetPipeline()->FreeTexture(&m_id)) {
+        if (!m_renderTargetInfo && m_id != SR_ID_INVALID && !GetPipeline()->FreeTexture(&m_id)) {
             SR_ERROR("Texture::FreeVMemory() : failed to free texture!");
         }
 
@@ -367,6 +387,29 @@ namespace SR_GTYPES_NS {
     void Texture::PrepareFrame() {
         SR_TRACY_ZONE;
 
+        auto&& pRenderContext = GetRenderContext();
+        if (!pRenderContext) {
+            return;
+        }
+
+        if (m_renderTargetInfo) {
+            SR_GTYPES_NS::Framebuffer* pFramebuffer = nullptr;
+            if (auto&& pRT = pRenderContext->FindRenderTarget(m_renderTargetInfo->name)) {
+                pFramebuffer = pRT->GetFramebuffer();
+            }
+            if (pFramebuffer && pFramebuffer->Update() && pFramebuffer->IsValid()) {
+                if (m_renderTargetInfo->depth) {
+                    m_id = pFramebuffer->GetDepthTexture(m_renderTargetInfo->layer, 0);
+                }
+                else {
+                    m_id = pFramebuffer->GetColorTexture(m_renderTargetInfo->layer, 0);
+                }
+            }
+            else {
+                m_id = SR_ID_INVALID;
+            }
+        }
+
         if (m_syncLoadTaskId) {
             if (SR_UTILS_NS::TaskManager::Instance().IsActive(*m_syncLoadTaskId)) {
                 return;
@@ -377,14 +420,7 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        if (auto&& pRenderContext = GetRenderContext()) {
-            pRenderContext->SetDirty();
-        }
-
-        if (auto&& pPipeline = GetPipeline()) {
-            pPipeline->SetDirty(true);
-        }
-
+        pRenderContext->SetDirty();
         SetImageMetaInfoInternal(m_imageMetaInfo);
 
         Broadcast(SR_UTILS_NS::IResource::RELOAD_BEGIN_EVENT);
@@ -407,7 +443,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (m_id == SR_ID_INVALID && m_isRenderTarget) {
+        if (m_id == SR_ID_INVALID && m_renderTargetInfo) {
             return false;
         }
 

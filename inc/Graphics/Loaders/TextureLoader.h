@@ -31,6 +31,9 @@ namespace SR_GRAPH_NS {
 
     public:
         static TextureData::Ptr Create(uint32_t width, uint32_t height, uint8_t* pData, DeleterFn&& deleter, TextureLoadInfo info);
+        static TextureData::Ptr CreateEmpty();
+
+        void SetData(uint32_t width, uint32_t height, uint8_t* pData, DeleterFn&& deleter, TextureLoadInfo info);
 
         SR_NODISCARD bool Save(const SR_UTILS_NS::Path& path) const;
 
