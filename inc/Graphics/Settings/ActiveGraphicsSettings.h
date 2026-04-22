@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_ACTIVE_GRAPHICS_SETTINGS_H
 #define SR_ENGINE_GRAPHICS_ACTIVE_GRAPHICS_SETTINGS_H
 
-#include <Graphics/Settings/Quality.h>
+#include <Graphics/Utils/CameraRenderParameters.h>
 
 #include <Utils/Serialization/Serializable.h>
 #include <Utils/FileSystem/Path.h>
@@ -31,6 +31,24 @@ namespace SR_GRAPH_NS {
 
         bool operator!=(const ActiveGraphicsSettings& lrs) const {
             return !(*this == lrs);
+        }
+
+        void CorrectByCameraRenderParameters(const CameraRenderParameters& parameters) {
+            if (parameters.postProcess.has_value()) {
+                postProcess = parameters.postProcess.value();
+            }
+            if (parameters.hdr.has_value()) {
+                hdr = parameters.hdr.value();
+            }
+            if (parameters.autoExposure.has_value()) {
+                autoExposure = parameters.autoExposure.value();
+            }
+            if (parameters.shadowsQuality.has_value()) {
+                shadowsQuality = parameters.shadowsQuality.value();
+            }
+            if (parameters.colorBufferQuality.has_value()) {
+                colorBufferQuality = parameters.colorBufferQuality.value();
+            }
         }
 
         /// @property

@@ -122,6 +122,10 @@ namespace SR_GTYPES_NS {
         params.pRenderSettings = &pContext->GetSettings();
         params.sceneViewName = pContext->GetSettings().editorSceneImageName;
         params.activeGraphicsSettings = pContext->GetActiveGraphicsSettings();
+        params.activeGraphicsSettings.CorrectByCameraRenderParameters(m_renderParameters);
+        params.offscreen = GetPriority() < 0;
+        params.includeLayers = &m_renderParameters.includeLayers;
+        params.excludeLayers = &m_renderParameters.excludeLayers;
         m_renderTechnique.pTechnique = FileRenderTechnique::Load(path, params).StaticCast<IRenderTechnique>();
 
         if (m_renderTechnique.pTechnique) {
@@ -471,5 +475,10 @@ namespace SR_GTYPES_NS {
 
     bool Camera::IsCameraActive() const {
         return !m_isDisabledByEditor && IsActive();
+    }
+
+    void Camera::SetRenderParameters(const CameraRenderParameters& parameters) {
+        m_renderParameters = parameters;
+        RemoveTechnique();
     }
 }

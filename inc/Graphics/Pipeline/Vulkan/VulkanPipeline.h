@@ -150,8 +150,6 @@ namespace SR_GRAPH_NS {
 
         void WriteMemoryBarrier(MemoryBarrierType type) override;
 
-        void ResetSubmitQueue() override;
-
         void UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) override;
         void UpdateUBO(uint32_t UBO, void* pData, uint64_t size, bool sizesMustBeEqual) override;
         void UpdateSSBO(uint32_t SSBO, void* pData, uint64_t size) override;

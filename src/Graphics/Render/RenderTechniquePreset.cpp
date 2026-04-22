@@ -9,8 +9,9 @@
 #include <Graphics/Pass/SwapchainPass.h>
 #include <Graphics/Pass/PostProcessPass.h>
 #include <Graphics/Pass/AutoExposurePass.h>
-#include <Graphics/Pass/SkyboxPass.h>
 #include <Graphics/Settings/RenderSettings.h>
+
+#include <Utils/ECS/LayerManager.h>
 
 #include <Codegen/RenderTechniquePreset.generated.hpp>
 
@@ -99,19 +100,31 @@ namespace SR_GRAPH_NS {
             pShadowPass->SetRenderLayers(shadowPreset.cascadesCount);
         }
 
-        for (auto&& pLayer : technique.GetLayers()) {
-            if (auto&& pMeshLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerMesh>(pLayer)) {
-                if (!pMeshLayer->castShadows || (pMeshLayer->editorOnly && !params.editor)) {
-                    continue;
-                }
-                for (auto&& layer : pMeshLayer->allowedLayers) {
-                    pShadowPass->GetAllowedLayers().insert(layer);
-                }
-                for (auto&& layer : pMeshLayer->disallowedLayers) {
-                    pShadowPass->GetDisallowedLayers().insert(layer);
-                }
+        auto&& layers = SR_UTILS_NS::LayerManager::Instance().GetLayersInfo();
+        for (auto&& layerInfo : layers) {
+            if (!params.IsLayerApplicable(layerInfo.name)) {
+                continue;
             }
+
+            if (!layerInfo.castShadows || (layerInfo.editorOnly && !params.editor)) {
+                continue;
+            }
+            pShadowPass->GetAllowedLayers().insert(layerInfo.name);
         }
+
+        //for (auto&& pLayer : technique.GetLayers()) {
+        //    if (auto&& pMeshLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerMesh>(pLayer)) {
+        //        if (!pMeshLayer->castShadows || (pMeshLayer->editorOnly && !params.editor)) {
+        //            continue;
+        //        }
+        //        for (auto&& layer : pMeshLayer->allowedLayers) {
+        //            pShadowPass->GetAllowedLayers().insert(layer);
+        //        }
+        //        for (auto&& layer : pMeshLayer->disallowedLayers) {
+        //            pShadowPass->GetDisallowedLayers().insert(layer);
+        //        }
+        //    }
+        //}
 
         for (const SR_UTILS_NS::StringAtom& layer : m_specialShadowLayers) {
             pShadowPass->GetAllowedLayers().insert(layer);
@@ -151,19 +164,30 @@ namespace SR_GRAPH_NS {
         pColorBufferPass->AddShaderDefine(SHADER_MACRO_SR_DEFINE_COLOR_PASS);
         pColorBufferPass->SetColorMultiplier(colorMultiplier);
 
-        for (auto&& pLayer : technique.GetLayers()) {
-            if (auto&& pMeshLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerMesh>(pLayer)) {
-                if (!pMeshLayer->colorBuffer || (pMeshLayer->editorOnly && !params.editor)) {
-                    continue;
-                }
-                for (auto&& layer : pMeshLayer->allowedLayers) {
-                    pColorBufferPass->GetAllowedLayers().insert(layer);
-                }
-                for (auto&& layer : pMeshLayer->disallowedLayers) {
-                    pColorBufferPass->GetDisallowedLayers().insert(layer);
-                }
+        auto&& layers = SR_UTILS_NS::LayerManager::Instance().GetLayersInfo();
+        for (auto&& layerInfo : layers) {
+            if (!params.IsLayerApplicable(layerInfo.name)) {
+                continue;
             }
+            if (!layerInfo.colorBuffer || (layerInfo.editorOnly && !params.editor)) {
+                continue;
+            }
+            pColorBufferPass->GetAllowedLayers().insert(layerInfo.name);
         }
+
+        //for (auto&& pLayer : technique.GetLayers()) {
+        //    if (auto&& pMeshLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerMesh>(pLayer)) {
+        //        if (!pMeshLayer->colorBuffer || (pMeshLayer->editorOnly && !params.editor)) {
+        //            continue;
+        //        }
+        //        for (auto&& layer : pMeshLayer->allowedLayers) {
+        //            pColorBufferPass->GetAllowedLayers().insert(layer);
+        //        }
+        //        for (auto&& layer : pMeshLayer->disallowedLayers) {
+        //            pColorBufferPass->GetDisallowedLayers().insert(layer);
+        //        }
+        //    }
+        //}
 
         pFrameBufferPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pColorBufferPass));
         SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass));
@@ -178,7 +202,7 @@ namespace SR_GRAPH_NS {
 
         const bool useOffscreenRender = params.activeGraphicsSettings.postProcess;
 
-        if (useOffscreenRender || params.editor) {
+        if (useOffscreenRender || params.editor || params.offscreen) {
             const SR_UTILS_NS::StringAtom fboName = useOffscreenRender ? offscreenControllerName : params.sceneViewName;
 
             FrameBufferPass::Ptr pFrameBuffer = new FrameBufferPass();
@@ -217,58 +241,66 @@ namespace SR_GRAPH_NS {
 
         SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pMainGroupPass));
 
-        for (auto&& pLayer : technique.GetLayers()) {
-            if ((pLayer->editorOnly && !params.editor)) {
+        MeshDrawerPass::Ptr pMeshDrawerPass = nullptr;
+        SR_UTILS_NS::RenderLayerInfo lastMeshLayerInfo;
+        auto&& layers = SR_UTILS_NS::LayerManager::Instance().GetLayersInfo();
+        for (auto&& layerInfo : layers) {
+            if (!params.IsLayerApplicable(layerInfo.name)) {
                 continue;
             }
 
-            if (auto&& pMeshLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerMesh>(pLayer)) {
-                if (!pMeshLayer->mainRenderer) {
-                    continue;
-                }
-
-                MeshDrawerPass::Ptr pMeshDrawerPass = new MeshDrawerPass();
-
-                if (pMeshLayer->applyShadows && params.activeGraphicsSettings.shadowsQuality != Quality::None) {
-                    if (pShadowIntegration) {
-                        pMeshDrawerPass->AddShaderDefine(SHADER_MACRO_SR_DEFINE_USE_CASCADED_SHADOW_MAP);
-                        SamplerData shadowSampler;
-                        shadowSampler.fboName = pShadowIntegration->shadowMapControllerName;
-                        shadowSampler.id = pShadowIntegration->shaderVariableName;
-                        shadowSampler.usageType = SamplerDataUsageType::FrameBufferDepth;
-                        pMeshDrawerPass->GetSamplersData().AddSampler(shadowSampler);
-                        pMeshDrawerPass->GetUniformsData().shared.useFromPass.insert(pShadowIntegration->shadowMapControllerName);
-                    }
-                }
-
-                pMeshDrawerPass->SetFrustumCulling(pMeshLayer->frustumCulling);
-                for (auto&& layer : pMeshLayer->allowedLayers) {
-                    pMeshDrawerPass->GetAllowedLayers().insert(layer);
-                }
-                for (auto&& layer : pMeshLayer->disallowedLayers) {
-                    pMeshDrawerPass->GetDisallowedLayers().insert(layer);
-                }
-                pMainGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pMeshDrawerPass));
+            if (layerInfo.editorOnly && !params.editor) {
+                continue;
             }
-            else if (auto&& pSkyboxLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerSkybox>(pLayer)) {
-                SkyboxPass::Ptr pSkyboxPass = new SkyboxPass();
-                pMainGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pSkyboxPass));
-            }
-            else if (auto&& pCustomPass = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerCustomPass>(pLayer); pCustomPass && pCustomPass->pass) {
-                BasePass::Ptr pPass = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pCustomPass->pass->GetMeta()->GetFactoryName());
-                pCustomPass->pass->CloneTo(*pPass);
-                pMainGroupPass->AddPass(pPass);
-            }
-            else if (auto&& pClearDepthLayer = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerClearDepth>(pLayer)) {
+
+            if (layerInfo.clearDepth) {
                 ClearDepthAttachmentPass::Ptr pClearDepthPass = new ClearDepthAttachmentPass();
+                pClearDepthPass->SetCustomName("ClearDepth_" + layerInfo.name.ToStringRef());
                 pMainGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pClearDepthPass));
             }
+
+            if (layerInfo.mainRenderer && !layerInfo.isCustom) {
+                if (!layerInfo.CompareParams(lastMeshLayerInfo)) {
+                    pMeshDrawerPass = new MeshDrawerPass();
+                    pMainGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pMeshDrawerPass));
+
+                    if (layerInfo.applyShadows && params.activeGraphicsSettings.shadowsQuality != Quality::None) {
+                        if (pShadowIntegration) {
+                            pMeshDrawerPass->AddShaderDefine(SHADER_MACRO_SR_DEFINE_USE_CASCADED_SHADOW_MAP);
+                            SamplerData shadowSampler;
+                            shadowSampler.fboName = pShadowIntegration->shadowMapControllerName;
+                            shadowSampler.id = pShadowIntegration->shaderVariableName;
+                            shadowSampler.usageType = SamplerDataUsageType::FrameBufferDepth;
+                            pMeshDrawerPass->GetSamplersData().AddSampler(shadowSampler);
+                            pMeshDrawerPass->GetUniformsData().shared.useFromPass.insert(pShadowIntegration->shadowMapControllerName);
+                        }
+                    }
+                    pMeshDrawerPass->SetFrustumCulling(layerInfo.frustumCulling);
+                }
+
+                pMeshDrawerPass->GetAllowedLayers().insert(layerInfo.name);
+            }
+
+            if (layerInfo.isCustom) {
+                for (auto&& pLayer : technique.GetCustomLayers()) {
+                    if (pLayer->GetLayerName() == layerInfo.name) {
+                        if (auto&& pCustomPass = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerCustomPass>(pLayer); pCustomPass && pCustomPass->pass) {
+                            BasePass::Ptr pPass = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pCustomPass->pass->GetMeta()->GetFactoryName());
+                            pCustomPass->pass->CloneTo(*pPass);
+                            pMainGroupPass->AddPass(pPass);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            lastMeshLayerInfo = layerInfo;
         }
 
         if (useOffscreenRender) {
             GroupPass::Ptr pPostProcessGroupPass;
 
-            if (params.editor) {
+            if (params.editor || params.offscreen) {
                 FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
                 pFrameBufferController->SetName(params.sceneViewName);
                 data.frameBuffers.emplace_back(pFrameBufferController);

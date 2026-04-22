@@ -71,23 +71,6 @@ namespace SR_GRAPH_NS {
 
         auto&& pVulkanPipeline = SR_UTILS_NS::DynamicPointerCast<VulkanPipeline>(m_pipeline);
 
-        //auto&& queues = m_pipeline->GetQueue().GetQueues();
-        //for (auto&& queue : queues) {
-        //    for (auto&& pFrameBuffer : queue) {
-        //        if (!pFrameBuffer->IsWasRendered()) {
-        //            continue;
-        //        }
-
-        //        if (!pFrameBuffer->IsValid()) {
-        //            continue;
-        //        }
-
-        //        auto&& pFBO = pVulkanPipeline->GetMemoryManager()->GetFBO(pFrameBuffer->GetId() - 1);
-
-        //        m_submitInfo.commandBuffers.emplace_back(pFBO->GetCommandBuffer(m_imageIndex));
-        //    }
-        //}
-
         for (uint32_t cmdBufferId : m_pipeline->GetCmdBuffersQueue()) {
             if (cmdBufferId == SR_ID_INVALID) {
                 m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_imageIndex]);

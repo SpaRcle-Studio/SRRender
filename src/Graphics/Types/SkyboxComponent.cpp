@@ -3,10 +3,14 @@
 //
 
 #include <Graphics/Types/SkyboxComponent.h>
+#include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Types/Camera.h>
+#include <Graphics/Material/UniqueMaterial.h>
+#include <Graphics/Material/FileMaterial.h>
+#include <Graphics/Types/Shader.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Render/IRenderTechnique.h>
-#include <Graphics/Pass/SkyboxPass.h>
+#include <Graphics/Types/Skybox.h>
 
 #include <Utils/FileSystem/PathDataAccessor.h>
 #include <Utils/World/Scene.h>
@@ -15,71 +19,78 @@
 #include <Codegen/SkyboxComponent.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    void SkyboxComponent::OnDisable() {
-        Super::OnDisable();
-
-        if (auto&& pSkyboxPass = FindSkyboxPass()) {
-            pSkyboxPass->SetParams("", "", false);
+    SkyboxComponent::~SkyboxComponent() {
+        if (m_skybox) {
+            m_skybox->RemoveUsePoint();
         }
     }
 
-    void SkyboxComponent::OnDetached() {
-        Super::OnDetached();
-
-        if (auto&& pSkyboxPass = FindSkyboxPass()) {
-            pSkyboxPass->SetParams("", "", false);
-        }
+    const SR_UTILS_NS::VertexLayoutDescription& SkyboxComponent::GetShaderVertexLayoutDescription() const noexcept {
+        static SR_UTILS_NS::VertexLayoutDescription description = SR_UTILS_NS::VertexLayoutDescription()
+            .AddAttribute(SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
+        ;
+        return description;
     }
 
     void SkyboxComponent::SetParams(const SR_UTILS_NS::Path& skyboxPath, const SR_UTILS_NS::Path& shaderPath, bool isQuad) {
         SR_TRACY_ZONE;
 
+        if (m_skyboxPath != skyboxPath || m_isQuad != isQuad) {
+            m_isSkyboxDirty = true;
+        }
+
         m_skyboxPath = skyboxPath;
-        m_shaderPath = shaderPath;
         m_isQuad = isQuad;
+
+        BaseMaterial::Ptr pMaterial = GetMaterial();
+        if (!pMaterial) {
+            pMaterial = new UniqueMaterial();
+        }
+        else if (pMaterial->GetMaterialType() == MaterialType::File) {
+            pMaterial = pMaterial.StaticCast<SR_GRAPH_NS::FileMaterial>()->MakeUnique();
+        }
+
+        if (pMaterial) {
+            pMaterial->SetShader(shaderPath);
+            SetMaterial(pMaterial);
+        }
     }
 
-    SkyboxPass* SkyboxComponent::FindSkyboxPass() const {
+    void SkyboxComponent::Draw() {
         SR_TRACY_ZONE;
 
-        Camera::Ptr pCamera = m_camera.Get();
+        m_isRendered = false;
 
-        if (!pCamera) {
-            if (auto&& pRenderScene = GetRenderScene()) {
-                pCamera = pRenderScene->GetMainCamera();
+        if (m_isSkyboxDirty) {
+            if (m_skybox) {
+                m_skybox->RemoveUsePoint();
+                m_skybox = nullptr;
             }
-            if (!pCamera) {
-                return nullptr;
+
+            if (!(m_skybox = m_skyboxPath.empty() ? SR_GTYPES_NS::Skybox::CreateEmpty(m_isQuad) : CoreResLoader::Load<SR_GTYPES_NS::Skybox>(m_skyboxPath))) {
+                SR_ERROR("SkyboxComponent::Draw() : failed to load skybox!\n\tPath: {}", m_skyboxPath);
+                return;
             }
+            else {
+                m_skybox->AddUsePoint();
+            }
+            m_isSkyboxDirty = false;
         }
 
-        if (auto&& pRenderTechnique = pCamera->GetRenderTechnique()) {
-            return pRenderTechnique->FindPassAs<SkyboxPass>();
+        if (!m_skybox) {
+            return;
         }
 
-        return nullptr;
+        if (auto&& pShader = GetPipeline()->GetCurrentShader(); SRVerify(pShader)) {
+            m_isRendered = m_skybox->Draw(pShader, m_dirtyMaterial, m_hasErrors, m_virtualUBO, m_virtualDescriptor);
+        }
     }
 
-    RenderScene* SkyboxComponent::GetRenderScene() const {
-        if (m_renderScene) {
-            return m_renderScene.Get();
+    void SkyboxComponent::FreeVideoMemory() {
+        if (auto&& pPipeline = TryGetPipeline()) {
+            pPipeline->GetUBOManager().TryFreeUBO(&m_virtualUBO);
+            pPipeline->GetDescriptorManager().TryFreeDescriptorSet(&m_virtualDescriptor);
         }
-
-        if (auto&& pScene = TryGetScene()) {
-            if (auto&& pRenderScene = pScene->GetDataStorage().GetValue<RenderScene::Ptr>()) {
-                m_renderScene = pRenderScene;
-            }
-        }
-        return m_renderScene.Get();
-    }
-
-    void SkyboxComponent::Update(float_t dt) {
-        SR_TRACY_ZONE;
-
-        Super::Update(dt);
-
-        if (auto&& pSkyboxPass = FindSkyboxPass()) {
-            pSkyboxPass->SetParams(m_skyboxPath, m_shaderPath, m_isQuad);
-        }
+        Super::FreeVideoMemory();
     }
 }

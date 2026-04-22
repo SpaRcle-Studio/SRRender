@@ -9,6 +9,7 @@
 #include <Utils/Common/StringAtomLiterals.h>
 #include <Utils/Common/HashManager.h>
 #include <Utils/Resources/ResourceManager.h>
+#include <Utils/Debug.h>
 
 namespace SR_GRAPH_NS {
     uint32_t MeshVideoMemoryInfo::Copy() {

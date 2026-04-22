@@ -42,6 +42,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD SR_MATH_NS::FRect GetTextureBorder() const;
         SR_NODISCARD SR_MATH_NS::FRect GetWindowBorder() const;
+        SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
         void SetTextureBorder(const SR_MATH_NS::FRect& border);
         void SetWindowBorder(const SR_MATH_NS::FRect& border);

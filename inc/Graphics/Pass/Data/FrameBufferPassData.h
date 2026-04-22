@@ -10,6 +10,8 @@
 #include <Graphics/Render/FrameBufferController.h>
 #include <Graphics/Memory/UBOManager.h>
 
+#include <Utils/Types/Optional.h>
+
 namespace SR_GTYPES_NS {
     class Framebuffer;
 }
@@ -44,7 +46,7 @@ namespace SR_GRAPH_NS {
         void SetFrameBufferName(SR_UTILS_NS::StringAtom name) noexcept { m_frameBufferName = name; }
         void SetClearColors(const ClearColors& colors) { m_clearColors = colors; }
         void SetClearDepth(float_t depth) { m_depth = depth; }
-        void SetClearDepth(std::optional<float_t> depth) { m_depth = depth; }
+        void SetClearDepth(SR_HTYPES_NS::Optional<float_t> depth) { m_depth = depth; }
 
     private:
         bool RenderFrameBuffer(const FBRenderCallback& callback, uint8_t layers);
@@ -62,7 +64,7 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom m_frameBufferName;
         /// @property
-        std::optional<float_t> m_depth = 1.f;
+        SR_HTYPES_NS::Optional<float_t> m_depth = 1.f;
 
     };
 }

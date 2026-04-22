@@ -263,10 +263,10 @@ namespace SR_GRAPH_NS {
     bool IRenderTechnique::Init() {
         SR_TRACY_ZONE;
 
-        if (!m_modulesApplied && m_camera && GetRenderScene()) {
-            SR_GRAPH_NS::Details::PostProcessRenderTechnique(this, GetRenderScene()->GetContext(), m_camera->GetCameraType());
-            m_modulesApplied = true;
-        }
+        //if (!m_modulesApplied && m_camera && GetRenderScene()) {
+        //    //SR_GRAPH_NS::Details::PostProcessRenderTechnique(this, GetRenderScene()->GetContext(), m_camera->GetCameraType());
+        //    m_modulesApplied = true;
+        //}
 
         for (auto&& pController : m_data.frameBuffers) {
             if (!pController->InitializeFramebuffer(GetRenderContext())) {
@@ -340,7 +340,7 @@ namespace SR_GRAPH_NS {
         DeInitPasses();
         m_hasErrors = false;
         m_data = std::move(data);
-        m_modulesApplied = false;
+        //m_modulesApplied = false;
 
         OnHierarchyChanged();
     }

@@ -21,7 +21,11 @@ namespace SR_GRAPH_NS {
             : Ptr(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
         { }
 
+        SR_NODISCARD SR_UTILS_NS::StringAtom GetLayerName() const noexcept { return layer; }
+
     public:
+        /// @property
+        SR_UTILS_NS::StringAtom layer;
         /// @property
         bool editorOnly = false;
 
@@ -154,15 +158,15 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        SR_NODISCARD const std::vector<RenderTechniqueLayerBase::Ptr>& GetLayers() const noexcept { return m_layers; }
+        SR_NODISCARD const std::vector<RenderTechniqueLayerBase::Ptr>& GetCustomLayers() const noexcept { return m_customLayers; }
 
     private:
         mutable RenderTechniqueData m_data;
 
         /// @property @notNull
-        std::vector<RenderTechniqueLayerBase::Ptr> m_layers;
-        /// @property @notNull
         std::vector<RenderTechniquePresetIntegrationBase::Ptr> m_integrations;
+        /// @property
+        std::vector<RenderTechniqueLayerBase::Ptr> m_customLayers;
 
     };
 }

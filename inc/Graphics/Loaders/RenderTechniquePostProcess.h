@@ -13,11 +13,11 @@ namespace SR_GRAPH_NS {
 }
 
 namespace SR_GTYPES_NS {
-    enum class CameraType : uint8_t;
+    //enum class CameraType : uint8_t;
 }
 
 namespace SR_GRAPH_NS::Details {
-    void PostProcessRenderTechnique(IRenderTechnique* pTechnique, RenderContext* pContext, SR_GTYPES_NS::CameraType cameraType);
+    //void PostProcessRenderTechnique(IRenderTechnique* pTechnique, RenderContext* pContext, SR_GTYPES_NS::CameraType cameraType);
 }
 
 #endif //SR_ENGINE_GRAPHICS_RENDER_TECHNIQUE_POST_PROCESS_H

@@ -139,6 +139,11 @@ namespace SR_GRAPH_NS {
                 shader.SetMat4(SHADER_PIXEL_ORTHOGONAL_MATRIX, pCamera->GetPixelOrthogonal());
                 shader.SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
                 shader.SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
+
+                shader.SetMat4(SHADER_VIEW_NO_TRANSLATE_MATRIX, pCamera->GetView());
+                shader.SetMat4(SHADER_PROJECTION_NO_FOV_MATRIX, pCamera->GetProjectionNoFOV());
+                shader.SetMat4(SHADER_INVERSE_PROJECTION_MATRIX, pCamera->GetInverseProjection());
+                shader.SetMat4(SHADER_INVERSE_VIEW_MATRIX, pCamera->GetInverseViewTranslate());
             }
         }
 

@@ -3010,13 +3010,6 @@ namespace SR_GRAPH_NS {
         //);
     }
 
-    void VulkanPipeline::ResetSubmitQueue() {
-        m_kernel->ClearSubmitQueue();
-        //m_kernel->GetWaitSemaphores().emplace_back(m_kernel->GetPresentCompleteSemaphore());
-
-        Super::ResetSubmitQueue();
-    }
-
     void VulkanPipeline::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
         SR_TRACY_ZONE;
 

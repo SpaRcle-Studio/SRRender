@@ -56,73 +56,81 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        if (m_resolutionScale.HasZero() || m_resolutionScale.HasNegative()) {
-            SR_ERROR("RenderTarget::Activate() : invalid resolution scale: {}x{}", m_resolutionScale.x, m_resolutionScale.y);
-            return;
-        }
-
-        if (!m_dynamicResolution && m_resolution.HasZero()) {
-            SR_ERROR("RenderTarget::Activate() : invalid resolution: {}x{}", m_resolution.x, m_resolution.y);
-            return;
-        }
-
-        if (pRenderTechnique->GetFrameBufferController(m_name)) {
-            SR_ERROR("RenderTarget::Activate() : render technique already has framebuffer controller with name: {}", m_name);
-            return;
-        }
-
         auto&& pRenderContext = GetRenderScene()->GetContext();
         if (pRenderContext->FindRenderTarget(m_name)) {
             SR_ERROR("RenderTarget::Activate() : render context already has render target with name: {}", m_name);
             return;
         }
-        pRenderContext->RegisterRenderTarget(this);
 
-        auto&& data = pRenderTechnique->GetRenderTechniqueData();
-
-        FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
-        {
-            pFrameBufferController->SetName(m_name);
-            pFrameBufferController->SetPreScale(m_resolutionScale);
-            if (m_dynamicResolution) {
-                pFrameBufferController->SetSize(m_resolution.CastToInt());
-            }
-            pFrameBufferController->SetSamples(m_sampleCount);
-            pFrameBufferController->SetDynamicResizing(m_dynamicResolution);
-
-            for (auto&& layer : m_layers) {
-                m_cachedFormats.emplace_back(layer.format);
-            }
-            pFrameBufferController->SetColorFormats(m_cachedFormats);
-            m_cachedFormats.clear();
-
-            data.frameBuffers.emplace_back(pFrameBufferController);
+        if (m_mode == RenderTargetMode::Custom) {
+            /// TODO: support custom render techniques
         }
+        else if (m_mode == RenderTargetMode::CameraShare) {
+            /// Do nothing, render target will share framebuffer with camera
+        }
+        else if (m_mode == RenderTargetMode::CameraIntegration) {
+            if (pRenderTechnique->GetFrameBufferController(m_name)) {
+                SR_ERROR("RenderTarget::Activate() : render technique already has framebuffer controller with name: {}", m_name);
+                return;
+            }
 
-        FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
-        {
-            pFrameBufferPass->SetFrameBufferName(m_name);
-            pFrameBufferPass->SetCustomName(m_name);
-            for (auto&& pBasePass : m_passes) {
-                if (!pBasePass) {
-                    continue;
+            if (m_resolutionScale.HasZero() || m_resolutionScale.HasNegative()) {
+                SR_ERROR("RenderTarget::Activate() : invalid resolution scale: {}x{}", m_resolutionScale.x, m_resolutionScale.y);
+                return;
+            }
+
+            if (!m_dynamicResolution && m_resolution.HasZero()) {
+                SR_ERROR("RenderTarget::Activate() : invalid resolution: {}x{}", m_resolution.x, m_resolution.y);
+                return;
+            }
+
+            auto&& data = pRenderTechnique->GetRenderTechniqueData();
+            FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
+            {
+                pFrameBufferController->SetName(m_name);
+                pFrameBufferController->SetPreScale(m_resolutionScale);
+                if (m_dynamicResolution) {
+                    pFrameBufferController->SetSize(m_resolution.CastToInt());
                 }
-                auto&& pClone = m_cachedPasses.emplace_back();
-                pClone = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pBasePass->GetMeta()->GetFactoryName());
-                pBasePass->CloneTo(*pClone);
+                pFrameBufferController->SetSamples(m_sampleCount);
+                pFrameBufferController->SetDynamicResizing(m_dynamicResolution);
+
+                for (auto&& layer : m_layers) {
+                    m_cachedFormats.emplace_back(layer.format);
+                }
+                pFrameBufferController->SetColorFormats(m_cachedFormats);
+                m_cachedFormats.clear();
+
+                data.frameBuffers.emplace_back(pFrameBufferController);
             }
-            pFrameBufferPass->SetPasses(m_cachedPasses);
-            pFrameBufferPass->GetFrameBufferPassData().GetClearColors().clear();
-            for (auto&& layer : m_layers) {
-                pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(layer.clearColor);
+
+            FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
+            {
+                pFrameBufferPass->SetFrameBufferName(m_name);
+                pFrameBufferPass->SetCustomName(m_name);
+                for (auto&& pBasePass : m_passes) {
+                    if (!pBasePass) {
+                        continue;
+                    }
+                    auto&& pClone = m_cachedPasses.emplace_back();
+                    pClone = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pBasePass->GetMeta()->GetFactoryName());
+                    pBasePass->CloneTo(*pClone);
+                }
+                pFrameBufferPass->SetPasses(m_cachedPasses);
+                pFrameBufferPass->GetFrameBufferPassData().GetClearColors().clear();
+                for (auto&& layer : m_layers) {
+                    pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(layer.clearColor);
+                }
+                pFrameBufferPass->GetFrameBufferPassData().SetClearDepth(m_clearDepth);
+                m_cachedPasses.clear();
+                data.AddPassFront(pFrameBufferPass.StaticCast<BasePass>());
             }
-            pFrameBufferPass->GetFrameBufferPassData().SetClearDepth(m_clearDepth);
-            m_cachedPasses.clear();
-            data.AddPassFront(pFrameBufferPass.StaticCast<BasePass>());
         }
 
+        pRenderContext->RegisterRenderTarget(this);
         pRenderTechnique->AttachRenderTarget(this);
         m_usedRenderTechnique = pRenderTechnique;
+        m_cachedMode = m_mode;
     }
 
     void RenderTarget::Deactivate() {
@@ -132,22 +140,25 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        auto&& data = m_usedRenderTechnique->GetRenderTechniqueData();
-        auto&& frameBuffers = data.frameBuffers;
-        auto it = std::find_if(frameBuffers.begin(), frameBuffers.end(), [this](const FrameBufferController::Ptr& pController) {
-            return pController->GetName() == m_name;
-        });
-        if (it == frameBuffers.end()) {
-            SR_ERROR("RenderTarget::Deactivate() : framebuffer controller with name {} not found in render technique!", m_name);
-        }
-        else {
-            (*it).AutoFree();
-            frameBuffers.erase(it);
+        if (m_mode == RenderTargetMode::CameraIntegration) {
+            auto&& data = m_usedRenderTechnique->GetRenderTechniqueData();
+            auto&& frameBuffers = data.frameBuffers;
+            auto it = std::find_if(frameBuffers.begin(), frameBuffers.end(), [this](const FrameBufferController::Ptr& pController) {
+                return pController->GetName() == m_name;
+            });
+            if (it == frameBuffers.end()) {
+                SR_ERROR("RenderTarget::Deactivate() : framebuffer controller with name {} not found in render technique!", m_name);
+            }
+            else {
+                (*it).AutoFree();
+                frameBuffers.erase(it);
+            }
+
+            if (auto&& pGroupPass = data.pass.DynamicCast<GroupPass>()) {
+                pGroupPass->RemovePass(m_name);
+            }
         }
 
-        if (auto&& pGroupPass = data.pass.DynamicCast<GroupPass>()) {
-            pGroupPass->RemovePass(m_name);
-        }
         GetRenderScene()->GetContext()->UnRegisterRenderTarget(this);
 
         m_usedRenderTechnique->DetachRenderTarget(this);
@@ -173,9 +184,14 @@ namespace SR_GTYPES_NS {
             return nullptr;
         }
 
+        if (m_mode == RenderTargetMode::Custom) {
+            return nullptr; /// TODO: support custom render techniques
+        }
+
         auto&& data = m_usedRenderTechnique->GetRenderTechniqueData();
         for (auto&& pController : data.frameBuffers) {
-            if (pController && pController->GetName() == m_name) {
+            SR_UTILS_NS::StringAtom frameBufferName = m_mode == RenderTargetMode::CameraShare ? m_frameBufferName : m_name;
+            if (pController && pController->GetName() == frameBufferName) {
                 return pController->GetFramebuffer().Get();
             }
         }

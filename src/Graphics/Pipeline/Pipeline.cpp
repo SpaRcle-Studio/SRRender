@@ -134,11 +134,6 @@ namespace SR_GRAPH_NS {
         m_isCmdState = false;
     }
 
-    void Pipeline::ClearFrameBuffersQueue() {
-        m_fboQueue.Clear();
-        ++m_state.operations;
-    }
-
     void Pipeline::ClearBuffers() {
         ++m_state.operations;
     }
@@ -428,7 +423,15 @@ namespace SR_GRAPH_NS {
     }
 
     void Pipeline::BindFrameBuffer(Pipeline::FramebufferPtr pFBO) {
+        SR_TRACY_ZONE;
         ++m_state.operations;
+
+        if (m_bindedFrameBuffers.Contains(pFBO)) {
+            SRHaltOnce("Pipeline::BindFrameBuffer() : framebuffer \"{}\" already binded!", pFBO ? pFBO->GetName() : "nullptr (Swapchain)");
+            return;
+        }
+        m_bindedFrameBuffers.Add(pFBO);
+
         m_state.pFrameBuffer = pFBO;
     }
 
@@ -469,50 +472,6 @@ namespace SR_GRAPH_NS {
     void Pipeline::SwitchWindow(const Pipeline::WindowPtr& pWindow) {
         ++m_state.operations;
         m_window = pWindow;
-    }
-
-    bool Pipeline::IsFBOQueueValid() const noexcept {
-        auto&& queues = m_fboQueue.GetQueues();
-
-        for (auto&& queue : queues) {
-            for (auto&& pFrameBuffer: queue) {
-                if (auto&& fboId = pFrameBuffer->GetId(); fboId == SR_ID_INVALID) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    //int32_t Pipeline::AllocateVBO(const SR_UTILS_NS::Vertex* pVertices, Vertices::VertexType type, size_t count) {
-    //    switch (type) {
-    //        case Vertices::VertexType::StaticMeshVertex: {
-    //            auto&& vertices = Vertices::CastVertices<Vertices::StaticMeshVertex>(pVertices, count);
-    //            return AllocateVBO(static_cast<void*>(vertices.data()), type, vertices.size());
-    //        }
-    //        case Vertices::VertexType::SkinnedMeshVertex: {
-    //            auto&& vertices = Vertices::CastVertices<Vertices::SkinnedMeshVertex>(pVertices, count);
-    //            return AllocateVBO(static_cast<void*>(vertices.data()), type, vertices.size());
-    //        }
-    //        case Vertices::VertexType::SimpleVertex: {
-    //            auto&& vertices = Vertices::CastVertices<Vertices::SimpleVertex>(pVertices, count);
-    //            return AllocateVBO(static_cast<void*>(vertices.data()), type, vertices.size());
-    //        }
-    //        case Vertices::VertexType::UIVertex: {
-    //            auto&& vertices = Vertices::CastVertices<Vertices::UIVertex>(pVertices, count);
-    //            return AllocateVBO(static_cast<void*>(vertices.data()), type, vertices.size());
-    //        }
-    //        default:
-    //            break;
-    //    }
-
-    //    SRHalt("Pipeline::AllocateVBO() : unknown vertex type! Type: {}", type);
-    //    return SR_ID_INVALID;
-    //}
-
-    void Pipeline::ResetSubmitQueue() {
-        ++m_state.operations;
     }
 
     bool Pipeline::BeginCompute() {
@@ -579,8 +538,10 @@ namespace SR_GRAPH_NS {
     }
 
     void Pipeline::OnFrameBuildBegin() {
+        SR_TRACY_ZONE;
         ++m_state.operations;
         m_cmdBuffersQueue.clear();
+        m_bindedFrameBuffers.clear();
     }
 
     void Pipeline::OnFrameBuildEnd() {

@@ -10,6 +10,7 @@
 #include <Utils/ECS/Component.h>
 #include <Utils/ECS/EntityRef.h>
 #include <Utils/FileSystem/Path.h>
+#include <Utils/Types/Optional.h>
 
 namespace SR_GRAPH_NS {
     class BasePass;
@@ -30,6 +31,12 @@ namespace SR_GTYPES_NS {
         /// @property
         SR_MATH_NS::FColor clearColor;
     };
+
+    SR_ENUM_NS_CLASS_T(RenderTargetMode, uint8_t,
+        CameraIntegration,
+        CameraShare,
+        Custom
+    );
 
     /// @category(Render)
     class RenderTarget : public SR_UTILS_NS::Component {
@@ -56,28 +63,35 @@ namespace SR_GTYPES_NS {
         SR_HTYPES_NS::SharedPtr<IRenderTechnique> m_usedRenderTechnique;
         std::vector<SR_HTYPES_NS::SharedPtr<BasePass>> m_cachedPasses;
         std::vector<ImageFormat> m_cachedFormats;
+        RenderTargetMode m_cachedMode = RenderTargetMode::CameraIntegration;
 
     private:
-        /// @property
+        /// @property @onChanged(Deactivate)
         SR_UTILS_NS::StringAtom m_name;
-        /// @property
+        /// @property @onChanged(Deactivate)
+        RenderTargetMode m_mode = RenderTargetMode::CameraIntegration;
+
+        /// @property @onChanged(Deactivate) @propertyCondition(This.m_mode != RenderTargetMode::Custom)
         SR_UTILS_NS::EntityRef<Camera> m_camera;
 
-        /// @property
+        /// @property @onChanged(Deactivate) @propertyCondition(This.m_mode != RenderTargetMode::CameraShare)
         std::vector<SR_HTYPES_NS::SharedPtr<BasePass>> m_passes;
 
-        /// @property @group(Framebuffer)
+        /// @property @onChanged(Deactivate) @propertyCondition(This.m_mode == RenderTargetMode::CameraShare)
+        SR_UTILS_NS::StringAtom m_frameBufferName;
+
+        /// @property @group(Framebuffer) @onChanged(Deactivate) @propertyCondition(This.m_mode != RenderTargetMode::CameraShare)
         bool m_dynamicResolution = false;
-        /// @property @group(Framebuffer) @propertyCondition(!This.m_dynamicResolution)
+        /// @property @group(Framebuffer) @onChanged(Deactivate) @propertyCondition(!This.m_dynamicResolution && This.m_mode != RenderTargetMode::CameraShare)
         SR_MATH_NS::UVector2 m_resolution = { 1920, 1080 };
-        /// @property @group(Framebuffer)
+        /// @property @group(Framebuffer) @onChanged(Deactivate) @propertyCondition(This.m_mode != RenderTargetMode::CameraShare)
         SR_MATH_NS::FVector2 m_resolutionScale = { 1.f, 1.f };
-        /// @property @group(Framebuffer)
+        /// @property @group(Framebuffer) @onChanged(Deactivate) @propertyCondition(This.m_mode != RenderTargetMode::CameraShare)
         uint32_t m_sampleCount = 1;
-        /// @property @group(Framebuffer)
+        /// @property @group(Framebuffer) @onChanged(Deactivate) @propertyCondition(This.m_mode != RenderTargetMode::CameraShare)
         std::vector<RenderTargetLayer> m_layers;
-        /// @property @group(Framebuffer)
-        std::optional<float_t> m_clearDepth = 1.f;
+        /// @property @group(Framebuffer)@onChanged(Deactivate) @propertyCondition(This.m_mode != RenderTargetMode::CameraShare)
+        SR_HTYPES_NS::Optional<float_t> m_clearDepth = 1.f;
 
     };
 }

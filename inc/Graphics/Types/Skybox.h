@@ -43,6 +43,7 @@ namespace SR_GTYPES_NS {
 
         void FreeVMemory() override;
         bool Draw();
+        bool Draw(Shader* pShader, bool& dirtyShader, bool& hasErrors, int32_t& virtualUBO, int32_t& virtualDescriptor);
 
         bool Load() override;
         bool Unload() override;

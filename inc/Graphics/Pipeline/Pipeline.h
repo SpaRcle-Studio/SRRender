@@ -14,6 +14,7 @@
 #include <Utils/Math/Vector3.h>
 #include <Utils/Types/SafePointer.h>
 #include <Utils/Types/PoolSet.h>
+#include <Utils/Types/SortedVector.h>
 
 namespace SR_GTYPES_NS {
     class Shader;
@@ -89,10 +90,6 @@ namespace SR_GRAPH_NS {
         /// Вызывается перед началом рендера, подготовка к рендеру
         virtual void PrepareFrame();
 
-        /// Вызывается в начале построения сцены рендера, чистит очередь рендера.
-        void ClearFrameBuffersQueue();
-        virtual void ResetSubmitQueue();
-
         /// Отрисовка кадра на экран
         /// После вызова функции кадр считается законченным и PipelineState очищается
         virtual void DrawFrame();
@@ -158,7 +155,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t GetCurrentDescriptorSet() const noexcept { ++m_state.operations; return m_state.descriptorSetId; }
         SR_NODISCARD uint32_t GetCurrentFrameBufferLayer() const noexcept { ++m_state.operations; return m_state.frameBufferLayer; }
         SR_NODISCARD bool IsDirty() const noexcept { ++m_state.operations; return m_dirty; }
-        SR_NODISCARD FrameBufferQueue& GetQueue() noexcept { ++m_state.operations; return m_fboQueue; }
         SR_NODISCARD RenderStrategy* GetCurrentRenderStrategy() const noexcept { ++m_state.operations; return m_state.pRenderStrategy; }
         SR_NODISCARD SR_GTYPES_NS::Camera* GetCurrentCamera() const { ++m_state.operations; return m_state.pCamera; }
         SR_NODISCARD SR_FORCE_INLINE DescriptorManager& GetDescriptorManager() const noexcept { return *m_descriptorManager; }
@@ -348,7 +344,6 @@ namespace SR_GRAPH_NS {
 
         PipelinePreInitInfo m_preInitInfo;
 
-        FrameBufferQueue m_fboQueue;
         std::vector<uint32_t> m_cmdBuffersQueue;
 
         bool m_isComputeState = false;
@@ -366,6 +361,7 @@ namespace SR_GRAPH_NS {
         RenderContextPtr m_renderContext;
 
         SR_HTYPES_NS::PoolSet<bool> m_bindedDescriptors;
+        SR_HTYPES_NS::SortedVector<FramebufferPtr> m_bindedFrameBuffers;
 
         PipelineState m_state;
         PipelineState m_previousState;

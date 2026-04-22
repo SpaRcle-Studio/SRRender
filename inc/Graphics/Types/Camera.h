@@ -6,6 +6,7 @@
 #define SR_ENGINE_CAMERA_H
 
 #include <Graphics/Utils/Frustum.h>
+#include <Graphics/Utils/CameraRenderParameters.h>
 
 #include <Utils/ECS/Component.h>
 #include <Utils/ECS/ComponentManager.h>
@@ -24,7 +25,6 @@ namespace SR_GRAPH_NS {
 namespace SR_GTYPES_NS {
     SR_ENUM_NS_CLASS_T(CameraType, uint8_t,
         Main,
-        Offscreen,
         Editor,
         EditorPrefab
     );
@@ -98,6 +98,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD SR_MATH_NS::FVector3 ScreenToWorldPoint(const SR_MATH_NS::FVector2& screenPos) const;
         SR_NODISCARD SR_MATH_NS::FVector3 ScreenToWorldPoint(const SR_MATH_NS::FVector2& screenPos, float_t depth) const;
         SR_NODISCARD const Frustum& GetFrustum() const { return m_frustum; }
+        SR_NODISCARD const CameraRenderParameters& GetRenderParameters() const { return m_renderParameters; }
 
         void SetFar(float_t value);
         void SetNear(float_t value);
@@ -107,6 +108,7 @@ namespace SR_GTYPES_NS {
 
         void SetRenderTechnique(const SR_UTILS_NS::Path& path);
         void SetViewportRect(const std::optional<SR_MATH_NS::FRect>& rect) { m_viewportRect = rect; }
+        void SetRenderParameters(const CameraRenderParameters& parameters);
 
         SR_NODISCARD const RenderTechniqueData& GetRenderTechniqueData() const;
 
@@ -123,9 +125,11 @@ namespace SR_GTYPES_NS {
         void RemoveTechnique();
 
     private:
+        /// @property @onChanged(RemoveTechnique)
+        CameraType m_type = CameraType::Main;
         /** >= 0 - одна главная камера, < 0 - закадровые камеры, которые рендерятся в RenderTexture.
          * Выбирается та камера, что ближе к нулю */
-        /// @property @setter(SetPriority)
+        /// @property @setter(SetPriority) @onChanged(RemoveTechnique)
         int32_t m_priority = 0;
 
         /// @property @setter(SetFar)
@@ -144,9 +148,10 @@ namespace SR_GTYPES_NS {
         /// @getter(GetRenderTechniqueData)
         SR_VIRTUAL_PROPERTY
 
-        /// @property
-        CameraType m_type = CameraType::Main;
+        /// @property @onChanged(RemoveTechnique)
+        CameraRenderParameters m_renderParameters;
 
+    private:
         float_t m_aspect = 1.f;
         bool m_hasErrors = false;
         bool m_isRegistered = false;

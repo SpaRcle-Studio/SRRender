@@ -145,10 +145,10 @@ namespace SR_GTYPES_NS {
         IGraphicsResource::FreeVMemory();
     }
 
-    bool Skybox::Draw() {
+    bool Skybox::Draw(Shader* pShader, bool& dirtyShader, bool& hasErrors, int32_t& virtualUBO, int32_t& virtualDescriptor) {
         SR_TRACY_ZONE;
 
-        if (m_idDirty && (m_hasErrors || !Calculate())) {
+        if (m_idDirty && (m_hasErrors || hasErrors || !Calculate())) {
             return false;
         }
 
@@ -165,23 +165,24 @@ namespace SR_GTYPES_NS {
         auto&& uboManager = Memory::UBOManager::Instance();
         auto&& descriptorManager = SR_GRAPH_NS::DescriptorManager::Instance();
 
-        if (m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
-            m_virtualUBO = uboManager.AllocateUBO(m_virtualUBO);
-            if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
-                m_hasErrors = true;
+        if (dirtyShader) SR_UNLIKELY_ATTRIBUTE {
+            virtualUBO = uboManager.AllocateUBO(virtualUBO);
+            if (virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                m_hasErrors = hasErrors = true;
                 return false;
             }
 
-            m_virtualDescriptor = descriptorManager.AllocateDescriptorSet(m_virtualDescriptor);
+            virtualDescriptor = descriptorManager.AllocateDescriptorSet(virtualDescriptor);
         }
 
-        m_uboManager.BindUBO(m_virtualUBO);
+        SRAssert(virtualUBO != SR_ID_INVALID);
+        m_uboManager.BindUBO(virtualUBO);
 
-        const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
+        const auto result = m_descriptorManager.Bind(virtualDescriptor);
 
-        if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
+        if (result == DescriptorManager::BindResult::Duplicated || dirtyShader) SR_UNLIKELY_ATTRIBUTE {
             if (m_cubeMap != SR_ID_INVALID) {
-                m_shader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
+                pShader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
             }
             m_descriptorManager.Flush();
         }
@@ -193,7 +194,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (result != DescriptorManager::BindResult::Failed) {
-            m_dirtyShader = false;
+            dirtyShader = false;
             if (m_isQuad) {
                 GetPipeline()->Draw(3);
             }
@@ -326,5 +327,9 @@ namespace SR_GTYPES_NS {
         }
 
         return IResource::Unload();
+    }
+
+    bool Skybox::Draw() {
+        return Draw(m_shader.Get(), m_dirtyShader, m_hasErrors, m_virtualUBO, m_virtualDescriptor);
     }
 }
