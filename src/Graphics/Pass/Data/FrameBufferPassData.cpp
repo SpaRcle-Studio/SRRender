@@ -48,6 +48,11 @@ namespace SR_GRAPH_NS {
             pFrameBuffer->EndRender();
         }
 
+        //if (pFrameBuffer->GetFeatures().colorShaderRead) {
+        //    /// memory barrier чтобы гарантировать видимость данных в шейдерах
+        //    GetPipeline()->MemoryBarrier(Pipeline::MemoryBarrierBits::ShaderRead);
+        //}
+
         GetPipeline()->SetCurrentFrameBuffer(nullptr);
 
         return false;

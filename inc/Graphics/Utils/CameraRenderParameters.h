@@ -28,6 +28,13 @@ namespace SR_GRAPH_NS {
         SR_HTYPES_NS::Optional<Quality> shadowsQuality;
         /// @property
         SR_HTYPES_NS::Optional<Quality> colorBufferQuality;
+        /// @property
+        SR_HTYPES_NS::Optional<bool> multisampling;
+        /// @property
+        SR_HTYPES_NS::Optional<SR_MATH_NS::IVector2> screenSize;
+        /// @property
+        SR_HTYPES_NS::Optional<SR_MATH_NS::FVector2> screenScale;
+
     };
 }
 

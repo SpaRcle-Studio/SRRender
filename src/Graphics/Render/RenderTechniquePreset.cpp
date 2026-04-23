@@ -225,9 +225,31 @@ namespace SR_GRAPH_NS {
                 colorFormats.emplace_back(ImageFormat::RGBA8_UNORM);
             }
 
+            if (mainRenderColorLayers > 1) { /// depth layer
+                colorFormats.emplace_back(ImageFormat::R32_SFLOAT);
+            }
+
+            if (mainRenderColorLayers > 2) { /// position layer
+                colorFormats.emplace_back(ImageFormat::RGBA16_SFLOAT);
+            }
+
             FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
             pFrameBufferController->SetName(fboName);
             pFrameBufferController->SetColorFormats(colorFormats);
+
+            if (params.pCameraParams) {
+                if (params.pCameraParams->screenSize) {
+                    pFrameBufferController->SetSize(params.pCameraParams->screenSize.value());
+                    pFrameBufferController->SetDynamicResizing(false);
+                }
+                if (params.pCameraParams->screenScale) {
+                    pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value());
+                }
+                if (params.pCameraParams->multisampling && !params.pCameraParams->multisampling.value()) {
+                    pFrameBufferController->SetSamples(1);
+                }
+            }
+
             data.frameBuffers.emplace_back(pFrameBufferController);
         }
         else {
@@ -303,6 +325,18 @@ namespace SR_GRAPH_NS {
             if (params.editor || params.offscreen) {
                 FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
                 pFrameBufferController->SetName(params.sceneViewName);
+                if (params.pCameraParams) {
+                    if (params.pCameraParams->screenSize) {
+                        pFrameBufferController->SetSize(params.pCameraParams->screenSize.value());
+                        pFrameBufferController->SetDynamicResizing(false);
+                    }
+                    if (params.pCameraParams->screenScale) {
+                        pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value());
+                    }
+                    if (params.pCameraParams->multisampling && !params.pCameraParams->multisampling.value()) {
+                        pFrameBufferController->SetSamples(1);
+                    }
+                }
                 data.frameBuffers.emplace_back(pFrameBufferController);
 
                 FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();

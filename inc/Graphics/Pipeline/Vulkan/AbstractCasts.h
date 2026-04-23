@@ -299,6 +299,7 @@ namespace SR_GRAPH_NS::VulkanTools {
 
             case ImageFormat::R8_UNORM: return VK_FORMAT_R8_UNORM;
             case ImageFormat::R16_UNORM: return VK_FORMAT_R16_UNORM;
+            case ImageFormat::R16_SFLOAT: return VK_FORMAT_R16_SFLOAT;
             case ImageFormat::R32_SFLOAT: return VK_FORMAT_R32_SFLOAT;
             case ImageFormat::R64_SFLOAT: return VK_FORMAT_R64_SFLOAT;
 

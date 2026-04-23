@@ -65,6 +65,7 @@ namespace SR_GRAPH_NS {
 
         R8_UNORM,
         R16_UNORM,
+        R16_SFLOAT,
 
         R32_SFLOAT,
         R64_SFLOAT,

@@ -85,7 +85,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD IRenderTechnique* GetRenderTechnique();
         SR_NODISCARD RenderScenePtr GetRenderScene() const;
         SR_NODISCARD RenderScenePtr TryGetRenderScene() const;
-        SR_NODISCARD const SR_UTILS_NS::Path& GetRenderTechniquePath();
+        SR_NODISCARD const SR_UTILS_NS::Path& GetRenderTechniquePath() const;
 
         SR_NODISCARD virtual SR_MATH_NS::FPoint GetMousePos() const;
 

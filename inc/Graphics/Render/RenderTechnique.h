@@ -17,21 +17,20 @@ namespace SR_GRAPH_NS {
     struct RenderTechniqueLoadParams {
         const RenderSettings* pRenderSettings = nullptr;
         ActiveGraphicsSettings activeGraphicsSettings;
-        const std::set<SR_UTILS_NS::StringAtom>* includeLayers = nullptr;
-        const std::set<SR_UTILS_NS::StringAtom>* excludeLayers = nullptr;
+        CameraRenderParameters* pCameraParams = nullptr;
         SR_UTILS_NS::StringAtom sceneViewName;
         bool editor = false;
         bool instancing = true;
         bool offscreen = false;
 
         SR_NODISCARD bool IsLayerApplicable(SR_UTILS_NS::StringAtom layer) const {
-            if (includeLayers && !includeLayers->empty()) {
-                if (includeLayers->count(layer) == 0) {
+            if (pCameraParams && !pCameraParams->includeLayers.empty()) {
+                if (pCameraParams->includeLayers.count(layer) == 0) {
                     return false;
                 }
             }
-            if (excludeLayers && !excludeLayers->empty()) {
-                if (excludeLayers->count(layer) == 1) {
+            if (pCameraParams && !pCameraParams->excludeLayers.empty()) {
+                if (pCameraParams->excludeLayers.count(layer) == 1) {
                     return false;
                 }
             }

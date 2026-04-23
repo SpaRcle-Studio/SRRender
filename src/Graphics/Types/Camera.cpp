@@ -124,8 +124,7 @@ namespace SR_GTYPES_NS {
         params.activeGraphicsSettings = pContext->GetActiveGraphicsSettings();
         params.activeGraphicsSettings.CorrectByCameraRenderParameters(m_renderParameters);
         params.offscreen = GetPriority() < 0;
-        params.includeLayers = &m_renderParameters.includeLayers;
-        params.excludeLayers = &m_renderParameters.excludeLayers;
+        params.pCameraParams = &m_renderParameters;
         m_renderTechnique.pTechnique = FileRenderTechnique::Load(path, params).StaticCast<IRenderTechnique>();
 
         if (m_renderTechnique.pTechnique) {
@@ -139,7 +138,7 @@ namespace SR_GTYPES_NS {
         return m_renderTechnique.pTechnique.Get();
     }
 
-    const SR_UTILS_NS::Path& Camera::GetRenderTechniquePath() {
+    const SR_UTILS_NS::Path& Camera::GetRenderTechniquePath() const {
         return m_renderTechnique.path;
     }
 
