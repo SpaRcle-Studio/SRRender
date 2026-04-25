@@ -95,9 +95,10 @@ namespace SR_SRSL_NS {
                         return;
                     }
 
-                    m_includes.emplace_back(SR_EXCHANGE(m_include, {}));
+                    SRSLInclude& include = m_includes.emplace_back();
+                    include.name = SR_EXCHANGE(m_include, {});
 
-                    auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(includePath, m_include.size());
+                    auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(includePath, include.buffer, m_include.size());
                     if (lexems.empty()) {
                         SR_ERROR("SRSLPreProcessor::ProcessMain() : failed to parse lexems!\n\tPath: " + includePath.ToString());
                         m_result.AddError(SRSLMessage(SRSLReturnCode::IncludeError, GetCurrentLexem())).SetDescription(includePath);
@@ -112,7 +113,7 @@ namespace SR_SRSL_NS {
                 break;
             case LexemKind::Identifier:
                 if (m_state == PPState::MacroName) {
-                    std::string value = GetCurrentLexem()->value;
+                    std::string_view value = GetCurrentLexem()->value;
 
                     if (m_ifStack.top() && value == "include") {
                         m_state = PPState::IncludeOpen;
@@ -120,14 +121,14 @@ namespace SR_SRSL_NS {
                     }
                     else if (value == "define") {
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
-                        std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
+                        std::string_view macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
                         m_params->AddDefine(macroName);
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                         m_state = PPState::Idle;
                     }
                     else if (value == "undef") {
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
-                        std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
+                        std::string_view macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
                         m_params->RemoveDefine(macroName);
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                         m_state = PPState::Idle;
@@ -143,12 +144,12 @@ namespace SR_SRSL_NS {
                         m_state = PPState::Idle;
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                         if (value == "ifdef") {
-                            std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
+                            std::string_view macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
                             m_lexems.erase(m_lexems.begin() + m_currentLexem);
                             m_ifStack.push(m_params->IsDefined(macroName) && m_ifStack.top());
                         }
                         else if (value == "ifndef") {
-                            std::string macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
+                            std::string_view macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
                             m_lexems.erase(m_lexems.begin() + m_currentLexem);
                             m_ifStack.push(!m_params->IsDefined(macroName) && m_ifStack.top());
                         }

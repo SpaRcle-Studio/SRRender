@@ -227,6 +227,8 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLLexicalAnalyzer::ProcessBracket() {
+        SR_TRACY_ZONE;
+
         switch (m_lexems[m_currentLexem].kind)
         {
             case LexemKind::OpeningBracket: {
@@ -390,6 +392,8 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLLexicalAnalyzer::ProcessExpression(bool isFunctionName, bool isSimpleExpr) {
+        SR_TRACY_ZONE;
+
         SRAssert(!m_expr);
         SR_SAFE_DELETE_PTR(m_expr);
 
@@ -490,6 +494,8 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLLexicalAnalyzer::ProcessDecorators() {
+        SR_TRACY_ZONE;
+
         SR_SAFE_DELETE_PTR(m_decorators);
         m_decorators = new SRSLDecorators();
 
@@ -625,6 +631,8 @@ namespace SR_SRSL_NS {
     }
 
     SRSLLexicalUnit* SRSLLexicalAnalyzer::TryProcessIdentifier() {
+        SR_TRACY_ZONE;
+
         auto&& pCurrent = GetCurrentLexem();
 
         const uint64_t currentLexem = m_currentLexem;

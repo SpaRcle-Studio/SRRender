@@ -6,6 +6,8 @@
 
 namespace SR_SRSL_NS {
     std::pair<SRSLExpr*, SRSLResult> SRSLMathExpression::Analyze(std::vector<Lexem>&& lexems) {
+        SR_TRACY_ZONE;
+
         Clear();
 
         m_lexems = SR_UTILS_NS::Exchange(lexems, { });
@@ -20,6 +22,7 @@ namespace SR_SRSL_NS {
     }
 
     SRSLExpr* SRSLMathExpression::ParseBinaryExpression(int32_t minPriority) {
+        SR_TRACY_ZONE;
         SRSLExpr* pLeftExpr = ParseSimpleExpression();
 
         if (!InBounds()) {
@@ -28,39 +31,40 @@ namespace SR_SRSL_NS {
 
         while (true) {
             uint32_t currentLexem = m_currentLexem;
-            std::string operation = ParseToken();
+            ParseTokenStackData operation = ParseTokenStack();
 
             if (IsHasErrors()) {
                 SR_SAFE_DELETE_PTR(pLeftExpr);
                 return nullptr;
             }
 
-            if (minPriority != 0 && operation == ".") {
+            if (minPriority != 0 && operation.value == ".") {
                 m_currentLexem = currentLexem;
                 return pLeftExpr;
             }
 
-            if (operation == "]" || operation == ",") {
+            if (operation.value == "]" || operation.value == ",") {
                 return pLeftExpr;
             }
 
-            const int32_t priority = GetPriority(operation, IsPrefix());
+            const int32_t priority = GetPriority(operation.value, IsPrefix());
 
             if (priority <= minPriority) {
                 m_currentLexem = currentLexem;
                 return pLeftExpr;
             }
 
-            if (IsIncrementOrDecrement(operation)) {
+            if (IsIncrementOrDecrement(operation.value)) {
                 /// постинкремент
-                pLeftExpr = new SRSLExpr(pLeftExpr, new SRSLExpr(std::move(operation)));
+                pLeftExpr = new SRSLExpr(pLeftExpr, new SRSLExpr(operation.value));
 
                 if (!InBounds()) {
                     return pLeftExpr;
                 }
 
                 currentLexem = m_currentLexem;
-                if (ParseToken() == ")") {
+                ParseToken(m_tokenBufferTmp);
+                if (m_tokenBufferTmp == ")") {
                     m_currentLexem = currentLexem;
                     return pLeftExpr;
                 }
@@ -86,7 +90,7 @@ namespace SR_SRSL_NS {
             else {
                 if (InBounds()) {
                     auto &&pRightExpr = ParseBinaryExpression(priority);
-                    pLeftExpr = new SRSLExpr(std::move(operation), pLeftExpr, pRightExpr);
+                    pLeftExpr = new SRSLExpr(operation.value, pLeftExpr, pRightExpr);
                 }
                 else {
                     return pLeftExpr;
@@ -100,23 +104,24 @@ namespace SR_SRSL_NS {
     }
 
     SRSLExpr* SRSLMathExpression::ParseSimpleExpression() {
+        SR_TRACY_ZONE;
         if (auto&& pExpr = TryParseString()) {
             return pExpr;
         }
 
-        std::string token = ParseToken();
+        ParseTokenStackData token = ParseTokenStack();
 
         if (IsHasErrors()) {
             return nullptr;
         }
 
-        if (token.empty()) {
+        if (token.value.empty()) {
             m_result = SRSLResult(SRSLReturnCode::EmptyToken);
             return nullptr;
         }
 
-        if (SR_MATH_NS::IsNumber(token) || IsIdentifier(token)) {
-            auto&& pBasicExpr = new SRSLExpr(std::move(token));
+        if (SR_MATH_NS::IsNumber(token.value) || IsIdentifier(token.value)) {
+            auto&& pBasicExpr = new SRSLExpr(token.value);
 
             /// parse function call
             if (auto&& pLexem = GetCurrentLexem(); pLexem && pLexem->kind == LexemKind::OpeningBracket) {
@@ -206,8 +211,8 @@ namespace SR_SRSL_NS {
             }
             else if (pLexem && pLexem->kind == LexemKind::Dot) {
                 ++m_currentLexem;
-                std::string field = GetCurrentLexem()->value;
-                auto&& pExpr = new SRSLExpr(std::move(field));
+                std::string_view field = GetCurrentLexem()->value;
+                auto&& pExpr = new SRSLExpr(field);
                 pBasicExpr = new SRSLExpr(".", pBasicExpr, pExpr);
                 ++m_currentLexem;
                 goto retrySubExpr;
@@ -242,7 +247,7 @@ namespace SR_SRSL_NS {
             return pBasicExpr;
         }
 
-        if (token.size() == 1 && (token == "(")) {
+        if (token.value.size() == 1 && (token.value == "(")) {
             auto&& pExpr = ParseBinaryExpression(0);
 
             if (!InBounds()) {
@@ -251,8 +256,8 @@ namespace SR_SRSL_NS {
                 return nullptr;
             }
 
-            std::string parsedToken = ParseToken();
-            if (parsedToken != ")") {
+            ParseToken(m_tokenBufferTmp);
+            if (m_tokenBufferTmp != ")") {
                 SR_SAFE_DELETE_PTR(pExpr);
                 m_result = SRSLResult(SRSLReturnCode::InvalidComplexExpression, GetCurrentLexem());
                 return nullptr;
@@ -262,25 +267,25 @@ namespace SR_SRSL_NS {
         }
 
         /// parse list { ... }
-        if (token.size() == 1 && token == "{") {
-            auto&& pListExpr = new SRSLExpr(std::move(token));
+        if (token.value.size() == 1 && token.value == "{") {
+            auto&& pListExpr = new SRSLExpr(token.value);
 
         labelNextArrayElem:
             int64_t currentLexemStash = m_currentLexem;
 
-            token = ParseToken();
+            token = ParseTokenStack();
 
-            if (token.empty()) {
+            if (token.value.empty()) {
                 m_result = SRSLResult(SRSLReturnCode::InvalidListEnd);
                 SR_SAFE_DELETE_PTR(pListExpr);
                 return nullptr;
             }
 
-            if (token == ",") {
+            if (token.value == ",") {
                 goto labelNextArrayElem;
             }
 
-            if (token == "}") {
+            if (token.value == "}") {
                 return pListExpr;
             }
 
@@ -294,7 +299,7 @@ namespace SR_SRSL_NS {
         }
 
         if (!InBounds()) {
-            return new SRSLExpr(std::move(token));
+            return new SRSLExpr(token.value);
         }
 
         auto&& pArgExpr = ParseSimpleExpression();
@@ -304,16 +309,18 @@ namespace SR_SRSL_NS {
             return nullptr;
         }
 
-        if (IsIncrementOrDecrement(token)) {
-            return new SRSLExpr(new SRSLExpr(std::move(token)), pArgExpr);
+        if (IsIncrementOrDecrement(token.value)) {
+            return new SRSLExpr(new SRSLExpr(token.value), pArgExpr);
         }
 
-        return new SRSLExpr(std::move(token), pArgExpr);
+        return new SRSLExpr(token.value, pArgExpr);
     }
 
     SRSLExpr* SRSLMathExpression::TryParseString() {
+        SR_TRACY_ZONE;
+
         bool isStringStarted = false;
-        std::string token;
+        m_tryParseStringTokenTmp.clear();
 
     retry:
         if (!InBounds()) {
@@ -324,7 +331,7 @@ namespace SR_SRSL_NS {
             case LexemKind::String: {
                 ++m_currentLexem;
                 if (isStringStarted) {
-                    return SRSLExpr::CreateStringExpression(std::move(token));
+                    return SRSLExpr::CreateStringExpression(std::move(m_tryParseStringTokenTmp));
                 }
                 isStringStarted = true;
                 goto retry;
@@ -339,16 +346,16 @@ namespace SR_SRSL_NS {
                         SRHalt("Unknown lexem kind and empty value!");
                     }
                     else {
-                        token += str;
+                        m_tryParseStringTokenTmp += str;
                     }
                 }
                 else {
                     if (GetCurrentLexem()->value == "\"" && GetLexem(1) && GetLexem(1)->kind == LexemKind::String) {
                         ++m_currentLexem;
-                        token += "\"";
+                        m_tryParseStringTokenTmp += "\"";
                     }
                     else {
-                        token += GetCurrentLexem()->value;
+                        m_tryParseStringTokenTmp += GetCurrentLexem()->value;
                     }
                 }
                 ++m_currentLexem;
@@ -357,7 +364,7 @@ namespace SR_SRSL_NS {
         }
     }
 
-    int32_t SRSLMathExpression::GetPriority(const std::string& operation, bool prefix) const {
+    int32_t SRSLMathExpression::GetPriority(const std::string_view& operation, bool prefix) const {
         if (operation == "") {
 
         }
@@ -424,8 +431,8 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLMathExpression::Clear() {
-        m_result = SRSLResult();
-
+        SR_TRACY_ZONE;
+        m_result.Clear();
         m_lexems.clear();
         m_currentLexem = 0;
     }
@@ -450,14 +457,15 @@ namespace SR_SRSL_NS {
         return GetLexem(0);
     }
 
-    std::string SRSLMathExpression::ParseToken()
-    {
+    void SRSLMathExpression::ParseToken(std::string& token) {
+        SR_TRACY_ZONE;
+
+        token.clear();
+
         /// пытаемся обработать как число
         {
             bool hasDot = false;
             bool hasInt = false;
-
-            std::string token;
 
         retry:
             switch (InBounds() ? GetCurrentLexem()->kind : LexemKind::Unknown) {
@@ -468,17 +476,18 @@ namespace SR_SRSL_NS {
                 case LexemKind::Dot:
                     if (hasDot) {
                         m_result = SRSLResult(SRSLReturnCode::UnexceptedDot, GetCurrentLexem());
-                        return std::string();
+                        token.clear();
+                        return;
                     }
                     token += m_lexems[m_currentLexem++].value;
                     hasDot = true;
                     goto retry;
                 default: {
                     if (hasDot && !hasInt) {
-                        return token;
+                        return;
                     }
                     else if (hasInt) {
-                        return token;
+                        return;
                     }
 
                     break;
@@ -486,10 +495,12 @@ namespace SR_SRSL_NS {
             }
         }
 
+        token.clear();
+
         if (!GetCurrentLexem()) {
             m_result = SRSLResult(SRSLReturnCode::EmptyToken);
             SRHalt("SRSLMathExpression::ParseToken() : GetCurrentLexem() is nullptr!");
-            return std::string();
+            return;
         }
 
         switch (GetCurrentLexem()->kind) {
@@ -504,160 +515,157 @@ namespace SR_SRSL_NS {
             case LexemKind::Comma:
             case LexemKind::Dot:
             case LexemKind::Question:
-            case LexemKind::Colon:
-                return m_lexems[m_currentLexem++].value;
-
-            case LexemKind::Negation: {
-                if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
-                    m_currentLexem += 2;
-                    return std::move(token); /// !=
-                }
-                return m_lexems[m_currentLexem++].value; /// !
+            case LexemKind::Colon: {
+                token = m_lexems[m_currentLexem++].value;
+                return;
             }
 
-            case LexemKind::Multiply: {
+            case LexemKind::Negation: {
+            case LexemKind::Multiply:
+            case LexemKind::Divide:
+            case LexemKind::Percent:
+            case LexemKind::Assign:
                 if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// *=
+                    return; /// !=
                 }
-                return m_lexems[m_currentLexem++].value; /// *
+                token = m_lexems[m_currentLexem++].value;
+                return; /// !
             }
 
             case LexemKind::Exponentiation: {
                 if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Exponentiation) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// ^^
+                    return; /// ^^
                 }
                 else if (pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// ^=
+                    return; /// ^=
                 }
-                return m_lexems[m_currentLexem++].value; /// ^
-            }
-
-            case LexemKind::Divide: {
-                if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
-                    m_currentLexem += 2;
-                    return std::move(token); /// /=
-                }
-                return m_lexems[m_currentLexem++].value; /// /
-            }
-
-            case LexemKind::Percent: {
-                if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
-                    m_currentLexem += 2;
-                    return std::move(token); /// %=
-                }
-                return m_lexems[m_currentLexem++].value; /// %
+                token = m_lexems[m_currentLexem++].value; /// ^
+                return;
             }
 
             case LexemKind::OpeningAngleBracket: {
                 if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// <=
+                    return; /// <=
                 }
                 else if (pNext && pNext->kind == LexemKind::OpeningAngleBracket) {
                     if (auto&& pNextNext = GetLexem(2); pNextNext && pNextNext->kind == LexemKind::Assign) {
-                        auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value + m_lexems[m_currentLexem + 2].value;
+                        token += m_lexems[m_currentLexem].value;
+                        token += m_lexems[m_currentLexem + 1].value;
+                        token += m_lexems[m_currentLexem + 2].value;
                         m_currentLexem += 3;
-                        return std::move(token); /// <<=
+                        return; /// <<=
                     }
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// <<
+                    return; /// <<
                 }
-                return m_lexems[m_currentLexem++].value; /// <
+                token = m_lexems[m_currentLexem++].value; /// <
+                return;
             }
 
             case LexemKind::ClosingAngleBracket: {
                 if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// >=
+                    return; /// >=
                 }
                 else if (pNext && pNext->kind == LexemKind::ClosingAngleBracket) {
                     if (auto&& pNextNext = GetLexem(2); pNextNext && pNextNext->kind == LexemKind::Assign) {
-                        auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value + m_lexems[m_currentLexem + 2].value;
+                        token += m_lexems[m_currentLexem].value;
+                        token += m_lexems[m_currentLexem + 1].value;
+                        token += m_lexems[m_currentLexem + 2].value;
                         m_currentLexem += 3;
-                        return std::move(token); /// >>=
+                        return; /// >>=
                     }
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// >>
+                    return; /// >>
                 }
-                return m_lexems[m_currentLexem++].value; /// >
+                token = m_lexems[m_currentLexem++].value; /// >
+                return;
             }
 
             case LexemKind::Plus: {
                 if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// +=
+                    return; /// +=
                 }
                 else if (pNext && pNext->kind == LexemKind::Plus) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// ++
+                    return; /// ++
                 }
-                return m_lexems[m_currentLexem++].value; /// +
+                token = m_lexems[m_currentLexem++].value; /// +
+                return;
             }
 
             case LexemKind::Minus: {
                 if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// -=
+                    return; /// -=
                 }
                 else if (pNext && pNext->kind == LexemKind::Minus) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// --
+                    return; /// --
                 }
-                return m_lexems[m_currentLexem++].value; /// +
-            }
-
-            case LexemKind::Assign: {
-                if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
-                    m_currentLexem += 2;
-                    return std::move(token); /// ==
-                }
-                return m_lexems[m_currentLexem++].value; /// =
+                token = m_lexems[m_currentLexem++].value; /// +
+                return;
             }
 
             case LexemKind::And: {
                 if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::And) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// &&
+                    return; /// &&
                 }
                 else if (pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// &=
+                    return; /// &=
                 }
-                return m_lexems[m_currentLexem++].value; /// &
+                token = m_lexems[m_currentLexem++].value; /// &
+                return;
             }
 
             case LexemKind::Or: {
                 if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::Or) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// ||
+                    return; /// ||
                 }
                 else if (pNext && pNext->kind == LexemKind::Assign) {
-                    auto&& token = m_lexems[m_currentLexem].value + m_lexems[m_currentLexem + 1].value;
+                    token += m_lexems[m_currentLexem].value;
+                    token += m_lexems[m_currentLexem + 1].value;
                     m_currentLexem += 2;
-                    return std::move(token); /// |=
+                    return; /// |=
                 }
-                return m_lexems[m_currentLexem++].value; /// |
+                token = m_lexems[m_currentLexem++].value; /// |
+                return;
             }
 
             default:
@@ -665,10 +673,11 @@ namespace SR_SRSL_NS {
         }
 
         m_result = SRSLResult(SRSLReturnCode::InvalidMathToken, GetCurrentLexem());
-        return std::string();
+        token.clear();
+        return;
     }
 
-    bool SRSLMathExpression::IsIncrementOrDecrement(const std::string &operation) const {
+    bool SRSLMathExpression::IsIncrementOrDecrement(const std::string_view& operation) const {
         return operation == "++" || operation == "--";
     }
 
@@ -684,5 +693,28 @@ namespace SR_SRSL_NS {
         }
 
         return pLexem->kind != LexemKind::Identifier;
+    }
+
+    void SRSLMathExpression::PopTokenStack() {
+        if (m_tokenStackSize > 0) {
+            m_tokenStackSize--;
+        }
+        else {
+            SRHalt("SRSLMathExpression::PopTokenStack() : token stack is empty!");
+        }
+    }
+
+    SRSLMathExpression::ParseTokenStackData SRSLMathExpression::ParseTokenStack() {
+        if (m_tokenStackSize >= m_tokenStack.size()) {
+            SRHalt("SRSLMathExpression::ParseTokenStack() : token stack overflow!");
+            return { };
+        }
+        std::string& data = m_tokenStack[m_tokenStackSize++];
+        ParseToken(data);
+        return { data };
+    }
+
+    SRSLMathExpression::ParseTokenStackData::~ParseTokenStackData() {
+        SRSLMathExpression::Instance().PopTokenStack();
     }
 }

@@ -11,20 +11,26 @@
 namespace SR_SRSL_NS {
     class SRSLMathExpression : public SR_UTILS_NS::Singleton<SRSLMathExpression> {
         SR_REGISTER_SINGLETON(SRSLMathExpression)
+        struct ParseTokenStackData {
+            std::string_view value;
+            ~ParseTokenStackData();
+        };
     public:
         SR_NODISCARD std::pair<SRSLExpr*, SRSLResult> Analyze(std::vector<Lexem>&& lexems);
 
     private:
         void Clear();
 
-        SR_NODISCARD int32_t GetPriority(const std::string& operation, bool prefix) const;
-        SR_NODISCARD bool IsIncrementOrDecrement(const std::string& operation) const;
+        SR_NODISCARD int32_t GetPriority(const std::string_view& operation, bool prefix) const;
+        SR_NODISCARD bool IsIncrementOrDecrement(const std::string_view& operation) const;
 
         SR_NODISCARD SRSLExpr* ParseBinaryExpression(int32_t minPriority);
         SR_NODISCARD SRSLExpr* ParseSimpleExpression();
         SR_NODISCARD SRSLExpr* TryParseString();
 
-        SR_NODISCARD std::string ParseToken();
+        void ParseToken(std::string& token);
+        ParseTokenStackData ParseTokenStack();
+        void PopTokenStack();
 
         SR_NODISCARD bool IsPrefix() const noexcept;
 
@@ -35,6 +41,11 @@ namespace SR_SRSL_NS {
 
     private:
         SRSLResult m_result;
+        std::string m_tokenBufferTmp;
+        std::string m_tryParseStringTokenTmp;
+
+        std::array<std::string, 64> m_tokenStack;
+        uint32_t m_tokenStackSize = 0;
 
         std::vector<Lexem> m_lexems;
         int64_t m_currentLexem = 0;

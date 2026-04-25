@@ -13,6 +13,11 @@
 #include <Utils/Types/SortedVector.h>
 
 namespace SR_SRSL_NS {
+    struct SRSLInclude {
+        SR_UTILS_NS::StringAtom name;
+        std::string buffer;
+    };
+
     struct ShaderParams : public SR_UTILS_NS::IResourceVariant {
     private:
         struct Entry {

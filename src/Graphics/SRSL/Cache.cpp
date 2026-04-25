@@ -529,7 +529,7 @@ namespace SR_GRAPH_NS {
         uint64_t hash = 0;
 
         for (auto&& include : pShader->m_includes) {
-            auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(include);
+            auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(include.name);
             hash = SR_UTILS_NS::CombineTwoHashes(hash, absPath.GetFileHash());
         }
 
@@ -541,7 +541,7 @@ namespace SR_GRAPH_NS {
 
         SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, pShader->m_includes.size());
         for (auto&& include : pShader->m_includes) {
-            SR_UTILS_NS::MarshalUtils::SaveString(marshal, include);
+            SR_UTILS_NS::MarshalUtils::SaveString(marshal, include.name);
         }
 
         SR_UTILS_NS::MarshalUtils::SaveValue(marshal, static_cast<uint32_t>(pShader->m_type));
@@ -610,11 +610,12 @@ namespace SR_GRAPH_NS {
         const auto hash = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
         uint64_t currentHash = 0;
 
-        std::vector<SR_UTILS_NS::StringAtom> includes;
+        std::vector<SR_SRSL_NS::SRSLInclude> includes;
         const auto includesSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
         for (uint64_t i = 0; i < includesSize; ++i) {
-            includes.emplace_back(SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal));
-            auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(includes.back());
+            SR_SRSL_NS::SRSLInclude& inc = includes.emplace_back();
+            inc.name = SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal);
+            auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(inc.name);
             currentHash = SR_UTILS_NS::CombineTwoHashes(currentHash, absPath.GetFileHash());
         }
 

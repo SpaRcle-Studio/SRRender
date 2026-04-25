@@ -160,7 +160,7 @@ namespace SR_GTYPES_NS {
 
         SR_SRSL_NS::ShaderParams m_params;
 
-        std::vector<SR_UTILS_NS::StringAtom> m_includes;
+        std::vector<SR_SRSL_NS::SRSLInclude> m_includes;
         Memory::ShaderUBOBlock m_uniformBlock;
         Memory::ShaderUBOBlock m_uniformSharedBlock;
         Memory::ShaderUBOBlock m_constBlock;

@@ -572,8 +572,8 @@ namespace SR_GRAPH_NS::Types {
 
         auto&& resourcesManager = SR_UTILS_NS::ResourceManager::Instance();
 
-        for (auto&& path : m_includes) {
-            auto&& pWatch = SR_UTILS_NS::FileWatcher::MakeShared(resourcesManager.GetResPath().Concat(path));
+        for (auto&& include : m_includes) {
+            auto&& pWatch = SR_UTILS_NS::FileWatcher::MakeShared(resourcesManager.GetResPath().Concat(include.name));
 
             pWatch->SetCallBack([this](auto&& pWatcher) {
                 SignalWatch();

@@ -92,7 +92,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetShared() const { return m_shared; }
         SR_NODISCARD const std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetSharedWorkgroup() const { return m_sharedWorkgroup; }
         SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, SRSLVariable*>& GetConstants() const { return m_constants; }
-        SR_NODISCARD const std::vector<SR_UTILS_NS::StringAtom>& GetIncludes() const { return m_includes; }
+        SR_NODISCARD const std::vector<SRSLInclude>& GetIncludes() const { return m_includes; }
         SR_NODISCARD const SR_MATH_NS::UVector3& GetComputeWorkGroupSize() const { return m_computeWorkGroupSize; }
         SR_NODISCARD bool IsMacroDefined(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD bool IsGLayerUsed() const { return m_gLayerUsed; }
@@ -123,7 +123,7 @@ namespace SR_SRSL_NS {
 
         bool m_gLayerUsed = false;
         ShaderParams m_params;
-        std::vector<SR_UTILS_NS::StringAtom> m_includes;
+        std::vector<SRSLInclude> m_includes;
         std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_shared;
         std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_sharedWorkgroup;
         std::map<SR_UTILS_NS::StringAtom, SRSLVariable*> m_constants;

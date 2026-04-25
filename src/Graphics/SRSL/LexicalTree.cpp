@@ -35,6 +35,7 @@ namespace SR_SRSL_NS {
     }
 
     std::string SRSLExpr::GetAsName() {
+        SR_TRACY_ZONE;
         if (!isArray) {
             return token;
         }

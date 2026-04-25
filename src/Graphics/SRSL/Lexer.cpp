@@ -10,32 +10,31 @@ namespace SR_SRSL_NS {
         Clear();
     }
 
-    SRSLLexer::Lexems SRSLLexer::Parse(const SR_UTILS_NS::Path& path, uint16_t fileIndex) {
+    SRSLLexer::Lexems SRSLLexer::Parse(const SR_UTILS_NS::Path& path, std::string& buffer, uint16_t fileIndex) {
         SR_TRACY_ZONE;
 
-        std::string buffer;
         if (!SR_UTILS_NS::FileSystem::ReadFile(path, buffer) || buffer.empty()) {
             SR_ERROR("SRSLLexer::Parse() : failed to read file!\n\tPath: {}", path);
             return { };
         }
 
-        return ParseInternal(std::move(buffer), fileIndex);
+        return ParseInternal(buffer, fileIndex);
     }
 
-    SRSLLexer::Lexems SRSLLexer::ParseString(std::string code, uint16_t fileIndex) {
-        return ParseInternal(std::move(code), fileIndex);
+    SRSLLexer::Lexems SRSLLexer::ParseString(std::string_view code, uint16_t fileIndex) {
+        return ParseInternal(code, fileIndex);
     }
 
     bool SRSLLexer::InBounds() const noexcept {
         return m_offset < m_source.size();
     }
 
-    SRSLLexer::Lexems SRSLLexer::ParseInternal(std::string&& code, uint16_t fileIndex) {
+    SRSLLexer::Lexems SRSLLexer::ParseInternal(std::string_view code, uint16_t fileIndex) {
         SR_TRACY_ZONE;
 
         Clear();
 
-        m_source = std::move(code);
+        m_source = code;
         m_fileIndex = fileIndex;
 
         while (InBounds())
@@ -126,23 +125,31 @@ namespace SR_SRSL_NS {
 
         const uint64_t length = identifier.size();
 
-        return Lexem(offset, length, LexemKind::Identifier, std::move(identifier), m_fileIndex, m_line, position);
+        return Lexem(offset, length, LexemKind::Identifier, identifier, m_fileIndex, m_line, position);
     }
 
-    std::string SRSLLexer::ProcessIdentifier() {
-        std::string identifier;
+    std::string_view SRSLLexer::ProcessIdentifier() {
+        uint32_t identifierStart = SR_UINT32_MAX;
+        uint32_t identifierLength = 0;
 
     retry:
         for (auto&& identifierChar : SRSL_IDENTIFIER_CHARS) {
+            if (!InBounds()) {
+                break;
+            }
+
             if (m_source[m_offset] == identifierChar) {
-                identifier += identifierChar;
+                if (identifierStart == SR_UINT32_MAX) {
+                    identifierStart = m_offset;
+                }
+                ++identifierLength;
                 ++m_offset;
                 ++m_position;
                 goto retry;
             }
         }
 
-        if (identifier.empty()) {
+        if (identifierLength == 0) {
             SR_ERROR("SRSLLexer::ProcessIdentifier() : invalid identifier!"
                  " \n\tPosition: {}"
                  " \n\tIdentifier: \"{}\"", m_offset, m_source[m_offset]
@@ -151,7 +158,10 @@ namespace SR_SRSL_NS {
             ++m_position;
         }
 
-        return identifier;
+        if (identifierStart == SR_UINT32_MAX) {
+            return {};
+        }
+        return std::string_view(m_source.data() + identifierStart, identifierLength);
     }
 
     void SRSLLexer::SkipSpaces() {
@@ -214,7 +224,7 @@ namespace SR_SRSL_NS {
     void SRSLLexer::Clear() {
         SR_TRACY_ZONE;
 
-        m_source.clear();
+        m_source = { };
         m_fileIndex = 0;
         m_offset = 0;
         m_lexems.clear();

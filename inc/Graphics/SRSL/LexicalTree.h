@@ -50,7 +50,15 @@ namespace SR_SRSL_NS {
         SRSLExpr() : SRSLLexicalUnit(LexicalUnitType::Expr) { }
 
         static SRSLExpr* CreateStringExpression(std::string token) {
+            SR_TRACY_ZONE;
             auto&& pExpr = new SRSLExpr(std::move(token));
+            pExpr->isString = true;
+            return pExpr;
+        }
+
+        static SRSLExpr* CreateStringExpression(std::string_view token) {
+            SR_TRACY_ZONE;
+            auto&& pExpr = new SRSLExpr(std::string(token));
             pExpr->isString = true;
             return pExpr;
         }
@@ -59,6 +67,7 @@ namespace SR_SRSL_NS {
             : SRSLLexicalUnit(LexicalUnitType::Expr)
             , token(SR_UTILS_NS::Exchange(token, { }))
         {
+            SR_TRACY_ZONE;
             SRAssert(this->token != "(" && this->token != ")");
             SRAssert(this->token != "[" && this->token != "]");
             SRAssert(this->token != "}");
@@ -68,20 +77,36 @@ namespace SR_SRSL_NS {
             }
         }
 
-        explicit SRSLExpr(std::string&& token, SRSLExpr* pAExpr)
+        explicit SRSLExpr(std::string_view token)
             : SRSLLexicalUnit(LexicalUnitType::Expr)
-            , token(SR_UTILS_NS::Exchange(token, { }))
+            , token(token)
         {
+            SR_TRACY_ZONE;
+            SRAssert(this->token != "(" && this->token != ")");
+            SRAssert(this->token != "[" && this->token != "]");
+            SRAssert(this->token != "}");
+
+            if (this->token == "{") {
+                isList = true;
+            }
+        }
+
+        explicit SRSLExpr(std::string_view token, SRSLExpr* pAExpr)
+            : SRSLLexicalUnit(LexicalUnitType::Expr)
+            , token(token)
+        {
+            SR_TRACY_ZONE;
             SRAssert(pAExpr);
             SRAssert(this->token != ")" && this->token != "(");
             SRAssert(this->token != "[" && this->token != "]");
             args.emplace_back(pAExpr);
         }
 
-        explicit SRSLExpr(std::string&& token, SRSLExpr* pAExpr, SRSLExpr* pBExpr)
+        explicit SRSLExpr(std::string_view token, SRSLExpr* pAExpr, SRSLExpr* pBExpr)
             : SRSLLexicalUnit(LexicalUnitType::Expr)
-            , token(SR_UTILS_NS::Exchange(token, { }))
+            , token(token)
         {
+            SR_TRACY_ZONE;
             SRAssert(pAExpr);
             SRAssert(this->token != ")" && this->token != "(");
             SRAssert(this->token != "]");
@@ -105,6 +130,7 @@ namespace SR_SRSL_NS {
         explicit SRSLExpr(SRSLExpr* pAExpr, SRSLExpr* pBExpr)
             : SRSLLexicalUnit(LexicalUnitType::Expr)
         {
+            SR_TRACY_ZONE;
             SRAssert(pAExpr && pBExpr);
             args.emplace_back(pAExpr);
             args.emplace_back(pBExpr);

@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_SRSL_LEXERUTILS_H
 #define SR_ENGINE_SRSL_LEXERUTILS_H
 
-#include <Graphics/macros.h>
+#include <Graphics/Loaders/SRSL.h>
 
 #include <Utils/Common/Singleton.h>
 #include <Utils/Common/Enumerations.h>
@@ -50,11 +50,13 @@ namespace SR_SRSL_NS {
         '_',
     };
 
-    SR_MAYBE_UNUSED static bool IsIdentifier(const std::string& token) noexcept {
+    SR_MAYBE_UNUSED static bool IsIdentifier(const std::string_view & token) noexcept {
+        SR_TRACY_ZONE;
         bool isFirst = true;
 
         for (auto&& tokenChar : token) {
-            if (isFirst && SR_MATH_NS::IsNumber(std::string(1, tokenChar))) {
+            std::string_view charStr(&tokenChar, 1);
+            if (isFirst && SR_MATH_NS::IsNumber(charStr)) {
                 return false;
             }
             isFirst = false;
@@ -74,9 +76,10 @@ namespace SR_SRSL_NS {
         return true;
     }
 
-    SR_MAYBE_UNUSED static bool IsOperator(const std::string& operation) noexcept {
-        static const std::vector<std::string> operators = {
-                "+", "-", "!", ".", "~", ">", "^", "<", ":", "?", "|", "&", "%",
+    SR_MAYBE_UNUSED static bool IsOperator(const std::string_view operation) noexcept {
+        SR_TRACY_ZONE;
+        static const std::vector<std::string_view> operators = {
+            "+", "-", "!", ".", "~", ">", "^", "<", ":", "?", "|", "&", "%",
         };
         return std::find(operators.begin(), operators.end(), operation) != operators.end();
     }
@@ -185,10 +188,10 @@ namespace SR_SRSL_NS {
     struct Lexem : public LocationEntity {
         Lexem() = default;
 
-        Lexem(uint64_t offset, uint64_t length, LexemKind kind, std::string&& value, uint16_t fileIndex, uint64_t line, uint64_t position)
+        Lexem(uint64_t offset, uint64_t length, LexemKind kind, std::string_view value, uint16_t fileIndex, uint64_t line, uint64_t position)
             : LocationEntity(offset, length, fileIndex, line, position)
             , kind(kind)
-            , value(SR_UTILS_NS::Exchange(value, { }))
+            , value(value)
         { }
 
         Lexem(uint64_t offset, uint64_t length, LexemKind kind, uint16_t fileIndex, uint64_t line, uint64_t position)
@@ -197,7 +200,13 @@ namespace SR_SRSL_NS {
         { }
 
         LexemKind kind = LexemKind::Unknown;
-        std::string value;
+        std::string_view value;
+
+        SR_NODISCARD std::string StringValue() {
+            SR_TRACY_ZONE;
+            return std::string(value);
+        }
+
     };
 
     struct SRSLMessage {
@@ -218,7 +227,7 @@ namespace SR_SRSL_NS {
             : SRSLMessage(code, *pLexem)
         { }
 
-        SR_NODISCARD std::string ToString(const std::vector<SR_UTILS_NS::StringAtom>& files, uint8_t tab) const {
+        SR_NODISCARD std::string ToString(const std::vector<SRSLInclude>& files, uint8_t tab) const {
             std::string message = SR_UTILS_NS::EnumReflector::ToStringAtom(code);
 
             if (fileIndex != SR_UINT16_MAX) {
@@ -228,7 +237,7 @@ namespace SR_SRSL_NS {
                 else {
                     auto&& resourcesPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath();
                 #ifdef SR_WIN32
-                    message += "\n{}File: {}/{}:{}:{}"_format(std::string(tab, '\t'), resourcesPath, files[fileIndex].ToStringRef(), line, position);
+                    message += "\n{}File: {}/{}:{}:{}"_format(std::string(tab, '\t'), resourcesPath, files[fileIndex].name.ToStringView(), line, position);
                 #else
                     message += "\n{}File: file:///{}/{}:{}:{}"_format(std::string(tab, '\t'), resourcesPath, files[fileIndex].ToStringRef(), line, position);
                 #endif
@@ -274,11 +283,17 @@ namespace SR_SRSL_NS {
             return errors.emplace_back(message);
         }
 
+        void Clear() {
+            processedLexems = 0;
+            warnings.clear();
+            errors.clear();
+        }
+
         SR_NODISCARD bool HasErrors() const { return !errors.empty(); }
         SR_NODISCARD bool HasWarnings() const { return !warnings.empty(); }
         SR_NODISCARD bool HasAny() const { return HasErrors() || HasWarnings(); }
 
-        SR_NODISCARD std::string ToString(const std::vector<SR_UTILS_NS::StringAtom>& files, uint8_t tab = 1) const {
+        SR_NODISCARD std::string ToString(const std::vector<SRSLInclude>& files, uint8_t tab = 1) const {
             std::string message;
 
             for (auto&& msg : errors) {

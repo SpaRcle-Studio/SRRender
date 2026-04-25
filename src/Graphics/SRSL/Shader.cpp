@@ -60,13 +60,15 @@ namespace SR_SRSL_NS {
         auto&& pShader = SRSLShader::Ptr(new SRSLShader(path));
         pShader->m_params = params;
 
-        auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(absPath, 0);
+        SRSLPreProcessor::Includes includes;
+        SRSLInclude& mainFile = includes.emplace_back();
+        mainFile.name = path.ToStringRef();
+
+        auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(absPath, mainFile.buffer, 0);
         if (lexems.empty()) {
             SR_ERROR("SRSLShader::Load() : failed to parse lexems!\n\tPath: " + path.ToString());
             return nullptr;
         }
-
-        SRSLPreProcessor::Includes includes = { path.ToStringRef() };
 
         auto&& [preProcessedLexems, preProcessResult] = SRSLPreProcessor::Instance().Process(std::move(lexems), includes, pShader->m_params);
         if (preProcessResult.HasErrors()) {
@@ -123,7 +125,7 @@ namespace SR_SRSL_NS {
         uint64_t hash = 0;
 
         for (auto&& include : m_includes) {
-            auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(include);
+            auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(include.name);
             hash = SR_UTILS_NS::CombineTwoHashes(hash, absPath.GetFileHash());
         }
 
