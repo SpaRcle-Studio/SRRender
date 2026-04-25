@@ -169,6 +169,24 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return result;
     }
 
+    ImmediateDataTypeUnion FloatToDataType(float_t value, ImmediateDataType type) {
+        ImmediateDataTypeUnion result = {};
+        switch (type) {
+            case ImmediateDataType::Int8:  result.s8   = static_cast<int8_t>(value); break;
+            case ImmediateDataType::UInt8:  result.u8   = static_cast<uint8_t>(value); break;
+            case ImmediateDataType::Int16: result.s16  = static_cast<int16_t>(value); break;
+            case ImmediateDataType::UInt16: result.u16  = static_cast<uint16_t>(value); break;
+            case ImmediateDataType::Int32: result.s32  = static_cast<int32_t>(value); break;
+            case ImmediateDataType::UInt32: result.u32  = static_cast<uint32_t>(value); break;
+            case ImmediateDataType::Int64: result.s64  = static_cast<int64_t>(value); break;
+            case ImmediateDataType::UInt64: result.u64  = static_cast<uint64_t>(value); break;
+            case ImmediateDataType::Float: result.f32 = value; break;
+            case ImmediateDataType::Double: result.f64 = value; break;
+            default: SRHalt("Unknown ImGuiDataType!"); break;
+        }
+        return result;
+    }
+
     void WriteDataType(void* pData, ImmediateDataType type, ImmediateDataTypeUnion value) {
         switch (type) {
             case ImmediateDataType::Int8:   *(int8_t*)pData   = value.s8; break;

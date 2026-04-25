@@ -32,6 +32,9 @@ namespace SR_GTYPES_NS {
         Radial90, Radial180, Radial360
     );
 
+    class Sprite;
+    SR_NODISCARD bool IsSpriteFillOriginApplicable(const Sprite& sprite, SpriteFillOrigin origin);
+
     /// @category(UI)
     class SR_GRAPHICS_DLL_API Sprite : public SR_GTYPES_NS::UIRenderComponent {
         SR_CLASS()
@@ -43,6 +46,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD SR_MATH_NS::FRect GetTextureBorder() const;
         SR_NODISCARD SR_MATH_NS::FRect GetWindowBorder() const;
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
+        SR_NODISCARD SpriteFillMethod GetFillMethod() const { return m_fillMethod; }
 
         void SetTextureBorder(const SR_MATH_NS::FRect& border);
         void SetWindowBorder(const SR_MATH_NS::FRect& border);
@@ -67,8 +71,9 @@ namespace SR_GTYPES_NS {
         /// @property @setter(SetFillMethod) @propertyCondition(This.m_spriteMode == SR_GTYPES_NS::SpriteMode::Filled)
         SpriteFillMethod m_fillMethod = SpriteFillMethod::Radial90;
         /// @property @setter(SetFillOrigin) @propertyCondition(This.m_spriteMode == SR_GTYPES_NS::SpriteMode::Filled)
+        /// @enumFilter(IsSpriteFillOriginApplicable)
         SpriteFillOrigin m_fillOrigin = SpriteFillOrigin::BottomLeft;
-        /// @property @drag(0.01f) @resetValue(1.f) @propertyCondition(This.m_spriteMode == SR_GTYPES_NS::SpriteMode::Filled) @setter(SetFillAmount)
+        /// @property @drag(0.01f) @resetValue(1.f) @propertyCondition(This.m_spriteMode == SR_GTYPES_NS::SpriteMode::Filled) @setter(SetFillAmount) @range(0.f, 1.f)
         float_t m_fillAmount = 1.f;
         /// @property @propertyCondition(This.m_spriteMode == SR_GTYPES_NS::SpriteMode::Filled) @setter(SetFillClockwise)
         bool m_fillClockwise = true;

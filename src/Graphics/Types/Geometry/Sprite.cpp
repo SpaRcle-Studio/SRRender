@@ -195,4 +195,22 @@ namespace SR_GTYPES_NS {
 
         pShader->SetInt(SHADER_FILL_CENTER, m_fillCenter || m_sliceMode == SliceMode::None ? 1 : 0);
     }
+
+    bool IsSpriteFillOriginApplicable(const Sprite& sprite, SpriteFillOrigin origin) {
+        switch (sprite.GetFillMethod()) {
+            case SpriteFillMethod::Horizontal:
+                return origin == SpriteFillOrigin::Left || origin == SpriteFillOrigin::Right;
+            case SpriteFillMethod::Vertical:
+                return origin == SpriteFillOrigin::Bottom || origin == SpriteFillOrigin::Top;
+            case SpriteFillMethod::Radial90:
+                return origin == SpriteFillOrigin::BottomLeft || origin == SpriteFillOrigin::TopLeft || origin == SpriteFillOrigin::TopRight || origin == SpriteFillOrigin::BottomRight;
+            case SpriteFillMethod::Radial180:
+            case SpriteFillMethod::Radial360:
+                return origin == SpriteFillOrigin::Bottom || origin == SpriteFillOrigin::Top || origin == SpriteFillOrigin::Left || origin == SpriteFillOrigin::Right;
+            default:
+                break;
+        }
+        SRHaltOnce("Unknown fill method!");
+        return false;
+    }
 }

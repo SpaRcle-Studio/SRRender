@@ -497,6 +497,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern ImmediateDataType GetDataType(std::string_view type);
         SR_GRAPHICS_DLL_API extern ImmediateDataType GetDataType(uint64_t size, bool isSigned, bool isIntegral);
         SR_GRAPHICS_DLL_API extern ImmediateDataTypeUnion ReadDataType(void* pData, ImmediateDataType type);
+        SR_GRAPHICS_DLL_API extern ImmediateDataTypeUnion FloatToDataType(float_t value, ImmediateDataType type);
         SR_GRAPHICS_DLL_API extern void WriteDataType(void* pData, ImmediateDataType type, ImmediateDataTypeUnion value);
 
         // Layout functions
