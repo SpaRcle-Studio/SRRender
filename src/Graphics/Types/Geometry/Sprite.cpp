@@ -40,6 +40,12 @@ namespace SR_GTYPES_NS {
         }
 
         shader.SetInt(SHADER_SPRITE_MODE, static_cast<int32_t>(m_spriteMode));
+
+        if (auto&& pTransformRect = SR_UTILS_NS::ExtractTransformAs<SR_UTILS_NS::TransformRect>(GetSceneObject().Get())) SR_LIKELY_ATTRIBUTE {
+            SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
+            shader.SetVec4(SHADER_NDC_RECT, layout.vec4);
+        }
+
         switch (m_spriteMode) {
             case SpriteMode::Filled:
                 ApplyFillModeParams(&shader);
@@ -114,7 +120,11 @@ namespace SR_GTYPES_NS {
     }
 
     void Sprite::ApplyFillModeParams(Shader* pShader) {
-
+        pShader->SetFloat(SHADER_SPRITE_FILL_AMOUNT, m_fillAmount);
+        pShader->SetInt(SHADER_SPRITE_FILL_METHOD, static_cast<int>(m_fillMethod));
+        pShader->SetInt(SHADER_SPRITE_FILL_ORIGIN, static_cast<int>(m_fillOrigin));
+        pShader->SetInt(SHADER_SPRITE_FILL_CLOCKWISE, m_fillClockwise ? 1 : 0);
+        pShader->SetInt(SHADER_SPRITE_MODE, static_cast<int>(m_spriteMode));
     }
 
     void Sprite::ApplySliceModeParams(Shader* pShader) {
@@ -133,7 +143,6 @@ namespace SR_GTYPES_NS {
             SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
             layoutWidth = layout.w;
             layoutHeight = layout.h;
-            pShader->SetVec4(SHADER_NDC_RECT, layout.vec4);
         }
 
         if (m_sliceMode == SliceMode::Manual) {
