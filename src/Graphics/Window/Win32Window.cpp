@@ -114,6 +114,7 @@ namespace SR_GRAPH_NS {
                     m_focusCallback(this, true);
                 }
                 m_isFocused = true;
+                SR_LOG("Win32Window::ReadWmdProcedure() : WM_SETFOCUS. Window is focused now.");
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             case WM_KILLFOCUS: {
@@ -121,6 +122,7 @@ namespace SR_GRAPH_NS {
                     m_focusCallback(this, false);
                 }
                 m_isFocused = false;
+                SR_LOG("Win32Window::ReadWmdProcedure() : WM_KILLFOCUS. Window is not focused now.");
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             case WM_MOVE: {

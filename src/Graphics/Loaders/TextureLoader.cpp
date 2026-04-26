@@ -15,6 +15,7 @@
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Types/Marshal.h>
 #include <Utils/FileSystem/FileSystem.h>
+#include <Utils/FileSystem/MappedFile.h>
 #include <Utils/Common/CLIManager.h>
 
 #include <Enum/TextureCompression.hpp>
@@ -327,12 +328,13 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         SR_TRACY_ZONE_TEXT(path);
 
-        auto&& marshal = SR_HTYPES_NS::Marshal::Load(path);
-        if (!marshal) {
-            SR_ERROR("TextureLoader::LoadFromCache() : failed to load marshal from path \"" + path.ToString() + "\"!");
+        SR_UTILS_NS::MappedFile mappedFile = SR_UTILS_NS::MappedFile::Open(path);
+        if (!mappedFile) {
+            SR_ERROR("TextureLoader::LoadFromCache() : failed to load marshal from path \"{}\"!", path);
             return nullptr;
         }
 
+        SR_HTYPES_NS::Marshal marshal(mappedFile);
         auto&& version = marshal.Read<uint64_t>();
         if (version != TextureLoader::VERSION) {
             return nullptr;
@@ -355,11 +357,12 @@ namespace SR_GRAPH_NS {
 
         const uint64_t offset = marshal.GetPosition();
 
-        uint8_t* pOriginData = reinterpret_cast<uint8_t*>(marshal.Detach().first);
+        uint8_t* pOriginData = (uint8_t*)mappedFile.GetData();
         uint8_t* pData = pOriginData + offset;
 
-        auto&& pTextureData = TextureData::Create(width, height, pData, [pOriginData](uint8_t*) {
-            SRFree(pOriginData);
+        SR_UTILS_NS::MappedFile* pMappedFile = new SR_UTILS_NS::MappedFile(std::move(mappedFile));
+        auto&& pTextureData = TextureData::Create(width, height, pData, [pMappedFile](uint8_t*) {
+            delete pMappedFile;
         }, info);
 
         pTextureData->SetPath(sourcePath);
