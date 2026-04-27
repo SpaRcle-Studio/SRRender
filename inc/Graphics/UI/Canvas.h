@@ -8,8 +8,9 @@
 #include <Graphics/stdInclude.h>
 
 #include <Utils/ECS/Component.h>
-#include <Utils/Math/Rect.h>
 #include <Utils/ECS/EntityRef.h>
+#include <Utils/Math/Rect.h>
+#include <Utils/Math/PhysicalUnit.h>
 
 namespace SR_GRAPH_NS {
     class RenderContext;
@@ -22,6 +23,18 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_UI_NS {
+    SR_ENUM_NS_CLASS_T(CanvasScaleMode, uint8_t,
+        ConstantPixelSize,
+        ScaleWithScreenSize,
+        ConstantPhysicalSize
+    )
+
+    SR_ENUM_NS_CLASS_T(CanvasScreenMatchMode, uint8_t,
+        MatchWidthOrHeight,
+        Expand,
+        Shrink
+    )
+
     /// @category(UI)
     class Canvas : public SR_UTILS_NS::Component {
         SR_CLASS()
@@ -51,6 +64,40 @@ namespace SR_GRAPH_UI_NS {
 
         SR_MATH_NS::UVector2 m_size;
         RenderScenePtr m_renderScene;
+
+    };
+
+    class CanvasScaler : public SR_UTILS_NS::Component {
+        SR_CLASS()
+        using Super = SR_UTILS_NS::Component;
+    public:
+        SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
+        void Update(float_t dt) override;
+
+    private:
+        /// @property
+        CanvasScaleMode m_scaleMode = CanvasScaleMode::ConstantPixelSize;
+
+        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPixelSize) @drag(0.1f)
+        float_t m_scaleFactor = 1.f;
+
+        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
+        SR_MATH_NS::UVector2 m_referenceResolution = SR_MATH_NS::UVector2(800, 600);
+        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
+        CanvasScreenMatchMode m_screenMatchMode = CanvasScreenMatchMode::MatchWidthOrHeight;
+        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize && This.m_screenMatchMode == CanvasScreenMatchMode::MatchWidthOrHeight)
+        /// @range(0.f, 1.f) @drag(0.1f)
+        float_t m_match = 0.f;
+
+        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
+        SR_MATH_NS::PhysicalUnit m_physicalUnit = SR_MATH_NS::PhysicalUnit::Points;
+        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
+        float_t m_fallbackScreenDPI = 96.f;
+        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
+        float_t m_defaultSpriteDPI = 96.f;
+
+        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPixelSize || This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
+        float_t m_referencePixelsPerUnit = 100.f;
 
     };
 

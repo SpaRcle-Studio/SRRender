@@ -9,7 +9,7 @@
 
 #include <Utils/World/Scene.h>
 #include <Utils/ECS/TransformRect.h>
-#include <Utils/ECS/SceneObject.h>
+#include <Utils/ECS/GameObject.h>
 
 #include <Codegen/Canvas.generated.hpp>
 
@@ -65,8 +65,6 @@ namespace SR_GRAPH_UI_NS {
             if (windowSize != m_size && pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
                 m_size = windowSize;
 
-                pTransform->SetScale(SR_MATH_NS::FVector3::One());
-
                 SR_UTILS_NS::RectAnchors anchors;
                 anchors.min = 0.f;
                 anchors.max = 0.f;
@@ -99,5 +97,73 @@ namespace SR_GRAPH_UI_NS {
         }
 
         return nullptr;
+    }
+
+    void CanvasScaler::Update(float_t dt) {
+        SR_TRACY_ZONE;
+
+        Super::Update(dt);
+
+        auto&& pGameObject = GetGameObject();
+        if (!pGameObject) {
+            return;
+        }
+
+        auto&& pCanvas = pGameObject->GetComponent<Canvas>();
+        if (!pCanvas) {
+            return;
+        }
+
+        float_t scale = 1.f;
+        switch (m_scaleMode) {
+            case CanvasScaleMode::ConstantPixelSize:
+                scale = m_scaleFactor;
+                break;
+            case CanvasScaleMode::ScaleWithScreenSize: {
+                const SR_MATH_NS::FVector2 screenSize = pCanvas->GetSize().CastToFloat();
+                if (screenSize.HasZero() || m_referenceResolution.HasZero()) {
+                    break;
+                }
+
+                const float_t scaleX = screenSize.x / m_referenceResolution.CastToFloat().x;
+                const float_t scaleY = screenSize.y / m_referenceResolution.CastToFloat().y;
+                switch (m_screenMatchMode) {
+                    case CanvasScreenMatchMode::MatchWidthOrHeight: {
+                        const float_t logWidth  = std::log(scaleX) / std::log(2.f);
+                        const float_t logHeight = std::log(scaleY) / std::log(2.f);
+                        const float_t logWeighted = SR_MATH_NS::Lerp(logWidth, logHeight, m_match);
+                        scale = std::pow(2.f, logWeighted);
+                        break;
+                    }
+
+                    case CanvasScreenMatchMode::Expand: {
+                        scale = std::min(scaleX, scaleY);
+                        break;
+                    }
+
+                    case CanvasScreenMatchMode::Shrink: {
+                        scale = std::max(scaleX, scaleY);
+                        break;
+                    }
+                    default:
+                        SRHalt("CanvasScaler::Update() : unknown screen match mode!");
+                        break;
+                }
+                break;
+            }
+            case CanvasScaleMode::ConstantPhysicalSize: {
+                float_t dpi = pCanvas->GetWindow() ? pCanvas->GetWindow()->GetScreenDPI() : 0.f;
+                if (dpi <= 0.f) {
+                    dpi = m_fallbackScreenDPI;
+                }
+                scale = dpi / m_defaultSpriteDPI;
+                break;
+            }
+            default:
+                SRHalt("CanvasScaler::Update() : unknown scale mode!");
+                break;
+        }
+
+        pGameObject->GetTransform()->SetScale(scale);
     }
 }

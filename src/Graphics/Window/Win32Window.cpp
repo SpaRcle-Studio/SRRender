@@ -99,6 +99,11 @@ namespace SR_GRAPH_NS {
             case WM_CHANGEUISTATE: {
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
+            case WM_DPICHANGED: {
+                SR_LOG("Win32Window::ReadWmdProcedure() : WM_DPICHANGED. DPI has been changed!");
+                m_screenDPI.reset();
+                return DefWindowProc(hwnd, msg, wParam, lParam);
+            }
             case WM_WINDOWPOSCHANGING: {
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
@@ -503,5 +508,13 @@ namespace SR_GRAPH_NS {
     bool Win32Window::IsVisible() const {
         SR_TRACY_ZONE;
         return ::IsWindowVisible(m_hWnd);
+    }
+
+    float_t Win32Window::GetScreenDPI() const {
+        if (!m_screenDPI) {
+            UINT dpi = GetDpiForWindow(m_hWnd);
+            m_screenDPI = static_cast<float_t>(dpi);
+        }
+        return m_screenDPI.value_or(0.f);
     }
 }

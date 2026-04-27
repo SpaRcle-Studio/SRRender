@@ -193,6 +193,77 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass));
     }
 
+    void RenderTechniquePresetIntegrationMainView::AddLayers(GroupPass& groupPass,
+        const Technique& technique,
+        const Params& params,
+        bool useOffscreenRender,
+        bool isSceneView
+    ) const {
+        SR_TRACY_ZONE;
+
+        auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>();
+
+        MeshDrawerPass::Ptr pMeshDrawerPass = nullptr;
+        SR_UTILS_NS::RenderLayerInfo lastMeshLayerInfo;
+        auto&& layers = SR_UTILS_NS::LayerManager::Instance().GetLayersInfo();
+        for (auto&& layerInfo : layers) {
+            if (!params.IsLayerApplicable(layerInfo.name)) {
+                continue;
+            }
+
+            if (layerInfo.editorOnly && !params.editor) {
+                continue;
+            }
+
+            if (useOffscreenRender && layerInfo.noPostProcess != isSceneView) {
+                continue;
+            }
+
+            if (layerInfo.clearDepth) {
+                ClearDepthAttachmentPass::Ptr pClearDepthPass = new ClearDepthAttachmentPass();
+                pClearDepthPass->SetCustomName("ClearDepth_" + layerInfo.name.ToStringRef());
+                groupPass.AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pClearDepthPass));
+            }
+
+            if (layerInfo.mainRenderer && !layerInfo.isCustom) {
+                if (!layerInfo.CompareParams(lastMeshLayerInfo)) {
+                    pMeshDrawerPass = new MeshDrawerPass();
+                    groupPass.AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pMeshDrawerPass));
+
+                    if (layerInfo.applyShadows && params.activeGraphicsSettings.shadowsQuality != Quality::None) {
+                        if (pShadowIntegration) {
+                            pMeshDrawerPass->AddShaderDefine(SHADER_MACRO_SR_DEFINE_USE_CASCADED_SHADOW_MAP);
+                            SamplerData shadowSampler;
+                            shadowSampler.fboName = pShadowIntegration->shadowMapControllerName;
+                            shadowSampler.id = pShadowIntegration->shaderVariableName;
+                            shadowSampler.usageType = SamplerDataUsageType::FrameBufferDepth;
+                            pMeshDrawerPass->GetSamplersData().AddSampler(shadowSampler);
+                            pMeshDrawerPass->GetUniformsData().shared.useFromPass.insert(pShadowIntegration->shadowMapControllerName);
+                        }
+                    }
+                    pMeshDrawerPass->SetFrustumCulling(layerInfo.frustumCulling);
+                }
+
+                pMeshDrawerPass->GetAllowedLayers().insert(layerInfo.name);
+            }
+
+            if (layerInfo.isCustom) {
+                for (auto&& pLayer : technique.GetCustomLayers()) {
+                    if (pLayer->GetLayerName() == layerInfo.name) {
+                        if (auto&& pCustomPass = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerCustomPass>(pLayer); pCustomPass && pCustomPass->pass) {
+                            BasePass::Ptr pPass = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pCustomPass->pass->GetMeta()->GetFactoryName());
+                            pCustomPass->pass->CloneTo(*pPass);
+                            groupPass.AddPass(pPass);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            lastMeshLayerInfo = layerInfo;
+        }
+    }
+
     void RenderTechniquePresetIntegrationMainView::Integrate(const Technique& technique, const Params& params) const {
         SR_TRACY_ZONE;
 
@@ -259,67 +330,11 @@ namespace SR_GRAPH_NS {
             pMainGroupPass = SR_UTILS_NS::StaticPointerCast<GroupPass>(pSwapchainPass);
         }
 
-        auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>();
-
         SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pMainGroupPass));
 
-        MeshDrawerPass::Ptr pMeshDrawerPass = nullptr;
-        SR_UTILS_NS::RenderLayerInfo lastMeshLayerInfo;
-        auto&& layers = SR_UTILS_NS::LayerManager::Instance().GetLayersInfo();
-        for (auto&& layerInfo : layers) {
-            if (!params.IsLayerApplicable(layerInfo.name)) {
-                continue;
-            }
-
-            if (layerInfo.editorOnly && !params.editor) {
-                continue;
-            }
-
-            if (layerInfo.clearDepth) {
-                ClearDepthAttachmentPass::Ptr pClearDepthPass = new ClearDepthAttachmentPass();
-                pClearDepthPass->SetCustomName("ClearDepth_" + layerInfo.name.ToStringRef());
-                pMainGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pClearDepthPass));
-            }
-
-            if (layerInfo.mainRenderer && !layerInfo.isCustom) {
-                if (!layerInfo.CompareParams(lastMeshLayerInfo)) {
-                    pMeshDrawerPass = new MeshDrawerPass();
-                    pMainGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pMeshDrawerPass));
-
-                    if (layerInfo.applyShadows && params.activeGraphicsSettings.shadowsQuality != Quality::None) {
-                        if (pShadowIntegration) {
-                            pMeshDrawerPass->AddShaderDefine(SHADER_MACRO_SR_DEFINE_USE_CASCADED_SHADOW_MAP);
-                            SamplerData shadowSampler;
-                            shadowSampler.fboName = pShadowIntegration->shadowMapControllerName;
-                            shadowSampler.id = pShadowIntegration->shaderVariableName;
-                            shadowSampler.usageType = SamplerDataUsageType::FrameBufferDepth;
-                            pMeshDrawerPass->GetSamplersData().AddSampler(shadowSampler);
-                            pMeshDrawerPass->GetUniformsData().shared.useFromPass.insert(pShadowIntegration->shadowMapControllerName);
-                        }
-                    }
-                    pMeshDrawerPass->SetFrustumCulling(layerInfo.frustumCulling);
-                }
-
-                pMeshDrawerPass->GetAllowedLayers().insert(layerInfo.name);
-            }
-
-            if (layerInfo.isCustom) {
-                for (auto&& pLayer : technique.GetCustomLayers()) {
-                    if (pLayer->GetLayerName() == layerInfo.name) {
-                        if (auto&& pCustomPass = SR_UTILS_NS::DynamicPointerCast<RenderTechniqueLayerCustomPass>(pLayer); pCustomPass && pCustomPass->pass) {
-                            BasePass::Ptr pPass = SR_UTILS_NS::Factory::Instance().Create<BasePass>(pCustomPass->pass->GetMeta()->GetFactoryName());
-                            pCustomPass->pass->CloneTo(*pPass);
-                            pMainGroupPass->AddPass(pPass);
-                        }
-                        break;
-                    }
-                }
-            }
-
-            lastMeshLayerInfo = layerInfo;
-        }
-
         if (useOffscreenRender) {
+            AddLayers(*pMainGroupPass, technique, params, useOffscreenRender, false);
+
             GroupPass::Ptr pPostProcessGroupPass;
 
             if (params.editor || params.offscreen) {
@@ -361,7 +376,7 @@ namespace SR_GRAPH_NS {
                 defaultPostProcessPass->CloneTo(*pPostProcessPass);
             }
 
-            if (pShadowIntegration) {
+            if (auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>()) {
                 SamplerData shadowSampler;
                 shadowSampler.fboName = pShadowIntegration->shadowMapControllerName;
                 shadowSampler.id = pShadowIntegration->shaderVariableName;
@@ -370,6 +385,10 @@ namespace SR_GRAPH_NS {
             }
 
             pPostProcessGroupPass->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pPostProcessPass));
+            AddLayers(*pPostProcessGroupPass, technique, params, useOffscreenRender, true);
+        }
+        else {
+            AddLayers(*pMainGroupPass, technique, params, useOffscreenRender, true);
         }
     }
 

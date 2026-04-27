@@ -388,7 +388,7 @@ namespace SR_SRSL_NS {
 
         for (auto&& [name, pVariable] : m_shader->GetConstants()) {
             if (pFunction->IsVariableUsed(name)) {
-                auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
+                auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType), true);
                 code += SR_FORMAT("const {} {} = {};\n\n", type.c_str(), pVariable->pName->ToString(0), GenerateExpression(pVariable->pExpr, 0).c_str());
             }
         }
@@ -435,7 +435,7 @@ namespace SR_SRSL_NS {
                 }
 
                 if (pFunction->IsVariableUsed(name)) {
-                    auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
+                    auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType), true);
                     code += SR_FORMAT("layout (location = {}) in {} {};\n", location, type.c_str(), name.c_str());
                     location += GetLocationMultiplier(type);
                 }
@@ -504,7 +504,7 @@ namespace SR_SRSL_NS {
 
             for (auto&& [name, pVariable] : m_shader->GetShared()) {
                 if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, name)) {
-                    auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
+                    auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType), true);
                     if (IsFlatType(type)) {
                         code += SR_FORMAT("layout (location = {}) flat out {} {};\n", location, type.c_str(), name.c_str());
                     }
@@ -514,7 +514,7 @@ namespace SR_SRSL_NS {
                     location += GetLocationMultiplier(type);
                 }
                 else if (pFunction->IsVariableUsed(name)) {
-                    auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType));
+                    auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType), true);
                     code += SR_FORMAT("{} {};\n", type.c_str(), name.c_str());
                 }
             }
@@ -776,7 +776,7 @@ namespace SR_SRSL_NS {
         std::string blockCode = SR_SPRINTF("layout (set = 0, binding = %d)%s buffer StorageBuffer_%s {\n", uniformBlock.binding, modifiers.c_str(), name.c_str());
 
         for (auto&& field : uniformBlock.fields) {
-            auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));
+            auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type), true);
             auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
 
             std::string strDimension;
@@ -824,7 +824,7 @@ namespace SR_SRSL_NS {
 
                 hasUsage |= pFunction->IsVariableUsed(field.name);
 
-                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));
+                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type), true);
                 auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
 
                 std::string strDimension;
@@ -883,7 +883,7 @@ namespace SR_SRSL_NS {
             for (auto&& field : m_shader->GetPushConstants().fields) {
                 hasUsage |= pFunction->IsVariableUsed(field.name);
 
-                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type));
+                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type), true);
 
                 auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
 
@@ -1016,8 +1016,8 @@ namespace SR_SRSL_NS {
         return code;
     }
 
-    std::string GLSLCodeGenerator::ReplaceToken(const std::string &token) const {
-        if (token == "bool") {
+    std::string GLSLCodeGenerator::ReplaceToken(const std::string &token, bool isUniform) const {
+        if (token == "bool" && isUniform) {
             return "int";
         }
         return token;

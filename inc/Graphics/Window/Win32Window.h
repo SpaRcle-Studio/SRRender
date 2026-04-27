@@ -36,6 +36,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_FORCE_INLINE HWND GetHWND() const { return m_hWnd; }
         SR_NODISCARD SR_MATH_NS::IVector2 GetScreenResolution() const override;
         SR_NODISCARD void* GetHandle() const override;
+        SR_NODISCARD float_t GetScreenDPI() const override;
 
         SR_NODISCARD SR_MATH_NS::IVector2 ClientToScreen(const SR_MATH_NS::IVector2& pos) const override;
         SR_NODISCARD SR_MATH_NS::IVector2 ScreenToClient(const SR_MATH_NS::IVector2& pos) const override;
@@ -66,6 +67,7 @@ namespace SR_GRAPH_NS {
         std::atomic<WinAPI::StyleState> m_styleState;
 
         SR_MATH_NS::IVector2 m_position;
+        mutable std::optional<float_t> m_screenDPI;
 
         HWND      m_hWnd       = nullptr;
         HDC       m_hDC        = nullptr;

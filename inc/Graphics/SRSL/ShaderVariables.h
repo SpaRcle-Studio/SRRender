@@ -14,7 +14,7 @@ namespace SR_GRAPH_NS {
 namespace SR_SRSL_NS {
     std::string ShaderRenderPassTypeToString(ShaderRenderPassType type);
 
-    const std::map<std::string, std::string>& GetDefaultUniforms();
+    const std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom>& GetDefaultUniforms();
 
     extern const std::map<std::string, std::string> SR_SRSL_DEFAULT_PUSH_CONSTANTS;
     extern const std::map<std::string, std::string> SR_SRSL_DEFAULT_SHARED_UNIFORMS;

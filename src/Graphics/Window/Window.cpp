@@ -207,4 +207,9 @@ namespace SR_GRAPH_NS {
 
         return true;
     }
+
+    float_t Window::GetScreenDPI() const {
+        SR_TRACY_ZONE;
+        return m_windowImpl ? m_windowImpl->GetScreenDPI() : 0.0f;
+    }
 }

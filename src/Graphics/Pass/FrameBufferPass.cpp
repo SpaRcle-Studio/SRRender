@@ -44,7 +44,7 @@ namespace SR_GRAPH_NS {
     bool ClearBuffersPass::Render() {
         SR_ERROR("Deprecated! Use ClearDepthAttachmentPass instead.");
 
-        auto&& pFrameBufferPass = dynamic_cast<FrameBufferPass*>(GetParent());
+        auto&& pFrameBufferPass = GetFrameBufferPass();
         if (!pFrameBufferPass) {
             SR_WARN("ClearBuffersPass::Render() : parent is not FrameBufferPass!");
             return false;
@@ -75,16 +75,16 @@ namespace SR_GRAPH_NS {
     /// ----------------------------------------------------------------------------------------------------------------
 
     bool ClearDepthAttachmentPass::Render() {
-        auto&& pFrameBufferPass = dynamic_cast<FrameBufferPass*>(GetParent());
-        if (!pFrameBufferPass) {
-            SR_WARN("ClearDepthAttachmentPass::Render() : parent is not FrameBufferPass!");
-            return false;
-        }
+        //auto&& pFrameBufferPass = GetFrameBufferPass();
+        //if (!pFrameBufferPass) {
+        //    SRHalt("ClearDepthAttachmentPass::Render() : parent is not FrameBufferPass!");
+        //    return false;
+        //}
 
-        auto&& pFBO = pFrameBufferPass->GetFrameBuffer();
-        if (!pFBO) {
-            return false;
-        }
+        //auto&& pFBO = pFrameBufferPass->GetFrameBuffer();
+        //if (!pFBO) {
+        //    return false;
+        //}
 
         GetPipeline()->ClearDepthAttachment(m_depth);
 

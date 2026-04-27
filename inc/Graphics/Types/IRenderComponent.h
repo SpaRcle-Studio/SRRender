@@ -118,6 +118,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsActive() const noexcept override;
         SR_NODISCARD int32_t GetVirtualUBO() const override { return m_virtualUBO; }
         SR_NODISCARD const SR_UTILS_NS::UI::MaskInfo& GetMaskInfo() const override;
+        SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
         void OnMaskDirty() override;
         void FreeVideoMemory() override;

@@ -1637,6 +1637,8 @@ namespace SR_GRAPH_NS {
             SR_TRACY_ZONE_TEXT(input);
 
             #ifdef SR_RENDER_USE_GLSL_LANG_LIB
+                glslang::SpvOptions spvOptions{};
+
                 EShLanguage stage = GetShaderStageFromFileExtension(input);
                 glslang::TShader shader(stage);
                 glslang::TProgram program;
@@ -1649,7 +1651,12 @@ namespace SR_GRAPH_NS {
                 }
 
                 const char* shaderStrings = shaderSourceStr.c_str();
-                shader.setStrings(&shaderStrings, 1);
+                const char* strings[] = { shaderSourceStr.c_str() };
+                const char* names[]   = { input.c_str() };
+                std::string preamble = "#line 1\n";
+
+                shader.setStringsWithLengthsAndNames(strings, nullptr, names, 1);
+                shader.setPreamble(preamble.c_str());
 
                 shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, 450);
                 //shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_3);
@@ -1661,6 +1668,16 @@ namespace SR_GRAPH_NS {
                 EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
                 if (m_kernel->IsValidationLayersEnabled()) {
                     messages = (EShMessages)(messages | EShMsgDebugInfo);
+                    spvOptions.generateDebugInfo = true;
+                    spvOptions.stripDebugInfo = false;
+                    spvOptions.disableOptimizer = true;
+                    //spvOptions.emitNonSemanticShaderDebugInfo = true;
+                    //spvOptions.emitNonSemanticShaderDebugSource = true;
+                }
+                else {
+                    spvOptions.generateDebugInfo = false;
+                    spvOptions.stripDebugInfo = true;
+                    spvOptions.disableOptimizer = false;
                 }
 
                 {
@@ -1691,7 +1708,7 @@ namespace SR_GRAPH_NS {
 
                 {
                     SR_TRACY_ZONE_N("GlslangToSpv");
-                    glslang::GlslangToSpv(*intermediate, spirv);
+                    glslang::GlslangToSpv(*intermediate, spirv, &spvOptions);
                 }
 
                 return spirv;

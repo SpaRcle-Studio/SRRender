@@ -430,8 +430,19 @@ namespace SR_SRSL_NS {
                     case LexemKind::Macro:
                         break;
 
+                    case LexemKind::Negation:
+                        if (GetLexem(1) && GetLexem(1)->kind == LexemKind::Assign) {
+                            exprLexems.emplace_back(m_lexems[m_currentLexem]);
+                            ++m_currentLexem;
+                        }
+                        goto gotoDefault;
                     case LexemKind::Assign:
                         if (isSimpleExpr) {
+                            goto gotoDefault;
+                        }
+                        if (GetLexem(1) && GetLexem(1)->kind == LexemKind::Assign) {
+                            exprLexems.emplace_back(m_lexems[m_currentLexem]);
+                            ++m_currentLexem;
                             goto gotoDefault;
                         }
                         SR_FALLTHROUGH;

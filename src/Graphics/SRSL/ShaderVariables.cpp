@@ -55,8 +55,8 @@ namespace SR_SRSL_NS {
         { "GROUND_COLOR",                   "vec3"          },
     };
 
-    const std::map<std::string, std::string>& GetDefaultUniforms() {
-        static const std::map<std::string, std::string> defaultUniforms = { /** NOLINT */
+    const std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom>& GetDefaultUniforms() {
+        static const std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom> defaultUniforms = { /** NOLINT */
             { "MODEL_MATRIX",                   "mat4"          },
             { "MODEL_NO_SCALE_MATRIX",          "mat4"          },
 
@@ -81,6 +81,8 @@ namespace SR_SRSL_NS {
             { "RGBA_VALUE",                     "vec4"          },
             { "SLICED_TEXTURE_BORDER",          "vec4"          },
             { "SLICED_WINDOW_BORDER",           "vec4"          },
+            { "NDC_RECT",                       "vec4"          },
+            { "UI_SCALE",                       "vec2"          },
 
             { "TEXT_RECT_X",                    "float"         },
             { "TEXT_RECT_Y",                    "float"         },

@@ -232,6 +232,9 @@ namespace SR_GRAPH_NS {
             }
 
             const auto pShader = pElement->pInfo->pShader;
+            if (pShader->HasErrors()) SR_UNLIKELY_ATTRIBUTE {
+                continue;
+            }
             m_pipeline->SetCurrentShader(pShader);
 
             /// Если меш не был отрисован, то бинд не пройдет
@@ -315,7 +318,6 @@ namespace SR_GRAPH_NS {
                 currentVBO = SR_ID_INVALID;
                 if (!shaderOk) SR_UNLIKELY_ATTRIBUTE {
                     pElement->state = QUEUE_STATE_SHADER_ERROR;
-                    pElement->pObject->MarkMaterialDirty();
                     pElement = FindNextShader(queue, pElement);
                     continue;
                 }

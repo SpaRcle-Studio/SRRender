@@ -12,6 +12,8 @@
 #include <Utils/ECS/GameObject.h>
 #include <Utils/ECS/TransformRect.h>
 
+#include <Enum/SpriteMode.hpp>
+
 #include <Codegen/Sprite.generated.hpp>
 
 namespace SR_GTYPES_NS {
@@ -44,18 +46,15 @@ namespace SR_GTYPES_NS {
         if (auto&& pTransformRect = SR_UTILS_NS::ExtractTransformAs<SR_UTILS_NS::TransformRect>(GetSceneObject().Get())) SR_LIKELY_ATTRIBUTE {
             SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
             shader.SetVec4(SHADER_NDC_RECT, layout.vec4);
+            shader.SetVec2(SHADER_UI_SCALE, pTransformRect->GetGlobalScale().XY());
         }
 
-        switch (m_spriteMode) {
-            case SpriteMode::Filled:
-                ApplyFillModeParams(&shader);
-                break;
-            case SpriteMode::Sliced:
-                ApplySliceModeParams(&shader);
-                break;
-            default:
-                SRHaltOnce("Unknown sprite mode!");
-                break;
+        if (SR_MATH_NS::IsMaskIncludedSubMask(m_spriteMode, SpriteMode::Sliced)) {
+            ApplySliceModeParams(&shader);
+        }
+
+        if (SR_MATH_NS::IsMaskIncludedSubMask(m_spriteMode, SpriteMode::Filled)) {
+            ApplyFillModeParams(&shader);
         }
 
         Super::UseModelMatrix(shader);

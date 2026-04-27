@@ -306,6 +306,8 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Shader::OnReloadDone() {
+        SR_TRACY_ZONE;
+
         m_virtualUBO.second = true;
 
         auto&& pContext = GetRenderContext();
@@ -317,6 +319,8 @@ namespace SR_GRAPH_NS::Types {
         pContext->Do([](RenderContext* ptr) {
             ptr->SetDirty();
         });
+        pContext->GetPipeline()->WaitDeviceIdle();
+        pContext->GetPipeline()->WaitRenderIdle();
 
         IResource::OnReloadDone();
     }

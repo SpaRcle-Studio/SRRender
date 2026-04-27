@@ -117,6 +117,14 @@ namespace SR_GRAPH_NS {
     public:
         void Integrate(const Technique& technique, const Params& params) const override;
 
+    private:
+        void AddLayers(
+            GroupPass& groupPass,
+            const Technique& technique,
+            const Params& params,
+            bool useOffscreenRender,
+            bool isSceneView) const;
+
     public:
         /// @property
         SR_UTILS_NS::StringAtom offscreenControllerName = "Offscreen";
