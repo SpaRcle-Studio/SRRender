@@ -44,35 +44,39 @@ namespace SR_GRAPH_UI_NS {
     public:
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
         SR_NODISCARD SR_MATH_NS::UVector2 GetSize() const noexcept { return m_size; }
+        SR_NODISCARD float_t GetScaleFactor() const noexcept { return m_scaleFactor; }
 
         void OnAttached() override;
+        void Update(float_t dt) override;
 
         void SetViewportRect(const SR_MATH_NS::FRect& rect) { m_viewportRect = rect; }
+        void SetScaleFactor(float_t scaleFactor);
         SR_NODISCARD const SR_MATH_NS::FRect& GetViewportRect() const noexcept { return m_viewportRect; }
 
         SR_NODISCARD SR_MATH_NS::FVector2 ScreenToCanvasSpace(const SR_MATH_NS::FVector2& screenPosition) const;
+        SR_NODISCARD SR_MATH_NS::FRect LayoutToCanvasRect(const SR_MATH_NS::FRect& layoutRect) const;
 
         SR_NODISCARD SR_GTYPES_NS::Camera* GetCamera() const noexcept;
         SR_NODISCARD Window* GetWindow() const noexcept;
 
-    protected:
-        void Update(float_t dt) override;
-
     private:
         SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Camera> m_camera;
         SR_MATH_NS::FRect m_viewportRect;
+        float_t m_scaleFactor = 1.f;
+        bool m_dirty = true;
 
         SR_MATH_NS::UVector2 m_size;
         RenderScenePtr m_renderScene;
 
     };
 
+    /// @category(UI)
     class CanvasScaler : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
-        void Update(float_t dt) override;
+        const float_t CalculateScaleFactor(const Canvas& canvas) const;
 
     private:
         /// @property

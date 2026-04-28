@@ -38,7 +38,7 @@ namespace SR_GRAPH_NS::UI {
             SR_UTILS_NS::UI::MaskInfo maskInfo;
             maskInfo.hasMask = enable && IsActive();
             maskInfo.scissor = true;
-            maskInfo.rect = pTransform->GetLayoutRect().CastToInt();
+            maskInfo.rect = pTransform->GetScaledLayoutRect().CastToInt();
 
             if (auto&& pCanvas = FindCanvas(GetSceneObject().Get())) {
                 maskInfo.referenceSize = pCanvas->GetSize().CastToInt();

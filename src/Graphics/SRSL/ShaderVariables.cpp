@@ -83,6 +83,7 @@ namespace SR_SRSL_NS {
             { "SLICED_WINDOW_BORDER",           "vec4"          },
             { "NDC_RECT",                       "vec4"          },
             { "UI_SCALE",                       "vec2"          },
+            { "UI_PIVOT",                       "vec2"          },
 
             { "TEXT_RECT_X",                    "float"         },
             { "TEXT_RECT_Y",                    "float"         },

@@ -118,6 +118,7 @@ namespace SR_GTYPES_NS {
                     }
                     break;
                 case ImageType::Direction:
+                case ImageType::UI:
                     m_format = ImageFormat::RGBA8_UNORM;
                     break;
                 case ImageType::Normal:

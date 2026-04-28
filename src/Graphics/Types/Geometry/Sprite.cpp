@@ -46,7 +46,7 @@ namespace SR_GTYPES_NS {
         if (auto&& pTransformRect = SR_UTILS_NS::ExtractTransformAs<SR_UTILS_NS::TransformRect>(GetSceneObject().Get())) SR_LIKELY_ATTRIBUTE {
             SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
             shader.SetVec4(SHADER_NDC_RECT, layout.vec4);
-            shader.SetVec2(SHADER_UI_SCALE, pTransformRect->GetGlobalScale().XY());
+            shader.SetMat4(SHADER_MODEL_MATRIX, pTransformRect->GetMatrix());
         }
 
         if (SR_MATH_NS::IsMaskIncludedSubMask(m_spriteMode, SpriteMode::Sliced)) {

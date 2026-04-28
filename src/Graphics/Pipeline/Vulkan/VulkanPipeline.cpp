@@ -2543,7 +2543,15 @@ namespace SR_GRAPH_NS {
         const VkRect2D scissor = m_scissorsStack.empty() ? m_internalData->scissor : Details::ToVkRect2D(m_scissorsStack.back());
         if (!Details::CompareVkRect2D(m_internalData->activeScissor, scissor)) {
             m_internalData->activeScissor = scissor;
-            vkCmdSetScissor(m_internalData->currentCmd, 0, 1, &m_internalData->activeScissor);
+            uint64_t xOverflow = static_cast<uint64_t>(scissor.offset.x) + static_cast<uint64_t>(scissor.extent.width);
+            uint64_t yOverflow = static_cast<uint64_t>(scissor.offset.y) + static_cast<uint64_t>(scissor.extent.height);
+            const bool isScissorOk = xOverflow <= static_cast<uint64_t>(std::numeric_limits<int32_t>::max()) &&
+                                     yOverflow <= static_cast<uint64_t>(std::numeric_limits<int32_t>::max()) &&
+                                     scissor.extent.width > 0 && scissor.extent.height > 0 &&
+                                     scissor.offset.x >= 0 && scissor.offset.y >= 0;
+            if (isScissorOk) {
+                vkCmdSetScissor(m_internalData->currentCmd, 0, 1, &m_internalData->activeScissor);
+            }
         }
 
         vkCmdDraw(m_internalData->currentCmd, count, m_drawInstancesCount, 0, m_drawInstancesStart);
