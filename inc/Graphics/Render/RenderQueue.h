@@ -76,7 +76,7 @@ namespace SR_GRAPH_NS {
         ~RenderQueue() override;
 
         void Register(const RenderObjectRegistrationInfo& info);
-        void UnRegister(const RenderObjectRegistrationInfo& info);
+        void UnRegister(const RenderObjectRegistrationInfo& info, bool* pInUpdateQueue);
 
         void Init();
 

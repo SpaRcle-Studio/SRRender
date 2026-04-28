@@ -82,7 +82,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void RenderQueue::UnRegister(const RenderObjectRegistrationInfo& info) {
+    void RenderQueue::UnRegister(const RenderObjectRegistrationInfo& info, bool* pInUpdateQueue) {
         SR_TRACY_ZONE;
 
         RenderQueue::Queue* pQueue = nullptr;
@@ -117,6 +117,9 @@ namespace SR_GRAPH_NS {
         }
 
         if (removedInfo.inUpdateQueue) {
+            if (pInUpdateQueue) {
+                *pInUpdateQueue = true;
+            }
             for (auto it = m_renderObjects.begin(); it != m_renderObjects.end();) {
                 if (it->pObject == meshInfo.pObject) {
                     it = m_renderObjects.erase(it);

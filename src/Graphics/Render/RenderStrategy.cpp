@@ -40,15 +40,19 @@ namespace SR_GRAPH_NS {
         m_prepareState = true;
 
         for (auto&& info : m_reRegisterQueue) {
+            bool inUpdateQueue = false;
             for (auto&& pQueue : m_queues) {
                 SRAssert(pQueue);
-                pQueue->UnRegister(info);
+                pQueue->UnRegister(info, &inUpdateQueue);
             }
 
             m_objectPool.RemoveByIndex(info.internal.poolId);
 
             Register(CreateRegistrationInfo(info.pObject));
             info.pObject->OnReRegistered();
+            if (inUpdateQueue) {
+                info.pObject->MarkUniformsDirty();
+            }
         }
         m_reRegisterQueue.clear();
 
@@ -124,7 +128,7 @@ namespace SR_GRAPH_NS {
 
         for (auto&& pQueue : m_queues) {
             SRAssert(pQueue);
-            pQueue->UnRegister(infoEx);
+            pQueue->UnRegister(infoEx, nullptr);
         }
 
         m_objectPool.RemoveByIndex(info.poolId);

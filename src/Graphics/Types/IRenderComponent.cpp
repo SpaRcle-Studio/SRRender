@@ -293,6 +293,18 @@ namespace SR_GTYPES_NS {
         return emptyMaskInfo;
     }
 
+    RenderQueueInfo* IRenderComponent::FindRenderQueueInfo(const RenderQueue* pQueue) noexcept {
+        auto&& renderQueues = GetRenderQueues();
+        auto pStart = renderQueues.data();
+        auto pEnd = pStart + renderQueues.size();
+        for (auto pElement = pStart; pElement != pEnd; ++pElement) {
+            if (pElement->pRenderQueue == pQueue) {
+                return pElement;
+            }
+        }
+        return nullptr;
+    }
+
     /// ================================================================================================================
 
     UIRenderComponent::~UIRenderComponent() {

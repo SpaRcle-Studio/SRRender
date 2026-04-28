@@ -62,6 +62,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsRenderObjectRegistered() const noexcept;
         SR_NODISCARD const RenderObjectRegistrationInfoInternal& GetRegistrationInfo() const noexcept;
         SR_NODISCARD MeshRenderQueues& GetRenderQueues() noexcept;
+        SR_NODISCARD RenderQueueInfo* FindRenderQueueInfo(const RenderQueue* pQueue) noexcept;
 
         /// render API
         void MarkUniformsDirty();
