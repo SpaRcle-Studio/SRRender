@@ -84,6 +84,11 @@ namespace SR_GRAPH_UI_NS {
                 const float_t newScaleFactor = pCanvasScaler->CalculateScaleFactor(*this);
                 m_dirty |= !SR_MATH_NS::IsEquals(m_scaleFactor, newScaleFactor);
                 m_scaleFactor = newScaleFactor;
+
+                const float_t newPixelsPerUnit = pCanvasScaler->GetReferencePixelsPerUnit();
+                m_dirty |= !SR_MATH_NS::IsEquals(m_referencePixelsPerUnit, newPixelsPerUnit);
+                m_referencePixelsPerUnit = newPixelsPerUnit;
+
                 if (SR_MATH_NS::IsEquals(m_scaleFactor, 0.f)) {
                     m_scaleFactor = 0.01f;
                 }
@@ -91,6 +96,7 @@ namespace SR_GRAPH_UI_NS {
 
             if (m_dirty && pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
                 m_size = windowSize;
+                m_dirty = false;
 
                 SR_UTILS_NS::RectAnchors anchors;
                 anchors.min = 0.f;
@@ -102,6 +108,8 @@ namespace SR_GRAPH_UI_NS {
 
                 pTransform->SetScale(m_scaleFactor);
                 pTransform->SetTranslation(SR_MATH_NS::FVector3(m_size.Cast<float_t>() / 2.f, 0.f));
+
+                pTransform->UpdateTree();
             }
         }
 
@@ -134,7 +142,7 @@ namespace SR_GRAPH_UI_NS {
         return nullptr;
     }
 
-    const float_t CanvasScaler::CalculateScaleFactor(const Canvas& canvas) const {
+    float_t CanvasScaler::CalculateScaleFactor(const Canvas& canvas) const {
         SR_TRACY_ZONE;
 
         float_t scale = 1.f;

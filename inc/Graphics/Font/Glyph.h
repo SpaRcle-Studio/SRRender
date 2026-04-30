@@ -5,12 +5,98 @@
 #ifndef SR_ENGINE_GLYPH_H
 #define SR_ENGINE_GLYPH_H
 
-#include <Graphics/macros.h>
+#include <Graphics/Font/FreeType.h>
+#include <Graphics/Font/GlyphRenderType.h>
 
 #include <Utils/Common/NonCopyable.h>
-#include <Graphics/Font/FreeType.h>
 
 namespace SR_GRAPH_NS {
+    SR_ENUM_NS_CLASS_T(GlyphRangeType, uint8_t,
+        ASCII, Latin1, Cyrilic, Custom
+    )
+
+    struct GlyphKey {
+        uint32_t codepoint = 0;
+
+        SR_NODISCARD bool operator==(const GlyphKey& other) const noexcept {
+            return codepoint == other.codepoint;
+        }
+
+        SR_NODISCARD static bool DecodeUTF8(const std::string& str, size_t& i, uint32_t& out);
+        SR_NODISCARD static bool NextGlyphKey(const std::string& text, size_t& i, GlyphKey& key);
+    };
+
+    struct GlyphRange : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+
+        using Super = SR_UTILS_NS::Serializable;
+
+        GlyphRange() = default;
+        GlyphRange(GlyphRangeType type, uint32_t start, uint32_t end)
+            : Super()
+            , type(type)
+            , start(start)
+            , end(end)
+        { }
+
+        /// @property
+        GlyphRangeType type = GlyphRangeType::Custom;
+        /// @property @propertyCondition(This.type == GlyphRangeType::Custom)
+        uint32_t start = 0;
+        /// @property @propertyCondition(This.type == GlyphRangeType::Custom)
+        uint32_t end = 0;
+    };
+
+    struct GlyphBitmap {
+        GlyphRenderType type = GlyphRenderType::SDF;
+        SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t> data;
+        bool generated = false;
+    };
+
+    struct GlyphAtlas {
+        SR_MATH_NS::FVector2 uv0;
+        SR_MATH_NS::FVector2 uv1;
+        uint16_t page = SR_ID_INVALID;
+    };
+
+    namespace FontDetails {
+        struct GlyphMetrics {
+            float_t advance  = 0.f; // сдвиг курсора
+            float_t bearingX = 0.f; // от cursor до левого края
+            float_t bearingY = 0.f; // от baseline до верхнего края
+
+            SR_MATH_NS::USVector2 size;
+
+            float_t sdfRange = 0.f;
+            uint16_t fontId = 0;
+        };
+
+        struct Glyph {
+            GlyphKey codepoint;
+            GlyphMetrics metrics;
+            GlyphBitmap bitmap;
+        };
+
+        SR_INLINE_STATIC GlyphRange ASCIIRange = { GlyphRangeType::ASCII, 32, 126 };
+        SR_INLINE_STATIC GlyphRange Latin1Range = { GlyphRangeType::Latin1, 160, 255 };
+        SR_INLINE_STATIC GlyphRange CyrillicRange = { GlyphRangeType::Cyrilic, 0x0400, 0x04FF };
+        SR_INLINE_STATIC GlyphRange* GlyphRanges[3] = { &ASCIIRange, &Latin1Range, &CyrillicRange };
+    }
+
+    struct PositionedGlyph {
+        GlyphKey codepoint;
+        FontDetails::GlyphMetrics metrics;
+        GlyphAtlas atlas;
+
+        SR_MATH_NS::FVector2 pos0;
+        SR_MATH_NS::FVector2 pos1;
+
+        uint32_t glyphIndex = 0;
+        uint32_t lineIndex  = 0;
+    };
+
+    //// ============================================== OLD GLYPH CODE =================================================
+
     struct GlyphMetrics {
         /// Позиция по горизонтали
         int32_t posX = 0;
@@ -85,5 +171,11 @@ namespace SR_GRAPH_NS {
 
     };
 }
+
+template<> struct std::hash<SR_GRAPH_NS::GlyphKey> {
+    SR_NODISCARD constexpr size_t operator()(const SR_GRAPH_NS::GlyphKey& v) const noexcept {
+        return v.codepoint;
+    }
+};
 
 #endif //SR_ENGINE_GLYPH_H

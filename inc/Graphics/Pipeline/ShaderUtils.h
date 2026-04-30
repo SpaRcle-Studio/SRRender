@@ -157,7 +157,7 @@ namespace SR_GRAPH_NS {
         HitAny,
         MissPrimary,
         MissSecondary
-    );
+    )
 
     SR_ENUM_NS_CLASS(LayoutBinding, Unknown = 0, Uniform, Sampler2D, Attachhment, SSBO)
     SR_ENUM_NS_CLASS(PolygonMode, Unknown, Fill, Line, Point)

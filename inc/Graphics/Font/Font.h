@@ -20,6 +20,8 @@ namespace SR_GTYPES_NS {
         using FontLibrary = void*;
         using FontFace = void*;
     #endif
+        using MSDFFreeTypeHandle = void*;
+        using MSDFontHandle = void*;
         using StringType = std::u32string;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<Font>;
@@ -38,7 +40,12 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD FT_Glyph GetGlyph(char32_t code, FT_Render_Mode renderMode, FT_Int32 charLoad, FT_Int32 glyphLoad) const;
         SR_NODISCARD FT_Glyph GetGlyph(char32_t code, FT_Render_Mode renderMode) const;
         SR_NODISCARD FT_Pos GetKerning(uint32_t leftCharCode, uint32_t rightCharCode) const;
+        SR_NODISCARD FontFace GetFontFace() const { return m_face; }
     #endif
+
+        bool GenerateMSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding) const;
+        bool GenerateMTSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding) const;
+        bool GenerateMSDFOrMTSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding, bool isMTSDF) const;
 
         SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
 
@@ -52,6 +59,9 @@ namespace SR_GTYPES_NS {
     private:
         FontLibrary m_library = nullptr;
         FontFace m_face = nullptr;
+
+        MSDFFreeTypeHandle m_MSDFFreeTypeHandle = nullptr;
+        MSDFontHandle m_MSDFFontHandle = nullptr;
 
         bool m_hasColor = false;
         bool m_isColorEmoji = false;

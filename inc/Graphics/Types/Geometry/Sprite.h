@@ -6,6 +6,7 @@
 #define SR_ENGINE_SPRITE_H
 
 #include <Graphics/Types/Mesh.h>
+#include <Graphics/UI/Canvas.h>
 
 #include <Utils/Math/Rect.h>
 
@@ -17,8 +18,9 @@ namespace SR_GTYPES_NS {
     );
 
     SR_ENUM_NS_CLASS_T(SpriteMode, uint8_t,
-        Sliced = 1 << 0,
-        Filled = 1 << 1,
+        Simple = 1 << 0,
+        Sliced = 1 << 1,
+        Filled = 1 << 2,
         SlicedFilled = Sliced | Filled
     );
 
@@ -37,7 +39,7 @@ namespace SR_GTYPES_NS {
     SR_NODISCARD bool IsSpriteFillOriginApplicable(const Sprite& sprite, SpriteFillOrigin origin);
 
     /// @category(UI)
-    class SR_GRAPHICS_DLL_API Sprite : public SR_GTYPES_NS::UIRenderComponent {
+    class SR_GRAPHICS_DLL_API Sprite : public SR_GTYPES_NS::UIRenderComponent, public SR_GRAPH_UI_NS::IFindCanvasOwner {
         SR_CLASS()
         using Super = SR_GTYPES_NS::UIRenderComponent;
     public:

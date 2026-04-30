@@ -26,6 +26,7 @@ option(SR_RENDER_USE_NATIVE_WEBGPU "" OFF)
 option(SR_RENDER_USE_NATIVE_WAYLAND "" ON)
 option(SR_RENDER_GLFW "" OFF)
 option(SR_RENDER_USE_YOGA "" OFF)
+option(SR_RENDER_USE_MSDFGEN "" ON)
 
 SRUseAssimpIfPossible(Graphics)
 
@@ -79,7 +80,7 @@ if (ANDROID_NDK)
 endif()
 
 if (NOT SR_EMSCRIPTEN)
-    include(freetype.cmake)
+    include(cmake/freetype.cmake)
     add_definitions(-DSR_USE_FREETYPE)
 endif()
 
@@ -124,6 +125,19 @@ else()
 
     SR_COPY_SHARED_MODULE_TO_EXECUTABLE_FOLDER(Graphics)
     SR_COPY_STATIC_LIBRARY_TO_LIBRARY_FOLDER(Graphics)
+endif()
+
+if (NOT SR_EMSCRIPTEN)
+    target_link_libraries(Graphics PUBLIC freetype)
+endif()
+
+if (SR_RENDER_USE_MSDFGEN)
+    target_compile_definitions(Graphics PUBLIC SR_RENDER_USE_MSDFGEN)
+
+    include(cmake/msdfgen.cmake)
+
+    target_link_libraries(Graphics PUBLIC msdfgen-core msdfgen-ext)
+    target_include_directories(Graphics PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/libs)
 endif()
 
 if (SR_EMSCRIPTEN)
@@ -209,10 +223,6 @@ endif()
 if (NOT SR_EMSCRIPTEN)
     target_link_libraries(Graphics PUBLIC CMP_Core)
     target_include_directories(Graphics PUBLIC libs/cmp_core/source)
-endif()
-
-if (NOT SR_EMSCRIPTEN)
-    target_link_libraries(Graphics PUBLIC freetype)
 endif()
 
 if (SR_RENDER_GLFW)

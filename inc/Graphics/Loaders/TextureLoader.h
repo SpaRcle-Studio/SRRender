@@ -11,15 +11,7 @@
 #include <Utils/Types/Function.h>
 #include <Utils/FileSystem/Path.h>
 
-namespace SR_GTYPES_NS {
-    class Texture;
-}
-
 namespace SR_GRAPH_NS {
-    namespace Memory {
-        struct TextureConfig;
-    }
-
     class TextureData : public SR_HTYPES_NS::SharedPtr<TextureData>, SR_UTILS_NS::NonCopyable {
         using Super = SR_HTYPES_NS::SharedPtr<TextureData>;
         using DeleterFn = SR_HTYPES_NS::Function<void(uint8_t*)>;
@@ -43,6 +35,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetHeight() const { return m_height; }
         SR_NODISCARD uint8_t GetChannels() const;
         SR_NODISCARD const uint8_t* GetData() const { return m_data; }
+        SR_NODISCARD uint8_t* GetDataMutable() { return m_data; }
         SR_NODISCARD uint32_t GetNumberOfBytes() const;
         SR_NODISCARD SR_UTILS_NS::Path GetPath() const { return m_path; }
         SR_NODISCARD const TextureLoadInfo& GetInfo() const { return m_info; }

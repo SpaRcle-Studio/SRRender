@@ -55,6 +55,7 @@ namespace SR_GRAPH_UI_NS {
 
         SR_NODISCARD SR_MATH_NS::FVector2 ScreenToCanvasSpace(const SR_MATH_NS::FVector2& screenPosition) const;
         SR_NODISCARD SR_MATH_NS::FRect LayoutToCanvasRect(const SR_MATH_NS::FRect& layoutRect) const;
+        SR_NODISCARD float_t GetReferencePixelsPerUnit() const noexcept { return m_referencePixelsPerUnit; }
 
         SR_NODISCARD SR_GTYPES_NS::Camera* GetCamera() const noexcept;
         SR_NODISCARD Window* GetWindow() const noexcept;
@@ -63,6 +64,7 @@ namespace SR_GRAPH_UI_NS {
         SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Camera> m_camera;
         SR_MATH_NS::FRect m_viewportRect;
         float_t m_scaleFactor = 1.f;
+        float_t m_referencePixelsPerUnit = 100.f;
         bool m_dirty = true;
 
         SR_MATH_NS::UVector2 m_size;
@@ -76,7 +78,8 @@ namespace SR_GRAPH_UI_NS {
         using Super = SR_UTILS_NS::Component;
     public:
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
-        const float_t CalculateScaleFactor(const Canvas& canvas) const;
+        SR_NODISCARD float_t CalculateScaleFactor(const Canvas& canvas) const;
+        SR_NODISCARD float_t GetReferencePixelsPerUnit() const noexcept { return m_referencePixelsPerUnit; }
 
     private:
         /// @property
@@ -100,7 +103,7 @@ namespace SR_GRAPH_UI_NS {
         /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
         float_t m_defaultSpriteDPI = 96.f;
 
-        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPixelSize || This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
+        /// @property @range(0.1f, std::numeric_limits<float_t>::max())
         float_t m_referencePixelsPerUnit = 100.f;
 
     };

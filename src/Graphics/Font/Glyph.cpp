@@ -4,7 +4,53 @@
 
 #include <Graphics/Font/Glyph.h>
 
+#include <Codegen/Glyph.generated.hpp>
+
 namespace SR_GRAPH_NS {
+    bool GlyphKey::DecodeUTF8(const std::string& str, size_t& i, uint32_t& out) {
+        const uint8_t c = static_cast<uint8_t>(str[i]);
+
+        if (c < 0x80) {
+            out = c;
+            ++i;
+            return true;
+        }
+        else if ((c >> 5) == 0x6) { // 110xxxxx
+            if (i + 1 >= str.size()) return false;
+            out = ((c & 0x1F) << 6) | (static_cast<uint8_t>(str[i+1]) & 0x3F);
+            i += 2;
+            return true;
+        }
+        else if ((c >> 4) == 0xE) { // 1110xxxx
+            if (i + 2 >= str.size()) return false;
+            out = ((c & 0x0F) << 12) |
+                  ((static_cast<uint8_t>(str[i+1]) & 0x3F) << 6) |
+                  (static_cast<uint8_t>(str[i+2]) & 0x3F);
+            i += 3;
+            return true;
+        }
+        else if ((c >> 3) == 0x1E) { // 11110xxx
+            if (i + 3 >= str.size()) return false;
+            out = ((c & 0x07) << 18) |
+                  ((static_cast<uint8_t>(str[i+1]) & 0x3F) << 12) |
+                  ((static_cast<uint8_t>(str[i+2]) & 0x3F) << 6) |
+                  (static_cast<uint8_t>(str[i+3]) & 0x3F);
+            i += 4;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool GlyphKey::NextGlyphKey(const std::string& text, size_t& i, GlyphKey& key) {
+        uint32_t cp;
+        if (!DecodeUTF8(text, i, cp)) {
+            return false;
+        }
+        key = GlyphKey{ cp };
+        return true;
+    }
+
 #ifdef SR_USE_FREETYPE
     Glyph::Glyph(FT_Glyph pGlyph, FT_Render_Mode renderMode)
         : Super()

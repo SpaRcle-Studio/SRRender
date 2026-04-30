@@ -11,6 +11,12 @@
     #include <freetype/include/freetype/ftglyph.h>
 #endif
 
+#ifdef SR_RENDER_USE_MSDFGEN
+    #include <msdfgen.h>
+    #include <msdfgen/ext/import-font.h>
+    #include <core/Bitmap.h>
+#endif
+
 #include <Codegen/Font.generated.hpp>
 
 namespace SR_GTYPES_NS {
@@ -26,22 +32,47 @@ namespace SR_GTYPES_NS {
             m_library = nullptr;
         }
 
+    #ifdef SR_RENDER_USE_MSDFGEN
+        if (m_MSDFFontHandle) {
+            msdfgen::destroyFont((msdfgen::FontHandle*)m_MSDFFontHandle);
+            m_MSDFFontHandle = nullptr;
+        }
+        if (m_MSDFFreeTypeHandle) {
+            msdfgen::deinitializeFreetype((msdfgen::FreetypeHandle*)m_MSDFFreeTypeHandle);
+            m_MSDFFreeTypeHandle = nullptr;
+        }
+    #endif
+
         return Super::Unload();
     }
 
     bool Font::Load() {
         SR_TRACY_ZONE;
 
-    #ifdef SR_USE_FREETYPE
-        FT_Init_FreeType(&m_library);
-
         SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(GetResourceId());
         if (!path.IsAbs()) {
             path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
         }
 
+    #ifdef SR_RENDER_USE_MSDFGEN
+        m_MSDFFreeTypeHandle = msdfgen::initializeFreetype();
+        if (!m_MSDFFreeTypeHandle) {
+            SR_ERROR("Font::Load() : failed to initialize free-type for msdfgen!\n\tPath: {}", path);
+            return false;
+        }
+
+        m_MSDFFontHandle = msdfgen::loadFont((msdfgen::FreetypeHandle*)m_MSDFFreeTypeHandle, path.c_str());
+        if (!m_MSDFFontHandle) {
+            SR_ERROR("Font::Load() : failed to load font for msdfgen!\n\tPath: {}", path);
+            return false;
+        }
+    #endif
+
+    #ifdef SR_USE_FREETYPE
+        FT_Init_FreeType(&m_library);
+
         if (FT_New_Face(m_library, path.c_str(), 0, &m_face)) {
-            SR_ERROR("Font::Load() : failed to load free-type font! \n\tPath: " + path.ToString());
+            SR_ERROR("Font::Load() : failed to load free-type font!\n\tPath: {}", path);
             return false;
         }
 
@@ -164,4 +195,80 @@ namespace SR_GTYPES_NS {
         return glyph;
     }
 #endif
+
+    bool Font::GenerateMSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding) const {
+        return GenerateMSDFOrMTSDF(code, out, width, height, range, padding, false);
+    }
+
+    bool Font::GenerateMTSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding) const {
+        return GenerateMSDFOrMTSDF(code, out, width, height, range, padding, true);
+    }
+
+    bool Font::GenerateMSDFOrMTSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding, bool isMTSDF) const {
+        SR_TRACY_ZONE;
+
+        if (width == 0 || height == 0) {
+            return false;
+        }
+
+    #ifdef SR_RENDER_USE_MSDFGEN
+        if (!m_MSDFFontHandle) {
+            SR_ERROR("Font::GenerateMSDFOrMTSDF() : font handle is null!");
+            return false;
+        }
+
+        msdfgen::Shape shape;
+        msdfgen::loadGlyph(shape, (msdfgen::FontHandle*)m_MSDFFontHandle, code);
+
+        shape.normalize();
+        msdfgen::edgeColoringSimple(shape, 3.0);
+
+        msdfgen::Vector2 scale(1.0, 1.0);
+        msdfgen::Projection proj(scale, msdfgen::Vector2(padding, padding));
+
+        if (isMTSDF) {
+            msdfgen::Bitmap<float, 4> mtsdf(width, height);
+
+            {
+                SR_TRACY_ZONE_N("msdfgen::generateMTSDF");
+                msdfgen::generateMTSDF(mtsdf, shape, proj, range);
+            }
+
+            out.resize(width * height * 4);
+            for (uint32_t y = 0; y < height; ++y) {
+                for (uint32_t x = 0; x < width; ++x) {
+                    const float* v = mtsdf(x, y);
+                    out[(y * width + x) * 4 + 0] = static_cast<uint8_t>(SR_CLAMP(v[0] * 255.0f, 0.0f, 255.0f));
+                    out[(y * width + x) * 4 + 1] = static_cast<uint8_t>(SR_CLAMP(v[1] * 255.0f, 0.0f, 255.0f));
+                    out[(y * width + x) * 4 + 2] = static_cast<uint8_t>(SR_CLAMP(v[2] * 255.0f, 0.0f, 255.0f));
+                    out[(y * width + x) * 4 + 3] = static_cast<uint8_t>(SR_CLAMP(v[3] * 255.0f, 0.0f, 255.0f));
+                }
+            }
+        }
+        else {
+            msdfgen::Bitmap<float, 3> msdf(width, height);
+
+            {
+                SR_TRACY_ZONE_N("msdfgen::generateMSDF");
+                msdfgen::generateMSDF(msdf, shape, proj, range);
+            }
+
+            out.resize(width * height * 4);
+            for (uint32_t y = 0; y < height; ++y) {
+                for (uint32_t x = 0; x < width; ++x) {
+                    const float* v = msdf(x, y);
+                    out[(y * width + x) * 4 + 0] = static_cast<uint8_t>(SR_CLAMP(v[0] * 255.0f, 0.0f, 255.0f));
+                    out[(y * width + x) * 4 + 1] = static_cast<uint8_t>(SR_CLAMP(v[1] * 255.0f, 0.0f, 255.0f));
+                    out[(y * width + x) * 4 + 2] = static_cast<uint8_t>(SR_CLAMP(v[2] * 255.0f, 0.0f, 255.0f));
+                    out[(y * width + x) * 4 + 3] = 255;
+                }
+            }
+        }
+
+        return true;
+    #else
+        SR_WARN("Font::GenerateMSDFOrMTSDF() : msdfgen is not supported!");
+        return false;
+    #endif
+    }
 }

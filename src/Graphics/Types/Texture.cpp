@@ -5,6 +5,7 @@
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/RenderTarget.h>
+#include <Graphics/Font/FontAsset.h>
 #include <Graphics/Loaders/TextureLoader.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Pipeline/Pipeline.h>
@@ -57,7 +58,9 @@ namespace SR_GTYPES_NS {
         m_isDirty = true;
 
         bool hasErrors = !IResource::Load();
+
         if (GetResourcePath().View().starts_with("RenderTarget/")) {
+            SR_LOG("Texture::Load() : loading render target texture: {}", GetResourcePath());
             auto&& parts = SR_UTILS_NS::StringUtils::SplitView(GetResourcePath().View(), "/");
             if (parts.size() != 3) {
                 SR_ERROR("Texture::Load() : invalid render target texture path! Path: {}", GetResourcePath());
@@ -72,11 +75,22 @@ namespace SR_GTYPES_NS {
             else {
                 m_renderTargetInfo->layer = SR_UTILS_NS::LexicalCast<uint32_t>(parts[2]);
             }
-        }
-
-        if (m_renderTargetInfo) {
-            SR_LOG("Texture::Load() : loading render target texture: {}", GetResourcePath());
             m_textureData = TextureData::CreateEmpty();
+            RegisterGraphicsResource();
+            GetRenderContext()->SetDirty();
+            return !hasErrors;
+        }
+        else if (GetResourcePath().View().starts_with("FontAtlas/")) {
+            SR_LOG("Texture::Load() : loading font atlas texture: {}", GetResourcePath());
+            auto&& parts = SR_UTILS_NS::StringUtils::SplitView(GetResourcePath().View(), "/");
+            if (parts.size() != 4) {
+                SR_ERROR("Texture::Load() : invalid font atlas texture path! Path: {}", GetResourcePath());
+                return false;
+            }
+            m_fontAtlasPageInfo = Texture::FontAtlasPageInfo();
+            m_fontAtlasPageInfo->fontIndex = SR_UTILS_NS::LexicalCast<uint32_t>(parts[1]);
+            m_fontAtlasPageInfo->renderType = SR_UTILS_NS::EnumReflector::FromString<GlyphRenderType>(parts[2]);
+            m_fontAtlasPageInfo->pageIndex = SR_UTILS_NS::LexicalCast<uint32_t>(parts[3]);
             RegisterGraphicsResource();
             GetRenderContext()->SetDirty();
             return !hasErrors;
@@ -206,7 +220,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Low) {
-            SR_LOG("Texture::Calculate() : calculating \"" + std::string(GetResourceId()) + "\" texture...");
+            SR_LOG("Texture::Calculate() : calculating \"{}\" texture...", GetResourceId());
         }
 
         if (m_renderTargetInfo) {
@@ -300,7 +314,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (IsDestroyed()) {
-            SRHalt("Texture::GetId() : the texture \"" + std::string(GetResourceId()) + "\" is destroyed!");
+            SRHalt("Texture::GetId() : the texture \"{}\" is destroyed!", GetResourceId());
             return SR_ID_INVALID;
         }
 
@@ -352,6 +366,10 @@ namespace SR_GTYPES_NS {
 
     void Texture::FreeTextureData() {
         SR_TRACY_ZONE;
+
+        m_renderTargetInfo.reset();
+        m_fontAtlasPageInfo.reset();
+
         if (m_syncLoadTaskId) {
             SR_INFO("Texture::FreeTextureData() : the texture is still loading asynchronously! Waiting for the loading to finish...");
             while (SR_UTILS_NS::TaskManager::Instance().IsActive(*m_syncLoadTaskId)) {
@@ -410,6 +428,23 @@ namespace SR_GTYPES_NS {
                 m_id = SR_ID_INVALID;
             }
         }
+        else if (m_fontAtlasPageInfo) {
+            auto&& pFont = m_fontAtlasPageInfo->pFont.GetResource();
+            if (!pFont) {
+                SR_UTILS_NS::StringAtom fontId = FontIndexer::Instance().GetFontIdByIndex(m_fontAtlasPageInfo->fontIndex);
+                pFont = CoreResLoader::Load<FontAsset>(fontId);
+                m_fontAtlasPageInfo->pFont.SetResource(fontId);
+            }
+
+            if (pFont && pFont->IsAtlasPageDirty(m_fontAtlasPageInfo->renderType, m_fontAtlasPageInfo->pageIndex)) {
+                m_textureData = pFont->GetAtlasTexture(m_fontAtlasPageInfo->renderType, m_fontAtlasPageInfo->pageIndex);
+                if (m_textureData) {
+                    m_format = m_textureData->GetInfo().channels == 4 ? ImageFormat::RGBA8_UNORM : ImageFormat::R8_UNORM;
+                }
+                m_isDirty = true;
+                pFont->OnAtlasPageUploaded(m_fontAtlasPageInfo->renderType, m_fontAtlasPageInfo->pageIndex);
+            }
+        }
 
         if (m_syncLoadTaskId) {
             if (SR_UTILS_NS::TaskManager::Instance().IsActive(*m_syncLoadTaskId)) {
@@ -445,6 +480,10 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_id == SR_ID_INVALID && m_renderTargetInfo) {
+            return false;
+        }
+
+        if (m_fontAtlasPageInfo && !m_textureData) {
             return false;
         }
 

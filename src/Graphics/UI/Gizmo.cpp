@@ -220,24 +220,26 @@ namespace SR_GRAPH_UI_NS {
             m_modelMatrix = m_modelMatrix.OrthogonalNormalize(); /// normalized for local scape
         }
 
+        static const SR_UTILS_NS::StringAtom useOrthogonalDefine = "USE_ORTHOGONAL";
+
         m_hoveredOperation = GizmoOperation::None;
 
         for (auto&& [flag, info]: m_meshes) {
             if (info.pVisual) {
                 if (IsGizmo2DSpace()) {
-                    info.pVisual->GetMaterial()->GetMaterialData()->AddShaderDefine("USE_ORTHOGONAL");
+                    info.pVisual->GetMaterial()->GetMaterialData()->AddShaderDefine(useOrthogonalDefine);
                 }
                 else {
-                    info.pVisual->GetMaterial()->GetMaterialData()->RemoveShaderDefine("USE_ORTHOGONAL");
+                    info.pVisual->GetMaterial()->GetMaterialData()->RemoveShaderDefine(useOrthogonalDefine);
                 }
             }
 
             if (info.pSelection) {
                 if (IsGizmo2DSpace()) {
-                    info.pSelection->GetMaterial()->GetMaterialData()->AddShaderDefine("USE_ORTHOGONAL");
+                    info.pSelection->GetMaterial()->GetMaterialData()->AddShaderDefine(useOrthogonalDefine);
                 }
                 else {
-                    info.pSelection->GetMaterial()->GetMaterialData()->RemoveShaderDefine("USE_ORTHOGONAL");
+                    info.pSelection->GetMaterial()->GetMaterialData()->RemoveShaderDefine(useOrthogonalDefine);
                 }
             }
         }

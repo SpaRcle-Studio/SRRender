@@ -67,6 +67,8 @@ namespace SR_GTYPES_NS {
     }
 
     bool Text::BuildAtlas() {
+        SR_TRACY_ZONE;
+
         if (!m_font) {
             SR_ERROR("Text::BuildAtlas() : missing font!");
             return false;

@@ -6,6 +6,7 @@
 #define SR_ENGINE_FREETYPE_H
 
 #include <Graphics/stdInclude.h>
+#include <Utils/Types/FastMemoryArray.h>
 
 #ifdef SR_USE_FREETYPE
 
@@ -42,6 +43,8 @@ namespace SR_GRAPH_NS {
         tt_slot_init(nullptr);
     #endif
     }
+
+    SR_GRAPHICS_DLL_API extern void FreeTypeGenerateSDF(const FT_Bitmap& bmp, SR_HTYPES_NS::FastMemoryArray<float>& out, uint32_t width, uint32_t height, float_t range);
 }
 
 #define SRFreeTypeErrToString(err) (FreeTypeErrToString(err))

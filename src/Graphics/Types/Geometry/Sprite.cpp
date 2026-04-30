@@ -136,7 +136,9 @@ namespace SR_GTYPES_NS {
             return;
         }
 
-        const float_t effectivePPU = std::max(pTexture->GetPPU() / 100.f * m_pixelsPerUnitMultiplier, static_cast<float_t>(SR_KINDA_SMALL_NUMBER_EPSILON));
+        auto&& pCanvas = FindCanvas(GetSceneObject().Get());
+        const float_t pixelsPerUnit = pCanvas ? pCanvas->GetReferencePixelsPerUnit() : 100.f;
+        const float_t effectivePPU = std::max(pTexture->GetPPU() / pixelsPerUnit * m_pixelsPerUnitMultiplier, static_cast<float_t>(SR_KINDA_SMALL_NUMBER_EPSILON));
 
         if (auto&& pTransformRect = SR_UTILS_NS::ExtractTransformAs<SR_UTILS_NS::TransformRect>(GetSceneObject().Get())) SR_LIKELY_ATTRIBUTE {
             SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
