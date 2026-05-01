@@ -46,6 +46,9 @@ file(GLOB_RECURSE MSDFGEN_EXT_HEADERS "${MSDFGEN_ROOT}/ext/*.h" "${MSDFGEN_ROOT}
 
 # Core library
 add_library(msdfgen-core "${MSDFGEN_ROOT}/msdfgen.h" ${MSDFGEN_CORE_HEADERS} ${MSDFGEN_CORE_SOURCES})
+if (UNIX)
+    target_compile_options(msdfgen-core PRIVATE -fPIC)
+endif()
 add_library(msdfgen::msdfgen-core ALIAS msdfgen-core)
 set_target_properties(msdfgen-core PROPERTIES PUBLIC_HEADER "${MSDFGEN_CORE_HEADERS}")
 target_compile_definitions(msdfgen-core PUBLIC
@@ -83,6 +86,9 @@ endif()
 if(NOT MSDFGEN_CORE_ONLY)
     add_library(msdfgen-ext "${MSDFGEN_ROOT}/msdfgen-ext.h" ${MSDFGEN_EXT_HEADERS} ${MSDFGEN_EXT_SOURCES})
     add_library(msdfgen::msdfgen-ext ALIAS msdfgen-ext)
+    if (UNIX)
+        target_compile_options(msdfgen-ext PRIVATE -fPIC)
+    endif()
     set_target_properties(msdfgen-ext PROPERTIES PUBLIC_HEADER "${MSDFGEN_EXT_HEADERS}")
     target_compile_definitions(msdfgen-ext INTERFACE MSDFGEN_EXTENSIONS)
     if(NOT MSDFGEN_DISABLE_SVG)
