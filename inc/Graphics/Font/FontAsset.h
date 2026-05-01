@@ -36,6 +36,9 @@ namespace SR_GRAPH_NS {
     public:
         bool BuildText(const std::string& text, float_t fontSize, std::vector<PositionedGlyph>& glyphs);
 
+        /// Разрешение генерации atlas (pixels per em baseline); масштаб экранного размера: fontSize / GetSamplingPointSize().
+        SR_NODISCARD float_t GetSamplingPointSize() const noexcept { return m_samplingPointSize; }
+
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<TextureData>& GetAtlasTexture(GlyphRenderType type, uint16_t page) const;
         SR_NODISCARD bool IsAtlasPageDirty(GlyphRenderType type, uint16_t page) const;
 
@@ -59,6 +62,10 @@ namespace SR_GRAPH_NS {
         float_t m_samplingPointSize = 86;
         /// @property @group(Generation)
         SR_MATH_NS::UVector2 m_atlasSize = { 1024, 1024 };
+        /// @property @group(Generation)
+        GlyphRenderType m_renderType = GlyphRenderType::MTSDF;
+        /// @property @group(Generation)
+        GlyphRenderType m_colorRenderType = GlyphRenderType::ColorBitmap;
 
         /// @property
         float_t m_ascent = 0.f;

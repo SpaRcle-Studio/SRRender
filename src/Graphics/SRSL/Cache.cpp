@@ -203,6 +203,7 @@ namespace SR_SRSL_NS {
         void SaveVertexLayoutDescription(SR_HTYPES_NS::Marshal& marshal, const SR_UTILS_NS::VertexLayoutDescription& description) {
             SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, description.attributesCount);
             SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, description.stride);
+            SR_UTILS_NS::MarshalUtils::SaveValue<bool>(marshal, description.instanced);
             for (size_t i = 0; i < description.attributesCount; ++i) {
                 const auto& attribute = description.attributes[i];
                 SR_UTILS_NS::MarshalUtils::SaveValue<uint32_t>(marshal, static_cast<uint32_t>(attribute.attribute));
@@ -215,9 +216,10 @@ namespace SR_SRSL_NS {
         SR_UTILS_NS::VertexLayoutDescription LoadVertexLayoutDescription(SR_HTYPES_NS::Marshal& marshal) {
             SR_UTILS_NS::VertexLayoutDescription description;
 
-            const auto attributesCount = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+            description.attributesCount = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
             description.stride = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
-            for (size_t i = 0; i < attributesCount; ++i) {
+            description.instanced = SR_UTILS_NS::MarshalUtils::LoadValue<bool>(marshal);
+            for (size_t i = 0; i < description.attributesCount; ++i) {
                 SR_UTILS_NS::VertexAttributeDescription attribute;
                 attribute.attribute = static_cast<SR_UTILS_NS::VertexAttribute>(SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal));
                 attribute.format = static_cast<SR_UTILS_NS::VertexAttributeFormat>(SR_UTILS_NS::MarshalUtils::LoadValue<uint8_t>(marshal));
@@ -225,7 +227,6 @@ namespace SR_SRSL_NS {
                 attribute.offset = SR_UTILS_NS::MarshalUtils::LoadValue<uint16_t>(marshal);
                 description.attributes[i] = attribute;
             }
-            description.attributesCount = static_cast<uint8_t>(attributesCount);
 
             return description;
         }
@@ -733,6 +734,6 @@ namespace SR_GRAPH_NS {
     }
 
     uint64_t ShaderCache::GetVersion() {
-        return 0xDEADBA0B;
+        return 0xBAD5F00D;
     }
 }

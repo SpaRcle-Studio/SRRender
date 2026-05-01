@@ -645,7 +645,7 @@ namespace SR_GRAPH_NS {
         VkVertexInputBindingDescription binding{};
         binding.binding = 0;
         binding.stride = static_cast<uint32_t>(layout.GetStride());
-        binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        binding.inputRate = layout.instanced ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
 
         bindings.push_back(binding);
 

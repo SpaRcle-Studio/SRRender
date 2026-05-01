@@ -223,8 +223,22 @@ namespace SR_GTYPES_NS {
         shape.normalize();
         msdfgen::edgeColoringSimple(shape, 3.0);
 
-        msdfgen::Vector2 scale(1.0, 1.0);
-        msdfgen::Projection proj(scale, msdfgen::Vector2(padding, padding));
+        msdfgen::Shape::Bounds bounds = shape.getBounds();
+
+        double glyphWidth  = bounds.r - bounds.l;
+        double glyphHeight = bounds.t - bounds.b;
+
+        double scale = std::min(
+            (width  - 2.0 * padding) / glyphWidth,
+            (height - 2.0 * padding) / glyphHeight
+        );
+
+        msdfgen::Vector2 translate(
+            padding - bounds.l * scale,
+            padding - bounds.b * scale
+        );
+
+        msdfgen::Projection proj(scale, translate);
 
         if (isMTSDF) {
             msdfgen::Bitmap<float, 4> mtsdf(width, height);
@@ -236,12 +250,14 @@ namespace SR_GTYPES_NS {
 
             out.resize(width * height * 4);
             for (uint32_t y = 0; y < height; ++y) {
+                uint32_t flippedY = height - 1 - y;
                 for (uint32_t x = 0; x < width; ++x) {
                     const float* v = mtsdf(x, y);
-                    out[(y * width + x) * 4 + 0] = static_cast<uint8_t>(SR_CLAMP(v[0] * 255.0f, 0.0f, 255.0f));
-                    out[(y * width + x) * 4 + 1] = static_cast<uint8_t>(SR_CLAMP(v[1] * 255.0f, 0.0f, 255.0f));
-                    out[(y * width + x) * 4 + 2] = static_cast<uint8_t>(SR_CLAMP(v[2] * 255.0f, 0.0f, 255.0f));
-                    out[(y * width + x) * 4 + 3] = static_cast<uint8_t>(SR_CLAMP(v[3] * 255.0f, 0.0f, 255.0f));
+                    uint32_t dst = (flippedY * width + x) * 4;
+                    out[dst + 0] = static_cast<uint8_t>(SR_CLAMP(v[0] * 255.0f, 0.0f, 255.0f));
+                    out[dst + 1] = static_cast<uint8_t>(SR_CLAMP(v[1] * 255.0f, 0.0f, 255.0f));
+                    out[dst + 2] = static_cast<uint8_t>(SR_CLAMP(v[2] * 255.0f, 0.0f, 255.0f));
+                    out[dst + 3] = static_cast<uint8_t>(SR_CLAMP(v[3] * 255.0f, 0.0f, 255.0f));
                 }
             }
         }
@@ -255,12 +271,14 @@ namespace SR_GTYPES_NS {
 
             out.resize(width * height * 4);
             for (uint32_t y = 0; y < height; ++y) {
+                uint32_t flippedY = height - 1 - y;
                 for (uint32_t x = 0; x < width; ++x) {
                     const float* v = msdf(x, y);
-                    out[(y * width + x) * 4 + 0] = static_cast<uint8_t>(SR_CLAMP(v[0] * 255.0f, 0.0f, 255.0f));
-                    out[(y * width + x) * 4 + 1] = static_cast<uint8_t>(SR_CLAMP(v[1] * 255.0f, 0.0f, 255.0f));
-                    out[(y * width + x) * 4 + 2] = static_cast<uint8_t>(SR_CLAMP(v[2] * 255.0f, 0.0f, 255.0f));
-                    out[(y * width + x) * 4 + 3] = 255;
+                    uint32_t dst = (flippedY * width + x) * 4;
+                    out[dst + 0] = static_cast<uint8_t>(SR_CLAMP(v[0] * 255.0f, 0.0f, 255.0f));
+                    out[dst + 1] = static_cast<uint8_t>(SR_CLAMP(v[1] * 255.0f, 0.0f, 255.0f));
+                    out[dst + 2] = static_cast<uint8_t>(SR_CLAMP(v[2] * 255.0f, 0.0f, 255.0f));
+                    out[dst + 3] = 255;
                 }
             }
         }

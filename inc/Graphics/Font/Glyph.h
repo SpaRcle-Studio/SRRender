@@ -10,6 +10,10 @@
 
 #include <Utils/Common/NonCopyable.h>
 
+namespace SR_UTILS_NS {
+    class VertexDataBuffer;
+}
+
 namespace SR_GRAPH_NS {
     SR_ENUM_NS_CLASS_T(GlyphRangeType, uint8_t,
         ASCII, Latin1, Cyrilic, Custom
@@ -93,6 +97,9 @@ namespace SR_GRAPH_NS {
 
         uint32_t glyphIndex = 0;
         uint32_t lineIndex  = 0;
+
+        /// layoutScale экранная доля метрик atlas: fontSize / FontAsset::GetSamplingPointSize()
+        void AddInstance(const SR_MATH_NS::FVector2& pos, float_t layoutScale, SR_UTILS_NS::VertexDataBuffer& buffer) const;
     };
 
     //// ============================================== OLD GLYPH CODE =================================================

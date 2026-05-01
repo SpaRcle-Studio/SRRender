@@ -4,6 +4,8 @@
 
 #include <Graphics/Font/Glyph.h>
 
+#include <Utils/Common/Vertices.h>
+
 #include <Codegen/Glyph.generated.hpp>
 
 namespace SR_GRAPH_NS {
@@ -267,5 +269,20 @@ namespace SR_GRAPH_NS {
                 *(pTarget + dst + 3) = 255;
             }
         }
+    }
+
+    void PositionedGlyph::AddInstance(const SR_MATH_NS::FVector2& pos, float_t layoutScale, SR_UTILS_NS::VertexDataBuffer& buffer) const {
+        SR_TRACY_ZONE;
+
+        /// layoutScale обычно fontSize / samplingPointSize — метрики в пикселях генерации atlas.
+        const auto& p0 = pos;
+        const auto& p1 = pos + metrics.size.Cast<float_t>() * layoutScale;
+        const auto& uv0 = atlas.uv0;
+        const auto& uv1 = atlas.uv1;
+
+        buffer.SetVertex(glyphIndex, SR_UTILS_NS::VertexAttribute::Position0, &p0);
+        buffer.SetVertex(glyphIndex, SR_UTILS_NS::VertexAttribute::Position1, &p1);
+        buffer.SetVertex(glyphIndex, SR_UTILS_NS::VertexAttribute::UV1, &uv0);
+        buffer.SetVertex(glyphIndex, SR_UTILS_NS::VertexAttribute::UV2, &uv1);
     }
 }

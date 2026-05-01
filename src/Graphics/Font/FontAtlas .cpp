@@ -105,6 +105,7 @@ namespace SR_GRAPH_NS {
         const float_t invW = 1.0f / static_cast<float_t>(m_pageSize.x);
         const float_t invH = 1.0f / static_cast<float_t>(m_pageSize.y);
 
+        /// UV1=min, UV2=max — совпадает с mix(UV1,UV2, corner): (0,0)→верхний левый texel, (1,1)→нижний правый.
         entry.atlas.uv0 = {
             static_cast<float_t>(entry.rect.x) * invW,
             static_cast<float_t>(entry.rect.y) * invH
@@ -126,20 +127,23 @@ namespace SR_GRAPH_NS {
             m_pages.emplace_back(new FontAtlasPage(m_pageSize, m_useRGBA));
         }
 
-        out.size = glyph.metrics.size + SR_MATH_NS::USVector2(m_padding) * 2;
-        if (!m_pages.back()->GetAllocator().Allocate(out.size.x, out.size.y, out.rect)) {
+        out.size = glyph.metrics.size;
+
+        SR_MATH_NS::USVector2 paddedSize = glyph.metrics.size + SR_MATH_NS::USVector2(m_padding) * 2;
+        if (!m_pages.back()->GetAllocator().Allocate(paddedSize.x, paddedSize.y, out.rect)) {
             if (m_pages.back()->GetAllocator().GetNodesCount() <= 1) {
                 return false; /// Glyph too big
             }
             m_pages.emplace_back(new FontAtlasPage(m_pageSize, m_useRGBA));
-            if (!m_pages.back()->GetAllocator().Allocate(out.size.x, out.size.y, out.rect)) {
+            if (!m_pages.back()->GetAllocator().Allocate(paddedSize.x,paddedSize.y, out.rect)) {
                 SRHalt("FontAtlas::PlaceGlyph() : failed to place glyph!");
                 return false; /// Something went wrong...
             }
         }
 
         m_pages.back()->CopyGlyphBitmap(glyph.bitmap, out.rect);
-        out.rect.xy += SR_MATH_NS::USVector2(m_padding);
+
+        /// UV должны охватывать весь битмап (включая SDF-halo для MSDF/MTSDF). Inset здесь только обрезал поля atlas.
         return true;
     }
 
