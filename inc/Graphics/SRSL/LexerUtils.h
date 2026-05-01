@@ -239,7 +239,7 @@ namespace SR_SRSL_NS {
                 #ifdef SR_WIN32
                     message += "\n{}File: {}/{}:{}:{}"_format(std::string(tab, '\t'), resourcesPath, files[fileIndex].name.ToStringView(), line, position);
                 #else
-                    message += "\n{}File: file:///{}/{}:{}:{}"_format(std::string(tab, '\t'), resourcesPath, files[fileIndex].ToStringRef(), line, position);
+                    message += "\n{}File: file:///{}/{}:{}:{}"_format(std::string(tab, '\t'), resourcesPath, files[fileIndex].name.ToStringView(), line, position);
                 #endif
                 }
             }
