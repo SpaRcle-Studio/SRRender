@@ -41,6 +41,9 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<TextureData>& GetAtlasTexture(GlyphRenderType type, uint16_t page) const;
         SR_NODISCARD bool IsAtlasPageDirty(GlyphRenderType type, uint16_t page) const;
+        SR_NODISCARD float_t GetFontAscender() const noexcept { return m_ascender; }
+        SR_NODISCARD float_t GetFontDescender() const noexcept { return m_descender; }
+        SR_NODISCARD float_t GetFontLineGap() const noexcept { return m_lineGap; }
 
         void OnAtlasPageUploaded(GlyphRenderType type, uint16_t page);
 
@@ -68,20 +71,15 @@ namespace SR_GRAPH_NS {
         GlyphRenderType m_colorRenderType = GlyphRenderType::ColorBitmap;
 
         /// @property
-        float_t m_ascent = 0.f;
-        /// @property
-        float_t m_descent = 0.f;
-        /// @property
-        float_t m_lineGap = 0.f;
-        /// @property
-        float_t m_unitsPerEm = 0.f;
-
-        /// @property
         /// @customArgs(pick: enabled, filter name: Font, relative: resources)
         /// @customArg(filter value: font)
         std::vector<SR_UTILS_NS::ResourceRef<FontAsset>> m_fallbacks;
 
     private:
+        float_t m_ascender = 0.f;
+        float_t m_descender = 0.f;
+        float_t m_lineGap = 0.f;
+
         uint16_t m_fontId = 0;
         SR_HTYPES_NS::FlatHashMap<GlyphKey, FontDetails::Glyph> m_glyphs;
         SR_HTYPES_NS::SharedPtr<FontAtlas> m_atlases[SR_UTILS_NS::EnumTraits<GlyphRenderType>::NumItems];

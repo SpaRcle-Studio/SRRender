@@ -43,7 +43,7 @@ namespace SR_GTYPES_NS {
         /// @property
         /// @customArg(text-box: enabled)
         std::string m_text;
-        /// @property @range(0.1f, 1024.f)
+        /// @property @range(0.1f, std::numeric_limits<float_t>::max())
         float_t m_fontSize = 16.f;
 
     };

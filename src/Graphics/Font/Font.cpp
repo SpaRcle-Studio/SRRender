@@ -228,17 +228,29 @@ namespace SR_GTYPES_NS {
         double glyphWidth  = bounds.r - bounds.l;
         double glyphHeight = bounds.t - bounds.b;
 
-        double scale = std::min(
-            (width  - 2.0 * padding) / glyphWidth,
-            (height - 2.0 * padding) / glyphHeight
-        );
+        if (glyphWidth <= 0.0 || glyphHeight <= 0.0) {
+            return false;
+        }
 
+        const double innerW = static_cast<double>(width) - 2.0 * padding;
+        const double innerH = static_cast<double>(height) - 2.0 * padding;
+
+        double scale = std::min(innerW / glyphWidth, innerH / glyphHeight);
+
+        /// Letterboxing: центрируем масштабированный bbox во внутренней области.
+        const double scaledW = glyphWidth * scale;
+        const double scaledH = glyphHeight * scale;
+        const double offsetX = (innerW - scaledW) * 0.5;
+        const double offsetY = (innerH - scaledH) * 0.5;
+
+        /// msdfgen::Projection: pixel = scale * (shape + translate) — translate в координатах контура (см. core/Projection.cpp).
+        /// Раньше использовалось padding - bounds.* * scale (пиксели × масштаб без деления на scale) — не соответствует API, смещение не менялось предсказуемо.
         msdfgen::Vector2 translate(
-            padding - bounds.l * scale,
-            padding - bounds.b * scale
+            (static_cast<double>(padding) + offsetX) / scale - bounds.l,
+            (static_cast<double>(padding) + offsetY) / scale - bounds.b
         );
 
-        msdfgen::Projection proj(scale, translate);
+        msdfgen::Projection proj(msdfgen::Vector2(scale, scale), translate);
 
         if (isMTSDF) {
             msdfgen::Bitmap<float, 4> mtsdf(width, height);

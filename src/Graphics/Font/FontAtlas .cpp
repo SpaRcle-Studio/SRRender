@@ -20,8 +20,18 @@ namespace SR_GRAPH_NS {
         }, loadInfo);
     }
 
-    void FontAtlasPage::CopyGlyphBitmap(const GlyphBitmap& bitmap, const SR_MATH_NS::USRect& destRect) {
+    void FontAtlasPage::CopyGlyphBitmap(const GlyphBitmap& bitmap, const SR_MATH_NS::USRect& destRect, SR_MATH_NS::USVector2 srcPixelSize) {
         SR_TRACY_ZONE;
+
+        const uint32_t srcW = srcPixelSize.x;
+        const uint32_t srcH = srcPixelSize.y;
+        if (srcW == 0 || srcH == 0) {
+            return;
+        }
+
+        /// При atlas padding destRect больше bitmap; кладём битмап по центру ячейки и заполняем gutter нейтральным фоном SDF.
+        const uint32_t ox = (destRect.w >= srcW) ? (destRect.w - srcW) / 2u : 0u;
+        const uint32_t oy = (destRect.h >= srcH) ? (destRect.h - srcH) / 2u : 0u;
 
         const bool useRGBAByBitmap = bitmap.type == GlyphRenderType::ColorBitmap || bitmap.type == GlyphRenderType::MSDF || bitmap.type == GlyphRenderType::MTSDF;
         const bool isRGBA = m_useRGBA;
@@ -31,7 +41,22 @@ namespace SR_GRAPH_NS {
         for (uint32_t y = 0; y < destRect.h; ++y) {
             for (uint32_t x = 0; x < destRect.w; ++x) {
                 const uint32_t destIndex = ((destRect.y + y) * m_pageSize.x + (destRect.x + x)) * (isRGBA ? 4 : 1);
-                const uint32_t srcIndex = (y * destRect.w + x) * (useRGBAByBitmap ? 4 : 1);
+                if (isRGBA) {
+                    pData[destIndex + 0] = 255;
+                    pData[destIndex + 1] = 255;
+                    pData[destIndex + 2] = 255;
+                    pData[destIndex + 3] = 255;
+                }
+                else {
+                    pData[destIndex] = 255;
+                }
+            }
+        }
+
+        for (uint32_t y = 0; y < srcH; ++y) {
+            for (uint32_t x = 0; x < srcW; ++x) {
+                const uint32_t destIndex = ((destRect.y + oy + y) * m_pageSize.x + (destRect.x + ox + x)) * (isRGBA ? 4 : 1);
+                const uint32_t srcIndex = (y * srcW + x) * (useRGBAByBitmap ? 4 : 1);
 
                 if (useRGBAByBitmap && isRGBA) { /// RGBA bitmap into RGBA atlas
                     pData[destIndex + 0] = bitmap.data[srcIndex + 0];
@@ -46,7 +71,6 @@ namespace SR_GRAPH_NS {
                     pData[destIndex + 3] = bitmap.data[srcIndex];
                 }
                 else if (useRGBAByBitmap) {
-                    // Simple alpha blending
                     const uint8_t alpha = bitmap.data[srcIndex + 3];
                     const uint8_t r = bitmap.data[srcIndex + 0];
                     const uint8_t g = bitmap.data[srcIndex + 1];
@@ -105,14 +129,18 @@ namespace SR_GRAPH_NS {
         const float_t invW = 1.0f / static_cast<float_t>(m_pageSize.x);
         const float_t invH = 1.0f / static_cast<float_t>(m_pageSize.y);
 
-        /// UV1=min, UV2=max — совпадает с mix(UV1,UV2, corner): (0,0)→верхний левый texel, (1,1)→нижний правый.
+        const uint32_t srcW = entry.size.x;
+        const uint32_t srcH = entry.size.y;
+        const uint32_t ox = (entry.rect.w >= srcW) ? (entry.rect.w - srcW) / 2u : 0u;
+        const uint32_t oy = (entry.rect.h >= srcH) ? (entry.rect.h - srcH) / 2u : 0u;
+
         entry.atlas.uv0 = {
-            static_cast<float_t>(entry.rect.x) * invW,
-            static_cast<float_t>(entry.rect.y) * invH
+            static_cast<float_t>(entry.rect.x + ox) * invW,
+            static_cast<float_t>(entry.rect.y + oy + srcH) * invH
         };
         entry.atlas.uv1 = {
-            static_cast<float_t>(entry.rect.x + entry.rect.w) * invW,
-            static_cast<float_t>(entry.rect.y + entry.rect.h) * invH
+            static_cast<float_t>(entry.rect.x + ox + srcW) * invW,
+            static_cast<float_t>(entry.rect.y + oy) * invH
         };
         entry.atlas.page = m_pages.size() - 1;
 
@@ -141,7 +169,7 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        m_pages.back()->CopyGlyphBitmap(glyph.bitmap, out.rect);
+        m_pages.back()->CopyGlyphBitmap(glyph.bitmap, out.rect, glyph.metrics.size);
 
         /// UV должны охватывать весь битмап (включая SDF-halo для MSDF/MTSDF). Inset здесь только обрезал поля atlas.
         return true;

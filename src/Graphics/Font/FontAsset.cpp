@@ -47,6 +47,14 @@ namespace SR_GRAPH_NS {
         GlyphKey key;
         uint32_t glyphIndex = 0;
         for (uint64_t i = 0; i < text.size(); ) {
+            if (text[i] == '\n') {
+                auto&& positionedGlyph = glyphs.emplace_back();
+                positionedGlyph.codepoint = GlyphKey{ '\n' };
+                positionedGlyph.glyphIndex = glyphIndex++;
+                ++i;
+                continue;
+            }
+
             if (!GlyphKey::NextGlyphKey(text, i, key)) {
                 ++i;
                 continue;
@@ -165,8 +173,6 @@ namespace SR_GRAPH_NS {
         glyph.metrics.sdfRange = SR_CLAMP(m_samplingPointSize * 0.1f, 4.0f, 16.0f);
 
         if (rasterizeWithMsdfDims) {
-            const FT_Glyph_Metrics& gm = pFace->glyph->metrics;
-
             /// 26.6 → px: ceil; метрики слота часто **уже** реального ink-box (g, t, курсив) — msdfgen же вписывает фактический контур.
             const auto ceil26d6 = [](FT_Pos v) -> uint32_t {
                 return static_cast<uint32_t>((v + static_cast<FT_Pos>(63)) >> 6);
@@ -178,14 +184,18 @@ namespace SR_GRAPH_NS {
                 return static_cast<float_t>((v + static_cast<FT_Pos>(63)) >> 6);
             };
 
-            glyph.metrics.advance = static_cast<float_t>((gm.horiAdvance + static_cast<FT_Pos>(32)) >> 6);
+            glyph.metrics.advance = static_cast<float_t>((pFace->glyph->metrics.horiAdvance + static_cast<FT_Pos>(32)) >> 6);
 
-            uint32_t coreW = ceil26d6(gm.width);
-            uint32_t coreH = ceil26d6(gm.height);
-            float_t bearingX = ceil26d6Signed(gm.horiBearingX);
-            float_t bearingY = ceil26d6Signed(gm.horiBearingY);
+            //glyph.metrics.advance  = static_cast<float>(pFace->glyph->metrics.horiAdvance >> 6);
+            //glyph.metrics.bearingX = static_cast<float>(pFace->glyph->metrics.horiBearingX >> 6);
+            //glyph.metrics.bearingY = static_cast<float>(pFace->glyph->metrics.horiBearingY >> 6);
 
-            const uint8_t padPx = static_cast<uint8_t>(std::ceil(glyph.metrics.sdfRange) + 1);
+            uint32_t coreW = ceil26d6(pFace->glyph->metrics.width);
+            uint32_t coreH = ceil26d6(pFace->glyph->metrics.height);
+            float_t bearingX = ceil26d6Signed(pFace->glyph->metrics.horiBearingX);
+            float_t bearingY = ceil26d6Signed(pFace->glyph->metrics.horiBearingY);
+
+            const auto padPx = static_cast<uint8_t>(std::ceil(glyph.metrics.sdfRange) + 1);
 
             if (coreW == 0 || coreH == 0) {
                 glyph.metrics.size = { };
@@ -279,6 +289,13 @@ namespace SR_GRAPH_NS {
             SR_ERROR("FontAsset::OnAssetLoaded() : failed to load \"{}\" font!", m_font.GetId());
             return;
         }
+
+    #ifdef SR_USE_FREETYPE
+        FT_Set_Pixel_Sizes(pFont->GetFontFace(), 0, m_samplingPointSize);
+        m_ascender = static_cast<float_t>(pFont->GetFontFace()->size->metrics.ascender >> 6);
+        m_descender = static_cast<float_t>(pFont->GetFontFace()->size->metrics.descender >> 6);
+        m_lineGap = static_cast<float_t>(pFont->GetFontFace()->size->metrics.height >> 6) - (m_ascender - m_descender);
+    #endif
 
         m_glyphs.reserve(1024);
 

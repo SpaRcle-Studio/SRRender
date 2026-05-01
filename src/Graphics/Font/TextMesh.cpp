@@ -87,11 +87,30 @@ namespace SR_GTYPES_NS {
 
         const float_t layoutScale = m_fontSize / std::max(1.f, pFontAsset->GetSamplingPointSize());
 
+        SR_MATH_NS::FVector2 textPos = { 100.f, 400.f };
+
         float_t penX = 0.0f;
+
+        float_t baselineY = textPos.y + pFontAsset->GetFontAscender() * layoutScale;
+        const float_t ascender  = pFontAsset->GetFontAscender() * layoutScale;
+        const float_t descender = pFontAsset->GetFontDescender() * layoutScale;
+        const float_t lineGap   = pFontAsset->GetFontLineGap() * layoutScale;
+        const float_t lineHeight = (ascender - descender) + lineGap;
+
         for (auto&& glyph : glyphs) {
-            const float_t x = penX + glyph.metrics.bearingX * layoutScale;
-            const float_t y = -glyph.metrics.bearingY * layoutScale;
-            glyph.AddInstance({ x + 100, y + 400 }, layoutScale, buffer);
+            if (glyph.codepoint.codepoint == '\n') {
+                penX = 0.0f;
+                baselineY -= lineHeight;
+                continue;
+            }
+
+            const float_t x = textPos.x + penX + glyph.metrics.bearingX * layoutScale;
+            const float_t y = baselineY - glyph.metrics.bearingY * layoutScale;
+
+            const SR_MATH_NS::FVector2 size = glyph.metrics.size.CastToFloat() * layoutScale;
+
+            glyph.AddInstance({x, y}, size, buffer);
+
             penX += glyph.metrics.advance * layoutScale;
         }
 

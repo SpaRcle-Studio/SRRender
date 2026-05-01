@@ -99,7 +99,7 @@ namespace SR_GRAPH_NS {
         uint32_t lineIndex  = 0;
 
         /// layoutScale экранная доля метрик atlas: fontSize / FontAsset::GetSamplingPointSize()
-        void AddInstance(const SR_MATH_NS::FVector2& pos, float_t layoutScale, SR_UTILS_NS::VertexDataBuffer& buffer) const;
+        void AddInstance(const SR_MATH_NS::FVector2& pos, const SR_MATH_NS::FVector2& size, SR_UTILS_NS::VertexDataBuffer& buffer) const;
     };
 
     //// ============================================== OLD GLYPH CODE =================================================

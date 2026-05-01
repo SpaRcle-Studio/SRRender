@@ -32,7 +32,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const TextureData::Ptr& GetTextureData() const { return m_textureData; }
         SR_NODISCARD bool IsDirty() const { return m_dirty; }
 
-        void CopyGlyphBitmap(const GlyphBitmap& bitmap, const SR_MATH_NS::USRect& destRect);
+        /// srcPixelSize — реальный размер bitmap.data (glyph.metrics.size); destRect может быть шире из‑за atlas padding.
+        void CopyGlyphBitmap(const GlyphBitmap& bitmap, const SR_MATH_NS::USRect& destRect, SR_MATH_NS::USVector2 srcPixelSize);
         void OnTextureUploaded();
 
     private:
