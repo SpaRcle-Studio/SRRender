@@ -81,10 +81,6 @@ endif()
 
 # Extensions library
 if(NOT MSDFGEN_CORE_ONLY)
-    if(NOT c AND NOT TARGET PNG::PNG)
-        find_package(PNG REQUIRED)
-    endif()
-
     add_library(msdfgen-ext "${MSDFGEN_ROOT}/msdfgen-ext.h" ${MSDFGEN_EXT_HEADERS} ${MSDFGEN_EXT_SOURCES})
     add_library(msdfgen::msdfgen-ext ALIAS msdfgen-ext)
     set_target_properties(msdfgen-ext PROPERTIES PUBLIC_HEADER "${MSDFGEN_EXT_HEADERS}")

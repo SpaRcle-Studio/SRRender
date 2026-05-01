@@ -60,9 +60,6 @@ namespace SR_GTYPES_NS {
         FontLibrary m_library = nullptr;
         FontFace m_face = nullptr;
 
-        MSDFFreeTypeHandle m_MSDFFreeTypeHandle = nullptr;
-        MSDFontHandle m_MSDFFontHandle = nullptr;
-
         bool m_hasColor = false;
         bool m_isColorEmoji = false;
 

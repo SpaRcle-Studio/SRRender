@@ -13,7 +13,7 @@
 
 #ifdef SR_RENDER_USE_MSDFGEN
     #include <msdfgen.h>
-    #include <msdfgen/ext/import-font.h>
+    #include <ext/import-font.h>
     #include <core/Bitmap.h>
 #endif
 
@@ -32,17 +32,6 @@ namespace SR_GTYPES_NS {
             m_library = nullptr;
         }
 
-    #ifdef SR_RENDER_USE_MSDFGEN
-        if (m_MSDFFontHandle) {
-            msdfgen::destroyFont((msdfgen::FontHandle*)m_MSDFFontHandle);
-            m_MSDFFontHandle = nullptr;
-        }
-        if (m_MSDFFreeTypeHandle) {
-            msdfgen::deinitializeFreetype((msdfgen::FreetypeHandle*)m_MSDFFreeTypeHandle);
-            m_MSDFFreeTypeHandle = nullptr;
-        }
-    #endif
-
         return Super::Unload();
     }
 
@@ -53,20 +42,6 @@ namespace SR_GTYPES_NS {
         if (!path.IsAbs()) {
             path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
         }
-
-    #ifdef SR_RENDER_USE_MSDFGEN
-        m_MSDFFreeTypeHandle = msdfgen::initializeFreetype();
-        if (!m_MSDFFreeTypeHandle) {
-            SR_ERROR("Font::Load() : failed to initialize free-type for msdfgen!\n\tPath: {}", path);
-            return false;
-        }
-
-        m_MSDFFontHandle = msdfgen::loadFont((msdfgen::FreetypeHandle*)m_MSDFFreeTypeHandle, path.c_str());
-        if (!m_MSDFFontHandle) {
-            SR_ERROR("Font::Load() : failed to load font for msdfgen!\n\tPath: {}", path);
-            return false;
-        }
-    #endif
 
     #ifdef SR_USE_FREETYPE
         FT_Init_FreeType(&m_library);
