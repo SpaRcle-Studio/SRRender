@@ -271,7 +271,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void PositionedGlyph::AddInstance(const SR_MATH_NS::FVector2& pos, const SR_MATH_NS::FVector2& size, SR_UTILS_NS::VertexDataBuffer& buffer) const {
+    void PositionedGlyph::AddInstance(uint32_t index, const SR_MATH_NS::FVector2& pos, const SR_MATH_NS::FVector2& size, SR_UTILS_NS::VertexDataBuffer& buffer) const {
         SR_TRACY_ZONE;
 
         const auto& p0 = pos;
@@ -279,9 +279,9 @@ namespace SR_GRAPH_NS {
         const auto& uv0 = atlas.uv0;
         const auto& uv1 = atlas.uv1;
 
-        buffer.SetVertex(glyphIndex, SR_UTILS_NS::VertexAttribute::Position0, &p0);
-        buffer.SetVertex(glyphIndex, SR_UTILS_NS::VertexAttribute::Position1, &p1);
-        buffer.SetVertex(glyphIndex, SR_UTILS_NS::VertexAttribute::UV1, &uv0);
-        buffer.SetVertex(glyphIndex, SR_UTILS_NS::VertexAttribute::UV2, &uv1);
+        buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Position0, &p0);
+        buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Position1, &p1);
+        buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::UV1, &uv0);
+        buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::UV2, &uv1);
     }
 }

@@ -10,6 +10,7 @@
 #include <Utils/ECS/TransformUtils.h>
 #include <Utils/ECS/TransformRect.h>
 #include <Utils/Common/Vertices.h>
+#include <Utils/Events/Broadcaster.h>
 
 #include <Codegen/TextMesh.generated.hpp>
 
@@ -68,9 +69,15 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
+        if (!m_onFontReloadedSubscription.IsValid()) {
+            m_onFontReloadedSubscription = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_FONT_RELOADED_ID, [this](auto&&) {
+                m_isCalculated = false;
+            });
+        }
+
         static SR_THREAD_LOCAL std::vector<PositionedGlyph> glyphs;
         pFontAsset->BuildText(m_text, m_fontSize, glyphs);
-        m_instancesCount = static_cast<uint32_t>(glyphs.size());
+        m_instancesCount = 0;
 
         if (glyphs.empty()) {
             return true;
@@ -116,13 +123,13 @@ namespace SR_GTYPES_NS {
             const SR_MATH_NS::FVector2 size = glyph.metrics.size.CastToFloat() * layoutScale;
             const float_t y = baselineY + glyph.metrics.bearingY * layoutScale - size.y;
 
-            glyph.AddInstance({x, y}, size, buffer);
+            glyph.AddInstance(m_instancesCount++, {x, y}, size, buffer);
 
             penX = cursorX + glyph.metrics.advance * layoutScale;
             prevCode = glyph.codepoint;
         }
 
-        m_VBO = GetPipeline()->AllocateVBO(m_VBO, buffer.GetDataSize(), buffer.GetRawData());
+        m_VBO = GetPipeline()->AllocateVBO(m_VBO, m_instancesCount * buffer.GetLayout().GetStride(), buffer.GetRawData());
 
         if (m_VBO == SR_ID_INVALID) {
             SR_ERROR("TextMesh::Calculate() : failed to allocate VBO for text mesh!");

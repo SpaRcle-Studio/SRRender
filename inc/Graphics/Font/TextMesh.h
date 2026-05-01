@@ -10,6 +10,7 @@
 #include <Graphics/UI/Canvas.h>
 
 #include <Utils/Types/UnicodeString.h>
+#include <Utils/Common/Subscription.h>
 
 namespace SR_GTYPES_NS {
     class TextMesh : public UIRenderComponent, public UI::IFindCanvasOwner {
@@ -34,6 +35,7 @@ namespace SR_GTYPES_NS {
     private:
         int32_t m_VBO = SR_ID_INVALID;
         uint32_t m_instancesCount = 0;
+        SR_UTILS_NS::Subscription m_onFontReloadedSubscription;
 
     private:
         /// @property @onChanged(OnTextDirty)

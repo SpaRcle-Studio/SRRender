@@ -6,6 +6,7 @@
 #include <Graphics/Font/FontAtlas.h>
 
 #include <Utils/TaskManager/TaskManager.h>
+#include <Utils/Events/Broadcaster.h>
 
 #include <Codegen/FontAsset.generated.hpp>
 
@@ -315,6 +316,8 @@ namespace SR_GRAPH_NS {
         }
 
         m_fontId = FontIndexer::Instance().GetIndexForFont(GetResourceId());
+
+        SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_ON_FONT_RELOADED_ID);
 
         auto&& pFont = m_font.GetResource();
         if (!pFont) {
