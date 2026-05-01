@@ -211,22 +211,30 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-    #ifdef SR_RENDER_USE_MSDFGEN
-        if (!m_MSDFFontHandle) {
-            SR_ERROR("Font::GenerateMSDFOrMTSDF() : font handle is null!");
+    #if defined(SR_RENDER_USE_MSDFGEN) && defined(SR_USE_FREETYPE)
+        if (!m_face) {
+            SR_ERROR("Font::GenerateMSDFOrMTSDF() : font face is null!");
+            return false;
+        }
+
+        const FT_UInt glyphIndex = FT_Get_Char_Index(m_face, code);
+        if (FT_Load_Glyph(m_face, glyphIndex, FT_LOAD_NO_BITMAP)) {
+            SR_ERROR("Font::GenerateMSDFOrMTSDF() : FT_Load_Glyph failed for codepoint {}!", static_cast<uint32_t>(code));
             return false;
         }
 
         msdfgen::Shape shape;
-        msdfgen::loadGlyph(shape, (msdfgen::FontHandle*)m_MSDFFontHandle, code);
+        if (msdfgen::readFreetypeOutline(shape, &m_face->glyph->outline)) {
+            SR_ERROR("Font::GenerateMSDFOrMTSDF() : readFreetypeOutline failed for codepoint {}!", static_cast<uint32_t>(code));
+            return false;
+        }
 
-        shape.normalize();
         msdfgen::edgeColoringSimple(shape, 3.0);
 
-        msdfgen::Shape::Bounds bounds = shape.getBounds();
+        const msdfgen::Shape::Bounds bounds = shape.getBounds();
 
-        double glyphWidth  = bounds.r - bounds.l;
-        double glyphHeight = bounds.t - bounds.b;
+        const double glyphWidth  = bounds.r - bounds.l;
+        const double glyphHeight = bounds.t - bounds.b;
 
         if (glyphWidth <= 0.0 || glyphHeight <= 0.0) {
             return false;
@@ -235,19 +243,38 @@ namespace SR_GTYPES_NS {
         const double innerW = static_cast<double>(width) - 2.0 * padding;
         const double innerH = static_cast<double>(height) - 2.0 * padding;
 
-        double scale = std::min(innerW / glyphWidth, innerH / glyphHeight);
+        const double scale = std::min(innerW / glyphWidth, innerH / glyphHeight);
 
-        /// Letterboxing: центрируем масштабированный bbox во внутренней области.
         const double scaledW = glyphWidth * scale;
         const double scaledH = glyphHeight * scale;
         const double offsetX = (innerW - scaledW) * 0.5;
-        const double offsetY = (innerH - scaledH) * 0.5;
 
-        /// msdfgen::Projection: pixel = scale * (shape + translate) — translate в координатах контура (см. core/Projection.cpp).
-        /// Раньше использовалось padding - bounds.* * scale (пиксели × масштаб без деления на scale) — не соответствует API, смещение не менялось предсказуемо.
+        /// Та же логика ceil26d6, что в FontAsset::LoadGlyph для MTSDF (метрики квада совпадают с этим смещением).
+        const auto ceil26d6Signed = [](FT_Pos v) -> double {
+            if (v <= 0) {
+                return static_cast<double>(v >> 6);
+            }
+            return static_cast<double>((v + static_cast<FT_Pos>(63)) >> 6);
+        };
+        const double coreBearingYPx = ceil26d6Signed(m_face->glyph->metrics.horiBearingY);
+
+        /// Строка baseline в выходной текстуре (сверху вниз): pad + расстояние от верха **core** до baseline в px при sampling size.
+        /// Без вертикального letterboxing: иначе чернила «плавают» внутри квада относительно bearingY в TextMesh.
+        const double baselineRowFromTop = SR_CLAMP(
+            static_cast<double>(padding) + coreBearingYPx,
+            0.0,
+            static_cast<double>(height > 0 ? height - 1u : 0u)
+        );
+        /// В буфере msdfgen y идёт снизу вверх; после копирования flippedY верх картинки = y = height - 1.
+        const double baselineYMsdf = static_cast<double>(height - 1u) - baselineRowFromTop;
+
+        /// Projection: pixel = scale * (shape + translate). Для контура baseline в декартовых координатах FT — y = 0.
+        const double translateY = baselineYMsdf / scale;
+
+        /// msdfgen::Projection: translate в координатах контура (см. core/Projection.cpp).
         msdfgen::Vector2 translate(
             (static_cast<double>(padding) + offsetX) / scale - bounds.l,
-            (static_cast<double>(padding) + offsetY) / scale - bounds.b
+            translateY
         );
 
         msdfgen::Projection proj(msdfgen::Vector2(scale, scale), translate);
@@ -297,7 +324,7 @@ namespace SR_GTYPES_NS {
 
         return true;
     #else
-        SR_WARN("Font::GenerateMSDFOrMTSDF() : msdfgen is not supported!");
+        SR_WARN("Font::GenerateMSDFOrMTSDF() : msdfgen or free-type is not enabled, cannot generate MSDF/MTSDF!");
         return false;
     #endif
     }

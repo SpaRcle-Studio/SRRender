@@ -2097,7 +2097,7 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    int32_t VulkanPipeline::AllocateVBO(uint64_t size, const void* pData) {
+    int32_t VulkanPipeline::AllocateVBO(int32_t VBO, uint64_t size, const void* pData) {
         SR_TRACY_ZONE;
 
         if (!m_memory) {
@@ -2114,7 +2114,7 @@ namespace SR_GRAPH_NS {
         ++m_state.allocations;
         m_state.allocatedMemory += size;
 
-        if (auto&& id = m_memory->AllocateVBO(size, pData); id >= 0) {
+        if (auto&& id = m_memory->AllocateVBO(VBO, size, pData); id >= 0) {
             return id;
         }
 

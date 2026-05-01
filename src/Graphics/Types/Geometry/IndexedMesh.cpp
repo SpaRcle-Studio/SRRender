@@ -137,7 +137,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (m_isUniqueMesh) {
-            if (m_VBO = GetPipeline()->AllocateVBO(buffer.GetDataSize(), buffer.GetRawData()); m_VBO == SR_ID_INVALID) {
+            if (m_VBO = GetPipeline()->AllocateVBO(SR_INVALID_VBO, buffer.GetDataSize(), buffer.GetRawData()); m_VBO == SR_ID_INVALID) {
                 SR_ERROR("IndexedMesh::CalculateVBO() : failed calculate VBO for mesh!");
                 m_hasErrors = true;
                 return false;
@@ -155,7 +155,7 @@ namespace SR_GTYPES_NS {
 
         m_VBO = MeshManager::Instance().CopyIfExists(registrationInfo, vertexLayout);
         if (m_VBO == SR_ID_INVALID) {
-            if (m_VBO = GetPipeline()->AllocateVBO(buffer.GetDataSize(), buffer.GetRawData()); m_VBO == SR_ID_INVALID) {
+            if (m_VBO = GetPipeline()->AllocateVBO(SR_INVALID_VBO, buffer.GetDataSize(), buffer.GetRawData()); m_VBO == SR_ID_INVALID) {
                 SR_ERROR("IndexedMesh::CalculateVBO() : failed calculate VBO for mesh!");
                 m_hasErrors = true;
                 return false;

@@ -5,6 +5,7 @@
 #include <Graphics/Font/TextMesh.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Render/RenderScene.h>
 
 #include <Utils/ECS/TransformUtils.h>
 #include <Utils/ECS/TransformRect.h>
@@ -71,10 +72,6 @@ namespace SR_GTYPES_NS {
         pFontAsset->BuildText(m_text, m_fontSize, glyphs);
         m_instancesCount = static_cast<uint32_t>(glyphs.size());
 
-        if (m_VBO != SR_ID_INVALID) {
-            GetPipeline()->FreeVBO(&m_VBO);
-        }
-
         if (glyphs.empty()) {
             return true;
         }
@@ -87,37 +84,50 @@ namespace SR_GTYPES_NS {
 
         const float_t layoutScale = m_fontSize / std::max(1.f, pFontAsset->GetSamplingPointSize());
 
-        SR_MATH_NS::FVector2 textPos = { 100.f, 400.f };
-
         float_t penX = 0.0f;
 
-        float_t baselineY = textPos.y + pFontAsset->GetFontAscender() * layoutScale;
+        float_t baselineY = pFontAsset->GetFontAscender() * layoutScale;
         const float_t ascender  = pFontAsset->GetFontAscender() * layoutScale;
         const float_t descender = pFontAsset->GetFontDescender() * layoutScale;
         const float_t lineGap   = pFontAsset->GetFontLineGap() * layoutScale;
         const float_t lineHeight = (ascender - descender) + lineGap;
 
+        std::optional<GlyphKey> prevCode;
+
         for (auto&& glyph : glyphs) {
             if (glyph.codepoint.codepoint == '\n') {
                 penX = 0.0f;
                 baselineY -= lineHeight;
+                prevCode.reset();
                 continue;
             }
 
-            const float_t x = textPos.x + penX + glyph.metrics.bearingX * layoutScale;
-            const float_t y = baselineY - glyph.metrics.bearingY * layoutScale;
+            float_t kerning = 0.f;
+            if (prevCode && m_kerning) {
+                kerning = pFontAsset->GetKerning(prevCode.value(), glyph.codepoint);
+                kerning *= layoutScale;
+            }
 
+            float_t cursorX = penX + kerning;
+
+            const float_t x = cursorX + glyph.metrics.bearingX * layoutScale;
+            /// FRect и спрайты: min угол = левый‑нижний, ось Y вверх (Bottom() = y, Top() = y+h). bearingY — от baseline вверх до верха квада.
+            /// Нижний край квада: baseline + bearingY − height (не baseline − bearingY — это было бы для Y вниз как у чистого framebuffer).
             const SR_MATH_NS::FVector2 size = glyph.metrics.size.CastToFloat() * layoutScale;
+            const float_t y = baselineY + glyph.metrics.bearingY * layoutScale - size.y;
 
             glyph.AddInstance({x, y}, size, buffer);
 
-            penX += glyph.metrics.advance * layoutScale;
+            penX = cursorX + glyph.metrics.advance * layoutScale;
+            prevCode = glyph.codepoint;
         }
 
-        m_VBO = GetPipeline()->AllocateVBO(buffer.GetDataSize(), buffer.GetRawData());
+        m_VBO = GetPipeline()->AllocateVBO(m_VBO, buffer.GetDataSize(), buffer.GetRawData());
+
         if (m_VBO == SR_ID_INVALID) {
             SR_ERROR("TextMesh::Calculate() : failed to allocate VBO for text mesh!");
             m_hasErrors = true;
+            ReRegisterRenderObject();
             return false;
         }
 
@@ -144,5 +154,13 @@ namespace SR_GTYPES_NS {
         }
         GetPipeline()->BindVBO(m_VBO);
         return true;
+    }
+
+    void TextMesh::OnTextDirty() {
+        m_isCalculated = false;
+        m_dirtyMaterial = true;
+        if (auto&& pRenderScene = TryGetRenderScene()) {
+            pRenderScene->SetDirty();
+        }
     }
 }

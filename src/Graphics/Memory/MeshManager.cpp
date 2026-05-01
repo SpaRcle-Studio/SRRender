@@ -137,7 +137,7 @@ namespace SR_GRAPH_NS {
 
         if (pBakedMesh->m_VBO == SR_ID_INVALID) {
             const SR_UTILS_NS::VertexDataBuffer& buffer = pRawMesh->GetVertexBuffer(index, layout);
-            pBakedMesh->m_VBO = pPipeline->AllocateVBO(buffer.GetDataSize(), buffer.GetRawData());
+            pBakedMesh->m_VBO = pPipeline->AllocateVBO(SR_ID_INVALID, buffer.GetDataSize(), buffer.GetRawData());
             if (pBakedMesh->m_VBO == SR_ID_INVALID) {
                 SR_ERROR("MeshManager::BakeMesh() : failed allocate VBO for mesh \"{}\"!", pRawMesh->GetResourceId());
                 return nullptr;

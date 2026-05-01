@@ -27,7 +27,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD PipelineType GetType() const noexcept override;
 
-        SR_NODISCARD int32_t AllocateVBO(uint64_t size, const void* pData) override;
+        SR_NODISCARD int32_t AllocateVBO(int32_t VBO, uint64_t size, const void* pData) override;
         SR_NODISCARD int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) override;
         SR_NODISCARD int32_t AllocateUBO(uint32_t uboSize) override;
         SR_NODISCARD int32_t AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) override;

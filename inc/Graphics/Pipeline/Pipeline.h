@@ -245,7 +245,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD virtual UsedVideoMemoryInfo GetUsedVideoMemoryInfo() const { return UsedVideoMemoryInfo(); }
 
-        SR_NODISCARD virtual int32_t AllocateVBO(uint64_t size, const void* pData) { return SR_ID_INVALID; }
+        SR_NODISCARD virtual int32_t AllocateVBO(int32_t VBO, uint64_t size, const void* pData) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateUBO(uint32_t uboSize) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) { return SR_ID_INVALID; }

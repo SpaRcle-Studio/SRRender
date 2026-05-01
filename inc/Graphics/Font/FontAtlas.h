@@ -50,7 +50,9 @@ namespace SR_GRAPH_NS {
     public:
         FontAtlas(SR_MATH_NS::USVector2 size, bool useRGBA, uint8_t padding);
 
-        SR_NODISCARD GlyphEntry* GetOrCreate(const FontDetails::Glyph& glyph);
+        void UpdateGlyphBitmap(const FontDetails::Glyph& glyph);
+
+        SR_NODISCARD GlyphEntry* GetOrCreate(const FontDetails::Glyph& glyph, bool allowEmpty);
         SR_NODISCARD const FontAtlasPage::Ptr& GetPage(uint16_t page) const;
 
     private:

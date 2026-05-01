@@ -217,11 +217,10 @@ namespace SR_GRAPH_NS::VulkanTools {
         return m_descriptorSetPool.Add(pDescriptorSet);
     }
 
-    int32_t MemoryManager::AllocateVBO(uint64_t size, const void* pData) {
+    int32_t MemoryManager::AllocateVBO(int32_t VBO, uint64_t size, const void* pData) {
         SR_TRACY_ZONE;
 
         VkBufferUsageFlags bufferUsageFlagBits = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-
         if (m_kernel->GetDevice()->IsRayTracingSupported()) {
             bufferUsageFlagBits |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
         }
@@ -236,6 +235,13 @@ namespace SR_GRAPH_NS::VulkanTools {
         if (!pVBO) {
             SR_ERROR("MemoryManager::AllocateVBO() : failed to create vertex buffer object!");
             return SR_ID_INVALID;
+        }
+
+        if (VBO != SR_ID_INVALID) {
+            m_kernel->WaitAllFences();
+            delete m_vboPool.At(VBO);
+            m_vboPool.At(VBO) = pVBO;
+            return VBO;
         }
 
         return m_vboPool.Add(pVBO);

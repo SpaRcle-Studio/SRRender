@@ -107,15 +107,15 @@ namespace SR_GRAPH_NS {
         , m_padding(padding)
     { }
 
-    GlyphEntry* FontAtlas::GetOrCreate(const FontDetails::Glyph& glyph) {
+    GlyphEntry* FontAtlas::GetOrCreate(const FontDetails::Glyph& glyph, bool allowEmpty) {
         SR_TRACY_ZONE;
-
-        if (glyph.bitmap.data.empty()) {
-            return nullptr;
-        }
 
         if (auto&& pIt = m_glyphs.find(glyph.codepoint); pIt != m_glyphs.end()) {
             return &pIt->second;
+        }
+
+        if (glyph.bitmap.data.empty() && !allowEmpty) {
+            return nullptr;
         }
 
         GlyphEntry entry;
@@ -144,6 +144,13 @@ namespace SR_GRAPH_NS {
         };
         entry.atlas.page = m_pages.size() - 1;
 
+        /// уменьшаем uv чтобы не было артефактов при линейной фильтрации
+        constexpr float_t paddingOffset = 1.0f;
+        entry.atlas.uv0.x += paddingOffset * invW;
+        entry.atlas.uv0.y -= paddingOffset * invH;
+        entry.atlas.uv1.x -= paddingOffset * invW;
+        entry.atlas.uv1.y += paddingOffset * invH;
+
         auto [resIt, _] = m_glyphs.emplace(entry.codepoint, entry);
         return &resIt->second;
     }
@@ -169,7 +176,9 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        m_pages.back()->CopyGlyphBitmap(glyph.bitmap, out.rect, glyph.metrics.size);
+        if (!glyph.bitmap.data.empty()) {
+            m_pages.back()->CopyGlyphBitmap(glyph.bitmap, out.rect, glyph.metrics.size);
+        }
 
         /// UV должны охватывать весь битмап (включая SDF-halo для MSDF/MTSDF). Inset здесь только обрезал поля atlas.
         return true;
@@ -181,5 +190,24 @@ namespace SR_GRAPH_NS {
             return emptyPage;
         }
         return m_pages[page];
+    }
+
+    void FontAtlas::UpdateGlyphBitmap(const FontDetails::Glyph& glyph) {
+        SR_TRACY_ZONE;
+
+        auto&& pIt = m_glyphs.find(glyph.codepoint);
+        if (pIt == m_glyphs.end()) {
+            SRHalt("FontAtlas::UpdateGlyphBitmap() : glyph not found in atlas!");
+            return;
+        }
+
+        const GlyphEntry& entry = pIt->second;
+        if (entry.atlas.page >= m_pages.size()) {
+            SRHalt("FontAtlas::UpdateGlyphBitmap() : invalid atlas page index!");
+            return;
+        }
+
+        auto&& pPage = m_pages[entry.atlas.page];
+        pPage->CopyGlyphBitmap(glyph.bitmap, entry.rect, glyph.metrics.size);
     }
 }

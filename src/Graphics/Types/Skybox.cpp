@@ -92,7 +92,7 @@ namespace SR_GTYPES_NS {
                 indexedVertices.SetVertex(i, SR_UTILS_NS::VertexAttribute::Position, &SR_UTILS_NS::SKYBOX_INDEXED_VERTICES[i]);
             }
 
-            if (m_VBO = GetPipeline()->AllocateVBO(indexedVertices.GetDataSize(), indexedVertices.GetRawData()); m_VBO == SR_ID_INVALID) {
+            if (m_VBO = GetPipeline()->AllocateVBO(SR_INVALID_VBO, indexedVertices.GetDataSize(), indexedVertices.GetRawData()); m_VBO == SR_ID_INVALID) {
                 SR_ERROR("Skybox::Calculate() : failed to calculate VBO!");
                 m_hasErrors = true;
                 return false;

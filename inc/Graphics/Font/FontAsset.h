@@ -41,15 +41,21 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<TextureData>& GetAtlasTexture(GlyphRenderType type, uint16_t page) const;
         SR_NODISCARD bool IsAtlasPageDirty(GlyphRenderType type, uint16_t page) const;
+        SR_NODISCARD float GetKerning(GlyphKey left, GlyphKey right) const;
         SR_NODISCARD float_t GetFontAscender() const noexcept { return m_ascender; }
         SR_NODISCARD float_t GetFontDescender() const noexcept { return m_descender; }
         SR_NODISCARD float_t GetFontLineGap() const noexcept { return m_lineGap; }
 
         void OnAtlasPageUploaded(GlyphRenderType type, uint16_t page);
+        void UpdateGlyphs();
 
     private:
         void OnAssetLoaded() override;
         void OnAssetUnloaded() override;
+
+        void OnGlyphBitmapGenerated(const GlyphKey& key);
+
+        static void ComputeGlyphBitmap(bool async, SR_GTYPES_NS::Font* pFont, FontDetails::Glyph* pGlyph, FontAsset* pAsset);
 
         FontDetails::Glyph* LoadGlyph(SR_GTYPES_NS::Font* pFont, const GlyphKey& key);
         SR_NODISCARD FontAtlasPage* GetAtlasPage(GlyphRenderType type, uint16_t page) const;
@@ -80,6 +86,8 @@ namespace SR_GRAPH_NS {
         float_t m_descender = 0.f;
         float_t m_lineGap = 0.f;
 
+        std::recursive_mutex m_mutex;
+        std::vector<GlyphKey> m_dirtyGlyphs;
         uint16_t m_fontId = 0;
         SR_HTYPES_NS::FlatHashMap<GlyphKey, FontDetails::Glyph> m_glyphs;
         SR_HTYPES_NS::SharedPtr<FontAtlas> m_atlases[SR_UTILS_NS::EnumTraits<GlyphRenderType>::NumItems];

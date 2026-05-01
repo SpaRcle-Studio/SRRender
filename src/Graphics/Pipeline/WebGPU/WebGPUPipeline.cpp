@@ -199,7 +199,7 @@ namespace SR_GRAPH_NS {
         return PipelineType::WebGPU;
     }
 
-    SR_NODISCARD int32_t WebGPUPipeline::AllocateVBO(uint64_t size, const void* pData) {
+    SR_NODISCARD int32_t WebGPUPipeline::AllocateVBO(int32_t VBO, uint64_t size, const void* pData) {
         if (!pData || size == 0) {
             return SR_ID_INVALID;
         }

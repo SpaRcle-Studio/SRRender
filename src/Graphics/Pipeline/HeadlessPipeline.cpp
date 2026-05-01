@@ -17,7 +17,7 @@ namespace SR_GRAPH_NS {
         return PipelineType::Headless;
     }
 
-    SR_NODISCARD int32_t HeadlessPipeline::AllocateVBO(uint64_t size, const void* pData) {
+    SR_NODISCARD int32_t HeadlessPipeline::AllocateVBO(int32_t VBO, uint64_t size, const void* pData) {
         static int32_t uniqueId = 0;
         return ++uniqueId;
     }

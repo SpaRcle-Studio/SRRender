@@ -5,6 +5,8 @@
 #include <Graphics/Font/FontAsset.h>
 #include <Graphics/Font/FontAtlas.h>
 
+#include <Utils/TaskManager/TaskManager.h>
+
 #include <Codegen/FontAsset.generated.hpp>
 
 namespace SR_GRAPH_NS {
@@ -31,6 +33,31 @@ namespace SR_GRAPH_NS {
             return SR_UTILS_NS::StringAtom();
         }
         return m_fontIds[index];
+    }
+
+    void FontAsset::ComputeGlyphBitmap(bool async, SR_GTYPES_NS::Font* pFont, FontDetails::Glyph* pGlyph, FontAsset* pAsset) {
+        SR_TRACY_ZONE;
+        if (async) {
+            pFont->AddUsePoint();
+            pAsset->AddUsePoint();
+            SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pFont, pGlyph, pAsset]() {
+                ComputeGlyphBitmap(false, pFont, pGlyph, pAsset);
+                SR_DEBUG_LOG("FontAsset::ComputeGlyphBitmap() : asynchronously generated bitmap for codepoint {}!", pGlyph->codepoint.codepoint);
+                pFont->RemoveUsePoint();
+                pAsset->RemoveUsePoint();
+            }, SR_UTILS_NS::TaskPriority::Normal);
+            return;
+        }
+
+        const bool isMTSDF = pGlyph->bitmap.type == GlyphRenderType::MTSDF;
+        const uint8_t sdfInset  = static_cast<uint8_t>(ceil(pGlyph->metrics.sdfRange) + 1);
+        const uint32_t bmpW = pGlyph->metrics.size.x;
+        const uint32_t bmpH = pGlyph->metrics.size.y;
+        if (!pFont->GenerateMSDFOrMTSDF(pGlyph->codepoint.codepoint, pGlyph->bitmap.data, bmpW, bmpH, pGlyph->metrics.sdfRange, sdfInset, isMTSDF)) {
+            SR_ERROR("FontAsset::ComputeGlyphBitmap() : failed to generate MSDF (or MTSDF) for codepoint {}!", pGlyph->codepoint.codepoint);
+            return;
+        }
+        pAsset->OnGlyphBitmapGenerated(pGlyph->codepoint);
     }
 
     bool FontAsset::BuildText(const std::string& text, float_t fontSize, std::vector<PositionedGlyph>& glyphs) {
@@ -77,6 +104,7 @@ namespace SR_GRAPH_NS {
                 pAtlas = new FontAtlas(m_atlasSize.CastToUSInt(), useRGBA, atlasPad);
             }
 
+            bool asyncGenerate = false;
             if (!pGlyph->bitmap.generated) {
                 pGlyph->bitmap.generated = true;
                 if (pGlyph->bitmap.type == GlyphRenderType::MSDF || pGlyph->bitmap.type == GlyphRenderType::MTSDF) {
@@ -84,14 +112,8 @@ namespace SR_GRAPH_NS {
                         /// Пробел / пустой контур — без bitmap в atlas.
                     }
                     else {
-                        const bool isMTSDF      = pGlyph->bitmap.type == GlyphRenderType::MTSDF;
-                        const uint8_t sdfInset  = static_cast<uint8_t>(ceil(pGlyph->metrics.sdfRange) + 1);
-                        const uint32_t bmpW = pGlyph->metrics.size.x;
-                        const uint32_t bmpH = pGlyph->metrics.size.y;
-                        if (!pFont->GenerateMSDFOrMTSDF(pGlyph->codepoint.codepoint, pGlyph->bitmap.data, bmpW, bmpH, pGlyph->metrics.sdfRange, sdfInset, isMTSDF)) {
-                            SR_ERROR("FontAsset::BuildText() : failed to generate MSDF (or MTSDF) for codepoint {}!", pGlyph->codepoint.codepoint);
-                            continue;
-                        }
+                        ComputeGlyphBitmap(true, pFont.Get(), pGlyph, this);
+                        asyncGenerate = true;
                     }
                 }
             }
@@ -101,7 +123,7 @@ namespace SR_GRAPH_NS {
             positionedGlyph.codepoint = key;
             positionedGlyph.glyphIndex = glyphIndex++;
 
-            if (auto&& pGlyphEntry = pAtlas->GetOrCreate(*pGlyph)) {
+            if (auto&& pGlyphEntry = pAtlas->GetOrCreate(*pGlyph, asyncGenerate)) {
                 positionedGlyph.atlas = pGlyphEntry->atlas;
             }
         }
@@ -173,29 +195,39 @@ namespace SR_GRAPH_NS {
         glyph.metrics.sdfRange = SR_CLAMP(m_samplingPointSize * 0.1f, 4.0f, 16.0f);
 
         if (rasterizeWithMsdfDims) {
-            /// 26.6 → px: ceil; метрики слота часто **уже** реального ink-box (g, t, курсив) — msdfgen же вписывает фактический контур.
+            /// 26.6 → px: ceil для размеров ячейки.
             const auto ceil26d6 = [](FT_Pos v) -> uint32_t {
                 return static_cast<uint32_t>((v + static_cast<FT_Pos>(63)) >> 6);
             };
-            const auto ceil26d6Signed = [](FT_Pos v) -> float_t {
-                if (v <= 0) {
-                    return static_cast<float_t>(v >> 6);
-                }
-                return static_cast<float_t>((v + static_cast<FT_Pos>(63)) >> 6);
-            };
-
             glyph.metrics.advance = static_cast<float_t>((pFace->glyph->metrics.horiAdvance + static_cast<FT_Pos>(32)) >> 6);
 
-            //glyph.metrics.advance  = static_cast<float>(pFace->glyph->metrics.horiAdvance >> 6);
-            //glyph.metrics.bearingX = static_cast<float>(pFace->glyph->metrics.horiBearingX >> 6);
-            //glyph.metrics.bearingY = static_cast<float>(pFace->glyph->metrics.horiBearingY >> 6);
-
-            uint32_t coreW = ceil26d6(pFace->glyph->metrics.width);
-            uint32_t coreH = ceil26d6(pFace->glyph->metrics.height);
-            float_t bearingX = ceil26d6Signed(pFace->glyph->metrics.horiBearingX);
-            float_t bearingY = ceil26d6Signed(pFace->glyph->metrics.horiBearingY);
-
             const auto padPx = static_cast<uint8_t>(std::ceil(glyph.metrics.sdfRange) + 1);
+
+            uint32_t coreW = 0;
+            uint32_t coreH = 0;
+            float_t bearingX = 0.f;
+            float_t bearingY = 0.f;
+
+            /// Совместить квад с тем же контуром, что уходит в msdfgen (метрики слота FT могут расходиться с bbox контура).
+            FT_Outline* pOutline = &pFace->glyph->outline;
+            FT_BBox bbox = { };
+            const bool haveOutline = pOutline->n_points > 0;
+            const FT_Error bboxOk = haveOutline ? FT_Outline_Get_BBox(pOutline, &bbox) : static_cast<FT_Error>(1);
+
+            if (!bboxOk && haveOutline && bbox.xMax > bbox.xMin && bbox.yMax > bbox.yMin) {
+                const FT_Pos dx = bbox.xMax - bbox.xMin;
+                const FT_Pos dy = bbox.yMax - bbox.yMin;
+                coreW = static_cast<uint32_t>((dx + static_cast<FT_Pos>(63)) >> 6);
+                coreH = static_cast<uint32_t>((dy + static_cast<FT_Pos>(63)) >> 6);
+                bearingX = static_cast<float_t>(bbox.xMin) / 64.f;
+                bearingY = static_cast<float_t>(bbox.yMax) / 64.f;
+            }
+            else {
+                coreW = ceil26d6(pFace->glyph->metrics.width);
+                coreH = ceil26d6(pFace->glyph->metrics.height);
+                bearingX = static_cast<float_t>(pFace->glyph->metrics.horiBearingX) / 64.f;
+                bearingY = static_cast<float_t>(pFace->glyph->metrics.horiBearingY) / 64.f;
+            }
 
             if (coreW == 0 || coreH == 0) {
                 glyph.metrics.size = { };
@@ -337,10 +369,51 @@ namespace SR_GRAPH_NS {
         return pPage ? pPage->IsDirty() : false;
     }
 
+    float_t FontAsset::GetKerning(GlyphKey left, GlyphKey right) const {
+        SR_TRACY_ZONE;
+
+        static constexpr std::string_view nonKerningChars = " \n\t";
+        for (char c : nonKerningChars) {
+            if (left.codepoint == static_cast<uint32_t>(c) || right.codepoint == static_cast<uint32_t>(c)) {
+                return 0.f;
+            }
+        }
+
+        auto&& pFont = m_font.GetResource();
+        if (!pFont) {
+            SR_ERROR("FontAsset::GetKerning() : failed to load \"{}\" font!", m_font.GetId());
+            return 0.f;
+        }
+        return pFont->GetKerning(left.codepoint, right.codepoint) / 64.0f; /// FreeType kerning is in 26.6 fixed-point format.
+    }
+
     void FontAsset::OnAtlasPageUploaded(GlyphRenderType type, uint16_t page) {
         SR_TRACY_ZONE;
         if (auto&& pPage = GetAtlasPage(type, page)) {
             pPage->OnTextureUploaded();
         }
+    }
+
+    void FontAsset::OnGlyphBitmapGenerated(const GlyphKey& key) {
+        SR_TRACY_ZONE;
+        SR_LOCK_GUARD;
+        m_dirtyGlyphs.emplace_back(key);
+    }
+
+    void FontAsset::UpdateGlyphs() {
+        if (m_dirtyGlyphs.empty()) {
+            return;
+        }
+        SR_TRACY_ZONE;
+        SR_LOCK_GUARD;
+        for (const GlyphKey& key : m_dirtyGlyphs) {
+            if (auto pIt = m_glyphs.find(key); pIt != m_glyphs.end()) {
+                const FontDetails::Glyph& glyph = pIt->second;
+                if (auto&& pAtlas = m_atlases[SR_UTILS_NS::EnumReflector::AsInt(glyph.bitmap.type)]) {
+                    pAtlas->UpdateGlyphBitmap(glyph);
+                }
+            }
+        }
+        m_dirtyGlyphs.clear();
     }
 }

@@ -29,22 +29,26 @@ namespace SR_GTYPES_NS {
 
     private:
         bool Calculate();
+        void OnTextDirty();
 
     private:
         int32_t m_VBO = SR_ID_INVALID;
         uint32_t m_instancesCount = 0;
-        bool m_dirty = true;
 
     private:
-        /// @property
+        /// @property @onChanged(OnTextDirty)
         /// @customArgs(pick: enabled, filter name: Font, relative: resources)
         /// @customArg(filter value: font)
         SR_UTILS_NS::ResourceRef<FontAsset> m_font;
-        /// @property
+        /// @property @onChanged(OnTextDirty)
         /// @customArg(text-box: enabled)
         std::string m_text;
         /// @property @range(0.1f, std::numeric_limits<float_t>::max())
+        /// @onChanged(OnTextDirty)
         float_t m_fontSize = 16.f;
+
+        /// @property @group(Features) @onChanged(OnTextDirty)
+        bool m_kerning = true;
 
     };
 }

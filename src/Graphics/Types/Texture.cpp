@@ -436,14 +436,23 @@ namespace SR_GTYPES_NS {
                 m_fontAtlasPageInfo->pFont.SetResource(fontId);
             }
 
-            if (pFont && pFont->IsAtlasPageDirty(m_fontAtlasPageInfo->renderType, m_fontAtlasPageInfo->pageIndex)) {
-                m_textureData = pFont->GetAtlasTexture(m_fontAtlasPageInfo->renderType, m_fontAtlasPageInfo->pageIndex);
-                if (m_textureData) {
-                    m_format = m_textureData->GetInfo().channels == 4 ? ImageFormat::RGBA8_UNORM : ImageFormat::R8_UNORM;
+            if (pFont) {
+                pFont->UpdateGlyphs();
+                if (pFont->IsAtlasPageDirty(m_fontAtlasPageInfo->renderType, m_fontAtlasPageInfo->pageIndex)) {
+                    m_textureData = pFont->GetAtlasTexture(m_fontAtlasPageInfo->renderType, m_fontAtlasPageInfo->pageIndex);
+                    if (m_textureData) {
+                        m_format = m_textureData->GetInfo().channels == 4 ? ImageFormat::RGBA8_UNORM : ImageFormat::R8_UNORM;
+                    }
+                    m_isDirty = true;
+                    pFont->OnAtlasPageUploaded(m_fontAtlasPageInfo->renderType, m_fontAtlasPageInfo->pageIndex);
+                    Broadcast(SR_UTILS_NS::IResource::RELOAD_BEGIN_EVENT);
+                    Broadcast(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT);
+                    pRenderContext->SetDirty();
                 }
-                m_isDirty = true;
-                pFont->OnAtlasPageUploaded(m_fontAtlasPageInfo->renderType, m_fontAtlasPageInfo->pageIndex);
             }
+            m_imageMetaInfo.addressMode = AddressMode::ClampToEdge;
+            m_imageMetaInfo.filter = TextureFilter::LINEAR;
+            m_activeImageMetaInfo = m_imageMetaInfo;
         }
 
         if (m_syncLoadTaskId) {
