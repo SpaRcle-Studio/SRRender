@@ -186,7 +186,7 @@ namespace SR_GRAPH_NS {
         SR_FORCE_INLINE void SetCurrentCamera(SR_GTYPES_NS::Camera* pCamera) { ++m_state.operations; m_state.pCamera = pCamera; }
 
         virtual void SetSwapchainImagesCount(uint16_t count) { }
-        virtual void SetCurrentFrameBufferLayer(uint32_t layer) { ++m_state.operations; m_state.frameBufferLayer = layer; }
+        virtual void SetCurrentFrameBufferLayer(uint32_t layer);
         virtual void SetCurrentFrameBuffer(FramebufferPtr pFrameBuffer);
         virtual void SetCurrentRenderStrategy(RenderStrategy* pStrategy) { ++m_state.operations; m_state.pRenderStrategy = pStrategy; }
         virtual void SetFrameBufferAccessMode(FrameBufferAccessMode mode) { ++m_state.operations; }
@@ -361,7 +361,18 @@ namespace SR_GRAPH_NS {
         RenderContextPtr m_renderContext;
 
         SR_HTYPES_NS::PoolSet<bool> m_bindedDescriptors;
-        SR_HTYPES_NS::SortedVector<FramebufferPtr> m_bindedFrameBuffers;
+
+        struct FBOBindingValidation {
+            FramebufferPtr pFrameBuffer = nullptr;
+            uint32_t layer = 0;
+            bool operator==(const FBOBindingValidation& other) const {
+                return pFrameBuffer == other.pFrameBuffer && layer == other.layer;
+            }
+            bool operator<(const FBOBindingValidation& other) const {
+                return std::tie(pFrameBuffer, layer) < std::tie(other.pFrameBuffer, other.layer);
+            }
+        };
+        SR_HTYPES_NS::SortedVector<FBOBindingValidation> m_bindedFrameBuffers;
 
         PipelineState m_state;
         PipelineState m_previousState;

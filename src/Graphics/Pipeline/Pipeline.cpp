@@ -426,11 +426,12 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         ++m_state.operations;
 
-        if (m_bindedFrameBuffers.Contains(pFBO)) {
-            SRHaltOnce("Pipeline::BindFrameBuffer() : framebuffer \"{}\" already binded!", pFBO ? pFBO->GetName() : "nullptr (Swapchain)");
+        FBOBindingValidation validation = { pFBO, m_state.frameBufferLayer };
+        if (m_bindedFrameBuffers.Contains(validation)) {
+            SRHaltOnce("Pipeline::BindFrameBuffer() : framebuffer already binded!\nFramebuffer: {}\nLayer: {}", pFBO ? pFBO->GetName() : "nullptr (Swapchain)", m_state.frameBufferLayer);
             return;
         }
-        m_bindedFrameBuffers.Add(pFBO);
+        m_bindedFrameBuffers.Add(validation);
 
         m_state.pFrameBuffer = pFBO;
     }
@@ -598,5 +599,10 @@ namespace SR_GRAPH_NS {
             }
         }
         m_cmdBuffersQueue.emplace_back(cmdBuffer);
+    }
+
+    void Pipeline::SetCurrentFrameBufferLayer(uint32_t layer) {
+        ++m_state.operations;
+        m_state.frameBufferLayer = layer;
     }
 }
