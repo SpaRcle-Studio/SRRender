@@ -137,7 +137,7 @@ namespace SR_GRAPH_NS {
             0,
         };
 
-        std::string fontData;
+        SR_UTILS_NS::String fontData;
 
         /// Main font
         {

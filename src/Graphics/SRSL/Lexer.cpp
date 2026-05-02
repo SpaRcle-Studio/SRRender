@@ -10,7 +10,7 @@ namespace SR_SRSL_NS {
         Clear();
     }
 
-    SRSLLexer::Lexems SRSLLexer::Parse(const SR_UTILS_NS::Path& path, std::string& buffer, uint16_t fileIndex) {
+    SRSLLexer::Lexems SRSLLexer::Parse(const SR_UTILS_NS::Path& path, SR_UTILS_NS::String& buffer, uint16_t fileIndex) {
         SR_TRACY_ZONE;
 
         if (!SR_UTILS_NS::FileSystem::ReadFile(path, buffer) || buffer.empty()) {

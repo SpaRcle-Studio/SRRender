@@ -146,7 +146,7 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        std::string buffer;
+        SR_UTILS_NS::String buffer;
         if (!SR_UTILS_NS::FileSystem::ReadFile(fullPath, buffer)) {
             SR_ERROR("TextureLoader::Load() : can not read \"{}\" file!", path);
             return nullptr;

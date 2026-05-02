@@ -15,7 +15,7 @@
 namespace SR_SRSL_NS {
     struct SRSLInclude {
         SR_UTILS_NS::StringAtom name;
-        std::string buffer;
+        SR_UTILS_NS::String buffer;
     };
 
     struct ShaderParams : public SR_UTILS_NS::IResourceVariant {

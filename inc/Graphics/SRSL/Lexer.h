@@ -17,7 +17,7 @@ namespace SR_SRSL_NS {
         ~SRSLLexer() override;
 
     public:
-        SR_NODISCARD Lexems Parse(const SR_UTILS_NS::Path& path, std::string& buffer, uint16_t fileIndex);
+        SR_NODISCARD Lexems Parse(const SR_UTILS_NS::Path& path, SR_UTILS_NS::String& buffer, uint16_t fileIndex);
         SR_NODISCARD Lexems ParseString(std::string_view code, uint16_t fileIndex);
 
     private:
