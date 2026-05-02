@@ -101,7 +101,7 @@ namespace SR_SRSL_NS {
                     auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(includePath, include.buffer, m_include.size());
                     if (lexems.empty()) {
                         SR_ERROR("SRSLPreProcessor::ProcessMain() : failed to parse lexems!\n\tPath: " + includePath.ToString());
-                        m_result.AddError(SRSLMessage(SRSLReturnCode::IncludeError, GetCurrentLexem())).SetDescription(includePath);
+                        m_result.AddError(SRSLMessage(SRSLReturnCode::IncludeError, GetCurrentLexem())).SetDescription(includePath.ToString());
                         return;
                     }
 

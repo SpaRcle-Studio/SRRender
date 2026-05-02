@@ -35,9 +35,7 @@ namespace SR_GTYPES_NS {
         if (auto&& pRawMesh =  CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
             return TryLoad(pRawMesh.Get(), id);
         }
-
-        SR_ERROR("Mesh::Load() : failed to load mesh!\n\tPath: " + path.ToStringRef() + "\n\tId: " + std::to_string(id));
-
+        SR_ERROR("Mesh::Load() : failed to load mesh!\n\tPath: {}\n\tId: {}", path, id);
         return nullptr;
     }
 

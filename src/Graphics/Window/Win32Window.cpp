@@ -111,7 +111,7 @@ namespace SR_GRAPH_NS {
                 DWORD styles = GetWindowLongPtr(hwnd, GWL_STYLE);
                 m_maximize = styles & WS_MAXIMIZE;
                 m_collapsed = styles & WS_MINIMIZE;
-
+                SR_LOG("Win32Window::ReadWmdProcedure() : WM_WINDOWPOSCHANGED. Window position has been changed! Maximize: {}, Collapsed: {}", m_maximize, m_collapsed);
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             case WM_SETFOCUS: {
@@ -133,6 +133,7 @@ namespace SR_GRAPH_NS {
             case WM_MOVE: {
                 m_position.x = (int)(short) LOWORD(lParam);
                 m_position.y = (int)(short) HIWORD(lParam);
+                SR_LOG("Win32Window::ReadWmdProcedure() : WM_MOVE. Window position has been changed! New position: ({}, {})", m_position.x, m_position.y);
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             case WM_SIZE: {

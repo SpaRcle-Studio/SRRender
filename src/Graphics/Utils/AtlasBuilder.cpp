@@ -83,7 +83,7 @@ namespace SR_GRAPH_NS {
 
         auto&& rootNode = document.Root().AppendNode("Config");
 
-        std::string atlasPath;
+        SR_UTILS_NS::Path atlasPath;
         if (m_data.saveInCache) {
             atlasPath = m_data.destination.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetCachePath());
         }

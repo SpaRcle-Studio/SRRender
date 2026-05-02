@@ -148,7 +148,7 @@ namespace SR_GRAPH_NS {
 
         std::string buffer;
         if (!SR_UTILS_NS::FileSystem::ReadFile(fullPath, buffer)) {
-            SR_ERROR("TextureLoader::Load() : can not read \"" + path.ToStringRef() + "\" file!");
+            SR_ERROR("TextureLoader::Load() : can not read \"{}\" file!", path);
             return nullptr;
         }
 
@@ -165,7 +165,7 @@ namespace SR_GRAPH_NS {
 
         if (!pImgDataOriginal) {
             std::string reason = stbi_failure_reason() ? stbi_failure_reason() : std::string();
-            SR_ERROR("TextureLoader::Load() : can not load \"" + path.ToStringRef() + "\" file!\n\tReason: " + reason);
+            SR_ERROR("TextureLoader::Load() : can not load \"{}\" file!\n\tReason: {}", path, reason);
             return nullptr;
         }
 
@@ -213,7 +213,7 @@ namespace SR_GRAPH_NS {
             SR_LOG("TextureLoader::Load() : save texture to cache...\n\tPath: {}", path);
 
             if (!SR_UTILS_NS::FileSystem::WriteHashToFile(cacheHashPath, fileHash)) {
-                SR_ERROR("TextureLoader::Load() : failed to write hash to file \"" + cacheHashPath.ToStringRef() + "\"!");
+                SR_ERROR("TextureLoader::Load() : failed to write hash to file \"{}\"!", cacheHashPath);
             }
 
             auto&& marshal = SR_HTYPES_NS::Marshal();
@@ -234,7 +234,7 @@ namespace SR_GRAPH_NS {
             marshal.WriteBlock(pImgData, width * height * info.channels * sizeof(uint8_t));
 
             if (!marshal.Save(cacheFilePath)) {
-                SR_ERROR("TextureLoader::Load() : failed to save marshal to file \"" + cacheFilePath.ToStringRef() + "\"!");
+                SR_ERROR("TextureLoader::Load() : failed to save marshal to file \"{}\"!", cacheFilePath);
             }
         }
 
@@ -253,7 +253,7 @@ namespace SR_GRAPH_NS {
         }, infoCopy);
 
         if (!pTextureData) {
-            SR_ERROR("TextureLoader::Load() : failed to create TextureData for path \"" + path.ToStringRef() + "\"!");
+            SR_ERROR("TextureLoader::Load() : failed to create TextureData for path \"{}\"!", path);
             return nullptr;
         }
 
@@ -436,13 +436,13 @@ namespace SR_GRAPH_NS {
         SRFree(pCompressedData);
 
         if (!marshal.Save(compressedTexturePath)) {
-            SR_ERROR("TextureLoader::AsyncCompressTexture() : failed to save marshal to file \"" + compressedTexturePath.ToStringRef() + "\"!");
+            SR_ERROR("TextureLoader::AsyncCompressTexture() : failed to save marshal to file \"{}\"!", compressedTexturePath);
             return;
         }
 
         SR_LOG("TextureLoader::CompressTexture() : compressed texture saved to cache.\n\tPath: {}", compressedTexturePath);
 
-        SR_UTILS_NS::StringAtom resourceId = relativePath.ToStringRef();
+        SR_UTILS_NS::StringAtom resourceId = relativePath.View();
         SR_UTILS_NS::ResourceManager::Instance().ReloadResource(resourceId, SR_GTYPES_NS::Texture::GetClassStaticName());
     }
 
