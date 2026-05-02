@@ -69,7 +69,7 @@ namespace SR_GRAPH_NS {
 
     private:
         static void AsyncCompressTexture(const TextureData::Ptr& pData, TextureCompression compression);
-        static void CompressTexture(const TextureData::Ptr& pData, TextureCompression compression);
+        static void CompressTexture(const TextureData::Ptr& pData, TextureCompression compression, std::atomic<SR_UTILS_NS::TaskState>& state);
         static TextureData::Ptr LoadFromCache(const SR_UTILS_NS::Path& path);
 
     };

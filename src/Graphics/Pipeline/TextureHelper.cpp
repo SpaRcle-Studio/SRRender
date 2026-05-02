@@ -7,6 +7,7 @@
 
 #include <Utils/Debug.h>
 #include <Utils/Profile/TracyContext.h>
+#include <Utils/TaskManager/TaskManager.h>
 
 #include <Enum/TextureCompression.hpp>
 #include <Enum/ImageFormat.hpp>
@@ -17,6 +18,7 @@
 
 namespace SR_GRAPH_NS {
     void DownscaleImage2x(const uint8_t* src, uint32_t srcW, uint32_t srcH, uint8_t* dst, uint8_t channels) {
+        SR_TRACY_ZONE;
         const uint32_t dstW = std::max(1u, srcW / 2);
         const uint32_t dstH = std::max(1u, srcH / 2);
 
@@ -72,7 +74,7 @@ namespace SR_GRAPH_NS {
         return totalSize;
     }
 
-    uint8_t* CompressImageMultithread(uint32_t w, uint32_t h, const uint8_t* pixels, TextureLoadInfo info, uint32_t maxThreads) {
+    uint8_t* CompressImageMultithread(uint32_t w, uint32_t h, const uint8_t* pixels, TextureLoadInfo info, uint32_t maxThreads, std::atomic<SR_UTILS_NS::TaskState>& state) {
         SR_TRACY_ZONE;
 
         if (info.compression == TextureCompression::None) {
@@ -103,6 +105,12 @@ namespace SR_GRAPH_NS {
             SR_LOG("CompressImageMultithread() : compressing mip level {} ({}x{})...", mip, currentWidth, currentHeight);
             SR_TRACY_ZONE_N("Compress Mip Level");
 
+            if (state.load() == SR_UTILS_NS::TaskState::Stopped) {
+                SR_LOG("CompressImageMultithread() : compression cancelled!");
+                SRFree(pCmpBuffer);
+                return nullptr;
+            }
+
             const uint32_t blockCols = std::max(1u, (currentWidth  + 3) / 4);
             const uint32_t blockRows = std::max(1u, (currentHeight + 3) / 4);
 
@@ -116,9 +124,14 @@ namespace SR_GRAPH_NS {
                 uint32_t count  = rowsPerThread + (t < remainder ? 1 : 0);
                 uint32_t endRow = startRow + count;
 
-                threads.emplace_back([=, &currentPixels]() {
+                threads.emplace_back([=, &currentPixels, &state]() {
                     SR_TRACY_ZONE;
                     for (uint32_t row = startRow; row < endRow; ++row) {
+                        if (state.load(std::memory_order_relaxed) == SR_UTILS_NS::TaskState::Stopped) {
+                            SR_LOG("CompressImageMultithread() : compression cancelled in thread {}!", t);
+                            return; // прерываем поток, если задача была остановлена
+                        }
+
                         for (uint32_t col = 0; col < blockCols; ++col) {
                             //const uint8_t* blockPtr = currentPixels.data() + (row * 4 * currentWidth + col * 4) * alignedChannels;
                             const uint8_t* blockPtr = currentPixels.data() + (row * 4) * currentWidth * 4 + (col * 4) * 4;
@@ -168,12 +181,12 @@ namespace SR_GRAPH_NS {
         return pCmpBuffer;
     }
 
-    uint8_t* CompressImage(uint32_t w, uint32_t h, const uint8_t *pixels, TextureLoadInfo info) {
+    uint8_t* CompressImage(uint32_t w, uint32_t h, const uint8_t *pixels, TextureLoadInfo info, std::atomic<SR_UTILS_NS::TaskState>& state) {
         SR_TRACY_ZONE;
     #if defined(SR_WIN32) || defined(SR_LINUX)
-        return CompressImageMultithread(w, h, pixels, info, 16);
+        return CompressImageMultithread(w, h, pixels, info, 16, state);
     #else
-        return CompressImageMultithread(w, h, pixels, info, 1);
+        return CompressImageMultithread(w, h, pixels, info, 1, state);
     #endif
     }
 

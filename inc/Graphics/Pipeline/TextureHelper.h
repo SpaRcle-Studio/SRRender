@@ -9,6 +9,10 @@
 
 #include <Utils/Common/Enumerations.h>
 
+namespace SR_UTILS_NS {
+    enum class TaskState : uint8_t;
+}
+
 namespace SR_GRAPH_NS {
     SR_ENUM_NS_CLASS_T(ImageType, uint8_t,
         Albedo,
@@ -123,7 +127,7 @@ namespace SR_GRAPH_NS {
     uint32_t GetPixelSize(ImageFormat format);
 
     uint64_t GetCompressedImageSize(uint32_t w, uint32_t h, TextureLoadInfo info);
-    uint8_t* CompressImage(uint32_t w, uint32_t h, const uint8_t* pixels, TextureLoadInfo info);
+    uint8_t* CompressImage(uint32_t w, uint32_t h, const uint8_t* pixels, TextureLoadInfo info, std::atomic<SR_UTILS_NS::TaskState>& state);
 }
 
 #endif //SR_ENGINE_TEXTUREHELPER_H

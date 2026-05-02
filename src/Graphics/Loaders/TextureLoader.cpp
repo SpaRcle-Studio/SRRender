@@ -378,12 +378,12 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pCopyData = pData, compression] {
-            CompressTexture(pCopyData, compression);
+        SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pCopyData = pData, compression](auto&& state) {
+            CompressTexture(pCopyData, compression, state);
         }, SR_UTILS_NS::TaskPriority::Discardable);
     }
 
-    void TextureLoader::CompressTexture(const TextureData::Ptr& pData, TextureCompression compression) {
+    void TextureLoader::CompressTexture(const TextureData::Ptr& pData, TextureCompression compression, std::atomic<SR_UTILS_NS::TaskState>& state) {
         SR_TRACY_ZONE;
 
         SR_LOG("TextureLoader::CompressTexture() : compress texture...\n\tPath: {}", pData->GetPath());
@@ -396,10 +396,15 @@ namespace SR_GRAPH_NS {
 
     #ifdef SR_USE_CMP_CORE
         compressedSize = GetCompressedImageSize(pData->GetWidth(), pData->GetHeight(), info);
-        pCompressedData = CompressImage(pData->GetWidth(), pData->GetHeight(), pData->GetData(), info);
+        pCompressedData = CompressImage(pData->GetWidth(), pData->GetHeight(), pData->GetData(), info, state);
     #else
         return;
     #endif
+
+        if (state.load() == SR_UTILS_NS::TaskState::Stopped) {
+            SR_LOG("TextureLoader::CompressTexture() : compression task was stopped! Path: {}", pData->GetPath());
+            return;
+        }
 
         if (!pCompressedData || compressedSize == 0) {
             SR_ERROR("TextureLoader::AsyncCompressTexture() : failed to compress texture!");

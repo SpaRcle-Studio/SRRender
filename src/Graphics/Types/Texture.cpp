@@ -172,7 +172,7 @@ namespace SR_GTYPES_NS {
         loadInfo.channels = TextureLoader::GetAlignedChannels(m_format);
 
         if (metaInfo.loadMode == SR_UTILS_NS::ResourceLoadMode::Async && asyncLoadSupport) {
-            m_syncLoadTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([loadInfo, pWeak = GetWeakThis<Texture>(), path = GetResourcePath()]() {
+            m_syncLoadTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([loadInfo, pWeak = GetWeakThis<Texture>(), path = GetResourcePath()](auto&&) {
                 SR_TRACY_ZONE_N("Texture::LoadAsync");
                 SR_TRACY_ZONE_TEXT(path);
                 if (auto&& pStrong = pWeak.Lock()) {
