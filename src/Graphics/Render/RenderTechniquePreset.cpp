@@ -304,6 +304,10 @@ namespace SR_GRAPH_NS {
                 colorFormats.emplace_back(ImageFormat::RGBA16_SFLOAT);
             }
 
+            if (mainRenderColorLayers > 3) { /// normal layer
+                colorFormats.emplace_back(ImageFormat::RGBA8_UNORM);
+            }
+
             FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
             pFrameBufferController->SetName(fboName);
             pFrameBufferController->SetColorFormats(colorFormats);
