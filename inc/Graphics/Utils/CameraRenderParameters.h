@@ -34,6 +34,8 @@ namespace SR_GRAPH_NS {
         SR_HTYPES_NS::Optional<SR_MATH_NS::IVector2> screenSize;
         /// @property
         SR_HTYPES_NS::Optional<SR_MATH_NS::FVector2> screenScale;
+        /// @property
+        SR_HTYPES_NS::Optional<bool> SSAO;
 
     };
 }

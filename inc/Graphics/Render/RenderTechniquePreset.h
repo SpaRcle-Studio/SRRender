@@ -112,6 +112,15 @@ namespace SR_GRAPH_NS {
 
     };
 
+    class RenderTechniquePresetIntegrationSSAO : public RenderTechniquePresetIntegrationBase {
+        SR_CLASS()
+    public:
+        void Integrate(const Technique& technique, const Params& params) const override;
+
+        /// @property
+        SR_UTILS_NS::StringAtom m_SSAOname = "SSAO";
+    };
+
     class RenderTechniquePresetIntegrationMainView : public RenderTechniquePresetIntegrationBase {
         SR_CLASS()
     public:

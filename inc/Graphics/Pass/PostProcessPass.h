@@ -36,6 +36,8 @@ namespace SR_GRAPH_NS {
         void Update() override;
         bool Prepare() override;
 
+        virtual void UseSSBO(){}
+
         SR_NODISCARD const BaseMaterial::Ptr& GetMaterial() const { return m_material; }
         SR_NODISCARD const SamplersPassData& GetSamplersData() const { return m_samplers; }
         SR_NODISCARD SamplersPassData& GetSamplersData() { return m_samplers; }

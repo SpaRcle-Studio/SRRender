@@ -9,6 +9,7 @@
 #include <Graphics/Pass/SwapchainPass.h>
 #include <Graphics/Pass/PostProcessPass.h>
 #include <Graphics/Pass/AutoExposurePass.h>
+#include <Graphics/Pass/SSAOPass.h>
 #include <Graphics/Settings/RenderSettings.h>
 
 #include <Utils/ECS/LayerManager.h>
@@ -430,6 +431,78 @@ namespace SR_GRAPH_NS {
         }
         else {
             SRHalt("RenderTechniquePresetIntegrationAutoExposure::Integrate() : failed to find offscreen controller pass for auto exposure integration! \n\tController name: {}", pMainViewIntegration->offscreenControllerName);
+        }
+    }
+
+    void RenderTechniquePresetIntegrationSSAO::Integrate(const Technique& technique, const Params& params) const {
+
+        GroupPass::Ptr pMainGroupPass;
+
+        auto&& data = technique.GetInternalData();
+
+        if (!params.activeGraphicsSettings.SSAO || !params.activeGraphicsSettings.postProcess) {
+            return;
+        }
+
+        FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
+        pFrameBufferController->SetName(m_SSAOname);
+        if (params.pCameraParams) {
+            if (params.pCameraParams->screenSize) {
+                pFrameBufferController->SetSize(params.pCameraParams->screenSize.value());
+                pFrameBufferController->SetDynamicResizing(false);
+            }
+            if (params.pCameraParams->screenScale) {
+                pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value());
+            }
+            if (params.pCameraParams->multisampling && !params.pCameraParams->multisampling.value()) {
+                pFrameBufferController->SetSamples(1);
+            }
+        }
+
+        data.frameBuffers.emplace_back(pFrameBufferController);
+
+        auto&& pMainViewIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationMainView>();
+        if (!pMainViewIntegration) {
+            SR_ERROR("RenderTechniquePresetIntegrationAutoExposure::Integrate() : failed to find main view integration for auto exposure integration!");
+            return;
+        }
+
+        auto&& pMainGroup = SR_UTILS_NS::DynamicPointerCast<GroupPass>(technique.GetInternalData().pass);
+
+        const int32_t index = pMainGroup->IndexOfPass(pMainViewIntegration->offscreenControllerName);
+        if (index >= 0) {
+            SSAOPass::Ptr pSSAO = new SSAOPass();
+            SamplerData ssaoSampler;
+
+            ssaoSampler.fboName = pMainViewIntegration->offscreenControllerName;
+            ssaoSampler.index = 1;
+            ssaoSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            ssaoSampler.id = "Depth";
+            pSSAO->GetSamplersData().AddSampler(ssaoSampler);
+
+            ssaoSampler.fboName = pMainViewIntegration->offscreenControllerName;
+            ssaoSampler.index = 2;
+            ssaoSampler.id = "Position";
+            pSSAO->GetSamplersData().AddSampler(ssaoSampler);
+
+            ssaoSampler.fboName = pMainViewIntegration->offscreenControllerName;
+            ssaoSampler.index = 3;
+            ssaoSampler.id = "Normal";
+            pSSAO->GetSamplersData().AddSampler(ssaoSampler);
+
+            FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
+            pFrameBufferPass->SetCustomName(m_SSAOname);
+            pFrameBufferPass->SetFrameBufferName(m_SSAOname);
+            pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
+
+            pFrameBufferPass->AddPass(pSSAO.StaticCast<BasePass>());
+            pMainGroup->InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass), index + 1);
+
+            //SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass));
+            //pPostProcessGroupPass = SR_UTILS_NS::StaticPointerCast<GroupPass>(pFrameBufferPass);
+        }
+        else {
+            SRHalt("RenderTechniquePresetIntegrationSSAOPass::Integrate() : failed to find offscreen controller pass for auto exposure integration! \n\tController name: {}", pMainViewIntegration->offscreenControllerName);
         }
     }
 }

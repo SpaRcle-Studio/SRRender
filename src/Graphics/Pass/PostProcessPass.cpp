@@ -74,6 +74,8 @@ namespace SR_GRAPH_NS {
 
         m_uboManager.BindUBO(m_virtualUBO);
 
+        UseSSBO();
+
         const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
 
         for (SR_UTILS_NS::StringAtom passName : m_useSSBOFromPasses) {

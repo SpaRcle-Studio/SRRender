@@ -5,34 +5,36 @@
 #include <Graphics/Pass/SSAOPass.h>
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Shader.h>
+#include <Codegen/SSAOPass.generated.hpp>
+
+#include "Utils/Common/Numeric.h"
+#include "Utils/Resources/ResourceManager.h"
 
 namespace SR_GRAPH_NS {
-    /*SR_REGISTER_RENDER_PASS(SSAOPass);
+
 
     bool SSAOPass::Init() {
-        SR_TRACY_ZONE;
+        SetShader("Engine/Shaders/SSAO/ssao.srsl");
+
+        auto mat = GetMaterial();
+        mat->SetTexture("Noise", CoreResLoader::Load<SR_GTYPES_NS::Texture>("Engine/Textures/4x4noise.png"));
 
         m_kernel = CreateKernel();
 
-        if ((m_noise = CreateNoise())) {
-            m_noise->AddUsePoint();
-        }
+        m_kernelSSBO = SSBOInstance::Create(sizeof(SR_MATH_NS::Vector4<float_t>) * m_kernel.size(),
+            SSBOUsage::CPUToGPU, "SSAOKernel");
 
-        if (!m_noise || m_noise->GetId() == SR_ID_INVALID) {
-            SR_ERROR("SSAOPass::Init() : failed to initialize SSAO pass!");
-            return false;
-        }
+        m_kernelSSBO->UpdateSSBO(m_kernel.data(), sizeof(SR_MATH_NS::Vector4<float_t>) * m_kernel.size());
 
         return PostProcessPass::Init();
     }
 
-    void SSAOPass::DeInit() {
-        if (m_noise) {
-            m_noise->RemoveUsePoint();
-            m_noise = nullptr;
+    void SSAOPass::UseSSBO() {
+        if (m_kernelSSBO){
+            if (!m_kernelSSBO->Bind("SSAOKernel")){
+                SR_ERROR("SSAOPass::UseSSBO() : Cant Bind SSAOKernel)");
+            };
         }
-
-        PostProcessPass::DeInit();
     }
 
     SSAOPass::SSAOKernel SSAOPass::CreateKernel() const {
@@ -59,91 +61,13 @@ namespace SR_GRAPH_NS {
         return kernel;
     }
 
-    SR_GTYPES_NS::Texture::Ptr SSAOPass::CreateNoise() const {
-        std::vector<SR_MATH_NS::Vector3<float_t>> noise;
-        noise.resize(16);
+    bool SSAOPass::Prepare(){
 
-        for (uint8_t i = 0; i < noise.size(); ++i) {
-            noise[i] = SR_MATH_NS::Vector3<float_t>(
-                    SR_UTILS_NS::Random::Instance().Float(-1.0, 1.0),
-                    SR_UTILS_NS::Random::Instance().Float(-1.0, 1.0),
-                    0.0f
-            );
-        }
-
-        auto&& config = Memory::TextureConfig();
-        config.m_format = ImageFormat::R32_SFLOAT;
-        config.m_filter = TextureFilter::NEAREST;
-
-        return SR_GTYPES_NS::Texture::LoadRaw((uint8_t*)noise.data(), noise.size() * sizeof(float_t), 4, 4, config);
+        return Super::Prepare();
     }
 
     void SSAOPass::Update() {
-        SR_TRACY_ZONE_N("SSAO update");
 
-        if (m_shader) {
-            m_shader->SetValue<false>(SHADER_SSAO_SAMPLES, m_kernel.data());
-        }
-
-        PostProcessPass::Update();
+        Super::Update();
     }
-
-    bool SSAOPass::Render() {
-        SR_TRACY_ZONE_N("SSAO render");
-
-        auto&& pFramebuffer = GetFramebuffer();
-        if (!pFramebuffer) {
-            return false;
-        }
-
-        if (!pFramebuffer->Bind()) {
-            return false;
-        }
-
-        if (!pFramebuffer->BeginCmdBuffer(GetClearColors(), GetClearDepth())) {
-            return false;
-        }
-
-        if (pFramebuffer->BeginRender()) {
-            pFramebuffer->SetViewportScissor();
-            PostProcessPass::Render();
-            pFramebuffer->EndRender();
-            pFramebuffer->EndCmdBuffer();
-        }
-
-        GetPassPipeline()->SetCurrentFrameBuffer(nullptr);
-
-        /// Независимо от того, отрисовали мы что-то в кадровый буффер или нет,
-        /// все равно возвращаем false (hasDrawData), так как технически, кадровый буффер
-        /// не несет данных для рендера.
-        return false;
-    }
-
-    void SSAOPass::UseSamplers(const ShaderUseInfo& info) {
-        if (m_shader && m_noise) {
-            m_shader->SetSampler2D(SHADER_SSAO_NOISE, m_noise);
-        }
-
-        Super::UseSamplers(info);
-    }
-
-    bool SSAOPass::Load(const SR_XML_NS::Node& passNode) {
-        LoadFramebufferSettings(passNode.TryGetNode("FramebufferSettings"));
-        return Super::Load(passNode);
-    }
-
-    void SSAOPass::OnResize(const SR_MATH_NS::UVector2 &size) {
-        Super::OnResize(size);
-    }
-
-    std::vector<SR_GTYPES_NS::Framebuffer*> SSAOPass::GetFrameBuffers() const {
-        if (!GetFramebuffer()) {
-            return std::vector<SR_GTYPES_NS::Framebuffer*>();
-        }
-        return { GetFramebuffer().Get() };
-    }
-
-    IRenderTechnique* SSAOPass::GetFrameBufferRenderTechnique() const {
-        return GetTechnique();
-    }*/
 }

@@ -26,7 +26,8 @@ namespace SR_GRAPH_NS {
                    && autoExposure == lrs.autoExposure
                    && sRGB == lrs.sRGB
                    && shadowsQuality == lrs.shadowsQuality
-                   && colorBufferQuality == lrs.colorBufferQuality;
+                   && colorBufferQuality == lrs.colorBufferQuality
+                   && SSAO == lrs.SSAO;
         }
 
         bool operator!=(const ActiveGraphicsSettings& lrs) const {
@@ -49,6 +50,9 @@ namespace SR_GRAPH_NS {
             if (parameters.colorBufferQuality.has_value()) {
                 colorBufferQuality = parameters.colorBufferQuality.value();
             }
+            if (parameters.SSAO.has_value()) {
+                SSAO = parameters.SSAO.value();
+            }
         }
 
         /// @property
@@ -65,6 +69,8 @@ namespace SR_GRAPH_NS {
         bool sRGB = true;
         /// @property
         bool textureCompression = true;
+        /// @property
+        bool SSAO = false;
         /// @property
         Quality shadowsQuality = Quality::High;
         /// @property
