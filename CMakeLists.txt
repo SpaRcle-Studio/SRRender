@@ -102,9 +102,7 @@ if (SR_GRAPHICS_STATIC_LIBRARY)
 
     endif()
 else()
-    add_library(Graphics SHARED ${Graphics_SOURCES}
-            inc/Graphics/Pass/BlurPass.h
-            src/Graphics/Pass/BlurPass.cpp)
+    add_library(Graphics SHARED ${Graphics_SOURCES})
     add_library(Graphics::lib ALIAS Graphics)
 
     if (MINGW AND SR_RENDER_USE_VULKAN)

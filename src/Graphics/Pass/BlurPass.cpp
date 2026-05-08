@@ -3,21 +3,12 @@
 //
 
 #include <Graphics/Pass/BlurPass.h>
+
 #include <Codegen/BlurPass.generated.hpp>
 
-
 namespace SR_GRAPH_NS {
-
-    bool BlurPass::Init(){
+    bool BlurPass::Init() {
         SetShader("Engine/Shaders/BlurPass/BlurPass.srsl");
         return Super::Init();
-    }
-
-    bool BlurPass::Prepare(){
-        return Super::Prepare();
-    }
-
-    void BlurPass::Update(){
-        Super::Update();
     }
 }
