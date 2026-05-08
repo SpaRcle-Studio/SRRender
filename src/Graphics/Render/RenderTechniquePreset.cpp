@@ -10,6 +10,7 @@
 #include <Graphics/Pass/PostProcessPass.h>
 #include <Graphics/Pass/AutoExposurePass.h>
 #include <Graphics/Pass/SSAOPass.h>
+#include <Graphics/Pass/BlurPass.h>
 #include <Graphics/Settings/RenderSettings.h>
 
 #include <Utils/ECS/LayerManager.h>
@@ -503,6 +504,70 @@ namespace SR_GRAPH_NS {
         }
         else {
             SRHalt("RenderTechniquePresetIntegrationSSAOPass::Integrate() : failed to find offscreen controller pass for auto exposure integration! \n\tController name: {}", pMainViewIntegration->offscreenControllerName);
+        }
+
+        //BlurPass
+        pFrameBufferController = new FrameBufferController();
+        pFrameBufferController->SetName(m_SSAOBlurname);
+
+        if (params.pCameraParams) {
+            if (params.pCameraParams->screenSize) {
+                pFrameBufferController->SetSize(params.pCameraParams->screenSize.value());
+                pFrameBufferController->SetDynamicResizing(false);
+            }
+            if (params.pCameraParams->screenScale) {
+                pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value());
+            }
+            if (params.pCameraParams->multisampling && !params.pCameraParams->multisampling.value()) {
+                pFrameBufferController->SetSamples(1);
+            }
+        }
+
+        data.frameBuffers.emplace_back(pFrameBufferController);
+
+        pMainViewIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationMainView>();
+        if (!pMainViewIntegration) {
+            SR_ERROR("RenderTechniquePresetIntegrationAutoExposure::Integrate() : failed to find main view integration for auto exposure integration!");
+            return;
+        }
+
+        pMainGroup = SR_UTILS_NS::DynamicPointerCast<GroupPass>(technique.GetInternalData().pass);
+
+        BlurPass::Ptr pBlur = new BlurPass();
+        SamplerData blurSampler;
+
+        blurSampler.fboName = m_SSAOname;
+        blurSampler.index = 0;
+        blurSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+        blurSampler.id = "image";
+        pBlur->GetSamplersData().AddSampler(blurSampler);
+
+        FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
+        pFrameBufferPass->SetCustomName(m_SSAOBlurname);
+        pFrameBufferPass->SetFrameBufferName(m_SSAOBlurname);
+        pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
+
+        pFrameBufferPass->AddPass(pBlur.StaticCast<BasePass>());
+        pMainGroup->InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass), index + 2);
+
+        //SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass)->AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass));
+        //pPostProcessGroupPass = SR_UTILS_NS::StaticPointerCast<GroupPass>(pFrameBufferPass);
+        //if () {
+        //    SRHalt("RenderTechniquePresetIntegrationSSAOPass::Integrate() : failed to find offscreen controller pass for auto exposure integration! \n\tController name: {}", pMainViewIntegration->offscreenControllerName);
+        //}
+
+        if (auto&& pPostProcessPass = pMainGroup->FindPassAs<PostProcessPass>(PostProcessPass::GetClassStaticName())) {
+
+            SamplerData finalSampler;
+
+            finalSampler.fboName = m_SSAOBlurname;
+            finalSampler.index = 0;
+            finalSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            finalSampler.id = "SSAO";
+            pPostProcessPass->GetSamplersData().AddSampler(finalSampler);
+        }
+        else {
+            SR_ERROR("RenderTechniquePresetIntegrationAutoExposure::Integrate() : failed to find post process pass for auto exposure integration! \n\tController name: {}", pMainViewIntegration->offscreenControllerName);
         }
     }
 }

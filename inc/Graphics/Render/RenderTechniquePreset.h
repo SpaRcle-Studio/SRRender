@@ -119,6 +119,8 @@ namespace SR_GRAPH_NS {
 
         /// @property
         SR_UTILS_NS::StringAtom m_SSAOname = "SSAO";
+        /// @property
+        SR_UTILS_NS::StringAtom m_SSAOBlurname = "SSAOBlur";
     };
 
     class RenderTechniquePresetIntegrationMainView : public RenderTechniquePresetIntegrationBase {

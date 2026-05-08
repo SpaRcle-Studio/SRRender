@@ -5,10 +5,10 @@
 #include <Graphics/Pass/SSAOPass.h>
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Shader.h>
-#include <Codegen/SSAOPass.generated.hpp>
 
 #include "Utils/Common/Numeric.h"
 #include "Utils/Resources/ResourceManager.h"
+#include <Codegen/SSAOPass.generated.hpp>
 
 namespace SR_GRAPH_NS {
 
