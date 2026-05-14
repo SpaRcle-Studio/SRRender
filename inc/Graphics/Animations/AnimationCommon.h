@@ -42,11 +42,11 @@ namespace SR_ANIMATIONS_NS {
     );*/
 
 #ifdef SR_UTILS_ASSIMP
-    static SR_MATH_NS::FVector3 AiV3ToFV3(const aiVector3D& v, float_t multiplier) {
+    SR_MAYBE_UNUSED static SR_MATH_NS::FVector3 AiV3ToFV3(const aiVector3D& v, float_t multiplier) {
         return SR_MATH_NS::FVector3(v.x, v.y, v.z) * multiplier;
     }
 
-    static SR_MATH_NS::Quaternion AiQToQ(const aiQuaternion& q) {
+    SR_MAYBE_UNUSED static SR_MATH_NS::Quaternion AiQToQ(const aiQuaternion& q) {
         return SR_MATH_NS::Quaternion(q.x, q.y, q.z, q.w);
     }
 #endif

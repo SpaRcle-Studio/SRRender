@@ -313,15 +313,15 @@ namespace SR_ANIMATIONS_NS {
         return m_matrices[index];
     }
 
-    const std::vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetOffsets() const noexcept {
+    const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetOffsets() const noexcept {
         if (auto&& pRawMesh = m_skeleton.GetRawMesh()) {
             return pRawMesh->GetBoneOffsets();
         }
-        const static std::vector<SR_MATH_NS::Matrix4x4> defValue;
+        const static SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> defValue;
         return defValue;
     }
 
-    const std::vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetMatrices() noexcept {
+    const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetMatrices() noexcept {
         if (!m_dirtyMatrices) {
             return m_matrices;
         }

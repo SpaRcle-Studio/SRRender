@@ -10,14 +10,14 @@
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace SR_GRAPH_NS::WinAPI {
-    static int GetBorderHeight(HWND hWnd) {
+    SR_MAYBE_UNUSED static int GetBorderHeight(HWND hWnd) {
         RECT rcClient, rcWind;
         GetClientRect(hWnd, &rcClient);
         GetWindowRect(hWnd, &rcWind);
         return ((rcWind.right - rcWind.left) - rcClient.right) / 2;
     }
 
-    static LRESULT ImGui_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+    SR_MAYBE_UNUSED static LRESULT ImGui_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         if (!ImGui::GetCurrentContext()) {
             return 0;

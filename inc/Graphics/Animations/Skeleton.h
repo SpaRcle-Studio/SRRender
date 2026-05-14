@@ -48,9 +48,9 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD int32_t GetBonesSSBO() const noexcept;
 
         const SR_MATH_NS::Matrix4x4& GetMatrixByIndex(uint16_t index) noexcept;
-        SR_NODISCARD const std::vector<SR_MATH_NS::Matrix4x4>& GetMatrices() noexcept;
-        SR_NODISCARD const std::vector<SR_MATH_NS::Matrix4x4>& GetOffsets() const noexcept;
-        SR_NODISCARD const std::vector<Bone*>& GetBones() const noexcept { return m_bonesByIndex; };
+        SR_NODISCARD const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& GetMatrices() noexcept;
+        SR_NODISCARD const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& GetOffsets() const noexcept;
+        SR_NODISCARD const SR_UTILS_NS::Vector<Bone*>& GetBones() const noexcept { return m_bonesByIndex; };
         SR_NODISCARD Bone* TryGetBone(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD Bone* GetBone(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD Bone* GetBoneByIndex(uint16_t index) const;
@@ -82,16 +82,16 @@ namespace SR_ANIMATIONS_NS {
 
         SR_UTILS_NS::Subscription m_prepareFrameSubscription;
 
-        std::vector<Bone*> m_bonesByIndex;
+        SR_UTILS_NS::Vector<Bone*> m_bonesByIndex;
 
         bool m_isNeedRecalcTransforms = true;
         bool m_multiFrameSSBOResources = true;
         mutable bool m_isBonesSSBODirty = true;
         mutable bool m_isOffsetsSSBODirty = true;
 
-        std::vector<uint32_t> m_indices;
-        std::vector<SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::Transform3D>> m_transforms;
-        std::vector<SR_MATH_NS::Matrix4x4> m_matrices;
+        SR_UTILS_NS::Vector<uint32_t> m_indices;
+        SR_UTILS_NS::Vector<SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::Transform3D>> m_transforms;
+        SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> m_matrices;
 
         mutable std::unique_ptr<SSBOInstance> m_offsetsSSBO;
         mutable std::array<std::unique_ptr<SSBOInstance>, SR_MAX_FRAMES_IN_FLIGHT> m_bonesSSBO;

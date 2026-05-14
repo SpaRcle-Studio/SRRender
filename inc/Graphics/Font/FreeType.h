@@ -18,7 +18,7 @@
 #include <freetype/src/truetype/ttobjs.h>
 
 namespace SR_GRAPH_NS {
-    static std::string FreeTypeErrToString(FT_Error err) {
+    SR_MAYBE_UNUSED static std::string FreeTypeErrToString(FT_Error err) {
 #undef FTERRORS_H_
 #define FT_ERRORDEF(e, v, s)  case e: return s;
 #define FT_ERROR_START_LIST     switch (err) {

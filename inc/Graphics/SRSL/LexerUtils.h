@@ -125,7 +125,7 @@ namespace SR_SRSL_NS {
         Identifier            /// _az_AZ_19_
     );
 
-    static std::string LexemKindToString(LexemKind lexem) {
+    SR_MAYBE_UNUSED static std::string LexemKindToString(LexemKind lexem) {
         static std::map<LexemKind, std::string> lexemToString = {
                 { LexemKind::OpeningSquareBracket, "[" },
                 { LexemKind::ClosingSquareBracket, "]" },

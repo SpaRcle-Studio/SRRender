@@ -8,13 +8,13 @@
 #include <Graphics/stdInclude.h>
 
 namespace SR_GRAPH_NS::SDF {
-    struct Point {
+    /*struct Point {
         uint16_t dx, dy;
         int32_t f;
-    };
+    };*/
 
     /* macro is a way faster than inline */
-    #define SR_SRF_COMPARE(offsetx, offsety)                                       \
+    /*#define SR_SRF_COMPARE(offsetx, offsety)                                       \
     do {                                                                           \
         int add;                                                                   \
         Point other = Get(x + offsetx, y + offsety);                               \
@@ -100,7 +100,7 @@ namespace SR_GRAPH_NS::SDF {
         uint32_t height;
     };
 
-    SR_MAYBE_UNUSED static SDFImage DFCalculate(const SDFImage& image, int32_t distanceFieldScale, bool transparent);
+    SR_MAYBE_UNUSED static SDFImage DFCalculate(const SDFImage& image, int32_t distanceFieldScale, bool transparent);*/
 }
 
 #endif //SR_ENGINE_SDFL_H
