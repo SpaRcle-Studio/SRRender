@@ -35,16 +35,6 @@ namespace SR_GRAPH_NS {
     class IRenderTechnique;
     class Pipeline;
 
-    SR_ENUM_NS_CLASS_T(RCUpdateQueueState, uint8_t,
-       Begin = 0,
-       Framebuffers,
-       Shaders,
-       Textures,
-       Techniques,
-       Skyboxes,
-       End
-    );
-
     /**
      * Здесь хранятся все контекстные ресурсы.
      * Исключение - меши, потому что они могут быть в нескольких экземплярах.
@@ -150,7 +140,6 @@ namespace SR_GRAPH_NS {
         bool InitPipeline();
 
     private:
-        RCUpdateQueueState m_updateState = RCUpdateQueueState::Begin;
         SR_UTILS_NS::StringAtom m_activePreset;
 
         std::vector<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>> m_framebuffers;

@@ -37,7 +37,7 @@
 #include <Utils/Serialization/SRASerialization.h>
 
 namespace SR_GRAPH_NS {
-    template<typename T> bool UpdateRenderResource(RenderContext* pRenderContext, T& resourceList) noexcept {
+    template<typename T> bool UpdateRenderResource(T& resourceList) noexcept {
         SR_TRACY_ZONE;
 
         bool dirty = false;
@@ -88,37 +88,32 @@ namespace SR_GRAPH_NS {
         }
         else {
             for (auto pIt = std::begin(resourceList); pIt != std::end(resourceList); ) {
-                if (auto pResource = *pIt) {
-                    const bool removed = pResource->Execute([&]() -> bool {
-                        if (pResource->GetCountUses() == 1) {
-                            SRAssert(pResource->GetContainerParents().empty());
-
-                            /// Ресурс необязательно имеет видеопамять, а лишь содержит другие ресурсы, например материал.
-                            if (auto&& pGraphicsResource = dynamic_cast<Memory::IGraphicsResource*>(pResource.Get())) {
-                                pGraphicsResource->DeInitGraphicsResource();
-                            }
-                            else {
-                                SRHalt("Resource is not IGraphicsResource!");
-                            }
-
-                            pResource->RemoveUsePoint();
-                            pIt = resourceList.erase(pIt);
-                            /// После освобождения ресурса необходимо перестроить все контекстные сцены рендера.
-                            dirty |= true;
-                            return true;
-                        }
-
-                        return false;
-                    });
-
-                    /// TODO: это безопасно?
-                    if (!removed) {
-                        ++pIt;
-                    }
-                }
-                else {
+                auto pResource = *pIt;
+                if (!pResource) {
                     SRHalt("Resource is nullptr!");
                     pIt = resourceList.erase(pIt);
+                    continue;
+                }
+
+                if (pResource->GetCountUses() == 1) {
+                    pResource->Execute([&]() {
+                        SRAssert(pResource->GetContainerParents().empty());
+                        /// Ресурс необязательно имеет видеопамять, а лишь содержит другие ресурсы, например материал.
+                        if (auto&& pGraphicsResource = dynamic_cast<Memory::IGraphicsResource*>(pResource.Get())) {
+                            pGraphicsResource->DeInitGraphicsResource();
+                        }
+                        else {
+                            SRHalt("Resource is not IGraphicsResource!");
+                        }
+                        pResource->RemoveUsePoint();
+                        pIt = resourceList.erase(pIt);
+                        /// После освобождения ресурса необходимо перестроить все контекстные сцены рендера.
+                        dirty |= true;
+                        return true;
+                    });
+                }
+                else {
+                    ++pIt;
                 }
             }
         }
@@ -140,21 +135,11 @@ namespace SR_GRAPH_NS {
 
         bool dirty = false;
 
-        m_updateState = static_cast<RCUpdateQueueState>(static_cast<uint8_t>(m_updateState) + 1);
-
-        switch (m_updateState) {
-            case RCUpdateQueueState::Framebuffers: dirty |= UpdateRenderResource(this, m_framebuffers); break;
-            case RCUpdateQueueState::Shaders: dirty |= UpdateRenderResource(this, m_shaders); break;
-            case RCUpdateQueueState::Textures: dirty |= UpdateRenderResource(this, m_textures); break;
-            case RCUpdateQueueState::Techniques: dirty |= UpdateRenderResource(this, m_techniques); break;
-            case RCUpdateQueueState::Skyboxes: dirty |= UpdateRenderResource(this, m_skyboxes); break;
-            case RCUpdateQueueState::End:
-                m_updateState = RCUpdateQueueState::Begin;
-                break;
-            default:
-                SRHaltOnce0();
-                break;
-        }
+        dirty |= UpdateRenderResource(m_techniques);
+        dirty |= UpdateRenderResource(m_framebuffers);
+        dirty |= UpdateRenderResource(m_shaders);
+        dirty |= UpdateRenderResource(m_textures);
+        dirty |= UpdateRenderResource(m_skyboxes);
 
         for (auto pIt = std::begin(m_scenes); pIt != std::end(m_scenes); ) {
             auto&& [pScene, pRenderScene] = *pIt;
@@ -184,7 +169,7 @@ namespace SR_GRAPH_NS {
 
             pRenderScene->DeInit();
 
-            UpdateRenderResource(this, m_techniques);
+            UpdateRenderResource(m_techniques);
 
             /// Как только уничтожается основная сцена, уничтожаем сцену рендера
             SR_LOG("RenderContext::Update() : destroy render scene...");
