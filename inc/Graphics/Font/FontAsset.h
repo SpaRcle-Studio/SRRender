@@ -45,6 +45,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD float_t GetFontAscender() const noexcept { return m_ascender; }
         SR_NODISCARD float_t GetFontDescender() const noexcept { return m_descender; }
         SR_NODISCARD float_t GetFontLineGap() const noexcept { return m_lineGap; }
+        SR_NODISCARD float_t GetCapLineAscenderRatio() const noexcept;
 
         void OnAtlasPageUploaded(GlyphRenderType type, uint16_t page);
         void UpdateGlyphs();

@@ -6,6 +6,7 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Render/RenderScene.h>
+#include <Graphics/Font/TextMeshDetails.h>
 
 #include <Utils/ECS/TransformUtils.h>
 #include <Utils/ECS/TransformRect.h>
@@ -43,9 +44,8 @@ namespace SR_GTYPES_NS {
         shader.SetInt(SHADER_SPRITE_MODE, static_cast<int32_t>(0));
 
         if (auto&& pTransformRect = SR_UTILS_NS::ExtractTransformAs<SR_UTILS_NS::TransformRect>(GetSceneObject().Get())) SR_LIKELY_ATTRIBUTE {
-            SR_MATH_NS::FRect layout = pTransformRect->GetLayoutRect();
-            shader.SetVec4(SHADER_NDC_RECT, layout.vec4);
             shader.SetMat4(SHADER_MODEL_MATRIX, pTransformRect->GetMatrix());
+            shader.SetVec4(SHADER_NDC_RECT, pTransformRect->GetLayoutRect().vec4);
         }
     }
 
@@ -89,44 +89,28 @@ namespace SR_GTYPES_NS {
 
         SetVertexLayoutDescription(GetShaderVertexLayoutDescription());
 
-        const float_t layoutScale = m_fontSize / std::max(1.f, pFontAsset->GetSamplingPointSize());
-
-        float_t penX = 0.0f;
-
-        float_t baselineY = pFontAsset->GetFontAscender() * layoutScale;
-        const float_t ascender  = pFontAsset->GetFontAscender() * layoutScale;
-        const float_t descender = pFontAsset->GetFontDescender() * layoutScale;
-        const float_t lineGap   = pFontAsset->GetFontLineGap() * layoutScale;
-        const float_t lineHeight = (ascender - descender) + lineGap;
-
-        std::optional<GlyphKey> prevCode;
-
-        for (auto&& glyph : glyphs) {
-            if (glyph.codepoint.codepoint == '\n') {
-                penX = 0.0f;
-                baselineY -= lineHeight;
-                prevCode.reset();
-                continue;
+        SR_MATH_NS::FVector2 layoutSize;
+        if (auto&& pSceneObject = GetSceneObject().Get()) {
+            if (auto&& pTransformRect = SR_UTILS_NS::ExtractTransformAs<SR_UTILS_NS::TransformRect>(pSceneObject)) {
+                layoutSize = pTransformRect->GetLayoutRect().Size();
             }
+        }
 
-            float_t kerning = 0.f;
-            if (prevCode && m_kerning) {
-                kerning = pFontAsset->GetKerning(prevCode.value(), glyph.codepoint);
-                kerning *= layoutScale;
-            }
+        TextMeshDetails::GlyphPlacementContext context;
+        context.fontSize = m_fontSize;
+        context.kerning = m_kerning;
+        context.horizontalAlignment = m_horizontalAlignment;
+        context.verticalAlignment = m_verticalAlignment;
+        context.layoutSize = layoutSize;
 
-            float_t cursorX = penX + kerning;
+        static SR_THREAD_LOCAL std::vector<TextMeshDetails::GlyphPlacement> placements;
+        if (!TextMeshDetails::CalculateGlyphPlacements(*pFontAsset, glyphs, context, placements)) {
+            m_isCalculated = true;
+            return true;
+        }
 
-            const float_t x = cursorX + glyph.metrics.bearingX * layoutScale;
-            /// FRect и спрайты: min угол = левый‑нижний, ось Y вверх (Bottom() = y, Top() = y+h). bearingY — от baseline вверх до верха квада.
-            /// Нижний край квада: baseline + bearingY − height (не baseline − bearingY — это было бы для Y вниз как у чистого framebuffer).
-            const SR_MATH_NS::FVector2 size = glyph.metrics.size.CastToFloat() * layoutScale;
-            const float_t y = baselineY + glyph.metrics.bearingY * layoutScale - size.y;
-
-            glyph.AddInstance(m_instancesCount++, {x, y}, size, buffer);
-
-            penX = cursorX + glyph.metrics.advance * layoutScale;
-            prevCode = glyph.codepoint;
+        for (auto&& placement : placements) {
+            glyphs[placement.glyphIndex].AddInstance(m_instancesCount++, placement.pos, placement.size, buffer);
         }
 
         m_VBO = GetPipeline()->AllocateVBO(m_VBO, m_instancesCount * buffer.GetLayout().GetStride(), buffer.GetRawData());
@@ -161,6 +145,11 @@ namespace SR_GTYPES_NS {
         }
         GetPipeline()->BindVBO(m_VBO);
         return true;
+    }
+
+    void TextMesh::OnMatrixDirty() {
+        OnTextDirty();
+        Super::OnMatrixDirty();
     }
 
     void TextMesh::OnTextDirty() {

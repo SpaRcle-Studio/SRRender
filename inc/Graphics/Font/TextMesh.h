@@ -13,6 +13,24 @@
 #include <Utils/Common/Subscription.h>
 
 namespace SR_GTYPES_NS {
+    SR_ENUM_NS_CLASS_T(TextAlignmentVertical, uint8_t,
+        Top,
+        Middle,
+        Bottom,
+        Baseline,
+        Midline,
+        Capline
+    );
+
+    SR_ENUM_NS_CLASS_T(TextAlignmentHorizontal, uint8_t,
+        Left,
+        Center,
+        Right,
+        Justified,
+        Flush,
+        GeometryCenter
+    );
+
     class TextMesh : public UIRenderComponent, public UI::IFindCanvasOwner {
         SR_CLASS()
         using Super = UIRenderComponent;
@@ -31,6 +49,7 @@ namespace SR_GTYPES_NS {
     private:
         bool Calculate();
         void OnTextDirty();
+        void OnMatrixDirty() override;
 
     private:
         int32_t m_VBO = SR_ID_INVALID;
@@ -48,6 +67,10 @@ namespace SR_GTYPES_NS {
         /// @property @range(0.1f, std::numeric_limits<float_t>::max())
         /// @onChanged(OnTextDirty)
         float_t m_fontSize = 16.f;
+        /// @property @group(Alignment) @onChanged(OnTextDirty)
+        TextAlignmentHorizontal m_horizontalAlignment = TextAlignmentHorizontal::Left;
+        /// @property @group(Alignment) @onChanged(OnTextDirty)
+        TextAlignmentVertical m_verticalAlignment = TextAlignmentVertical::Top;
 
         /// @property @group(Features) @onChanged(OnTextDirty)
         bool m_kerning = true;

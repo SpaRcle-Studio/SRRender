@@ -419,4 +419,11 @@ namespace SR_GRAPH_NS {
         }
         m_dirtyGlyphs.clear();
     }
+
+    float_t FontAsset::GetCapLineAscenderRatio() const noexcept {
+        /// Доля ascender для capline, если в FontAsset нет отдельной метрики (как у TMP / OpenType ~0.7).
+        /// TODO: добавить в FontDetails::GlyphMetrics отдельное поле для capline и грузить из шрифта, если есть.
+        constexpr float_t CAPLINE_ASCENDER_RATIO = 0.71f;
+        return CAPLINE_ASCENDER_RATIO;
+    }
 }
