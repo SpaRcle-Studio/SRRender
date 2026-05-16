@@ -31,6 +31,7 @@ namespace SR_GRAPH_NS {
         void Update() override;
         void UseSSBO() override;
         SSAOKernel CreateKernel() const;
+        void UseConstants(SR_GTYPES_NS::Shader& shader) override;
     };
 }
 

@@ -58,6 +58,16 @@ namespace SR_GRAPH_NS {
 
     };
 
+    struct SSAOPreset : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+
+        /// @property
+        float_t preScale = 1.f;
+        /// @property
+        uint32_t sampleCount = 64;
+
+    };
+
     struct RenderSettingsPreset : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
@@ -85,6 +95,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const RenderSettingsPreset& GetPreset(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD const ShadowQualityPreset& GetShadowQualityPreset(Quality quality) const;
         SR_NODISCARD float_t GetColorBufferResolutionCoefficient(Quality quality) const;
+        SR_NODISCARD const SSAOPreset& GetSSAOResolutionPreset(Quality quality) const;
 
     public:
         /// @property
@@ -115,6 +126,8 @@ namespace SR_GRAPH_NS {
         std::map<Quality, ShadowQualityPreset> shadowQualityPresets;
         /// @property
         std::map<Quality, float_t> colorBufferQualityPresets;
+        /// @property
+        std::map<Quality, SSAOPreset> SSAOQualityPresets;
 
     };
 }

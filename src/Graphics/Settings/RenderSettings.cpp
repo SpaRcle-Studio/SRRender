@@ -38,4 +38,8 @@ namespace SR_GRAPH_NS {
         }
         return coefficient;
     }
+
+   const SSAOPreset& RenderSettings::GetSSAOResolutionPreset(Quality quality) const {
+        return FindSuitableQuality(quality, SSAOQualityPresets);
+    }
 }

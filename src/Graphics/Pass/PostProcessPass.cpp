@@ -87,6 +87,7 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        UseConstants(*pShader);
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
             UseSamplers(*pShader);
             m_descriptorManager.Flush();

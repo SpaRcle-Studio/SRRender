@@ -441,24 +441,35 @@ namespace SR_GRAPH_NS {
 
         auto&& data = technique.GetInternalData();
 
-        if (!params.activeGraphicsSettings.SSAO || !params.activeGraphicsSettings.postProcess) {
+        if ((params.activeGraphicsSettings.SSAO == Quality::None) || !params.activeGraphicsSettings.postProcess) {
             return;
         }
 
         FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
         pFrameBufferController->SetName(m_SSAOname);
+
+        const Quality SSAOQuality = params.activeGraphicsSettings.SSAO;
+        //if (SSAOQuality == Quality::None) {
+        //    return;
+        //}
+        SSAOPreset SSAOpreset = params.pRenderSettings->GetSSAOResolutionPreset(SSAOQuality);
+
         if (params.pCameraParams) {
             if (params.pCameraParams->screenSize) {
                 pFrameBufferController->SetSize(params.pCameraParams->screenSize.value());
                 pFrameBufferController->SetDynamicResizing(false);
             }
             if (params.pCameraParams->screenScale) {
-                pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value());
+                pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value() * SSAOpreset.preScale);
+            }
+            else{
+                pFrameBufferController->SetPreScale(SSAOpreset.preScale);
             }
             if (params.pCameraParams->multisampling && !params.pCameraParams->multisampling.value()) {
                 pFrameBufferController->SetSamples(1);
             }
         }
+
 
         data.frameBuffers.emplace_back(pFrameBufferController);
 
@@ -516,7 +527,10 @@ namespace SR_GRAPH_NS {
                 pFrameBufferController->SetDynamicResizing(false);
             }
             if (params.pCameraParams->screenScale) {
-                pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value());
+                pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value() * SSAOpreset.preScale);
+            }
+            else{
+                pFrameBufferController->SetPreScale(SSAOpreset.preScale);
             }
             if (params.pCameraParams->multisampling && !params.pCameraParams->multisampling.value()) {
                 pFrameBufferController->SetSamples(1);

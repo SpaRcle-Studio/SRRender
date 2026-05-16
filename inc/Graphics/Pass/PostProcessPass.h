@@ -30,6 +30,7 @@ namespace SR_GRAPH_NS {
         void OnResize(const SR_MATH_NS::UVector2& size) override;
         void OnMultisampleChanged() override;
         void SetShader(const SR_UTILS_NS::Path& path);
+        virtual void UseConstants(SR_GTYPES_NS::Shader& shader){}
 
         bool PreRender() override;
         bool Render() override;

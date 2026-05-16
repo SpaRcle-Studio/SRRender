@@ -5,14 +5,14 @@
 #include <Graphics/Pass/SSAOPass.h>
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Render/RenderContext.h>
 
-#include "Utils/Common/Numeric.h"
-#include "Utils/Resources/ResourceManager.h"
+#include <Utils/Common/Numeric.h>
+#include <Utils/Resources/ResourceManager.h>
+
 #include <Codegen/SSAOPass.generated.hpp>
 
 namespace SR_GRAPH_NS {
-
-
     bool SSAOPass::Init() {
         SetShader("Engine/Shaders/SSAO/ssao.srsl");
 
@@ -62,12 +62,18 @@ namespace SR_GRAPH_NS {
     }
 
     bool SSAOPass::Prepare(){
-
         return Super::Prepare();
     }
 
     void SSAOPass::Update() {
-
         Super::Update();
+    }
+
+    void SSAOPass::UseConstants(SR_GTYPES_NS::Shader& shader) {
+        const Quality SSAOQuality = GetRenderContext()->GetActiveGraphicsSettings().SSAO;
+        SSAOPreset SSAOpreset = GetRenderContext()->GetSettings().GetSSAOResolutionPreset(SSAOQuality);
+        Super::UseConstants(shader);
+        static const Utils::StringAtom name("sampleCount");
+        shader.SetConstInt(name, SSAOpreset.sampleCount);
     }
 }
