@@ -13,17 +13,16 @@
 
 namespace SR_GRAPH_NS {
     struct ParticleData{
-        SR_MATH_NS::FVector3 positions;
-        SR_MATH_NS::FVector3 velocities;
+        SR_MATH_NS::FVector3 position;
+        SR_MATH_NS::FVector3 velocity;
 
-        float lifetimes;
-        float maxLifetimes;
+        float lifetime;
+        float maxLifetime;
 
-        float sizes;
+        float size;
 
-        SR_MATH_NS::FVector4 colors;
+        SR_MATH_NS::FVector4 color;
     };
 }
-
 
 #endif //SRENGINE_PARTICLEDATA_H

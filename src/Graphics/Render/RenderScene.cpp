@@ -171,6 +171,8 @@ namespace SR_GRAPH_NS {
     void RenderScene::Update() {
         SR_TRACY_ZONE_N("Update render");
 
+        m_particleUpdater.Update(SR_HTYPES_NS::Time::Instance().DeltaTime());
+
         SR_RENDER_TECHNIQUES_CALL(Update)
     }
 
@@ -589,5 +591,9 @@ namespace SR_GRAPH_NS {
             return m_cameras[index].pCamera;
         }
         return nullptr;
+    }
+
+    ParticleUpdater& RenderScene::GetParticleUpdater(){
+        return m_particleUpdater;
     }
 }

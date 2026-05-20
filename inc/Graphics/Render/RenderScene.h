@@ -9,6 +9,7 @@
 #include <Graphics/Render/RenderStrategy.h>
 #include <Graphics/Render/FlatCluster.h>
 #include <Graphics/GUI/WidgetManager.h>
+#include <Graphics/Particles/ParticleUpdater.h>
 
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Common/Subscription.h>
@@ -53,6 +54,8 @@ namespace SR_GRAPH_NS {
             CameraPtr pCamera;
         };
 
+    public:
+        ParticleUpdater& GetParticleUpdater();
     public:
         explicit RenderScene(const ScenePtr& scene, RenderContext* pContext);
         ~RenderScene() override;
@@ -163,6 +166,8 @@ namespace SR_GRAPH_NS {
         bool m_dirtyCameras = true;
         bool m_hasDrawData  = false;
         bool m_bOverlay     = false;
+
+        ParticleUpdater m_particleUpdater;
 
     };
 }

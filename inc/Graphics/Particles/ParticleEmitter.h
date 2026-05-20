@@ -17,11 +17,19 @@ namespace SR_GRAPH_NS {
         SR_CLASS()
         using Super = SR_GTYPES_NS::IRenderComponent;
     public:
-        ParticleData particleData;
+        SR_HTYPES_NS::FastMemoryArray<ParticleData> m_particles;
         uint32_t m_maxParticles = 1000;
+        uint32_t m_aliveParticles = 0;
+        float_t m_spawnRate = 10.0f;
+        float_t m_spawnTimer = 0.0f;
 
         void InitializeParticle();
-
+        void SpawnParticle();
+        void UpdateParticle(float_t dt);
+        void KillParticle(uint32_t index);
+        void UpdateEmitter(float_t dt);
+        void OnEnable() override;
+        void OnDisable() override;
     };
 }
 
