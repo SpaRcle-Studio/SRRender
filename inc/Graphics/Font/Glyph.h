@@ -9,6 +9,9 @@
 #include <Graphics/Font/GlyphRenderType.h>
 
 #include <Utils/Common/NonCopyable.h>
+#include <Utils/Math/Vector2.h>
+#include <Utils/Math/Rect.h>
+#include <Utils/Serialization/Serializable.h>
 
 namespace SR_UTILS_NS {
     class VertexDataBuffer;

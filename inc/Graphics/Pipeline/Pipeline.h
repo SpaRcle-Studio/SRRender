@@ -12,6 +12,7 @@
 #include <Graphics/Utils/FrameBufferAccessMode.h>
 
 #include <Utils/Math/Vector3.h>
+#include <Utils/Math/Rect.h>
 #include <Utils/Types/SafePointer.h>
 #include <Utils/Types/PoolSet.h>
 #include <Utils/Types/SortedVector.h>

@@ -220,6 +220,14 @@ namespace SR_GRAPH_NS::VulkanTools {
     int32_t MemoryManager::AllocateVBO(int32_t VBO, uint64_t size, const void* pData) {
         SR_TRACY_ZONE;
 
+        if (VBO != SR_ID_INVALID) {
+            auto&& pVBO = m_vboPool.At(VBO);
+            if (pVBO && pVBO->GetSize() == size) {
+                pVBO->CopyToDevice(pData, size, true);
+                return VBO;
+            }
+        }
+
         VkBufferUsageFlags bufferUsageFlagBits = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         if (m_kernel->GetDevice()->IsRayTracingSupported()) {
             bufferUsageFlagBits |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;

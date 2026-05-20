@@ -14,6 +14,7 @@
 #include <Utils/Math/Vector3.h>
 #include <Utils/Math/Vector4.h>
 #include <Utils/Types/ObjectPool.h>
+#include <Utils/Types/SafePointer.h>
 #include <Utils/Serialization/Serializable.h>
 
 namespace SR_GTYPES_NS {
