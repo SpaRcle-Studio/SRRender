@@ -15,6 +15,7 @@
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Lighting/LightSystem.h>
 #include <Graphics/Window/Window.h>
+#include <Graphics/Particles/ParticleEmitter.h>
 
 #include <Utils/DebugDraw.h>
 #include <Utils/Common/Numeric.h>
@@ -569,6 +570,16 @@ namespace SR_GRAPH_NS {
                 UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
                 pMaterial->SetShader("Engine/Shaders/UI/text.srsl");
                 pText3D->SetMaterial(pMaterial.StaticCast<BaseMaterial>());
+            }
+            else if (auto&& pParticleEmitter = dynamic_cast<SR_GRAPH_NS::ParticleEmitter*>(pObject)) {
+                SR_INFO("SET PARTICLE MATERIAL");
+                UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
+
+                pMaterial->SetShader("Engine/Shaders/Particle/particle.srsl");
+
+                pParticleEmitter->SetMaterial(
+                        pMaterial.StaticCast<BaseMaterial>()
+                );
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultMaterial()) {
                 pObject->SetMaterial(pDefaultMat);

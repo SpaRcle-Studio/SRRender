@@ -18,10 +18,6 @@ namespace SR_GRAPH_NS {
 
         float lifetime;
         float maxLifetime;
-
-        float size;
-
-        SR_MATH_NS::FVector4 color;
     };
 }
 
