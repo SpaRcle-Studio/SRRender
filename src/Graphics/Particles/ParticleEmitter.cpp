@@ -21,6 +21,11 @@ namespace SR_GRAPH_NS{
         m_particles.resize(m_maxParticles);
 
         m_instanceVertexBuffer.SetLayout(GetShaderVertexLayoutDescription());
+        m_instanceVertexBuffer.Allocate(m_maxParticles);
+
+        m_VBO = GetPipeline()->AllocateVBO(m_VBO,
+                                           m_maxParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
+                                           m_instanceVertexBuffer.GetRawData());
     }
 
     void ParticleEmitter::Draw() {
@@ -38,8 +43,6 @@ namespace SR_GRAPH_NS{
                 m_dirtyMaterial,
                 m_hasErrors
         );
-
-        GetPipeline()->ResetDrawInstancesCount();
     }
 
     bool ParticleEmitter::ExecuteInEditMode() const {
@@ -57,11 +60,14 @@ namespace SR_GRAPH_NS{
     }
 
     void ParticleEmitter::BuildInstanceVertexBuffer() {
+        SR_INFO("BUILD INSTANCE BUFFER");
+
+        //if (m_aliveParticles == 0) {
+        //    return;
+        //}
         //SetVertexLayoutDescription(GetShaderVertexLayoutDescription());
-        //m_instanceVertexBuffer.SetLayout(GetShaderVertexLayoutDescription());
 
         BuildInstanceData();
-        m_instanceVertexBuffer.Allocate(m_aliveParticles);
 
         for (uint32_t i = 0; i < m_aliveParticles; ++i){
             m_instanceVertexBuffer.SetVertexT(i, SR_UTILS_NS::VertexAttribute::Position1,
@@ -79,9 +85,18 @@ namespace SR_GRAPH_NS{
             return;
         }
 
-        m_VBO = GetPipeline()->AllocateVBO(m_VBO,
-                                           m_aliveParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
-                                           m_instanceVertexBuffer.GetRawData());
+        SR_INFO("VBO {}", m_VBO);
+
+        //m_VBO = GetPipeline()->AllocateVBO(m_VBO,
+         //                                  m_aliveParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
+         //                                  m_instanceVertexBuffer.GetRawData());
+
+        if (m_aliveParticles > 0) {
+            SR_INFO("POS {} {} {}",
+                    m_instanceData[0].position.x,
+                    m_instanceData[0].position.y,
+                    m_instanceData[0].position.z);
+        }
     }
 
     void ParticleEmitter::SpawnParticle(){
@@ -97,11 +112,8 @@ namespace SR_GRAPH_NS{
         particle.lifetime = 5.0f;
         particle.maxLifetime = 5.0f;
 
-       // particle.size = 1.0f;
-
-        //particle.color = SR_MATH_NS::FVector4(1.0f);
-
         ++m_aliveParticles;
+        //SR_INFO("SPAWN {}", m_aliveParticles);
     }
 
     void ParticleEmitter::UpdateParticle(float_t dt){
@@ -129,6 +141,8 @@ namespace SR_GRAPH_NS{
     }
 
     void ParticleEmitter::UpdateEmitter(float_t dt){
+        //SR_INFO("BEFORE UPDATE {}", m_aliveParticles);
+        //SR_INFO("UPDATE EMITTER");
         m_spawnTimer += dt;
 
         const float_t spawnInterval = 1.0f / m_spawnRate;
@@ -141,15 +155,21 @@ namespace SR_GRAPH_NS{
         UpdateParticle(dt);
 
         m_isVBODirty = true;
+        //SR_INFO("DIRTY SET {}", m_isVBODirty);
+        //SR_INFO("AFTER UPDATE {}", m_aliveParticles);
+        //SR_INFO("ALIVE {}", m_aliveParticles);
     }
 
     void ParticleEmitter::OnEnable(){
+        SR_INFO("START ALIVE {}", m_aliveParticles);
         InitializeParticle();
 
         Super::OnEnable();
 
         if (auto* pRenderScene = TryGetRenderScene()){
             pRenderScene->GetParticleUpdater().RegisterEmitter(this);
+        } else {
+            SR_ERROR("NO RENDER SCENE");
         }
     }
 
@@ -172,7 +192,7 @@ namespace SR_GRAPH_NS{
     }
 
     std::optional<int32_t> ParticleEmitter::GetVBO() const {
-        const_cast<ParticleEmitter&>(*this).Calculate();
+        //const_cast<ParticleEmitter&>(*this).Calculate();
         if (m_VBO == SR_ID_INVALID){
             return std::nullopt;
         }
@@ -199,14 +219,16 @@ namespace SR_GRAPH_NS{
     }
 
     void ParticleEmitter::Calculate() {
+        SR_INFO("CALCULATE DIRTY {}", m_isVBODirty);
+        SR_INFO("ALIVE IN CALCULATE {}", m_aliveParticles);
         if (!m_isVBODirty) {
             return;
         }
 
-
-        if(m_aliveParticles > 0) {
-            BuildInstanceVertexBuffer();
-        }
+        BuildInstanceVertexBuffer();
+        //if(m_aliveParticles > 0) {
+        //    BuildInstanceVertexBuffer();
+        //}
 
         m_isVBODirty = false;
     }

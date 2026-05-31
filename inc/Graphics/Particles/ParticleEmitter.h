@@ -28,7 +28,7 @@ namespace SR_GRAPH_NS {
 
 
         uint32_t m_maxParticles = 1000;
-        uint32_t m_aliveParticles = 100;
+        uint32_t m_aliveParticles = 0;
         float_t m_spawnRate = 10.0f;
         float_t m_spawnTimer = 0.0f;
 
