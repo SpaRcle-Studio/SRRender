@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/Loaders/SRSL.h>
+#include <Graphics/SRSL/MathExpression.h>
 
 #include <Utils/Common/ToString.h>
 
@@ -125,5 +126,14 @@ namespace SR_SRSL_NS {
         m_params = other.m_params;
         m_hash = other.m_hash;
         m_initialized = other.m_initialized;
+    }
+
+    std::string_view ShaderParams::GetParam(std::string_view key) const {
+        for (const auto& entry : m_params) {
+            if (entry.key == key) {
+                return entry.GetValue(m_buffer);
+            }
+        }
+        return std::string_view();
     }
 }

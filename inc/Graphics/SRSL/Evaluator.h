@@ -14,9 +14,15 @@ namespace SR_SRSL_NS {
     public:
         SR_NODISCARD double_t Evaluate(const std::string& code);
         SR_NODISCARD double_t Evaluate(const SRSLExpr* pExpr);
+        SR_NODISCARD bool MacroEvaluate(const SRSLExpr* pExpr, ShaderParams& params) const;
 
     private:
         SR_NODISCARD double_t ApplyOperator(const std::string& op, double_t left, double_t right) const;
+        SR_NODISCARD bool MacroEvaluateInternal(const SRSLExpr* pExpr) const;
+        SR_NODISCARD static bool MacroEvaluateIdentifier(const std::string_view& identifier) ;
+
+    private:
+        mutable ShaderParams* m_params = nullptr;
 
     };
 }

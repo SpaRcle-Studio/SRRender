@@ -20,6 +20,7 @@ namespace SR_GRAPH_NS {
 
     public:
         void SetMaterialData(const MaterialData::Ptr& pData) noexcept;
+        void SaveAs(const SR_UTILS_NS::Path& path);
         SR_NODISCARD const MaterialData::Ptr& GetMaterialData() const noexcept override;
         SR_NODISCARD MaterialType GetMaterialType() const noexcept override;
 

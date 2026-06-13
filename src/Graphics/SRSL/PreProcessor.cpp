@@ -4,6 +4,8 @@
 
 #include <Graphics/SRSL/PreProcessor.h>
 #include <Graphics/SRSL/Lexer.h>
+#include <Graphics/SRSL/MathExpression.h>
+#include <Graphics/SRSL/Evaluator.h>
 
 namespace SR_SRSL_NS {
     SRSLPreProcessor::OutResult SRSLPreProcessor::Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderParams& params) {
@@ -20,6 +22,13 @@ namespace SR_SRSL_NS {
         }
 
         includes = std::move(m_includes);
+
+        {
+            SR_TRACY_ZONE_N("Remove macro end lexems");
+            std::erase_if(m_lexems, [](const Lexem &lexem) {
+                return lexem.kind == LexemKind::MacroEnd;
+            });
+        }
 
         return std::make_pair(SR_UTILS_NS::Exchange(m_lexems, { }), std::move(m_result));
     }
@@ -143,7 +152,28 @@ namespace SR_SRSL_NS {
                         }
                         m_state = PPState::Idle;
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
-                        if (value == "ifdef") {
+                        if (value == "if") {
+                            const int64_t startLexem = m_currentLexem;
+                            m_expressionLexems.clear();
+                            while (GetCurrentLexem()->kind != LexemKind::MacroEnd) {
+                                m_expressionLexems.emplace_back(*GetCurrentLexem());
+                                m_currentLexem++;
+                            }
+
+                            m_lexems.erase(m_lexems.begin() + startLexem, m_lexems.begin() + m_currentLexem);
+
+                            auto&& result = SRSLMathExpression::Instance().Analyze(std::move(m_expressionLexems));
+                            if (!result.first) {
+                                SR_ERROR("SRSLPreProcessor::ProcessMain() : failed to evaluate expression!\n\tExpression: {}", result.second.ToString(m_includes));
+                                m_ifStack.push(false);
+                            }
+                            else {
+                                const bool expression = SRSLEvaluator::Instance().MacroEvaluate(result.first, *m_params);
+                                m_ifStack.push(expression && m_ifStack.top());
+                                delete result.first;
+                            }
+                        }
+                        else if (value == "ifdef") {
                             std::string_view macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
                             m_lexems.erase(m_lexems.begin() + m_currentLexem);
                             m_ifStack.push(m_params->IsDefined(macroName) && m_ifStack.top());

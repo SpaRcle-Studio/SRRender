@@ -56,6 +56,7 @@ namespace SR_SRSL_NS {
         void Clear();
 
         SR_NODISCARD bool IsDefined(std::string_view key) const;
+        SR_NODISCARD std::string_view GetParam(std::string_view key) const;
 
         void SetParam(SR_UTILS_NS::StringAtom key, std::string_view value);
         void AddDefine(SR_UTILS_NS::StringAtom define);

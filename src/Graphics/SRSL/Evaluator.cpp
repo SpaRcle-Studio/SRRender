@@ -74,4 +74,53 @@ namespace SR_SRSL_NS {
 
         return 0.f;
     }
+
+    bool SRSLEvaluator::MacroEvaluateInternal(const SRSLExpr* pExpr) const {
+        if (pExpr->args.empty()) {
+            return MacroEvaluateIdentifier(pExpr->token);
+        }
+        else if (pExpr->isCall) {
+            if (pExpr->token == "defined") {
+                if (pExpr->args.size() != 1) {
+                    SRHalt("The \"defined\" operator requires exactly one argument!");
+                    return false;
+                }
+                const auto& identifier = pExpr->args[0]->token;
+                return m_params->IsDefined(identifier);
+            }
+        }
+        else if (pExpr->args.size() == 2) {
+            if (pExpr->token == "&&") {
+                return MacroEvaluateInternal(pExpr->args[0]) && MacroEvaluateInternal(pExpr->args[1]);
+            }
+            else if (pExpr->token == "||") {
+                return MacroEvaluateInternal(pExpr->args[0]) || MacroEvaluateInternal(pExpr->args[1]);
+            }
+        }
+        SRHalt("Invalid macro expression!");
+        return false;
+    }
+
+    bool SRSLEvaluator::MacroEvaluate(const SRSLExpr* pExpr, ShaderParams& params) const {
+        m_params = &params;
+        const bool result = MacroEvaluateInternal(pExpr);
+        m_params = nullptr;
+        return result;
+    }
+
+    bool SRSLEvaluator::MacroEvaluateIdentifier(const std::string_view& identifier) {
+        if (identifier == "true") {
+            return true;
+        }
+        else if (identifier == "false") {
+            return false;
+        }
+
+        if (SR_MATH_NS::IsNumber(identifier)) {
+            const auto value = SR_UTILS_NS::LexicalCast<double_t>(identifier);
+            return value > 0;
+        }
+        SRHalt("Unknown identifier in macro expression: {}"_format(identifier));
+        return false;
+    }
 }

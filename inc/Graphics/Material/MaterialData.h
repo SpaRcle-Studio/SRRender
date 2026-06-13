@@ -146,6 +146,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsAlphaEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_ALPHA) == 1; }
         SR_NODISCARD bool IsBlendingDisabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_DISABLE_BLENDING) == 1; }
         SR_NODISCARD bool IsEmissionEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_EMISSION) == 1; }
+        SR_NODISCARD bool IsORMEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_ORM) == 1; }
 
         void SetNormalMappingEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_NORMAL, enabled); }
         void SetRoughnessEnabled(bool disabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ROUGHNESS, disabled); }
@@ -156,6 +157,7 @@ namespace SR_GRAPH_NS {
         void SetAlphaEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ALPHA, enabled); }
         void SetBlendingDisabled(bool disabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_DISABLE_BLENDING, disabled); }
         void SetEmissionEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_EMISSION, enabled); }
+        void SetORMEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ORM, enabled); }
 
     private:
         /// @property @onChanged(OnShaderDefinesChanged)
@@ -181,6 +183,8 @@ namespace SR_GRAPH_NS {
         /// @virtualProperty(hasAlpha) @getter(IsAlphaEnabled) @setter(SetAlphaEnabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(disableBlending) @getter(IsBlendingDisabled) @setter(SetBlendingDisabled) @dontSave @group(Params)
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(hasORM) @getter(IsORMEnabled) @setter(SetORMEnabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY
 
 

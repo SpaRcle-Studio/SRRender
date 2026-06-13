@@ -7,10 +7,8 @@
 
 #include <Graphics/Utils/ImageMetaInfo.h>
 #include <Graphics/Memory/IGraphicsResource.h>
-#include <Graphics/Font/GlyphRenderType.h>
 
 #include <Utils/Resources/IResource.h>
-#include <Utils/Resources/ResourceRef.h>
 
 namespace SR_GRAPH_NS {
     class TextureLoader;
@@ -24,6 +22,7 @@ namespace SR_GTYPES_NS {
     /// @extension(png, jpg, jpeg, tga, bmp)
     class Texture : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         SR_CLASS()
+        friend class TextureImpl;
         friend class ::SR_GRAPH_NS::TextureLoader;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<Texture>;
@@ -66,21 +65,7 @@ namespace SR_GTYPES_NS {
     private:
         SR_HTYPES_NS::SharedPtr<TextureData> m_textureData;
 
-        struct RTInfo {
-            SR_UTILS_NS::StringAtom name;
-            uint32_t layer = 0;
-            bool depth = false;
-        };
-
-        struct FontAtlasPageInfo {
-            uint16_t fontIndex = 0;
-            uint16_t pageIndex = 0;
-            GlyphRenderType renderType = GlyphRenderType::SDF;
-            SR_UTILS_NS::ResourceRef<FontAsset> pFont;
-        };
-
-        std::optional<RTInfo> m_renderTargetInfo;
-        std::optional<FontAtlasPageInfo> m_fontAtlasPageInfo;
+        SR_HTYPES_NS::RawPointerHolder<TextureImpl> m_impl;
         int32_t m_id = SR_ID_INVALID;
 
         std::atomic<bool> m_hasErrors = false;

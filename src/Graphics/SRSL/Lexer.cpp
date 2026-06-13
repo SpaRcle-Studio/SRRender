@@ -111,7 +111,10 @@ namespace SR_SRSL_NS {
             case '8': return Lexem(m_offset++, 1, LexemKind::Integer, "8", m_fileIndex, m_line, m_position++);
             case '9': return Lexem(m_offset++, 1, LexemKind::Integer, "9", m_fileIndex, m_line, m_position++);
 
-            case '#': return Lexem(m_offset++, 1, LexemKind::Macro, "#", m_fileIndex, m_line, m_position++);
+            case '#':
+                m_macroLine = true;
+                return Lexem(m_offset++, 1, LexemKind::Macro, "#", m_fileIndex, m_line, m_position++);
+
             case '"': return Lexem(m_offset++, 1, LexemKind::String, "\"", m_fileIndex, m_line, m_position++);
 
             default:
@@ -175,6 +178,10 @@ namespace SR_SRSL_NS {
                     ++m_position;
 
                     if (spaceChar == '\n') {
+                        if (m_macroLine) {
+                            m_macroLine = false;
+                            m_lexems.emplace_back(Lexem(m_offset, 1, LexemKind::MacroEnd, "\n", m_fileIndex, m_line, m_position));
+                        }
                         ++m_line;
                         m_position = 0;
                     }
@@ -224,6 +231,7 @@ namespace SR_SRSL_NS {
     void SRSLLexer::Clear() {
         SR_TRACY_ZONE;
 
+        m_macroLine = false;
         m_source = { };
         m_fileIndex = 0;
         m_offset = 0;

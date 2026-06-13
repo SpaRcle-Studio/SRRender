@@ -119,6 +119,7 @@ namespace SR_SRSL_NS {
         Integer,              /// 0-9
 
         Macro,                /// #
+        MacroEnd,             /// \n
 
         String,               /// "
 

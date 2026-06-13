@@ -35,6 +35,7 @@ namespace SR_SRSL_NS {
         SRSLResult m_result;
         ShaderParams* m_params = nullptr;
 
+        std::vector<Lexem> m_expressionLexems;
         std::vector<Lexem> m_lexems;
         int64_t m_currentLexem = 0;
 

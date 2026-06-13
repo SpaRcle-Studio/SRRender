@@ -217,6 +217,7 @@ namespace SR_SRSL_NS {
                 case LexemKind::And:
                 case LexemKind::Or:
                 case LexemKind::Macro:
+                case LexemKind::MacroEnd:
                     ++m_currentLexem;
                     break;
                 default:

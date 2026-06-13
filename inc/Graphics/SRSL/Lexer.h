@@ -33,6 +33,7 @@ namespace SR_SRSL_NS {
         void SkipComment();
 
     private:
+        bool m_macroLine = false;
         std::string_view m_source;
         uint64_t m_offset = 0;
         uint16_t m_fileIndex = 0;
