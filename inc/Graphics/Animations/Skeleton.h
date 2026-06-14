@@ -7,11 +7,13 @@
 
 #include <Graphics/Memory/SSBO.h>
 #include <Graphics/Animations/Bone.h>
+#include <Graphics/Animations/SkeletonRetarget.h>
 
 #include <Utils/ECS/Component.h>
 #include <Utils/Types/IRawMeshHolder.h>
 #include <Utils/Types/FlatHashMap.h>
 #include <Utils/Common/Subscription.h>
+#include <Utils/Resources/ResourceRef.h>
 
 namespace SR_GRAPH_NS {
     class RenderScene;
@@ -77,6 +79,9 @@ namespace SR_ANIMATIONS_NS {
         void OnRawMeshChanged();
 
     private:
+        /// @method @editorButton
+        void SwitchDebug();
+
         SR_HTYPES_NS::FlatHashMap<Bone*, uint64_t> m_debugLines;
         SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Bone*> m_bonesByName;
 
@@ -84,6 +89,7 @@ namespace SR_ANIMATIONS_NS {
 
         SR_UTILS_NS::Vector<Bone*> m_bonesByIndex;
 
+        bool m_debugEnabled = false;
         bool m_isNeedRecalcTransforms = true;
         bool m_multiFrameSSBOResources = true;
         mutable bool m_isBonesSSBODirty = true;
@@ -100,22 +106,22 @@ namespace SR_ANIMATIONS_NS {
 
     private:
         /// @property
+        SR_UTILS_NS::ResourceRef<SkeletonRetargetProfile> m_retargetProfile;
+        /// @property
         bool m_customHierarchy = false;
-        /// @property @dontSave @setter(SetDebugEnabled)
-        bool m_debugEnabled = false;
-        /// @property @dontSave @readOnly
+        /// @property @dontSave @readOnly @debugOnly
         bool m_dirtyMatrices = false;
-        /// @property @dontSave @readOnly
+        /// @property @dontSave @readOnly @debugOnly
         bool m_hasInvalidBones = false;
 
         /// @property
         /// @onChanged(OnRawMeshChanged)
         SR_HTYPES_NS::RawMeshHolder m_skeleton;
-        /// @property @propertyCondition(This.m_customHierarchy == false) @loadCondition(This.m_customHierarchy == false)
+        /// @property @condition(This.m_customHierarchy == false) @loadCondition(This.m_customHierarchy == false)
         /// @onChanged(OnRawMeshChanged)
         SR_HTYPES_NS::RawMeshHolder m_boneHierarchy;
 
-        /// @property @notNull @propertyCondition(This.m_customHierarchy == true) @loadCondition(This.m_customHierarchy == true)
+        /// @property @notNull @condition(This.m_customHierarchy == true) @loadCondition(This.m_customHierarchy == true)
         SR_HTYPES_NS::SharedPtr<Bone> m_rootBone;
 
     };

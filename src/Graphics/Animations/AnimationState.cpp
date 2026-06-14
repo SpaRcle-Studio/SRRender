@@ -174,7 +174,7 @@ namespace SR_ANIMATIONS_NS {
 
                 auto&& pBone = context.pSkeleton->GetBone(channel.GetChannelName());
                 if (!pBone) {
-                    SR_WARN("AnimationClipState::Compile() : bone is nullptr!");
+                    SR_WARN("AnimationClipState::Compile() : bone \"{}\" not found in skeleton \"{}\"!", channel.GetChannelName(), context.pSkeleton->GetGameObject()->GetName());
                     continue;
                 }
 

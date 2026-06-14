@@ -48,9 +48,9 @@ namespace SR_GRAPH_NS {
 
         /// @property
         GlyphRangeType type = GlyphRangeType::Custom;
-        /// @property @propertyCondition(This.type == GlyphRangeType::Custom)
+        /// @property @condition(This.type == GlyphRangeType::Custom)
         uint32_t start = 0;
-        /// @property @propertyCondition(This.type == GlyphRangeType::Custom)
+        /// @property @condition(This.type == GlyphRangeType::Custom)
         uint32_t end = 0;
     };
 

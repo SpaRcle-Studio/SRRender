@@ -124,7 +124,7 @@ namespace SR_GTYPES_NS {
             }
         }
 
-        if (!IsTextureSupportsFormat(m_format) && m_format != ImageFormat::Auto && m_format!= ImageFormat::Unknown) {
+        if (!IsTextureSupportsFormat(m_format) && m_format != ImageFormat::Auto && m_format != ImageFormat::Unknown) {
             SR_WARN("Texture::Load() : the texture format {} is not supported! Falling back to Auto format.", m_format);
             m_format = ImageFormat::Auto;
         }

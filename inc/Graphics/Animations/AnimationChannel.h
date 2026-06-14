@@ -24,7 +24,13 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationChannel();
 
     public:
-        static void Load(SR_HTYPES_NS::RawMesh* pRawMesh, aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels);
+        static void Load(
+            SR_HTYPES_NS::RawMesh* pSkeletonRawMesh,
+            SR_HTYPES_NS::RawMesh* pAnimationRawMesh,
+            aiNodeAnim* pChannel,
+            float_t ticksPerSecond,
+            std::vector<AnimationChannel>& channels
+        );
 
         void SetName(SR_UTILS_NS::StringAtom name);
         void SetBoneIndex(uint16_t index) { m_boneIndex = index; }

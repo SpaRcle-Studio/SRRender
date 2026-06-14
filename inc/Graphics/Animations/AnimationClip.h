@@ -5,9 +5,10 @@
 #ifndef SR_ENGINE_ANIMATIONCLIP_H
 #define SR_ENGINE_ANIMATIONCLIP_H
 
-#include <Graphics/macros.h>
+#include <Graphics/Animations/SkeletonRetarget.h>
 
 #include <Utils/Resources/Asset.h>
+#include <Utils/Resources/ResourceRef.h>
 
 namespace SR_HTYPES_NS {
     class RawMesh;
@@ -52,6 +53,8 @@ namespace SR_ANIMATIONS_NS {
         /// @customArg(filter value: fbx)
         SR_UTILS_NS::Path m_clipPath;
         /// @property
+        SR_UTILS_NS::ResourceRef<SkeletonRetargetProfile> m_retargetProfile;
+        /// @property @condition(!This.m_retargetProfile.IsValid())
         /// @customArgs(pick: enabled, filter name: Skeleton, relative: resources)
         /// @customArg(filter value: fbx)
         SR_UTILS_NS::Path m_skeletonPath;

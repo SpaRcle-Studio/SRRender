@@ -49,7 +49,7 @@ namespace SR_GRAPH_NS {
         /// @property
         AtlasType m_type = AtlasType::SpriteSheet;
 
-        /// @property @propertyCondition(This.m_type == AtlasType::SpriteSheet)
+        /// @property @condition(This.m_type == AtlasType::SpriteSheet)
         std::vector<AtlasSpriteSheetSettings> m_spriteSheets;
 
         /// @property @hidden

@@ -41,7 +41,7 @@ namespace SR_GRAPH_NS {
         /// @property
         bool useMaterial = true;
         /// @property
-        /// @propertyCondition(This.useMaterial == false)
+        /// @condition(This.useMaterial == false)
         bool modelMatrix = true;
 
     };

@@ -43,6 +43,7 @@ namespace SR_ANIMATIONS_NS {
         for (uint32_t channelIndex = 0; channelIndex < pAnimation->mNumChannels; ++channelIndex) {
             AnimationChannel::Load(
                 pSkeleton,
+                pRawMesh,
                 pAnimation->mChannels[channelIndex],
                 static_cast<float_t>(pAnimation->mTicksPerSecond),
                 m_channels
@@ -68,6 +69,11 @@ namespace SR_ANIMATIONS_NS {
 
     void AnimationClip::OnAssetLoaded() {
         SR_TRACY_ZONE;
+
+        if (m_clipPath.empty()) {
+            SR_ERROR("AnimationClip::Load() : clip path is empty!");
+            return;
+        }
 
         SR_HTYPES_NS::RawMeshParams params;
         params.animation = true;

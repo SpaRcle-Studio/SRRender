@@ -70,25 +70,25 @@ namespace SR_GTYPES_NS {
         /// @property @setter(SetSpriteMode)
         SpriteMode m_spriteMode = SpriteMode::Sliced;
 
-        /// @property @setter(SetFillMethod) @propertyCondition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Filled))
+        /// @property @setter(SetFillMethod) @condition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Filled))
         SpriteFillMethod m_fillMethod = SpriteFillMethod::Radial90;
-        /// @property @setter(SetFillOrigin) @propertyCondition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Filled))
+        /// @property @setter(SetFillOrigin) @condition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Filled))
         /// @enumFilter(IsSpriteFillOriginApplicable)
         SpriteFillOrigin m_fillOrigin = SpriteFillOrigin::BottomLeft;
-        /// @property @drag(0.01f) @resetValue(1.f) @propertyCondition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Filled)) @setter(SetFillAmount) @range(0.f, 1.f)
+        /// @property @drag(0.01f) @resetValue(1.f) @condition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Filled)) @setter(SetFillAmount) @range(0.f, 1.f)
         float_t m_fillAmount = 1.f;
-        /// @property @propertyCondition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Filled)) @setter(SetFillClockwise)
+        /// @property @condition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Filled)) @setter(SetFillClockwise)
         bool m_fillClockwise = true;
 
-        /// @property @setter(SetSliceMode) @propertyCondition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced))
+        /// @property @setter(SetSliceMode) @condition(SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced))
         SliceMode m_sliceMode = SliceMode::Auto;
-        /// @property @setter(SetFillCenter) @propertyCondition(This.m_sliceMode != SR_GTYPES_NS::SliceMode::None && SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced))
+        /// @property @setter(SetFillCenter) @condition(This.m_sliceMode != SR_GTYPES_NS::SliceMode::None && SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced))
         bool m_fillCenter = true;
-        /// @property @drag(0.01f) @resetValue(1.f) @propertyCondition(This.m_sliceMode == SR_GTYPES_NS::SliceMode::Auto && SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced)) @setter(SetPixelsPerUnitMultiplier)
+        /// @property @drag(0.01f) @resetValue(1.f) @condition(This.m_sliceMode == SR_GTYPES_NS::SliceMode::Auto && SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced)) @setter(SetPixelsPerUnitMultiplier)
         float_t m_pixelsPerUnitMultiplier = 1.f;
-        /// @property @setter(SetTextureBorder) @drag(0.01f) @propertyCondition(This.m_sliceMode == SR_GTYPES_NS::SliceMode::Manual && SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced))
+        /// @property @setter(SetTextureBorder) @drag(0.01f) @condition(This.m_sliceMode == SR_GTYPES_NS::SliceMode::Manual && SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced))
         SR_MATH_NS::FRect m_textureBorder;
-        /// @property @setter(SetWindowBorder) @drag(0.01f) @propertyCondition(This.m_sliceMode == SR_GTYPES_NS::SliceMode::Manual && SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced))
+        /// @property @setter(SetWindowBorder) @drag(0.01f) @condition(This.m_sliceMode == SR_GTYPES_NS::SliceMode::Manual && SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced))
         SR_MATH_NS::FRect m_windowBorder;
 
     };

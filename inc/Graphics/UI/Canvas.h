@@ -85,22 +85,22 @@ namespace SR_GRAPH_UI_NS {
         /// @property
         CanvasScaleMode m_scaleMode = CanvasScaleMode::ConstantPixelSize;
 
-        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPixelSize) @drag(0.1f)
+        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPixelSize) @drag(0.1f)
         float_t m_scaleFactor = 1.f;
 
-        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
+        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
         SR_MATH_NS::UVector2 m_referenceResolution = SR_MATH_NS::UVector2(800, 600);
-        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
+        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
         CanvasScreenMatchMode m_screenMatchMode = CanvasScreenMatchMode::MatchWidthOrHeight;
-        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize && This.m_screenMatchMode == CanvasScreenMatchMode::MatchWidthOrHeight)
+        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize && This.m_screenMatchMode == CanvasScreenMatchMode::MatchWidthOrHeight)
         /// @range(0.f, 1.f) @drag(0.1f)
         float_t m_match = 0.f;
 
-        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
+        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
         SR_MATH_NS::PhysicalUnit m_physicalUnit = SR_MATH_NS::PhysicalUnit::Points;
-        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
+        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
         float_t m_fallbackScreenDPI = 96.f;
-        /// @property @propertyCondition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
+        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
         float_t m_defaultSpriteDPI = 96.f;
 
         /// @property @range(0.1f, std::numeric_limits<float_t>::max())

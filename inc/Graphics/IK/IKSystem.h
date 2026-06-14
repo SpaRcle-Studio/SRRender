@@ -57,7 +57,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::EntityRef<SR_UTILS_NS::GameObject> m_rotationReference;
         /// @property
         SR_UTILS_NS::EntityRef<SR_UTILS_NS::GameObject> m_root;
-        /// @property @propertyCondition(This.GetIKType() == SR_GRAPH_NS::IKType::TwoBone)
+        /// @property @condition(This.GetIKType() == SR_GRAPH_NS::IKType::TwoBone)
         SR_UTILS_NS::EntityRef<SR_UTILS_NS::GameObject> m_mid;
         /// @property
         SR_UTILS_NS::EntityRef<SR_UTILS_NS::GameObject> m_tip;

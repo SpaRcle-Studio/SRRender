@@ -61,6 +61,7 @@ namespace SR_ANIMATIONS_NS {
         Animator* m_pAnimator = nullptr;
         AnimationGraphAsset* m_pAsset = nullptr;
         std::vector<SR_UTILS_NS::GameObject::Ptr> m_gameObjects;
+        std::vector<SR_MATH_NS::Matrix4x4> m_baseMatrices;
 
     private:
         /// @property

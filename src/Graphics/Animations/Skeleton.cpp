@@ -390,6 +390,10 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
+    void Skeleton::SwitchDebug() {
+        m_debugEnabled = !m_debugEnabled;
+    }
+
     const SR_GRAPH_NS::RenderContext::Ptr& Skeleton::GetRenderContext() const noexcept {
         if (!m_renderContext) SR_UNLIKELY_ATTRIBUTE {
             SRAssert2(SR_THIS_THREAD, "Skeleton::GetPipeline() : SR_THIS_THREAD is nullptr!");
@@ -463,6 +467,12 @@ namespace SR_ANIMATIONS_NS {
             }
 
             const SR_HTYPES_NS::Function<void(aiNode*, SR_ANIMATIONS_NS::Bone*)> processNode = [&](aiNode* node, SR_ANIMATIONS_NS::Bone* pBone) {
+                if (std::string_view(node->mName.C_Str(), node->mName.length).find("_$AssimpFbx$_") != std::string_view::npos) {
+                    for (uint32_t i = 0; i < node->mNumChildren; ++i) {
+                        processNode(node->mChildren[i], pBone);
+                    }
+                    return;
+                }
                 pBone = AddBone(pBone, node->mName.C_Str(), false);
 
                 for (uint32_t i = 0; i < node->mNumChildren; ++i) {

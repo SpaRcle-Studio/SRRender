@@ -98,7 +98,19 @@ namespace SR_ANIMATIONS_NS {
 
             data.dirty = false;
 
+            //SR_MATH_NS::Matrix4x4 matrix = m_baseMatrices[i] * SR_MATH_NS::Matrix4x4(
+            //    SR_MATH_NS::FVector3(),
+            //    data.rotation.value_or(SR_MATH_NS::Quaternion()),
+            //    data.scaling.value_or(SR_MATH_NS::FVector3(1.f))
+            //);
+
+            //SR_MATH_NS::FVector3 translation;
+            //SR_MATH_NS::Quaternion rotation;
+            //SR_MATH_NS::FVector3 scaling;
+            //matrix.Decompose(translation, rotation, scaling);
+
             m_gameObjects[i]->GetTransform()->SetMatrix(
+                    //translation, rotation, scaling
                 data.translation,
                 data.rotation,
                 data.scaling
@@ -126,6 +138,11 @@ namespace SR_ANIMATIONS_NS {
 
         for (auto&& pNode : m_nodes) {
             pNode->Compile(compileContext);
+        }
+
+        m_baseMatrices.resize(m_gameObjects.size());
+        for (size_t i = 0; i < m_gameObjects.size(); ++i) {
+            m_baseMatrices[i] = m_gameObjects[i]->GetTransform()->GetLocalMatrix();
         }
 
         SR_DEBUG_LOG(SR_FORMAT("AnimationGraph::Compile() : game objects count = {}", m_gameObjects.size()));

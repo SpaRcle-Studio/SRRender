@@ -6,6 +6,8 @@
 
 #include <Utils/Types/RawMesh.h>
 
+#include <cmath>
+
 #ifdef SR_UTILS_ASSIMP
     #include <assimp/anim.h>
 #endif
@@ -83,12 +85,18 @@ namespace SR_ANIMATIONS_NS {
         return keyIndex;
     }
 
-    void AnimationChannel::Load(SR_HTYPES_NS::RawMesh* pRawMesh, aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels) {
+    void AnimationChannel::Load(SR_HTYPES_NS::RawMesh* pSkeletonRawMesh, SR_HTYPES_NS::RawMesh* pAnimationRawMesh, aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels) {
         SR_TRACY_ZONE;
 
 #ifdef SR_UTILS_ASSIMP
+        if (ticksPerSecond <= 0.f) {
+            /// FBX/Mixamo (и некоторые другие источники) иногда оставляют 0.
+            /// В таком случае считаем, что 1 tick == 1/25 sec (дефолт Assimp/FBX пайплайнов).
+            ticksPerSecond = 25.f;
+        }
+
         auto&& boneName = SR_UTILS_NS::StringAtom(pChannel->mNodeName.C_Str());
-        auto&& boneIndex = pRawMesh->GetBoneIndex(boneName);
+        auto&& boneIndex = pSkeletonRawMesh->GetBoneIndex(boneName);
         if (boneIndex == SR_ID_INVALID) {
             return;
         }

@@ -51,17 +51,17 @@ namespace SR_GRAPH_NS {
         SamplerDataUsageType usageType = SamplerDataUsageType::Texture;
 
         /// @property
-        /// @propertyCondition(This.IsFrameBufferUsage())
+        /// @condition(This.IsFrameBufferUsage())
         SR_UTILS_NS::StringAtom fboName;
         /// @property
-        /// @propertyCondition(This.IsFrameBufferUsage())
+        /// @condition(This.IsFrameBufferUsage())
         bool global = false;
         /// @property
-        /// @propertyCondition(This.IsFrameBufferColorUsage())
+        /// @condition(This.IsFrameBufferColorUsage())
         uint64_t index = 0;
 
         /// @property
-        /// @propertyCondition(This.IsTextureUsage())
+        /// @condition(This.IsTextureUsage())
         SR_UTILS_NS::Path texturePath;
     };
 
