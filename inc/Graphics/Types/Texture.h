@@ -19,6 +19,8 @@ namespace SR_GRAPH_NS {
 }
 
 namespace SR_GTYPES_NS {
+    class TextureImpl;
+    
     /// @extension(png, jpg, jpeg, tga, bmp)
     class Texture : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         SR_CLASS()
