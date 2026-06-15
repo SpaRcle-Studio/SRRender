@@ -32,26 +32,6 @@ namespace SR_ANIMATIONS_NS {
     private:
         std::vector<AnimationGameObjectData> m_gameObjects;
 
-    public:
-        /*SR_NODISCARD AnimationData* GetData(SR_UTILS_NS::StringAtom boneName) const noexcept;
-        SR_NODISCARD AnimationData* GetDataByIndex(uint16_t index) const noexcept;
-
-        void Reset();
-        void Initialize(const Skeleton* pSkeleton);
-        void Apply(Skeleton* pSkeleton);
-        void Update(Skeleton* pSkeleton, AnimationPose* pWorkingPose);
-        void SetPose(AnimationClip* pClip);
-
-    private:
-        static void Apply(const AnimationData* pWorkingData, const SR_UTILS_NS::GameObject::Ptr& pGameObject);
-        static void Update(AnimationData* pStaticData, const AnimationData* pWorkingData, const SR_UTILS_NS::GameObject::Ptr& pGameObject);
-
-    private:
-        bool m_isInitialized = false;
-
-        SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, AnimationData*> m_indices;
-        std::vector<std::pair<SR_UTILS_NS::StringAtom, AnimationData*>> m_data;*/
-
     };
 }
 

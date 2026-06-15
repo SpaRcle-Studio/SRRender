@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_ANIMATIONCLIP_H
 #define SR_ENGINE_ANIMATIONCLIP_H
 
-#include <Graphics/Animations/SkeletonRetarget.h>
+#include <Graphics/Animations/SkeletonRig.h>
 
 #include <Utils/Resources/Asset.h>
 #include <Utils/Resources/ResourceRef.h>
@@ -41,9 +41,10 @@ namespace SR_ANIMATIONS_NS {
         bool Unload() override;
         void OnAssetLoaded() override;
         void PostProcess();
+        void RetargetChannels();
 
     private:
-        SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, const std::string& name);
+        SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, SR_UTILS_NS::StringAtom name);
 
     private:
         /// @property
@@ -53,8 +54,8 @@ namespace SR_ANIMATIONS_NS {
         /// @customArg(filter value: fbx)
         SR_UTILS_NS::Path m_clipPath;
         /// @property
-        SR_UTILS_NS::ResourceRef<SkeletonRetargetProfile> m_retargetProfile;
-        /// @property @condition(!This.m_retargetProfile.IsValid())
+        SR_UTILS_NS::ResourceRef<SkeletonRig> m_rig;
+        /// @property @condition(!This.m_rig.IsValid())
         /// @customArgs(pick: enabled, filter name: Skeleton, relative: resources)
         /// @customArg(filter value: fbx)
         SR_UTILS_NS::Path m_skeletonPath;

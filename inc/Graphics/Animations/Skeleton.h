@@ -7,7 +7,7 @@
 
 #include <Graphics/Memory/SSBO.h>
 #include <Graphics/Animations/Bone.h>
-#include <Graphics/Animations/SkeletonRetarget.h>
+#include <Graphics/Animations/SkeletonRig.h>
 
 #include <Utils/ECS/Component.h>
 #include <Utils/Types/IRawMeshHolder.h>
@@ -55,6 +55,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const SR_UTILS_NS::Vector<Bone*>& GetBones() const noexcept { return m_bonesByIndex; };
         SR_NODISCARD Bone* TryGetBone(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD Bone* GetBone(SR_UTILS_NS::StringAtom name);
+        SR_NODISCARD Bone* GetAnimationBone(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD Bone* GetBoneByIndex(uint16_t index) const;
         SR_NODISCARD uint64_t GetBoneIndex(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD bool IsDebugEnabled() const noexcept { return m_debugEnabled; }
@@ -106,7 +107,7 @@ namespace SR_ANIMATIONS_NS {
 
     private:
         /// @property
-        SR_UTILS_NS::ResourceRef<SkeletonRetargetProfile> m_retargetProfile;
+        SR_UTILS_NS::ResourceRef<SkeletonRig> m_rig;
         /// @property
         bool m_customHierarchy = false;
         /// @property @dontSave @readOnly @debugOnly

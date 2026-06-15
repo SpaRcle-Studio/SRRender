@@ -172,7 +172,7 @@ namespace SR_ANIMATIONS_NS {
                     continue;
                 }
 
-                auto&& pBone = context.pSkeleton->GetBone(channel.GetChannelName());
+                auto&& pBone = context.pSkeleton->GetAnimationBone(channel.GetChannelName());
                 if (!pBone) {
                     SR_WARN("AnimationClipState::Compile() : bone \"{}\" not found in skeleton \"{}\"!", channel.GetChannelName(), context.pSkeleton->GetGameObject()->GetName());
                     continue;

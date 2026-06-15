@@ -26,7 +26,6 @@ namespace SR_ANIMATIONS_NS {
     public:
         static void Load(
             SR_HTYPES_NS::RawMesh* pSkeletonRawMesh,
-            SR_HTYPES_NS::RawMesh* pAnimationRawMesh,
             aiNodeAnim* pChannel,
             float_t ticksPerSecond,
             std::vector<AnimationChannel>& channels

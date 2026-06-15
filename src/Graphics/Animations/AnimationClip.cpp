@@ -23,14 +23,15 @@ namespace SR_ANIMATIONS_NS {
         m_channels.clear();
     }
 
-    bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, const std::string& name) {
+    bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, SR_UTILS_NS::StringAtom name) {
     #ifdef SR_UTILS_ASSIMP
         const aiAnimation* pAnimation = nullptr;
 
         const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
 
         for (uint32_t i = 0; i < pScene->mNumAnimations; ++i) {
-            if (name == pScene->mAnimations[i]->mName.C_Str()) {
+            auto&& animationName = pScene->mAnimations[i]->mName;
+            if (name == std::string_view(animationName.C_Str(), animationName.length)) {
                 pAnimation = pScene->mAnimations[i];
                 break;
             }
@@ -43,7 +44,6 @@ namespace SR_ANIMATIONS_NS {
         for (uint32_t channelIndex = 0; channelIndex < pAnimation->mNumChannels; ++channelIndex) {
             AnimationChannel::Load(
                 pSkeleton,
-                pRawMesh,
                 pAnimation->mChannels[channelIndex],
                 static_cast<float_t>(pAnimation->mTicksPerSecond),
                 m_channels
@@ -51,6 +51,7 @@ namespace SR_ANIMATIONS_NS {
         }
 
         PostProcess();
+        RetargetChannels();
 
         return true;
     #else
@@ -84,17 +85,19 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
-        SR_HTYPES_NS::RawMesh::Ptr pSkeletonMesh = nullptr;
+        SR_HTYPES_NS::RawMesh::Ptr pSkeletonMesh;
 
-        if (m_skeletonPath.empty() || m_skeletonPath == m_clipPath) {
-            pSkeletonMesh = pRawMesh;
-        }
-        else if (!m_skeletonPath.empty()) {
-            pSkeletonMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(m_skeletonPath);
-            if (!pSkeletonMesh) {
-                pRawMesh->CheckResourceUsage();
-                SR_ERROR("AnimationClip::Load() : failed to load skeleton raw mesh from path: {}", m_skeletonPath);
-                return;
+        if (!m_rig.IsValid()) {
+            if (m_skeletonPath.empty() || m_skeletonPath == m_clipPath) {
+                pSkeletonMesh = pRawMesh;
+            }
+            else if (!m_skeletonPath.empty()) {
+                pSkeletonMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(m_skeletonPath);
+                if (!pSkeletonMesh) {
+                    pRawMesh->CheckResourceUsage();
+                    SR_ERROR("AnimationClip::Load() : failed to load skeleton raw mesh from path: {}", m_skeletonPath);
+                    return;
+                }
             }
         }
 
@@ -110,13 +113,17 @@ namespace SR_ANIMATIONS_NS {
             }
         #endif
             pRawMesh->CheckResourceUsage();
-            pSkeletonMesh->CheckResourceUsage();
+            if (pSkeletonMesh) {
+                pSkeletonMesh->CheckResourceUsage();
+            }
             SR_ERROR("AnimationClip::Load() : wrong animation name \"{}\"!\n\tTotal animations: {}", m_clipName, animations);
             return;
         }
 
         pRawMesh->CheckResourceUsage();
-        pSkeletonMesh->CheckResourceUsage();
+        if (pSkeletonMesh) {
+            pSkeletonMesh->CheckResourceUsage();
+        }
 
         for (auto&& channel : GetChannels()) {
             m_maxKeyFrame = SR_MAX(m_maxKeyFrame, channel.GetKeys().size());
@@ -145,5 +152,27 @@ namespace SR_ANIMATIONS_NS {
             );
             m_channels.erase(pIt, m_channels.end());
         }
+    }
+
+    void AnimationClip::RetargetChannels() {
+        SR_TRACY_ZONE;
+
+        auto&& pRig = m_rig.GetResource();
+        if (!pRig) {
+            return;
+        }
+
+        for (auto&& channel : m_channels) {
+            SR_UTILS_NS::StringAtom retargetedBone = pRig->RetargetBone(channel.GetChannelName());
+            channel.SetName(retargetedBone);
+            if (!retargetedBone.empty()) {
+                channel.SetBoneIndex(pRig->GetBoneIndex(retargetedBone));
+            }
+        }
+
+        auto&& pIt = std::ranges::remove_if(m_channels, [](const AnimationChannel& channel) {
+            return channel.GetChannelName().empty();
+        });
+        m_channels.erase(pIt.begin(), pIt.end());
     }
 }

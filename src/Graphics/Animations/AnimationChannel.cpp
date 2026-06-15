@@ -85,7 +85,7 @@ namespace SR_ANIMATIONS_NS {
         return keyIndex;
     }
 
-    void AnimationChannel::Load(SR_HTYPES_NS::RawMesh* pSkeletonRawMesh, SR_HTYPES_NS::RawMesh* pAnimationRawMesh, aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels) {
+    void AnimationChannel::Load(SR_HTYPES_NS::RawMesh* pSkeletonRawMesh, aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels) {
         SR_TRACY_ZONE;
 
 #ifdef SR_UTILS_ASSIMP
@@ -95,10 +95,14 @@ namespace SR_ANIMATIONS_NS {
             ticksPerSecond = 25.f;
         }
 
-        auto&& boneName = SR_UTILS_NS::StringAtom(pChannel->mNodeName.C_Str());
-        auto&& boneIndex = pSkeletonRawMesh->GetBoneIndex(boneName);
-        if (boneIndex == SR_ID_INVALID) {
-            return;
+        auto&& boneName = SR_UTILS_NS::StringAtom(std::string_view(pChannel->mNodeName.C_Str(), pChannel->mNodeName.length));
+        uint32_t boneIndex = SR_ID_INVALID;
+
+        if (pSkeletonRawMesh) {
+            boneIndex = pSkeletonRawMesh->GetBoneIndex(boneName);
+            if (boneIndex == SR_ID_INVALID) {
+                return;
+            }
         }
 
         channels.reserve(pChannel->mNumPositionKeys + pChannel->mNumRotationKeys + pChannel->mNumScalingKeys);

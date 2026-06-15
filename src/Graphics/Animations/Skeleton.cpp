@@ -101,7 +101,18 @@ namespace SR_ANIMATIONS_NS {
         return true;
     }
 
+    Bone* Skeleton::GetAnimationBone(SR_UTILS_NS::StringAtom name) {
+        SR_TRACY_ZONE;
+
+        if (auto&& pRig = m_rig.GetResource()) {
+            name = pRig->GetBoneName(name);
+        }
+        return GetBone(name);
+    }
+
     Bone* Skeleton::GetBone(SR_UTILS_NS::StringAtom name) {
+        SR_TRACY_ZONE;
+
         if (m_rootBone) {
             m_rootBone->InitTreeIfNeed();
         }
