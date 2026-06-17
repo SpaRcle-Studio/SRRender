@@ -16,8 +16,12 @@ namespace SR_GRAPH_NS {
         SR_MATH_NS::FVector3 position;
         SR_MATH_NS::FVector3 velocity;
 
+        SR_MATH_NS::FVector4 color;
+
         float lifetime;
         float maxLifetime;
+
+        float size;
     };
 }
 

@@ -4,11 +4,13 @@
 
 
 #include <Graphics/Particles/ParticleUpdater.h>
+#include <Graphics/Particles/ParticleEmitter.h>
 
 namespace SR_GRAPH_NS{
     void ParticleUpdater::Update(float_t dt){
         for (uint32_t i = 0; i < m_Emitters.size(); i++){
             m_Emitters[i]->UpdateEmitter(dt);
+            m_Emitters[i]->BuildInstanceVertexBuffer();
         }
     }
 

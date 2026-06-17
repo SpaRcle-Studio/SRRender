@@ -8,6 +8,10 @@
 #include <Graphics/Particles/ParticleData.h>
 #include <Graphics/Types/IRenderComponent.h>
 #include <Graphics/Particles/ParticleInstanceData.h>
+#include <Graphics/Particles/ParticleMainModule.h>
+#include <Graphics/Particles/ParticleShapeModule.h>
+#include <Graphics/Particles/ParticleRendererModule.h>
+
 
 //include <Graphics/Common/Vertices.h>
 
@@ -56,10 +60,19 @@ namespace SR_GRAPH_NS {
         void Draw() override;
         bool ExecuteInEditMode() const override;
 
+        void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
+        void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
+        SR_NODISCARD int32_t GetVirtualUBO() const override { return m_virtualUBO; }
+
+        //ShapeModule& GetShapeModule() noexcept {return m_shape;}
+
     private:
         void Calculate();
     private:
         bool m_isVBODirty = true;
+        ParticleMainModule m_main;
+        ParticleShape::Ptr m_shape;
+        ParticleRenderMode m_renderer;
 
     };
 }

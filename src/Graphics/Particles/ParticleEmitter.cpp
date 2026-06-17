@@ -10,26 +10,37 @@
 #include <Graphics/Particles/ParticleEmitter.h>
 #include <Graphics/Particles/ParticleData.h>
 
-#include <Codegen/ParticleEmitter.generated.hpp>
-
-#include "Graphics/Render/RenderScene.h"
+#include <Graphics/Render/RenderScene.h>
 #include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Types/Shader.h>
+
+#include <Codegen/ParticleEmitter.generated.hpp>
 
 namespace SR_GRAPH_NS{
 
     void ParticleEmitter::InitializeParticle(){
         m_particles.resize(m_maxParticles);
+        m_instanceData.resize(m_particles.size());
 
         m_instanceVertexBuffer.SetLayout(GetShaderVertexLayoutDescription());
         m_instanceVertexBuffer.Allocate(m_maxParticles);
 
-        m_VBO = GetPipeline()->AllocateVBO(m_VBO,
-                                           m_maxParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
-                                           m_instanceVertexBuffer.GetRawData());
+        m_VBO = GetPipeline()->AllocateVBO(
+                m_VBO,
+                m_maxParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
+                m_instanceVertexBuffer.GetRawData());
     }
 
     void ParticleEmitter::Draw() {
+        if(m_aliveParticles == 0) {
+            return;
+        }
         SR_INFO("DRAW PARTICLES");
+        SR_INFO(
+                "DRAW alive={} vbo={}",
+                m_aliveParticles,
+                m_VBO
+        );
 
         Calculate();
 
@@ -43,6 +54,8 @@ namespace SR_GRAPH_NS{
                 m_dirtyMaterial,
                 m_hasErrors
         );
+
+        GetPipeline()->ResetDrawInstancesCount();
     }
 
     bool ParticleEmitter::ExecuteInEditMode() const {
@@ -50,22 +63,15 @@ namespace SR_GRAPH_NS{
     }
 
     void ParticleEmitter::BuildInstanceData() {
-        m_instanceData.resize(m_particles.size());
-
         for (uint32_t i = 0; i < m_aliveParticles; ++i){
             m_instanceData[i].position = m_particles[i].position;
-            m_instanceData[i].size = 1.0f;
-            m_instanceData[i].color = SR_MATH_NS::FVector4(1.0f);
+            m_instanceData[i].size = m_particles[i].size;
+            m_instanceData[i].color = m_particles[i].color;
         }
     }
 
     void ParticleEmitter::BuildInstanceVertexBuffer() {
         SR_INFO("BUILD INSTANCE BUFFER");
-
-        //if (m_aliveParticles == 0) {
-        //    return;
-        //}
-        //SetVertexLayoutDescription(GetShaderVertexLayoutDescription());
 
         BuildInstanceData();
 
@@ -87,9 +93,10 @@ namespace SR_GRAPH_NS{
 
         SR_INFO("VBO {}", m_VBO);
 
-        //m_VBO = GetPipeline()->AllocateVBO(m_VBO,
-         //                                  m_aliveParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
-         //                                  m_instanceVertexBuffer.GetRawData());
+        m_VBO = GetPipeline()->AllocateVBO(
+                m_VBO,
+                m_maxParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
+                m_instanceVertexBuffer.GetRawData());
 
         if (m_aliveParticles > 0) {
             SR_INFO("POS {} {} {}",
@@ -106,23 +113,32 @@ namespace SR_GRAPH_NS{
 
         auto& particle = m_particles[m_aliveParticles];
 
-        particle.position = SR_MATH_NS::FVector3(0.0f);
-        particle.velocity = SR_MATH_NS::FVector3(0.0f, 1.0f, 0.0f);
+        particle.position = m_shape->GeneratePosition();
+        particle.velocity = m_shape->GenerateDirection() * m_main.startSpeed;
 
-        particle.lifetime = 5.0f;
-        particle.maxLifetime = 5.0f;
+        particle.lifetime = m_main.startLifetime;
+        particle.maxLifetime = m_main.startLifetime;
+        particle.color = m_main.m_startColor;
+        particle.size = m_main.startSize;
 
         ++m_aliveParticles;
-        //SR_INFO("SPAWN {}", m_aliveParticles);
     }
 
     void ParticleEmitter::UpdateParticle(float_t dt){
         for (uint32_t i = 0; i < m_aliveParticles;){
             auto& particle = m_particles[i];
 
+            particle.velocity.y += m_main.gravity * dt;
             particle.position += particle.velocity * dt;
 
             particle.lifetime -= dt;
+
+            float_t t = particle.lifetime / particle.maxLifetime;
+
+            particle.color.x = SR_MATH_NS::Lerp(m_main.m_startColor.x, m_main.m_endColor.x, t);
+            particle.color.y = SR_MATH_NS::Lerp(m_main.m_startColor.y, m_main.m_endColor.y, t);
+            particle.color.z= SR_MATH_NS::Lerp(m_main.m_startColor.z, m_main.m_endColor.z, t);
+            particle.color.w = SR_MATH_NS::Lerp(m_main.m_startColor.w, m_main.m_endColor.w, t);
 
             if (particle.lifetime <= 0.0f){
                 KillParticle(i);
@@ -141,8 +157,6 @@ namespace SR_GRAPH_NS{
     }
 
     void ParticleEmitter::UpdateEmitter(float_t dt){
-        //SR_INFO("BEFORE UPDATE {}", m_aliveParticles);
-        //SR_INFO("UPDATE EMITTER");
         m_spawnTimer += dt;
 
         const float_t spawnInterval = 1.0f / m_spawnRate;
@@ -155,13 +169,10 @@ namespace SR_GRAPH_NS{
         UpdateParticle(dt);
 
         m_isVBODirty = true;
-        //SR_INFO("DIRTY SET {}", m_isVBODirty);
-        //SR_INFO("AFTER UPDATE {}", m_aliveParticles);
-        //SR_INFO("ALIVE {}", m_aliveParticles);
     }
 
     void ParticleEmitter::OnEnable(){
-        SR_INFO("START ALIVE {}", m_aliveParticles);
+        m_shape = new SphereShape();
         InitializeParticle();
 
         Super::OnEnable();
@@ -192,10 +203,12 @@ namespace SR_GRAPH_NS{
     }
 
     std::optional<int32_t> ParticleEmitter::GetVBO() const {
-        //const_cast<ParticleEmitter&>(*this).Calculate();
+        const_cast<ParticleEmitter&>(*this).Calculate();
         if (m_VBO == SR_ID_INVALID){
             return std::nullopt;
         }
+
+        SR_INFO("GET VBO");
 
         return m_VBO;
     }
@@ -204,6 +217,8 @@ namespace SR_GRAPH_NS{
         if (m_VBO == SR_ID_INVALID){
             return false;
         }
+
+        SR_INFO("PARTICLE BIND");
 
         GetPipeline()->BindVBO(m_VBO);
 
@@ -219,17 +234,27 @@ namespace SR_GRAPH_NS{
     }
 
     void ParticleEmitter::Calculate() {
-        SR_INFO("CALCULATE DIRTY {}", m_isVBODirty);
-        SR_INFO("ALIVE IN CALCULATE {}", m_aliveParticles);
+        SR_INFO("CALCULATE");
+
         if (!m_isVBODirty) {
             return;
         }
 
         BuildInstanceVertexBuffer();
-        //if(m_aliveParticles > 0) {
-        //    BuildInstanceVertexBuffer();
-        //}
 
         m_isVBODirty = false;
+    }
+
+    void ParticleEmitter::UseMaterial(SR_GTYPES_NS::Shader& shader) {
+        Super::UseMaterial(shader);
+        UseModelMatrix(shader);
+    }
+
+    void ParticleEmitter::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
+        Super::UseModelMatrix(shader);
+
+        if (auto&& pTransform = GetTransform()) SR_LIKELY_ATTRIBUTE {
+            shader.SetMat4(SHADER_MODEL_MATRIX, pTransform->GetMatrix());
+        }
     }
 }
