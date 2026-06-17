@@ -14,9 +14,18 @@ namespace SR_ANIMATIONS_NS {
 
     class RetargetAnimation : public SR_UTILS_NS::Singleton<RetargetAnimation> {
         SR_REGISTER_SINGLETON(RetargetAnimation);
+    public:
         using Channels = SR_UTILS_NS::Vector<AnimationChannel>;
+        
     public:
         SR_NODISCARD bool Retarget(
+            const SkeletonRig& sourceRig,
+            const SkeletonRig& targetRig,
+            const Channels& sourceChannels,
+            Channels& outTargetChannels
+        );
+
+        SR_NODISCARD bool BrokenLegacyRetarget(
             const SkeletonRig& sourceRig,
             const SkeletonRig& targetRig,
             const Channels& sourceChannels,
