@@ -69,6 +69,7 @@ namespace SR_ANIMATIONS_NS {
         SR_HTYPES_NS::RawMeshHolder& GetBoneHierarchyRawMesh() noexcept { return m_boneHierarchy; }
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
+        SR_NODISCARD const SkeletonRig* GetRig() const noexcept { return m_rig.GetResource().Get(); }
 
     private:
         void UpdateBonesSSBO();
@@ -98,6 +99,7 @@ namespace SR_ANIMATIONS_NS {
         SR_UTILS_NS::Vector<uint32_t> m_indices;
         SR_UTILS_NS::Vector<SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::Transform3D>> m_transforms;
         SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> m_matrices;
+        SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> m_bindPoseMatrices;
 
         mutable std::unique_ptr<SSBOInstance> m_offsetsSSBO;
         mutable std::array<std::unique_ptr<SSBOInstance>, SR_MAX_FRAMES_IN_FLIGHT> m_bonesSSBO;

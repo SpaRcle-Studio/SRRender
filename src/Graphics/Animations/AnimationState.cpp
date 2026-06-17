@@ -80,32 +80,26 @@ namespace SR_ANIMATIONS_NS {
 
         uint32_t currentKeyFrame = 0;
 
-        auto&& channels = m_clip->GetChannels();
+        auto&& channels = m_clip->GetChannels(context.pRig);
         const auto channelsCount = static_cast<uint32_t>(channels.size());
 
-        if (context.weight > 0.f && context.weight < 1.f) SR_UNLIKELY_ATTRIBUTE {
-            for (uint32_t i = 0; i < channelsCount; ++i) {
-                const uint32_t keyFrame = channels[i].UpdateChannelWithWeight(
-                    m_channelPlayState[i],
-                    m_time,
-                    context,
-                    m_channelContexts[i]
-                );
-
-                currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
+        for (uint32_t i = 0; i < channelsCount; ++i) {
+            ChannelUpdateContext& channelContext = m_channelContexts[i];
+            if (!channelContext.gameObjectIndex) SR_UNLIKELY_ATTRIBUTE {
+                currentKeyFrame = SR_MAX(currentKeyFrame, m_channelPlayState[i]);
+                continue;
             }
-        }
-        else {
-            for (uint32_t i = 0; i < channelsCount; ++i) {
-                const uint32_t keyFrame = channels[i].UpdateChannel(
-                    m_channelPlayState[i],
-                    m_time,
-                    context,
-                    m_channelContexts[i]
-                );
 
-                currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
+            auto&& data = context.pPose->GetGameObjectData(channelContext.gameObjectIndex.value());
+
+            uint32_t keyFrame = 0;
+            if (context.weight > 0.f && context.weight < 1.f) SR_UNLIKELY_ATTRIBUTE {
+                keyFrame = channels[i].UpdateChannelWithWeight(m_channelPlayState[i], m_time, context, data);
             }
+            else {
+                keyFrame = channels[i].UpdateChannel(m_channelPlayState[i], m_time, context, data);
+            }
+            currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
         }
 
         m_time += context.dt;
@@ -163,7 +157,7 @@ namespace SR_ANIMATIONS_NS {
 
         m_channelContexts.clear();
 
-        for (auto&& channel : m_clip->GetChannels()) {
+        for (auto&& channel : m_clip->GetChannels(context.pRig)) {
             auto&& channelContext = m_channelContexts.emplace_back();
 
             if (channel.HasBoneIndex()) {
@@ -198,7 +192,7 @@ namespace SR_ANIMATIONS_NS {
             }
         }
 
-        m_channelPlayState.resize(m_clip->GetChannels().size());
+        m_channelPlayState.resize(m_clip->GetChannels(context.pRig).size());
 
         return Super::Compile(context);
     }

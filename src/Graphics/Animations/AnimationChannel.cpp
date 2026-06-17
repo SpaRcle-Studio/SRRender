@@ -17,8 +17,7 @@ namespace SR_ANIMATIONS_NS {
         m_keys.clear();
     }
 
-    uint32_t AnimationChannel::UpdateChannelWithWeight(uint32_t keyIndex, float_t time,  UpdateContext& context, ChannelUpdateContext& channelContext) const {
-        AnimationGameObjectData& data = context.pPose->GetGameObjectData(channelContext.gameObjectIndex.value());
+    uint32_t AnimationChannel::UpdateChannelWithWeight(uint32_t keyIndex, float_t time, UpdateContext& context, AnimationGameObjectData& data) const {
         const auto keysCount = static_cast<uint32_t>(m_keys.size());
         const UnionAnimationKey* pData = m_keys.data();
 
@@ -49,12 +48,7 @@ namespace SR_ANIMATIONS_NS {
         return keyIndex;
     }
 
-    uint32_t AnimationChannel::UpdateChannel(uint32_t keyIndex, float_t time, UpdateContext& context, ChannelUpdateContext& channelContext) const {
-        if (!channelContext.gameObjectIndex) SR_UNLIKELY_ATTRIBUTE {
-            return keyIndex;
-        }
-
-        AnimationGameObjectData& data = context.pPose->GetGameObjectData(channelContext.gameObjectIndex.value());
+    uint32_t AnimationChannel::UpdateChannel(uint32_t keyIndex, float_t time, UpdateContext& context, AnimationGameObjectData& data) const {
         const auto keysCount = static_cast<uint32_t>(m_keys.size());
         const UnionAnimationKey* pData = m_keys.data();
 
@@ -85,7 +79,7 @@ namespace SR_ANIMATIONS_NS {
         return keyIndex;
     }
 
-    void AnimationChannel::Load(aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels) {
+    void AnimationChannel::Load(aiNodeAnim* pChannel, float_t ticksPerSecond, SR_UTILS_NS::Vector<AnimationChannel>& channels) {
         SR_TRACY_ZONE;
 
 #ifdef SR_UTILS_ASSIMP
@@ -149,6 +143,5 @@ namespace SR_ANIMATIONS_NS {
 
     void AnimationChannel::SetName(SR_UTILS_NS::StringAtom name) {
         m_name = name;
-        SRAssert(!m_name.empty());
     }
 }

@@ -24,13 +24,14 @@ namespace SR_ANIMATIONS_NS {
         using Super = SR_UTILS_NS::Asset;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<AnimationClip>;
+        using Channels = SR_UTILS_NS::Vector<AnimationChannel>;
 
     public:
         AnimationClip();
         ~AnimationClip() override;
 
     public:
-        SR_NODISCARD const std::vector<AnimationChannel>& GetChannels() const { return m_channels; }
+        SR_NODISCARD const Channels& GetChannels(const SkeletonRig* pTargetRig) const;
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
 
         SR_NODISCARD SR_UTILS_NS::StringAtom GetClipName() const noexcept;
@@ -59,9 +60,10 @@ namespace SR_ANIMATIONS_NS {
         /// @property @condition(!This.m_rig.IsValid())
         SR_HTYPES_NS::RawMeshHolder m_skeleton;
         /// @property
-        std::vector<SR_UTILS_NS::StringAtom> m_excludedBones;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> m_excludedBones;
 
-        std::vector<AnimationChannel> m_channels;
+        Channels m_channels;
+        mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Channels> m_retargetedChannels;
 
         float_t m_duration = 0.f;
         uint32_t m_maxKeyFrame = 0;

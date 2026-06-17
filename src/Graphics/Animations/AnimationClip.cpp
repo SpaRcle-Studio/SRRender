@@ -56,13 +56,13 @@ namespace SR_ANIMATIONS_NS {
             }
         }
 
-        PostProcess();
         RetargetChannels();
+        PostProcess();
 
-        auto&& pIt = std::ranges::remove_if(m_channels, [](const AnimationChannel& channel) {
-            return !channel.IsValid();
-        });
-        m_channels.erase(pIt.begin(), pIt.end());
+        //auto&& pIt = std::ranges::remove_if(m_channels, [](const AnimationChannel& channel) {
+        //    return !channel.IsValid();
+        //});
+        //m_channels.erase(pIt.begin(), pIt.end());
 
         return true;
     #else
@@ -72,6 +72,7 @@ namespace SR_ANIMATIONS_NS {
 
     bool AnimationClip::Unload() {
         m_channels.clear();
+        m_retargetedChannels.clear();
 
         m_maxKeyFrame = 0;
         m_duration = 0.f;
@@ -114,7 +115,7 @@ namespace SR_ANIMATIONS_NS {
 
         pRawMesh->CheckResourceUsage();
 
-        for (auto&& channel : GetChannels()) {
+        for (auto&& channel : m_channels) {
             m_maxKeyFrame = SR_MAX(m_maxKeyFrame, channel.GetKeys().size());
             for (auto&& key : channel.GetKeys()) {
                 m_duration = SR_MAX(m_duration, key.time);
@@ -163,12 +164,203 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
-        for (auto&& channel : m_channels) {
-            SR_UTILS_NS::StringAtom retargetedBone = pRig->RetargetBone(channel.GetChannelName());
-            channel.SetName(retargetedBone);
-            if (!retargetedBone.empty()) {
-                channel.SetBoneIndex(pRig->GetBoneIndex(retargetedBone));
+        /*for (auto&& channel : m_channels) {
+            SR_UTILS_NS::StringAtom outName;
+            auto&& pChain = pRig->RetargetBone(channel.GetChannelName(), outName);
+            if (!pChain) {
+                continue;
             }
+
+            auto&& boneInfo = pChain->bones.front();
+
+            channel.SetName(outName);
+            channel.SetBoneIndex(boneInfo.index);
+
+            /// substract the bind pose from the animation keys
+            for (UnionAnimationKey& key : channel.GetKeys()) {
+                switch (key.type) {
+                    case AnimationKeyType::Translation: {
+                        auto&& translation = key.data.translation.translation;
+                        translation -= boneInfo.bindTranslation;
+                        break;
+                    }
+                    case AnimationKeyType::Rotation: {
+                        auto&& rotation = key.data.rotation.rotation;
+                        rotation = boneInfo.bindRotation.Inverse() * rotation;
+                        break;
+                    }
+                    case AnimationKeyType::Scaling: {
+                        auto&& scale = key.data.scaling.scaling;
+                        scale /= boneInfo.bindScale;
+                        break;
+                    }
+                    default: {
+                        SRHalt("AnimationClip::RetargetChannels() : unknown key type!");
+                        break;
+                    }
+                }
+            }
+        }*/
+    }
+
+    const AnimationClip::Channels& AnimationClip::GetChannels(const SkeletonRig* pTargetRig) const {
+        SR_TRACY_ZONE;
+
+        auto&& pSourceRig = m_rig.GetResource();
+        if (!pTargetRig || !pSourceRig) {
+            return m_channels;
         }
+
+        const SR_UTILS_NS::StringAtom targetRigName = pTargetRig->GetResourceId();
+        if (auto&& pIt = m_retargetedChannels.find(targetRigName); pIt != m_retargetedChannels.end()) {
+            return pIt->second;
+        }
+
+        m_retargetedChannels[targetRigName] = m_channels;
+        Channels& channels = m_retargetedChannels[targetRigName];
+
+        /** formula:
+         *  prepare offsets: offset = bindTarget * inverse(bindSource)
+         *  and when animating: key = offset * key * inverse(offset)
+        */
+
+        for (auto&& channel : channels) {
+            SR_UTILS_NS::StringAtom sourceName;
+            auto&& pSourceChain = pSourceRig->RetargetBone(channel.GetChannelName(), sourceName);
+            if (!pSourceChain) {
+                continue;
+            }
+            auto&& pTargetChain = pTargetRig->GetBoneChain(sourceName);
+            if (!pTargetChain) {
+                continue;
+            }
+
+            auto&& sourceBoneInfo = pSourceChain->bones.front();
+            auto&& targetBoneInfo = pTargetChain->bones.front();
+
+            channel.SetName(targetBoneInfo.name);
+            channel.SetBoneIndex(targetBoneInfo.index);
+
+            const auto& sourceBindT = sourceBoneInfo.bindTranslation;
+            const auto& sourceBindR = sourceBoneInfo.bindRotation;
+            const auto& sourceBindS = sourceBoneInfo.bindScale;
+
+            const auto& targetBindT = targetBoneInfo.bindTranslation;
+            const auto& targetBindR = targetBoneInfo.bindRotation;
+            const auto& targetBindS = targetBoneInfo.bindScale;
+
+
+
+            //const auto Bs = sourceBoneInfo.bindRotation;
+            //const auto Bt = targetBoneInfo.bindRotation;
+
+            //// conversion between spaces
+            //const auto C = Bt * Bs.Inverse();
+
+
+            //const SR_MATH_NS::FVector3 tOffset = targetBoneInfo.bindTranslation - sourceBoneInfo.bindTranslation;
+            const SR_MATH_NS::Quaternion qOffset = targetBoneInfo.bindRotation * sourceBoneInfo.bindRotation.Inverse();
+            //const SR_MATH_NS::FVector3 sOffset = targetBoneInfo.bindScale / sourceBoneInfo.bindScale;
+
+            for (UnionAnimationKey& key : channel.GetKeys()) {
+                switch (key.type) {
+                    case AnimationKeyType::Rotation: {
+                        //auto&& rotation = key.data.rotation.rotation;
+                        //rotation = qOffset * rotation * qOffset.Inverse();
+
+                        auto& rotation = key.data.rotation.rotation;
+                        /// delta относительно bind позы источника
+                        const SR_MATH_NS::Quaternion delta = sourceBindR.Inverse() * rotation;
+                        /// применяем к bind позе цели
+                        rotation = targetBindR * delta;
+
+
+                        // animation delta in source space
+                        //const auto Rdelta = Bs.Inverse() * rotation;
+                        //rotation = Bt * C * Rdelta * C.Inverse();
+
+                        break;
+                    }
+                    case AnimationKeyType::Translation: {
+                        //auto&& translation = key.data.translation.translation;
+                        //translation += tOffset;
+
+
+                        auto& translation = key.data.translation.translation;
+                        const SR_MATH_NS::FVector3 delta = translation - sourceBindT;
+                        translation = targetBindT + delta.Rotate(qOffset);
+
+                        break;
+                    }
+                    case AnimationKeyType::Scaling: {
+                        //auto&& scale = key.data.scaling.scaling;
+                        //scale *= sOffset;
+
+                        auto& scale = key.data.scaling.scaling;
+                        const SR_MATH_NS::FVector3 delta = scale / sourceBindS;
+                        scale = targetBindS * delta;
+                        break;
+                    }
+                    default: {
+                        SRHalt("AnimationClip::RetargetChannels() : unknown key type!");
+                        break;
+                    }
+                }
+            }
+
+            /*for (UnionAnimationKey& key : channel.GetKeys()) {
+                switch (key.type) {
+                    case AnimationKeyType::Translation: {
+                        auto&& translation = key.data.translation.translation;
+                        translation -= sourceBoneInfo.bindTranslation;
+                        break;
+                    }
+                    case AnimationKeyType::Rotation: {
+                        auto&& rotation = key.data.rotation.rotation;
+                        rotation = sourceBoneInfo.bindRotation.Inverse() * rotation;
+                        break;
+                    }
+                    case AnimationKeyType::Scaling: {
+                        auto&& scale = key.data.scaling.scaling;
+                        scale /= sourceBoneInfo.bindScale;
+                        break;
+                    }
+                    default: {
+                        SRHalt("AnimationClip::RetargetChannels() : unknown key type!");
+                        break;
+                    }
+                }
+            }
+
+            for (UnionAnimationKey& key : channel.GetKeys()) {
+                switch (key.type) {
+                    case AnimationKeyType::Translation: {
+                        auto&& translation = key.data.translation.translation;
+                        translation += targetBoneInfo.bindTranslation;
+                        break;
+                    }
+                    case AnimationKeyType::Rotation: {
+                        auto&& rotation = key.data.rotation.rotation;
+                        rotation = targetBoneInfo.bindRotation * rotation;
+                        break;
+                    }
+                    case AnimationKeyType::Scaling: {
+                        auto&& scale = key.data.scaling.scaling;
+                        scale *= targetBoneInfo.bindScale;
+                        break;
+                    }
+                    default: {
+                        SRHalt("AnimationClip::RetargetChannels() : unknown key type!");
+                        break;
+                    }
+                }
+            }*/
+        }
+
+        channels.erase_if([](const AnimationChannel& channel) {
+            return !channel.IsValid();
+        });
+
+        return channels;
     }
 }

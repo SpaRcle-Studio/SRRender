@@ -25,9 +25,11 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         uint32_t index = SR_ID_INVALID;
         /// @property
-        SR_MATH_NS::FVector3 bindPosition;
+        SR_MATH_NS::FVector3 bindTranslation;
         /// @property
         SR_MATH_NS::Quaternion bindRotation;
+        /// @property
+        SR_MATH_NS::FVector3 bindScale;
     };
 
     struct SkeletonRigBoneChain : public SR_UTILS_NS::Serializable {
@@ -37,13 +39,27 @@ namespace SR_ANIMATIONS_NS {
         SR_UTILS_NS::Vector<SkeletonRigBoneInfo> bones;
     };
 
+    struct SkeletonAutoRigRules : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+
+        /// @property
+        SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> ignoreBonesStartsWith;
+        /// @property
+        SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> ignoreBonesContains;
+        /// @property
+        SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> ignoreBonesEndsWith;
+
+        SR_NODISCARD bool IsBoneIgnored(SR_UTILS_NS::StringAtom name) const;
+    };
+
     /// @extension(rig)
     class SkeletonRig : public SR_UTILS_NS::Asset {
         SR_CLASS()
     public:
-        SR_NODISCARD SR_UTILS_NS::StringAtom RetargetBone(SR_UTILS_NS::StringAtom name) const;
+        SR_NODISCARD const SkeletonRigBoneChain* RetargetBone(SR_UTILS_NS::StringAtom name, SR_UTILS_NS::StringAtom& outName) const;
 
         SR_NODISCARD uint32_t GetBoneIndex(SR_UTILS_NS::StringAtom name) const;
+        SR_NODISCARD const SkeletonRigBoneChain* GetBoneChain(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD SR_UTILS_NS::StringAtom GetBoneName(SR_UTILS_NS::StringAtom name) const;
 
     private:
@@ -58,6 +74,10 @@ namespace SR_ANIMATIONS_NS {
 
         /// @property
         std::unordered_map<SR_UTILS_NS::StringAtom, SkeletonRigBoneChain> m_mapping;
+
+        /// @property @condition(This.m_skeletonType == SkeletonType::Humanoid)
+        SkeletonAutoRigRules m_autoRigRules;
+
 
     };
 }

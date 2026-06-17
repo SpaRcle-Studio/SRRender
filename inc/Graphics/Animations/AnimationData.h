@@ -23,8 +23,6 @@ namespace SR_ANIMATIONS_NS {
         SR_HTYPES_NS::Optional<bool> enable;
         SR_HTYPES_NS::Optional<SR_UTILS_NS::StringAtom> layer;
 
-        float_t rotationWeight = 1.0f;
-
     };
 
     //static AnimationGameObjectData Merge(AnimationGameObjectData& from, AnimationGameObjectData& to, float_t weight) {

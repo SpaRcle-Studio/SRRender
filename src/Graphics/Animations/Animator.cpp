@@ -62,6 +62,10 @@ namespace SR_ANIMATIONS_NS {
 
             UpdateContext context;
 
+            if (auto&& pSkeleton = m_skeleton.Get()) {
+                context.pRig = pSkeleton->GetRig();
+            }
+
             context.tolerance = m_tolerance / 1000.f / 1000.f;
             context.frameRate = SR_MAX(1, m_frameRate);
             context.weight = 1.f;

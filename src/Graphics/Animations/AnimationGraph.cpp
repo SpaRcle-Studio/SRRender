@@ -78,7 +78,9 @@ namespace SR_ANIMATIONS_NS {
     void AnimationGraph::Apply(AnimationPose* pPose) {
         SR_TRACY_ZONE;
 
-        auto&& gameObjectsData = pPose->GetGameObjects();
+        //const bool isRetargeted = Retarget(pPose);
+        //std::vector<AnimationGameObjectData>& gameObjectsData = isRetargeted ? m_gameObjectsCache : pPose->GetGameObjects();
+        std::vector<AnimationGameObjectData>& gameObjectsData = pPose->GetGameObjects();
 
         {
             SR_TRACY_ZONE_N("Normalize");
@@ -98,24 +100,66 @@ namespace SR_ANIMATIONS_NS {
 
             data.dirty = false;
 
-            //SR_MATH_NS::Matrix4x4 matrix = m_baseMatrices[i] * SR_MATH_NS::Matrix4x4(
-            //    SR_MATH_NS::FVector3(),
-            //    data.rotation.value_or(SR_MATH_NS::Quaternion()),
-            //    data.scaling.value_or(SR_MATH_NS::FVector3(1.f))
-            //);
-
-            //SR_MATH_NS::FVector3 translation;
-            //SR_MATH_NS::Quaternion rotation;
-            //SR_MATH_NS::FVector3 scaling;
-            //matrix.Decompose(translation, rotation, scaling);
-
             m_gameObjects[i]->GetTransform()->SetMatrix(
-                    //translation, rotation, scaling
                 data.translation,
                 data.rotation,
                 data.scaling
             );
         }
+    }
+
+    bool AnimationGraph::Retarget(AnimationPose* pPose) {
+        SR_TRACY_ZONE;
+
+        if (auto&& pSkeleton = m_pAnimator->GetSkeleton().Get()) {
+            if (auto&& pRig = pSkeleton->GetRig()) {
+                auto&& gameObjectsData = pPose->GetGameObjects();
+                m_gameObjectsCache.resize(gameObjectsData.size());
+
+                for (uint32_t i = 0; i < gameObjectsData.size(); ++i) {
+                    AnimationGameObjectData& data = gameObjectsData[i];
+                    if (!data.dirty) SR_UNLIKELY_ATTRIBUTE {
+                        continue;
+                    }
+                    data.dirty = false;
+
+                    SR_UTILS_NS::StringAtom retargetName;
+                    auto&& pBoneChain = pRig->RetargetBone(m_gameObjects[i]->GetName(), retargetName);
+                    if (!pBoneChain) {
+                        continue;
+                    }
+
+                    auto&& cachedData = m_gameObjectsCache[i];
+                    cachedData.dirty = true;
+
+                    auto&& boneInfo = pBoneChain->bones.front();
+                    if (data.translation) SR_LIKELY_ATTRIBUTE {
+                        cachedData.translation = data.translation.value() + boneInfo.bindTranslation;
+                    }
+                    else {
+                        cachedData.translation.reset();
+                    }
+
+                    if (data.rotation) SR_LIKELY_ATTRIBUTE {
+                        cachedData.rotation = boneInfo.bindRotation * data.rotation.value();
+                    }
+                    else {
+                        cachedData.rotation.reset();
+                    }
+
+                    if (data.scaling) SR_LIKELY_ATTRIBUTE {
+                        cachedData.scaling = data.scaling.value() * boneInfo.bindScale;
+                    }
+                    else {
+                        cachedData.scaling.reset();
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void AnimationGraph::Compile() {
@@ -134,15 +178,13 @@ namespace SR_ANIMATIONS_NS {
 
         auto&& compileContext = CompileContext(m_gameObjects);
 
-        compileContext.pSkeleton = m_pAnimator->GetSkeleton().Get();
+        if (auto&& pSkeleton = m_pAnimator->GetSkeleton().Get()) {
+            compileContext.pSkeleton = m_pAnimator->GetSkeleton().Get();
+            compileContext.pRig = pSkeleton->GetRig();
+        }
 
         for (auto&& pNode : m_nodes) {
             pNode->Compile(compileContext);
-        }
-
-        m_baseMatrices.resize(m_gameObjects.size());
-        for (size_t i = 0; i < m_gameObjects.size(); ++i) {
-            m_baseMatrices[i] = m_gameObjects[i]->GetTransform()->GetLocalMatrix();
         }
 
         SR_DEBUG_LOG(SR_FORMAT("AnimationGraph::Compile() : game objects count = {}", m_gameObjects.size()));

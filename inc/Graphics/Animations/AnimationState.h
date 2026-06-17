@@ -110,6 +110,7 @@ namespace SR_ANIMATIONS_NS {
         float_t m_duration = 0.f;
         float_t m_time = 0.f;
         SR_HTYPES_NS::FastMemoryArray<uint32_t> m_channelPlayState;
+
     };
 
     /// ----------------------------------------------------------------------------------------------------------------

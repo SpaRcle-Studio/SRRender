@@ -55,13 +55,14 @@ namespace SR_ANIMATIONS_NS {
     private:
         void Apply(AnimationPose* pPose);
         void Compile();
+        bool Retarget(AnimationPose* pPose);
 
     private:
         bool m_isCompiled = false;
         Animator* m_pAnimator = nullptr;
         AnimationGraphAsset* m_pAsset = nullptr;
         std::vector<SR_UTILS_NS::GameObject::Ptr> m_gameObjects;
-        std::vector<SR_MATH_NS::Matrix4x4> m_baseMatrices;
+        std::vector<AnimationGameObjectData> m_gameObjectsCache;
 
     private:
         /// @property

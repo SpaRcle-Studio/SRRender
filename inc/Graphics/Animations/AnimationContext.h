@@ -10,27 +10,11 @@
 #include <Utils/Types/SortedVector.h>
 #include <Utils/ECS/GameObject.h>
 
-namespace SpaRcle::Graphics::Animations {
-    class AnimationGraph;
-}
-
 namespace SR_ANIMATIONS_NS {
     class AnimationPose;
+    class AnimationGraph;
     class Skeleton;
-
-    //using AnimationDataPair = std::pair<SR_UTILS_NS::StringAtom, AnimationData>;
-
-    //class AnimationDataPredicate {
-    //    SR_NODISCARD constexpr bool operator()(const AnimationDataPair& left, const AnimationDataPair& right) const noexcept {
-    //        return left.first < right.first;
-    //    }
-    //};
-
-    //class AnimationDataNamePredicate {
-    //    SR_NODISCARD constexpr bool operator()(const AnimationDataPair& left, const SR_UTILS_NS::StringAtom& right) const noexcept {
-    //        return left.first < right;
-    //    }
-    //};
+    class SkeletonRig;
 
     struct UpdateContext {
         float_t dt = 0.f;
@@ -39,14 +23,12 @@ namespace SR_ANIMATIONS_NS {
         uint16_t frameRate = 1;
         AnimationPose* pPose = nullptr;
         AnimationGraph* pGraph = nullptr;
+        const SkeletonRig* pRig = nullptr;
         float_t tolerance = 0.001f;
-
     };
 
     struct ChannelUpdateContext {
         std::optional<uint16_t> gameObjectIndex;
-        AnimationPose* pPose = nullptr;
-        AnimationGraph* pGraph = nullptr;
     };
 
     struct CompileContext {
@@ -55,6 +37,7 @@ namespace SR_ANIMATIONS_NS {
         { }
 
         Skeleton* pSkeleton = nullptr;
+        const SkeletonRig* pRig = nullptr;
 
         std::vector<SR_UTILS_NS::GameObject::Ptr>& gameObjects;
     };
