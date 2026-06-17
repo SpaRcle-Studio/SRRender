@@ -40,7 +40,11 @@ namespace SR_ANIMATIONS_NS {
 
             const float_t currentTime = time - prevKey.time;
             const float_t keyCurrTime = key.time - prevKey.time;
-            const float_t progress = currentTime / keyCurrTime;
+            float_t progress = 0.f;
+            if (keyCurrTime > 0.f) {
+                progress = currentTime / keyCurrTime;
+            }
+            progress = SR_CLAMP01(progress);
 
             key.UpdateWithWeight(progress, prevKey, data, context.weight);
         }
@@ -71,7 +75,11 @@ namespace SR_ANIMATIONS_NS {
 
             const float_t currentTime = time - prevKey.time;
             const float_t keyCurrTime = key.time - prevKey.time;
-            const float_t progress = currentTime / keyCurrTime;
+            float_t progress = 0.f;
+            if (keyCurrTime > 0.f) {
+                progress = currentTime / keyCurrTime;
+            }
+            progress = SR_CLAMP01(progress);
 
             key.Update(progress, prevKey, data, context.tolerance);
         }

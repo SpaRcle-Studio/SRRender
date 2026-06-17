@@ -30,6 +30,11 @@ namespace SR_ANIMATIONS_NS {
             SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> refNodeLocal;
             SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> refNodeCS;
 
+            /// Reference TRS (local)
+            SR_UTILS_NS::Vector<SR_MATH_NS::FVector3> refLocalT;
+            SR_UTILS_NS::Vector<SR_MATH_NS::Quaternion> refLocalR;
+            SR_UTILS_NS::Vector<SR_MATH_NS::FVector3> refLocalS;
+
             /// Node hierarchy helpers (for ordering / chain sorting)
             SR_UTILS_NS::Vector<uint32_t> nodeDepth;
 
@@ -70,6 +75,9 @@ namespace SR_ANIMATIONS_NS {
 
             out.refNodeLocal.resize(out.nodesCount);
             out.refNodeCS.resize(out.nodesCount);
+            out.refLocalT.resize(out.nodesCount);
+            out.refLocalR.resize(out.nodesCount);
+            out.refLocalS.resize(out.nodesCount);
             out.nodeDepth.resize(out.nodesCount);
 
             /// Import order guarantees parent index < child index.
@@ -79,7 +87,10 @@ namespace SR_ANIMATIONS_NS {
                 out.nodeIndexByName[node.name] = node.index;
 
                 const auto& trs = node.transform;
-                out.refNodeLocal[i] = SR_MATH_NS::Matrix4x4::CreateTRS(trs.translation, trs.rotation, trs.scale);
+                out.refLocalT[i] = trs.translation;
+                out.refLocalR[i] = trs.rotation;
+                out.refLocalS[i] = trs.scale;
+                out.refNodeLocal[i] = SR_MATH_NS::Matrix4x4::CreateTRS(out.refLocalT[i], out.refLocalR[i], out.refLocalS[i]);
 
                 if (node.parent.has_value()) {
                     const uint16_t parent = node.parent.value();
@@ -298,10 +309,9 @@ namespace SR_ANIMATIONS_NS {
         srcLocalS.resize(srcGraph.nodesCount);
 
         for (uint16_t i = 0; i < srcGraph.nodesCount; ++i) {
-            const auto& node = srcGraph.pScene->GetNodeByIndex(i);
-            srcLocalT[i] = node.transform.translation;
-            srcLocalR[i] = node.transform.rotation;
-            srcLocalS[i] = node.transform.scale;
+            srcLocalT[i] = srcGraph.refLocalT[i];
+            srcLocalR[i] = srcGraph.refLocalR[i];
+            srcLocalS[i] = srcGraph.refLocalS[i];
         }
 
         /// Channel -> nodeIndex lookup + cursor state for fast sequential sampling
@@ -377,8 +387,7 @@ namespace SR_ANIMATIONS_NS {
             }
 
             /// 3) Retarget top-down so unmapped children follow mapped parents.
-            /// We compute CS from parentCS * localFinal; for mapped nodes we override localFinal
-            /// by deriving it from desired component-space transform.
+            /// We compute CS from parentCS * localFinal; for mapped nodes we override localFinal.
             for (uint16_t ni = 0; ni < tgtGraph.nodesCount; ++ni) {
                 const auto& tgtNode = tgtGraph.pScene->GetNodeByIndex(ni);
 
@@ -394,7 +403,6 @@ namespace SR_ANIMATIONS_NS {
                     const SR_MATH_NS::Matrix4x4& srcRefCS = srcGraph.refNodeCS[srcNode];
                     const SR_MATH_NS::Matrix4x4& srcAnimCS = srcNodeCS[srcNode];
 
-                    /// Rotation/scale retarget in component space; translation only for hips/root.
                     SR_MATH_NS::FVector3 srcRefT, srcAnimT, tgtRefT;
                     SR_MATH_NS::Quaternion srcRefR, srcAnimR, tgtRefR;
                     SR_MATH_NS::FVector3 srcRefS, srcAnimS, tgtRefS;
@@ -406,19 +414,12 @@ namespace SR_ANIMATIONS_NS {
                     const SR_MATH_NS::Quaternion deltaR = srcAnimR * srcRefR.Inverse();
                     const SR_MATH_NS::Quaternion desiredR = (deltaR * tgtRefR).Normalized();
 
-                    /// We intentionally do NOT retarget scale by default: it tends to create stretching on different rigs.
-                    /// (UE typically has per-chain rules; we keep it conservative here.)
-
                     if (translationRetargetNodes.count(ni) != 0) {
-                        /// For hips/root: apply component-space translation delta.
                         const SR_MATH_NS::FVector3 desiredT = tgtRefT + (srcAnimT - srcRefT);
                         const SR_MATH_NS::Matrix4x4 desiredCS = SR_MATH_NS::Matrix4x4::CreateTRS(desiredT, desiredR, tgtRefS);
-
-                        /// Convert desired component transform into a local transform under *current* parentCS.
                         localFinal = parentCS.Inverse() * desiredCS;
                     }
                     else {
-                        /// For most bones: keep target local translation/scale, only retarget rotation (in component space).
                         SR_MATH_NS::FVector3 refLocalT;
                         SR_MATH_NS::Quaternion refLocalR;
                         SR_MATH_NS::FVector3 refLocalS;

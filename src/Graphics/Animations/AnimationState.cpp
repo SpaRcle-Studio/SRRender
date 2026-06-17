@@ -157,7 +157,21 @@ namespace SR_ANIMATIONS_NS {
 
         m_channelContexts.clear();
 
-        for (auto&& channel : m_clip->GetChannels(context.pRig)) {
+        const auto& channels = m_clip->GetChannels(context.pRig);
+
+        /// Important: retargeting may bake channels (different key counts than the source clip),
+        /// so we must compute these values from the channels actually used at runtime.
+        m_maxKeyFrame = 0;
+        m_duration = 0.f;
+
+        for (const auto& channel : channels) {
+            m_maxKeyFrame = SR_MAX(m_maxKeyFrame, static_cast<uint32_t>(channel.GetKeys().size()));
+            for (const auto& key : channel.GetKeys()) {
+                m_duration = SR_MAX(m_duration, key.time);
+            }
+        }
+
+        for (auto&& channel : channels) {
             auto&& channelContext = m_channelContexts.emplace_back();
 
             if (channel.HasBoneIndex()) {
@@ -192,7 +206,7 @@ namespace SR_ANIMATIONS_NS {
             }
         }
 
-        m_channelPlayState.resize(m_clip->GetChannels(context.pRig).size());
+        m_channelPlayState.resize(channels.size());
 
         return Super::Compile(context);
     }
