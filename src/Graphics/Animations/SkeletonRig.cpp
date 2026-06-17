@@ -120,18 +120,8 @@ namespace SR_ANIMATIONS_NS {
 
         m_mapping.clear();
 
-        auto&& resourcesPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath();
-        if (auto&& path = SR_UTILS_NS::FileDialog::Instance().OpenDialog(resourcesPath.ToString(), { { "Any skeleton", "prefab,pmx,fbx,obj,blend,dae,abc,stl,ply,glb,gltf,x3d,sfg,bvh,3ds,gltf" } }); !path.IsEmpty()) {
-            SR_UTILS_NS::ResourceRef<SR_HTYPES_NS::RawMesh> rawMesh = path.RemoveSubPath(resourcesPath);
-            if (auto&& pRawMesh = rawMesh.GetResource()) {
-                for (uint32_t i = 0; i < pRawMesh->GetMeshesCount(); ++i) {
-                    if (pRawMesh->GetMeshData(i).bones.empty()) {
-                        continue;
-                    }
-                    AutoRemapHumanoidBonesImpl(*pRawMesh, i);
-                    break;
-                }
-            }
+        if (auto&& pRawMesh = m_skeleton.GetRawMesh()) {
+            AutoRemapHumanoidBonesImpl(*pRawMesh, m_skeleton.GetMeshId());
         }
     }
 }

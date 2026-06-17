@@ -21,10 +21,6 @@ namespace SR_ANIMATIONS_NS {
             : SR_HTYPES_NS::SharedPtr<Bone>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
         { }
 
-        void SetSkeleton(Skeleton* pSkeleton) {
-            this->pSkeleton = pSkeleton;
-        }
-
         bool Initialize();
         void InitTreeIfNeed();
 
@@ -40,8 +36,8 @@ namespace SR_ANIMATIONS_NS {
         SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::GameObject> gameObject;
         Bone* pParent = nullptr;
         Bone* pRoot = nullptr;
+        SR_WORLD_NS::Scene* pScene = nullptr;
         bool hasError = false;
-        Skeleton* pSkeleton = nullptr;
 
     };
 }

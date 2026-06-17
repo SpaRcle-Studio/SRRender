@@ -9,6 +9,7 @@
 #include <Graphics/Animations/HumanoidBoneType.h>
 
 #include <Utils/Types/SharedPtr.h>
+#include <Utils/Types/IRawMeshHolder.h>
 #include <Utils/Resources/Asset.h>
 #include <Utils/Resources/ResourceRef.h>
 
@@ -61,6 +62,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD uint32_t GetBoneIndex(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD const SkeletonRigBoneChain* GetBoneChain(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD SR_UTILS_NS::StringAtom GetBoneName(SR_UTILS_NS::StringAtom name) const;
+        SR_NODISCARD const SR_HTYPES_NS::RawMeshHolder& GetSkeleton() const { return m_skeleton; }
 
     private:
         /// @method @editorButton @condition(This.m_skeletonType == SkeletonType::Humanoid)
@@ -69,6 +71,9 @@ namespace SR_ANIMATIONS_NS {
         void AutoRemapHumanoidBonesImpl(const SR_HTYPES_NS::RawMesh& rawMesh, uint32_t index);
 
     private:
+        /// @property
+        SR_HTYPES_NS::RawMeshHolder m_skeleton;
+
         /// @property
         SkeletonType m_skeletonType = SkeletonType::Generic;
 

@@ -52,7 +52,7 @@ namespace SR_ANIMATIONS_NS {
         }
         else {
             m_rootBone = pBone;
-            m_rootBone->SetSkeleton(this);
+            m_rootBone->pScene = GetScene();
             m_rootBone->InitTreeIfNeed();
         }
 
@@ -65,21 +65,18 @@ namespace SR_ANIMATIONS_NS {
 
     bool Skeleton::ReCalculateSkeleton() {
         m_bonesByName.clear();
-        m_bonesByIndex.clear();
 
-        if (!m_rootBone && !TryInitializeBonesFromMesh()) {
+        if (!GetRootBone() && !TryInitializeBonesFromMesh()) {
             SR_WARN("Skeleton::ReCalculateSkeleton() : root bone is nullptr!");
             return false;
         }
 
-        m_rootBone->InitTreeIfNeed();
-
-        if (m_rootBone) {
-            m_rootBone->gameObject = GetGameObject();
+        if (GetRootBone()) {
+            GetRootBone()->InitTreeIfNeed();
+            GetRootBone()->gameObject = GetGameObject();
         }
 
         m_bonesByName.reserve(SR_HUMANOID_MAX_BONES);
-        m_bonesByIndex.reserve(SR_HUMANOID_MAX_BONES);
 
         const SR_HTYPES_NS::Function<void(SR_ANIMATIONS_NS::Bone*)> processBone = [&](SR_ANIMATIONS_NS::Bone* pBone) {
         #ifdef SR_DEBUG
@@ -88,7 +85,6 @@ namespace SR_ANIMATIONS_NS {
             }
         #endif
 
-            m_bonesByIndex.emplace_back(pBone);
             m_bonesByName.insert(std::make_pair(pBone->name, pBone));
 
             for (auto&& pSubBone : pBone->bones) {
@@ -96,7 +92,7 @@ namespace SR_ANIMATIONS_NS {
             }
         };
 
-        processBone(m_rootBone.Get());
+        processBone(GetRootBone().Get());
 
         return true;
     }
@@ -113,8 +109,8 @@ namespace SR_ANIMATIONS_NS {
     Bone* Skeleton::GetBone(SR_UTILS_NS::StringAtom name) {
         SR_TRACY_ZONE;
 
-        if (m_rootBone) {
-            m_rootBone->InitTreeIfNeed();
+        if (auto&& pRoot = GetRootBone()) {
+            pRoot->InitTreeIfNeed();
         }
 
         auto&& pBoneIt = m_bonesByName.find(name);
@@ -129,27 +125,9 @@ namespace SR_ANIMATIONS_NS {
         return pBoneIt->second;
     }
 
-    Bone* Skeleton::GetBoneByIndex(uint16_t index) const {
-        if (m_rootBone) {
-            m_rootBone->InitTreeIfNeed();
-        }
-
-        if (index >= m_bonesByIndex.size()) SR_UNLIKELY_ATTRIBUTE {
-            return nullptr;
-        }
-
-        if (!m_bonesByIndex[index]->gameObject && !m_bonesByIndex[index]->hasError) SR_UNLIKELY_ATTRIBUTE {
-            if (!m_bonesByIndex[index]->Initialize()) {
-                return nullptr;
-            }
-        }
-
-        return m_bonesByIndex[index];
-    }
-
     Bone* Skeleton::TryGetBone(SR_UTILS_NS::StringAtom name) {
-        if (m_rootBone) {
-            m_rootBone->InitTreeIfNeed();
+        if (auto&& pRoot = GetRootBone()) {
+            pRoot->InitTreeIfNeed();
         }
 
         auto&& pBoneIt = m_bonesByName.find(name);
@@ -173,16 +151,11 @@ namespace SR_ANIMATIONS_NS {
     }
 
     void Skeleton::OnPostLoad() {
-        if (m_rootBone) {
-            m_rootBone->SetSkeleton(this);
-        }
         Super::OnPostLoad();
     }
 
     void Skeleton::OnAttached() {
         ReCalculateSkeleton();
-
-
 
         if (auto&& pScene = TryGetScene()) {
             auto&& pRenderScene = pScene->GetDataStorage().GetValue<RenderScenePtr>();
@@ -217,7 +190,8 @@ namespace SR_ANIMATIONS_NS {
         SR_TRACY_ZONE;
 
         static const auto& defaultMesh = SR_HTYPES_NS::MeshSceneStructure::MeshData();
-        auto&& mesh = m_skeleton.IsValidMeshId() ? m_skeleton.GetRawMesh()->GetMeshData(m_skeleton.GetMeshId()) : defaultMesh;
+        auto&& skeleton = GetSkeletonRawMesh();
+        auto&& mesh = skeleton.IsValidMeshId() ? skeleton.GetRawMesh()->GetMeshData(skeleton.GetMeshId()) : defaultMesh;
 
         if (!mesh.maxBoneId.has_value()) {
             m_matrices.clear();
@@ -279,7 +253,7 @@ namespace SR_ANIMATIONS_NS {
     }
 
     void Skeleton::UpdateDebug() {
-        if (!m_rootBone) {
+        if (!GetRootBone()) {
             DisableDebug();
             return;
         }
@@ -314,29 +288,10 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    uint64_t Skeleton::GetBoneIndex(SR_UTILS_NS::StringAtom name) {
-        for (uint64_t i = 0; i < m_bonesByIndex.size(); ++i) {
-            if (m_bonesByIndex[i]->name == name) {
-                return i;
-            }
-        }
-
-        return SR_ID_INVALID;
-    }
-
-    const SR_MATH_NS::Matrix4x4& Skeleton::GetMatrixByIndex(uint16_t index) noexcept {
-        static SR_MATH_NS::Matrix4x4 identityMatrix = SR_MATH_NS::Matrix4x4().Identity();
-
-        if (index >= m_bonesByIndex.size()) {
-            return identityMatrix;
-        }
-
-        return m_matrices[index];
-    }
-
     const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetOffsets() const noexcept {
-        if (auto&& pRawMesh = m_skeleton.GetRawMesh()) {
-            return pRawMesh->GetBoneOffsetMatrices(m_skeleton.GetMeshId());
+        auto&& skeleton = GetSkeletonRawMesh();
+        if (auto&& pRawMesh = skeleton.GetRawMesh()) {
+            return pRawMesh->GetBoneOffsetMatrices(skeleton.GetMeshId());
         }
         const static SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> defValue;
         return defValue;
@@ -375,16 +330,7 @@ namespace SR_ANIMATIONS_NS {
             }
 
             auto&& pTransform = m_transforms[index].Get();
-
-            //if (hasDirty) {
-            //    m_matrices[index] = pTransform->GetMatrix();
-            //    continue;
-            //}
-
-           // if (pTransform->IsDirty()) {
-           //     hasDirty = true;
             m_matrices[index] = pTransform->GetMatrix();
-           // }
         }
 
         m_dirtyMatrices = false;
@@ -403,6 +349,13 @@ namespace SR_ANIMATIONS_NS {
 
     void Skeleton::SwitchDebug() {
         m_debugEnabled = !m_debugEnabled;
+    }
+
+    SR_HTYPES_NS::SharedPtr<Bone>& Skeleton::GetRootBone() noexcept {
+        if (auto&& pParent = m_parent.Get()) {
+            return pParent->GetRootBone();
+        }
+        return m_rootBone;
     }
 
     const SR_GRAPH_NS::RenderContext::Ptr& Skeleton::GetRenderContext() const noexcept {
@@ -460,14 +413,7 @@ namespace SR_ANIMATIONS_NS {
     bool Skeleton::TryInitializeBonesFromMesh() {
         SR_TRACY_ZONE;
 
-        if (m_customHierarchy) {
-            return false;
-        }
-
-        SR_HTYPES_NS::RawMesh::Ptr pRawMesh = m_boneHierarchy.GetRawMesh();
-        if (!pRawMesh) {
-            pRawMesh = m_skeleton.GetRawMesh();
-        }
+        SR_HTYPES_NS::RawMesh::Ptr pRawMesh = GetSkeletonRawMesh().GetRawMesh();
 
         if (pRawMesh) {
         #ifdef SR_UTILS_ASSIMP
@@ -498,5 +444,16 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return false;
+    }
+
+    const SkeletonRig* Skeleton::GetRig() const noexcept {
+        return m_rig.GetResource().Get();
+    }
+
+    const SR_HTYPES_NS::RawMeshHolder& Skeleton::GetSkeletonRawMesh() const {
+        if (!m_rig.IsValid()) {
+            return m_skeleton;
+        }
+        return m_rig.GetResource()->GetSkeleton();
     }
 }

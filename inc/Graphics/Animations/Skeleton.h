@@ -10,6 +10,7 @@
 #include <Graphics/Animations/SkeletonRig.h>
 
 #include <Utils/ECS/Component.h>
+#include <Utils/ECS/EntityRef.h>
 #include <Utils/Types/IRawMeshHolder.h>
 #include <Utils/Types/FlatHashMap.h>
 #include <Utils/Common/Subscription.h>
@@ -49,15 +50,11 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD int32_t GetOffsetsSSBO() const noexcept;
         SR_NODISCARD int32_t GetBonesSSBO() const noexcept;
 
-        const SR_MATH_NS::Matrix4x4& GetMatrixByIndex(uint16_t index) noexcept;
         SR_NODISCARD const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& GetMatrices() noexcept;
         SR_NODISCARD const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& GetOffsets() const noexcept;
-        SR_NODISCARD const SR_UTILS_NS::Vector<Bone*>& GetBones() const noexcept { return m_bonesByIndex; };
         SR_NODISCARD Bone* TryGetBone(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD Bone* GetBone(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD Bone* GetAnimationBone(SR_UTILS_NS::StringAtom name);
-        SR_NODISCARD Bone* GetBoneByIndex(uint16_t index) const;
-        SR_NODISCARD uint64_t GetBoneIndex(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD bool IsDebugEnabled() const noexcept { return m_debugEnabled; }
         SR_NODISCARD bool IsDirtyMatrices() const noexcept { return m_dirtyMatrices; }
         void SetDebugEnabled(bool enabled) { m_debugEnabled = enabled; }
@@ -65,11 +62,11 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<Pipeline>& GetPipeline() const noexcept;
 
-        SR_HTYPES_NS::RawMeshHolder& GetSkeletonRawMesh() noexcept { return m_skeleton; }
-        SR_HTYPES_NS::RawMeshHolder& GetBoneHierarchyRawMesh() noexcept { return m_boneHierarchy; }
+        void SetRawMesh(const SR_HTYPES_NS::RawMeshHolder& rawMesh) { m_skeleton = rawMesh; OnRawMeshChanged(); }
+        const SR_HTYPES_NS::RawMeshHolder& GetSkeletonRawMesh() const;
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
-        SR_NODISCARD const SkeletonRig* GetRig() const noexcept { return m_rig.GetResource().Get(); }
+        SR_NODISCARD const SkeletonRig* GetRig() const noexcept;
 
     private:
         void UpdateBonesSSBO();
@@ -83,12 +80,13 @@ namespace SR_ANIMATIONS_NS {
         /// @method @editorButton
         void SwitchDebug();
 
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<Bone>& GetRootBone() noexcept;
+
+    private:
         SR_HTYPES_NS::FlatHashMap<Bone*, uint64_t> m_debugLines;
         SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Bone*> m_bonesByName;
 
         SR_UTILS_NS::Subscription m_prepareFrameSubscription;
-
-        SR_UTILS_NS::Vector<Bone*> m_bonesByIndex;
 
         bool m_debugEnabled = false;
         bool m_isNeedRecalcTransforms = true;
@@ -108,22 +106,19 @@ namespace SR_ANIMATIONS_NS {
 
     private:
         /// @property
+        SR_UTILS_NS::EntityRef<Skeleton> m_parent;
+        /// @property @onChanged(OnRawMeshChanged)
         SR_UTILS_NS::ResourceRef<SkeletonRig> m_rig;
-        /// @property
-        bool m_customHierarchy = false;
+        /// @property @condition(!This.m_rig.IsValid())
+        /// @onChanged(OnRawMeshChanged)
+        SR_HTYPES_NS::RawMeshHolder m_skeleton;
+
         /// @property @dontSave @readOnly @debugOnly
         bool m_dirtyMatrices = false;
         /// @property @dontSave @readOnly @debugOnly
         bool m_hasInvalidBones = false;
 
-        /// @property
-        /// @onChanged(OnRawMeshChanged)
-        SR_HTYPES_NS::RawMeshHolder m_skeleton;
-        /// @property @condition(This.m_customHierarchy == false) @loadCondition(This.m_customHierarchy == false)
-        /// @onChanged(OnRawMeshChanged)
-        SR_HTYPES_NS::RawMeshHolder m_boneHierarchy;
-
-        /// @property @notNull @condition(This.m_customHierarchy == true) @loadCondition(This.m_customHierarchy == true)
+        /// @property @notNull @debugOnly @dontSave @readOnly
         SR_HTYPES_NS::SharedPtr<Bone> m_rootBone;
 
     };

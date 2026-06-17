@@ -38,7 +38,7 @@ namespace SR_ANIMATIONS_NS {
         }
 
         /// Shoulder, UpperArm, LowerArm, Hand,
-        if (name.contains("shoulder")) {
+        if (name.contains("shoulder") || name.contains("clavicle")) {
             return leftSide ? HumanoidBoneType::LeftShoulder : HumanoidBoneType::RightShoulder;
         }
         else if (name.contains("arm") && (name.contains("upper") || name.contains("up") || name.contains("forearm"))) {

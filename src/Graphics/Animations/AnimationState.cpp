@@ -188,7 +188,7 @@ namespace SR_ANIMATIONS_NS {
             }
             else {
                 /// auto&& name = pChannel->GetGameObjectName();
-                SRHalt("Not implemented!");
+                SR_ERROR("Not implemented!");
             }
         }
 

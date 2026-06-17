@@ -14,7 +14,7 @@
 namespace SR_ANIMATIONS_NS {
     void Bone::InitTree(Bone* pParent) {
         this->pRoot = pParent ? pParent->pRoot : this;
-        this->pSkeleton = pParent ? pParent->pSkeleton : pSkeleton;
+        this->pScene = pParent ? pParent->pScene : pScene;
         this->pParent = pParent;
 
         for (auto&& pChild : bones) {
@@ -31,7 +31,7 @@ namespace SR_ANIMATIONS_NS {
             return false;
         }
 
-        if (!pRoot->gameObject && !pRoot->pSkeleton) {
+        if (!pRoot->gameObject && !pRoot->pScene) {
             SRHalt0();
             hasError = true;
             return false;
@@ -57,7 +57,7 @@ namespace SR_ANIMATIONS_NS {
                 }
             }
             else {
-                if (!((gameObject = SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::GameObject>(pRoot->pSkeleton->GetScene()->Find(names[i]))))) {
+                if (!((gameObject = SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::GameObject>(pRoot->pScene->GetScene()->Find(names[i]))))) {
                     break;
                 }
             }

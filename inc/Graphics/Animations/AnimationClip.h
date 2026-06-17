@@ -43,7 +43,6 @@ namespace SR_ANIMATIONS_NS {
         bool Unload() override;
         void OnAssetLoaded() override;
         void PostProcess();
-        void RetargetChannels();
 
     private:
         SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_UTILS_NS::StringAtom name);
@@ -63,7 +62,7 @@ namespace SR_ANIMATIONS_NS {
         SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> m_excludedBones;
 
         Channels m_channels;
-        mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Channels> m_retargetedChannels;
+        mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Channels> m_retargetCache;
 
         float_t m_duration = 0.f;
         uint32_t m_maxKeyFrame = 0;
