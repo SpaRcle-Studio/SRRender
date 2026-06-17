@@ -24,12 +24,7 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationChannel();
 
     public:
-        static void Load(
-            SR_HTYPES_NS::RawMesh* pSkeletonRawMesh,
-            aiNodeAnim* pChannel,
-            float_t ticksPerSecond,
-            std::vector<AnimationChannel>& channels
-        );
+        static void Load(aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels);
 
         void SetName(SR_UTILS_NS::StringAtom name);
         void SetBoneIndex(uint16_t index) { m_boneIndex = index; }
@@ -47,6 +42,8 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD const Keys& GetKeys() const { return m_keys; }
         SR_NODISCARD Keys& GetKeys() { return m_keys; }
+
+        SR_NODISCARD bool IsValid() const { return !m_keys.empty() && HasBoneIndex() && !m_name.empty(); }
 
         SR_NODISCARD SR_FORCE_INLINE SR_UTILS_NS::StringAtom GetChannelName() const noexcept { return m_name; }
         SR_NODISCARD SR_FORCE_INLINE uint16_t GetBoneIndex() const noexcept { return m_boneIndex.value_or(SR_UINT16_MAX); }

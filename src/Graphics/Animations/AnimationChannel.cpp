@@ -85,7 +85,7 @@ namespace SR_ANIMATIONS_NS {
         return keyIndex;
     }
 
-    void AnimationChannel::Load(SR_HTYPES_NS::RawMesh* pSkeletonRawMesh, aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels) {
+    void AnimationChannel::Load(aiNodeAnim* pChannel, float_t ticksPerSecond, std::vector<AnimationChannel>& channels) {
         SR_TRACY_ZONE;
 
 #ifdef SR_UTILS_ASSIMP
@@ -93,16 +93,6 @@ namespace SR_ANIMATIONS_NS {
             /// FBX/Mixamo (и некоторые другие источники) иногда оставляют 0.
             /// В таком случае считаем, что 1 tick == 1/25 sec (дефолт Assimp/FBX пайплайнов).
             ticksPerSecond = 25.f;
-        }
-
-        auto&& boneName = SR_UTILS_NS::StringAtom(std::string_view(pChannel->mNodeName.C_Str(), pChannel->mNodeName.length));
-        uint32_t boneIndex = SR_ID_INVALID;
-
-        if (pSkeletonRawMesh) {
-            boneIndex = pSkeletonRawMesh->GetBoneIndex(boneName);
-            if (boneIndex == SR_ID_INVALID) {
-                return;
-            }
         }
 
         channels.reserve(pChannel->mNumPositionKeys + pChannel->mNumRotationKeys + pChannel->mNumScalingKeys);
@@ -113,8 +103,6 @@ namespace SR_ANIMATIONS_NS {
             auto&& channel = channels.emplace_back();
 
             channel.ReserveKeys(pChannel->mNumPositionKeys);
-            channel.SetName(boneName);
-            channel.SetBoneIndex(boneIndex);
 
             for (uint32_t positionKeyIndex = 0; positionKeyIndex < pChannel->mNumPositionKeys; ++positionKeyIndex) {
                 auto&& pPositionKey = pChannel->mPositionKeys[positionKeyIndex];
@@ -131,8 +119,6 @@ namespace SR_ANIMATIONS_NS {
             auto&& channel = channels.emplace_back();
 
             channel.ReserveKeys(pChannel->mNumRotationKeys);
-            channel.SetName(boneName);
-            channel.SetBoneIndex(boneIndex);
 
             for (uint32_t rotationKeyIndex = 0; rotationKeyIndex < pChannel->mNumRotationKeys; ++rotationKeyIndex) {
                 auto&& pRotationKey = pChannel->mRotationKeys[rotationKeyIndex];
@@ -149,8 +135,6 @@ namespace SR_ANIMATIONS_NS {
             auto&& channel = channels.emplace_back();
 
             channel.ReserveKeys(pChannel->mNumScalingKeys);
-            channel.SetName(boneName);
-            channel.SetBoneIndex(boneIndex);
 
             for (uint32_t scalingKeyIndex = 0; scalingKeyIndex < pChannel->mNumScalingKeys; ++scalingKeyIndex) {
                 auto&& pScalingKey = pChannel->mScalingKeys[scalingKeyIndex];

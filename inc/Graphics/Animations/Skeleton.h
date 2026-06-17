@@ -60,7 +60,6 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD uint64_t GetBoneIndex(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD bool IsDebugEnabled() const noexcept { return m_debugEnabled; }
         SR_NODISCARD bool IsDirtyMatrices() const noexcept { return m_dirtyMatrices; }
-        SR_NODISCARD const SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, uint16_t>& GetOptimizedBones() const noexcept;
         void SetDebugEnabled(bool enabled) { m_debugEnabled = enabled; }
 
         SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;

@@ -23,7 +23,7 @@ namespace SR_ANIMATIONS_NS {
         m_channels.clear();
     }
 
-    bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, SR_UTILS_NS::StringAtom name) {
+    bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_UTILS_NS::StringAtom name) {
     #ifdef SR_UTILS_ASSIMP
         const aiAnimation* pAnimation = nullptr;
 
@@ -42,16 +42,27 @@ namespace SR_ANIMATIONS_NS {
         }
 
         for (uint32_t channelIndex = 0; channelIndex < pAnimation->mNumChannels; ++channelIndex) {
-            AnimationChannel::Load(
-                pSkeleton,
-                pAnimation->mChannels[channelIndex],
-                static_cast<float_t>(pAnimation->mTicksPerSecond),
-                m_channels
-            );
+            auto&& pChannel = pAnimation->mChannels[channelIndex];
+            auto&& channelName = SR_UTILS_NS::StringAtom(std::string_view(pChannel->mNodeName.C_Str(), pChannel->mNodeName.length));
+            if (channelName.empty()) {
+                SR_LOG("AnimationClip::LoadChannels() : channel name is empty! Animation name: {}, Channel index: {}", name, channelIndex);
+                continue;
+            }
+
+            const uint64_t lastSize = m_channels.size();
+            AnimationChannel::Load(pChannel, static_cast<float_t>(pAnimation->mTicksPerSecond), m_channels);
+            for (uint64_t i = lastSize; i < m_channels.size(); ++i) {
+                m_channels[i].SetName(channelName);
+            }
         }
 
         PostProcess();
         RetargetChannels();
+
+        auto&& pIt = std::ranges::remove_if(m_channels, [](const AnimationChannel& channel) {
+            return !channel.IsValid();
+        });
+        m_channels.erase(pIt.begin(), pIt.end());
 
         return true;
     #else
@@ -85,23 +96,7 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
-        SR_HTYPES_NS::RawMesh::Ptr pSkeletonMesh;
-
-        if (!m_rig.IsValid()) {
-            if (m_skeletonPath.empty() || m_skeletonPath == m_clipPath) {
-                pSkeletonMesh = pRawMesh;
-            }
-            else if (!m_skeletonPath.empty()) {
-                pSkeletonMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(m_skeletonPath);
-                if (!pSkeletonMesh) {
-                    pRawMesh->CheckResourceUsage();
-                    SR_ERROR("AnimationClip::Load() : failed to load skeleton raw mesh from path: {}", m_skeletonPath);
-                    return;
-                }
-            }
-        }
-
-        if (!LoadChannels(pRawMesh.Get(), pSkeletonMesh.Get(), m_clipName)) {
+        if (!LoadChannels(pRawMesh.Get(), m_clipName)) {
             std::string animations;
         #ifdef SR_UTILS_ASSIMP
             const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
@@ -113,17 +108,11 @@ namespace SR_ANIMATIONS_NS {
             }
         #endif
             pRawMesh->CheckResourceUsage();
-            if (pSkeletonMesh) {
-                pSkeletonMesh->CheckResourceUsage();
-            }
             SR_ERROR("AnimationClip::Load() : wrong animation name \"{}\"!\n\tTotal animations: {}", m_clipName, animations);
             return;
         }
 
         pRawMesh->CheckResourceUsage();
-        if (pSkeletonMesh) {
-            pSkeletonMesh->CheckResourceUsage();
-        }
 
         for (auto&& channel : GetChannels()) {
             m_maxKeyFrame = SR_MAX(m_maxKeyFrame, channel.GetKeys().size());
@@ -159,6 +148,18 @@ namespace SR_ANIMATIONS_NS {
 
         auto&& pRig = m_rig.GetResource();
         if (!pRig) {
+            auto&& pSkeleton = m_skeleton.GetRawMesh();
+            if (!pSkeleton) {
+                SR_ERROR("AnimationClip::RetargetChannels() : both rig and skeleton are not set for clip \"{}\"!", GetResourceId());
+                return;
+            }
+
+            for (auto&& channel : m_channels) {
+                const auto boneIndex= pSkeleton->GetBoneInfo(m_skeleton.GetMeshId(), channel.GetChannelName()).boneId;
+                if (boneIndex.has_value()) {
+                    channel.SetBoneIndex(boneIndex.value());
+                }
+            }
             return;
         }
 
@@ -169,10 +170,5 @@ namespace SR_ANIMATIONS_NS {
                 channel.SetBoneIndex(pRig->GetBoneIndex(retargetedBone));
             }
         }
-
-        auto&& pIt = std::ranges::remove_if(m_channels, [](const AnimationChannel& channel) {
-            return channel.GetChannelName().empty();
-        });
-        m_channels.erase(pIt.begin(), pIt.end());
     }
 }

@@ -14,10 +14,10 @@ namespace SR_ANIMATIONS_NS {
     void SkeletonRig::AutoRemapHumanoidBonesImpl(const SR_HTYPES_NS::RawMesh& rawMesh, uint32_t index) {
         SR_TRACY_ZONE;
 
-        const auto& bones = rawMesh.GetBones(index);
+        const auto& bones = rawMesh.GetMeshData(index).bones;
 
-        for (const auto& [boneName, boneIndex] : bones) {
-            if (boneName.empty()) {
+        for (const auto& [boneName, boneInfo] : bones) {
+            if (boneName.empty() || !boneInfo.boneId.has_value()) {
                 continue;
             }
 
@@ -25,9 +25,9 @@ namespace SR_ANIMATIONS_NS {
             if (humanoidBoneType == HumanoidBoneType::Unknown) {
                 continue;
             }
-            auto&& boneInfo = m_mapping[SR_UTILS_NS::EnumReflector::ToStringAtom(humanoidBoneType)].bones.emplace_back();
-            boneInfo.name = boneName;
-            boneInfo.index = boneIndex;
+            auto&& rigBoneInfo = m_mapping[SR_UTILS_NS::EnumReflector::ToStringAtom(humanoidBoneType)].bones.emplace_back();
+            rigBoneInfo.name = boneName;
+            rigBoneInfo.index = boneInfo.boneId.value();
         }
     }
 
@@ -82,7 +82,7 @@ namespace SR_ANIMATIONS_NS {
             SR_UTILS_NS::ResourceRef<SR_HTYPES_NS::RawMesh> rawMesh = path.RemoveSubPath(resourcesPath);
             if (auto&& pRawMesh = rawMesh.GetResource()) {
                 for (uint32_t i = 0; i < pRawMesh->GetMeshesCount(); ++i) {
-                    if (pRawMesh->GetBones(i).empty()) {
+                    if (pRawMesh->GetMeshData(i).bones.empty()) {
                         continue;
                     }
                     AutoRemapHumanoidBonesImpl(*pRawMesh, i);

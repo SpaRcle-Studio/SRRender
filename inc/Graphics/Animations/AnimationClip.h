@@ -9,6 +9,7 @@
 
 #include <Utils/Resources/Asset.h>
 #include <Utils/Resources/ResourceRef.h>
+#include <Utils/Types/IRawMeshHolder.h>
 
 namespace SR_HTYPES_NS {
     class RawMesh;
@@ -44,7 +45,7 @@ namespace SR_ANIMATIONS_NS {
         void RetargetChannels();
 
     private:
-        SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_HTYPES_NS::RawMesh* pSkeleton, SR_UTILS_NS::StringAtom name);
+        SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_UTILS_NS::StringAtom name);
 
     private:
         /// @property
@@ -56,9 +57,7 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         SR_UTILS_NS::ResourceRef<SkeletonRig> m_rig;
         /// @property @condition(!This.m_rig.IsValid())
-        /// @customArgs(pick: enabled, filter name: Skeleton, relative: resources)
-        /// @customArg(filter value: fbx)
-        SR_UTILS_NS::Path m_skeletonPath;
+        SR_HTYPES_NS::RawMeshHolder m_skeleton;
         /// @property
         std::vector<SR_UTILS_NS::StringAtom> m_excludedBones;
 

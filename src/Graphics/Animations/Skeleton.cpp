@@ -216,34 +216,44 @@ namespace SR_ANIMATIONS_NS {
     void Skeleton::CalculateTransforms() {
         SR_TRACY_ZONE;
 
-        auto&& optimizedBones = GetOptimizedBones();
+        static const auto& defaultMesh = SR_HTYPES_NS::MeshSceneStructure::MeshData();
+        auto&& mesh = m_skeleton.IsValidMeshId() ? m_skeleton.GetRawMesh()->GetMeshData(m_skeleton.GetMeshId()) : defaultMesh;
 
-        m_matrices.resize(optimizedBones.size());
-        m_transforms.resize(optimizedBones.size());
-        m_indices.resize(optimizedBones.size());
+        if (!mesh.maxBoneId.has_value()) {
+            m_matrices.clear();
+            m_transforms.clear();
+            m_indices.clear();
+            return;
+        }
+
+        const uint32_t requiredSize = mesh.maxBoneId.value() + 1;
+        m_matrices.resize(requiredSize);
+        m_transforms.resize(requiredSize);
+        m_indices.resize(requiredSize);
 
         m_hasInvalidBones = false;
         m_isNeedRecalcTransforms = false;
 
         uint32_t transformIndex = 0;
 
-        for (auto&& [hashName, index] : optimizedBones) {
+        for (auto&& [hashName, boneInfo] : mesh.bones) {
+            const uint32_t boneId = boneInfo.boneId.value();
             auto&& pBone = GetBone(hashName);
             if (!pBone) {
-                m_transforms[index] = nullptr;
+                m_transforms[boneId] = nullptr;
                 m_hasInvalidBones = true;
-                m_indices[transformIndex++] = index;
+                m_indices[transformIndex++] = boneId;
                 continue;
             }
 
             auto&& pGameObject = pBone->gameObject;
 
             if (pGameObject || pBone->hasError || pBone->Initialize()) {
-                m_transforms[index] = pGameObject ? SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::Transform3D>(pGameObject->GetTransform()) : nullptr;
+                m_transforms[boneId] = pGameObject ? SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::Transform3D>(pGameObject->GetTransform()) : nullptr;
             }
-            m_hasInvalidBones |= !m_transforms[index];
+            m_hasInvalidBones |= !m_transforms[boneId];
 
-            m_indices[transformIndex++] = index;
+            m_indices[transformIndex++] = boneId;
         }
     }
 
@@ -326,7 +336,7 @@ namespace SR_ANIMATIONS_NS {
 
     const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetOffsets() const noexcept {
         if (auto&& pRawMesh = m_skeleton.GetRawMesh()) {
-            return pRawMesh->GetBoneOffsets();
+            return pRawMesh->GetBoneOffsetMatrices(m_skeleton.GetMeshId());
         }
         const static SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> defValue;
         return defValue;
@@ -346,9 +356,7 @@ namespace SR_ANIMATIONS_NS {
             CalculateTransforms();
         }
 
-        const uint64_t optimizedBonesSize = GetOptimizedBones().size();
-
-        for (uint64_t i = 0; i < optimizedBonesSize; ++i) {
+        for (uint64_t i = 0; i < m_matrices.size(); ++i) {
             const uint32_t index = m_indices[i];
 
             if (!m_transforms[index]) SR_UNLIKELY_ATTRIBUTE {
@@ -382,14 +390,6 @@ namespace SR_ANIMATIONS_NS {
         m_dirtyMatrices = false;
 
         return m_matrices;
-    }
-
-    const SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, uint16_t>& Skeleton::GetOptimizedBones() const noexcept {
-        if (auto&& pRawMesh = m_skeleton.GetRawMesh()) {
-            return pRawMesh->GetOptimizedBones();
-        }
-        static SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, uint16_t> defValue;
-        return defValue;
     }
 
     void Skeleton::OnRawMeshChanged() {
