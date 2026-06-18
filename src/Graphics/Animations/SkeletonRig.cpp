@@ -33,15 +33,23 @@ namespace SR_ANIMATIONS_NS {
         const auto& bones = rawMesh.GetMeshData(index).bones;
 
         for (const auto& [boneName, boneInfo] : bones) {
-            if (boneName.empty() || !boneInfo.boneId.has_value()) {
+            SR_UTILS_NS::StringAtom workingBoneName = boneName;
+            if (workingBoneName.empty() || !boneInfo.boneId.has_value()) {
                 continue;
             }
 
-            if (m_autoRigRules.IsBoneIgnored(boneName)) {
+            if (m_autoRigRules.IsBoneIgnored(workingBoneName)) {
                 continue;
             }
 
-            HumanoidBoneType humanoidBoneType = ExtractHumanoidBoneType(boneName);
+            for (const auto& prefix : m_autoRigRules.removePrefixes) {
+                if (workingBoneName.ToStringView().starts_with(prefix.ToStringView())) {
+                    workingBoneName = SR_UTILS_NS::StringAtom(workingBoneName.ToStringView().substr(prefix.ToStringView().size()));
+                    break;
+                }
+            }
+
+            HumanoidBoneType humanoidBoneType = ExtractHumanoidBoneType(workingBoneName);
             if (humanoidBoneType == HumanoidBoneType::Unknown) {
                 continue;
             }
@@ -122,6 +130,63 @@ namespace SR_ANIMATIONS_NS {
 
         if (auto&& pRawMesh = m_skeleton.GetRawMesh()) {
             AutoRemapHumanoidBonesImpl(*pRawMesh, m_skeleton.GetMeshId());
+        }
+    }
+
+    TranslationRetargetMode SkeletonRig::GetTranslationRetargetMode(SR_UTILS_NS::StringAtom humanoidKey) const noexcept {
+        if (auto&& it = m_translationRetargetModes.find(humanoidKey); it != m_translationRetargetModes.end()) {
+            return it->second;
+        }
+
+        if (humanoidKey == SR_UTILS_NS::StringAtom("Hips")) {
+            return TranslationRetargetMode::OrientAndScale;
+        }
+
+        return TranslationRetargetMode::Skeleton;
+    }
+
+    bool SkeletonRig::TryGetRetargetPoseLocal(SR_UTILS_NS::StringAtom boneName, SkeletonRigPoseBone& outPose) const noexcept {
+        for (const auto& pose : m_retargetPoseLocal) {
+            if (pose.name == boneName) {
+                outPose = pose;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void SkeletonRig::InitializeRetargetPoseFromBind() {
+        SR_TRACY_ZONE;
+
+        m_retargetPoseLocal.clear();
+
+        auto&& pRawMesh = m_skeleton.GetRawMesh();
+        if (!pRawMesh) {
+            SR_WARN("SkeletonRig::InitializeRetargetPoseFromBind() : raw mesh is nullptr!");
+            return;
+        }
+
+        const auto meshId = m_skeleton.GetMeshId();
+        if (meshId == SR_ID_INVALID) {
+            SR_WARN("SkeletonRig::InitializeRetargetPoseFromBind() : mesh id is invalid!");
+            return;
+        }
+
+        const auto& bones = pRawMesh->GetMeshData(meshId).bones;
+        m_retargetPoseLocal.reserve(bones.size());
+
+        for (const auto& [boneName, boneInfo] : bones) {
+            if (boneName.empty() || !boneInfo.nodeIndex.has_value()) {
+                continue;
+            }
+
+            const auto& node = pRawMesh->GetSceneStructure().GetNodeByIndex(boneInfo.nodeIndex.value());
+
+            auto&& pose = m_retargetPoseLocal.emplace_back();
+            pose.name = boneName;
+            pose.translation = node.transform.translation;
+            pose.rotation = node.transform.rotation;
+            pose.scale = node.transform.scale;
         }
     }
 }

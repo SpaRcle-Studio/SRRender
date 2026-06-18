@@ -24,13 +24,6 @@ namespace SR_ANIMATIONS_NS {
             const Channels& sourceChannels,
             Channels& outTargetChannels
         );
-
-        SR_NODISCARD bool BrokenLegacyRetarget(
-            const SkeletonRig& sourceRig,
-            const SkeletonRig& targetRig,
-            const Channels& sourceChannels,
-            Channels& outTargetChannels
-        );
     };
 }
 

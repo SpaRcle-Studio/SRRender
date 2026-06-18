@@ -70,6 +70,9 @@ namespace SR_ANIMATIONS_NS {
         if (workingName.contains("hips") || workingName.contains("pelvis")) {
             return HumanoidBoneType::Hips;
         }
+        else if (workingName.contains("spine") && (workingName.contains("upper") || workingName.contains("up") || workingName.contains("2") || workingName.contains("3") || workingName.contains("4") || workingName.contains("5"))) {
+            return HumanoidBoneType::UpperChest;
+        }
         else if (workingName == "spine") {
             return HumanoidBoneType::Spine;
         }
@@ -85,6 +88,7 @@ namespace SR_ANIMATIONS_NS {
 
         const bool leftSide = workingName.contains("left") ||
             workingName.starts_with("l_") ||
+            workingName.starts_with("l-") ||
             workingName.ends_with("_l") ||
             workingName.contains(".l") ||
             workingName.contains("l.") ||

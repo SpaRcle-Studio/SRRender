@@ -17,6 +17,14 @@ namespace SR_ANIMATIONS_NS {
         /// If true we additionally try to map by identical bone names (safe only when skeletons match by name).
         static constexpr bool kEnableUnmappedBonePassThrough = false;
 
+        struct OrientAndScaleCache {
+            SR_MATH_NS::Quaternion deltaOrient = SR_MATH_NS::Quaternion::Identity();
+            float_t scale = 1.f;
+            SR_MATH_NS::FVector3 sourceRefT = SR_MATH_NS::FVector3::Zero();
+            SR_MATH_NS::FVector3 targetRefT = SR_MATH_NS::FVector3::Zero();
+            bool valid = false;
+        };
+
         struct RigGraph final {
             const SR_HTYPES_NS::RawMesh* pRawMesh = nullptr;
             SR_HTYPES_NS::IRawMeshHolder::MeshIndex meshId = SR_ID_INVALID;
@@ -86,10 +94,17 @@ namespace SR_ANIMATIONS_NS {
 
                 out.nodeIndexByName[node.name] = node.index;
 
-                const auto& trs = node.transform;
-                out.refLocalT[i] = trs.translation;
-                out.refLocalR[i] = trs.rotation;
-                out.refLocalS[i] = trs.scale;
+                /// Default reference pose comes from mesh bind/rest, but can be overridden by rig retarget pose.
+                out.refLocalT[i] = node.transform.translation;
+                out.refLocalR[i] = node.transform.rotation;
+                out.refLocalS[i] = node.transform.scale;
+
+                SkeletonRigPoseBone poseOverride;
+                if (rig.TryGetRetargetPoseLocal(node.name, poseOverride)) {
+                    out.refLocalT[i] = poseOverride.translation;
+                    out.refLocalR[i] = poseOverride.rotation;
+                    out.refLocalS[i] = poseOverride.scale;
+                }
                 out.refNodeLocal[i] = SR_MATH_NS::Matrix4x4::CreateTRS(out.refLocalT[i], out.refLocalR[i], out.refLocalS[i]);
 
                 if (node.parent.has_value()) {
@@ -165,6 +180,30 @@ namespace SR_ANIMATIONS_NS {
             }
             return duration;
         }
+
+        SR_NODISCARD static OrientAndScaleCache BuildOrientAndScaleCache(
+            const SR_MATH_NS::FVector3& sourceRefT,
+            const SR_MATH_NS::FVector3& targetRefT
+        ) {
+            OrientAndScaleCache cache;
+            cache.sourceRefT = sourceRefT;
+            cache.targetRefT = targetRefT;
+
+            const float_t srcLen = sourceRefT.Length();
+            const float_t tgtLen = targetRefT.Length();
+            if (srcLen <= 1e-6f || tgtLen <= 1e-6f) {
+                cache.valid = false;
+                return cache;
+            }
+
+            const SR_MATH_NS::FVector3 srcDir = sourceRefT / srcLen;
+            const SR_MATH_NS::FVector3 tgtDir = targetRefT / tgtLen;
+
+            cache.deltaOrient = SR_MATH_NS::Quaternion::FromToRotation(srcDir, tgtDir);
+            cache.scale = tgtLen / srcLen;
+            cache.valid = true;
+            return cache;
+        }
     }
 
     SR_NODISCARD bool RetargetAnimation::Retarget(
@@ -177,8 +216,7 @@ namespace SR_ANIMATIONS_NS {
         RigGraph tgtGraph;
 
         if (!BuildRigGraph(sourceRig, srcGraph) || !BuildRigGraph(targetRig, tgtGraph)) {
-            /// Fallback to legacy math if skeleton metadata is missing.
-            return BrokenLegacyRetarget(sourceRig, targetRig, sourceChannels, outTargetChannels);
+            return false;
         }
 
         const float_t duration = ComputeChannelsDuration(sourceChannels);
@@ -236,6 +274,11 @@ namespace SR_ANIMATIONS_NS {
         std::unordered_set<uint16_t> translationRetargetNodes;
         translationRetargetNodes.reserve(8);
 
+        /// Hips basis correction (legacy-style) for translation deltas.
+        /// We use local ref rotations to build a stable basis and apply qOffset for translation.
+        SR_MATH_NS::Quaternion hipsRootBasis = SR_MATH_NS::Quaternion::Identity();
+        OrientAndScaleCache hipsOrientAndScale;
+
         SR_UTILS_NS::EnumReflector::ForEach<HumanoidBoneType>([&](HumanoidBoneType type) {
             if (type == HumanoidBoneType::Unknown) {
                 return;
@@ -273,6 +316,11 @@ namespace SR_ANIMATIONS_NS {
             if (key == SR_UTILS_NS::StringAtom("Hips")) {
                 /// Only the chain root (hips) gets translation retarget. Children keep local translations.
                 translationRetargetNodes.insert(tgtNodes.front());
+
+                /// Derive hipsRootBasis from local ref rotations once.
+                hipsRootBasis = tgtGraph.refLocalR[tgtNodes.front()] * srcGraph.refLocalR[srcNodes.front()].Inverse();
+
+                hipsOrientAndScale = BuildOrientAndScaleCache(srcGraph.refLocalT[srcNodes.front()], tgtGraph.refLocalT[tgtNodes.front()]);
             }
         });
 
@@ -337,6 +385,28 @@ namespace SR_ANIMATIONS_NS {
         srcNodeLocal.resize(srcGraph.nodesCount);
         srcNodeCS.resize(srcGraph.nodesCount);
 
+        /// Component-space rotations (avoid Matrix4x4::Decompose artifacts, important for arms/twists).
+        SR_UTILS_NS::Vector<SR_MATH_NS::Quaternion> srcCSRotRef;
+        SR_UTILS_NS::Vector<SR_MATH_NS::Quaternion> srcCSRotAnim;
+        srcCSRotRef.resize(srcGraph.nodesCount);
+        srcCSRotAnim.resize(srcGraph.nodesCount);
+
+        SR_UTILS_NS::Vector<SR_MATH_NS::Quaternion> tgtCSRotRef;
+        SR_UTILS_NS::Vector<SR_MATH_NS::Quaternion> tgtCSRotFinal;
+        tgtCSRotRef.resize(tgtGraph.nodesCount);
+        tgtCSRotFinal.resize(tgtGraph.nodesCount);
+
+        for (uint16_t ni = 0; ni < tgtGraph.nodesCount; ++ni) {
+            const auto& node = tgtGraph.pScene->GetNodeByIndex(ni);
+            if (node.parent.has_value()) {
+                const uint16_t parent = node.parent.value();
+                tgtCSRotRef[ni] = (tgtCSRotRef[parent] * tgtGraph.refLocalR[ni]).Normalized();
+            }
+            else {
+                tgtCSRotRef[ni] = tgtGraph.refLocalR[ni].Normalized();
+            }
+        }
+
         SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> tgtNodeLocalFinal;
         SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4> tgtNodeCSFinal;
         tgtNodeLocalFinal.resize(tgtGraph.nodesCount);
@@ -386,6 +456,20 @@ namespace SR_ANIMATIONS_NS {
                 }
             }
 
+            /// Build source component-space rotations (ref + anim) from local quaternions.
+            for (uint16_t ni = 0; ni < srcGraph.nodesCount; ++ni) {
+                const auto& node = srcGraph.pScene->GetNodeByIndex(ni);
+                if (node.parent.has_value()) {
+                    const uint16_t parent = node.parent.value();
+                    srcCSRotRef[ni] = (srcCSRotRef[parent] * srcGraph.refLocalR[ni]).Normalized();
+                    srcCSRotAnim[ni] = (srcCSRotAnim[parent] * srcLocalR[ni]).Normalized();
+                }
+                else {
+                    srcCSRotRef[ni] = srcGraph.refLocalR[ni].Normalized();
+                    srcCSRotAnim[ni] = srcLocalR[ni].Normalized();
+                }
+            }
+
             /// 3) Retarget top-down so unmapped children follow mapped parents.
             /// We compute CS from parentCS * localFinal; for mapped nodes we override localFinal.
             for (uint16_t ni = 0; ni < tgtGraph.nodesCount; ++ni) {
@@ -399,40 +483,42 @@ namespace SR_ANIMATIONS_NS {
 
                 const uint16_t srcNode = tgtToSrcNode[ni];
                 if (srcNode != SR_UINT16_MAX) {
-                    const SR_MATH_NS::Matrix4x4& tgtRefCS = tgtGraph.refNodeCS[ni];
-                    const SR_MATH_NS::Matrix4x4& srcRefCS = srcGraph.refNodeCS[srcNode];
-                    const SR_MATH_NS::Matrix4x4& srcAnimCS = srcNodeCS[srcNode];
+                    /// Rotation retarget in component space using pure quaternions (no matrix decomposition).
+                    const SR_MATH_NS::Quaternion deltaCS = srcCSRotAnim[srcNode] * srcCSRotRef[srcNode].Inverse();
+                    const SR_MATH_NS::Quaternion desiredCSRot = (deltaCS * tgtCSRotRef[ni]).Normalized();
 
-                    SR_MATH_NS::FVector3 srcRefT, srcAnimT, tgtRefT;
-                    SR_MATH_NS::Quaternion srcRefR, srcAnimR, tgtRefR;
-                    SR_MATH_NS::FVector3 srcRefS, srcAnimS, tgtRefS;
+                    const SR_MATH_NS::Quaternion parentCSRot = tgtNode.parent.has_value()
+                        ? tgtCSRotFinal[tgtNode.parent.value()]
+                        : SR_MATH_NS::Quaternion::Identity();
 
-                    srcRefCS.Decompose(srcRefT, srcRefR, srcRefS);
-                    srcAnimCS.Decompose(srcAnimT, srcAnimR, srcAnimS);
-                    tgtRefCS.Decompose(tgtRefT, tgtRefR, tgtRefS);
-
-                    const SR_MATH_NS::Quaternion deltaR = srcAnimR * srcRefR.Inverse();
-                    const SR_MATH_NS::Quaternion desiredR = (deltaR * tgtRefR).Normalized();
+                    const SR_MATH_NS::Quaternion localR = (parentCSRot.Inverse() * desiredCSRot).Normalized();
+                    tgtCSRotFinal[ni] = (parentCSRot * localR).Normalized();
 
                     if (translationRetargetNodes.count(ni) != 0) {
-                        const SR_MATH_NS::FVector3 desiredT = tgtRefT + (srcAnimT - srcRefT);
-                        const SR_MATH_NS::Matrix4x4 desiredCS = SR_MATH_NS::Matrix4x4::CreateTRS(desiredT, desiredR, tgtRefS);
-                        localFinal = parentCS.Inverse() * desiredCS;
+                        /// UE-like OrientAndScale for Hips translation.
+                        const SR_MATH_NS::FVector3 srcAnimatedLocalT = srcLocalT[srcNode];
+                        const SR_MATH_NS::FVector3 sourceRefT = hipsOrientAndScale.sourceRefT;
+                        const SR_MATH_NS::FVector3 targetRefT = hipsOrientAndScale.targetRefT;
+
+                        SR_MATH_NS::FVector3 desiredLocalT = targetRefT;
+
+                        /// If translation is not animated (or cache invalid), fall back to target ref.
+                        if (hipsOrientAndScale.valid && !srcAnimatedLocalT.IsEquals(sourceRefT, 0.0001f)) {
+                            desiredLocalT = (hipsOrientAndScale.deltaOrient * srcAnimatedLocalT) * hipsOrientAndScale.scale;
+                        }
+
+                        localFinal = SR_MATH_NS::Matrix4x4::CreateTRS(desiredLocalT, localR, tgtGraph.refLocalS[ni]);
                     }
                     else {
-                        SR_MATH_NS::FVector3 refLocalT;
-                        SR_MATH_NS::Quaternion refLocalR;
-                        SR_MATH_NS::FVector3 refLocalS;
-                        tgtGraph.refNodeLocal[ni].Decompose(refLocalT, refLocalR, refLocalS);
-
-                        SR_MATH_NS::FVector3 parentT;
-                        SR_MATH_NS::Quaternion parentR;
-                        SR_MATH_NS::FVector3 parentS;
-                        parentCS.Decompose(parentT, parentR, parentS);
-
-                        const SR_MATH_NS::Quaternion localR = (parentR.Inverse() * desiredR).Normalized();
-                        localFinal = SR_MATH_NS::Matrix4x4::CreateTRS(refLocalT, localR, refLocalS);
+                        localFinal = SR_MATH_NS::Matrix4x4::CreateTRS(tgtGraph.refLocalT[ni], localR, tgtGraph.refLocalS[ni]);
                     }
+                }
+                else {
+                    /// Unmapped: keep reference rotations (but still propagate component-space rotation for children).
+                    const SR_MATH_NS::Quaternion parentCSRot = tgtNode.parent.has_value()
+                        ? tgtCSRotFinal[tgtNode.parent.value()]
+                        : SR_MATH_NS::Quaternion::Identity();
+                    tgtCSRotFinal[ni] = (parentCSRot * tgtGraph.refLocalR[ni]).Normalized();
                 }
 
                 tgtNodeLocalFinal[ni] = localFinal;
@@ -464,138 +550,6 @@ namespace SR_ANIMATIONS_NS {
                 outTargetChannels[idx.r].AddKey(t, RotationKey(outR));
                 outTargetChannels[idx.s].AddKey(t, ScalingKey(outS));
             }
-        }
-
-        outTargetChannels.erase_if([](const AnimationChannel& channel) {
-            return !channel.IsValid();
-        });
-
-        return true;
-    }
-
-    SR_NODISCARD bool RetargetAnimation::BrokenLegacyRetarget(
-        const SkeletonRig& sourceRig,
-        const SkeletonRig& targetRig,
-        const Channels& sourceChannels,
-        Channels& outTargetChannels
-    ) {
-        /** formula:
-         *  prepare offsets: offset = bindTarget * inverse(bindSource)
-         *  and when animating: key = offset * key * inverse(offset)
-        */
-
-        /// Иногда риги импортируются в разных глобальных базисах (разные FBX пайплайны),
-        /// и тогда локальные оси костей не совпадают. Приводим источник в базис цели
-        /// через bind-поворот "Hips" как опорной кости.
-        SR_MATH_NS::Quaternion rootBasis = SR_MATH_NS::Quaternion::Identity();
-        if (auto&& pSourceHips = sourceRig.GetBoneChain(SR_UTILS_NS::StringAtom("Hips"))) {
-            if (auto&& pTargetHips = targetRig.GetBoneChain(SR_UTILS_NS::StringAtom("Hips"))) {
-                const auto& srcHipsR = pSourceHips->bones.front().bindRotation;
-                const auto& tgtHipsR = pTargetHips->bones.front().bindRotation;
-                rootBasis = tgtHipsR * srcHipsR.Inverse();
-            }
-        }
-        const SR_MATH_NS::Quaternion rootBasisInv = rootBasis.Inverse();
-
-        outTargetChannels = sourceChannels;
-
-        for (auto&& channel : outTargetChannels) {
-            SR_UTILS_NS::StringAtom sourceName;
-            auto&& pSourceChain = sourceRig.RetargetBone(channel.GetChannelName(), sourceName);
-            if (!pSourceChain) {
-                continue;
-            }
-            auto&& pTargetChain = targetRig.GetBoneChain(sourceName);
-            if (!pTargetChain) {
-                continue;
-            }
-
-            auto&& sourceBoneInfo = pSourceChain->bones.front();
-            auto&& targetBoneInfo = pTargetChain->bones.front();
-
-            channel.SetName(targetBoneInfo.name);
-            channel.SetBoneIndex(targetBoneInfo.index);
-
-            const auto& sourceBindT = sourceBoneInfo.bindTranslation;
-            const auto& sourceBindR = sourceBoneInfo.bindRotation;
-            const auto& sourceBindS = sourceBoneInfo.bindScale;
-
-            const auto& targetBindT = targetBoneInfo.bindTranslation;
-            const auto& targetBindR = targetBoneInfo.bindRotation;
-            const auto& targetBindS = targetBoneInfo.bindScale;
-
-
-
-            //const auto Bs = sourceBoneInfo.bindRotation;
-            //const auto Bt = targetBoneInfo.bindRotation;
-
-            //// conversion between spaces
-            //const auto C = Bt * Bs.Inverse();
-
-
-            //const SR_MATH_NS::FVector3 tOffset = targetBoneInfo.bindTranslation - sourceBoneInfo.bindTranslation;
-            const SR_MATH_NS::Quaternion sourceBindRAdj = rootBasis * sourceBindR * rootBasisInv;
-            const SR_MATH_NS::FVector3 sourceBindTAdj = sourceBindT.Rotate(rootBasis);
-
-            const SR_MATH_NS::Quaternion qOffset = targetBindR * sourceBindRAdj.Inverse();
-            //const SR_MATH_NS::FVector3 sOffset = targetBoneInfo.bindScale / sourceBoneInfo.bindScale;
-
-            for (UnionAnimationKey& key : channel.GetKeys()) {
-                switch (key.type) {
-                    case AnimationKeyType::Rotation: {
-                        //auto&& rotation = key.data.rotation.rotation;
-                        //rotation = qOffset * rotation * qOffset.Inverse();
-
-                        auto& rotation = key.data.rotation.rotation;
-                        /// приводим ключ источника в базис цели (глобально, через hips)
-                        const SR_MATH_NS::Quaternion rotationAdj = rootBasis * rotation * rootBasisInv;
-
-                        /// delta относительно bind позы источника
-                        SR_MATH_NS::Quaternion delta = sourceBindRAdj.Inverse() * rotationAdj;
-
-                        /// конвертация базиса: source local -> target local
-                        /// (иначе при разных осях костей дельта крутится "не туда")
-                        const SR_MATH_NS::Quaternion basis = targetBindR.Inverse() * sourceBindRAdj;
-                        delta = basis * delta * basis.Inverse();
-
-                        /// применяем дельту к bind позе цели
-                        rotation = targetBindR * delta;
-
-
-                        // animation delta in source space
-                        //const auto Rdelta = Bs.Inverse() * rotation;
-                        //rotation = Bt * C * Rdelta * C.Inverse();
-
-                        break;
-                    }
-                    case AnimationKeyType::Translation: {
-                        //auto&& translation = key.data.translation.translation;
-                        //translation += tOffset;
-
-
-                        auto& translation = key.data.translation.translation;
-                        const SR_MATH_NS::FVector3 translationAdj = translation.Rotate(rootBasis);
-                        const SR_MATH_NS::FVector3 delta = translationAdj - sourceBindTAdj;
-                        translation = targetBindT + delta.Rotate(qOffset);
-
-                        break;
-                    }
-                    case AnimationKeyType::Scaling: {
-                        //auto&& scale = key.data.scaling.scaling;
-                        //scale *= sOffset;
-
-                        auto& scale = key.data.scaling.scaling;
-                        const SR_MATH_NS::FVector3 delta = scale / sourceBindS;
-                        scale = targetBindS * delta;
-                        break;
-                    }
-                    default: {
-                        SRHalt("AnimationClip::RetargetChannels() : unknown key type!");
-                        break;
-                    }
-                }
-            }
-
         }
 
         outTargetChannels.erase_if([](const AnimationChannel& channel) {
