@@ -108,7 +108,7 @@ namespace SR_ANIMATIONS_NS {
                 out.refLocalR[i] = node.localTransform.rotation;
                 out.refLocalS[i] = node.localTransform.scale;
 
-                SkeletonRigPoseBone poseOverride;
+                SR_MATH_NS::DecomposedMatrix poseOverride;
                 if (rig.TryGetRetargetPoseLocal(node.name, poseOverride)) {
                     out.refLocalT[i] = poseOverride.translation;
                     out.refLocalR[i] = poseOverride.rotation;

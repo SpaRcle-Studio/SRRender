@@ -24,7 +24,7 @@ namespace SR_ANIMATIONS_NS {
         return 1;
     }
 
-    HumanoidBoneType TryExtractSidedHumanoidBone(const SR_UTILS_NS::String& name, bool leftSide) {
+    HumanoidBoneType TryExtractSidedHumanoidBone(const SR_UTILS_NS::String& name, bool leftSide, const SR_HTYPES_NS::FlatHashSet<HumanoidBoneType>& mappedBones) {
         /// UpperLeg, LowerLeg, Foot, Toes,
         if (((name.contains("upper") || name.contains("up")) && name.contains("leg")) || name.contains("thigh")) {
             return leftSide ? HumanoidBoneType::LeftUpperLeg : HumanoidBoneType::RightUpperLeg;
@@ -76,17 +76,19 @@ namespace SR_ANIMATIONS_NS {
             }
         }
 
+        const bool upperArmMapped = mappedBones.contains(leftSide ? HumanoidBoneType::LeftUpperArm : HumanoidBoneType::RightUpperArm);
+        const bool lowerArmMapped = mappedBones.contains(leftSide ? HumanoidBoneType::LeftLowerArm : HumanoidBoneType::RightLowerArm);
+
+        const bool isArmPattern = name.contains("arm") && !name.contains("armature");
+
         /// Shoulder, UpperArm, LowerArm, Hand,
         if (name.contains("shoulder") || name.contains("clavicle")) {
             return leftSide ? HumanoidBoneType::LeftShoulder : HumanoidBoneType::RightShoulder;
         }
-        else if (name.contains("forearm") || name.contains("lowerarm") || name.contains("lower_arm")) {
-            return leftSide ? HumanoidBoneType::LeftLowerArm : HumanoidBoneType::RightLowerArm;
-        }
-        else if (name.contains("upperarm") || name.contains("upper_arm") || (name.contains("arm") && (name.contains("upper") || name.contains("up")))) {
+        else if (isArmPattern && !upperArmMapped) {
             return leftSide ? HumanoidBoneType::LeftUpperArm : HumanoidBoneType::RightUpperArm;
         }
-        else if (name.contains("arm")) {
+        else if (isArmPattern && !lowerArmMapped) {
             return leftSide ? HumanoidBoneType::LeftLowerArm : HumanoidBoneType::RightLowerArm;
         }
         else if (name.contains("hand")) {
@@ -129,7 +131,7 @@ namespace SR_ANIMATIONS_NS {
         return hierarchy;
     }
 
-    HumanoidBoneType ExtractHumanoidBoneType(SR_UTILS_NS::StringAtom name) {
+    HumanoidBoneType ExtractHumanoidBoneTypeImpl(SR_UTILS_NS::StringAtom name, const SR_HTYPES_NS::FlatHashSet<HumanoidBoneType>& mappedBones) {
         SR_TRACY_ZONE;
 
         SR_THREAD_LOCAL static SR_UTILS_NS::String workingName;
@@ -162,6 +164,7 @@ namespace SR_ANIMATIONS_NS {
         }
 
         const bool leftSide = workingName.contains("left") ||
+            workingName.starts_with("l ") ||
             workingName.starts_with("l_") ||
             workingName.starts_with("l-") ||
             workingName.ends_with("_l") ||
@@ -169,11 +172,21 @@ namespace SR_ANIMATIONS_NS {
             workingName.contains("l.") ||
             workingName.contains("_l_");
 
-        if (HumanoidBoneType type = TryExtractSidedHumanoidBone(workingName, leftSide); type != HumanoidBoneType::Unknown) {
+        if (HumanoidBoneType type = TryExtractSidedHumanoidBone(workingName, leftSide, mappedBones); type != HumanoidBoneType::Unknown) {
             return type;
         }
 
         SR_WARN("ExtractHumanoidBoneType() : failed to extract humanoid bone type from \"{}\" ({}) name!", name, workingName);
         return HumanoidBoneType::Unknown;
+    }
+
+    HumanoidBoneType ExtractHumanoidBoneType(SR_UTILS_NS::StringAtom name, SR_HTYPES_NS::FlatHashSet<HumanoidBoneType>& mappedBones) {
+        SR_TRACY_ZONE;
+
+        const HumanoidBoneType type = ExtractHumanoidBoneTypeImpl(name, mappedBones);
+        if (type != HumanoidBoneType::Unknown) {
+            mappedBones.insert(type);
+        }
+        return type;
     }
 }

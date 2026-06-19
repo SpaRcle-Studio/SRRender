@@ -18,13 +18,6 @@ namespace SR_HTYPES_NS {
 }
 
 namespace SR_ANIMATIONS_NS {
-    SR_ENUM_NS_CLASS_T(TranslationRetargetMode, uint8_t,
-        Skeleton,
-        AnimationScaled,
-        AnimationRelative,
-        OrientAndScale
-    );
-
     struct SkeletonRigBoneInfo : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
@@ -40,19 +33,6 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         SR_MATH_NS::FVector3 bindScale;
 
-    };
-
-    struct SkeletonRigPoseBone : public SR_UTILS_NS::Serializable {
-        SR_STRUCT()
-
-        /// @property
-        SR_UTILS_NS::StringAtom name;
-        /// @property
-        SR_MATH_NS::FVector3 translation;
-        /// @property
-        SR_MATH_NS::Quaternion rotation;
-        /// @property
-        SR_MATH_NS::FVector3 scale = SR_MATH_NS::FVector3::One();
     };
 
     struct SkeletonRigBoneChain : public SR_UTILS_NS::Serializable {
@@ -89,8 +69,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD SR_UTILS_NS::StringAtom GetBoneName(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD const SR_HTYPES_NS::RawMeshHolder& GetSkeleton() const { return m_skeleton; }
 
-        SR_NODISCARD TranslationRetargetMode GetTranslationRetargetMode(SR_UTILS_NS::StringAtom humanoidKey) const noexcept;
-        SR_NODISCARD bool TryGetRetargetPoseLocal(SR_UTILS_NS::StringAtom boneName, SkeletonRigPoseBone& outPose) const noexcept;
+        SR_NODISCARD bool TryGetRetargetPoseLocal(SR_UTILS_NS::StringAtom boneName, SR_MATH_NS::DecomposedMatrix& outPose) const noexcept;
 
         SR_NODISCARD const SR_MATH_NS::FVector3& GetSkeletonTranslation() const { return m_skeletonTranslation; }
         SR_NODISCARD const SR_MATH_NS::FVector3& GetSkeletonRotation() const { return m_skeletonRotation; }
@@ -99,9 +78,6 @@ namespace SR_ANIMATIONS_NS {
     private:
         /// @method @editorButton @condition(This.m_skeletonType == SkeletonType::Humanoid)
         void AutoRemapHumanoidBones();
-
-        /// @method @editorButton
-        void InitializeRetargetPoseFromBind();
 
         void AutoRemapHumanoidBonesImpl(const SR_HTYPES_NS::RawMesh& rawMesh, uint32_t index);
 
@@ -121,12 +97,6 @@ namespace SR_ANIMATIONS_NS {
 
         /// @property
         std::unordered_map<SR_UTILS_NS::StringAtom, SkeletonRigBoneChain> m_mapping;
-
-        /// @property
-        SR_UTILS_NS::Vector<SkeletonRigPoseBone> m_retargetPoseLocal;
-
-        /// @property @condition(This.m_skeletonType == SkeletonType::Humanoid)
-        std::unordered_map<SR_UTILS_NS::StringAtom, TranslationRetargetMode> m_translationRetargetModes;
 
         /// @property @condition(This.m_skeletonType == SkeletonType::Humanoid)
         SkeletonAutoRigRules m_autoRigRules;

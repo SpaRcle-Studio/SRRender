@@ -118,7 +118,7 @@ namespace SR_ANIMATIONS_NS {
 
     extern const SR_UTILS_NS::Vector<HumanoidBoneType>& GetHumanoidSkeletonHierarchy();
 
-    extern HumanoidBoneType ExtractHumanoidBoneType(SR_UTILS_NS::StringAtom name);
+    extern HumanoidBoneType ExtractHumanoidBoneType(SR_UTILS_NS::StringAtom name, SR_HTYPES_NS::FlatHashSet<HumanoidBoneType>& mappedBones);
 }
 
 #endif //SR_ENGINE_GRAPHICS_HUMANOID_BONE_TYPE_H
