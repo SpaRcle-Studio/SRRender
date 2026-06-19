@@ -13,6 +13,9 @@
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Material/BaseMaterial.h>
+
+#include <Utils/Types/RawMesh.h>
 
 #include <Codegen/ParticleEmitter.generated.hpp>
 
@@ -35,25 +38,19 @@ namespace SR_GRAPH_NS{
         if(m_aliveParticles == 0) {
             return;
         }
-        SR_INFO("DRAW PARTICLES");
-        SR_INFO(
-                "DRAW alive={} vbo={}",
-                m_aliveParticles,
-                m_VBO
-        );
 
         Calculate();
 
         GetPipeline()->SetDrawInstancesCount(m_aliveParticles);
 
+
         DrawRenderObject(
-                this,
-                6,
-                m_virtualUBO,
-                m_virtualDescriptor,
-                m_dirtyMaterial,
-                m_hasErrors
-        );
+                    this,
+                    IsValidMeshId() ? GetIndices().size() : 6,
+                    m_virtualUBO,
+                    m_virtualDescriptor,
+                    m_dirtyMaterial,
+                    m_hasErrors);
 
         GetPipeline()->ResetDrawInstancesCount();
     }
@@ -71,7 +68,7 @@ namespace SR_GRAPH_NS{
     }
 
     void ParticleEmitter::BuildInstanceVertexBuffer() {
-        SR_INFO("BUILD INSTANCE BUFFER");
+       //SR_INFO("BUILD INSTANCE BUFFER");
 
         BuildInstanceData();
 
@@ -91,19 +88,12 @@ namespace SR_GRAPH_NS{
             return;
         }
 
-        SR_INFO("VBO {}", m_VBO);
+        //SR_INFO("VBO {}", m_VBO);
 
         m_VBO = GetPipeline()->AllocateVBO(
                 m_VBO,
                 m_maxParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
                 m_instanceVertexBuffer.GetRawData());
-
-        if (m_aliveParticles > 0) {
-            SR_INFO("POS {} {} {}",
-                    m_instanceData[0].position.x,
-                    m_instanceData[0].position.y,
-                    m_instanceData[0].position.z);
-        }
     }
 
     void ParticleEmitter::SpawnParticle(){
@@ -173,7 +163,17 @@ namespace SR_GRAPH_NS{
 
     void ParticleEmitter::OnEnable(){
         m_shape = new SphereShape();
+
+        //SetRawMesh(SR_UTILS_NS::Path("Samples/diamond.fbx"));
+
+        //auto& buf = GetVertexBuffer(GetVertexLayoutDescription());
+
+        //SR_INFO("VERTICES: {}", buf.GetVertexCount());
+        //SR_INFO("INDICES: {}", GetIndices().size());
+
         InitializeParticle();
+
+        //LoadMesh();
 
         Super::OnEnable();
 
@@ -208,7 +208,7 @@ namespace SR_GRAPH_NS{
             return std::nullopt;
         }
 
-        SR_INFO("GET VBO");
+        //SR_INFO("GET VBO");
 
         return m_VBO;
     }
@@ -218,7 +218,9 @@ namespace SR_GRAPH_NS{
             return false;
         }
 
-        SR_INFO("PARTICLE BIND");
+        //if(m_geometryVBO != SR_ID_INVALID) {
+        //    GetPipeline()->BindVBO(m_geometryVBO);
+        //}
 
         GetPipeline()->BindVBO(m_VBO);
 
@@ -234,7 +236,7 @@ namespace SR_GRAPH_NS{
     }
 
     void ParticleEmitter::Calculate() {
-        SR_INFO("CALCULATE");
+        //SR_INFO("CALCULATE");
 
         if (!m_isVBODirty) {
             return;
@@ -248,6 +250,8 @@ namespace SR_GRAPH_NS{
     void ParticleEmitter::UseMaterial(SR_GTYPES_NS::Shader& shader) {
         Super::UseMaterial(shader);
         UseModelMatrix(shader);
+        SR_UTILS_NS::StringAtom SHADER_SPRITE_FILL_METHOD = "ISQuad";
+        shader.SetInt(SHADER_SPRITE_FILL_METHOD, static_cast<int>(1));
     }
 
     void ParticleEmitter::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {
@@ -257,4 +261,25 @@ namespace SR_GRAPH_NS{
             shader.SetMat4(SHADER_MODEL_MATRIX, pTransform->GetMatrix());
         }
     }
+
+    const SR_HTYPES_NS::FastMemoryArray<uint32_t>& ParticleEmitter::GetIndices() const {
+        SR_TRACY_ZONE;
+        return GetRawMesh()->GetIndices(GetMeshId());
+    }
+
+    /*void ParticleEmitter::LoadMesh() {
+        if (!IsValidMeshId()) {
+            return;
+        }
+
+        const auto& meshBuffer = GetVertexBuffer(GetVertexLayoutDescription());
+
+        m_geometryVBO = GetPipeline()->AllocateVBO(
+                m_geometryVBO,
+                meshBuffer.GetVertexCount() *
+                meshBuffer.GetLayout().GetStride(),
+                meshBuffer.GetRawData()
+        );
+    }
+     */
 }
