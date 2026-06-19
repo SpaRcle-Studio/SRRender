@@ -116,6 +116,8 @@ namespace SR_ANIMATIONS_NS {
         TongueTip
     );
 
+    extern const SR_UTILS_NS::Vector<HumanoidBoneType>& GetHumanoidSkeletonHierarchy();
+
     extern HumanoidBoneType ExtractHumanoidBoneType(SR_UTILS_NS::StringAtom name);
 }
 

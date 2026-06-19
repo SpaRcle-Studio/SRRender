@@ -22,18 +22,22 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
+    void Bone::SetGameObject(const GameObjectPtr& pGameObject) noexcept {
+        m_gameObject = pGameObject;
+    }
+
     bool Bone::Initialize() {
         SR_TRACY_ZONE;
 
         if (!pRoot) {
             SRHalt0();
-            hasError = true;
+            m_hasError = true;
             return false;
         }
 
-        if (!pRoot->gameObject && !pRoot->pScene) {
+        if (!pRoot->m_gameObject && !pRoot->pScene) {
             SRHalt0();
-            hasError = true;
+            m_hasError = true;
             return false;
         }
 
@@ -46,24 +50,24 @@ namespace SR_ANIMATIONS_NS {
             pParentBone = pParentBone->pParent;
         }
 
-        if (pRoot->gameObject) {
-            gameObject = pRoot->gameObject;
+        if (pRoot->m_gameObject) {
+            m_gameObject = pRoot->m_gameObject;
         }
 
         for (int32_t i = static_cast<int32_t>(names.size()) - 1; i >= 0; --i) {
-            if (gameObject) {
-                if (!((gameObject = SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::GameObject>(gameObject->Find(names[i]))))) {
+            if (m_gameObject) {
+                if (!((m_gameObject = SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::GameObject>(m_gameObject->Find(names[i]))))) {
                     break;
                 }
             }
             else {
-                if (!((gameObject = SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::GameObject>(pRoot->pScene->GetScene()->Find(names[i]))))) {
+                if (!((m_gameObject = SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::GameObject>(pRoot->pScene->GetScene()->Find(names[i]))))) {
                     break;
                 }
             }
         }
 
-        if ((hasError = !gameObject.Valid())) {
+        if ((m_hasError = !m_gameObject.Valid())) {
             return false;
         }
 
@@ -76,5 +80,15 @@ namespace SR_ANIMATIONS_NS {
         if (!pRoot) {
             InitTree(nullptr);
         }
+    }
+
+    const Bone::GameObjectPtr& Bone::GetGameObject() const noexcept {
+        if (!m_gameObject && !m_hasError) {
+            if (!const_cast<Bone&>(*this).Initialize()) {
+                SR_WARN("Bone::GetGameObject() : failed to initialize bone! Name: {}", name);
+            }
+        }
+
+        return m_gameObject;
     }
 }

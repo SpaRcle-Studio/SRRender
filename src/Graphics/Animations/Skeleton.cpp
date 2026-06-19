@@ -73,7 +73,7 @@ namespace SR_ANIMATIONS_NS {
 
         if (GetRootBone()) {
             GetRootBone()->InitTreeIfNeed();
-            GetRootBone()->gameObject = GetGameObject();
+            GetRootBone()->SetGameObject(GetGameObject());
         }
 
         m_bonesByName.reserve(SR_HUMANOID_MAX_BONES);
@@ -116,27 +116,6 @@ namespace SR_ANIMATIONS_NS {
         auto&& pBoneIt = m_bonesByName.find(name);
         if (pBoneIt == m_bonesByName.end()) {
             return nullptr;
-        }
-
-        if (!pBoneIt->second->gameObject && !pBoneIt->second->hasError && !pBoneIt->second->Initialize()) {
-            SR_WARN("Skeleton::GetBone() : failed to find bone game object!\n\tName: {}", pBoneIt->second->name);
-        }
-
-        return pBoneIt->second;
-    }
-
-    Bone* Skeleton::TryGetBone(SR_UTILS_NS::StringAtom name) {
-        if (auto&& pRoot = GetRootBone()) {
-            pRoot->InitTreeIfNeed();
-        }
-
-        auto&& pBoneIt = m_bonesByName.find(name);
-        if (pBoneIt == m_bonesByName.end()) {
-            return nullptr;
-        }
-
-        if (!pBoneIt->second->gameObject && !pBoneIt->second->hasError) {
-            pBoneIt->second->Initialize();
         }
 
         return pBoneIt->second;
@@ -220,11 +199,9 @@ namespace SR_ANIMATIONS_NS {
                 continue;
             }
 
-            auto&& pGameObject = pBone->gameObject;
+            auto&& pGameObject = pBone->GetGameObject();
+            m_transforms[boneId] = pGameObject ? SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::Transform3D>(pGameObject->GetTransform()) : nullptr;
 
-            if (pGameObject || pBone->hasError || pBone->Initialize()) {
-                m_transforms[boneId] = pGameObject ? SR_UTILS_NS::DynamicPointerCast<SR_UTILS_NS::Transform3D>(pGameObject->GetTransform()) : nullptr;
-            }
             m_hasInvalidBones |= !m_transforms[boneId];
 
             m_indices[transformIndex++] = boneId;
@@ -269,15 +246,15 @@ namespace SR_ANIMATIONS_NS {
 
             auto&& debugId = m_debugLines[pBone];
 
-            auto&& fromGameObject = GetBone(pBone->name);
-            auto&& toGameObject = GetBone(pBone->pParent->name);
+            auto&& pFromGameObject = GetBone(pBone->name)->GetGameObject();
+            auto&& pToGameObject = GetBone(pBone->pParent->name)->GetGameObject();
 
-            if (!fromGameObject->gameObject || !toGameObject->gameObject) {
+            if (!pFromGameObject || !pToGameObject) {
                 continue;
             }
 
-            auto&& fromPos = fromGameObject->gameObject->GetTransform()->GetMatrix().GetTranslate();
-            auto&& toPos = toGameObject->gameObject->GetTransform()->GetMatrix().GetTranslate();
+            auto&& fromPos = pFromGameObject->GetTransform()->GetMatrix().GetTranslate();
+            auto&& toPos = pToGameObject->GetTransform()->GetMatrix().GetTranslate();
 
             debugId = SR_UTILS_NS::DebugOverlayDraw::Instance().DrawLine(
                 debugId,
@@ -455,5 +432,23 @@ namespace SR_ANIMATIONS_NS {
             return m_skeleton;
         }
         return m_rig.GetResource()->GetSkeleton();
+    }
+
+    void Skeleton::ForEachBone(const SR_UTILS_NS::Function<void(Bone&)>& callback) {
+        SR_TRACY_ZONE;
+
+        if (auto&& pParent = m_parent.Get()) {
+            pParent->ForEachBone(callback);
+        }
+        else if (GetRootBone()) {
+            const SR_HTYPES_NS::Function<void(SR_ANIMATIONS_NS::Bone*)> processBone = [&](SR_ANIMATIONS_NS::Bone* pBone) {
+                callback(*pBone);
+                for (auto&& pSubBone : pBone->bones) {
+                    processBone(pSubBone.Get());
+                }
+            };
+
+            processBone(GetRootBone().Get());
+        }
     }
 }

@@ -59,9 +59,9 @@ namespace SR_ANIMATIONS_NS {
 
             if (boneInfo.nodeIndex.has_value()) {
                 auto&& node = rawMesh.GetSceneStructure().GetNodeByIndex(boneInfo.nodeIndex.value());
-                rigBoneInfo.bindTranslation = node.transform.translation;
-                rigBoneInfo.bindRotation = node.transform.rotation;
-                rigBoneInfo.bindScale = node.transform.scale;
+                rigBoneInfo.bindTranslation = node.localTransform.translation;
+                rigBoneInfo.bindRotation = node.localTransform.rotation;
+                rigBoneInfo.bindScale = node.localTransform.scale;
             }
             else {
                 SR_WARN("SkeletonRig::AutoRemapHumanoidBonesImpl() : bone node index is not set! Bone name: {}", boneName);
@@ -184,9 +184,9 @@ namespace SR_ANIMATIONS_NS {
 
             auto&& pose = m_retargetPoseLocal.emplace_back();
             pose.name = boneName;
-            pose.translation = node.transform.translation;
-            pose.rotation = node.transform.rotation;
-            pose.scale = node.transform.scale;
+            pose.translation = node.localTransform.translation;
+            pose.rotation = node.localTransform.rotation;
+            pose.scale = node.localTransform.scale;
         }
     }
 }

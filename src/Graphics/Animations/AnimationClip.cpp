@@ -5,6 +5,7 @@
 #include <Graphics/Animations/AnimationClip.h>
 #include <Graphics/Animations/AnimationChannel.h>
 #include <Graphics/Animations/RetargetAnimation.h>
+#include <Graphics/Animations/IKRetargetAnimation.h>
 
 #include <Utils/Types/RawMesh.h>
 #include <Utils/Common/StringUtils.h>

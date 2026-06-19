@@ -16,6 +16,7 @@ namespace SR_ANIMATIONS_NS {
 
     class Bone final : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<Bone> {
         SR_CLASS()
+        using GameObjectPtr = SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::GameObject>;
     public:
         Bone()
             : SR_HTYPES_NS::SharedPtr<Bone>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
@@ -23,6 +24,9 @@ namespace SR_ANIMATIONS_NS {
 
         bool Initialize();
         void InitTreeIfNeed();
+
+        void SetGameObject(const GameObjectPtr& pGameObject) noexcept;
+        SR_NODISCARD const GameObjectPtr& GetGameObject() const noexcept;
 
     private:
         void InitTree(Bone* pParent);
@@ -33,11 +37,13 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         std::vector<Bone::Ptr> bones;
 
-        SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::GameObject> gameObject;
         Bone* pParent = nullptr;
         Bone* pRoot = nullptr;
         SR_WORLD_NS::Scene* pScene = nullptr;
-        bool hasError = false;
+
+    private:
+        GameObjectPtr m_gameObject;
+        bool m_hasError = false;
 
     };
 }

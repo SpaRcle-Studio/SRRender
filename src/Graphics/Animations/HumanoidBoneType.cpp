@@ -5,6 +5,25 @@
 #include <Graphics/Animations/HumanoidBoneType.h>
 
 namespace SR_ANIMATIONS_NS {
+    static int32_t ExtractFingerSegmentIndex(const SR_UTILS_NS::String& name) {
+        /// Common patterns:
+        /// - Thumb1/Thumb2/Thumb3
+        /// - thumb_01/thumb_02/thumb_03
+        /// - thumb.prox / thumb.inter / thumb.dist
+        /// - thumb_metacarpal (treat as proximal)
+        if (name.contains("dist") || name.contains("tip") || name.contains("03") || name.ends_with("3")) {
+            return 3;
+        }
+        if (name.contains("inter") || name.contains("mid") || name.contains("02") || name.ends_with("2")) {
+            return 2;
+        }
+        if (name.contains("prox") || name.contains("meta") || name.contains("01") || name.ends_with("1")) {
+            return 1;
+        }
+
+        return 1;
+    }
+
     HumanoidBoneType TryExtractSidedHumanoidBone(const SR_UTILS_NS::String& name, bool leftSide) {
         /// UpperLeg, LowerLeg, Foot, Toes,
         if (((name.contains("upper") || name.contains("up")) && name.contains("leg")) || name.contains("thigh")) {
@@ -22,26 +41,49 @@ namespace SR_ANIMATIONS_NS {
 
         /// Thumb, Index, Middle, Ring, Little
         if (name.contains("thumb")) {
-            return leftSide ? HumanoidBoneType::LeftThumbProximal : HumanoidBoneType::RightThumbProximal;
+            switch (ExtractFingerSegmentIndex(name)) {
+                case 2:  return leftSide ? HumanoidBoneType::LeftThumbIntermediate : HumanoidBoneType::RightThumbIntermediate;
+                case 3:  return leftSide ? HumanoidBoneType::LeftThumbDistal : HumanoidBoneType::RightThumbDistal;
+                default: return leftSide ? HumanoidBoneType::LeftThumbProximal : HumanoidBoneType::RightThumbProximal;
+            }
         }
         else if (name.contains("index")) {
-            return leftSide ? HumanoidBoneType::LeftIndexProximal : HumanoidBoneType::RightIndexProximal;
+            switch (ExtractFingerSegmentIndex(name)) {
+                case 2:  return leftSide ? HumanoidBoneType::LeftIndexIntermediate : HumanoidBoneType::RightIndexIntermediate;
+                case 3:  return leftSide ? HumanoidBoneType::LeftIndexDistal : HumanoidBoneType::RightIndexDistal;
+                default: return leftSide ? HumanoidBoneType::LeftIndexProximal : HumanoidBoneType::RightIndexProximal;
+            }
         }
         else if (name.contains("middle")) {
-            return leftSide ? HumanoidBoneType::LeftMiddleProximal : HumanoidBoneType::RightMiddleProximal;
+            switch (ExtractFingerSegmentIndex(name)) {
+                case 2:  return leftSide ? HumanoidBoneType::LeftMiddleIntermediate : HumanoidBoneType::RightMiddleIntermediate;
+                case 3:  return leftSide ? HumanoidBoneType::LeftMiddleDistal : HumanoidBoneType::RightMiddleDistal;
+                default: return leftSide ? HumanoidBoneType::LeftMiddleProximal : HumanoidBoneType::RightMiddleProximal;
+            }
         }
         else if (name.contains("ring")) {
-            return leftSide ? HumanoidBoneType::LeftRingProximal : HumanoidBoneType::RightRingProximal;
+            switch (ExtractFingerSegmentIndex(name)) {
+                case 2:  return leftSide ? HumanoidBoneType::LeftRingIntermediate : HumanoidBoneType::RightRingIntermediate;
+                case 3:  return leftSide ? HumanoidBoneType::LeftRingDistal : HumanoidBoneType::RightRingDistal;
+                default: return leftSide ? HumanoidBoneType::LeftRingProximal : HumanoidBoneType::RightRingProximal;
+            }
         }
         else if (name.contains("little") || name.contains("pinky")) {
-            return leftSide ? HumanoidBoneType::LeftLittleProximal : HumanoidBoneType::RightLittleProximal;
+            switch (ExtractFingerSegmentIndex(name)) {
+                case 2:  return leftSide ? HumanoidBoneType::LeftLittleIntermediate : HumanoidBoneType::RightLittleIntermediate;
+                case 3:  return leftSide ? HumanoidBoneType::LeftLittleDistal : HumanoidBoneType::RightLittleDistal;
+                default: return leftSide ? HumanoidBoneType::LeftLittleProximal : HumanoidBoneType::RightLittleProximal;
+            }
         }
 
         /// Shoulder, UpperArm, LowerArm, Hand,
         if (name.contains("shoulder") || name.contains("clavicle")) {
             return leftSide ? HumanoidBoneType::LeftShoulder : HumanoidBoneType::RightShoulder;
         }
-        else if (name.contains("arm") && (name.contains("upper") || name.contains("up") || name.contains("forearm"))) {
+        else if (name.contains("forearm") || name.contains("lowerarm") || name.contains("lower_arm")) {
+            return leftSide ? HumanoidBoneType::LeftLowerArm : HumanoidBoneType::RightLowerArm;
+        }
+        else if (name.contains("upperarm") || name.contains("upper_arm") || (name.contains("arm") && (name.contains("upper") || name.contains("up")))) {
             return leftSide ? HumanoidBoneType::LeftUpperArm : HumanoidBoneType::RightUpperArm;
         }
         else if (name.contains("arm")) {
@@ -52,6 +94,39 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return HumanoidBoneType::Unknown;
+    }
+
+    const SR_UTILS_NS::Vector<HumanoidBoneType>& GetHumanoidSkeletonHierarchy() {
+        static const SR_UTILS_NS::Vector<HumanoidBoneType> hierarchy = {
+            HumanoidBoneType::Hips,
+            HumanoidBoneType::Spine,
+            HumanoidBoneType::Chest,
+            HumanoidBoneType::UpperChest,
+            HumanoidBoneType::Neck,
+            HumanoidBoneType::Head,
+
+            HumanoidBoneType::LeftShoulder,
+            HumanoidBoneType::LeftUpperArm,
+            HumanoidBoneType::LeftLowerArm,
+            HumanoidBoneType::LeftHand,
+
+            HumanoidBoneType::RightShoulder,
+            HumanoidBoneType::RightUpperArm,
+            HumanoidBoneType::RightLowerArm,
+            HumanoidBoneType::RightHand,
+
+            HumanoidBoneType::LeftUpperLeg,
+            HumanoidBoneType::LeftLowerLeg,
+            HumanoidBoneType::LeftFoot,
+            HumanoidBoneType::LeftToes,
+
+            HumanoidBoneType::RightUpperLeg,
+            HumanoidBoneType::RightLowerLeg,
+            HumanoidBoneType::RightFoot,
+            HumanoidBoneType::RightToes
+        };
+
+        return hierarchy;
     }
 
     HumanoidBoneType ExtractHumanoidBoneType(SR_UTILS_NS::StringAtom name) {

@@ -95,9 +95,9 @@ namespace SR_ANIMATIONS_NS {
                 out.nodeIndexByName[node.name] = node.index;
 
                 /// Default reference pose comes from mesh bind/rest, but can be overridden by rig retarget pose.
-                out.refLocalT[i] = node.transform.translation;
-                out.refLocalR[i] = node.transform.rotation;
-                out.refLocalS[i] = node.transform.scale;
+                out.refLocalT[i] = node.localTransform.translation;
+                out.refLocalR[i] = node.localTransform.rotation;
+                out.refLocalS[i] = node.localTransform.scale;
 
                 SkeletonRigPoseBone poseOverride;
                 if (rig.TryGetRetargetPoseLocal(node.name, poseOverride)) {

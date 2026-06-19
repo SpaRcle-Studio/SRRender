@@ -32,12 +32,14 @@ namespace SR_ANIMATIONS_NS {
         SR_UTILS_NS::StringAtom name;
         /// @property
         uint32_t index = SR_ID_INVALID;
+
         /// @property
         SR_MATH_NS::FVector3 bindTranslation;
         /// @property
         SR_MATH_NS::Quaternion bindRotation;
         /// @property
         SR_MATH_NS::FVector3 bindScale;
+
     };
 
     struct SkeletonRigPoseBone : public SR_UTILS_NS::Serializable {
@@ -90,6 +92,10 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD TranslationRetargetMode GetTranslationRetargetMode(SR_UTILS_NS::StringAtom humanoidKey) const noexcept;
         SR_NODISCARD bool TryGetRetargetPoseLocal(SR_UTILS_NS::StringAtom boneName, SkeletonRigPoseBone& outPose) const noexcept;
 
+        SR_NODISCARD const SR_MATH_NS::FVector3& GetSkeletonTranslation() const { return m_skeletonTranslation; }
+        SR_NODISCARD const SR_MATH_NS::FVector3& GetSkeletonRotation() const { return m_skeletonRotation; }
+        SR_NODISCARD const SR_MATH_NS::FVector3& GetSkeletonScale() const { return m_skeletonScale; }
+
     private:
         /// @method @editorButton @condition(This.m_skeletonType == SkeletonType::Humanoid)
         void AutoRemapHumanoidBones();
@@ -105,6 +111,13 @@ namespace SR_ANIMATIONS_NS {
 
         /// @property
         SkeletonType m_skeletonType = SkeletonType::Generic;
+
+        /// @property @group(Skeleton transform)
+        SR_MATH_NS::FVector3 m_skeletonTranslation;
+        /// @property @group(Skeleton transform)
+        SR_MATH_NS::FVector3 m_skeletonRotation;
+        /// @property @group(Skeleton transform)
+        SR_MATH_NS::FVector3 m_skeletonScale = SR_MATH_NS::FVector3::One();
 
         /// @property
         std::unordered_map<SR_UTILS_NS::StringAtom, SkeletonRigBoneChain> m_mapping;

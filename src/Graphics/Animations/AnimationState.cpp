@@ -186,19 +186,20 @@ namespace SR_ANIMATIONS_NS {
                     continue;
                 }
 
-                if (!pBone->gameObject) {
+                auto&& pBoneGameObject = pBone->GetGameObject();
+                if (!pBoneGameObject) {
                     SR_WARN("AnimationClipState::Compile() : game object is nullptr!");
                     continue;
                 }
 
-                auto&& pIt = std::find(context.gameObjects.begin(), context.gameObjects.end(), pBone->gameObject);
+                auto&& pIt = std::find(context.gameObjects.begin(), context.gameObjects.end(), pBoneGameObject);
                 if (pIt != context.gameObjects.end()) {
                     channelContext.gameObjectIndex = static_cast<uint16_t>(std::distance(context.gameObjects.begin(), pIt));
                     continue;
                 }
 
                 channelContext.gameObjectIndex = static_cast<uint16_t>(context.gameObjects.size());
-                context.gameObjects.emplace_back(pBone->gameObject);
+                context.gameObjects.emplace_back(pBoneGameObject);
             }
             else {
                 /// auto&& name = pChannel->GetGameObjectName();

@@ -52,12 +52,13 @@ namespace SR_ANIMATIONS_NS {
 
         SR_NODISCARD const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& GetMatrices() noexcept;
         SR_NODISCARD const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& GetOffsets() const noexcept;
-        SR_NODISCARD Bone* TryGetBone(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD Bone* GetBone(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD Bone* GetAnimationBone(SR_UTILS_NS::StringAtom name);
         SR_NODISCARD bool IsDebugEnabled() const noexcept { return m_debugEnabled; }
         SR_NODISCARD bool IsDirtyMatrices() const noexcept { return m_dirtyMatrices; }
         void SetDebugEnabled(bool enabled) { m_debugEnabled = enabled; }
+
+        void ForEachBone(const SR_HTYPES_NS::Function<void(Bone&)>& callback);
 
         SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<Pipeline>& GetPipeline() const noexcept;
