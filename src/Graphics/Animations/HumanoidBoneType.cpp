@@ -91,7 +91,7 @@ namespace SR_ANIMATIONS_NS {
         else if (isArmPattern && !lowerArmMapped) {
             return leftSide ? HumanoidBoneType::LeftLowerArm : HumanoidBoneType::RightLowerArm;
         }
-        else if (name.contains("hand")) {
+        else if (name.contains("hand") || name.contains("wrist")) {
             return leftSide ? HumanoidBoneType::LeftHand : HumanoidBoneType::RightHand;
         }
 
