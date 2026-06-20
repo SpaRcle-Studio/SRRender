@@ -55,7 +55,6 @@ namespace SR_ANIMATIONS_NS {
     private:
         void Apply(AnimationPose* pPose);
         void Compile();
-        bool Retarget(AnimationPose* pPose);
 
     private:
         bool m_isCompiled = false;

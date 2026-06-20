@@ -66,17 +66,52 @@ namespace SR_ANIMATIONS_NS {
             auto&& rigBoneInfo = m_mapping[SR_UTILS_NS::EnumReflector::ToStringAtom(humanoidBoneType)].bones.emplace_back();
             rigBoneInfo.name = boneName;
             rigBoneInfo.index = boneInfo.boneId.value();
-
-            if (boneInfo.nodeIndex.has_value()) {
-                auto&& node = rawMesh.GetSceneStructure().GetNodeByIndex(boneInfo.nodeIndex.value());
-                rigBoneInfo.bindTranslation = node.localTransform.translation;
-                rigBoneInfo.bindRotation = node.localTransform.rotation;
-                rigBoneInfo.bindScale = node.localTransform.scale;
-            }
-            else {
-                SR_WARN("SkeletonRig::AutoRemapHumanoidBonesImpl() : bone node index is not set! Bone name: {}", boneName);
-            }
         });
+
+        /// разделяем цепочку спины на Spine, Chest, UpperChest
+        /// обязательно должен быть Spine, затем обязательно UpperChest, и только потом Chest, если они есть
+        auto&& pSpineChainIt = m_mapping.find(SR_UTILS_NS::EnumReflector::ToStringAtom(HumanoidBoneType::Spine));
+        if (pSpineChainIt != m_mapping.end()) {
+            SkeletonRigBoneChain spineChain = pSpineChainIt->second;
+            const auto count = static_cast<uint32_t>(spineChain.bones.size());
+            if (count >= 1) {
+                m_mapping[SR_UTILS_NS::EnumReflector::ToStringAtom(HumanoidBoneType::Spine)].bones = { spineChain.bones.front() };
+            }
+
+            if (count >= 2) {
+                m_mapping[SR_UTILS_NS::EnumReflector::ToStringAtom(HumanoidBoneType::UpperChest)].bones = { spineChain.bones.back() };
+            }
+
+            if (count >= 3) {
+                auto& chestChain = m_mapping[SR_UTILS_NS::EnumReflector::ToStringAtom(HumanoidBoneType::Chest)];
+                chestChain.bones.assign(spineChain.bones.begin() + 1, spineChain.bones.end() - 1);
+            }
+        }
+
+        auto&& pHipsIt = m_mapping.find(SR_UTILS_NS::EnumReflector::ToStringAtom(HumanoidBoneType::Hips));
+        if (pHipsIt != m_mapping.end() && pHipsIt->second.bones.size() > 1) {
+            /// Если обнаружили несколько pelvis/hips костей, то вероятно они имеют направления, и у них есть общая родительская кость, которая может быть корнем рига.
+            /// В этом случае добавляем эту общую родительскую кость вместо текущих pelvis/hips костей
+            const auto& hipsBone = pHipsIt->second.bones.front();
+            if (hipsBone.index != SR_ID_INVALID) {
+                const auto& hipsBoneInfo = rawMesh.GetBoneInfo(index, hipsBone.name);
+                if (hipsBoneInfo.nodeIndex.has_value()) {
+                    auto&& hipsNode = sceneStructure.GetNodeByIndex(hipsBoneInfo.nodeIndex.value());
+                    if (hipsNode.parent.has_value()) {
+                        const auto& parentNode = sceneStructure.GetNodeByIndex(hipsNode.parent.value());
+                        auto&& pParentBoneInfoIt = bones.find(parentNode.name);
+                        if (pParentBoneInfoIt != bones.end() && pParentBoneInfoIt->second.boneId.has_value()) {
+                            const auto& parentBone = pParentBoneInfoIt->second;
+                            auto& hipsChain = pHipsIt->second;
+                            hipsChain.bones.clear();
+                            auto& newBone = hipsChain.bones.emplace_back();
+                            newBone.name = parentNode.name;
+                            newBone.index = parentBone.boneId.value();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     const SkeletonRigBoneChain* SkeletonRig::RetargetBone(SR_UTILS_NS::StringAtom name, SR_UTILS_NS::StringAtom& outName) const {

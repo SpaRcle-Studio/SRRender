@@ -26,13 +26,6 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         uint32_t index = SR_ID_INVALID;
 
-        /// @property
-        SR_MATH_NS::FVector3 bindTranslation;
-        /// @property
-        SR_MATH_NS::Quaternion bindRotation;
-        /// @property
-        SR_MATH_NS::FVector3 bindScale;
-
     };
 
     struct SkeletonRigBoneChain : public SR_UTILS_NS::Serializable {
@@ -58,6 +51,17 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD bool IsBoneIgnored(SR_UTILS_NS::StringAtom name) const;
     };
 
+    struct SkeletonWorldSettings : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+
+        /// @property
+        SR_MATH_NS::FVector3 translationOffset;
+        /// @property
+        SR_MATH_NS::FVector3 rotationOffset;
+        /// @property
+        SR_MATH_NS::FVector3 scaleFactor = SR_MATH_NS::FVector3::One();
+    };
+
     /// @extension(rig)
     class SkeletonRig : public SR_UTILS_NS::Asset {
         SR_CLASS()
@@ -68,12 +72,10 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const SkeletonRigBoneChain* GetBoneChain(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD SR_UTILS_NS::StringAtom GetBoneName(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD const SR_HTYPES_NS::RawMeshHolder& GetSkeleton() const { return m_skeleton; }
+        SR_NODISCARD SkeletonType GetSkeletonType() const { return m_skeletonType; }
+        SR_NODISCARD const SkeletonWorldSettings& GetWorldSettings() const { return m_worldSettings; }
 
         SR_NODISCARD bool TryGetRetargetPoseLocal(SR_UTILS_NS::StringAtom boneName, SR_MATH_NS::DecomposedMatrix& outPose) const noexcept;
-
-        SR_NODISCARD const SR_MATH_NS::FVector3& GetSkeletonTranslation() const { return m_skeletonTranslation; }
-        SR_NODISCARD const SR_MATH_NS::FVector3& GetSkeletonRotation() const { return m_skeletonRotation; }
-        SR_NODISCARD const SR_MATH_NS::FVector3& GetSkeletonScale() const { return m_skeletonScale; }
 
     private:
         /// @method @editorButton @condition(This.m_skeletonType == SkeletonType::Humanoid)
@@ -83,23 +85,19 @@ namespace SR_ANIMATIONS_NS {
 
     private:
         /// @property
+        SkeletonType m_skeletonType = SkeletonType::Generic;
+
+        /// @property
         SR_HTYPES_NS::RawMeshHolder m_skeleton;
 
         /// @property
-        SkeletonType m_skeletonType = SkeletonType::Generic;
-
-        /// @property @group(Skeleton transform)
-        SR_MATH_NS::FVector3 m_skeletonTranslation;
-        /// @property @group(Skeleton transform)
-        SR_MATH_NS::FVector3 m_skeletonRotation;
-        /// @property @group(Skeleton transform)
-        SR_MATH_NS::FVector3 m_skeletonScale = SR_MATH_NS::FVector3::One();
-
-        /// @property
-        std::unordered_map<SR_UTILS_NS::StringAtom, SkeletonRigBoneChain> m_mapping;
+        SkeletonWorldSettings m_worldSettings;
 
         /// @property @condition(This.m_skeletonType == SkeletonType::Humanoid)
         SkeletonAutoRigRules m_autoRigRules;
+
+        /// @property
+        std::unordered_map<SR_UTILS_NS::StringAtom, SkeletonRigBoneChain> m_mapping;
 
     };
 }

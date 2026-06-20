@@ -108,60 +108,6 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    bool AnimationGraph::Retarget(AnimationPose* pPose) {
-        SR_TRACY_ZONE;
-
-        if (auto&& pSkeleton = m_pAnimator->GetSkeleton().Get()) {
-            if (auto&& pRig = pSkeleton->GetRig()) {
-                auto&& gameObjectsData = pPose->GetGameObjects();
-                m_gameObjectsCache.resize(gameObjectsData.size());
-
-                for (uint32_t i = 0; i < gameObjectsData.size(); ++i) {
-                    AnimationGameObjectData& data = gameObjectsData[i];
-                    if (!data.dirty) SR_UNLIKELY_ATTRIBUTE {
-                        continue;
-                    }
-                    data.dirty = false;
-
-                    SR_UTILS_NS::StringAtom retargetName;
-                    auto&& pBoneChain = pRig->RetargetBone(m_gameObjects[i]->GetName(), retargetName);
-                    if (!pBoneChain) {
-                        continue;
-                    }
-
-                    auto&& cachedData = m_gameObjectsCache[i];
-                    cachedData.dirty = true;
-
-                    auto&& boneInfo = pBoneChain->bones.front();
-                    if (data.translation) SR_LIKELY_ATTRIBUTE {
-                        cachedData.translation = data.translation.value() + boneInfo.bindTranslation;
-                    }
-                    else {
-                        cachedData.translation.reset();
-                    }
-
-                    if (data.rotation) SR_LIKELY_ATTRIBUTE {
-                        cachedData.rotation = boneInfo.bindRotation * data.rotation.value();
-                    }
-                    else {
-                        cachedData.rotation.reset();
-                    }
-
-                    if (data.scaling) SR_LIKELY_ATTRIBUTE {
-                        cachedData.scaling = data.scaling.value() * boneInfo.bindScale;
-                    }
-                    else {
-                        cachedData.scaling.reset();
-                    }
-                }
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     void AnimationGraph::Compile() {
         SR_TRACY_ZONE;
 
