@@ -17,6 +17,8 @@ namespace SR_GRAPH_NS {
         float_t size;
 
         SR_MATH_NS::FVector4 color;
+
+        SR_MATH_NS::FVector3 rotation;
     };
 }
 

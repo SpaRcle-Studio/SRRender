@@ -22,6 +22,9 @@ namespace SR_GRAPH_NS {
         float maxLifetime;
 
         float size;
+
+        SR_MATH_NS::FVector3 rotation;
+        SR_MATH_NS::FVector3 rotationSpeed;
     };
 }
 

@@ -64,6 +64,7 @@ namespace SR_GRAPH_NS{
             m_instanceData[i].position = m_particles[i].position;
             m_instanceData[i].size = m_particles[i].size;
             m_instanceData[i].color = m_particles[i].color;
+            m_instanceData[i].rotation = m_particles[i].rotation;
         }
     }
 
@@ -79,6 +80,8 @@ namespace SR_GRAPH_NS{
                                               m_instanceData[i].color);
             m_instanceVertexBuffer.SetVertexT(i, SR_UTILS_NS::VertexAttribute::Custom0,
                                               m_instanceData[i].size);
+            m_instanceVertexBuffer.SetVertexT(i, SR_UTILS_NS::VertexAttribute::Custom1,
+                                              m_instanceData[i].rotation);
         }
 
         auto* pPipeline = GetPipeline();
@@ -111,6 +114,10 @@ namespace SR_GRAPH_NS{
         particle.color = m_main.m_startColor;
         particle.size = m_main.startSize;
 
+        particle.rotation = SR_MATH_NS::FVector3(0.0f);
+        particle.rotationSpeed = m_main.startRotationSpeed;
+
+
         ++m_aliveParticles;
     }
 
@@ -124,6 +131,8 @@ namespace SR_GRAPH_NS{
             particle.lifetime -= dt;
 
             float_t t = particle.lifetime / particle.maxLifetime;
+
+            particle.rotation += particle.rotationSpeed * dt;
 
             particle.color.x = SR_MATH_NS::Lerp(m_main.m_startColor.x, m_main.m_endColor.x, t);
             particle.color.y = SR_MATH_NS::Lerp(m_main.m_startColor.y, m_main.m_endColor.y, t);
@@ -198,6 +207,7 @@ namespace SR_GRAPH_NS{
                 .AddAttribute(SR_UTILS_NS::VertexAttribute::Position1, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
                 .AddAttribute(SR_UTILS_NS::VertexAttribute::Color0, SR_UTILS_NS::VertexAttributeFormat::Float32, 4)
                 .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom0, SR_UTILS_NS::VertexAttributeFormat::Float32, 1)
+                .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom1, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
                 .SetInstanced(true);
         return description;
     }
