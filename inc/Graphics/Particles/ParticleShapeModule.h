@@ -51,6 +51,7 @@ namespace SR_GRAPH_NS {
     private:
         /// @property
         float m_radius = 5.0f;
+        mutable SR_MATH_NS::FVector3 m_point = SR_MATH_NS::FVector3(0.0f, 1.0f, 0.0);
     };
 }
 #endif //SRENGINE_PARTICLESHAPEMODULE_H

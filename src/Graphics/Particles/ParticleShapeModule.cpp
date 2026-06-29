@@ -24,17 +24,18 @@ namespace SR_GRAPH_NS{
 
     SR_MATH_NS::FVector3 SphereShape::GeneratePosition() const {
         while(true) {
-            SR_MATH_NS::FVector3 point(SR_UTILS_NS::Random::Instance().Float(-1.0, 1.0),
+            SR_MATH_NS::FVector3 temppoint(SR_UTILS_NS::Random::Instance().Float(-1.0, 1.0),
                                        SR_UTILS_NS::Random::Instance().Float(-1.0, 1.0),
                                        SR_UTILS_NS::Random::Instance().Float(-1.0, 1.0));
 
-            if(point.Length() <= 1.0f) {
-                return point * m_radius;
+            m_point = temppoint;
+            if(m_point.Length() <= 1.0f) {
+                return m_point * m_radius;
             }
         }
     }
 
     SR_MATH_NS::FVector3 SphereShape::GenerateDirection() const {
-        return SR_MATH_NS::FVector3(0.0f, 1.0f, 0.0f);
+        return m_point.Normalize();
     }
 }

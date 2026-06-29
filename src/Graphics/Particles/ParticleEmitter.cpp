@@ -15,6 +15,7 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Material/BaseMaterial.h>
 
+#include <Utils/Common/Numeric.h>
 #include <Utils/Types/RawMesh.h>
 
 #include <Codegen/ParticleEmitter.generated.hpp>
@@ -107,12 +108,16 @@ namespace SR_GRAPH_NS{
         auto& particle = m_particles[m_aliveParticles];
 
         particle.position = m_shape->GeneratePosition();
-        particle.velocity = m_shape->GenerateDirection() * m_main.startSpeed;
+        particle.direction = m_shape->GenerateDirection();
+        particle.velocity = particle.direction * SR_UTILS_NS::Random::Instance().Float(m_main.startMinSpeed, m_main.startMaxSpeed);
 
-        particle.lifetime = m_main.startLifetime;
-        particle.maxLifetime = m_main.startLifetime;
+        particle.lifetime = SR_UTILS_NS::Random::Instance().Float(m_main.startMinLifetime, m_main.startMaxLifetime);
+        particle.maxLifetime = particle.lifetime;
+
         particle.color = m_main.m_startColor;
-        particle.size = m_main.startSize;
+
+        particle.startSize = SR_UTILS_NS::Random::Instance().Float(m_main.startMinSize, m_main.startMaxSize);
+        particle.size = particle.startSize;
 
         particle.rotation = SR_MATH_NS::FVector3(0.0f);
         particle.rotationSpeed = m_main.startRotationSpeed;
@@ -125,14 +130,16 @@ namespace SR_GRAPH_NS{
         for (uint32_t i = 0; i < m_aliveParticles;){
             auto& particle = m_particles[i];
 
+            float_t t = particle.lifetime / particle.maxLifetime;
+
             particle.velocity.y += m_main.gravity * dt;
             particle.position += particle.velocity * dt;
 
             particle.lifetime -= dt;
 
-            float_t t = particle.lifetime / particle.maxLifetime;
-
             particle.rotation += particle.rotationSpeed * dt;
+
+            particle.size = SR_MATH_NS::Lerp(particle.startSize, m_main.endSize, 1.0f - t);
 
             particle.color.x = SR_MATH_NS::Lerp(m_main.m_startColor.x, m_main.m_endColor.x, t);
             particle.color.y = SR_MATH_NS::Lerp(m_main.m_startColor.y, m_main.m_endColor.y, t);
