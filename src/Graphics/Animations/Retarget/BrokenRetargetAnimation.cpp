@@ -2,7 +2,9 @@
 // Created by Monika on 18.06.2026.
 //
 
-#include <Graphics/Animations/RetargetAnimation.h>
+/// WRONG IMPLEMENTATION, NOT WORKING
+
+/*#include <Graphics/Animations/RetargetAnimation.h>
 #include <Graphics/Animations/SkeletonRig.h>
 
 #include <Utils/Types/RawMesh.h>
@@ -558,4 +560,4 @@ namespace SR_ANIMATIONS_NS {
 
         return true;
     }
-}
+}*/

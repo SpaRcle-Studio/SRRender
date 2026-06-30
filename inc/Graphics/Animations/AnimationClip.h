@@ -2,10 +2,11 @@
 // Created by Monika on 08.01.2023.
 //
 
-#ifndef SR_ENGINE_ANIMATIONCLIP_H
-#define SR_ENGINE_ANIMATIONCLIP_H
+#ifndef SR_ENGINE_GRAPHICS_ANIMATION_CLIP_H
+#define SR_ENGINE_GRAPHICS_ANIMATION_CLIP_H
 
-#include <Graphics/Animations/SkeletonRig.h>
+#include <Graphics/Animations/Retarget/RetargetProfile.h>
+#include <Graphics/Animations/AnimationChannel.h>
 
 #include <Utils/Resources/Asset.h>
 #include <Utils/Resources/ResourceRef.h>
@@ -60,6 +61,8 @@ namespace SR_ANIMATIONS_NS {
         SR_HTYPES_NS::RawMeshHolder m_skeleton;
         /// @property
         SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> m_excludedBones;
+        /// @property
+        SR_UTILS_NS::Vector<RetargetProfileEmbedded> m_retargetProfiles;
 
         Channels m_channels;
         mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Channels> m_retargetCache;
@@ -70,4 +73,4 @@ namespace SR_ANIMATIONS_NS {
     };
 }
 
-#endif //SR_ENGINE_ANIMATIONCLIP_H
+#endif //SR_ENGINE_GRAPHICS_ANIMATION_CLIP_H

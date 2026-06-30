@@ -4,8 +4,6 @@
 
 #include <Graphics/Animations/AnimationClip.h>
 #include <Graphics/Animations/AnimationChannel.h>
-#include <Graphics/Animations/RetargetAnimation.h>
-#include <Graphics/Animations/IKRetargetAnimation.h>
 
 #include <Utils/Types/RawMesh.h>
 #include <Utils/Common/StringUtils.h>
@@ -58,18 +56,18 @@ namespace SR_ANIMATIONS_NS {
             }
         }
 
-        if (auto&& pRig = m_rig.GetResource(); !pRig) {
-            if (auto&& pSkeleton = m_skeleton.GetRawMesh()) {
-                for (auto&& channel : m_channels) {
-                    const auto boneIndex= pSkeleton->GetBoneInfo(m_skeleton.GetMeshId(), channel.GetChannelName()).boneId;
-                    if (boneIndex.has_value()) {
-                        channel.SetBoneIndex(boneIndex.value());
-                    }
+        auto&& pRig = m_rig.GetResource();
+        if (auto&& pSkeleton = pRig ? pRig->GetSkeleton().GetRawMesh() : m_skeleton.GetRawMesh()) {
+            auto&& meshId = pRig ? pRig->GetSkeleton().GetMeshId() : m_skeleton.GetMeshId();
+            for (auto&& channel : m_channels) {
+                const auto boneIndex= pSkeleton->GetBoneInfo(meshId, channel.GetChannelName()).boneId;
+                if (boneIndex.has_value()) {
+                    channel.SetBoneIndex(boneIndex.value());
                 }
             }
-            else {
-                SR_ERROR("AnimationClip::RetargetChannels() : both rig and skeleton are not set for clip \"{}\"!", GetResourceId());
-            }
+        }
+        else {
+            SR_ERROR("AnimationClip::LoadChannels() : failed to get skeleton for animation \"{}\"", name);
         }
 
         PostProcess();
@@ -162,20 +160,39 @@ namespace SR_ANIMATIONS_NS {
             return m_channels;
         }
 
+        const SR_UTILS_NS::StringAtom sourceRigName = pSourceRig->GetResourceId();
         const SR_UTILS_NS::StringAtom targetRigName = pTargetRig->GetResourceId();
+
+        if (sourceRigName == targetRigName) {
+            return m_channels;
+        }
+
         if (auto&& pIt = m_retargetCache.find(targetRigName); pIt != m_retargetCache.end()) {
             return pIt->second;
         }
 
-        Channels channels;
-        if (RetargetAnimation::Instance().Retarget(*pSourceRig, *pTargetRig, m_channels, channels)) {
-            m_retargetCache[targetRigName] = std::move(channels);
-            return m_retargetCache[targetRigName];
-        }
-        else {
-            SR_ERROR("AnimationClip::GetChannels() : failed to retarget animation from rig \"{}\" to rig \"{}\"!", pSourceRig->GetResourceId(), targetRigName);
+        RetargetAnimationContext context(m_channels, *pSourceRig, *pTargetRig);
+
+        for (auto&& profile : m_retargetProfiles) {
+            if (profile.targetRig.GetId() != targetRigName) {
+                continue;
+            }
+            if (profile.sourceRig.GetId() != sourceRigName) {
+                continue;
+            }
+            context.pProfile = &profile;
+            break;
         }
 
-        return m_channels;
+        if (RetargetAnimationSystem::Instance().Retarget(context)) {
+            SR_LOG("AnimationClip::GetChannels() : retargeted animation \"{}\" from rig \"{}\" to rig \"{}\"", GetResourceId(), sourceRigName, targetRigName);
+            m_retargetCache[targetRigName] = std::move(context.targetChannels);
+            return m_retargetCache[targetRigName];
+        }
+
+        SR_ERROR("AnimationClip::GetChannels() : failed to retarget animation \"{}\" from rig \"{}\" to rig \"{}\"", GetResourceId(), sourceRigName, targetRigName);
+
+        m_retargetCache.emplace(targetRigName, m_channels);
+        return m_retargetCache[targetRigName];
     }
 }

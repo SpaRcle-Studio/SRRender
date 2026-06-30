@@ -2,6 +2,9 @@
 // Created by Monika on 18.06.2026.
 //
 
+/// WRONG IMPLEMENTATION, NOT WORKING
+
+/*
 #include <Graphics/Animations/IKRetargetAnimation.h>
 #include <Graphics/Animations/SkeletonRig.h>
 
@@ -1110,4 +1113,4 @@ namespace SR_ANIMATIONS_NS {
 
         return true;
     }
-}
+}*/
