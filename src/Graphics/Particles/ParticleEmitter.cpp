@@ -6,6 +6,7 @@
 #include <Graphics/Particles/ParticleData.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Pipeline/Pipeline.h>
+#include <Graphics/Memory/DescriptorManager.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Material/BaseMaterial.h>
 
@@ -274,11 +275,16 @@ namespace SR_GRAPH_NS {
         if (m_geometryIBO != SR_ID_INVALID){
             GetPipeline()->FreeIBO(&m_geometryIBO);
         }
-        if (m_virtualUBO != SR_ID_INVALID) {
-            GetPipeline()->FreeUBO(&m_virtualUBO);
+
+        auto&& uboManager = Memory::UBOManager::Instance();
+        auto&& descriptorManager = SR_GRAPH_NS::DescriptorManager::Instance();
+
+        if (m_virtualUBO != SR_ID_INVALID && !uboManager.FreeUBO(&m_virtualUBO)) {
+            SR_ERROR("ParticleEmitter::FreeVideoMemory() : failed to free virtual uniform buffer object!");
         }
-        if (m_virtualDescriptor != SR_ID_INVALID) {
-            GetPipeline()->FreeDescriptorSet(&m_virtualDescriptor);
+
+        if (m_virtualDescriptor != SR_ID_INVALID && !descriptorManager.FreeDescriptorSet(&m_virtualDescriptor)) {
+            SR_ERROR("ParticleEmitter::FreeVideoMemory() : failed to free virtual descriptor set!");
         }
     }
 
