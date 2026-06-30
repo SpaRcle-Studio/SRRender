@@ -63,12 +63,22 @@ namespace SR_GRAPH_NS {
     };
 
     struct VulkanPipelineInternalData {
-        VkDeviceSize offsets[1] = { 0 };
         VkViewport viewport = { };
         VkRect2D scissor = { };
         VkRect2D activeScissor = { };
         VkRenderPassBeginInfo renderPassBI = { };
         VkCommandBufferBeginInfo cmdBufInfo = { };
+
+        struct VBOBind {
+            VkBuffer pBuffer = VK_NULL_HANDLE;
+            VertexInputRate inputRate = VertexInputRate::Vertex;
+            bool operator==(const VBOBind& other) const {
+                return pBuffer == other.pBuffer && inputRate == other.inputRate;
+            }
+            bool operator!=(const VBOBind& other) const { return !(*this == other); }
+        };
+        std::array<VBOBind, SR_MAX_VERTEX_INPUT_BINDINGS> VBOs;
+        bool isVBOsDirty = true;
 
         VkDescriptorSet currentDescriptorSet = VK_NULL_HANDLE;
 
@@ -1820,6 +1830,8 @@ namespace SR_GRAPH_NS {
 
         const auto frameIndex = GetCurrentImageIndex();
 
+        m_internalData->isVBOsDirty = true;
+
         if (!m_isComputeState) {
             if (m_state.cmdBufferId == SR_ID_INVALID) {
                 m_internalData->currentCmd = m_kernel->m_drawCmdBuffs[frameIndex];
@@ -2465,9 +2477,22 @@ namespace SR_GRAPH_NS {
         vkUpdateDescriptorSets(*m_kernel->GetDevice(), 1, &descriptorSetWrite, 0, nullptr);
     }
 
-    void VulkanPipeline::BindVBO(uint32_t VBO, VertexInputRate inputRate) {
-        Super::BindVBO(VBO, inputRate);
-        vkCmdBindVertexBuffers(m_internalData->currentCmd, 0, 1, m_memory->GetVBO(VBO)->GetCRef(), m_internalData->offsets);
+    void VulkanPipeline::BindVBO(uint32_t VBO, uint32_t slot, VertexInputRate inputRate) {
+        Super::BindVBO(VBO, slot, inputRate);
+
+        VulkanPipelineInternalData::VBOBind previousBind = m_internalData->VBOs[slot];
+
+        if (VBO == SR_UINT32_MAX) {
+            m_internalData->VBOs[slot] = {};
+        }
+        else {
+            m_internalData->VBOs[slot].pBuffer = *m_memory->GetVBO(VBO)->GetCRef();
+            m_internalData->VBOs[slot].inputRate = inputRate;
+        }
+
+        if (previousBind != m_internalData->VBOs[slot]) {
+            m_internalData->isVBOsDirty = true;
+        }
     }
 
     void VulkanPipeline::BindIBO(uint32_t IBO) {
@@ -2556,6 +2581,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        FlushVBOBuffers();
+
         vkCmdDraw(m_internalData->currentCmd, count, m_drawInstancesCount, 0, m_drawInstancesStart);
     }
 
@@ -2588,6 +2615,8 @@ namespace SR_GRAPH_NS {
             m_internalData->activeScissor = scissor;
             vkCmdSetScissor(m_internalData->currentCmd, 0, 1, &m_internalData->activeScissor);
         }
+
+        FlushVBOBuffers();
 
         vkCmdDrawIndexed(m_internalData->currentCmd, count, m_drawInstancesCount, 0, 0, m_drawInstancesStart);
     }
@@ -3180,5 +3209,29 @@ namespace SR_GRAPH_NS {
             return m_kernel->GetMaxFramesInFlight();
         }
         return 0;
+    }
+
+    void VulkanPipeline::FlushVBOBuffers() {
+        if (!m_internalData->isVBOsDirty) {
+            return;
+        }
+        SR_TRACY_ZONE;
+        static std::vector<VkBuffer> buffers;
+        buffers.clear();
+        buffers.reserve(m_internalData->VBOs.size());
+        for (auto&& vboBind : m_internalData->VBOs) {
+            if (!vboBind.pBuffer) {
+                continue;
+            }
+            buffers.emplace_back(vboBind.pBuffer);
+        }
+        if (!buffers.empty()) {
+            static VkDeviceSize offsets[SR_MAX_VERTEX_INPUT_BINDINGS] = { 0 };
+            vkCmdBindVertexBuffers(m_internalData->currentCmd, 0, buffers.size(), buffers.data(), offsets);
+        }
+        else {
+            PipelineError("VulkanPipeline::FlushVBOBuffers() : no VBOs to bind!");
+        }
+        m_internalData->isVBOsDirty = false;
     }
 }

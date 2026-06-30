@@ -18,11 +18,23 @@
 #include <Codegen/ParticleEmitter.generated.hpp>
 
 namespace SR_GRAPH_NS {
+    static const auto ParticleEmitterVertexLayout = SR_UTILS_NS::VertexLayoutDescription()
+        .AddAttribute(SR_UTILS_NS::VertexAttribute::Position1, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
+        .AddAttribute(SR_UTILS_NS::VertexAttribute::Color0, SR_UTILS_NS::VertexAttributeFormat::Float32, 4)
+        .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom0, SR_UTILS_NS::VertexAttributeFormat::Float32, 1)
+        .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom1, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
+        .SetInstanced(true);
+
+    /// Geometry data
+    static const auto ParticleEmitterGeometryVertexLayout = SR_UTILS_NS::VertexLayoutDescription()
+        .AddAttribute(SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
+    ;
+
     void ParticleEmitter::InitializeParticle() {
         m_particles.resize(m_maxParticles);
         m_instanceData.resize(m_particles.size());
 
-        m_instanceVertexBuffer.SetLayout(GetShaderVertexLayoutDescriptions().GetLayout(0));
+        m_instanceVertexBuffer.SetLayout(ParticleEmitterVertexLayout);
         m_instanceVertexBuffer.Allocate(m_maxParticles);
 
         m_VBO = GetPipeline()->AllocateVBO(
@@ -41,17 +53,20 @@ namespace SR_GRAPH_NS {
         GetPipeline()->SetDrawInstancesCount(m_aliveParticles);
 
         if (IsValidMeshId()) {
-            GetPipeline()->BindVBO(m_geometryVBO, VertexInputRate::Vertex);
+            GetPipeline()->BindVBO(m_geometryVBO, 1, VertexInputRate::Vertex);
             GetPipeline()->BindIBO(m_geometryIBO);
         }
 
         DrawRenderObject(
-                    this,
-                    IsValidMeshId() ? GetIndices().size() : 6,
-                    m_virtualUBO,
-                    m_virtualDescriptor,
-                    m_dirtyMaterial,
-                    m_hasErrors);
+            this,
+            IsValidMeshId() ? GetIndices().size() : 6,
+            m_virtualUBO,
+            m_virtualDescriptor,
+            m_dirtyMaterial,
+            m_hasErrors
+        );
+
+        GetPipeline()->BindVBO(SR_ID_INVALID, 1, VertexInputRate::Vertex);
 
         GetPipeline()->ResetDrawInstancesCount();
     }
@@ -215,25 +230,11 @@ namespace SR_GRAPH_NS {
     }
 
     SR_UTILS_NS::VertexLayoutDescriptionsRef ParticleEmitter::GetShaderVertexLayoutDescriptions() const noexcept {
-        /// Particles data
-        static const auto particleLayout = SR_UTILS_NS::VertexLayoutDescription()
-            .AddAttribute(SR_UTILS_NS::VertexAttribute::Position1, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
-            .AddAttribute(SR_UTILS_NS::VertexAttribute::Color0, SR_UTILS_NS::VertexAttributeFormat::Float32, 4)
-            .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom0, SR_UTILS_NS::VertexAttributeFormat::Float32, 1)
-            .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom1, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
-            .SetInstanced(true);
-
-        /// Geometry data
-        static const auto geometryLayout = SR_UTILS_NS::VertexLayoutDescription()
-            .AddAttribute(SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
-            .AddAttribute(SR_UTILS_NS::VertexAttribute::Normal, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
-            .AddAttribute(SR_UTILS_NS::VertexAttribute::UV0, SR_UTILS_NS::VertexAttributeFormat::Float32, 2);
-
         if (IsValidMeshId()) {
-            static const std::array<SR_UTILS_NS::VertexLayoutDescription, 2> layouts = { particleLayout, geometryLayout };
+            static const std::array<SR_UTILS_NS::VertexLayoutDescription, 2> layouts = { ParticleEmitterVertexLayout, ParticleEmitterGeometryVertexLayout };
             return SR_UTILS_NS::VertexLayoutDescriptionsRef(layouts);
         }
-        return SR_UTILS_NS::VertexLayoutDescriptionsRef(particleLayout);
+        return SR_UTILS_NS::VertexLayoutDescriptionsRef(ParticleEmitterVertexLayout);
     }
 
     std::optional<int32_t> ParticleEmitter::GetVBO() const {
@@ -244,13 +245,20 @@ namespace SR_GRAPH_NS {
         return m_VBO;
     }
 
+    std::optional<int32_t> ParticleEmitter::GetIBO() const {
+        const_cast<ParticleEmitter&>(*this).Calculate();
+        if (m_geometryIBO == SR_ID_INVALID){
+            return std::nullopt;
+        }
+        return m_geometryIBO;
+    }
+
     bool ParticleEmitter::Bind() {
-        if (m_VBO == SR_ID_INVALID){
+        Calculate();
+        if (m_VBO == SR_ID_INVALID) {
             return false;
         }
-
-        GetPipeline()->BindVBO(m_VBO, VertexInputRate::Instance);
-
+        GetPipeline()->BindVBO(m_VBO, 0, VertexInputRate::Instance);
         return true;
     }
 
@@ -284,7 +292,7 @@ namespace SR_GRAPH_NS {
             if (m_geometryIBO != SR_ID_INVALID) {
                 GetPipeline()->FreeIBO(&m_geometryIBO);
             }
-            const auto& meshBuffer = GetVertexBuffer(GetVertexLayoutDescription());
+            const auto& meshBuffer = GetVertexBuffer(ParticleEmitterGeometryVertexLayout);
             auto&& indices = GetIndices();
             m_geometryVBO = GetPipeline()->AllocateVBO(m_geometryVBO, meshBuffer.GetDataSize(), meshBuffer.GetRawData());
             m_geometryIBO = GetPipeline()->AllocateIBO((void *) indices.data(), sizeof(uint32_t), indices.size(), m_geometryVBO);
@@ -295,8 +303,8 @@ namespace SR_GRAPH_NS {
     void ParticleEmitter::UseMaterial(SR_GTYPES_NS::Shader& shader) {
         Super::UseMaterial(shader);
         UseModelMatrix(shader);
-        SR_UTILS_NS::StringAtom SHADER_SPRITE_FILL_METHOD = "ISQuad";
-        shader.SetInt(SHADER_SPRITE_FILL_METHOD, static_cast<int>(1));
+        static const SR_UTILS_NS::StringAtom id = "ISQuad";
+        shader.SetInt(id, static_cast<int>(!IsValidMeshId()));
     }
 
     void ParticleEmitter::UseModelMatrix(SR_GTYPES_NS::Shader& shader) {

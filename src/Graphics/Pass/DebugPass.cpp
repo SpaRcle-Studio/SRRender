@@ -149,7 +149,7 @@ namespace SR_GRAPH_NS {
 
                 const BakedMesh& mesh = pDebugRenderer->GetMeshUnchecked(meshId);
 
-                pPipeline->BindVBO(mesh.GetVBO(), VertexInputRate::Vertex);
+                pPipeline->BindVBO(mesh.GetVBO(), 0, VertexInputRate::Vertex);
                 pPipeline->BindIBO(mesh.GetIBO());
 
                 DrawQueue(const_cast<Pipeline&>(pPipeline.GetUncheckedRef()), queue, shaderInfo, mesh.GetCountIndices());

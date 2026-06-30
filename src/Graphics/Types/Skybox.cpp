@@ -189,7 +189,7 @@ namespace SR_GTYPES_NS {
         GetPipeline()->GetCurrentShader()->FlushConstants();
 
         if (!m_isQuad) {
-            GetPipeline()->BindVBO(m_VBO, VertexInputRate::Vertex);
+            GetPipeline()->BindVBO(m_VBO, 0, VertexInputRate::Vertex);
             GetPipeline()->BindIBO(m_IBO);
         }
 

@@ -49,6 +49,8 @@ namespace SR_GRAPH_NS {
         uint32_t texturesCount = 0;
     };
 
+    #define SR_MAX_VERTEX_INPUT_BINDINGS 8
+
     SR_ENUM_NS_CLASS_T(MemoryBarrierType, uint8_t,
         ReadAttachmentToCompute,
         ComputeToReadAttachment
@@ -296,7 +298,7 @@ namespace SR_GRAPH_NS {
         virtual void BindCmdBuffer(uint32_t cmdBuffer);
 
         /// Vertex Buffer Object - биндими для рендера вершин
-        virtual void BindVBO(uint32_t VBO, VertexInputRate inputRate);
+        virtual void BindVBO(uint32_t VBO, uint32_t slot, VertexInputRate inputRate);
 
         /// Index Buffer Object - биндим для рендера вершин по индексам
         virtual void BindIBO(uint32_t IBO);

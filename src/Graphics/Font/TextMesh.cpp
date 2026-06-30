@@ -143,7 +143,7 @@ namespace SR_GTYPES_NS {
         if (m_VBO == SR_ID_INVALID) {
             return false;
         }
-        GetPipeline()->BindVBO(m_VBO, VertexInputRate::Instance);
+        GetPipeline()->BindVBO(m_VBO, 0, VertexInputRate::Instance);
         return true;
     }
 
