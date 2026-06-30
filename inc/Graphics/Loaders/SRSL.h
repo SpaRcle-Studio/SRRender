@@ -51,7 +51,8 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const std::string& GetBuffer() const { return m_buffer; }
         SR_NODISCARD bool empty() const { return m_params.empty(); }
         SR_NODISCARD const SR_HTYPES_NS::SortedVector<Entry>& GetParams() const { return m_params; }
-        SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescription& GetVertexLayoutDescription() const { return m_vertexLayoutDescription; }
+        SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescriptions& GetVertexLayoutDescriptions() const { return m_vertexLayoutDescriptions; }
+        SR_NODISCARD SR_UTILS_NS::VertexLayoutDescriptions& GetVertexLayoutDescriptions() { return m_vertexLayoutDescriptions; }
 
         void Clear();
 
@@ -62,8 +63,8 @@ namespace SR_SRSL_NS {
         void AddDefine(SR_UTILS_NS::StringAtom define);
         void RemoveDefine(SR_UTILS_NS::StringAtom define);
 
-        void SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description) {
-            m_vertexLayoutDescription = description;
+        void SetVertexLayoutDescriptions(const SR_UTILS_NS::VertexLayoutDescriptionsRef& descriptions) {
+            m_vertexLayoutDescriptions = descriptions.Detach();
             m_initialized = false;
         }
 
@@ -82,7 +83,7 @@ namespace SR_SRSL_NS {
 
         SR_UTILS_NS::SRHashType m_hash = 0;
         bool m_initialized = false;
-        SR_UTILS_NS::VertexLayoutDescription m_vertexLayoutDescription;
+        SR_UTILS_NS::VertexLayoutDescriptions m_vertexLayoutDescriptions;
 
     };
 }

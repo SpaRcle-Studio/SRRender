@@ -206,9 +206,9 @@ namespace SR_GRAPH_NS {
             params.SetParam(key, value);
         }
 
-        params.SetVertexLayoutDescription(SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
+        params.GetVertexLayoutDescriptions().AddLayout().AddAttribute(
             SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
-        ));
+        );
 
         if (auto&& pNewShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(path, &params)) {
             SetShader(pNewShader);

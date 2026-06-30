@@ -35,7 +35,7 @@ namespace SR_GTYPES_NS {
         SR_CLASS()
         using Super = UIRenderComponent;
     public:
-        const SR_UTILS_NS::VertexLayoutDescription& GetShaderVertexLayoutDescription() const noexcept override;
+        SR_UTILS_NS::VertexLayoutDescriptionsRef GetShaderVertexLayoutDescriptions() const noexcept override;
 
         void Draw() override;
         void UseSamplers(Shader& shader) override;

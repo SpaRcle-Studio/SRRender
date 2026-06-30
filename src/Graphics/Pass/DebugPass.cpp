@@ -46,9 +46,9 @@ namespace SR_GRAPH_NS {
                 params.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
             }
 
-            params.SetVertexLayoutDescription(SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
+            params.GetVertexLayoutDescriptions().AddLayout().AddAttribute(
                 SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
-            ));
+            );
 
             pShader = CoreResLoader::Load<SR_GTYPES_NS::Shader>(shaderPath, &params);
             if (pShader) {
@@ -149,7 +149,7 @@ namespace SR_GRAPH_NS {
 
                 const BakedMesh& mesh = pDebugRenderer->GetMeshUnchecked(meshId);
 
-                pPipeline->BindVBO(mesh.GetVBO());
+                pPipeline->BindVBO(mesh.GetVBO(), VertexInputRate::Vertex);
                 pPipeline->BindIBO(mesh.GetIBO());
 
                 DrawQueue(const_cast<Pipeline&>(pPipeline.GetUncheckedRef()), queue, shaderInfo, mesh.GetCountIndices());

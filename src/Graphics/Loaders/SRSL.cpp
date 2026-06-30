@@ -11,7 +11,7 @@ namespace SR_SRSL_NS {
     void ShaderParams::InitHash() {
         SR_TRACY_ZONE;
 
-        m_hash = m_vertexLayoutDescription.GetHash();
+        m_hash = m_vertexLayoutDescriptions.GetHash();
         m_initialized = true;
 
         for (const auto& entry : m_params) {
@@ -87,7 +87,7 @@ namespace SR_SRSL_NS {
     void ShaderParams::Clear() {
         m_params.clear();
         m_buffer.clear();
-        m_vertexLayoutDescription.Reset();
+        m_vertexLayoutDescriptions.Reset();
         m_hash = 0;
         m_initialized = false;
     }
@@ -121,7 +121,7 @@ namespace SR_SRSL_NS {
 
     void ShaderParams::SetFrom(const ShaderParams& other) {
         SR_TRACY_ZONE;
-        m_vertexLayoutDescription = other.m_vertexLayoutDescription;
+        m_vertexLayoutDescriptions = other.m_vertexLayoutDescriptions;
         m_buffer = other.m_buffer;
         m_params = other.m_params;
         m_hash = other.m_hash;

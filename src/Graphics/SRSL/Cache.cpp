@@ -255,7 +255,10 @@ namespace SR_SRSL_NS {
                 SR_UTILS_NS::MarshalUtils::SaveVector(marshal, info.pushConstants);
             }
 
-            SaveVertexLayoutDescription(marshal, createInfo.vertexLayoutDescription);
+            SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, createInfo.vertexLayoutDescriptions.GetLayoutsCount());
+            for (auto&& layout : createInfo.vertexLayoutDescriptions.GetLayouts()) {
+                SaveVertexLayoutDescription(marshal, layout);
+            }
         }
 
         SRShaderCreateInfo LoadCreateInfo(SR_HTYPES_NS::Marshal& marshal) {
@@ -286,7 +289,11 @@ namespace SR_SRSL_NS {
                 createInfo.stages[stage] = info;
             }
 
-            createInfo.vertexLayoutDescription = LoadVertexLayoutDescription(marshal);
+            const auto layoutsCount = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+            createInfo.vertexLayoutDescriptions.layouts.resize(layoutsCount);
+            for (size_t i = 0; i < layoutsCount; ++i) {
+                createInfo.vertexLayoutDescriptions.layouts[i] = LoadVertexLayoutDescription(marshal);
+            }
 
             return createInfo;
         }
@@ -734,6 +741,6 @@ namespace SR_GRAPH_NS {
     }
 
     uint64_t ShaderCache::GetVersion() {
-        return 0xBAD5F00D;
+        return 0xBAD8F00D;
     }
 }

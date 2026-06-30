@@ -54,6 +54,11 @@ namespace SR_GRAPH_NS {
         ComputeToReadAttachment
     );
 
+    SR_ENUM_NS_CLASS_T(VertexInputRate, uint8_t,
+        Vertex,
+        Instance
+    );
+
     class Pipeline : public SR_HTYPES_NS::SharedPtr<Pipeline> {
     public:
         using Super = SR_HTYPES_NS::SharedPtr<Pipeline>;
@@ -291,7 +296,7 @@ namespace SR_GRAPH_NS {
         virtual void BindCmdBuffer(uint32_t cmdBuffer);
 
         /// Vertex Buffer Object - биндими для рендера вершин
-        virtual void BindVBO(uint32_t VBO);
+        virtual void BindVBO(uint32_t VBO, VertexInputRate inputRate);
 
         /// Index Buffer Object - биндим для рендера вершин по индексам
         virtual void BindIBO(uint32_t IBO);

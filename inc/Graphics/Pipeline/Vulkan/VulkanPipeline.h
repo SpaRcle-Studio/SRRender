@@ -170,7 +170,7 @@ namespace SR_GRAPH_NS {
         void Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
 
         void BindAttachment(uint8_t activeTexture, uint32_t textureId) override;
-        void BindVBO(uint32_t VBO) override;
+        void BindVBO(uint32_t VBO, VertexInputRate inputRate) override;
         void BindIBO(uint32_t IBO) override;
         void BindTexture(uint8_t activeTexture, uint32_t textureId) override;
         bool BindDescriptorSet(uint32_t descriptorSet) override;

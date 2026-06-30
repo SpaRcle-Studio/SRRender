@@ -225,7 +225,7 @@ namespace SR_GRAPH_NS {
 
         SR_SRSL_NS::ShaderType shaderType = SR_SRSL_NS::ShaderType::Unknown;
 
-        SR_UTILS_NS::VertexLayoutDescription vertexLayoutDescription;
+        SR_UTILS_NS::VertexLayoutDescriptions vertexLayoutDescriptions;
 
         PolygonMode       polygonMode       = PolygonMode::Unknown;
         CullMode          cullMode          = CullMode::Unknown;

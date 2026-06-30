@@ -179,8 +179,8 @@ namespace SR_GRAPH_NS {
                 params.AddDefine(SR_SRSL_NS::SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[i]);
             }
 
-            params.SetVertexLayoutDescription(SR_UTILS_NS::VertexLayoutDescription()
-                .AddAttribute(SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
+            params.GetVertexLayoutDescriptions().AddLayout().AddAttribute(
+                SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
             );
 
             if (!m_shaderPath.empty()) {

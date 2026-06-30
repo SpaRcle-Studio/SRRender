@@ -144,7 +144,7 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         if (auto&& VBO = GetVBO(); VBO && VBO != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
-            GetPipeline()->BindVBO(VBO.value());
+            GetPipeline()->BindVBO(VBO.value(), VertexInputRate::Vertex);
         }
         else {
             return false;

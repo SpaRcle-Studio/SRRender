@@ -283,9 +283,8 @@ namespace SR_GTYPES_NS {
         return nullptr;
     }
 
-    const SR_UTILS_NS::VertexLayoutDescription& IRenderComponent::GetShaderVertexLayoutDescription() const noexcept {
-        static SR_UTILS_NS::VertexLayoutDescription emptyDescription;
-        return emptyDescription;
+    SR_UTILS_NS::VertexLayoutDescriptionsRef IRenderComponent::GetShaderVertexLayoutDescriptions() const noexcept {
+        return SR_UTILS_NS::VertexLayoutDescriptionsRef();
     }
 
     const SR_UTILS_NS::UI::MaskInfo& IRenderComponent::GetMaskInfo() const {

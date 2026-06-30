@@ -25,7 +25,7 @@ namespace SR_GTYPES_NS {
     public:
         ~SkyboxComponent() override;
 
-        const SR_UTILS_NS::VertexLayoutDescription& GetShaderVertexLayoutDescription() const noexcept override;
+        SR_UTILS_NS::VertexLayoutDescriptionsRef GetShaderVertexLayoutDescriptions() const noexcept override;
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
 
         void SetParams(const SR_UTILS_NS::Path& skyboxPath, const SR_UTILS_NS::Path& shaderPath, bool isQuad);

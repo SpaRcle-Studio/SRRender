@@ -16,7 +16,7 @@
 #include <Codegen/TextMesh.generated.hpp>
 
 namespace SR_GTYPES_NS {
-    const SR_UTILS_NS::VertexLayoutDescription& TextMesh::GetShaderVertexLayoutDescription() const noexcept {
+    SR_UTILS_NS::VertexLayoutDescriptionsRef TextMesh::GetShaderVertexLayoutDescriptions() const noexcept {
         static const auto description = SR_UTILS_NS::VertexLayoutDescription()
             .AddAttribute(SR_UTILS_NS::VertexAttribute::Position0, SR_UTILS_NS::VertexAttributeFormat::Float32, 2)
             .AddAttribute(SR_UTILS_NS::VertexAttribute::Position1, SR_UTILS_NS::VertexAttributeFormat::Float32, 2)
@@ -84,10 +84,10 @@ namespace SR_GTYPES_NS {
         }
 
         static SR_THREAD_LOCAL SR_UTILS_NS::VertexDataBuffer buffer;
-        buffer.SetLayout(GetShaderVertexLayoutDescription());
+        buffer.SetLayout(GetShaderVertexLayoutDescriptions().GetLayout(0));
         buffer.Allocate(glyphs.size());
 
-        SetVertexLayoutDescription(GetShaderVertexLayoutDescription());
+        SetVertexLayoutDescription(GetShaderVertexLayoutDescriptions().GetLayout(0));
 
         SR_MATH_NS::FVector2 layoutSize;
         if (auto&& pSceneObject = GetSceneObject().Get()) {
@@ -143,7 +143,7 @@ namespace SR_GTYPES_NS {
         if (m_VBO == SR_ID_INVALID) {
             return false;
         }
-        GetPipeline()->BindVBO(m_VBO);
+        GetPipeline()->BindVBO(m_VBO, VertexInputRate::Instance);
         return true;
     }
 

@@ -34,7 +34,7 @@ namespace SR_GTYPES_NS {
             return empty;
         }
 
-        SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescription& GetShaderVertexLayoutDescription() const noexcept override;
+        SR_NODISCARD SR_UTILS_NS::VertexLayoutDescriptionsRef GetShaderVertexLayoutDescriptions() const noexcept override;
 
         SR_NODISCARD FrustumCullingType GetFrustumCullingType() const noexcept override { return m_frustumCullingType; }
         void SetFrustumCullingType(FrustumCullingType type) override { m_frustumCullingType = type; }

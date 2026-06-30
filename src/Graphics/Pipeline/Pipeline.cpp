@@ -151,7 +151,7 @@ namespace SR_GRAPH_NS {
         UpdateMultiSampling();
     }
 
-    void Pipeline::BindVBO(uint32_t VBO) {
+    void Pipeline::BindVBO(uint32_t VBO, VertexInputRate inputRate) {
         ++m_state.operations;
         m_state.VBOId = static_cast<int32_t>(VBO);
     }

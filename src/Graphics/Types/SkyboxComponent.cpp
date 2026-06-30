@@ -25,7 +25,7 @@ namespace SR_GTYPES_NS {
         }
     }
 
-    const SR_UTILS_NS::VertexLayoutDescription& SkyboxComponent::GetShaderVertexLayoutDescription() const noexcept {
+    SR_UTILS_NS::VertexLayoutDescriptionsRef SkyboxComponent::GetShaderVertexLayoutDescriptions() const noexcept {
         static SR_UTILS_NS::VertexLayoutDescription description = SR_UTILS_NS::VertexLayoutDescription()
             .AddAttribute(SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
         ;

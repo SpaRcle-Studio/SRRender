@@ -11,6 +11,12 @@
 #include <Enum/VertexAttributeFormat.hpp>
 
 namespace SR_SRSL_NS {
+    static constexpr std::array BuiltInGLSLAttributes = {
+        SR_UTILS_NS::VertexAttributeDescription { SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3, 0 },
+        SR_UTILS_NS::VertexAttributeDescription { SR_UTILS_NS::VertexAttribute::Normal, SR_UTILS_NS::VertexAttributeFormat::Float32, 3, 0 },
+        SR_UTILS_NS::VertexAttributeDescription { SR_UTILS_NS::VertexAttribute::UV0, SR_UTILS_NS::VertexAttributeFormat::Float32, 2, 0 },
+    };
+
     ISRSLCodeGenerator::SRSLCodeGenRes GLSLCodeGenerator::GenerateStages(const SRSLShader* pShader) {
         SR_GLOBAL_LOCK
 
@@ -161,12 +167,12 @@ namespace SR_SRSL_NS {
             preCode += GenerateTab(1) + "vec4 OUT_POSITION;\n";
         }
 
-        auto&& vertexLayoutDescription = m_shader->GetCreateInfo().vertexLayoutDescription;
-        for (uint32_t i = 0; i < vertexLayoutDescription.attributesCount; ++i) {
-            auto&& vertexAttribute = vertexLayoutDescription.attributes[i];
-            std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
+        auto&& vertexLayoutDescriptions = m_shader->GetCreateInfo().vertexLayoutDescriptions;
+
+        vertexLayoutDescriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& vertexLayoutDescription, uint32_t) {
+            std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexLayoutDescription.attribute);
             preCode += SR_FORMAT("{}{} = {}_INPUT;\n", GenerateTab(1).c_str(), attributeName, attributeName);
-        }
+        });
 
         if (m_shader->GetUseStack()->IsVariableUsedInEntryPoints("VERTEX_INDEX")) {
             preCode += GenerateTab(1) + "int VERTEX_INDEX = gl_VertexIndex;\n";
@@ -177,7 +183,7 @@ namespace SR_SRSL_NS {
         if (isOutPositionUsed) {
             postCode += GenerateTab(1) + "gl_Position = OUT_POSITION;\n";
         }
-        else if (vertexLayoutDescription.Find(SR_UTILS_NS::VertexAttribute::Position)) {
+        else if (vertexLayoutDescriptions.Find(SR_UTILS_NS::VertexAttribute::Position)) {
             postCode += GenerateTab(1) + "gl_Position = vec4(VERTEX, 1.0);\n";
         }
 
@@ -396,12 +402,10 @@ namespace SR_SRSL_NS {
         auto&& pVertexFunction = m_shader->GetUseStack()->FindFunction(SR_SRSL_ENTRY_POINTS.at(ShaderStage::Vertex));
 
         uint32_t location = 0;
-        uint32_t vertexInputIndex = 0;
 
-        const SR_UTILS_NS::VertexLayoutDescription& description = m_shader->GetCreateInfo().vertexLayoutDescription;
+        const SR_UTILS_NS::VertexLayoutDescriptions& descriptions = m_shader->GetCreateInfo().vertexLayoutDescriptions;
 
-        for (uint32_t i = 0; i < description.attributesCount; ++i) {
-            auto&& vertexAttribute = description.attributes[i];
+        descriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& vertexAttribute, uint32_t) {
             std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
             std::string_view attributeType = ToGLSLType(vertexAttribute.format, vertexAttribute.count);
 
@@ -419,13 +423,11 @@ namespace SR_SRSL_NS {
                 code += SR_FORMAT("layout (location = {}) in {} {}_INPUT;\n", location, attributeType, attributeName);
             }
             else {
-                ++vertexInputIndex;
-                continue;
+                return;
             }
 
             location += GetLocationMultiplier(attributeType);
-            ++vertexInputIndex;
-        }
+        });
 
         if (stage != ShaderStage::Vertex) {
             for (auto&& [name, pVariable] : m_shader->GetShared()) {
@@ -476,13 +478,11 @@ namespace SR_SRSL_NS {
         auto&& pFunction = m_shader->GetUseStack()->FindFunction(SR_SRSL_ENTRY_POINTS.at(stage));
 
         uint32_t location = 0;
-        uint32_t vertexInputIndex = 0;
 
         if (stage == ShaderStage::Vertex) {
-            const SR_UTILS_NS::VertexLayoutDescription& description = m_shader->GetCreateInfo().vertexLayoutDescription;
+            const SR_UTILS_NS::VertexLayoutDescriptions& descriptions = m_shader->GetCreateInfo().vertexLayoutDescriptions;
 
-            for (uint32_t i = 0; i < description.attributesCount; ++i) {
-                auto&& vertexAttribute = description.attributes[i];
+            descriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& vertexAttribute, uint32_t) {
                 std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
                 std::string_view attributeType = ToGLSLType(vertexAttribute.format, vertexAttribute.count);
 
@@ -498,8 +498,21 @@ namespace SR_SRSL_NS {
                 else {
                     code += SR_FORMAT("{} {};\n", attributeType, attributeName);
                 }
+            });
 
-                ++vertexInputIndex;
+            for (auto&& builtInAttribute : BuiltInGLSLAttributes) {
+                std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(builtInAttribute.attribute);
+                if (descriptions.Find(builtInAttribute.attribute)) {
+                    continue;
+                }
+                std::string_view attributeType = ToGLSLType(builtInAttribute.format, builtInAttribute.count);
+                if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, attributeName)) {
+                    code += "layout (location = {}) out {} {};\n"_format(location, attributeType, attributeName);
+                    location += GetLocationMultiplier(attributeType);
+                }
+                else {
+                    code += "{} {};\n"_format(attributeType, attributeName);
+                }
             }
 
             for (auto&& [name, pVariable] : m_shader->GetShared()) {

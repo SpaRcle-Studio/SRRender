@@ -75,7 +75,7 @@ namespace SR_GTYPES_NS {
         virtual void UseSamplers(SR_GTYPES_NS::Shader& shader);
         virtual void UseModelMatrix(SR_GTYPES_NS::Shader& shader) { }
         SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescription& GetVertexLayoutDescription() const noexcept;
-        SR_NODISCARD virtual const SR_UTILS_NS::VertexLayoutDescription& GetShaderVertexLayoutDescription() const noexcept;
+        SR_NODISCARD virtual SR_UTILS_NS::VertexLayoutDescriptionsRef GetShaderVertexLayoutDescriptions() const noexcept;
         SR_NODISCARD virtual const SR_UTILS_NS::UI::MaskInfo& GetMaskInfo() const;
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::BaseMaterial>& GetMaterial() const noexcept { return m_material; }

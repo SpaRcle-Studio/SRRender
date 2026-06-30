@@ -631,36 +631,38 @@ namespace SR_GRAPH_NS {
         return VK_FORMAT_UNDEFINED;
     }
 
-    void BuildVkVertexInput(const SR_UTILS_NS::VertexLayoutDescription& layout,
+    void BuildVkVertexInput(const SR_UTILS_NS::VertexLayoutDescriptions& descriptions,
         std::vector<VkVertexInputBindingDescription>& bindings,
         std::vector<VkVertexInputAttributeDescription>& attributes
     ) {
         bindings.clear();
         attributes.clear();
 
-        if (layout.attributesCount == 0) {
-            return;
-        }
+        bindings.reserve(descriptions.GetLayoutsCount());
+        attributes.reserve(descriptions.GetAttributesCount());
 
-        VkVertexInputBindingDescription binding{};
-        binding.binding = 0;
-        binding.stride = static_cast<uint32_t>(layout.GetStride());
-        binding.inputRate = layout.instanced ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+        for (auto&& layout : descriptions.GetLayouts()) {
+            if (layout.attributesCount == 0) {
+                continue;
+            }
+            VkVertexInputBindingDescription binding = {};
+            binding.binding = bindings.size();
+            binding.stride = static_cast<uint32_t>(layout.GetStride());
+            binding.inputRate = layout.instanced ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
 
-        bindings.push_back(binding);
+            for (uint32_t i = 0; i < layout.attributesCount; ++i) {
+                const auto& attributeDescription = layout.attributes[i];
 
-        uint32_t location = 0;
+                VkVertexInputAttributeDescription vkAttributeDescription = {};
+                vkAttributeDescription.binding = binding.binding;
+                vkAttributeDescription.location = attributes.size();
+                vkAttributeDescription.format = ToVkFormat(attributeDescription.format, attributeDescription.count);
+                vkAttributeDescription.offset = static_cast<uint32_t>(attributeDescription.offset);
 
-        for (uint32_t i = 0; i < layout.attributesCount; ++i) {
-            const auto& attr = layout.attributes[i];
+                attributes.push_back(vkAttributeDescription);
+            }
 
-            VkVertexInputAttributeDescription vkAttr{};
-            vkAttr.binding = 0;
-            vkAttr.location = location++;
-            vkAttr.format = ToVkFormat(attr.format, attr.count);
-            vkAttr.offset = static_cast<uint32_t>(attr.offset);
-
-            attributes.push_back(vkAttr);
+            bindings.push_back(binding);
         }
     }
 
@@ -771,7 +773,7 @@ namespace SR_GRAPH_NS {
         else {
             std::vector<VkVertexInputBindingDescription> vkVertexDescriptions;
             std::vector<VkVertexInputAttributeDescription> vkVertexAttributes;
-            BuildVkVertexInput(createInfo.vertexLayoutDescription, vkVertexDescriptions, vkVertexAttributes);
+            BuildVkVertexInput(createInfo.vertexLayoutDescriptions, vkVertexDescriptions, vkVertexAttributes);
 
             if (!pShaderProgram->SetVertexDescriptions(vkVertexDescriptions, vkVertexAttributes)) {
                 PipelineError("VulkanPipeline::LinkShader() : failed to set vertex descriptions!");
@@ -2463,8 +2465,8 @@ namespace SR_GRAPH_NS {
         vkUpdateDescriptorSets(*m_kernel->GetDevice(), 1, &descriptorSetWrite, 0, nullptr);
     }
 
-    void VulkanPipeline::BindVBO(uint32_t VBO) {
-        Super::BindVBO(VBO);
+    void VulkanPipeline::BindVBO(uint32_t VBO, VertexInputRate inputRate) {
+        Super::BindVBO(VBO, inputRate);
         vkCmdBindVertexBuffers(m_internalData->currentCmd, 0, 1, m_memory->GetVBO(VBO)->GetCRef(), m_internalData->offsets);
     }
 

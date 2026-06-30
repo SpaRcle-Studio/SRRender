@@ -27,6 +27,7 @@ namespace SR_GRAPH_NS {
     SRShaderCreateInfo::SRShaderCreateInfo(SRShaderCreateInfo&& ref) noexcept
         : stages(std::move(ref.stages))
         , shaderType(ref.shaderType)
+        , vertexLayoutDescriptions(std::move(ref.vertexLayoutDescriptions))
         , polygonMode(ref.polygonMode)
         , cullMode(ref.cullMode)
         , depthCompare(ref.depthCompare)
@@ -36,15 +37,13 @@ namespace SR_GRAPH_NS {
         , depthWrite(ref.depthWrite)
         , depthTest(ref.depthTest)
         , alphaCoverage(ref.alphaCoverage)
-    {
-        memmove(&vertexLayoutDescription, &ref.vertexLayoutDescription, sizeof(vertexLayoutDescription));
-    }
+    { }
 
     SRShaderCreateInfo& SRShaderCreateInfo::operator=(SRShaderCreateInfo&& ref) noexcept {
         if (this != &ref) {
             stages = std::move(ref.stages);
             shaderType = ref.shaderType;
-            memmove(&vertexLayoutDescription, &ref.vertexLayoutDescription, sizeof(vertexLayoutDescription));
+            vertexLayoutDescriptions = std::move(ref.vertexLayoutDescriptions);
             polygonMode = ref.polygonMode;
             cullMode = ref.cullMode;
             depthCompare = ref.depthCompare;

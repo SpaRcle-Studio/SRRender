@@ -213,16 +213,15 @@ namespace SR_SRSL_NS {
                 preCode += "var OUT_POSITION : vec4<f32>;\n";
             }
 
-            auto&& vertexLayoutDescription = pShader->GetCreateInfo().vertexLayoutDescription;
-            if (vertexLayoutDescription.attributesCount > 0) {
+            auto&& vertexLayoutDescriptions = pShader->GetCreateInfo().vertexLayoutDescriptions;
+            if (vertexLayoutDescriptions.GetAttributesCount() > 0) {
                 preArgs += "input : VertexInput";
             }
 
-            for (uint32_t i = 0; i < vertexLayoutDescription.attributesCount; ++i) {
-                auto&& vertexAttribute = vertexLayoutDescription.attributes[i];
+            vertexLayoutDescriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& vertexAttribute, uint32_t) {
                 std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
                 preCode += SR_FORMAT("{}{} = input.{};\n", GenerateTab(1), attributeName, attributeName);
-            }
+            });
 
             if (pShader->GetUseStack()->IsVariableUsedInEntryPoints("VERTEX_INDEX")) {
                 preCode += GenerateTab(1);
@@ -233,17 +232,16 @@ namespace SR_SRSL_NS {
                 preArgs += "@builtin(vertex_index) vertexIndex : u32";
             }
 
-            for (uint32_t i = 0; i < vertexLayoutDescription.attributesCount; ++i) {
-                auto&& vertexAttribute = vertexLayoutDescription.attributes[i];
+            vertexLayoutDescriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& vertexAttribute, uint32_t) {
                 std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
                 preCode += SR_FORMAT("{}vsOut.{} = {};\n", GenerateTab(1), attributeName, attributeName);
-            }
+            });
 
             if (isOutPositionUsed) {
                 postCode += GenerateTab(1);
                 postCode += "vsOut.position = OUT_POSITION;\n";
             }
-            else if (vertexLayoutDescription.Find(SR_UTILS_NS::VertexAttribute::Position)) {
+            else if (vertexLayoutDescriptions.Find(SR_UTILS_NS::VertexAttribute::Position)) {
                 postCode += GenerateTab(1);
                 postCode += "vsOut.position = vec4<f32>(VERTEX, 1.0);\n";
             }
@@ -441,30 +439,28 @@ namespace SR_SRSL_NS {
         }
         code += "/// Shader type: " + SR_UTILS_NS::EnumReflector::ToStringAtom(pShader->GetType()).ToStringRef() + "\n\n";
 
-        if (pShader->GetCreateInfo().vertexLayoutDescription.attributesCount > 0) {
+        auto&& vertexLayoutDescriptions = pShader->GetCreateInfo().vertexLayoutDescriptions;
+        if (vertexLayoutDescriptions.GetAttributesCount() > 0) {
             code += "struct VertexInput {\n";
-            for (int32_t i = 0; i < pShader->GetCreateInfo().vertexLayoutDescription.attributesCount; ++i) {
-                auto&& vertexAttribute = pShader->GetCreateInfo().vertexLayoutDescription.attributes[i];
+            vertexLayoutDescriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& vertexAttribute, uint32_t i) {
                 std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
                 std::string_view attributeType = WGSLDetail::VertexAttributeFormatToString(vertexAttribute.format, vertexAttribute.count);
                 code += "\t@location({}) {}_INPUT : {},\n"_format(i, attributeName, attributeType);
-            }
+            });
             code += "};\n\n";
 
             code += "struct VertexOutput {\n";
             code += "\t@builtin(position) position : vec4<f32>,\n";
-            for (int32_t i = 0; i < pShader->GetCreateInfo().vertexLayoutDescription.attributesCount; ++i) {
-                auto&& vertexAttribute = pShader->GetCreateInfo().vertexLayoutDescription.attributes[i];
+            vertexLayoutDescriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& vertexAttribute, uint32_t i) {
                 std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
                 std::string_view attributeType = WGSLDetail::VertexAttributeFormatToString(vertexAttribute.format, vertexAttribute.count);
-                code += "\t@location({}) {} : {},\n"_format(std::max(i, 0), attributeName, attributeType);
-            }
+                code += "\t@location({}) {} : {},\n"_format(std::max(i, 0u), attributeName, attributeType);
+            });
             code += "};\n\n";
 
-            for (int32_t i = 0; i < pShader->GetCreateInfo().vertexLayoutDescription.attributesCount; ++i) {
-                auto&& vertexAttribute = pShader->GetCreateInfo().vertexLayoutDescription.attributes[i];
+            vertexLayoutDescriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& vertexAttribute, uint32_t) {
                 code += "var<private> {} : {};\n"_format(SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute), WGSLDetail::VertexAttributeFormatToString(vertexAttribute.format, vertexAttribute.count));
-            }
+            });
             code += "\n";
         }
 

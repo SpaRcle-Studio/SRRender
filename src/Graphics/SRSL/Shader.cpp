@@ -230,7 +230,7 @@ namespace SR_SRSL_NS {
     bool SRSLShader::PrepareSettings() {
         SR_TRACY_ZONE;
 
-        m_createInfo.vertexLayoutDescription = m_params.GetVertexLayoutDescription();
+        m_createInfo.vertexLayoutDescriptions = m_params.GetVertexLayoutDescriptions();
         m_gLayerUsed = GetUseStack()->IsVariableUsed("gl_Layer");
 
         for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {

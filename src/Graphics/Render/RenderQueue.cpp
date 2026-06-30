@@ -60,7 +60,7 @@ namespace SR_GRAPH_NS {
 
         if (info.internal.pMaterial) {
             m_cachedShaderParams.SetFrom(m_meshDrawerPass->GetShaderParams());
-            m_cachedShaderParams.SetVertexLayoutDescription(info.pObject->GetShaderVertexLayoutDescription());
+            m_cachedShaderParams.SetVertexLayoutDescriptions(info.pObject->GetShaderVertexLayoutDescriptions());
             pNewQueue->pShader = info.internal.pMaterial->GetShader(m_cachedShaderParams);
         }
         else {
