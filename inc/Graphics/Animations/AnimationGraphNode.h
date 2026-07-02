@@ -12,6 +12,7 @@ namespace SR_ANIMATIONS_NS {
     class AnimationStateMachine;
     class AnimationGraph;
     class AnimationPose;
+    class AnimationClip;
 
     /// ----------------------------------------------------------------------------------------------------------------
 
@@ -36,6 +37,10 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD virtual bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
 		virtual void Compile(CompileContext& context);
         void SetGraph(AnimationGraph* pGraph) { m_graph = pGraph; }
+        void AddInputPin(const AnimationLink& link) { m_inputPins.emplace_back(link); }
+        void AddOutputPin(const AnimationLink& link) { m_outputPins.emplace_back(link); }
+        void ClearInputPins() { m_inputPins.clear(); }
+        void ClearOutputPins() { m_outputPins.clear(); }
 
         SR_NODISCARD uint64_t GetIndex() const;
 
@@ -73,6 +78,9 @@ namespace SR_ANIMATIONS_NS {
         SR_CLASS()
         using Super = AnimationGraphNode;
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<AnimationGraphNodeStateMachine>;
+
+    public:
         AnimationGraphNodeStateMachine();
         ~AnimationGraphNodeStateMachine() override;
 
@@ -82,6 +90,7 @@ namespace SR_ANIMATIONS_NS {
 
         void SetStateMachine(AnimationStateMachine* pMachine);
         void Compile(CompileContext& context) override;
+        bool SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
 
         SR_NODISCARD bool IsStateActive(SR_UTILS_NS::StringAtom name) const override;
         SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;

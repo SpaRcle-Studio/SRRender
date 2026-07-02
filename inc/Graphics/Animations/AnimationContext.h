@@ -27,6 +27,21 @@ namespace SR_ANIMATIONS_NS {
         float_t tolerance = 0.001f;
     };
 
+    struct ChannelAnimationUpdateContext {
+        ChannelAnimationUpdateContext() = default;
+        ChannelAnimationUpdateContext(float_t weight, bool fpsCompensation, uint16_t frameRate, float_t tolerance)
+            : weight(weight), fpsCompensation(fpsCompensation), frameRate(frameRate), tolerance(tolerance)
+        { }
+        ChannelAnimationUpdateContext(const UpdateContext& context)
+            : weight(context.weight), fpsCompensation(context.fpsCompensation), frameRate(context.frameRate), tolerance(context.tolerance)
+        { }
+
+        bool fpsCompensation = false;
+        uint16_t frameRate = 1;
+        float_t tolerance = 0.001f;
+        float_t weight = 1.f;
+    };
+
     struct ChannelUpdateContext {
         std::optional<uint16_t> gameObjectIndex;
     };

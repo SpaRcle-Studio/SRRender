@@ -34,6 +34,8 @@ namespace SR_ANIMATIONS_NS {
         ~Skeleton() override;
 
     public:
+        static Skeleton::Ptr ImportSkeletonFromRawMesh(const SR_HTYPES_NS::RawMesh& rawMesh);
+
         void LateUpdate() override;
 
         void OnPostLoad() override;
@@ -59,10 +61,12 @@ namespace SR_ANIMATIONS_NS {
         void SetDebugEnabled(bool enabled) { m_debugEnabled = enabled; }
 
         void ForEachBone(const SR_HTYPES_NS::Function<void(Bone&)>& callback);
+        void ForEachTransform(const SR_HTYPES_NS::Function<void(SR_UTILS_NS::Transform&)>& callback);
 
         SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<Pipeline>& GetPipeline() const noexcept;
 
+        void SetRig(const SR_UTILS_NS::ResourceRef<SkeletonRig>& rig) { m_rig = rig; OnRawMeshChanged(); }
         void SetRawMesh(const SR_HTYPES_NS::RawMeshHolder& rawMesh) { m_skeleton = rawMesh; OnRawMeshChanged(); }
         const SR_HTYPES_NS::RawMeshHolder& GetSkeletonRawMesh() const;
 
@@ -70,10 +74,10 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const SkeletonRig* GetRig() const noexcept;
 
     private:
+        void CalculateTransforms();
         void UpdateBonesSSBO();
         void UpdateDebug();
         void DisableDebug();
-        void CalculateTransforms();
         bool TryInitializeBonesFromMesh();
         void OnRawMeshChanged();
 

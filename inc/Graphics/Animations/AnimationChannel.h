@@ -37,8 +37,8 @@ namespace SR_ANIMATIONS_NS {
             newKey.SetData(key);
         }
 
-        SR_NODISCARD uint32_t UpdateChannel(uint32_t keyIndex, float_t time, UpdateContext& context, AnimationGameObjectData& data) const;
-        SR_NODISCARD uint32_t UpdateChannelWithWeight(uint32_t keyIndex, float_t time, UpdateContext& context, AnimationGameObjectData& data) const;
+        SR_NODISCARD uint32_t UpdateChannel(uint32_t keyIndex, float_t time, ChannelAnimationUpdateContext& context, AnimationGameObjectData& data) const;
+        SR_NODISCARD uint32_t UpdateChannelWithWeight(uint32_t keyIndex, float_t time, ChannelAnimationUpdateContext& context, AnimationGameObjectData& data) const;
 
     public:
         SR_NODISCARD const Keys& GetKeys() const { return m_keys; }

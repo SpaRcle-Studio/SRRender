@@ -8,6 +8,7 @@
 #include <Graphics/Animations/AnimationState.h>
 
 namespace SR_ANIMATIONS_NS {
+    class AnimationClip;
     class AnimationGraph;
 
     class AnimationStateMachine : public IAnimationDataSet {
@@ -18,8 +19,6 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationStateMachine() override;
 
     public:
-        //SR_NODISCARD static AnimationStateMachine* Load(const SR_XML_NS::Node& nodeXml);
-
         void OnPostLoad() override;
         void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
 
@@ -30,6 +29,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationState* GetStateOrNull(uint32_t index) const;
         SR_NODISCARD const std::vector<AnimationState::Ptr>& GetStates() const noexcept { return m_states; }
 
+        bool SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
         void Compile(CompileContext& context);
         void Update(UpdateContext& context);
 

@@ -87,6 +87,16 @@ namespace SR_ANIMATIONS_NS {
         return m_pose;
     }
 
+    bool AnimationGraphNodeStateMachine::SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip) {
+        SR_TRACY_ZONE;
+
+        if (!m_stateMachine) {
+            SetStateMachine(new AnimationStateMachine());
+        }
+
+        return m_stateMachine->SetSimpleClip(pClip);
+    }
+
     void AnimationGraphNodeStateMachine::Compile(CompileContext& context) {
         SR_TRACY_ZONE;
 

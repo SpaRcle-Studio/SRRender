@@ -39,7 +39,6 @@ namespace SR_ANIMATIONS_NS {
 
         Bone* pParent = nullptr;
         Bone* pRoot = nullptr;
-        SR_WORLD_NS::Scene* pScene = nullptr;
 
     private:
         GameObjectPtr m_gameObject;

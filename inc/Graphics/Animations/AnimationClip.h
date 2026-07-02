@@ -69,6 +69,7 @@ namespace SR_ANIMATIONS_NS {
 
         float_t m_duration = 0.f;
         uint32_t m_maxKeyFrame = 0;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::Subscription> m_rigReloadSubscriptions;
 
     };
 }

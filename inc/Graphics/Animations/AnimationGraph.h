@@ -11,6 +11,7 @@
 
 namespace SR_ANIMATIONS_NS {
     class Animator;
+    class AnimationClip;
     class AnimationGraphAsset;
 
     class AnimationGraph : public IAnimationDataSet {
@@ -27,6 +28,7 @@ namespace SR_ANIMATIONS_NS {
     public:
         void OnPostLoad() override;
         void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
+        void SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
 
         SR_NODISCARD AnimationGraphNode* GetNode(uint64_t index) const;
         SR_NODISCARD uint64_t GetNodeIndex(const AnimationGraphNode* pNode) const;

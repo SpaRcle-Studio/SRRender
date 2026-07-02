@@ -165,6 +165,39 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
+    void AnimationGraph::SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip) {
+        SR_TRACY_ZONE;
+
+        if (m_nodes.empty()) {
+            m_nodes.emplace_back(SRNew<AnimationGraphNodeFinal>());
+        }
+
+        if (m_nodes.size() < 2) {
+            m_nodes.emplace_back(SRNew<AnimationGraphNodeStateMachine>());
+        }
+
+        if (m_nodes[1]->GetMeta() != AnimationGraphNodeStateMachine::GetMetaStatic()) {
+            m_nodes[1] = SRNew<AnimationGraphNodeStateMachine>();
+        }
+
+        m_nodes.resize(2);
+
+        m_nodes[0]->SetGraph(this);
+        m_nodes[1]->SetGraph(this);
+
+        if (m_nodes[1].StaticCast<AnimationGraphNodeStateMachine>()->SetSimpleClip(pClip)) {
+            m_isCompiled = false;
+        }
+
+        m_nodes[0]->ClearInputPins();
+        m_nodes[0]->ClearOutputPins();
+
+        m_nodes[1]->ClearInputPins();
+        m_nodes[1]->ClearOutputPins();
+
+        m_nodes[0]->AddInputPin(AnimationLink(1, 0));
+    }
+
     void AnimationGraph::CloneTo(SR_UTILS_NS::SRClass& clone) const {
         Super::CloneTo(clone);
         for (auto&& pNode : static_cast<AnimationGraph&>(clone).m_nodes) {

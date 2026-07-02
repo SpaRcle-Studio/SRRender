@@ -76,6 +76,36 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
+    bool AnimationStateMachine::SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip) {
+        SR_TRACY_ZONE;
+
+        m_states.resize(2);
+
+        if (!m_states[0]) {
+            m_states[0] = SRNew<AnimationEntryPointState>();
+            m_states[0]->SetMachine(this);
+        }
+
+        if (!m_states[1] || m_states[1]->GetMeta() != AnimationClipState::GetMetaStatic()) {
+            m_states[1] = SRNew<AnimationClipState>();
+            m_states[1]->SetMachine(this);
+        }
+
+        m_states[1]->GetTransitions().clear();
+
+        auto&& pEntryPoint = m_states[0].StaticCast<AnimationEntryPointState>();
+        pEntryPoint->GetTransitions().resize(1);
+        auto&& pTransition = pEntryPoint->GetTransitions()[0];
+        if (!pTransition) {
+            pTransition = SRNew<AnimationStateTransition>();
+        }
+
+        pTransition->ResetCondition();
+        pTransition->SetTargetIndex(1);
+
+        return m_states[1].StaticCast<AnimationClipState>()->SetClip(pClip);
+    }
+
     void AnimationStateMachine::Compile(CompileContext& context) {
         for (auto&& pState : m_states) {
             pState->Compile(context);

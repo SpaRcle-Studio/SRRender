@@ -47,19 +47,16 @@ namespace SR_ANIMATIONS_NS {
     bool AnimationState::Compile(CompileContext& context) {
         SR_TRACY_ZONE;
 
-        if (!m_machine) {
-            SRHalt("AnimationState::Compile() : machine is nullptr!");
-            return false;
-        }
-
-        for (auto&& pTransition : m_transitions) {
-            auto&& pDestinationState = m_machine->GetStateOrNull(pTransition->GetTargetIndex());
-            if (!pDestinationState) {
-                SR_ERROR("AnimationState::Compile() : failed to get destination state! State name: {}, Target index: {}", GetStateName(), pTransition->GetTargetIndex());
-                return false;
+        if (m_machine) {
+            for (auto&& pTransition : m_transitions) {
+                auto&& pDestinationState = m_machine->GetStateOrNull(pTransition->GetTargetIndex());
+                if (!pDestinationState) {
+                    SR_ERROR("AnimationState::Compile() : failed to get destination state! State name: {}, Target index: {}", GetStateName(), pTransition->GetTargetIndex());
+                    return false;
+                }
+                pTransition->SetSourceState(this);
+                pTransition->SetDestinationState(pDestinationState);
             }
-            pTransition->SetSourceState(this);
-            pTransition->SetDestinationState(pDestinationState);
         }
 
         return true;
@@ -83,6 +80,8 @@ namespace SR_ANIMATIONS_NS {
         auto&& channels = m_clip->GetChannels(context.pRig);
         const auto channelsCount = static_cast<uint32_t>(channels.size());
 
+        ChannelAnimationUpdateContext channelAnimationContext = context;
+
         for (uint32_t i = 0; i < channelsCount; ++i) {
             ChannelUpdateContext& channelContext = m_channelContexts[i];
             if (!channelContext.gameObjectIndex) SR_UNLIKELY_ATTRIBUTE {
@@ -94,10 +93,10 @@ namespace SR_ANIMATIONS_NS {
 
             uint32_t keyFrame = 0;
             if (context.weight > 0.f && context.weight < 1.f) SR_UNLIKELY_ATTRIBUTE {
-                keyFrame = channels[i].UpdateChannelWithWeight(m_channelPlayState[i], m_time, context, data);
+                keyFrame = channels[i].UpdateChannelWithWeight(m_channelPlayState[i], m_time, channelAnimationContext, data);
             }
             else {
-                keyFrame = channels[i].UpdateChannel(m_channelPlayState[i], m_time, context, data);
+                keyFrame = channels[i].UpdateChannel(m_channelPlayState[i], m_time, channelAnimationContext, data);
             }
             currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
         }
@@ -117,11 +116,11 @@ namespace SR_ANIMATIONS_NS {
         SetClip(nullptr);
     }
 
-    void AnimationClipState::SetClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip) {
+    bool AnimationClipState::SetClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip) {
         SR_TRACY_ZONE;
 
         if (m_clip == pClip) {
-            return;
+            return false;
         }
 
         if (m_clip) {
@@ -132,6 +131,10 @@ namespace SR_ANIMATIONS_NS {
             pClip->AddUsePoint();
         }
 
+        m_channelContexts.clear();
+        m_channelPlayState.clear();
+        m_time = 0.f;
+
         if ((m_clip = pClip)) {
             m_maxKeyFrame = m_clip->GetMaxKeyFrame();
             m_duration = m_clip->GetDuration();
@@ -140,6 +143,8 @@ namespace SR_ANIMATIONS_NS {
             m_maxKeyFrame = 0;
             m_duration = 0.f;
         }
+
+        return true;
     }
 
     float_t AnimationClipState::GetProgress() const noexcept {
@@ -202,8 +207,7 @@ namespace SR_ANIMATIONS_NS {
                 context.gameObjects.emplace_back(pBoneGameObject);
             }
             else {
-                /// auto&& name = pChannel->GetGameObjectName();
-                SR_ERROR("Not implemented!");
+                SR_ERROR("AnimationClipState::Compile() : channel \"{}\" has no bone index!", channel.GetChannelName());
             }
         }
 

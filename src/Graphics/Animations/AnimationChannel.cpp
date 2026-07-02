@@ -17,7 +17,7 @@ namespace SR_ANIMATIONS_NS {
         m_keys.clear();
     }
 
-    uint32_t AnimationChannel::UpdateChannelWithWeight(uint32_t keyIndex, float_t time, UpdateContext& context, AnimationGameObjectData& data) const {
+    uint32_t AnimationChannel::UpdateChannelWithWeight(uint32_t keyIndex, float_t time, ChannelAnimationUpdateContext& context, AnimationGameObjectData& data) const {
         const auto keysCount = static_cast<uint32_t>(m_keys.size());
         const UnionAnimationKey* pData = m_keys.data();
 
@@ -52,7 +52,7 @@ namespace SR_ANIMATIONS_NS {
         return keyIndex;
     }
 
-    uint32_t AnimationChannel::UpdateChannel(uint32_t keyIndex, float_t time, UpdateContext& context, AnimationGameObjectData& data) const {
+    uint32_t AnimationChannel::UpdateChannel(uint32_t keyIndex, float_t time, ChannelAnimationUpdateContext& context, AnimationGameObjectData& data) const {
         const auto keysCount = static_cast<uint32_t>(m_keys.size());
         const UnionAnimationKey* pData = m_keys.data();
 

@@ -31,6 +31,27 @@ namespace SR_ANIMATIONS_NS {
         m_bonesByName.clear();
     }
 
+    Skeleton::Ptr Skeleton::ImportSkeletonFromRawMesh(const SR_HTYPES_NS::RawMesh& rawMesh) {
+        auto&& pSkeleton = SR_UTILS_NS::Factory::Instance().Create<SR_ANIMATIONS_NS::Skeleton>();
+        if (!pSkeleton) {
+            SRHalt0();
+            return nullptr;
+        }
+
+        SR_HTYPES_NS::RawMeshHolder skeletonHolder;
+
+        skeletonHolder.SetRawMesh(rawMesh.GetThis().DynamicCast<SR_HTYPES_NS::RawMesh>());
+        for (uint32_t meshId = 0; meshId < rawMesh.GetMeshesCount(); ++meshId) {
+            if (rawMesh.HasBones(meshId)) {
+                skeletonHolder.SetMeshId(meshId);
+                break;
+            }
+        }
+
+        pSkeleton->SetRawMesh(skeletonHolder);
+        return pSkeleton;
+    }
+
     void Skeleton::OnDestroy() {
         Super::OnDestroy();
     }
@@ -52,7 +73,6 @@ namespace SR_ANIMATIONS_NS {
         }
         else {
             m_rootBone = pBone;
-            m_rootBone->pScene = GetScene();
             m_rootBone->InitTreeIfNeed();
         }
 
@@ -99,10 +119,6 @@ namespace SR_ANIMATIONS_NS {
 
     Bone* Skeleton::GetAnimationBone(SR_UTILS_NS::StringAtom name) {
         SR_TRACY_ZONE;
-
-        //if (auto&& pRig = m_rig.GetResource()) {
-        //    name = pRig->GetBoneName(name);
-        //}
         return GetBone(name);
     }
 
@@ -432,6 +448,18 @@ namespace SR_ANIMATIONS_NS {
             return m_skeleton;
         }
         return m_rig.GetResource()->GetSkeleton();
+    }
+
+    void Skeleton::ForEachTransform(const SR_HTYPES_NS::Function<void(SR_UTILS_NS::Transform&)>& callback) {
+        SR_TRACY_ZONE;
+        if (m_isNeedRecalcTransforms) {
+            CalculateTransforms();
+        }
+        for (auto&& pTransform : m_transforms) {
+            if (pTransform) {
+                callback(*pTransform);
+            }
+        }
     }
 
     void Skeleton::ForEachBone(const SR_UTILS_NS::Function<void(Bone&)>& callback) {

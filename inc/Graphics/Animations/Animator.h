@@ -8,6 +8,7 @@
 #include <Graphics/Animations/AnimationKey.h>
 #include <Graphics/Animations/Skeleton.h>
 #include <Graphics/Animations/AnimationGraph.h>
+#include <Graphics/Animations/AnimationClip.h>
 #include <Graphics/Animations/AnimationStateMachine.h>
 #include <Graphics/IK/IKSystem.h>
 
@@ -57,22 +58,25 @@ namespace SR_ANIMATIONS_NS {
     private:
         /// @property
         SR_UTILS_NS::EntityRef<Skeleton> m_skeleton;
-        /// @property
-        uint32_t m_frameRate = 1;
-        /// @property @drag(0.01f)
-        float_t m_tolerance = 1.0f;
-        /// @property
-        bool m_sync = false;
-        /// @property
-        bool m_fpsCompensation = false;
 
+        /// @property @group(Advanced)
+        uint32_t m_frameRate = 1;
+        /// @property @group(Advanced) @drag(0.01f)
+        float_t m_tolerance = 1.0f;
+        /// @property @group(Advanced)
+        bool m_sync = false;
+        /// @property @group(Advanced)
+        bool m_fpsCompensation = false;
+        /// @property @group(Advanced)
+        std::vector<SR_UTILS_NS::EntityRef<IKSystem>> m_IKSystems;
+
+        /// @property
+        SR_UTILS_NS::ResourceRef<AnimationClip> m_clip;
         /// @virtualProperty(graph) @getter(GetGraphPath) @setter(SetGraph)
         /// @customArgs(pick: enabled, filter name: Animator, relative: resources)
         /// @customArg(filter value: animator)
+        /// @condition(!This.m_clip.IsValid())
         SR_VIRTUAL_PROPERTY
-
-        /// @property
-        std::vector<SR_UTILS_NS::EntityRef<IKSystem>> m_IKSystems;
 
         std::vector<bool> m_preparedIKSystems;
 

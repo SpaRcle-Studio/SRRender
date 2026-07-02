@@ -49,31 +49,41 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
-        if (m_graph) {
-            m_preparedIKSystems.resize(m_IKSystems.size());
-            for (size_t i = 0; i < m_IKSystems.size(); ++i) {
-                if (auto&& pSystem = m_IKSystems[i].Get(); pSystem && pSystem->IsActive()) {
-                    if (!m_preparedIKSystems[i]) {
-                        pSystem->UpdateIK(dt);
-                        m_preparedIKSystems[i] = true;
-                    }
+        if (!m_graph && !m_clip.IsValid()) {
+            return;
+        }
+
+        if (m_clip.IsValid()) {
+            if (!m_graph) {
+                m_graph = SRNew<AnimationGraph>();
+                m_graph->SetAnimator(this);
+            }
+            m_graph->SetSimpleClip(m_clip.GetResource());
+        }
+
+        m_preparedIKSystems.resize(m_IKSystems.size());
+        for (size_t i = 0; i < m_IKSystems.size(); ++i) {
+            if (auto&& pSystem = m_IKSystems[i].Get(); pSystem && pSystem->IsActive()) {
+                if (!m_preparedIKSystems[i]) {
+                    pSystem->UpdateIK(dt);
+                    m_preparedIKSystems[i] = true;
                 }
             }
-
-            UpdateContext context;
-
-            if (auto&& pSkeleton = m_skeleton.Get()) {
-                context.pRig = pSkeleton->GetRig();
-            }
-
-            context.tolerance = m_tolerance / 1000.f / 1000.f;
-            context.frameRate = SR_MAX(1, m_frameRate);
-            context.weight = 1.f;
-            context.fpsCompensation = m_fpsCompensation;
-            context.dt = dt;
-
-            m_graph->Update(context);
         }
+
+        UpdateContext context;
+
+        if (auto&& pSkeleton = m_skeleton.Get()) {
+            context.pRig = pSkeleton->GetRig();
+        }
+
+        context.tolerance = m_tolerance / 1000.f / 1000.f;
+        context.frameRate = SR_MAX(1, m_frameRate);
+        context.weight = 1.f;
+        context.fpsCompensation = m_fpsCompensation;
+        context.dt = dt;
+
+        m_graph->Update(context);
 
         for (auto&& pIK : m_IKSystems) {
             if (auto&& pSystem = pIK.Get()) {
@@ -83,31 +93,6 @@ namespace SR_ANIMATIONS_NS {
             }
         }
     }
-
-    /*void Animator::ReloadClip() {
-        SR_SAFE_DELETE_PTR(m_graph);
-
-        if (m_clipPath.empty() || m_clipName.empty()) {
-            return;
-        }
-
-        auto&& pAnimationClip = AnimationClip::Load(m_clipPath, m_clipName);
-        if (!pAnimationClip) {
-            SR_ERROR("Animator::ReloadClip() : failed to load animation clip: {}", m_clipPath.ToStringView());
-            return;
-        }
-
-        m_graph = new AnimationGraph(this);
-
-        auto&& pStateMachineNode = m_graph->AddNode<AnimationGraphNodeStateMachine>();
-        auto&& pStateMachine = pStateMachineNode->GetMachine();
-
-        auto&& pClipState = pStateMachine->AddState<AnimationClipState>(pAnimationClip);
-
-        pStateMachine->GetEntryPoint()->AddTransition(pClipState);
-
-        m_graph->GetFinal()->AddInput(pStateMachineNode, 0, 0);
-    }*/
 
     void Animator::OnAttached() {
         Super::OnAttached();

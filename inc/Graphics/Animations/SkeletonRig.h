@@ -90,7 +90,7 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         SR_HTYPES_NS::RawMeshHolder m_skeleton;
 
-        /// @property
+        /// @property @tooltip(Настройки мирового пространства скелета, то, как скелет надо трансформировать, чтобы он соответствовал координатной системе мира)
         SkeletonWorldSettings m_worldSettings;
 
         /// @property @condition(This.m_skeletonType == SkeletonType::Humanoid)

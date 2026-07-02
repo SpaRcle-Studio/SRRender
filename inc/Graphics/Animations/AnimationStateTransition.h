@@ -35,6 +35,9 @@ namespace SR_ANIMATIONS_NS {
 
         void SetSourceState(AnimationState* state) { m_sourceState = state; }
         void SetDestinationState(AnimationState* state) { m_destinationState = state; }
+        void SetTargetIndex(int32_t index) { m_targetIndex = index; }
+
+        void ResetCondition() { m_condition.Reset(); }
 
         SR_NODISCARD int32_t GetTargetIndex() const noexcept { return m_targetIndex; }
 

@@ -79,6 +79,9 @@ namespace SR_ANIMATIONS_NS {
         SR_CLASS()
         using Super = AnimationState;
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<AnimationClipState>;
+
+    public:
         ~AnimationClipState() override;
 
         void OnPostLoad() override;
@@ -87,7 +90,7 @@ namespace SR_ANIMATIONS_NS {
         void Update(UpdateContext& context) override;
         bool Compile(CompileContext& context) override;
         void ResetState() override;
-        void SetClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
+        bool SetClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
 
         SR_NODISCARD float_t GetProgress() const noexcept override;
         SR_NODISCARD float_t GetDuration() const noexcept override { return m_duration; }

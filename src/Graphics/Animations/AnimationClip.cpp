@@ -79,6 +79,7 @@ namespace SR_ANIMATIONS_NS {
     }
 
     bool AnimationClip::Unload() {
+        m_rigReloadSubscriptions.clear();
         m_channels.clear();
         m_retargetCache.clear();
 
@@ -130,6 +131,23 @@ namespace SR_ANIMATIONS_NS {
             }
         }
 
+        m_rigReloadSubscriptions.clear();
+        if (m_rig.IsValid()) {
+            auto&& pRig = m_rig.GetResource();
+            m_rigReloadSubscriptions.emplace_back(pRig->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                m_retargetCache.clear();
+            }));
+        }
+
+        for (auto&& profile : m_retargetProfiles) {
+            if (profile.targetRig.IsValid()) {
+                auto&& pTargetRig = profile.targetRig.GetResource();
+                m_rigReloadSubscriptions.emplace_back(pTargetRig->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                    m_retargetCache.clear();
+                }));
+            }
+        }
+
         Super::OnAssetLoaded();
     }
 
@@ -177,7 +195,7 @@ namespace SR_ANIMATIONS_NS {
             if (profile.targetRig.GetId() != targetRigName) {
                 continue;
             }
-            if (profile.sourceRig.GetId() != sourceRigName) {
+            if (profile.sourceRig.GetId() != sourceRigName && profile.sourceRig.IsValid()) {
                 continue;
             }
             context.pProfile = &profile;
