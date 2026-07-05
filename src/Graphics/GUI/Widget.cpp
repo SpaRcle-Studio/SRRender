@@ -6,11 +6,10 @@
 #include <Graphics/GUI/ImGUI.h>
 #include <Graphics/GUI/WidgetManager.h>
 
+#include <Codegen/Widget.generated.hpp>
+
 namespace SR_GRAPH_GUI_NS {
     Widget::~Widget() {
-        for (auto&& pWidget : m_subWidgets) {
-            delete pWidget;
-        }
         m_subWidgets.clear();
     }
 
@@ -187,7 +186,7 @@ namespace SR_GRAPH_GUI_NS {
         m_strongStorage.Clear();
     }
 
-    void Widget::AddSubWidget(Widget* pWidget) {
+    void Widget::AddSubWidget(Widget::Ptr pWidget) {
         m_subWidgets.emplace_back(pWidget);
         pWidget->SetManager(m_manager);
         pWidget->Init();
@@ -197,20 +196,20 @@ namespace SR_GRAPH_GUI_NS {
         for (auto&& pWidget : m_subWidgets) {
             pWidget->OnKeyDown(pData);
         }
-        Super::OnKeyDown(pData);
+        InputHandler::OnKeyDown(pData);
     }
 
     void Widget::OnKeyUp(const SR_UTILS_NS::KeyboardInputData* pData) {
         for (auto&& pWidget : m_subWidgets) {
             pWidget->OnKeyUp(pData);
         }
-        Super::OnKeyDown(pData);
+        InputHandler::OnKeyDown(pData);
     }
 
     void Widget::OnKeyPress(const SR_UTILS_NS::KeyboardInputData* pData) {
         for (auto&& pWidget : m_subWidgets) {
             pWidget->OnKeyPress(pData);
         }
-        Super::OnKeyDown(pData);
+        InputHandler::OnKeyDown(pData);
     }
 }

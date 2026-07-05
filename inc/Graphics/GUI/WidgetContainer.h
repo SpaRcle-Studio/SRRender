@@ -44,15 +44,6 @@ namespace SR_GRAPH_GUI_NS {
             : Super(std::move(name))
         {
             m_elements.reserve(16);
-            //AddFlags(
-            //    ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration
-                //ImGuiWindowFlags_::ImGuiWindowFlags_NoMove |
-                //ImGuiWindowFlags_::ImGuiWindowFlags_NoBringToFrontOnFocus |
-                //ImGuiWindowFlags_::ImGuiWindowFlags_NoNavFocus |
-                //ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground |
-                //ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollWithMouse
-                //ImGuiWindowFlags_::ImGuiWindowFlags_NoFocusOnAppearing |
-            //);
         }
 
     public:

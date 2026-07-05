@@ -10,17 +10,11 @@ namespace SR_GRAPH_NS::GUI {
     MessageBoxWidget::MessageBoxWidget()
         : Widget("MessageBox")
     {
-        GlobalWidgetManager::Instance().Register(this);
-
         SetCenter(true);
         SetFlags(WindowFlags::NoMove
                  | WindowFlags::NoDecoration
                  | WindowFlags::AlwaysAutoResize
                  | WindowFlags::NoSavedSettings);
-    }
-
-    MessageBoxWidget::~MessageBoxWidget() {
-        GlobalWidgetManager::Instance().Remove(this);
     }
 
     void MessageBoxWidget::Draw() {
@@ -52,8 +46,6 @@ namespace SR_GRAPH_NS::GUI {
     }
 
     void MessageBoxWidget::Show(const std::string& header, const std::string& message, MessageBoxType type, MessageBoxButton buttons) {
-        SR_LOCK_GUARD_INHERIT(Widget);
-
         m_header = header;
         m_message = message;
         m_type = type;

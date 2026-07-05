@@ -22,11 +22,9 @@ namespace SR_GRAPH_NS::GUI {
     };
     typedef uint32_t MessageBoxButton;
 
-    class MessageBoxWidget : public Widget, public SR_UTILS_NS::Singleton<MessageBoxWidget> {
-        SR_REGISTER_SINGLETON(MessageBoxWidget)
+    class MessageBoxWidget : public Widget {
     private:
         MessageBoxWidget();
-        ~MessageBoxWidget() override;
 
     public:
         void Show(const std::string& header, const std::string& message = std::string(),

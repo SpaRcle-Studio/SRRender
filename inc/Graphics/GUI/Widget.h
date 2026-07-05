@@ -14,6 +14,7 @@
 #include <Utils/Types/Function.h>
 #include <Utils/Input/InputSystem.h>
 #include <Utils/Input/InputHandler.h>
+#include <Utils/Serialization/Serializable.h>
 
 #include <Enum/WindowFlags.hpp>
 
@@ -36,19 +37,24 @@ namespace SR_GRAPH_GUI_NS {
     };
     typedef uint32_t WidgetFlagBits;
 
-    class Widget : public SR_UTILS_NS::NonCopyable, public SR_UTILS_NS::InputHandler {
+    /// @abstract
+    class Widget : public SR_UTILS_NS::Serializable, public SR_UTILS_NS::InputHandler, public SR_HTYPES_NS::SharedPtr<Widget> {
         friend class WidgetManager;
-        using Super = SR_UTILS_NS::InputHandler;
+        SR_CLASS()
     public:
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using ContextPtr = RenderContext*;
         using ScenePtr = SR_HTYPES_NS::SharedPtr<SR_WORLD_NS::Scene>;
+        using Ptr = SR_HTYPES_NS::SharedPtr<Widget>;
 
     public:
-        Widget() = default;
+        Widget()
+            : Ptr(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+        { }
 
         explicit Widget(std::string name, SR_MATH_NS::IVector2 size = SR_MATH_NS::IVector2MAX)
-            : m_name(std::move(name))
+            : Ptr(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+            , m_name(std::move(name))
             , m_size(size)
         { }
 
@@ -86,23 +92,24 @@ namespace SR_GRAPH_GUI_NS {
 
         virtual void SetManager(WidgetManager* pManager);
 
-        void AddSubWidget(Widget* pWidget);
+        void AddSubWidget(Widget::Ptr pWidget);
 
         void OnKeyDown(const SR_UTILS_NS::KeyboardInputData* pData) override;
         void OnKeyUp(const SR_UTILS_NS::KeyboardInputData* pData) override;
         void OnKeyPress(const SR_UTILS_NS::KeyboardInputData* pData) override;
 
-        template<typename T> T* GetSubWidget() {
-            for (auto* pWidget : m_subWidgets) {
-                if (auto* pCastWidget = dynamic_cast<T*>(pWidget)) {
-                    return pCastWidget;
+        template<typename T> SR_HTYPES_NS::SharedPtr<T> GetSubWidget() {
+            SR_UTILS_NS::StringAtom typeName = T::GetMetaStatic()->GetFactoryName();
+            for (auto pWidget : m_subWidgets) {
+                if (pWidget->GetMeta()->GetFactoryName() == typeName) {
+                    return pWidget.StaticCast<T>();
                 }
             }
             return nullptr;
         }
 
     protected:
-        virtual void Draw() = 0;
+        virtual void Draw() { }
         virtual void OnClose() { }
         virtual void OnOpen() { }
 
@@ -125,7 +132,7 @@ namespace SR_GRAPH_GUI_NS {
         void DrawWindow();
 
     protected:
-        std::vector<Widget*> m_subWidgets;
+        std::vector<Widget::Ptr> m_subWidgets;
 
     private:
         std::string m_name;

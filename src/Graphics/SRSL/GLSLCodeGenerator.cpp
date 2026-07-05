@@ -505,13 +505,24 @@ namespace SR_SRSL_NS {
                 if (descriptions.Find(builtInAttribute.attribute)) {
                     continue;
                 }
+                bool isUsed = false;
+                for (auto&& [name, pVariable] : m_shader->GetShared()) {
+                    if (name == attributeName) {
+                        isUsed = true;
+                        break;
+                    }
+                }
+                if (isUsed) {
+                    continue;
+                }
+
                 std::string_view attributeType = ToGLSLType(builtInAttribute.format, builtInAttribute.count);
                 if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, attributeName)) {
-                    code += "layout (location = {}) out {} {};\n"_format(location, attributeType, attributeName);
+                    code += "layout (location = {}) out {} {}; /// added by builtin\n"_format(location, attributeType, attributeName);
                     location += GetLocationMultiplier(attributeType);
                 }
                 else {
-                    code += "{} {};\n"_format(attributeType, attributeName);
+                    code += "{} {}; /// added by builtin\n"_format(attributeType, attributeName);
                 }
             }
 
@@ -519,16 +530,16 @@ namespace SR_SRSL_NS {
                 if (m_shader->GetUseStack()->IsVariableUsedInEntryPoint(ShaderStage::Fragment, name)) {
                     auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType), true);
                     if (IsFlatType(type)) {
-                        code += SR_FORMAT("layout (location = {}) flat out {} {};\n", location, type.c_str(), name.c_str());
+                        code += SR_FORMAT("layout (location = {}) flat out {} {}; /// added by shared\n", location, type.c_str(), name.c_str());
                     }
                     else {
-                        code += SR_FORMAT("layout (location = {}) out {} {};\n", location, type.c_str(), name.c_str());
+                        code += SR_FORMAT("layout (location = {}) out {} {}; /// added by shared\n", location, type.c_str(), name.c_str());
                     }
                     location += GetLocationMultiplier(type);
                 }
                 else if (pFunction->IsVariableUsed(name)) {
                     auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType), true);
-                    code += SR_FORMAT("{} {};\n", type.c_str(), name.c_str());
+                    code += SR_FORMAT("{} {}; /// added by shared\n", type.c_str(), name.c_str());
                 }
             }
         }

@@ -31,17 +31,40 @@ namespace SR_GRAPH_NS::GUI {
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using ContextPtr = RenderContext*;
         using ScenePtr = SR_HTYPES_NS::SharedPtr<SR_WORLD_NS::Scene>;
+        using WidgetPtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_GUI_NS::Widget>;
+        using Widgets = SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, WidgetPtr>;
     public:
         WidgetManager();
         ~WidgetManager() override;
 
         virtual void Draw();
 
-        bool Register(Widget* widget);
-        bool Remove(Widget* widget);
+        virtual bool Init();
+        virtual void DeInit() { }
 
         void HideAll();
         void ShowAll();
+
+        void CloseAllWidgets();
+
+        SR_NODISCARD WidgetPtr GetWidget(SR_UTILS_NS::StringAtom name) const;
+
+        template<typename T> SR_HTYPES_NS::SharedPtr<T> GetWidget() {
+            SR_UTILS_NS::StringAtom widgetName = T::GetMetaStatic()->GetFactoryName();
+            if (auto&& pWidget = GetWidget(widgetName)) {
+                return pWidget.StaticCast<T>();
+            }
+            return nullptr;
+        }
+
+        template<typename T> SR_HTYPES_NS::SharedPtr<T> OpenWidget() {
+            if (auto&& pWidget = GetWidget<T>()) {
+                pWidget->Open();
+                return pWidget;
+            }
+            return nullptr;
+        }
+
 
         void SetRenderScene(const RenderScenePtr& renderScene);
         void SetRenderContext(ContextPtr pContext);

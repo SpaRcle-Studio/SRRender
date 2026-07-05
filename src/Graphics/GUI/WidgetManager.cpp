@@ -8,9 +8,9 @@
 #include <Graphics/GUI/Widget.h>
 #include <Graphics/GUI/ImGUI.h>
 
-#include <Utils/Debug.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Types/SafePtrLockGuard.h>
+#include <Utils/TypeTraits/Factory.h>
 
 namespace SR_GRAPH_NS::GUI {
     WidgetManager::WidgetManager()
@@ -30,39 +30,7 @@ namespace SR_GRAPH_NS::GUI {
         }
     }
 
-    bool WidgetManager::Register(Widget *widget) {
-        SR_SCOPED_LOCK;
-
-        if (m_widgets.count(widget->GetName()) == 1) {
-            SRHalt("WidgetManager::Register() : widget is already registered!");
-            return false;
-        }
-
-        m_widgets.insert(std::make_pair(widget->GetName(), widget));
-
-        widget->SetManager(this);
-        widget->Init();
-
-        return true;
-    }
-
-    bool WidgetManager::Remove(Widget *widget) {
-        SR_SCOPED_LOCK;
-
-        if (m_widgets.count(widget->GetName()) == 0) {
-            SRHalt("WidgetManager::Remove() : widget is not registered!");
-            return false;
-        }
-
-        m_widgets.erase(widget->GetName());
-
-        widget->SetManager(nullptr);
-
-        return true;
-    }
-
     WidgetManager::~WidgetManager() {
-        SRAssert2(m_widgets.empty(), "Memory leak is possible!");
         m_widgets.clear();
     }
 
@@ -167,6 +135,40 @@ namespace SR_GRAPH_NS::GUI {
 
     void WidgetManager::SetRenderContext(WidgetManager::ContextPtr pContext) {
         m_renderContext = pContext;
+    }
+
+    void WidgetManager::CloseAllWidgets() {
+        for (auto& [id, widget] : m_widgets) {
+            widget->Close();
+        }
+    }
+
+    WidgetManager::WidgetPtr WidgetManager::GetWidget(SR_UTILS_NS::StringAtom name) const {
+        if (auto&& pIt = m_widgets.find(name); pIt != m_widgets.end()) {
+            return pIt->second;
+        }
+
+        return nullptr;
+    }
+
+    bool WidgetManager::Init() {
+        auto&& factory = SR_UTILS_NS::Factory::Instance();
+        auto&& widgets = factory.GetInheritances(SR_GRAPH_GUI_NS::Widget::GetClassStaticName());
+        for (auto&& widget : widgets) {
+            if (factory.IsAbstract(widget) || factory.GetType(widget)->IsHidden()) {
+                continue;
+            }
+            if (auto&& pWidget = factory.Create<SR_GRAPH_GUI_NS::Widget>(widget)) {
+                m_widgets[widget] = pWidget;
+                pWidget->SetManager(this);
+            }
+        }
+
+        for (auto&& [widgetName, pWidget] : m_widgets) {
+            pWidget->Init();
+        }
+
+        return true;
     }
 
     Widget* ViewportsTableManager::GetWidgetByViewport(void *viewport) const {

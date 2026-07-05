@@ -22,6 +22,7 @@ set(FT_DISABLE_HARFBUZZ ON)
 option(SR_GRAPHICS_DLL_EXPORTS "" ON)
 option(SR_RENDER_USE_GLSL_LANG_LIB "" ON)
 option(SR_RENDER_USE_NATIVE_WEBGPU "" OFF)
+option(SR_RENDER_USE_EELY "" OFF)
 
 option(SR_RENDER_USE_NATIVE_WAYLAND "" ON)
 option(SR_RENDER_GLFW "" OFF)
@@ -243,8 +244,6 @@ target_compile_definitions(Graphics PRIVATE SR_IMGUI_INCLUDE_CHECK)
 target_include_directories(Graphics PUBLIC inc)
 target_include_directories(Graphics PUBLIC libs/inc)
 target_include_directories(Graphics PUBLIC libs/imgui)
-#target_include_directories(Graphics PUBLIC libs/imgui-node-editor)
-#target_include_directories(Graphics PUBLIC libs/glew/inc)
 target_include_directories(Graphics PUBLIC libs)
 
 if (SR_RENDER_USE_VULKAN)
@@ -259,6 +258,10 @@ endif()
 
 get_property(SR_UTILS_INCLUDE_DIRECTORIES_CONTENT GLOBAL PROPERTY SR_UTILS_INCLUDE_DIRECTORIES)
 target_include_directories(Graphics PUBLIC ${SR_UTILS_INCLUDE_DIRECTORIES_CONTENT})
+
+if (SR_RENDER_USE_EELY)
+    include(cmake/eely.cmake)
+endif()
 
 set_target_properties(Graphics PROPERTIES
     BUILD_RPATH "\$ORIGIN"
