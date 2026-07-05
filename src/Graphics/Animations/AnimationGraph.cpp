@@ -33,7 +33,7 @@ namespace SR_ANIMATIONS_NS {
 
     AnimationGraphNode* AnimationGraph::GetFinal() const {
         if (m_nodes.empty()) {
-            SRHalt("AnimationGraph::GetFinal() : no nodes in graph!");
+            SRHaltOnce("AnimationGraph::GetFinal() : no nodes in graph!");
             return nullptr;
         }
         return const_cast<AnimationGraphNode*>(m_nodes.front().Get());
@@ -143,7 +143,7 @@ namespace SR_ANIMATIONS_NS {
             return const_cast<AnimationGraphNode*>(m_nodes.at(index).Get());
         }
 
-        SRHalt("Out of range!");
+        SRHaltOnce("Out of range!");
 
         return nullptr;
     }
@@ -216,6 +216,13 @@ namespace SR_ANIMATIONS_NS {
     }
 
     const AnimationGraph& AnimationGraphAsset::GetData() const noexcept {
+        if (!m_data) {
+            m_data = new AnimationGraph();
+        }
+        return *m_data;
+    }
+
+    AnimationGraph& AnimationGraphAsset::GetDataMutable() const noexcept {
         if (!m_data) {
             m_data = new AnimationGraph();
         }

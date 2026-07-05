@@ -7,6 +7,8 @@
 
 #include <Graphics/Animations/AnimationStateTransition.h>
 
+#include <Utils/Math/Vector2.h>
+
 namespace SR_ANIMATIONS_NS {
     class AnimationGraph;
     class AnimationClip;
@@ -25,6 +27,8 @@ namespace SR_ANIMATIONS_NS {
 
     public:
         SR_NODISCARD AnimationStateMachine* GetMachine() const noexcept { return m_machine; }
+        SR_NODISCARD SR_MATH_NS::FVector2 GetEditorPosition() const noexcept { return m_editorPosition; }
+        void SetEditorPosition(const SR_MATH_NS::FVector2& pos) noexcept { m_editorPosition = pos; }
 
         SR_NODISCARD virtual float_t GetProgress() const noexcept { return 1.f; }
         SR_NODISCARD virtual float_t GetDuration() const noexcept { return 0.f; }
@@ -54,6 +58,8 @@ namespace SR_ANIMATIONS_NS {
     protected:
         /// @property @getter(GetStateName)
         SR_UTILS_NS::StringAtom m_stateName;
+        /// @property @group(Editor) @hidden
+        SR_MATH_NS::FVector2 m_editorPosition = SR_MATH_NS::FVector2(0.f, 0.f);
         /// @property
         bool m_resetOnPlay = false;
         /// @property @notNull

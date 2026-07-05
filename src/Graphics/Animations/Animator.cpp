@@ -6,6 +6,8 @@
 
 #include <Utils/ECS/ComponentManager.h>
 #include <Utils/FileSystem/PathDataAccessor.h>
+#include <Utils/Events/Broadcaster.h>
+#include <Utils/Common/SubscriptionMessage.h>
 
 #include <Codegen/Animator.generated.hpp>
 
@@ -178,5 +180,12 @@ namespace SR_ANIMATIONS_NS {
 
     SR_HTYPES_NS::SharedPtr<Skeleton> Animator::GetSkeleton() noexcept {
         return m_skeleton.Get();
+    }
+
+    void Animator::InspectGraph() {
+        SR_UTILS_NS::SubscriptionMessage message;
+        message.SetStringAtom("ClassName", Animator::GetClassStaticName());
+        message.SetInt("EntityId", GetEntityId());
+        SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_DO_INSPECT_ENTITY_ID, message);
     }
 }

@@ -1268,6 +1268,10 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         ax::NodeEditor::SetCurrentEditor(reinterpret_cast<ax::NodeEditor::EditorContext*>(editor));
     }
 
+    void NavigateToContent() {
+        ax::NodeEditor::NavigateToContent();
+    }
+
     bool Begin(const char* id, const SR_MATH_NS::FVector2& size) {
         return ax::NodeEditor::Begin(id, F2ToImV2(size));
     }
@@ -1422,6 +1426,12 @@ namespace SR_GRAPH_GUI_NS::Immediate {
 
     SR_MATH_NS::FVector2 GetItemRectMax() {
         return ImV2ToF2(ImGui::GetItemRectMax());
+    }
+
+    void DrawListAddTriangleFilled(void* pDrawList, const SR_MATH_NS::FVector2& a, const SR_MATH_NS::FVector2& b, const SR_MATH_NS::FVector2& c, uint32_t color) {
+        if (auto&& pImGuiDrawList = static_cast<ImDrawList*>(pDrawList)) {
+            pImGuiDrawList->AddTriangleFilled(F2ToImV2(a), F2ToImV2(b), F2ToImV2(c), color);
+        }
     }
 
     bool IsItemVisible() {

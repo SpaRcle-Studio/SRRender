@@ -554,6 +554,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void* CreateEditor(const char* settingsFile);
         SR_GRAPHICS_DLL_API extern void DestroyEditor(void* editor);
         SR_GRAPHICS_DLL_API extern void SetCurrentEditor(void* editor);
+        SR_GRAPHICS_DLL_API extern void NavigateToContent();
         SR_GRAPHICS_DLL_API extern bool Begin(const char* id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2());
         SR_GRAPHICS_DLL_API extern void EndNodeEditor();
         SR_GRAPHICS_DLL_API extern void BeginNode(uintptr_t nodeId);
@@ -584,6 +585,7 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void PopNodeEditorStyleVar(int count = 1);
         SR_GRAPHICS_DLL_API extern void* GetNodeBackgroundDrawList(uintptr_t nodeId);
         SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetItemRectMax();
+        SR_GRAPHICS_DLL_API extern void DrawListAddTriangleFilled(void* pDrawList, const SR_MATH_NS::FVector2& a, const SR_MATH_NS::FVector2& b, const SR_MATH_NS::FVector2& c, uint32_t color);
         SR_GRAPHICS_DLL_API extern bool IsItemVisible();
     #endif
     }

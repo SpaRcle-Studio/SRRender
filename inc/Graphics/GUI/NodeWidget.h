@@ -21,13 +21,20 @@ namespace SR_GRAPH_GUI_NS {
         bool expand = false;
     };
 
+    /// @abstract
     class NodeWidget : public SR_GRAPH_GUI_NS::Widget {
+        SR_CLASS()
         using Super = SR_GRAPH_GUI_NS::Widget;
     public:
+        NodeWidget() = default;
         explicit NodeWidget(std::string name, SR_MATH_NS::IVector2 size = SR_MATH_NS::IVector2MAX);
         ~NodeWidget() override;
 
     public:
+        void Init() override;
+
+        virtual void Zoom() { }
+
         Node& AddNode(Node* pNode);
         Link& AddLink(Link* pLink);
 
@@ -56,8 +63,6 @@ namespace SR_GRAPH_GUI_NS {
         SR_NODISCARD NodeWidgetProperty* FindProperty(const std::string& name);
 
         void Clear();
-
-        void Init() override;
 
         void Draw() override;
         void OnClose() override;

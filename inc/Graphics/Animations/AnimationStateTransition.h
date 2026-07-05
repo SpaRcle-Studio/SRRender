@@ -45,7 +45,7 @@ namespace SR_ANIMATIONS_NS {
         virtual void Update(const StateConditionContext& context);
 
     protected:
-        /// @property
+        /// @property @hidden
         int32_t m_targetIndex = -1;
         /// @property
         AnimationStateCondition::Ptr m_condition;

@@ -106,6 +106,49 @@ namespace SR_ANIMATIONS_NS {
         return m_states[1].StaticCast<AnimationClipState>()->SetClip(pClip);
     }
 
+    bool AnimationStateMachine::RemoveState(const uint32_t index) {
+        if (index >= m_states.size()) {
+            return false;
+        }
+
+        // не даём удалить entry point
+        if (index == 0) {
+            return false;
+        }
+
+        m_states.erase(m_states.begin() + static_cast<int64_t>(index));
+
+        // правим индексы переходов
+        for (auto&& pState : m_states) {
+            if (!pState) {
+                continue;
+            }
+
+            for (auto&& pTransition : pState->GetTransitions()) {
+                if (!pTransition) {
+                    continue;
+                }
+
+                const int32_t target = pTransition->GetTargetIndex();
+                if (target < 0) {
+                    continue;
+                }
+
+                if (static_cast<uint32_t>(target) == index) {
+                    pTransition->SetTargetIndex(-1);
+                }
+                else if (static_cast<uint32_t>(target) > index) {
+                    pTransition->SetTargetIndex(target - 1);
+                }
+            }
+        }
+
+        // форсим пересбор активных стейтов при следующем Compile()
+        m_activeStates.clear();
+
+        return true;
+    }
+
     void AnimationStateMachine::Compile(CompileContext& context) {
         for (auto&& pState : m_states) {
             pState->Compile(context);

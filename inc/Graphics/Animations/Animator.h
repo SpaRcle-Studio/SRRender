@@ -52,6 +52,9 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationGraph* GetGraph() const noexcept;
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<Skeleton> GetSkeleton() noexcept;
 
+        /// @method @editorButton @condition(This.m_graph && !This.m_clip.IsValid())
+        void InspectGraph();
+
     private:
         void UpdateInternal(float_t dt);
 

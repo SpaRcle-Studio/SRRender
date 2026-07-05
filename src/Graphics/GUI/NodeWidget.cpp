@@ -16,18 +16,22 @@
 #include <Utils/Common/HashManager.h>
 #include <Utils/FileSystem/FileDialog.h>
 
+#include <Codegen/NodeWidget.generated.hpp>
+
 namespace SR_GRAPH_GUI_NS {
     NodeWidget::NodeWidget(std::string name, SR_MATH_NS::IVector2 size)
         : Super(std::move(name), size)
-    {
-        //m_nodeBuilder = new NodeBuilder(SR_GTYPES_NS::Texture::Load("Editor/Textures/BlueprintBackground.png"));
-
-        m_creationPopup = new PopupItemSubWidget(GetName() + "-Popup");
-    }
+    { }
 
     NodeWidget::~NodeWidget() {
         Clear();
-        //delete m_nodeBuilder;
+    }
+
+    void NodeWidget::Init() {
+        m_creationPopup = new PopupItemSubWidget(GetName() + "-Popup");
+        InitStructsCreationPopup();
+        InitCreationPopup();
+        Super::Init();
     }
 
     void NodeWidget::UpdateTouch() {
@@ -131,7 +135,7 @@ namespace SR_GRAPH_GUI_NS {
         ImGui::SameLine();
 
         if (ImGui::Button("Zoom")) {
-
+            Zoom();
         }
 
         ImGui::SameLine();
@@ -164,12 +168,6 @@ namespace SR_GRAPH_GUI_NS {
 
     void NodeWidget::DrawPopupMenu() {
 
-    }
-
-    void NodeWidget::Init() {
-        InitStructsCreationPopup();
-        InitCreationPopup();
-        Super::Init();
     }
 
     void NodeWidget::InitStructsCreationPopup() {

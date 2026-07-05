@@ -28,10 +28,13 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationState* GetState(uint32_t index) const;
         SR_NODISCARD AnimationState* GetStateOrNull(uint32_t index) const;
         SR_NODISCARD const std::vector<AnimationState::Ptr>& GetStates() const noexcept { return m_states; }
+        SR_NODISCARD std::vector<AnimationState::Ptr>& GetStatesMutable() noexcept { return m_states; }
 
         bool SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
         void Compile(CompileContext& context);
         void Update(UpdateContext& context);
+
+        bool RemoveState(uint32_t index);
 
         template<class T, typename... Args> T* CreateState(Args&& ...args) {
             return AddState(new T(std::forward<Args>(args)...));
@@ -52,7 +55,7 @@ namespace SR_ANIMATIONS_NS {
     private:
         AnimationGraphNode* m_node = nullptr;
 
-        /// @property
+        /// @property @hidden
         std::vector<AnimationState::Ptr> m_states;
 
         std::set<AnimationState*> m_activeStates;

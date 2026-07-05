@@ -24,7 +24,6 @@ namespace SR_GRAPH_NS {
 namespace SR_GRAPH_NS::GUI {
     class Widget;
 
-    typedef SR_HTYPES_NS::FlatHashMap<std::string, Widget*> Widgets;
     typedef SR_HTYPES_NS::FlatHashMap<void*, Widget*> ViewportsTable;
 
     class WidgetManager : public SR_UTILS_NS::NonCopyable, public SR_UTILS_NS::InputHandler {
