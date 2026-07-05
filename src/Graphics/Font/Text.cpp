@@ -173,7 +173,8 @@ namespace SR_GTYPES_NS {
     }
 
     void Text::SetText(const std::string& text) {
-        auto&& newText = SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(text);
+        std::u32string newText;
+        SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(newText, text);
         if (m_text == newText) {
             return;
         }
@@ -182,7 +183,8 @@ namespace SR_GTYPES_NS {
     }
 
     void Text::SetText(const std::u16string& text) {
-        auto&& newText = SR_UTILS_NS::Localization::UtfToUtf<char32_t, char16_t>(text);
+        std::u32string newText;
+        SR_UTILS_NS::Localization::UtfToUtf<char32_t, char16_t>(newText, text);
         if (m_text == newText) {
             return;
         }

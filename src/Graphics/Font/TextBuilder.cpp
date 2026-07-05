@@ -230,7 +230,8 @@ namespace SR_GRAPH_NS {
         InitFontSize();
 
         /// препроцессор текста
-        StringType text = SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(str);
+        StringType text;
+        SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(text, str);
         for (uint32_t i = 0; i < static_cast<uint32_t>(text.size()); ++i) {
             if (auto&& iterator = PreProcess(text, i); iterator != SR_ID_INVALID) {
                 text.erase(text.begin() + i, text.begin() + iterator);
@@ -245,7 +246,9 @@ namespace SR_GRAPH_NS {
     }
 
     bool TextBuilder::Build(const char* text) {
-        return Build(SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(text));
+        StringType unicodeText;
+        SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(unicodeText, text);
+        return Build(std::move(unicodeText));
     }
 
     void TextBuilder::SetDebug(bool enabled) {
