@@ -171,163 +171,27 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeWidget::InitStructsCreationPopup() {
-        auto&& menu = m_creationPopup->AddMenu("Structs");
 
-        /*for (auto&& [hashName, pStruct] : SR_SRLM_NS::DataTypeManager::Instance().GetStructs()) {
-            auto&& structMenu = menu.AddMenu(std::string(SR_HASH_TO_STR(hashName)));
-
-            structMenu.AddMenu("Create").SetAction([typeHashName = hashName](const SR_GRAPH_GUI_NS::DrawPopupContext& context) {
-                auto&& pNode = new SR_SRLM_NS::CreateStructNode();
-                pNode->SetStructHashName(typeHashName);
-                pNode->InitNode();
-                context.pWidget->AddNode(new Node(pNode)).SetPosition(context.popupPos);
-            });
-
-            structMenu.AddMenu("Break").SetAction([typeHashName = hashName](const SR_GRAPH_GUI_NS::DrawPopupContext& context) {
-                auto&& pNode = new SR_SRLM_NS::BreakStructNode();
-                pNode->SetStructHashName(typeHashName);
-                pNode->InitNode();
-                context.pWidget->AddNode(new Node(pNode)).SetPosition(context.popupPos);
-            });
-        }*/
     }
 
     void NodeWidget::InitCreationPopup() {
-        /*for (auto&& [hashName, nodeInfo] : SR_SRLM_NS::LogicalNodeManager::Instance().GetNodeConstructors()) {
-            if (nodeInfo.category.empty()) {
-                continue;
-            }
 
-            auto&& menu = m_creationPopup->AddMenu(nodeInfo.category);
-            menu.AddMenu(std::string(SR_HASH_TO_STR(hashName))).SetAction([constructor = nodeInfo.constructor](const SR_GRAPH_GUI_NS::DrawPopupContext& context) {
-                SR_SRLM_NS::LogicalNode* pLogicalNode = constructor();
-                pLogicalNode->InitNode();
-                pLogicalNode->InitValues();
-                context.pWidget->AddNode(new Node(pLogicalNode)).SetPosition(context.popupPos);
-            });
-        }*/
     }
 
     void NodeWidget::TopPanelSaveAt() {
-        /*auto&& path = SR_UTILS_NS::FileDialog::Instance().SaveDialog(SR_UTILS_NS::ResourceManager::Instance().GetResPath(), { { "SRLM", "srlm" } });
-        if (path.empty()) {
-            return;
-        }
 
-        m_currentFile = path;
-
-        TopPanelSave();*/
     }
 
     void NodeWidget::TopPanelOpen() {
-        /*auto&& path = SR_UTILS_NS::FileDialog::Instance().OpenDialog(SR_UTILS_NS::ResourceManager::Instance().GetResPath(), { { "SRLM", "srlm" } });
-        if (path.empty()) {
-            return;
-        }
 
-        Clear();
-
-        m_currentFile = path;
-
-        auto&& xmlDocument = SR_XML_NS::Document::Load(path);
-        if (!xmlDocument) {
-            return;
-        }
-
-        auto&& xmlLogicalMachine = xmlDocument.Root().GetNode("LogicalMachine");
-
-        std::map<uint64_t, Node*> nodes;
-
-        auto&& xmlNodes = xmlLogicalMachine.GetNode("Nodes");
-        for (auto&& xmlNode : xmlNodes.GetNodes()) {
-            auto&& uid = xmlNode.GetAttribute("UID").ToUInt64();
-            if (auto&& pLogicalNode = SR_SRLM_NS::LogicalNode::LoadXml(xmlNode)) {
-                auto&& pNode = new Node(pLogicalNode);
-                pNode->SetPosition(xmlNode.GetAttribute<SR_MATH_NS::FVector2>());
-                nodes[uid] = pNode;
-            }
-        }
-
-        auto&& xmlLinks = xmlLogicalMachine.GetNode("Links");
-        for (auto&& xmlLink : xmlLinks.GetNodes()) {
-            auto&& startNodeId = xmlLink.GetAttribute("SN").ToUInt64();
-            auto&& endNodeId = xmlLink.GetAttribute("EN").ToUInt64();
-
-            auto&& startPinIndex = xmlLink.GetAttribute("SP").ToUInt64();
-            auto&& endPinIndex = xmlLink.GetAttribute("EP").ToUInt64();
-
-            if (nodes.count(startNodeId) == 0) {
-                SR_ERROR("NodeWidget::TopPanelOpen() : start node not exists! Id: " + SR_UTILS_NS::ToString(startNodeId));
-                continue;
-            }
-
-            if (nodes.count(endNodeId) == 0) {
-                SR_ERROR("NodeWidget::TopPanelOpen() : end node not exists! Id: " + SR_UTILS_NS::ToString(endNodeId));
-                continue;
-            }
-
-            AddLink(new Link(
-                nodes[startNodeId]->GetOutputPin(startPinIndex),
-                nodes[endNodeId]->GetInputPin(endPinIndex)
-            ));
-        }
-
-        for (auto&& [uid, pNode] : nodes) {
-            AddNode(pNode);
-        }*/
     }
 
     void NodeWidget::TopPanelSave() {
-        /*if (m_currentFile.empty()) {
-            TopPanelSaveAt();
-            return;
-        }
 
-        auto&& xmlDocument = SR_XML_NS::Document::New();
-
-        auto&& xmlLogicalMachine = xmlDocument.Root().AppendNode("LogicalMachine");
-        auto&& xmlNodes = xmlLogicalMachine.AppendNode("Nodes");
-
-        for (auto&& [uid, pNode] : m_nodes) {
-            auto&& xmlNode = xmlNodes.AppendNode("Node");
-            xmlNode.AppendAttribute("UID", uid);
-            xmlNode.AppendAttribute(pNode->GetPosition());
-            pNode->GetLogicalNode()->SaveXml(xmlNode);
-        }
-
-        auto&& xmlLinks = xmlLogicalMachine.AppendNode("Links");
-
-        for (auto&& [uid, pLink] : m_links) {
-            if (!pLink->IsLinked()) {
-                continue;
-            }
-
-            auto&& xmlLink = xmlLinks.AppendChild("Link");
-
-            xmlLink.AppendAttribute("SN", pLink->GetStart()->GetNode()->GetId());
-            xmlLink.AppendAttribute("EN", pLink->GetEnd()->GetNode()->GetId());
-
-            xmlLink.AppendAttribute("SP", pLink->GetStart()->GetIndex());
-            xmlLink.AppendAttribute("EP", pLink->GetEnd()->GetIndex());
-        }
-
-        xmlDocument.Save(m_currentFile);*/
     }
 
     void NodeWidget::Execute() {
-        /*if (m_nodes.empty() && m_properties.empty()) {
-            TopPanelOpen();
-        }
-        else {
-            TopPanelSave();
-        }
 
-        if (auto&& pLogicalMachine = SR_SRLM_NS::LogicalMachine::Load(m_currentFile)) {
-            pLogicalMachine->AddUsePoint();
-            pLogicalMachine->Init();
-            pLogicalMachine->UpdateMachine(0.f);
-            pLogicalMachine->RemoveUsePoint();
-        }*/
     }
 
     void NodeWidget::TopPanelClose() {

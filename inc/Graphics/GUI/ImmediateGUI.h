@@ -557,6 +557,8 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern void NavigateToContent();
         SR_GRAPHICS_DLL_API extern bool Begin(const char* id, const SR_MATH_NS::FVector2& size = SR_MATH_NS::FVector2());
         SR_GRAPHICS_DLL_API extern void EndNodeEditor();
+        SR_GRAPHICS_DLL_API extern void ResumeNodeEditor();
+        SR_GRAPHICS_DLL_API extern void SuspendNodeEditor();
         SR_GRAPHICS_DLL_API extern void BeginNode(uintptr_t nodeId);
         SR_GRAPHICS_DLL_API extern void EndNode();
         SR_GRAPHICS_DLL_API extern void BeginPin(uintptr_t pinId, bool isInput);

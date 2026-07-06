@@ -215,6 +215,31 @@ namespace SR_ANIMATIONS_NS {
         return emptyPath;
     }
 
+    void AnimationGraph::RemoveNode(uint64_t index) {
+        if (index >= m_nodes.size()) {
+            SRHalt("AnimationGraph::RemoveNode() : index out of range!");
+            return;
+        }
+
+        m_nodes.erase(m_nodes.begin() + index);
+        m_isCompiled = false;
+    }
+
+    void AnimationGraph::RemoveNode(AnimationGraphNode* pNode) {
+        if (!SRVerify(pNode)) {
+            return;
+        }
+
+        auto&& pIt = std::ranges::find_if(m_nodes, [pNode](const AnimationGraphNode::Ptr& node) {
+            return node.Get() == pNode;
+        });
+
+        if (SRVerify(pIt != m_nodes.end())) {
+            m_nodes.erase(pIt);
+            m_isCompiled = false;
+        }
+    }
+
     const AnimationGraph& AnimationGraphAsset::GetData() const noexcept {
         if (!m_data) {
             m_data = new AnimationGraph();

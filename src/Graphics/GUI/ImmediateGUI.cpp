@@ -1280,6 +1280,14 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         ax::NodeEditor::End();
     }
 
+    void ResumeNodeEditor() {
+        ax::NodeEditor::Resume();
+    }
+
+    void SuspendNodeEditor() {
+        ax::NodeEditor::Suspend();
+    }
+
     void BeginNode(uintptr_t nodeId) {
         ax::NodeEditor::BeginNode(ax::NodeEditor::NodeId(nodeId));
     }
