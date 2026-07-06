@@ -1378,6 +1378,15 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         return ax::NodeEditor::ShowBackgroundContextMenu();
     }
 
+    bool ShowNodeContextMenu(uintptr_t* nodeId) {
+        ax::NodeEditor::NodeId nodeIdObj;
+        if (ax::NodeEditor::ShowNodeContextMenu(&nodeIdObj)) {
+            if (nodeId) *nodeId = nodeIdObj.Get();
+            return true;
+        }
+        return false;
+    }
+
     int GetSelectedNodes(uintptr_t* nodeIds, int maxCount) {
         if (!nodeIds || maxCount <= 0) {
             return ax::NodeEditor::GetSelectedNodes(nullptr, 0);
@@ -1386,6 +1395,18 @@ namespace SR_GRAPH_GUI_NS::Immediate {
         int count = ax::NodeEditor::GetSelectedNodes(ids.data(), maxCount);
         for (int i = 0; i < count; ++i) {
             nodeIds[i] = ids[i].Get();
+        }
+        return count;
+    }
+
+    int GetSelectedLinks(uintptr_t* linkIds, int maxCount) {
+        if (!linkIds || maxCount <= 0) {
+            return ax::NodeEditor::GetSelectedLinks(nullptr, 0);
+        }
+        std::vector<ax::NodeEditor::LinkId> ids(maxCount);
+        int count = ax::NodeEditor::GetSelectedLinks(ids.data(), maxCount);
+        for (int i = 0; i < count; ++i) {
+            linkIds[i] = ids[i].Get();
         }
         return count;
     }

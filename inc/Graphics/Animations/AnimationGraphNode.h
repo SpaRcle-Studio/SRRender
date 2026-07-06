@@ -49,12 +49,17 @@ namespace SR_ANIMATIONS_NS {
         void ClearOutputPins() { m_outputPins.clear(); }
 
         SR_NODISCARD uint64_t GetIndex() const;
+        SR_NODISCARD void* GetUserData() const noexcept { return m_userData; }
+        void SetUserData(void* pUserData) noexcept { m_userData = pUserData; }
+
+        template<typename T> SR_NODISCARD T* GetUserData() const noexcept { return reinterpret_cast<T*>(m_userData); }
 
         void ConnectTo(AnimationGraphNode* pNode, uint16_t fromPinIndex, uint16_t toPinIndex);
 
     protected:
         AnimationGraph* m_graph = nullptr;
         AnimationPose* m_pose = nullptr;
+        void* m_userData = nullptr;
 
         /// @property @hidden
         std::vector<AnimationLink> m_inputPins;
@@ -68,6 +73,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
+    /// @hidden
     class AnimationGraphNodeFinal : public AnimationGraphNode {
         SR_CLASS()
         using Super = AnimationGraphNode;

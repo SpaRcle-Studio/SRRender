@@ -62,6 +62,27 @@ namespace SR_ANIMATIONS_NS {
         return true;
     }
 
+    uint32_t AnimationState::GetStateIndex() const noexcept {
+        if (!m_machine) {
+            return SR_ID_INVALID;
+        }
+
+        const auto& states = m_machine->GetStates();
+        for (uint32_t i = 0; i < states.size(); ++i) {
+            if (states[i].Get() == this) {
+                return i;
+            }
+        }
+
+        return SR_ID_INVALID;
+    }
+
+    void AnimationState::OnStateRemoved(uint32_t stateIndex) {
+        std::erase_if(m_transitions, [stateIndex](const SR_HTYPES_NS::SharedPtr<AnimationStateTransition>& pTransition) {
+            return pTransition->GetTargetIndex() == static_cast<int32_t>(stateIndex);
+        });
+    }
+
     void AnimationClipState::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 

@@ -14,9 +14,8 @@ namespace SR_GRAPH_NS::GUI {
 
     class Link : private SR_UTILS_NS::NonCopyable {
     public:
-        Link();
+        Link() = default;
         Link(Pin* start, Pin* end);
-//        Link(Pin* start, Pin* end, ImColor color);
         ~Link() override;
 
     public:
@@ -29,14 +28,17 @@ namespace SR_GRAPH_NS::GUI {
         void SetStart(Pin* pPin);
         void SetEnd(Pin* pPin);
 
-        void Draw() const;
+        void DrawBezier() const;
         void Broke(Pin* pFrom);
+
+        SR_NODISCARD void* GetUserData() const noexcept { return m_userData; }
+        template<typename T> SR_NODISCARD T* GetUserData() const noexcept { return reinterpret_cast<T*>(m_userData); }
+        void SetUserData(void* pUserData) noexcept { m_userData = pUserData; }
 
     private:
         Pin* m_startPin = nullptr;
         Pin* m_endPin = nullptr;
-
-       // ImColor m_color;
+        void* m_userData = nullptr;
 
     };
 }

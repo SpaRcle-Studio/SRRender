@@ -103,7 +103,6 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     uintptr_t Node::GetId() const {
-        /// TODO: переделать, при сохранении будут проблемы
         return reinterpret_cast<const uintptr_t>(this);
     }
 

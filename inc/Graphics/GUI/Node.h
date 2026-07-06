@@ -28,29 +28,13 @@ namespace SR_GRAPH_GUI_NS {
     class Link;
 
     class Node : public SR_UTILS_NS::NonCopyable {
-        using PinType = SR_SRLM_NS::DataTypeClass;
     public:
         Node();
-        //explicit Node(const std::string& name);
-        //explicit Node(SR_SRLM_NS::LogicalNode* pNode);
-        //Node(const std::string& name, NodeType type);
-      // Node(const std::string& name, ImColor color);
-      // Node(std::string  name, NodeType type, ImColor color);
-
         ~Node() override;
 
     public:
         Node& AddInput(Pin* pin);
         Node& AddOutput(Pin* pin);
-
-        /*Node& AddInput(PinType type);
-        Node& AddOutput(PinType type);
-
-        Node& AddInput(const std::string& name, PinType type);
-        Node& AddOutput(const std::string& name, PinType type);
-
-        Node& AddInput(const std::string& name, SR_SRLM_NS::DataType* pDataType);
-        Node& AddOutput(const std::string& name, SR_SRLM_NS::DataType* pDataType);*/
 
         void RemoveInput(uint32_t index);
         void RemoveOutput(uint32_t index);
@@ -66,7 +50,12 @@ namespace SR_GRAPH_GUI_NS {
         SR_NODISCARD const std::vector<Pin*>& GetOutputs() const noexcept { return m_outputs; }
         SR_NODISCARD int32_t GetPinIndex(const Pin* pPin) const;
         SR_NODISCARD SR_MATH_NS::FVector2 GetPosition() const;
-        //SR_NODISCARD SR_SRLM_NS::LogicalNode* GetLogicalNode() const { return m_logicalNode; }
+        SR_NODISCARD void* GetUserData() const { return m_userData; }
+        SR_NODISCARD SR_MATH_NS::FRect GetRect() const { return m_rect; }
+
+        void SetRect(const SR_MATH_NS::FRect& rect) { m_rect = rect; }
+
+        template<typename T> SR_NODISCARD T* GetUserData() const { return reinterpret_cast<T*>(m_userData); }
 
         Node& SetName(std::string name);
         Node& SetPosition(const SR_MATH_NS::FVector2& pos);
@@ -75,12 +64,14 @@ namespace SR_GRAPH_GUI_NS {
         void Draw(NodeBuilder* pBuilder, Pin* pNewLinkPin);
         void PostDraw();
 
+        void SetUserData(void* pUserData) { m_userData = pUserData; }
+
     private:
-        //SR_SRLM_NS::LogicalNode* m_logicalNode = nullptr;
+        void* m_userData = nullptr;
+        SR_MATH_NS::FRect m_rect;
         std::string m_name;
         std::vector<Pin*> m_inputs;
         std::vector<Pin*> m_outputs;
-       // ImColor m_color = ImColor(255, 255, 255, 255);
         NodeType m_type = NodeType::None;
         float_t m_maxOutputWidth = 0.f;
         bool m_hasOutputDelegates = false;

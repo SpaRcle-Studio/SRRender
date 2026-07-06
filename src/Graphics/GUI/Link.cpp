@@ -11,7 +11,7 @@ namespace SR_GRAPH_NS::GUI {
         return reinterpret_cast<uintptr_t>(this);
     }
 
-    void Link::Draw() const {
+    void Link::DrawBezier() const {
     #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (m_startPin && m_endPin) {
             SR_GRAPH_GUI_NS::Immediate::Link(GetId(), m_startPin->GetId(), m_endPin->GetId());
@@ -19,23 +19,10 @@ namespace SR_GRAPH_NS::GUI {
     #endif
     }
 
-    Link::Link()
-        //: Link(nullptr, nullptr, ImColor(255, 255, 255, 255))
-    { }
-
-    Link::Link(Pin* start, Pin* end)
-       // : Link(start, end, ImColor(255, 255, 255, 255))
-    {
+    Link::Link(Pin* start, Pin* end) {
         SetStart(start);
         SetEnd(end);
     }
-
-   //Link::Link(Pin* start, Pin* end, ImColor color)
-   //    : m_color(color)
-   //{
-   //    SetStart(start);
-   //    SetEnd(end);
-   //}
 
     void Link::SetStart(Pin* pPin) {
         if (m_startPin) {

@@ -15,14 +15,26 @@ namespace SR_SRLM_NS {
 }
 
 namespace SR_GRAPH_GUI_NS {
-    struct NodeWidgetProperty {
-        std::string name;
-        std::unique_ptr<SR_SRLM_NS::DataType> pData;
-        bool expand = false;
+    class INodeWidgetDataContainer {
+    public:
+        Node& AddNode(Node* pNode);
+        Link& AddLink(Link* pLink);
+
+        void RemoveNode(Node* pNode);
+        void RemoveLink(Link* pLink);
+
+        virtual bool CanAddNode(Node* pNode) { return true; }
+
+        void ClearContainer();
+
+    protected:
+        std::map<uintptr_t, Node*> m_nodes;
+        std::map<uintptr_t, Link*> m_links;
+
     };
 
     /// @abstract
-    class NodeWidget : public SR_GRAPH_GUI_NS::Widget {
+    class NodeWidget : public SR_GRAPH_GUI_NS::Widget, public INodeWidgetDataContainer {
         SR_CLASS()
         using Super = SR_GRAPH_GUI_NS::Widget;
     public:
@@ -35,15 +47,7 @@ namespace SR_GRAPH_GUI_NS {
 
         virtual void Zoom() { }
 
-        Node& AddNode(Node* pNode);
-        Link& AddLink(Link* pLink);
-
-        void RemoveNode(Node* pNode);
-        void RemoveLink(Link* pLink);
-
     protected:
-        virtual bool CanAddNode(Node* pNode) { return true; }
-
         virtual void UpdateTouch();
         virtual void DrawPopupMenu();
         virtual void DrawTopPanel();
@@ -57,27 +61,13 @@ namespace SR_GRAPH_GUI_NS {
 
         virtual void Execute();
 
-        virtual void InitCreationPopup();
-        virtual void InitStructsCreationPopup();
-
-        SR_NODISCARD NodeWidgetProperty* FindProperty(const std::string& name);
-
         void Clear();
 
         void Draw() override;
         void OnClose() override;
 
     protected:
-        PopupItemSubWidget::Ptr m_creationPopup;
-
         void* m_editor = nullptr;
-
-        SR_GRAPH_GUI_NS::NodeBuilder* m_nodeBuilder = nullptr;
-
-        std::map<uintptr_t, Node*> m_nodes;
-        std::map<uintptr_t, Link*> m_links;
-
-        std::vector<NodeWidgetProperty> m_properties;
 
         SR_UTILS_NS::Path m_currentFile;
 

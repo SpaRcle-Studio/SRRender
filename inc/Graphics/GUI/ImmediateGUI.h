@@ -575,7 +575,9 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPHICS_DLL_API extern bool QueryDeletedNode(uintptr_t* nodeId);
         SR_GRAPHICS_DLL_API extern void EndDelete();
         SR_GRAPHICS_DLL_API extern bool ShowBackgroundContextMenu();
+        SR_GRAPHICS_DLL_API extern bool ShowNodeContextMenu(uintptr_t* nodeId);
         SR_GRAPHICS_DLL_API extern int GetSelectedNodes(uintptr_t* nodeIds, int maxCount);
+        SR_GRAPHICS_DLL_API extern int GetSelectedLinks(uintptr_t* linkIds, int maxCount);
         SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 ScreenToCanvas(const SR_MATH_NS::FVector2& screenPos);
         SR_GRAPHICS_DLL_API extern void SetNodePosition(uintptr_t nodeId, const SR_MATH_NS::FVector2& position);
         SR_GRAPHICS_DLL_API extern SR_MATH_NS::FVector2 GetNodePosition(uintptr_t nodeId);

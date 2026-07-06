@@ -13,7 +13,9 @@
 namespace SR_ANIMATIONS_NS {
     AnimationGraph::AnimationGraph()
         : Super()
-    { }
+    {
+        m_nodes.emplace_back(SRNew<AnimationGraphNodeFinal>());
+    }
 
     AnimationGraph::~AnimationGraph() {
         m_nodes.clear();
@@ -34,6 +36,10 @@ namespace SR_ANIMATIONS_NS {
     AnimationGraphNode* AnimationGraph::GetFinal() const {
         if (m_nodes.empty()) {
             SRHaltOnce("AnimationGraph::GetFinal() : no nodes in graph!");
+            return nullptr;
+        }
+        if (m_nodes.front()->GetMeta() != AnimationGraphNodeFinal::GetMetaStatic()) {
+            SRHaltOnce("AnimationGraph::GetFinal() : first node is not final!");
             return nullptr;
         }
         return const_cast<AnimationGraphNode*>(m_nodes.front().Get());
@@ -160,6 +166,13 @@ namespace SR_ANIMATIONS_NS {
 
     void AnimationGraph::OnPostLoad() {
         Super::OnPostLoad();
+
+        if (m_nodes.empty() || m_nodes.front()->GetMeta() != AnimationGraphNodeFinal::GetMetaStatic()) {
+            SR_ERROR("AnimationGraph::OnPostLoad() : broken graph! Final node is nullptr! Trying to fix...");
+            RemoveNodes(AnimationGraphNodeFinal::GetMetaStatic()->GetFactoryName());
+            m_nodes.insert(m_nodes.begin(), SRNew<AnimationGraphNodeFinal>());
+        }
+
         for (auto&& pNode : m_nodes) {
             pNode->SetGraph(this);
         }
@@ -215,29 +228,39 @@ namespace SR_ANIMATIONS_NS {
         return emptyPath;
     }
 
-    void AnimationGraph::RemoveNode(uint64_t index) {
+    bool AnimationGraph::RemoveNode(uint64_t index) {
         if (index >= m_nodes.size()) {
             SRHalt("AnimationGraph::RemoveNode() : index out of range!");
-            return;
+            return true;
+        }
+
+        if (GetFinal() == m_nodes[index].Get()) {
+            return false;
         }
 
         m_nodes.erase(m_nodes.begin() + index);
         m_isCompiled = false;
+        return true;
     }
 
-    void AnimationGraph::RemoveNode(AnimationGraphNode* pNode) {
+    bool AnimationGraph::RemoveNode(AnimationGraphNode* pNode) {
         if (!SRVerify(pNode)) {
-            return;
+            return false;
         }
+        return RemoveNode(GetNodeIndex(pNode));
+    }
 
-        auto&& pIt = std::ranges::find_if(m_nodes, [pNode](const AnimationGraphNode::Ptr& node) {
-            return node.Get() == pNode;
-        });
-
-        if (SRVerify(pIt != m_nodes.end())) {
-            m_nodes.erase(pIt);
-            m_isCompiled = false;
+    bool AnimationGraph::RemoveNodes(SR_UTILS_NS::StringAtom name) {
+        SR_UTILS_NS::SmallVector<AnimationGraphNode*, 16> nodesToRemove;
+        for (auto&& pNode : m_nodes) {
+            if (pNode->GetMeta()->GetFactoryName() == name) {
+                nodesToRemove.emplace_back(pNode.Get());
+            }
         }
+        for (auto&& pNode : nodesToRemove) {
+            RemoveNode(pNode);
+        }
+        return !nodesToRemove.empty();
     }
 
     const AnimationGraph& AnimationGraphAsset::GetData() const noexcept {

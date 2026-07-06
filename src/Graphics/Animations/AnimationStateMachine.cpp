@@ -9,7 +9,9 @@
 namespace SR_ANIMATIONS_NS {
     AnimationStateMachine::AnimationStateMachine()
         : Super()
-    { }
+    {
+        m_states.emplace_back(SRNew<AnimationEntryPointState>());
+    }
 
     AnimationStateMachine::~AnimationStateMachine() {
         m_states.clear();
@@ -17,6 +19,12 @@ namespace SR_ANIMATIONS_NS {
 
     void AnimationStateMachine::OnPostLoad() {
         Super::OnPostLoad();
+
+        if (m_states.empty()) {
+            SR_ERROR("AnimationStateMachine::OnPostLoad() : no entry point state found! Trying to fix...");
+            m_states.emplace_back(SRNew<AnimationEntryPointState>());
+        }
+
         for (auto&& pState : m_states) {
             pState->SetMachine(this);
         }
@@ -106,6 +114,20 @@ namespace SR_ANIMATIONS_NS {
         return m_states[1].StaticCast<AnimationClipState>()->SetClip(pClip);
     }
 
+    bool AnimationStateMachine::RemoveState(AnimationState* pState) {
+        if (!pState) {
+            return false;
+        }
+
+        for (uint32_t i = 0; i < m_states.size(); ++i) {
+            if (m_states[i] == pState) {
+                return RemoveState(i);
+            }
+        }
+
+        return false;
+    }
+
     bool AnimationStateMachine::RemoveState(const uint32_t index) {
         if (index >= m_states.size()) {
             return false;
@@ -114,6 +136,14 @@ namespace SR_ANIMATIONS_NS {
         // не даём удалить entry point
         if (index == 0) {
             return false;
+        }
+
+        // удаляем транзишены на удаляемый стейт
+        for (auto&& pState : m_states) {
+            if (!pState) {
+                continue;
+            }
+            pState->OnStateRemoved(index);
         }
 
         m_states.erase(m_states.begin() + static_cast<int64_t>(index));

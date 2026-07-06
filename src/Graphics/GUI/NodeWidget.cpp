@@ -19,47 +19,11 @@
 #include <Codegen/NodeWidget.generated.hpp>
 
 namespace SR_GRAPH_GUI_NS {
-    NodeWidget::NodeWidget(std::string name, SR_MATH_NS::IVector2 size)
-        : Super(std::move(name), size)
-    { }
-
-    NodeWidget::~NodeWidget() {
-        Clear();
-    }
-
-    void NodeWidget::Init() {
-        m_creationPopup = new PopupItemSubWidget(GetName() + "-Popup");
-        InitStructsCreationPopup();
-        InitCreationPopup();
-        Super::Init();
-    }
-
-    void NodeWidget::UpdateTouch() {
-
-    }
-
-    void NodeWidget::Clear() {
-        for (auto&& [id, pLink] : m_links) {
-            delete pLink;
-        }
-
-        for (auto&& [id, pNode] : m_nodes) {
-            delete pNode;
-        }
-
-        m_nodes.clear();
-        m_links.clear();
-    }
-
-    void NodeWidget::Draw() {
-
-    }
-
-    void NodeWidget::RemoveLink(Link *pLink) {
+        void INodeWidgetDataContainer::RemoveLink(Link *pLink) {
         pLink->Broke(nullptr);
     }
 
-    void NodeWidget::RemoveNode(Node* pNode) {
+    void INodeWidgetDataContainer::RemoveNode(Node* pNode) {
         auto&& pIt = m_nodes.find(pNode->GetId());
         if (pIt == m_nodes.end()) {
             SRHalt0();
@@ -70,7 +34,7 @@ namespace SR_GRAPH_GUI_NS {
         delete pNode;
     }
 
-    Node& NodeWidget::AddNode(Node* pNode) {
+    Node& INodeWidgetDataContainer::AddNode(Node* pNode) {
         static Node def;
 
         if (!pNode) {
@@ -88,7 +52,7 @@ namespace SR_GRAPH_GUI_NS {
         return *pNode;
     }
 
-    Link& NodeWidget::AddLink(Link* pLink) {
+    Link& INodeWidgetDataContainer::AddLink(Link* pLink) {
         if (!pLink) {
             SRHalt0();
             static Link def;
@@ -99,6 +63,43 @@ namespace SR_GRAPH_GUI_NS {
         m_links.insert(std::make_pair(pLink->GetId(), pLink));
 
         return *pLink;
+    }
+
+    void INodeWidgetDataContainer::ClearContainer() {
+        for (auto&& [id, pLink] : m_links) {
+            delete pLink;
+        }
+
+        for (auto&& [id, pNode] : m_nodes) {
+            delete pNode;
+        }
+
+        m_nodes.clear();
+        m_links.clear();
+    }
+
+    NodeWidget::NodeWidget(std::string name, SR_MATH_NS::IVector2 size)
+        : Super(std::move(name), size)
+    { }
+
+    NodeWidget::~NodeWidget() {
+        Clear();
+    }
+
+    void NodeWidget::Init() {
+        Super::Init();
+    }
+
+    void NodeWidget::UpdateTouch() {
+
+    }
+
+    void NodeWidget::Clear() {
+        ClearContainer();
+    }
+
+    void NodeWidget::Draw() {
+
     }
 
     void NodeWidget::OnClose() {
@@ -170,14 +171,6 @@ namespace SR_GRAPH_GUI_NS {
 
     }
 
-    void NodeWidget::InitStructsCreationPopup() {
-
-    }
-
-    void NodeWidget::InitCreationPopup() {
-
-    }
-
     void NodeWidget::TopPanelSaveAt() {
 
     }
@@ -204,14 +197,5 @@ namespace SR_GRAPH_GUI_NS {
 
     void NodeWidget::DrawNodeEditor() {
 
-    }
-
-    NodeWidgetProperty* NodeWidget::FindProperty(const std::string& name) {
-        for (auto&& property : m_properties) {
-            if (property.name == name) {
-                return &property;
-            }
-        }
-        return nullptr;
     }
 }

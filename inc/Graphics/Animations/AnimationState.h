@@ -39,6 +39,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD Transitions& GetTransitions() noexcept { return m_transitions; }
         SR_NODISCARD const Transitions& GetTransitions() const noexcept { return m_transitions; }
         SR_NODISCARD bool IsResetOnPlay() const noexcept { return m_resetOnPlay; }
+        SR_NODISCARD uint32_t GetStateIndex() const noexcept;
 
         void OnTransitionBegin(AnimationStateTransition* pTransition);
         void OnTransitionDone();
@@ -47,6 +48,8 @@ namespace SR_ANIMATIONS_NS {
         void SetMachine(AnimationStateMachine* pMachine) { m_machine = pMachine; }
         void SetResetOnPlay(bool reset) { m_resetOnPlay = reset; }
 
+        void OnStateRemoved(uint32_t stateIndex);
+
         virtual void ResetState() { }
 
         SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetDefaultStateName() const noexcept;
@@ -54,6 +57,10 @@ namespace SR_ANIMATIONS_NS {
 
         virtual void Update(UpdateContext& context) { }
         virtual bool Compile(CompileContext& context);
+
+        void SetUserData(void* pUserData) { m_userData = pUserData; }
+        SR_NODISCARD void* GetUserData() const noexcept { return m_userData; }
+        template<typename T> SR_NODISCARD T* GetUserData() const noexcept { return reinterpret_cast<T*>(m_userData); }
 
     protected:
         /// @property @getter(GetStateName)
@@ -67,6 +74,7 @@ namespace SR_ANIMATIONS_NS {
 
         AnimationStateTransition* m_activeTransition = nullptr;
         AnimationStateMachine* m_machine = nullptr;
+        void* m_userData = nullptr;
 
     };
 
@@ -124,6 +132,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
+    /// @hidden
     class AnimationEntryPointState : public AnimationState {
         SR_CLASS()
         using Super = AnimationState;

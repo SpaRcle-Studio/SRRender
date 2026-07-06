@@ -54,8 +54,9 @@ namespace SR_ANIMATIONS_NS {
             return pNode;
         }
 
-        void RemoveNode(uint64_t index);
-        void RemoveNode(AnimationGraphNode* pNode);
+        bool RemoveNode(uint64_t index);
+        bool RemoveNode(AnimationGraphNode* pNode);
+        bool RemoveNodes(SR_UTILS_NS::StringAtom name);
 
         void SetAsset(AnimationGraphAsset* pAsset);
         void SetAnimator(Animator* pAnimator) { m_pAnimator = pAnimator; }

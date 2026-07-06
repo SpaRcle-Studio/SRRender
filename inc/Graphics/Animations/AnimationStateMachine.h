@@ -35,6 +35,7 @@ namespace SR_ANIMATIONS_NS {
         void Update(UpdateContext& context);
 
         bool RemoveState(uint32_t index);
+        bool RemoveState(AnimationState* pState);
 
         template<class T, typename... Args> T* CreateState(Args&& ...args) {
             return AddState(new T(std::forward<Args>(args)...));
