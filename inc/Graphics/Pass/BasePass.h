@@ -116,7 +116,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD BasePass* GetParent() const { return m_parent; }
         virtual void SetParent(BasePass* pParent) { m_parent = pParent; }
 
-        virtual void ForEachPass(const std::function<void(BasePass&)>& func);
+        virtual void ForEachPass(const SR_HTYPES_NS::Function<void(BasePass&)>& func);
         virtual bool UpdateFrustum() { return false; }
 
     protected:

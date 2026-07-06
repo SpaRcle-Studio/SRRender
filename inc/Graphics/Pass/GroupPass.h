@@ -48,7 +48,7 @@ namespace SR_GRAPH_NS {
         void SetPasses(const std::vector<BasePass::Ptr>& passes);
         void InsertPass(const BasePass::Ptr& pass, uint32_t index);
 
-        void ForEachPass(const std::function<void(BasePass&)>& func) override;
+        void ForEachPass(const SR_HTYPES_NS::Function<void(BasePass&)>& func) override;
         bool UpdateFrustum() override;
 
         SR_NODISCARD BasePass* FindPass(SR_UTILS_NS::StringAtom name) override;

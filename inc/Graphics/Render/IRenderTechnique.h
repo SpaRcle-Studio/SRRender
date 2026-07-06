@@ -89,7 +89,7 @@ namespace SR_GRAPH_NS {
         void OnMultisampleChanged();
         void OnHierarchyChanged();
 
-        void ForEachPass(const std::function<void(BasePass&)>& func);
+        void ForEachPass(const SR_HTYPES_NS::Function<void(BasePass&)>& func);
 
         SR_NODISCARD BasePass* FindPass(SR_UTILS_NS::StringAtom name) const;
 

@@ -177,7 +177,7 @@ namespace SR_GRAPH_NS {
         return changed;
     }
 
-    void GroupPass::ForEachPass(const std::function<void(BasePass&)>& func) {
+    void GroupPass::ForEachPass(const SR_HTYPES_NS::Function<void(BasePass&)>& func) {
         for (auto&& pPass : m_passes) {
             pPass->ForEachPass(func);
         }

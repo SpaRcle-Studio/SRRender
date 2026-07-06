@@ -240,7 +240,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void IRenderTechnique::ForEachPass(const std::function<void(BasePass&)>& func) {
+    void IRenderTechnique::ForEachPass(const SR_HTYPES_NS::Function<void(BasePass&)>& func) {
         if (m_data.pass) {
             m_data.pass->ForEachPass(func);
         }

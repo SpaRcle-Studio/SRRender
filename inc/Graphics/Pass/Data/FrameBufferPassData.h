@@ -24,8 +24,8 @@ namespace SR_GRAPH_NS {
         using Super = SR_UTILS_NS::Serializable;
     public:
         using ClearColors = std::vector<SR_MATH_NS::FColor>;
-        using FBRenderCallback = std::function<bool()>;
-        using FBUpdateCallback = std::function<void()>;
+        using FBRenderCallback = SR_HTYPES_NS::Function<bool()>;
+        using FBUpdateCallback = SR_HTYPES_NS::Function<void()>;
 
     public:
         FrameBufferPassData();
