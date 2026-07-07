@@ -6,18 +6,15 @@
 #define SR_ENGINE_GRAPHICS_VULKAN_IMGUI_OVERLAY_H
 
 #include <Graphics/Overlay/ImGuiOverlay.h>
-#include <Graphics/Overlay/ImGuiInternal.h>
 
 #include <EvoVulkan/Tools/SubmitInfo.h>
-#include <EvoVulkan/Types/RenderPass.h>
-
-#include <Utils/Input/InputSystem.h>
+#include <ImmediateGUI/Backend/PlatformBackend.h>
+#include <ImmediateGUI/Backend/VulkanRenderer.h>
 
 namespace EvoVulkan::Types {
     class Device;
     class Swapchain;
     class MultisampleTarget;
-    class DescriptorPool;
 }
 
 namespace SR_GRAPH_NS {
@@ -29,9 +26,7 @@ namespace SR_GRAPH_NS {
         { }
 
         ~VulkanImGuiOverlay() override {
-            SRAssert2(m_frameBuffs.empty(), "Vulkan ImGUI Overlay frame buffers are not empty");
-            SRAssert2(m_cmdPools.empty(), "Vulkan ImGUI Overlay command pools are not empty");
-            SRAssert2(m_cmdBuffs.empty(), "Vulkan ImGUI Overlay command buffers are not empty");
+            SRAssert2(m_vkRenderer == nullptr, "Vulkan ImGUI Overlay renderer is not destroyed");
         }
 
     public:
@@ -56,48 +51,23 @@ namespace SR_GRAPH_NS {
         void EndDraw() override;
 
     private:
-        bool InitializeRenderer();
-        void DeInitializeRenderer();
-        void DestroyBuffers();
-        void ProcessInput();
-
         uint32_t GetCountImages() const;
 
     private:
-        static const std::vector<VkDescriptorPoolSize> POOL_SIZES;
-
-    private:
-        SR_UTILS_NS::Subscription m_inputTextSubscription;
-        std::vector<SR_UTILS_NS::InputTextEvent> m_inputTextEvents;
-
         EvoVulkan::SubmitInfo m_submitInfo = { };
 
         bool m_dynamicRendering = false;
 
         VkSemaphore m_semaphore = VK_NULL_HANDLE;
 
-        VkCommandBufferBeginInfo m_cmdBuffBI = { };
-        VkRenderPassBeginInfo m_renderPassBI = { };
-        std::vector<VkClearValue> m_clearValues;
+        SR_GRAPH_GUI_NS::Immediate::PlatformBackend m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::None;
+        SR_GRAPH_GUI_NS::Immediate::VulkanRendererHandle m_vkRenderer = nullptr;
 
-        std::vector<VkFramebuffer> m_frameBuffs;
-        std::vector<VkCommandPool> m_cmdPools;
-        std::vector<VkCommandBuffer> m_cmdBuffs;
-
-        EvoVulkan::Types::RenderPass m_renderPass = { };
-
-        EvoVulkan::Types::DescriptorPool* m_pool = nullptr;
         EvoVulkan::Types::Device* m_device = nullptr;
         EvoVulkan::Types::Swapchain* m_swapChain = nullptr;
         EvoVulkan::Types::MultisampleTarget* m_multiSample = nullptr;
 
-        PFN_vkCmdBeginRendering m_pVkCmdBeginRendering = nullptr;
-        PFN_vkCmdEndRendering m_pVkCmdEndRendering = nullptr;
-
         bool m_undockingActive = false;
-
-        SR_PLATFORM_NS::KeyboardState m_keyboardState;
-        SR_PLATFORM_NS::MouseState m_mouseState;
 
     };
 }

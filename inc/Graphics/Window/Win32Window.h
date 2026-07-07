@@ -66,6 +66,7 @@ namespace SR_GRAPH_NS {
     private:
         std::atomic<WinAPI::StyleState> m_styleState;
 
+        SR_UTILS_NS::Vector<void*> m_viewports;
         SR_MATH_NS::IVector2 m_position;
         mutable std::optional<float_t> m_screenDPI;
 

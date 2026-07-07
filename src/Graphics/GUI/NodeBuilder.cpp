@@ -7,8 +7,8 @@
 #include <Graphics/GUI/Pin.h>
 #include <Graphics/GUI/Node.h>
 #include <Graphics/GUI/NodeBuilder.h>
-#include <Graphics/GUI/ImNodeEditorUtils.h>
-#include <Graphics/GUI/ImmediateGUI.h>
+
+#include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 namespace SR_GRAPH_GUI_NS {
     NodeBuilder::NodeBuilder(SR_GTYPES_NS::Texture *pTexture)
@@ -26,7 +26,6 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeBuilder::Begin(Node* pNode) {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (!pNode) {
             return;
         }
@@ -46,7 +45,6 @@ namespace SR_GRAPH_GUI_NS {
         m_currentNode = pNode;
 
         SetStage(Stage::Begin);
-    #endif
     }
 
     //inline ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs) {
@@ -58,7 +56,6 @@ namespace SR_GRAPH_GUI_NS {
     //}
 
     void NodeBuilder::End() {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
         SetStage(Stage::End);
 
         SR_GRAPH_GUI_NS::Immediate::EndNode();
@@ -110,7 +107,6 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPH_GUI_NS::Immediate::PopNodeEditorStyleVar(1);
 
         SetStage(Stage::Invalid);
-    #endif
     }
 
     void NodeBuilder::Header(const SR_MATH_NS::FColor& color) {
@@ -123,7 +119,6 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeBuilder::Input(Pin* pPin) {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (!pPin) {
             return;
         }
@@ -145,16 +140,13 @@ namespace SR_GRAPH_GUI_NS {
         m_currentPin = pPin;
 
         SR_GRAPH_GUI_NS::Immediate::BeginHorizontal(reinterpret_cast<const void*>(pPin->GetId()));
-    #endif
     }
 
     void NodeBuilder::EndInput() {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
         SR_GRAPH_GUI_NS::Immediate::EndHorizontal();
 
         SR_GRAPH_GUI_NS::Immediate::EndPin();
         m_currentPin = nullptr;
-    #endif
     }
 
     void NodeBuilder::Middle() {
@@ -165,7 +157,6 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeBuilder::Output(Pin* pPin) {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (!pPin) {
             return;
         }
@@ -187,16 +178,12 @@ namespace SR_GRAPH_GUI_NS {
         m_currentPin = pPin;
 
         SR_GRAPH_GUI_NS::Immediate::BeginHorizontal(reinterpret_cast<const void*>(pPin->GetId()));
-    #endif
     }
 
     void NodeBuilder::EndOutput() {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
         SR_GRAPH_GUI_NS::Immediate::EndHorizontal();
-
         SR_GRAPH_GUI_NS::Immediate::EndPin();
         m_currentPin = nullptr;
-    #endif
     }
 
     bool NodeBuilder::SetStage(NodeBuilder::Stage stage) {

@@ -4,7 +4,8 @@
 
 #include <Graphics/GUI/Link.h>
 #include <Graphics/GUI/Pin.h>
-#include <Graphics/GUI/ImmediateGUI.h>
+
+#include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 namespace SR_GRAPH_NS::GUI {
     uintptr_t Link::GetId() const {
@@ -12,11 +13,9 @@ namespace SR_GRAPH_NS::GUI {
     }
 
     void Link::DrawBezier() const {
-    #ifdef SR_USE_IMGUI_NODE_EDITOR
         if (m_startPin && m_endPin) {
             SR_GRAPH_GUI_NS::Immediate::Link(GetId(), m_startPin->GetId(), m_endPin->GetId());
         }
-    #endif
     }
 
     Link::Link(Pin* start, Pin* end) {

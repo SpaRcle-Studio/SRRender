@@ -4,7 +4,6 @@
 
 #include <Graphics/GUI/Pin.h>
 #include <Graphics/GUI/Utils.h>
-#include <Graphics/GUI/ImGUI.h>
 #include <Graphics/GUI/Link.h>
 #include <Graphics/GUI/Node.h>
 
@@ -44,38 +43,6 @@ namespace SR_GRAPH_GUI_NS {
 
         m_node = nullptr;
     }
-
-    /*ImColor Pin::GetIconColor(const PinType& type) {
-        switch (type) {
-            case PinType::Flow:   return ImColor(255, 255, 255);
-            case PinType::Bool:   return ImColor(220,  48,  48);
-            case PinType::Float:  return ImColor(147, 226,  74);
-            case PinType::String: return ImColor(124,  21, 153);
-            case PinType::Int8:
-            case PinType::Int16:
-            case PinType::Int32:
-            case PinType::Int64:
-            case PinType::UInt8:
-            case PinType::UInt16:
-            case PinType::UInt32:
-            case PinType::UInt64:
-                return ImColor(68, 201, 156);
-            case PinType::Struct:
-                return ImColor(51, 150, 215);
-            case PinType::Enum:
-                return ImColor(255, 48,  48);
-            case PinType::Array:
-                return ImColor(218, 0, 183);
-                /// case PinType::Numeric:  return ImColor( 68, 101, 056);
-            /// case PinType::Object:   return ImColor( 51, 150, 215);
-            /// case PinType::Function: return ImColor(218,   0, 183);
-            /// case PinType::Delegate: return ImColor(255,  48,  48);
-            /// case PinType::Event:    return ImColor(255,  48,  48);
-            default:
-                SRHalt("Unknown icon type!");
-                return ImColor(0, 0, 0);
-        }
-    }*/
 
     IconType Pin::GetIconType(const PinType &type) {
         switch (type) {
@@ -209,7 +176,7 @@ namespace SR_GRAPH_GUI_NS {
 
     void Pin::PostDrawOption() {
         if (m_editEnum) {
-            ImGui::OpenPopup(SR_FORMAT_C("pin_enum_popup{}", (void*)this));
+            SR_GRAPH_GUI_NS::Immediate::OpenPopup(SR_FORMAT_C("pin_enum_popup{}", (void*)this));
             m_editEnum = false;
         }
 

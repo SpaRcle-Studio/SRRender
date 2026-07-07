@@ -49,7 +49,6 @@ namespace SR_GRAPH_GUI_NS {
         SR_NODISCARD const std::vector<Pin*>& GetInputs() const noexcept { return m_inputs; }
         SR_NODISCARD const std::vector<Pin*>& GetOutputs() const noexcept { return m_outputs; }
         SR_NODISCARD int32_t GetPinIndex(const Pin* pPin) const;
-        SR_NODISCARD SR_MATH_NS::FVector2 GetPosition() const;
         SR_NODISCARD void* GetUserData() const { return m_userData; }
         SR_NODISCARD SR_MATH_NS::FRect GetRect() const { return m_rect; }
 

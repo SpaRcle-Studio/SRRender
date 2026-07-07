@@ -4,6 +4,8 @@
 
 #include <Graphics/Window/AndroidWindow.h>
 
+#include <ImmediateGUI/GUI/ImmediateGUI.h>
+
 #include <Utils/Platform/Platform.h>
 #include <Utils/Platform/AndroidEvent.h>
 
@@ -37,7 +39,6 @@ namespace SR_GRAPH_NS {
     }
 
     void AndroidWindow::PollEvents() {
-        ImGuiIO& io = ImGui::GetIO();
         SR_UTILS_NS::AndroidEvent event;
 
         while (SR_UTILS_NS::AndroidEventQueue::Instance().PopEvent(event)) {
@@ -51,29 +52,31 @@ namespace SR_GRAPH_NS {
                     float x = event.motion.x;
                     float y = event.motion.y;
 
+                    auto&& pMouseDown = SR_GRAPH_GUI_NS::Immediate::GetMouseDown();
+
                     switch (action) {
                         case AMOTION_EVENT_ACTION_DOWN:
                         case AMOTION_EVENT_ACTION_POINTER_DOWN:
-                            if (pointerIndex < IM_ARRAYSIZE(io.MouseDown)) {
-                                io.MouseDown[pointerIndex] = true;
-                                io.MousePos = ImVec2(x, y);
+                            if (pointerIndex < 5) {
+                                pMouseDown[pointerIndex] = true;
+                                SR_GRAPH_GUI_NS::Immediate::SetMousePos(SR_MATH_NS::FVector2(x, y));
                             }
                             break;
 
                         case AMOTION_EVENT_ACTION_UP:
                         case AMOTION_EVENT_ACTION_POINTER_UP:
-                            if (pointerIndex < IM_ARRAYSIZE(io.MouseDown)) {
-                                io.MouseDown[pointerIndex] = false;
+                            if (pointerIndex < 5) {
+                                pMouseDown[pointerIndex] = false;
                             }
                             break;
 
                         case AMOTION_EVENT_ACTION_MOVE:
-                            io.MousePos = ImVec2(x, y);
+                            SR_GRAPH_GUI_NS::Immediate::SetMousePos(SR_MATH_NS::FVector2(x, y));
                             break;
 
                         case AMOTION_EVENT_ACTION_CANCEL:
-                            for (int i = 0; i < IM_ARRAYSIZE(io.MouseDown); i++) {
-                                io.MouseDown[i] = false;
+                            for (int i = 0; i < 5; i++) {
+                                pMouseDown[i] = false;
                             }
                             break;
 

@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_WIDGET_H
 #define SR_ENGINE_GRAPHICS_WIDGET_H
 
-#include <Graphics/GUI/ImmediateGUI.h>
+#include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Types/DataStorage.h>

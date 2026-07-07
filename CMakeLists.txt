@@ -239,11 +239,8 @@ if (SR_RENDER_USE_VULKAN)
     endif()
 endif()
 
-target_compile_definitions(Graphics PRIVATE SR_IMGUI_INCLUDE_CHECK)
-
 target_include_directories(Graphics PUBLIC inc)
 target_include_directories(Graphics PUBLIC libs/inc)
-target_include_directories(Graphics PUBLIC libs/imgui)
 target_include_directories(Graphics PUBLIC libs)
 
 if (SR_RENDER_USE_VULKAN)
@@ -262,6 +259,10 @@ target_include_directories(Graphics PUBLIC ${SR_UTILS_INCLUDE_DIRECTORIES_CONTEN
 if (SR_RENDER_USE_EELY)
     include(cmake/eely.cmake)
 endif()
+
+get_property(SR_IMMEDIATE_GUI_INCLUDE_DIRECTORIES_CONTENT GLOBAL PROPERTY SR_IMMEDIATE_GUI_INCLUDE_DIRECTORIES)
+target_include_directories(Graphics PUBLIC ${SR_IMMEDIATE_GUI_INCLUDE_DIRECTORIES_CONTENT})
+target_link_libraries(Graphics PUBLIC ImmediateGUI)
 
 set_target_properties(Graphics PROPERTIES
     BUILD_RPATH "\$ORIGIN"

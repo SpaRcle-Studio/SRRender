@@ -6,7 +6,8 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/GUI/WidgetManager.h>
 #include <Graphics/GUI/Widget.h>
-#include <Graphics/GUI/ImGUI.h>
+
+#include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 #include <Utils/Common/Features.h>
 #include <Utils/Types/SafePtrLockGuard.h>
@@ -118,19 +119,17 @@ namespace SR_GRAPH_NS::GUI {
     }
 
     void WidgetManager::HideAll() {
-    #ifdef SR_WIN32
         for (auto&& widget : ViewportsTableManager::Instance().GetViewportsTable()) {
-            ShowWindow((HWND)((ImGuiViewport*)widget.first)->PlatformHandle, SW_HIDE);
+            auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(widget.first);
+            SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Hide);
         }
-    #endif
     }
 
     void WidgetManager::ShowAll() {
-    #ifdef SR_WIN32
         for (auto&& widget : ViewportsTableManager::Instance().GetViewportsTable()) {
-            ShowWindow((HWND)((ImGuiViewport*)widget.first)->PlatformHandle, SW_SHOW);
+            auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(widget.first);
+            SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Show);
         }
-    #endif
     }
 
     void WidgetManager::SetRenderContext(WidgetManager::ContextPtr pContext) {

@@ -3,16 +3,17 @@
 //
 
 #include <Graphics/Overlay/ImGuiOverlay.h>
-#include <Graphics/GUI/Editor/Theme.h>
 #include <Graphics/GUI/Icons.h>
-#include <Graphics/GUI/ImGUI.h>
 #include <Graphics/Pipeline/Pipeline.h>
+
+#include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/CLIManager.h>
 #include <Utils/FileSystem/FileSystem.h>
 #include <Utils/Resources/ResourceManager.h>
+#include <Utils/Platform/Platform.h>
 
 namespace SR_GRAPH_NS {
     ImGuiOverlay::ImGuiOverlay(Overlay::PipelinePtr pPipeline)
@@ -21,37 +22,6 @@ namespace SR_GRAPH_NS {
 
     bool ImGuiOverlay::Init() {
         SR_GRAPH("ImGuiOverlay::Init() : initializing ImGui...");
-
-        m_context = ImGui::CreateContext();
-
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-        ReloadFonts();
-
-        io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-        io.ConfigDockingWithShift = true;
-        io.ConfigWindowsResizeFromEdges = true;
-        io.ConfigViewportsNoDecoration = true;
-        io.ConfigWindowsMoveFromTitleBarOnly = true;
-
-        if (SR_UTILS_NS::Features::Instance().Enabled("Undocking", false)) {
-            if (IsDynamicRenderingEnabled()) {
-                io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-            }
-            else {
-                SR_WARN("ImGuiOverlay::Init() : dynamic rendering is disabled! Undocking is not available!");
-            }
-        }
-
-        if (auto&& pTheme = SR_GRAPH_GUI_NS::Theme::Load("Engine/Configs/Themes/Dark.xml")) {
-            pTheme->Apply();
-            delete pTheme;
-        }
-        else {
-            SR_ERROR("Engine::InitializeRender() : failed to load theme!");
-        }
 
         auto&& resourcesManager = SR_UTILS_NS::ResourceManager::Instance();
 
@@ -81,7 +51,19 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        io.IniFilename = m_iniPathEditor.CStr();
+        SR_GRAPH_GUI_NS::Immediate::ImmediateGUICreateContext createContext;
+        createContext.themePath = "Engine/Configs/Themes/Dark.xml";
+        createContext.iniPath = m_iniPathEditor;
+        createContext.viewportsEnabled = SR_UTILS_NS::Features::Instance().Enabled("Undocking", false);
+        if (!IsDynamicRenderingEnabled()) {
+            SR_WARN("ImGuiOverlay::Init() : dynamic rendering is disabled! Undocking is not available!");
+            createContext.viewportsEnabled = false;
+        }
+        m_viewportsEnabled = createContext.viewportsEnabled;
+
+        m_context = SR_GRAPH_GUI_NS::Immediate::CreateContext(createContext);
+
+        ReloadFonts();
 
         return true;
     }
@@ -110,7 +92,8 @@ namespace SR_GRAPH_NS {
 
     void ImGuiOverlay::Destroy() {
         if (m_context) {
-            ImGui::DestroyContext(((ImGuiContext*)m_context));
+            SR_GRAPH("ImGuiOverlay::Destroy() : destroying ImGui context...");
+            SR_GRAPH_GUI_NS::Immediate::DestroyContext(m_context);
             m_context = nullptr;
         }
     }
@@ -126,16 +109,16 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StoreUtils::User::SetFloat("ImGuiFontSize", m_fontSize);
         SR_UTILS_NS::StoreUtils::User::SetFloat("ImGuiIconFontSize", m_iconFontSize);
 
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        SR_GRAPH_GUI_NS::Immediate::ClearFonts();
 
-        io.Fonts->Clear();
-
-        static const ImWchar mainFontRanges[] = {
+        static const uint32_t mainFontRanges[] = {
             0x0020, 0x00FF, /// Basic Latin + Latin Supplement
             //0x0400, 0x044F, /// Cyrillic
             0x0400, 0x04FF, /// Cyrillic
             0,
         };
+        static const uint32_t ranges[] = { 0x26A0, 0x26A0, 0 };
+        static const uint32_t icon_ranges[] = { SR_ICON_MIN, SR_ICON_MAX, 0 };
 
         SR_UTILS_NS::String fontData;
 
@@ -146,18 +129,11 @@ namespace SR_GRAPH_NS {
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: " + fontPath.ToString());
 
             if (fontPath.Exists()) {
-                ImFontConfig font_config;
-                font_config.OversampleH = 1; /// Or 2 is the same
-                font_config.OversampleV = 1;
-                font_config.PixelSnapH = true;
-                font_config.MergeMode = false;
-
                 if (SR_UTILS_NS::FileSystem::ReadFile(fontPath, fontData)) {
-                    ImFontConfig config;
-                    config.FontDataOwnedByAtlas = false;
-
-                    m_smallFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize * 0.75f, &config, mainFontRanges);
-                    m_mainFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize, &config, mainFontRanges);
+                    SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
+                    config.fontDataOwnedByAtlas = false;
+                    m_smallFont = SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize * 0.75f, config, mainFontRanges);
+                    m_mainFont = SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize, config, mainFontRanges);
                 }
                 else {
                     SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to read font data!\n\tPath: " + fontPath.ToString());
@@ -173,12 +149,11 @@ namespace SR_GRAPH_NS {
             SR_TRACY_ZONE_N("Load warning font");
             auto&& fontPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/seguisym.ttf");
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load warning font...\n\tPath: " + fontPath.ToString());
-            ImFontConfig config;
-            config.MergeMode = true;
-            config.FontDataOwnedByAtlas = false;
-            static const ImWchar ranges[] = { 0x26A0, 0x26A0, 0 };
+            SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
+            config.mergeMode = true;
+            config.fontDataOwnedByAtlas = false;
             if (SR_UTILS_NS::FileSystem::ReadFile(fontPath, fontData)) {
-                io.Fonts->AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize, &config, ranges);
+                SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize, config, ranges);
             }
         }
 
@@ -189,13 +164,12 @@ namespace SR_GRAPH_NS {
 
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load icon font...\n\tPath: " + iconsFont.ToString());
             if (iconsFont.Exists()) {
-                ImFontConfig config;
-                config.MergeMode = false;
-                config.GlyphMinAdvanceX = 13.0f;
-                config.FontDataOwnedByAtlas = false;
-                static const ImWchar icon_ranges[] = { SR_ICON_MIN, SR_ICON_MAX, 0 };
+                SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
+                config.mergeMode = false;
+                config.glyphMinAdvanceX = 13.0f;
+                config.fontDataOwnedByAtlas = false;
                 if (SR_UTILS_NS::FileSystem::ReadFile(iconsFont, fontData)) {
-                    m_iconFont = io.Fonts->AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_iconFontSize, &config, icon_ranges);
+                    m_iconFont = SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_iconFontSize, config, icon_ranges);
                 }
             }
             else {
@@ -203,10 +177,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        io.FontDefault = static_cast<ImFont*>(m_mainFont);
-
         SR_GRAPH("ImGuiOverlay::ReloadFonts() : build fonts...");
-        if (!io.Fonts->Build()) {
+        if (!SR_GRAPH_GUI_NS::Immediate::BuildFonts(m_mainFont)) {
             SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to build fonts!");
             return;
         }
@@ -221,18 +193,14 @@ namespace SR_GRAPH_NS {
 
     bool ImGuiOverlay::IsUndockingActive() const {
         if (m_context && IsViewportsEnabled()) {
-            return ((ImGuiContext*)m_context)->Viewports.size() > 1;
+            return SR_GRAPH_GUI_NS::Immediate::GetViewportCount(m_context) > 1;
         }
 
         return false;
     }
 
     bool ImGuiOverlay::IsViewportsEnabled() const {
-        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            return true;
-        }
-
-        return false;
+        return m_viewportsEnabled;
     }
 
     void* ImGuiOverlay::GetIconFont() const {

@@ -5,8 +5,6 @@
     #include <Utils/macros.h>
 #endif
 
-#define SR_USE_IMGUI_NODE_EDITOR
-
 #ifdef SR_GRAPHICS_DLL_EXPORTS
     #define SR_GRAPHICS_DLL_API SR_DLL_API_EXPORT
 #else

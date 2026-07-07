@@ -3,8 +3,9 @@
 //
 
 #include <Graphics/GUI/Widget.h>
-#include <Graphics/GUI/ImGUI.h>
 #include <Graphics/GUI/WidgetManager.h>
+
+#include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 #include <Codegen/Widget.generated.hpp>
 
@@ -18,20 +19,19 @@ namespace SR_GRAPH_GUI_NS {
         m_widgetFlags = WIDGET_FLAG_NONE;
 
         if (m_center) {
-            ImGuiIO& io = ImGui::GetIO();
-            ImVec2 pos(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-            ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            auto&& position = SR_GRAPH_GUI_NS::Immediate::GetDisplaySize() * 0.5f;
+            SR_GRAPH_GUI_NS::Immediate::SetNextWindowPos(position, SR_GRAPH_GUI_NS::Immediate::Condition::Always, SR_MATH_NS::FVector2(0.5f, 0.5f));
         }
 
         WindowFlags flags = m_windowFlags;
 
         if (IsFocused() || IsHovered()) {
-            ImVec4 color = ImGui::GetStyleColorVec4(ImGuiCol_::ImGuiCol_WindowBg);
-            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_WindowBg, color + ImVec4(0.02, 0.02, 0.02, 0));
+            SR_MATH_NS::FVector4 color = SR_GRAPH_GUI_NS::Immediate::GetStyleColorVec4(SR_GRAPH_GUI_NS::Immediate::StyleColor::WindowBg);
+            SR_GRAPH_GUI_NS::Immediate::PushStyleColor(SR_GRAPH_GUI_NS::Immediate::StyleColor::WindowBg, color + SR_MATH_NS::FVector4(0.02f, 0.02f, 0.02f, 0.f));
         }
 
-        auto&& size = m_size.Contains(SR_INT32_MAX) ? ImVec2(0, 0) : ImVec2(m_size.x, m_size.y);
-        if (ImGui::BeginChild(m_name.c_str(), size, false, flags)) {
+        auto&& size = m_size.Contains(SR_INT32_MAX) ? SR_MATH_NS::FVector2(0, 0) : SR_MATH_NS::FVector2(m_size.x, m_size.y);
+        if (SR_GRAPH_GUI_NS::Immediate::BeginChild(m_name.c_str(), size, false, flags)) {
             Draw();
 
             for (auto&& pWidget : m_subWidgets) {
@@ -40,12 +40,12 @@ namespace SR_GRAPH_GUI_NS {
         }
 
         if (IsFocused() || IsHovered())
-            ImGui::PopStyleColor();
+            SR_GRAPH_GUI_NS::Immediate::PopStyleColor();
 
         InternalCheckFocused();
         InternalCheckHovered();
 
-        ImGui::EndChild();
+        SR_GRAPH_GUI_NS::Immediate::EndChild();
     }
 
     void Widget::DrawWindow()  {
@@ -55,35 +55,34 @@ namespace SR_GRAPH_GUI_NS {
         m_widgetFlags = WIDGET_FLAG_NONE;
 
         if (m_center) {
-            ImGuiIO& io = ImGui::GetIO();
-            ImVec2 pos(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-            ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            auto&& position = SR_GRAPH_GUI_NS::Immediate::GetDisplaySize() * 0.5f;
+            SR_GRAPH_GUI_NS::Immediate::SetNextWindowPos(position, SR_GRAPH_GUI_NS::Immediate::Condition::Always, SR_MATH_NS::FVector2(0.5f, 0.5f));
         }
 
         WindowFlags flags = m_windowFlags;
 
         if (IsFocused() || IsHovered()) {
-            ImVec4 color = ImGui::GetStyleColorVec4(ImGuiCol_::ImGuiCol_WindowBg);
-            ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_WindowBg, color + ImVec4(0.02, 0.02, 0.02, 0));
+            SR_MATH_NS::FVector4 color = SR_GRAPH_GUI_NS::Immediate::GetStyleColorVec4(SR_GRAPH_GUI_NS::Immediate::StyleColor::WindowBg);
+            SR_GRAPH_GUI_NS::Immediate::PushStyleColor(SR_GRAPH_GUI_NS::Immediate::StyleColor::WindowBg, color + SR_MATH_NS::FVector4(0.02f, 0.02f, 0.02f, 0.f));
         }
 
         if (!m_size.Contains(SR_INT32_MAX)) {
-            ImGui::SetNextWindowSize(ImVec2(m_size.x, m_size.y));
+            SR_GRAPH_GUI_NS::Immediate::SetNextWindowSize(SR_MATH_NS::FVector2(m_size.x, m_size.y));
             flags |= WindowFlags::NoResize;
         }
 
-        auto&& pPreviousViewport = ImGui::GetWindowViewport();
+        auto&& pPreviousViewport = SR_GRAPH_GUI_NS::Immediate::GetWindowViewport();
 
         bool open = m_open;
-        if (ImGui::Begin(m_name.c_str(), &open, flags)) {
-            auto&& windowSize = ImGui::GetWindowSize();
+        if (SR_GRAPH_GUI_NS::Immediate::Begin(m_name.c_str(), &open, flags)) {
+            auto&& windowSize = SR_GRAPH_GUI_NS::Immediate::GetWindowSize();
             if (windowSize.x < 40.0f || windowSize.y < 40.0f) {
                 if (!m_defaultSize.HasZero()) {
-                    ImGui::SetWindowSize(ImVec2(m_defaultSize.x, m_defaultSize.y));
+                    SR_GRAPH_GUI_NS::Immediate::SetWindowSize(SR_MATH_NS::FVector2(m_defaultSize.x, m_defaultSize.y));
                 }
             }
 
-            auto&& pCurrentViewport = ImGui::GetWindowViewport();
+            auto&& pCurrentViewport = SR_GRAPH_GUI_NS::Immediate::GetWindowViewport();
 
             if (pPreviousViewport != pCurrentViewport) {
                 ViewportsTableManager::Instance().RegisterWidget(this, pCurrentViewport);
@@ -98,28 +97,23 @@ namespace SR_GRAPH_GUI_NS {
         }
 
         if (IsFocused() || IsHovered())
-            ImGui::PopStyleColor();
+            SR_GRAPH_GUI_NS::Immediate::PopStyleColor();
 
         InternalCheckFocused();
         InternalCheckHovered();
 
-        ImGui::End();
+        SR_GRAPH_GUI_NS::Immediate::End();
     }
 
     void Widget::TextCenter(const std::string &text) const {
-        float font_size = ImGui::GetFontSize() * text.size() / 2;
-
-        ImGui::SameLine(
-                ImGui::GetWindowSize().x / 2 -
-                font_size + (font_size / 2)
-        );
-
-        ImGui::Text("%s", text.c_str());
+        float font_size = SR_GRAPH_GUI_NS::Immediate::GetFontSize() * text.size() / 2;
+        SR_GRAPH_GUI_NS::Immediate::SameLine(SR_GRAPH_GUI_NS::Immediate::GetWindowSize().x / 2 - font_size + (font_size / 2));
+        SR_GRAPH_GUI_NS::Immediate::Text("%s", text.c_str());
     }
 
     void Widget::Focus() {
         if (!IsFocused())  {
-            ImGui::SetWindowFocus(m_name.c_str());
+            SR_GRAPH_GUI_NS::Immediate::SetWindowFocus(m_name.c_str());
         }
     }
 
@@ -138,7 +132,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Widget::InternalCheckFocused() {
-        if (ImGui::IsWindowFocused() || m_widgetFlags & WIDGET_FLAG_FOCUSED) {
+        if (SR_GRAPH_GUI_NS::Immediate::IsWindowFocused() || m_widgetFlags & WIDGET_FLAG_FOCUSED) {
             m_internalFlags |= WIDGET_FLAG_FOCUSED;
         }
         else if (IsFocused()) {
@@ -147,7 +141,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Widget::InternalCheckHovered() {
-        if (ImGui::IsWindowHovered() || m_widgetFlags & WIDGET_FLAG_HOVERED) {
+        if (SR_GRAPH_GUI_NS::Immediate::IsWindowHovered() || m_widgetFlags & WIDGET_FLAG_HOVERED) {
             m_internalFlags |= WIDGET_FLAG_HOVERED;
         }
         else if (IsHovered()) {
@@ -156,11 +150,11 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Widget::CheckFocused() {
-        m_widgetFlags |= ImGui::IsWindowFocused() ? WIDGET_FLAG_FOCUSED : WIDGET_FLAG_NONE;
+        m_widgetFlags |= SR_GRAPH_GUI_NS::Immediate::IsWindowFocused() ? WIDGET_FLAG_FOCUSED : WIDGET_FLAG_NONE;
     }
 
     void Widget::CheckHovered() {
-        m_widgetFlags |= ImGui::IsWindowHovered() ? WIDGET_FLAG_HOVERED : WIDGET_FLAG_NONE;
+        m_widgetFlags |= SR_GRAPH_GUI_NS::Immediate::IsWindowHovered() ? WIDGET_FLAG_HOVERED : WIDGET_FLAG_NONE;
     }
 
     void Widget::SetManager(WidgetManager* manager) {

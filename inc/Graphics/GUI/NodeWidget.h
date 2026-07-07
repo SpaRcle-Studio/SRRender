@@ -7,8 +7,6 @@
 
 #include <Graphics/GUI/NodeBuilder.h>
 #include <Graphics/GUI/Widget.h>
-#include <Graphics/GUI/PopupMenu.h>
-#include <Utils/Resources/Xml.h>
 
 namespace SR_SRLM_NS {
     class DataType;

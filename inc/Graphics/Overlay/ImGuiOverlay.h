@@ -36,6 +36,8 @@ namespace SR_GRAPH_NS {
         void* m_smallFont = nullptr;
         void* m_iconFont = nullptr;
 
+        bool m_viewportsEnabled = false;
+
         float_t m_fontSize = 12.0f;
         float_t m_iconFontSize = 40.0f;
 

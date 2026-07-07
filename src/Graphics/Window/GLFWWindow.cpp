@@ -124,10 +124,10 @@ namespace SR_GRAPH_NS {
             m_resizeCallback(this, size.x, size.y);
         }
 
-        if (ImGui::GetCurrentContext()) {
-            ImGui::GetIO().DisplaySize.x = size.x;
-            ImGui::GetIO().DisplaySize.y = size.y;
-        }
+        //if (ImGui::GetCurrentContext()) {
+        //    ImGui::GetIO().DisplaySize.x = size.x;
+        //    ImGui::GetIO().DisplaySize.y = size.y;
+        //}
     }
 
     void GLFWWindow::OnFramebufferSizeChangedCallback(GLFWwindow* pWindow, SpaRcle::Utils::Math::IVector2 size) {
@@ -152,10 +152,10 @@ namespace SR_GRAPH_NS {
             m_resizeCallback(this, size.x, size.y);
         }*/
 
-        if (ImGui::GetCurrentContext()) {
-            ImGui::GetIO().DisplaySize.x = size.x;
-            ImGui::GetIO().DisplaySize.y = size.y;
-        }
+        //if (ImGui::GetCurrentContext()) {
+        //    ImGui::GetIO().DisplaySize.x = size.x;
+        //    ImGui::GetIO().DisplaySize.y = size.y;
+        //}
     }
 
     void GLFWWindow::OnFocusChangedCallback(GLFWwindow* pWindow, bool isFocused) {
@@ -175,10 +175,10 @@ namespace SR_GRAPH_NS {
     void GLFWWindow::OnWindowRefreshCallback(GLFWwindow* pWindow) {
         SR_INFO("GLFWWindow::OnWindowRefreshCallback() : ------------------------------");
 
-        if (ImGui::GetCurrentContext()) {
-            ImGui::GetIO().DisplaySize.x = m_size.x;
-            ImGui::GetIO().DisplaySize.y = m_size.y;
-        }
+        //if (ImGui::GetCurrentContext()) {
+        //    ImGui::GetIO().DisplaySize.x = m_size.x;
+        //    ImGui::GetIO().DisplaySize.y = m_size.y;
+        //}
     }
 
     void GLFWWindow::OnScrollCallback(GLFWwindow* pWindow, double xoffset, double yoffset) {

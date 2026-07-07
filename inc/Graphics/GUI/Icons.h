@@ -94,15 +94,4 @@ inline static const char* SR_ICONS[] = {
     SR_ICON_STOPWATCH_20,
 };
 
-namespace SR_GRAPH_NS::GUI {
-    SR_ENUM_NS_CLASS(IconType,
-          Flow,
-          Circle,
-          Square,
-          Grid,
-          RoundSquare,
-          Diamond
-    );
-}
-
 #endif //SR_ENGINE_ICONS_H

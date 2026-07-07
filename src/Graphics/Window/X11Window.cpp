@@ -2,6 +2,7 @@
 // Created by innerviewer on 06/11/23.
 //
 
+/*
 #include <Graphics/Window/X11Window.h>
 
 #include <X11/Xutil.h>
@@ -271,4 +272,4 @@ namespace SR_GRAPH_NS {
 
         return replies;
     }
-}
+}*/

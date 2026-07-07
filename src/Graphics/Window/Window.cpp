@@ -8,7 +8,6 @@
 #include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Texture.h>
 #include <Graphics/Types/Framebuffer.h>
-#include <Graphics/GUI/Editor/Theme.h>
 #include <Graphics/GUI/WidgetManager.h>
 #include <Graphics/GUI/Widget.h>
 

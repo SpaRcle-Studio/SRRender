@@ -12,6 +12,7 @@
 #include <Graphics/Pipeline/Vulkan/AbstractCasts.h>
 #include <Graphics/Pipeline/Vulkan/VulkanTracy.h>
 #include <Graphics/Pipeline/Vulkan/VulkanMemory.h>
+#include <Graphics/Overlay/Overlay.h>
 
 #include <EvoVulkan/Types/CmdBuffer.h>
 #include <EvoVulkan/Types/VmaBuffer.h>
@@ -46,6 +47,7 @@
 #include <Utils/Common/Features.h>
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Vertices.h>
+#include <Utils/FileSystem/FileSystem.h>
 
 namespace SR_GRAPH_NS {
     /// Структура для хранения состояния асинхронного запроса пикселей

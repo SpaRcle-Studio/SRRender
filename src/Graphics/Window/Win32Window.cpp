@@ -3,11 +3,12 @@
 //
 
 #include <Graphics/Window/Win32Window.h>
+
+#include <ImmediateGUI/GUI/ImmediateGUI.h>
+
 #include <Utils/Platform/Platform.h>
 
 #define SR_BORDERSIZE 5 * 2
-
-extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace SR_GRAPH_NS::WinAPI {
     SR_MAYBE_UNUSED static int GetBorderHeight(HWND hWnd) {
@@ -15,27 +16,6 @@ namespace SR_GRAPH_NS::WinAPI {
         GetClientRect(hWnd, &rcClient);
         GetWindowRect(hWnd, &rcWind);
         return ((rcWind.right - rcWind.left) - rcClient.right) / 2;
-    }
-
-    SR_MAYBE_UNUSED static LRESULT ImGui_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-    {
-        if (!ImGui::GetCurrentContext()) {
-            return 0;
-        }
-
-        ImGuiIO& io = ImGui::GetIO();
-
-        switch (msg) {
-            case WM_CHAR:
-                wchar_t wch;
-                MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (char *) &wParam, 1, &wch, 1);
-                io.AddInputCharacter(wch);
-                return 1;
-            default:
-                break;
-        }
-
-        return 0;
     }
 }
 
@@ -321,11 +301,8 @@ namespace SR_GRAPH_NS {
     LRESULT Win32Window::WndProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
         SR_TRACY_ZONE;
 
-        if (ImGui::GetCurrentContext() && !WinAPI::ImGui_WndProcHandler(hWnd, message, wParam, lParam)) {
-            auto&& pBackend = ImGui::GetIO().BackendPlatformUserData;
-            if (pBackend && ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam)) {
-                return true;
-            }
+        if (SR_GRAPH_GUI_NS::Immediate::WindowsWndProcHandler(hWnd, message, wParam, lParam)) {
+            return true;
         }
 
         if (auto&& pWindow = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA))) {
@@ -449,11 +426,13 @@ namespace SR_GRAPH_NS {
 
         MSG msg = {};
 
-        if (ImGui::GetCurrentContext()) {
-            for (auto&& viewport : ImGui::GetPlatformIO().Viewports) {
-                while (::PeekMessage(&msg, (HWND)viewport->PlatformHandle, 0, 0, PM_NOREMOVE)) {
+        if (SR_GRAPH_GUI_NS::Immediate::GetCurrentContext()) {
+            SR_GRAPH_GUI_NS::Immediate::GetViewports(m_viewports);
+            for (auto&& pViewport : m_viewports) {
+                auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(pViewport);
+                while (::PeekMessage(&msg, (HWND)pPlatformHandle, 0, 0, PM_NOREMOVE)) {
                     SR_TRACY_ZONE_N("Win32Window::PollEvents() : viewport message loop");
-                    if (!::GetMessage(&msg, (HWND)viewport->PlatformHandle, 0, 0))
+                    if (!::GetMessage(&msg, (HWND)pPlatformHandle, 0, 0))
                         break;
                     ::TranslateMessage(&msg);
                     ::DispatchMessage(&msg);
