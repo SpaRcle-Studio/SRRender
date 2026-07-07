@@ -23,6 +23,7 @@
 #include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 #include <Utils/Common/Features.h>
+#include <Utils/Types/Time.h>
 
 namespace SR_GRAPH_NS {
     bool VulkanImGuiOverlay::Init() {
