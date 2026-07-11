@@ -31,7 +31,7 @@ namespace SR_GRAPH_GUI_NS {
         }
 
         auto&& size = m_size.Contains(SR_INT32_MAX) ? SR_MATH_NS::FVector2(0, 0) : SR_MATH_NS::FVector2(m_size.x, m_size.y);
-        if (SR_GRAPH_GUI_NS::Immediate::BeginChild(m_name.c_str(), size, false, flags)) {
+        if (SR_GRAPH_GUI_NS::Immediate::BeginChild(m_name.c_str(), size, ChildWindowFlags::None, flags)) {
             Draw();
 
             for (auto&& pWidget : m_subWidgets) {

@@ -47,14 +47,6 @@ namespace SR_GRAPH_GUI_NS {
         SetStage(Stage::Begin);
     }
 
-    //inline ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs) {
-    //    return ImVec2(lhs.x - rhs.x, lhs.y - rhs.y);
-    //}
-
-    //inline ImVec2 operator+(const ImVec2& lhs, const ImVec2& rhs) {
-    //    return ImVec2(lhs.x + rhs.x, lhs.y + rhs.y);
-    //}
-
     void NodeBuilder::End() {
         SetStage(Stage::End);
 

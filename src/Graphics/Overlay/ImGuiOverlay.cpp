@@ -15,6 +15,8 @@
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Platform/Platform.h>
 
+#include <cstring>
+
 namespace SR_GRAPH_NS {
     ImGuiOverlay::ImGuiOverlay(Overlay::PipelinePtr pPipeline)
         : Super(std::move(pPipeline))
@@ -52,7 +54,6 @@ namespace SR_GRAPH_NS {
         }
 
         SR_GRAPH_GUI_NS::Immediate::ImmediateGUICreateContext createContext;
-        createContext.themePath = "Engine/Configs/Themes/Dark.xml";
         createContext.iniPath = m_iniPathEditor;
         createContext.viewportsEnabled = SR_UTILS_NS::Features::Instance().Enabled("Undocking", false);
         if (!IsDynamicRenderingEnabled()) {
@@ -122,59 +123,62 @@ namespace SR_GRAPH_NS {
 
         SR_UTILS_NS::String fontData;
 
+        auto&& rm = SR_UTILS_NS::ResourceManager::Instance();
+
+        auto loadFontOwnedByAtlas = [&](const SR_UTILS_NS::Path& fontPath, float size, const SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig& cfg, const uint32_t* glyphRanges) -> void* {
+            if (!fontPath.Exists()) {
+                SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found!\n\tPath: " + fontPath.ToString());
+                return nullptr;
+            }
+
+            if (!SR_UTILS_NS::FileSystem::ReadFile(fontPath, fontData) || fontData.empty()) {
+                SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to read font data!\n\tPath: " + fontPath.ToString());
+                return nullptr;
+            }
+
+            void* owned = SRMalloc(fontData.size());
+            if (!owned) {
+                SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to allocate font memory!\n\tPath: " + fontPath.ToString());
+                return nullptr;
+            }
+            memcpy(owned, fontData.data(), fontData.size());
+
+            SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config = cfg;
+            config.fontDataOwnedByAtlas = true; // ImGui will free via allocator we set in CreateContext()
+            return SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF(owned, static_cast<int>(fontData.size()), size, config, glyphRanges);
+        };
+
         /// Main font
         {
             SR_TRACY_ZONE_N("Load main font");
-            auto&& fontPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/tahoma.ttf");
+            auto&& fontPath = rm.GetResPath().Concat("Engine/Fonts/tahoma.ttf");
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: " + fontPath.ToString());
 
-            if (fontPath.Exists()) {
-                if (SR_UTILS_NS::FileSystem::ReadFile(fontPath, fontData)) {
-                    SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
-                    config.fontDataOwnedByAtlas = false;
-                    m_smallFont = SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize * 0.75f, config, mainFontRanges);
-                    m_mainFont = SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize, config, mainFontRanges);
-                }
-                else {
-                    SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to read font data!\n\tPath: " + fontPath.ToString());
-                }
-            }
-            else {
-                SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found!\n\tPath: " + fontPath.ToString());
-            }
+            SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
+            m_smallFont = loadFontOwnedByAtlas(fontPath, m_fontSize * 0.75f, config, mainFontRanges);
+            m_mainFont  = loadFontOwnedByAtlas(fontPath, m_fontSize, config, mainFontRanges);
         }
 
         /// Warning font - for icons like "⚠" merge with main font
         {
             SR_TRACY_ZONE_N("Load warning font");
-            auto&& fontPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/seguisym.ttf");
+            auto&& fontPath = rm.GetResPath().Concat("Engine/Fonts/seguisym.ttf");
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load warning font...\n\tPath: " + fontPath.ToString());
             SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
             config.mergeMode = true;
-            config.fontDataOwnedByAtlas = false;
-            if (SR_UTILS_NS::FileSystem::ReadFile(fontPath, fontData)) {
-                SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_fontSize, config, ranges);
-            }
+            loadFontOwnedByAtlas(fontPath, m_fontSize, config, ranges);
         }
 
         /// Icons font
         {
             SR_TRACY_ZONE_N("Load icons font");
-            auto&& iconsFont = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Fonts/fa-solid-900.ttf");
+            auto&& iconsFont = rm.GetResPath().Concat("Engine/Fonts/fa-solid-900.ttf");
 
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load icon font...\n\tPath: " + iconsFont.ToString());
-            if (iconsFont.Exists()) {
-                SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
-                config.mergeMode = false;
-                config.glyphMinAdvanceX = 13.0f;
-                config.fontDataOwnedByAtlas = false;
-                if (SR_UTILS_NS::FileSystem::ReadFile(iconsFont, fontData)) {
-                    m_iconFont = SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF((void*)fontData.c_str(), fontData.size(), m_iconFontSize, config, icon_ranges);
-                }
-            }
-            else {
-                SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found! \n\tPath: " + iconsFont.ToString());
-            }
+            SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
+            config.mergeMode = false;
+            config.glyphMinAdvanceX = 13.0f;
+            m_iconFont = loadFontOwnedByAtlas(iconsFont, m_iconFontSize, config, icon_ranges);
         }
 
         SR_GRAPH("ImGuiOverlay::ReloadFonts() : build fonts...");

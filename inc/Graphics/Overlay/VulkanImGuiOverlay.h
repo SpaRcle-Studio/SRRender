@@ -11,6 +11,8 @@
 #include <ImmediateGUI/Backend/PlatformBackend.h>
 #include <ImmediateGUI/Backend/VulkanRenderer.h>
 
+#include <unordered_map>
+
 namespace EvoVulkan::Types {
     class Device;
     class Swapchain;
@@ -38,6 +40,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD EvoVulkan::SubmitInfo& Render(uint32_t frame);
         SR_NODISCARD void* GetTextureDescriptorSet(uint32_t textureId) override;
+        void OnTextureFreed(uint32_t textureId) override;
 
         SR_NODISCARD VkSemaphore GetSemaphore() { return m_semaphore; }
         SR_NODISCARD EvoVulkan::SubmitInfo& GetSubmitInfo() { return m_submitInfo; }
@@ -54,6 +57,12 @@ namespace SR_GRAPH_NS {
         uint32_t GetCountImages() const;
 
     private:
+        struct ImGuiTextureBinding {
+            VkImageView view = VK_NULL_HANDLE;
+            VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+        };
+
         EvoVulkan::SubmitInfo m_submitInfo = { };
 
         bool m_dynamicRendering = false;
@@ -68,6 +77,8 @@ namespace SR_GRAPH_NS {
         EvoVulkan::Types::MultisampleTarget* m_multiSample = nullptr;
 
         bool m_undockingActive = false;
+
+        SR_HTYPES_NS::FlatHashMap<uint32_t, ImGuiTextureBinding> m_imguiTextureBindings;
 
     };
 }

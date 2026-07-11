@@ -69,7 +69,7 @@ namespace SR_ANIMATIONS_NS {
         SR_MATH_NS::FVector2 m_editorPosition = SR_MATH_NS::FVector2(0.f, 0.f);
         /// @property
         bool m_resetOnPlay = false;
-        /// @property @notNull
+        /// @property @notNull @hidden
         Transitions m_transitions;
 
         AnimationStateTransition* m_activeTransition = nullptr;

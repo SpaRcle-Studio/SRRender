@@ -39,6 +39,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual void* GetTextureDescriptorSet(uint32_t textureId) { return nullptr; }
         SR_NODISCARD virtual std::string GetName() const = 0;
 
+        virtual void OnTextureFreed(uint32_t textureId) { }
+
         virtual void Destroy() = 0;
 
         virtual void Prepare() { }

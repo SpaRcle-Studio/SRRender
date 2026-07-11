@@ -123,6 +123,16 @@ namespace SR_GRAPH_NS {
 
     void VulkanImGuiOverlay::Destroy() {
         if (m_vkRenderer) {
+            // Release cached ImGui texture descriptor sets (allocated by imgui vulkan backend).
+            for (auto&& [id, binding] : m_imguiTextureBindings) {
+                if (binding.descriptorSet != VK_NULL_HANDLE) {
+                    SR_GRAPH_GUI_NS::Immediate::VulkanRemoveTexture(m_vkRenderer, binding.descriptorSet);
+                }
+            }
+            m_imguiTextureBindings.clear();
+        }
+
+        if (m_vkRenderer) {
             SR_GRAPH_GUI_NS::Immediate::VulkanDestroyRenderer(m_vkRenderer);
             m_vkRenderer = nullptr;
         }
@@ -254,12 +264,50 @@ namespace SR_GRAPH_NS {
 
         auto&& pMemoryManager = SR_UTILS_NS::DynamicPointerCast<VulkanPipeline>(m_pipeline)->GetMemoryManager();
 
-        if (auto&& pTexture = pMemoryManager->GetTexture(textureId)) {
-            auto&& layout = SR_GRAPH_GUI_NS::Immediate::VulkanGetTextureDescriptorSetLayout(m_vkRenderer);
-            return reinterpret_cast<void*>(pTexture->GetDescriptorSet(layout).descriptorSet);
+        auto* pTexture = pMemoryManager ? pMemoryManager->GetTexture(textureId) : nullptr;
+        if (!pTexture) {
+            return nullptr;
         }
 
-        return nullptr;
+        const VkImageView view = pTexture->GetImageView();
+        const VkImageLayout layout = pTexture->GetLayout();
+        if (view == VK_NULL_HANDLE) {
+            return nullptr;
+        }
+
+        auto& binding = m_imguiTextureBindings[textureId];
+        if (binding.descriptorSet != VK_NULL_HANDLE && binding.view == view && binding.layout == layout) {
+            return reinterpret_cast<void*>(binding.descriptorSet);
+        }
+
+        if (binding.descriptorSet != VK_NULL_HANDLE) {
+            SR_GRAPH_GUI_NS::Immediate::VulkanRemoveTexture(m_vkRenderer, binding.descriptorSet);
+            binding = ImGuiTextureBinding{};
+        }
+
+        binding.view = view;
+        binding.layout = layout;
+        binding.descriptorSet = SR_GRAPH_GUI_NS::Immediate::VulkanAddTexture(m_vkRenderer, view, layout);
+
+        if (binding.descriptorSet == VK_NULL_HANDLE) {
+            binding = ImGuiTextureBinding{};
+            return nullptr;
+        }
+
+        return reinterpret_cast<void*>(binding.descriptorSet);
+    }
+
+    void VulkanImGuiOverlay::OnTextureFreed(uint32_t textureId) {
+        auto it = m_imguiTextureBindings.find(textureId);
+        if (it == m_imguiTextureBindings.end()) {
+            return;
+        }
+
+        if (m_vkRenderer && it->second.descriptorSet != VK_NULL_HANDLE) {
+            SR_GRAPH_GUI_NS::Immediate::VulkanRemoveTexture(m_vkRenderer, it->second.descriptorSet);
+        }
+
+        m_imguiTextureBindings.erase(it);
     }
 
     uint32_t VulkanImGuiOverlay::GetCountImages() const {

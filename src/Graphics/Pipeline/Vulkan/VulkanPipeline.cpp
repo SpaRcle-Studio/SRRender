@@ -1096,7 +1096,6 @@ namespace SR_GRAPH_NS {
             m_internalData->renderPassBI.framebuffer = vkFrameBuffer;
             m_internalData->renderPassBI.renderPass  = pFrameBuffer->GetRenderPass();
             m_internalData->renderPassBI.renderArea  = pFrameBuffer->GetRenderPassArea();
-            //m_internalData->currentCmd               = pFrameBuffer->GetCommandBuffer(frameIndex);
 
             m_currentVkFrameBuffer = pFrameBuffer;
             m_state.frameBufferId = FBO;
@@ -1115,6 +1114,14 @@ namespace SR_GRAPH_NS {
 
         ++m_state.allocations;
         ++m_state.operations;
+
+        for (auto&& color : (*createInfo.colors)) {
+            for (const auto textureId : color.texture) {
+                for (auto&& [type, pOverlay] : m_overlays) {
+                    pOverlay->OnTextureFreed(textureId);
+                }
+            }
+        }
 
         const uint8_t maxFrames = createInfo.pFBO->size();
         for (uint8_t frame = 0; frame < maxFrames; ++frame) {
@@ -2021,6 +2028,11 @@ namespace SR_GRAPH_NS {
 
         WaitRenderIdle();
 
+        const uint32_t textureId = static_cast<uint32_t>(*id);
+        for (auto&& [type, pOverlay] : m_overlays) {
+            pOverlay->OnTextureFreed(textureId);
+        }
+
         if (!m_memory || !m_memory->FreeTexture(static_cast<uint32_t>(*id))) {
             SR_ERROR("VulkanPipeline::FreeTexture() : failed to free texture!");
             return false;
@@ -2100,6 +2112,10 @@ namespace SR_GRAPH_NS {
         ++m_state.deletions;
 
         WaitRenderIdle();
+
+        for (auto&& [type, pOverlay] : m_overlays) {
+            pOverlay->OnTextureFreed(*id);
+        }
 
         const bool result = m_memory->FreeTexture(*id);
 
@@ -2255,108 +2271,7 @@ namespace SR_GRAPH_NS {
 
     void VulkanPipeline::SetDirty(bool dirty) {
         SR_TRACY_ZONE;
-
         Super::SetDirty(dirty);
-
-        if (m_dirty) {
-            return;
-        }
-
-        /// Чистим старую очередь
-
-        //m_kernel->ClearSubmitQueue();
-
-        //auto&& queues = m_fboQueue.GetQueues();
-
-        //for (auto&& queue : queues) {
-        //    for (auto&& pFrameBuffer : queue) {
-        //        if (auto&& fboId = pFrameBuffer->GetId(); fboId != SR_ID_INVALID) {
-        //            auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
-        //            vkFrameBuffer->ClearWaitSemaphores();
-        //            vkFrameBuffer->ClearSignalSemaphores();
-        //        }
-        //        else {
-        //            SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer id is invalid!");
-        //        }
-        //    }
-        //}
-
-        /// Определяем зависимости
-
-        /*if (!queues.empty()) {
-            /// Если являемся началом цепочки, то должны дождаться предыдущего кадра
-            for (auto&& pFrameBuffer : queues.front()) {
-                if (auto&& fboId = pFrameBuffer->GetId(); fboId != SR_ID_INVALID) {
-                    auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
-                    vkFrameBuffer->GetWaitSemaphores().emplace_back(m_kernel->GetPresentCompleteSemaphore());
-                }
-                else {
-                    SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer id is invalid!");
-                }
-            }
-
-            /// Если являемся концом цепочки, то нужно чтобы нас дождался рендер
-            for (auto&& pFrameBuffer : queues.back()) {
-                if (auto&& fboId = pFrameBuffer->GetId(); fboId != SR_ID_INVALID) {
-                    auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
-                    m_kernel->GetWaitSemaphores().emplace_back(vkFrameBuffer->GetSemaphore());
-                }
-                else {
-                    SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer id is invalid!");
-                }
-            }
-        }
-        else {
-            m_kernel->GetWaitSemaphores().emplace_back(m_kernel->GetPresentCompleteSemaphore());
-        }
-
-        for (uint32_t queueIndex = 1; queueIndex < queues.size(); ++queueIndex) {
-            for (auto&& pFrameBuffer : queues[queueIndex]) {
-                for (auto&& pDependency : queues[queueIndex - 1]) {
-                    auto&& fboId = pFrameBuffer->GetId();
-                    auto&& fboDependencyId = pDependency->GetId();
-
-                    if (fboId == SR_ID_INVALID || fboDependencyId == SR_ID_INVALID) {
-                        SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer's or it's dependency's id is invalid!");
-                        continue;
-                    }
-
-                    auto&& vkFrameBuffer = m_memory->GetFBO(fboId - 1);
-                    auto&& vkDependency = m_memory->GetFBO(fboDependencyId - 1);
-                    vkFrameBuffer->GetWaitSemaphores().emplace_back(vkDependency->GetSemaphore());
-                }
-            }
-        }
-
-        /// Строим новую очередь
-
-        for (auto&& queue : queues) {
-            EvoVulkan::SubmitInfo submitInfo;
-
-            submitInfo.SetWaitDstStageMask(m_kernel->GetSubmitPipelineStages());
-
-            for (auto&& pFrameBuffer : queue) {
-                auto&& fbId = pFrameBuffer->GetId();
-                if (fbId == SR_ID_INVALID) {
-                    SR_ERROR("VulkanPipeline::SetDirty(false) : frame buffer id is invalid!");
-                    continue;
-                }
-
-                auto&& vkFrameBuffer = m_memory->GetFBO(fbId - 1);
-
-                submitInfo.commandBuffers.emplace_back(vkFrameBuffer->GetCmd());
-
-                for (auto&& signalSemaphore : vkFrameBuffer->GetSignalSemaphores()) {
-                    submitInfo.AddSignalSemaphore(signalSemaphore);
-                }
-
-                for (auto&& waitSemaphore : vkFrameBuffer->GetWaitSemaphores()) {
-                    submitInfo.AddWaitSemaphore(waitSemaphore);
-                }
-            }
-
-            m_kernel->AddSubmitQueue(submitInfo);
-        }*/
     }
 
     void VulkanPipeline::PushConstants(void* pData, uint64_t size) {
