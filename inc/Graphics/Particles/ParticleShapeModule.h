@@ -41,6 +41,7 @@ namespace SR_GRAPH_NS {
         SR_MATH_NS::FVector3 GenerateDirection() const override;
     };
 
+
     class SphereShape : public ParticleShape {
         SR_CLASS()
 
@@ -51,6 +52,35 @@ namespace SR_GRAPH_NS {
     private:
         /// @property
         float m_radius = 5.0f;
+        mutable SR_MATH_NS::FVector3 m_point = SR_MATH_NS::FVector3(0.0f, 1.0f, 0.0);
+    };
+
+
+    class BoxShape : public ParticleShape {
+    SR_CLASS()
+
+    public:
+        SR_MATH_NS::FVector3 GeneratePosition() const override;
+        SR_MATH_NS::FVector3 GenerateDirection() const override;
+
+    private:
+        /// @property
+        float m_width = 80.0f;
+        float m_depth = 40.0f;
+        float m_height = 2.0f;
+    };
+
+    class ConusShape : public ParticleShape {
+    SR_CLASS()
+
+    public:
+        SR_MATH_NS::FVector3 GeneratePosition() const override;
+        SR_MATH_NS::FVector3 GenerateDirection() const override;
+
+    private:
+        /// @property
+        float m_radius = 0.1f;
+        float m_height = 5.0f;
         mutable SR_MATH_NS::FVector3 m_point = SR_MATH_NS::FVector3(0.0f, 1.0f, 0.0);
     };
 }

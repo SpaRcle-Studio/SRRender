@@ -13,22 +13,25 @@
 
 namespace SR_GRAPH_NS {
     struct ParticleMainModule {
-        float startMaxLifetime = 7.0f;
-        float startMinLifetime = 4.0f;
+        float startMaxLifetime = 15.0f;
+        float startMinLifetime = 9.0f;
 
         float startMaxSpeed = 7.0f;
         float startMinSpeed = 4.0f;
         float endSpeed = 0.0f;
 
-        float startMinSize = 1.0f;
-        float startMaxSize = 2.0f;
+        SR_MATH_NS::FVector3 directionVelosity = SR_MATH_NS::FVector3 (0.0f, 0.0f, 0.0f);
+
+        float startMinSize = 10.0f;
+        float startMaxSize = 25.0f;
         float endSize = 0.0f;
 
-        float gravity = -1.0;
+        float gravity = 0.0;
+
         SR_MATH_NS::FVector4 m_startColor = SR_MATH_NS::FVector4(1.0f, 0.5f, 0.0f, 1.0f);
         SR_MATH_NS::FVector4 m_endColor = SR_MATH_NS::FVector4(0.2f, 0.0f, 1.0f, 1.0f);
 
-        SR_MATH_NS::FVector3 startRotationSpeed = SR_MATH_NS::FVector3(90.0f, 0.0f, 180.0f);
+        SR_MATH_NS::FVector3 startRotationSpeed = SR_MATH_NS::FVector3(90.0f, 20.0f, 180.0f);
 
     };
 };

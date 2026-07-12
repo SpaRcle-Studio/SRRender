@@ -11,6 +11,8 @@
 #include <Graphics/Particles/ParticleMainModule.h>
 #include <Graphics/Particles/ParticleShapeModule.h>
 #include <Graphics/Particles/ParticleRendererModule.h>
+#include <Graphics/Particles/ParticleEmissionModule.h>
+
 #include <Graphics/Types/Geometry/IndexedMesh.h>
 #include <Graphics/Types/Geometry/IndexedMesh.h>
 
@@ -70,8 +72,10 @@ namespace SR_GRAPH_NS {
 
         uint32_t m_maxParticles = 1000;
         uint32_t m_aliveParticles = 0;
-        float_t m_spawnRate = 10.0f;
+        ParticleEmissionModule m_emission;
+        bool canSpawn;
         float_t m_spawnTimer = 0.0f;
+        float_t m_emitterTimer = 0.0f;
 
         int32_t m_VBO = SR_ID_INVALID;
 
@@ -87,7 +91,7 @@ namespace SR_GRAPH_NS {
         bool m_isParticlesVBODirty = true;
         ParticleMainModule m_main;
         ParticleShape::Ptr m_shape;
-        ParticleRenderMode m_renderer = ParticleRenderMode::Billboard;
+        //ParticleRenderMode m_renderer = ParticleRenderMode::Billboard;
     };
 }
 

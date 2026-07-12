@@ -149,6 +149,7 @@ namespace SR_GRAPH_NS {
             float_t t = particle.lifetime / particle.maxLifetime;
 
             particle.velocity.y += m_main.gravity * dt;
+            particle.velocity += m_main.directionVelosity * dt;
             particle.position += particle.velocity * dt;
 
             particle.lifetime -= dt;
@@ -180,10 +181,18 @@ namespace SR_GRAPH_NS {
 
     void ParticleEmitter::UpdateEmitter(float_t dt){
         m_spawnTimer += dt;
+        m_emitterTimer += dt;
+        if(m_emitterTimer >= m_emission.duration){
+            if(m_emission.looping) {
+                m_emitterTimer -= m_emission.duration;
+            } else {
+                canSpawn = false;
+            }
+        }
 
-        const float_t spawnInterval = 1.0f / m_spawnRate;
+        const float_t spawnInterval = 1.0f / m_emission.rateOverTime;
 
-        while (m_spawnTimer >= spawnInterval){
+        while (canSpawn && m_spawnTimer >= spawnInterval){
             SpawnParticle();
             m_spawnTimer -= spawnInterval;
         }
@@ -194,7 +203,7 @@ namespace SR_GRAPH_NS {
     }
 
     void ParticleEmitter::OnEnable(){
-        m_shape = new SphereShape();
+        m_shape = new ConusShape();
 
         //SetRawMesh(SR_UTILS_NS::Path("Samples/diamond.fbx"));
 
