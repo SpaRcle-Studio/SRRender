@@ -71,24 +71,7 @@ namespace SR_GRAPH_NS {
 
     void ImGuiOverlay::Prepare() {
         SR_TRACY_ZONE;
-
         Super::Prepare();
-
-        if (!IsEnabled()) {
-            return;
-        }
-
-        static const SR_UTILS_NS::StringAtom fontSizeKey = "ImGuiFontSize";
-        static const SR_UTILS_NS::StringAtom iconFontSizeKey = "ImGuiIconFontSize";
-
-        const bool isFontChanged =
-            m_fontSize != SR_UTILS_NS::StoreUtils::User::GetFloat(fontSizeKey, m_fontSize) ||
-            m_iconFontSize != SR_UTILS_NS::StoreUtils::User::GetFloat(iconFontSizeKey, m_iconFontSize);
-
-        if (isFontChanged) {
-            ReloadFonts();
-            GetPipeline()->SetDirty(true);
-        }
     }
 
     void ImGuiOverlay::Destroy() {
@@ -103,12 +86,6 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         SR_INFO("ImGuiOverlay::ReloadFonts() : reloading fonts...");
-
-        m_fontSize = SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiFontSize", m_fontSize);
-        m_iconFontSize = SR_UTILS_NS::StoreUtils::User::GetFloat("ImGuiIconFontSize", m_iconFontSize);
-
-        SR_UTILS_NS::StoreUtils::User::SetFloat("ImGuiFontSize", m_fontSize);
-        SR_UTILS_NS::StoreUtils::User::SetFloat("ImGuiIconFontSize", m_iconFontSize);
 
         SR_GRAPH_GUI_NS::Immediate::ClearFonts();
 
@@ -155,8 +132,8 @@ namespace SR_GRAPH_NS {
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: " + fontPath.ToString());
 
             SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
-            m_smallFont = loadFontOwnedByAtlas(fontPath, m_fontSize * 0.75f, config, mainFontRanges);
-            m_mainFont  = loadFontOwnedByAtlas(fontPath, m_fontSize, config, mainFontRanges);
+            m_smallFont = loadFontOwnedByAtlas(fontPath, 12.f * 0.75f, config, mainFontRanges);
+            m_mainFont  = loadFontOwnedByAtlas(fontPath, 12.f, config, mainFontRanges);
         }
 
         /// Warning font - for icons like "⚠" merge with main font
@@ -166,7 +143,7 @@ namespace SR_GRAPH_NS {
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load warning font...\n\tPath: " + fontPath.ToString());
             SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
             config.mergeMode = true;
-            loadFontOwnedByAtlas(fontPath, m_fontSize, config, ranges);
+            loadFontOwnedByAtlas(fontPath, 12.0, config, ranges);
         }
 
         /// Icons font
@@ -178,7 +155,7 @@ namespace SR_GRAPH_NS {
             SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
             config.mergeMode = false;
             config.glyphMinAdvanceX = 13.0f;
-            m_iconFont = loadFontOwnedByAtlas(iconsFont, m_iconFontSize, config, icon_ranges);
+            m_iconFont = loadFontOwnedByAtlas(iconsFont, 40.f, config, icon_ranges);
         }
 
         SR_GRAPH("ImGuiOverlay::ReloadFonts() : build fonts...");

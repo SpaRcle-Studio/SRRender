@@ -9,6 +9,7 @@
 #include <Graphics/GUI/NodeBuilder.h>
 
 #include <ImmediateGUI/GUI/ImmediateGUI.h>
+#include <ImmediateGUI/GUI/NodeEditor.h>
 
 namespace SR_GRAPH_GUI_NS {
     NodeBuilder::NodeBuilder(SR_GTYPES_NS::Texture *pTexture)
@@ -33,12 +34,12 @@ namespace SR_GRAPH_GUI_NS {
         m_hasHeader = false;
         m_headerMin = m_headerMax = SR_MATH_NS::FVector2();
 
-        SR_GRAPH_GUI_NS::Immediate::PushNodeEditorStyleVar(
-            SR_GRAPH_GUI_NS::Immediate::NodeEditorStyleVar::NodePadding,
+        SR_IMMEDIATE_GUI_NS::NodeEditor::PushNodeEditorStyleVar(
+            SR_IMMEDIATE_GUI_NS::NodeEditor::NodeEditorStyleVar::NodePadding,
             SR_MATH_NS::FVector4(8, 8, 8, 8)
         );
 
-        SR_GRAPH_GUI_NS::Immediate::BeginNode(pNode->GetId());
+        SR_IMMEDIATE_GUI_NS::NodeEditor::BeginNode(pNode->GetId());
 
         SR_GRAPH_GUI_NS::Immediate::PushID(reinterpret_cast<const void*>(pNode->GetId()));
         m_currentNodeId = pNode->GetId();
@@ -50,11 +51,11 @@ namespace SR_GRAPH_GUI_NS {
     void NodeBuilder::End() {
         SetStage(Stage::End);
 
-        SR_GRAPH_GUI_NS::Immediate::EndNode();
+        SR_IMMEDIATE_GUI_NS::NodeEditor::EndNode();
 
         // Рисуем цветной заголовок на фоне ноды
         if (SR_GRAPH_GUI_NS::Immediate::IsItemVisible()) {
-            auto&& drawList = SR_GRAPH_GUI_NS::Immediate::GetNodeBackgroundDrawList(m_currentNodeId);
+            auto&& drawList = SR_IMMEDIATE_GUI_NS::NodeEditor::GetNodeBackgroundDrawList(m_currentNodeId);
             if (drawList) {
                 // Получаем alpha из текущего стиля
                 auto&& alpha = static_cast<int>(255); // TODO: получить из ImGui::GetStyle().Alpha
@@ -96,7 +97,7 @@ namespace SR_GRAPH_GUI_NS {
 
         SR_GRAPH_GUI_NS::Immediate::PopID();
 
-        SR_GRAPH_GUI_NS::Immediate::PopNodeEditorStyleVar(1);
+        SR_IMMEDIATE_GUI_NS::NodeEditor::PopNodeEditorStyleVar(1);
 
         SetStage(Stage::Invalid);
     }
@@ -126,9 +127,9 @@ namespace SR_GRAPH_GUI_NS {
             SR_GRAPH_GUI_NS::Immediate::Spring(0);
 
         // Начинаем пин
-        SR_GRAPH_GUI_NS::Immediate::BeginPin(pPin->GetId(), true);
-        SR_GRAPH_GUI_NS::Immediate::PinPivotAlignment(SR_MATH_NS::FVector2(0, 0.5f));
-        SR_GRAPH_GUI_NS::Immediate::PinPivotSize(SR_MATH_NS::FVector2(0, 0));
+        SR_IMMEDIATE_GUI_NS::NodeEditor::BeginPin(pPin->GetId(), true);
+        SR_IMMEDIATE_GUI_NS::NodeEditor::PinPivotAlignment(SR_MATH_NS::FVector2(0, 0.5f));
+        SR_IMMEDIATE_GUI_NS::NodeEditor::PinPivotSize(SR_MATH_NS::FVector2(0, 0));
         m_currentPin = pPin;
 
         SR_GRAPH_GUI_NS::Immediate::BeginHorizontal(reinterpret_cast<const void*>(pPin->GetId()));
@@ -137,7 +138,7 @@ namespace SR_GRAPH_GUI_NS {
     void NodeBuilder::EndInput() {
         SR_GRAPH_GUI_NS::Immediate::EndHorizontal();
 
-        SR_GRAPH_GUI_NS::Immediate::EndPin();
+        SR_IMMEDIATE_GUI_NS::NodeEditor::EndPin();
         m_currentPin = nullptr;
     }
 
@@ -164,9 +165,9 @@ namespace SR_GRAPH_GUI_NS {
             SR_GRAPH_GUI_NS::Immediate::Spring(0);
 
         // Начинаем пин
-        SR_GRAPH_GUI_NS::Immediate::BeginPin(pPin->GetId(), false);
-        SR_GRAPH_GUI_NS::Immediate::PinPivotAlignment(SR_MATH_NS::FVector2(1.0f, 0.5f));
-        SR_GRAPH_GUI_NS::Immediate::PinPivotSize(SR_MATH_NS::FVector2(0, 0));
+        SR_IMMEDIATE_GUI_NS::NodeEditor::BeginPin(pPin->GetId(), false);
+        SR_IMMEDIATE_GUI_NS::NodeEditor::PinPivotAlignment(SR_MATH_NS::FVector2(1.0f, 0.5f));
+        SR_IMMEDIATE_GUI_NS::NodeEditor::PinPivotSize(SR_MATH_NS::FVector2(0, 0));
         m_currentPin = pPin;
 
         SR_GRAPH_GUI_NS::Immediate::BeginHorizontal(reinterpret_cast<const void*>(pPin->GetId()));
@@ -174,7 +175,7 @@ namespace SR_GRAPH_GUI_NS {
 
     void NodeBuilder::EndOutput() {
         SR_GRAPH_GUI_NS::Immediate::EndHorizontal();
-        SR_GRAPH_GUI_NS::Immediate::EndPin();
+        SR_IMMEDIATE_GUI_NS::NodeEditor::EndPin();
         m_currentPin = nullptr;
     }
 
@@ -202,7 +203,7 @@ namespace SR_GRAPH_GUI_NS {
                 break;
 
             case Stage::Input:
-                SR_GRAPH_GUI_NS::Immediate::PopNodeEditorStyleVar(2);
+                SR_IMMEDIATE_GUI_NS::NodeEditor::PopNodeEditorStyleVar(2);
                 SR_GRAPH_GUI_NS::Immediate::Spring(1, 0);
                 SR_GRAPH_GUI_NS::Immediate::EndVertical();
                 break;
@@ -212,7 +213,7 @@ namespace SR_GRAPH_GUI_NS {
                 break;
 
             case Stage::Output:
-                SR_GRAPH_GUI_NS::Immediate::PopNodeEditorStyleVar(2);
+                SR_IMMEDIATE_GUI_NS::NodeEditor::PopNodeEditorStyleVar(2);
                 SR_GRAPH_GUI_NS::Immediate::Spring(1, 0);
                 SR_GRAPH_GUI_NS::Immediate::EndVertical();
                 break;
@@ -244,12 +245,12 @@ namespace SR_GRAPH_GUI_NS {
 
             case Stage::Input:
                 SR_GRAPH_GUI_NS::Immediate::BeginVertical("inputs", SR_MATH_NS::FVector2(0, 0), 0.0f);
-                SR_GRAPH_GUI_NS::Immediate::PushNodeEditorStyleVar(
-                    SR_GRAPH_GUI_NS::Immediate::NodeEditorStyleVar::SourceDirection,
+                SR_IMMEDIATE_GUI_NS::NodeEditor::PushNodeEditorStyleVar(
+                        SR_IMMEDIATE_GUI_NS::NodeEditor::NodeEditorStyleVar::SourceDirection,
                     SR_MATH_NS::FVector2(1.0f, 0.0f)
                 );
-                SR_GRAPH_GUI_NS::Immediate::PushNodeEditorStyleVar(
-                    SR_GRAPH_GUI_NS::Immediate::NodeEditorStyleVar::TargetDirection,
+                SR_IMMEDIATE_GUI_NS::NodeEditor::PushNodeEditorStyleVar(
+                        SR_IMMEDIATE_GUI_NS::NodeEditor::NodeEditorStyleVar::TargetDirection,
                     SR_MATH_NS::FVector2(-1.0f, 0.0f)
                 );
                 if (!m_hasHeader)
@@ -267,12 +268,12 @@ namespace SR_GRAPH_GUI_NS {
                 else
                     SR_GRAPH_GUI_NS::Immediate::Spring(1, 0);
                 SR_GRAPH_GUI_NS::Immediate::BeginVertical("outputs", SR_MATH_NS::FVector2(0, 0), 1.0f);
-                SR_GRAPH_GUI_NS::Immediate::PushNodeEditorStyleVar(
-                    SR_GRAPH_GUI_NS::Immediate::NodeEditorStyleVar::SourceDirection,
+                SR_IMMEDIATE_GUI_NS::NodeEditor::PushNodeEditorStyleVar(
+                    SR_IMMEDIATE_GUI_NS::NodeEditor::NodeEditorStyleVar::SourceDirection,
                     SR_MATH_NS::FVector2(1.0f, 0.0f)
                 );
-                SR_GRAPH_GUI_NS::Immediate::PushNodeEditorStyleVar(
-                    SR_GRAPH_GUI_NS::Immediate::NodeEditorStyleVar::TargetDirection,
+                SR_IMMEDIATE_GUI_NS::NodeEditor::PushNodeEditorStyleVar(
+                        SR_IMMEDIATE_GUI_NS::NodeEditor::NodeEditorStyleVar::TargetDirection,
                     SR_MATH_NS::FVector2(-1.0f, 0.0f)
                 );
                 if (!m_hasHeader)

@@ -38,9 +38,6 @@ namespace SR_GRAPH_NS {
 
         bool m_viewportsEnabled = false;
 
-        float_t m_fontSize = 12.0f;
-        float_t m_iconFontSize = 40.0f;
-
         SR_UTILS_NS::Path m_iniPathEditor;
         SR_UTILS_NS::Path m_iniPathWidgets;
 
