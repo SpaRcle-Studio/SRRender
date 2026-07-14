@@ -73,7 +73,7 @@ namespace SR_GRAPH_NS {
         uint32_t m_maxParticles = 1000;
         uint32_t m_aliveParticles = 0;
         ParticleEmissionModule m_emission;
-        bool canSpawn;
+        bool canSpawn = true;
         float_t m_spawnTimer = 0.0f;
         float_t m_emitterTimer = 0.0f;
 

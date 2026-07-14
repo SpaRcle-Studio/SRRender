@@ -38,6 +38,12 @@ namespace SR_GRAPH_NS {
         m_instanceVertexBuffer.SetLayout(ParticleEmitterVertexLayout);
         m_instanceVertexBuffer.Allocate(m_maxParticles);
 
+        ParticleBurst burst;
+        burst.time = 1.0f;
+        burst.count = 100;
+
+        m_emission.bursts.emplace_back(burst);
+
         m_VBO = GetPipeline()->AllocateVBO(
                 m_VBO,
                 m_maxParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
@@ -182,9 +188,24 @@ namespace SR_GRAPH_NS {
     void ParticleEmitter::UpdateEmitter(float_t dt){
         m_spawnTimer += dt;
         m_emitterTimer += dt;
+
+        for(auto& burst : m_emission.bursts) {
+            if(!burst.emitted && m_emitterTimer >= burst.time) {
+                for(uint32_t i = 0; i < burst.count; i++){
+                    SpawnParticle();
+                }
+
+                burst.emitted = true;
+            }
+        }
+
         if(m_emitterTimer >= m_emission.duration){
             if(m_emission.looping) {
                 m_emitterTimer -= m_emission.duration;
+
+                for (auto& burst : m_emission.bursts) {
+                    burst.emitted = false;
+                }
             } else {
                 canSpawn = false;
             }

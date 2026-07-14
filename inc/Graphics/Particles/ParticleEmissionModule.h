@@ -15,13 +15,23 @@
 
 
 namespace SR_GRAPH_NS{
+    struct ParticleBurst {
+        float time = 4.0f;
+
+        uint32_t count = 50;
+
+        bool emitted = false;
+    };
+
     class ParticleEmissionModule : SR_UTILS_NS::Serializable{
     public:
         ///@property
         float duration = 5.0f;
         bool looping = true;
 
-        float rateOverTime = 10.0f;
+        float rateOverTime = 1.0f;
+
+        SR_HTYPES_NS::FastMemoryArray<ParticleBurst> bursts;
     };
 }
 
