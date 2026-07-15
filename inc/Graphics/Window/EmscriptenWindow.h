@@ -21,6 +21,8 @@ namespace SR_GRAPH_NS {
                         const SR_MATH_NS::UVector2& size,
                         bool fullScreen, bool resizable) override;
 
+        void PollEvents() override;
+
     public:
         SR_NODISCARD WindowType GetType() const override { return WindowType::Emscripten; };
         SR_NODISCARD void* GetHandle() const override { return nullptr; };

@@ -6,6 +6,8 @@
 
 #include <emscripten/html5.h>
 
+#include <algorithm>
+
 namespace SR_GRAPH_NS {
     bool EmscriptenWindow::Initialize(
             const std::string& name, const SR_MATH_NS::IVector2 &position,
@@ -32,5 +34,30 @@ namespace SR_GRAPH_NS {
         m_isInitialized = true;
 
         return true;
+    }
+
+    void EmscriptenWindow::PollEvents() {
+        // Drive resize from the actual canvas CSS size (set by HTML/CSS).
+        double cssW = 0.0, cssH = 0.0;
+        if (emscripten_get_element_css_size("#canvas", &cssW, &cssH) != EMSCRIPTEN_RESULT_SUCCESS) {
+            return;
+        }
+
+        const uint32_t w = static_cast<uint32_t>(std::max(1.0, cssW));
+        const uint32_t h = static_cast<uint32_t>(std::max(1.0, cssH));
+
+        if (w == m_size.x && h == m_size.y) {
+            return;
+        }
+
+        m_size = { w, h };
+        m_surfaceSize = m_size;
+
+        // Keep canvas backing store in sync with CSS pixels (no DPR scaling).
+        emscripten_set_canvas_element_size("#canvas", static_cast<int>(w), static_cast<int>(h));
+
+        if (m_resizeCallback) {
+            m_resizeCallback(this, static_cast<int32_t>(w), static_cast<int32_t>(h));
+        }
     }
 }
