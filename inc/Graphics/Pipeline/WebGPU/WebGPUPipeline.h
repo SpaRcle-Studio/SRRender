@@ -7,6 +7,10 @@
 
 #include <Graphics/Pipeline/Pipeline.h>
 
+#if defined(SR_RENDER_USE_WEBGPU)
+    #include <webgpu/webgpu.h>
+#endif
+
 namespace SR_GRAPH_NS {
     struct WebGPUPipelineInternalData;
 
@@ -20,6 +24,9 @@ namespace SR_GRAPH_NS {
         bool IsAsyncEarlyInit() const override;
         bool Init() override;
         bool PostInit() override;
+        bool Destroy() override;
+
+        bool InitOverlay() override;
 
         void DrawFrame() override;
         void OnFrameBuildBegin() override;
@@ -59,6 +66,11 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD uint16_t GetSwapchainImagesCount() const override { return 1; }
         SR_NODISCARD uint8_t GetCurrentImageIndex() const override { return 0; }
+
+        /// WebGPU helpers for overlay/backends (Emscripten).
+        SR_NODISCARD WGPUDevice GetWGPUDevice() const;
+        SR_NODISCARD int32_t GetFramesInFlightCount() const { return 3; }
+        SR_NODISCARD WGPUTextureFormat GetSurfaceFormat() const;
 
     private:
         WebGPUPipelineInternalData* m_internalData = nullptr;

@@ -15,6 +15,7 @@
         "src/Graphics/Pipeline/Vulkan/VulkanMemory.cpp",
         "src/Graphics/Pipeline/Vulkan/VulkanKernel.cpp",
         "src/Graphics/Pipeline/Vulkan/VulkanTracy.cpp",
-        "src/Graphics/Overlay/VulkanImGuiOverlay.cpp"
+        "src/Graphics/Overlay/VulkanImGuiOverlay.cpp",
+        "src/Graphics/Overlay/WebGPUImGuiOverlay.cpp"
     ]
 }

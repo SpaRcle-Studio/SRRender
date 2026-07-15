@@ -36,10 +36,11 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool HasColor() const noexcept { return m_hasColor; }
         SR_NODISCARD bool IsColorEmoji() const noexcept { return m_isColorEmoji; }
 
+        SR_NODISCARD int32_t GetKerning(uint32_t leftCharCode, uint32_t rightCharCode) const;
+
     #ifdef SR_USE_FREETYPE
         SR_NODISCARD FT_Glyph GetGlyph(char32_t code, FT_Render_Mode renderMode, FT_Int32 charLoad, FT_Int32 glyphLoad) const;
         SR_NODISCARD FT_Glyph GetGlyph(char32_t code, FT_Render_Mode renderMode) const;
-        SR_NODISCARD FT_Pos GetKerning(uint32_t leftCharCode, uint32_t rightCharCode) const;
         SR_NODISCARD FontFace GetFontFace() const { return m_face; }
     #endif
 

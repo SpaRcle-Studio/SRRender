@@ -9,7 +9,7 @@
 #include <Codegen/Glyph.generated.hpp>
 
 namespace SR_GRAPH_NS {
-    bool GlyphKey::DecodeUTF8(const std::string& str, size_t& i, uint32_t& out) {
+    bool GlyphKey::DecodeUTF8(const std::string& str, uint64_t& i, uint32_t& out) {
         const uint8_t c = static_cast<uint8_t>(str[i]);
 
         if (c < 0x80) {
@@ -44,7 +44,7 @@ namespace SR_GRAPH_NS {
         return false;
     }
 
-    bool GlyphKey::NextGlyphKey(const std::string& text, size_t& i, GlyphKey& key) {
+    bool GlyphKey::NextGlyphKey(const std::string& text, uint64_t& i, GlyphKey& key) {
         uint32_t cp;
         if (!DecodeUTF8(text, i, cp)) {
             return false;

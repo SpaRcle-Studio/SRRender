@@ -29,8 +29,8 @@ namespace SR_GRAPH_NS {
             return codepoint == other.codepoint;
         }
 
-        SR_NODISCARD static bool DecodeUTF8(const std::string& str, size_t& i, uint32_t& out);
-        SR_NODISCARD static bool NextGlyphKey(const std::string& text, size_t& i, GlyphKey& key);
+        SR_NODISCARD static bool DecodeUTF8(const std::string& str, uint64_t& i, uint32_t& out);
+        SR_NODISCARD static bool NextGlyphKey(const std::string& text, uint64_t& i, GlyphKey& key);
     };
 
     struct GlyphRange : public SR_UTILS_NS::Serializable {

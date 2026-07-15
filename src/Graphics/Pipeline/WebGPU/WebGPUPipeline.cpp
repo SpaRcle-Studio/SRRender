@@ -3,10 +3,16 @@
 //
 
 #include <Graphics/Pipeline/WebGPU/WebGPUPipeline.h>
+#include <Graphics/Overlay/WebGPUImGuiOverlay.h>
+
+#include <Utils/Types/ObjectPool.h>
+#include <Utils/Common/Features.h>
 
 #include <emscripten/html5.h>
 
 #include <webgpu/webgpu_cpp.h>
+
+#include <algorithm>
 
 namespace SR_GRAPH_NS {
     struct WebGPUPipelineInternalData {
@@ -16,6 +22,12 @@ namespace SR_GRAPH_NS {
         wgpu::Surface surface;
         wgpu::CommandBuffer surfaceCommandBuffer;
         wgpu::CommandEncoder activeEncoder;
+
+        wgpu::Texture surfaceTexture;
+        wgpu::TextureView surfaceTextureView;
+        wgpu::TextureFormat surfaceFormat = wgpu::TextureFormat::Undefined;
+        uint32_t surfaceWidth = 0;
+        uint32_t surfaceHeight = 0;
 
         SR_HTYPES_NS::ObjectPool<wgpu::Buffer> VBOs;
         SR_HTYPES_NS::ObjectPool<wgpu::Buffer> IBOs;
@@ -39,9 +51,49 @@ namespace SR_GRAPH_NS {
 
         Super::DrawFrame();
 
+        if (!m_internalData->device || !m_internalData->queue || !m_internalData->activeEncoder || !m_internalData->surfaceTextureView) {
+            return;
+        }
+
+        // Draw scene (TODO) + ImGui into the current surface texture.
+        wgpu::RenderPassColorAttachment color{};
+        color.view = m_internalData->surfaceTextureView;
+        color.loadOp = wgpu::LoadOp::Clear;
+        color.storeOp = wgpu::StoreOp::Store;
+        color.clearValue = {0.10f, 0.10f, 0.12f, 1.0f};
+
+        wgpu::RenderPassDescriptor passDesc{};
+        passDesc.colorAttachmentCount = 1;
+        passDesc.colorAttachments = &color;
+
+        auto pass = m_internalData->activeEncoder.BeginRenderPass(&passDesc);
+
+    #ifdef SR_USE_IMGUI
+        if (auto&& pOverlayBase = GetOverlay(OverlayType::ImGui)) {
+            if (pOverlayBase->IsEnabled() && !pOverlayBase->IsSurfaceDirty()) {
+                if (auto&& pImGuiOverlay = SR_UTILS_NS::DynamicPointerCast<WebGPUImGuiOverlay>(pOverlayBase)) {
+                    pImGuiOverlay->Render(pass.Get());
+                }
+            }
+        }
+    #endif
+
+        pass.End();
+
+        m_internalData->surfaceCommandBuffer = m_internalData->activeEncoder.Finish();
+        m_internalData->surfaceCommandBuffer.SetLabel("Surface command buffer");
+
         if (m_internalData->surfaceCommandBuffer) {
             m_internalData->queue.Submit(1, &m_internalData->surfaceCommandBuffer);
         }
+
+        // Emscripten/WebGPU: wgpuSurfacePresent is unsupported.
+        // Presentation is driven by the browser main loop (requestAnimationFrame).
+        // Release surface texture references after submitting work.
+        m_internalData->surfaceCommandBuffer = nullptr;
+        m_internalData->activeEncoder = nullptr;
+        m_internalData->surfaceTextureView = nullptr;
+        m_internalData->surfaceTexture = nullptr;
     }
 
     void WebGPUPipeline::OnFrameBuildBegin() {
@@ -51,9 +103,42 @@ namespace SR_GRAPH_NS {
 
         m_internalData->instance.ProcessEvents();
 
+        if (!m_internalData->device || !m_internalData->queue || !m_internalData->surface) {
+            return;
+        }
+
+        // Resize-aware surface configuration.
+        // In Emscripten/WebGPU we keep surface size in CSS pixels to avoid feedback loops
+        // and to match ImGui coordinates when DisplayFramebufferScale = (1,1).
+        double cssW = 0.0, cssH = 0.0;
+        if (emscripten_get_element_css_size("#canvas", &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
+            constexpr uint32_t kMaxSurfaceDim = 8192; // Safe default WebGPU limit (unless requested higher at device creation).
+            const uint32_t pxW = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssW)));
+            const uint32_t pxH = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssH)));
+
+            if (pxW != m_internalData->surfaceWidth || pxH != m_internalData->surfaceHeight) {
+                m_internalData->surfaceWidth = pxW;
+                m_internalData->surfaceHeight = pxH;
+
+                wgpu::SurfaceConfiguration config{};
+                config.device = m_internalData->device;
+                config.format = m_internalData->surfaceFormat != wgpu::TextureFormat::Undefined ? m_internalData->surfaceFormat : wgpu::TextureFormat::BGRA8Unorm;
+                config.usage = wgpu::TextureUsage::RenderAttachment;
+                config.width = pxW;
+                config.height = pxH;
+                config.presentMode = wgpu::PresentMode::Fifo;
+
+                m_internalData->surface.Configure(&config);
+                SetOverlaySurfaceDirty();
+                ReCreateOverlay();
+            }
+        }
+
         wgpu::SurfaceTexture surfaceTexture{};
         m_internalData->surface.GetCurrentTexture(&surfaceTexture);
-        if (surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::SuccessOptimal) {
+        if (surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::SuccessOptimal &&
+            surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::SuccessSuboptimal)
+        {
             switch (surfaceTexture.status) {
                 case wgpu::SurfaceGetCurrentTextureStatus::Error:
                     SR_ERROR("WebGPUPipeline::OnFrameBuildBegin() : failed to acquire surface texture: error!");
@@ -74,38 +159,17 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        m_internalData->surfaceTexture = surfaceTexture.texture;
+        m_internalData->surfaceTextureView = m_internalData->surfaceTexture.CreateView();
+
         m_internalData->activeEncoder = m_internalData->device.CreateCommandEncoder();
         m_internalData->activeEncoder.SetLabel("Surface command encoder");
-
-        auto view = surfaceTexture.texture.CreateView();
-        wgpu::RenderPassColorAttachment color{};
-        color.view = view;
-        color.loadOp = wgpu::LoadOp::Clear;
-        color.storeOp = wgpu::StoreOp::Store;
-
-        static float animColor = 0.f;
-        animColor += 0.01f;
-        if (animColor > 1.f) {
-            animColor = 0.f;
-        }
-
-        color.clearValue = {animColor, 0.2f, 0.4f, 1.0f};
-
-        wgpu::RenderPassDescriptor passDesc{};
-        passDesc.colorAttachmentCount = 1;
-        passDesc.colorAttachments = &color;
-
-        auto pass = m_internalData->activeEncoder.BeginRenderPass(&passDesc);
-        pass.End();
     }
 
     void WebGPUPipeline::OnFrameBuildEnd() {
         SR_TRACY_ZONE;
 
         Super::OnFrameBuildEnd();
-
-        m_internalData->surfaceCommandBuffer = m_internalData->activeEncoder.Finish();
-        m_internalData->surfaceCommandBuffer.SetLabel("Surface command buffer");
     }
 
     bool WebGPUPipeline::PreInit(const PipelinePreInitInfo& info) {
@@ -167,9 +231,21 @@ namespace SR_GRAPH_NS {
                 config.device = m_internalData->device;
                 config.format = wgpu::TextureFormat::BGRA8Unorm;
                 config.usage = wgpu::TextureUsage::RenderAttachment;
-                config.width = 800;
-                config.height = 600;
+                double cssW = 0.0, cssH = 0.0;
+                if (emscripten_get_element_css_size("#canvas", &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
+                    constexpr uint32_t kMaxSurfaceDim = 8192;
+                    config.width = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssW)));
+                    config.height = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssH)));
+                }
+                else {
+                    config.width = 800;
+                    config.height = 600;
+                }
                 config.presentMode = wgpu::PresentMode::Fifo;
+
+                m_internalData->surfaceFormat = config.format;
+                m_internalData->surfaceWidth = config.width;
+                m_internalData->surfaceHeight = config.height;
 
                 m_internalData->surface.Configure(&config);
 
@@ -195,8 +271,48 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
+    bool WebGPUPipeline::Destroy() {
+        DestroyOverlay();
+        return Super::Destroy();
+    }
+
+    bool WebGPUPipeline::InitOverlay() {
+        SR_TRACY_ZONE;
+
+    #ifdef SR_USE_IMGUI
+        const bool defaultEnabled =
+        #if defined(SR_EMSCRIPTEN)
+            true;
+        #else
+            false;
+        #endif
+
+        if (SR_UTILS_NS::Features::Instance().Enabled("ImGUI", defaultEnabled)) {
+            auto&& pImGuiOverlay = m_overlays[OverlayType::ImGui];
+            pImGuiOverlay = new WebGPUImGuiOverlay(GetThis());
+            if (!pImGuiOverlay->Init()) {
+                PipelineError("WebGPUPipeline::InitOverlay() : failed to initialize ImGui overlay!");
+                return false;
+            }
+        }
+    #endif
+
+        return Pipeline::InitOverlay();
+    }
+
     PipelineType WebGPUPipeline::GetType() const noexcept {
         return PipelineType::WebGPU;
+    }
+
+    WGPUDevice WebGPUPipeline::GetWGPUDevice() const {
+        return m_internalData ? m_internalData->device.Get() : nullptr;
+    }
+
+    WGPUTextureFormat WebGPUPipeline::GetSurfaceFormat() const {
+        if (!m_internalData) {
+            return WGPUTextureFormat_Undefined;
+        }
+        return static_cast<WGPUTextureFormat>(m_internalData->surfaceFormat);
     }
 
     SR_NODISCARD int32_t WebGPUPipeline::AllocateVBO(int32_t VBO, uint64_t size, const void* pData) {
@@ -364,50 +480,59 @@ namespace SR_GRAPH_NS {
 
     bool WebGPUPipeline::FreeDescriptorSet(int32_t* id) {
         *id = SR_ID_INVALID;
+        return true;
     }
 
     bool WebGPUPipeline::FreeVBO(int32_t* id) {
         m_internalData->VBOs.At(*id).Destroy();
         m_internalData->VBOs.RemoveByIndex(*id);
         *id = SR_ID_INVALID;
+        return true;
     }
 
     bool WebGPUPipeline::FreeIBO(int32_t* id) {
         m_internalData->UBOs.At(*id).Destroy();
         m_internalData->UBOs.RemoveByIndex(*id);
         *id = SR_ID_INVALID;
+        return true;
     }
 
     bool WebGPUPipeline::FreeUBO(int32_t* id) {
         m_internalData->UBOs.At(*id).Destroy();
         m_internalData->UBOs.RemoveByIndex(*id);
         *id = SR_ID_INVALID;
+        return true;
     }
 
     bool WebGPUPipeline::FreeFBO(int32_t* id) {
         *id = SR_ID_INVALID;
+        return true;
     }
 
     bool WebGPUPipeline::FreeSSBO(int32_t* id) {
         m_internalData->SSBOs.At(*id).Destroy();
         m_internalData->SSBOs.RemoveByIndex(*id);
         *id = SR_ID_INVALID;
+        return true;
     }
 
     bool WebGPUPipeline::FreeCubeMap(int32_t* id) {
         *id = SR_ID_INVALID;
+        return true;
     }
 
     bool WebGPUPipeline::FreeShader(int32_t* id) {
         *id = SR_ID_INVALID;
+        return true;
     }
 
     bool WebGPUPipeline::FreeTexture(int32_t* id) {
         *id = SR_ID_INVALID;
+        return true;
     }
 
     bool WebGPUPipeline::FreeCmdBuffer(int32_t* id) {
         *id = SR_ID_INVALID;
+        return true;
     }
-
 }

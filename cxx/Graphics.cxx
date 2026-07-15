@@ -18,6 +18,7 @@
 
 #if defined(SR_RENDER_USE_WEBGPU)
     #include "../src/Graphics/Pipeline/WebGPU/WebGPUPipeline.cpp"
+    #include "../src/Graphics/Overlay/WebGPUImGuiOverlay.cpp"
 #endif
 
 #if defined(SR_EMSCRIPTEN)

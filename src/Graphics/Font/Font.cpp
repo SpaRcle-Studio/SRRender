@@ -116,8 +116,8 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-#ifdef SR_USE_FREETYPE
-    FT_Pos Font::GetKerning(uint32_t leftCharCode, uint32_t rightCharCode) const {
+    int32_t Font::GetKerning(uint32_t leftCharCode, uint32_t rightCharCode) const {
+    #ifdef SR_USE_FREETYPE
         if (!FT_HAS_KERNING(m_face)) {
             return 0;
         }
@@ -132,8 +132,12 @@ namespace SR_GTYPES_NS {
         FT_Get_Kerning(m_face, leftIndex, rightIndex, FT_KERNING_DEFAULT, &delta);
 
         return delta.x;
+    #else
+        return 0;
+    #endif
     }
 
+#ifdef SR_USE_FREETYPE
     FT_Glyph Font::GetGlyph(char32_t code, FT_Render_Mode renderMode) const {
         if (HasColor()) {
             return GetGlyph(code, renderMode, FT_LOAD_RENDER, FT_LOAD_COLOR);

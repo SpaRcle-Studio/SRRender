@@ -5,6 +5,7 @@
 #include <Graphics/Font/FreeType.h>
 
 namespace SR_GRAPH_NS {
+#ifdef SR_USE_FREETYPE
     inline bool GetMonoPixel(const FT_Bitmap& bmp, int x, int y) {
         const uint8_t* row = bmp.buffer + y * bmp.pitch;
         uint8_t byte = row[x >> 3];
@@ -116,4 +117,5 @@ namespace SR_GRAPH_NS {
             out[i] = 0.5f + 0.5f * dist;
         }
     }
+#endif
 }
