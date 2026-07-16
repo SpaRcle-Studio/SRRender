@@ -18,8 +18,8 @@ namespace SR_SRSL_NS {
         SR_NODISCARD std::set<SR_GRAPH_NS::ShaderStage> IsVariableUsedInEntryPointsExt(const std::string_view& name) const;
         SR_NODISCARD bool IsVariableUsedInEntryPoints(const std::string_view& name) const;
         SR_NODISCARD bool IsVariableUsedInEntryPoint(SR_GRAPH_NS::ShaderStage stage, const std::string_view& name) const;
-        SR_NODISCARD bool IsVariableUsed(const std::string_view& name) const;
-        SR_NODISCARD bool IsFunctionUsed(const std::string_view& name) const;
+        SR_NODISCARD bool IsVariableUsed(const std::string_view& name, uint8_t depth = 0) const;
+        SR_NODISCARD bool IsFunctionUsed(const std::string_view& name, uint8_t depth = 0) const;
         SR_NODISCARD bool IsStructUsed(const std::string_view &name) const;
 
         SR_NODISCARD SRSLUseStack::Ptr FindFunction(const std::string_view& name) const;

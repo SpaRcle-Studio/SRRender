@@ -57,8 +57,15 @@ namespace SR_SRSL_NS {
         return str;
     }
 
-    bool SRSLUseStack::IsVariableUsed(const std::string_view& name) const {
+    bool SRSLUseStack::IsVariableUsed(const std::string_view& name, uint8_t depth) const {
         SR_TRACY_ZONE;
+
+        depth++;
+
+        if (depth > 128) {
+            SR_TRACY_ZONE_COLOR(0xFF0000);
+            return false;
+        }
 
         for (auto&& nameInForce : forceUsedVariables) {
             if (nameInForce == name) {
@@ -73,14 +80,14 @@ namespace SR_SRSL_NS {
         }
 
         for (auto&& function : functions) {
-            if (function.second && function.second->IsVariableUsed(name)) {
+            if (function.second && function.second->IsVariableUsed(name, depth)) {
                 return true;
             }
         }
 
         if (SRVerify(pRoot)) {
             for (auto&& function : forceUsedFunctions) {
-                if (auto&& pFunction = pRoot->FindFunction(function); pFunction && pFunction->IsVariableUsed(name)) {
+                if (auto&& pFunction = pRoot->FindFunction(function); pFunction && pFunction->IsVariableUsed(name, depth)) {
                     return true;
                 }
             }
@@ -89,13 +96,22 @@ namespace SR_SRSL_NS {
         return false;
     }
 
-    bool SRSLUseStack::IsFunctionUsed(const std::string_view& name) const {
+    bool SRSLUseStack::IsFunctionUsed(const std::string_view& name, uint8_t depth) const {
+        SR_TRACY_ZONE;
+
+        depth++;
+
+        if (depth > 128) {
+            SR_TRACY_ZONE_COLOR(0xFF0000);
+            return false;
+        }
+
         for (auto&& nameInForce : forceUsedFunctions) {
             if (nameInForce == name) {
                 return true;
             }
             if (SRVerify(pRoot)) {
-                if (auto&& pFunction = pRoot->FindFunction(nameInForce); pFunction && pFunction->IsFunctionUsed(name)) {
+                if (auto&& pFunction = pRoot->FindFunction(nameInForce); pFunction && pFunction->IsFunctionUsed(name, depth)) {
                     return true;
                 }
             }
@@ -110,7 +126,7 @@ namespace SR_SRSL_NS {
                 continue;
             }
 
-            if (function.second->IsFunctionUsed(name)) {
+            if (function.second->IsFunctionUsed(name, depth)) {
                 return true;
             }
         }
