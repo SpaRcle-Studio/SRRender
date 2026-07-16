@@ -111,7 +111,7 @@ namespace SR_GRAPH_NS {
         // In Emscripten/WebGPU we keep surface size in CSS pixels to avoid feedback loops
         // and to match ImGui coordinates when DisplayFramebufferScale = (1,1).
         double cssW = 0.0, cssH = 0.0;
-        if (emscripten_get_element_css_size("#canvas", &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
+        if (emscripten_get_element_css_size(EMSCRIPTEN_CANVAS_ID, &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
             constexpr uint32_t kMaxSurfaceDim = 8192; // Safe default WebGPU limit (unless requested higher at device creation).
             const uint32_t pxW = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssW)));
             const uint32_t pxH = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssH)));
@@ -194,10 +194,12 @@ namespace SR_GRAPH_NS {
         }
 
         wgpu::EmscriptenSurfaceSourceCanvasHTMLSelector canvasDesc{};
-        canvasDesc.selector = "#canvas";
+        canvasDesc.selector = EMSCRIPTEN_CANVAS_ID;
 
         wgpu::SurfaceDescriptor surfaceDesc{};
         surfaceDesc.nextInChain = &canvasDesc;
+
+        SR_LOG("WebGPUPipeline::PreInit() : creating WebGPU surface for canvas element...");
 
         m_internalData->surface = m_internalData->instance.CreateSurface(&surfaceDesc);
         if (!m_internalData->surface) {
@@ -232,7 +234,7 @@ namespace SR_GRAPH_NS {
                 config.format = wgpu::TextureFormat::BGRA8Unorm;
                 config.usage = wgpu::TextureUsage::RenderAttachment;
                 double cssW = 0.0, cssH = 0.0;
-                if (emscripten_get_element_css_size("#canvas", &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
+                if (emscripten_get_element_css_size(EMSCRIPTEN_CANVAS_ID, &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
                     constexpr uint32_t kMaxSurfaceDim = 8192;
                     config.width = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssW)));
                     config.height = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssH)));

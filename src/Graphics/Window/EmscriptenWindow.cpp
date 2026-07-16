@@ -16,7 +16,7 @@ namespace SR_GRAPH_NS {
         SR_LOG("EmscriptenWindow::Initialize() : initializing emscripten window...");
 
         double cssW = 0.0, cssH = 0.0;
-        if (emscripten_get_element_css_size("#canvas", &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
+        if (emscripten_get_element_css_size(EMSCRIPTEN_CANVAS_ID, &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
             // Keep window size in CSS pixels (surface is configured in CSS pixels too).
             const uint32_t pxW = static_cast<uint32_t>(std::max(1.0, cssW));
             const uint32_t pxH = static_cast<uint32_t>(std::max(1.0, cssH));
@@ -39,7 +39,7 @@ namespace SR_GRAPH_NS {
     void EmscriptenWindow::PollEvents() {
         // Drive resize from the actual canvas CSS size (set by HTML/CSS).
         double cssW = 0.0, cssH = 0.0;
-        if (emscripten_get_element_css_size("#canvas", &cssW, &cssH) != EMSCRIPTEN_RESULT_SUCCESS) {
+        if (emscripten_get_element_css_size(EMSCRIPTEN_CANVAS_ID, &cssW, &cssH) != EMSCRIPTEN_RESULT_SUCCESS) {
             return;
         }
 
@@ -54,7 +54,7 @@ namespace SR_GRAPH_NS {
         m_surfaceSize = m_size;
 
         // Keep canvas backing store in sync with CSS pixels (no DPR scaling).
-        emscripten_set_canvas_element_size("#canvas", static_cast<int>(w), static_cast<int>(h));
+        emscripten_set_canvas_element_size(EMSCRIPTEN_CANVAS_ID, static_cast<int>(w), static_cast<int>(h));
 
         if (m_resizeCallback) {
             m_resizeCallback(this, static_cast<int32_t>(w), static_cast<int32_t>(h));
