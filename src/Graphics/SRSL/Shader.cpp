@@ -871,7 +871,7 @@ namespace SR_SRSL_NS {
             SR_LOG("SRSLShader::ClearShadersCache() : cache was cleared.");
         }
         else {
-            SR_WARN("SRSLShader::ClearShadersCache() : cache is already clean!");
+            SR_LOG("SRSLShader::ClearShadersCache() : cache is already clean!");
         }
     }
 
