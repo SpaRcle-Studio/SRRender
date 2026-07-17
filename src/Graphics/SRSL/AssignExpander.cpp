@@ -109,7 +109,7 @@ namespace SR_SRSL_NS {
         Lexem operation = *GetLexem(1);
         Lexem assign = *GetLexem(2);
 
-        std::vector<Lexem> copy;
+        SR_UTILS_NS::Vector<Lexem> copy;
         copy.insert(copy.end(), m_lexems.begin() + m_currentLexem, m_lexems.end());
         auto&& [pExpr, result] = SRSLMathExpression::Instance().Analyze(std::move(copy));
 

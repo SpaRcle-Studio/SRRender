@@ -50,39 +50,8 @@ namespace SR_SRSL_NS {
         '_',
     };
 
-    SR_MAYBE_UNUSED static bool IsIdentifier(const std::string_view & token) noexcept {
-        SR_TRACY_ZONE;
-        bool isFirst = true;
-
-        for (auto&& tokenChar : token) {
-            std::string_view charStr(&tokenChar, 1);
-            if (isFirst && SR_MATH_NS::IsNumber(charStr)) {
-                return false;
-            }
-            isFirst = false;
-
-            for (auto&& identifierChar : SRSL_IDENTIFIER_CHARS) {
-                if (tokenChar == identifierChar) {
-                    goto skip;
-                }
-            }
-
-            return false;
-
-        skip:
-            SR_NOOP;
-        }
-
-        return true;
-    }
-
-    SR_MAYBE_UNUSED static bool IsOperator(const std::string_view operation) noexcept {
-        SR_TRACY_ZONE;
-        static const std::vector<std::string_view> operators = {
-            "+", "-", "!", ".", "~", ">", "^", "<", ":", "?", "|", "&", "%",
-        };
-        return std::find(operators.begin(), operators.end(), operation) != operators.end();
-    }
+    bool IsIdentifier(SR_UTILS_NS::StringView token) noexcept;
+    bool IsOperator(SR_UTILS_NS::StringView operation) noexcept;
 
     SR_ENUM_NS_CLASS_T(LexemKind, uint16_t,
         Unknown,

@@ -5,7 +5,7 @@
 #include <Graphics/SRSL/LexicalAnalyzer.h>
 
 namespace SR_SRSL_NS {
-    std::pair<SRSLAnalyzedTree::Ptr, SRSLResult> SRSLLexicalAnalyzer::Analyze(std::vector<Lexem>&& lexems) {
+    std::pair<SRSLAnalyzedTree::Ptr, SRSLResult> SRSLLexicalAnalyzer::Analyze(SR_UTILS_NS::Vector<Lexem>&& lexems) {
         SR_TRACY_ZONE;
         SR_GLOBAL_LOCK
 
@@ -398,7 +398,7 @@ namespace SR_SRSL_NS {
         SRAssert(!m_expr);
         SR_SAFE_DELETE_PTR(m_expr);
 
-        std::vector<Lexem> exprLexems;
+        SR_UTILS_NS::Vector<Lexem> exprLexems;
         uint32_t deep = 0;
         bool allowIdentifier = true;
 
@@ -664,7 +664,7 @@ namespace SR_SRSL_NS {
             ProcessExpression(true);
         }
         else {
-            m_expr = new SRSLExpr(std::string(pCurrent->value));
+            m_expr = new SRSLExpr(pCurrent->value);
             ++m_currentLexem;
         }
 

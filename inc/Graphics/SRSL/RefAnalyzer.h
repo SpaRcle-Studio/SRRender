@@ -12,6 +12,7 @@ namespace SR_GRAPH_NS {
 }
 
 namespace SR_SRSL_NS {
+    struct SRSLUseStackHolder;
     struct SRSLUseStack {
         using Ptr = std::shared_ptr<SRSLUseStack>;
 
@@ -30,33 +31,40 @@ namespace SR_SRSL_NS {
         void SetRoot(SRSLUseStack* pRootStack);
 
         std::map<std::string, SRSLUseStack::Ptr> functions;
-        std::set<std::string> variables;
 
-        std::set<std::string> forceUsedVariables;
-        std::set<std::string> forceUsedFunctions;
+        SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> variables;
+        SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> forceUsedVariables;
+        SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> forceUsedFunctions;
 
         SRSLUseStack* pRoot = nullptr;
     };
 
+    struct SRSLUseStackHolder {
+        using Ptr = SR_HTYPES_NS::RawPointerHolder<SRSLUseStackHolder>;
+
+        
+    };
+
     class SRSLRefAnalyzer : public SR_UTILS_NS::Singleton<SRSLRefAnalyzer> {
         SR_REGISTER_SINGLETON(SRSLRefAnalyzer)
+        using Stack = SR_UTILS_NS::Vector<SR_UTILS_NS::StringView>;
     public:
         SR_NODISCARD SRSLUseStack::Ptr Analyze(const SRSLAnalyzedTree::Ptr& pAnalyzedTree, const SR_SRSL_NS::ShaderParams& params);
 
     private:
         SR_NODISCARD SRSLFunction* FindFunction(const std::string& name) const;
         SR_NODISCARD SRSLFunction* FindFunction(SRSLLexicalTree* pTree, const std::string& name) const;
-        SR_NODISCARD SRSLUseStack::Ptr AnalyzeTree(std::list<std::string>& stack, SRSLLexicalTree* pTree);
+        SR_NODISCARD SRSLUseStack::Ptr AnalyzeTree(Stack& stack, SRSLLexicalTree* pTree);
 
         void PreprocessUseStack(SRSLUseStack::Ptr& pUseStack, const SR_SRSL_NS::ShaderParams& params);
 
-        void AnalyzeVariable(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLVariable* pVariable);
-        void AnalyzeExpression(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLExpr* pExpr);
-        void AnalyzeArrayExpression(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLExpr* pExpr);
-        void AnalyzeIfStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLIfStatement* pIfStatement);
-        void AnalyzeForStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLForStatement* pForStatement);
-        void AnalyzeWhileStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLWhileStatement* pWhileStatement);
-        void AnalyzeFunction(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLFunction* pFunction);
+        void AnalyzeVariable(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLVariable* pVariable);
+        void AnalyzeExpression(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLExpr* pExpr);
+        void AnalyzeArrayExpression(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLExpr* pExpr);
+        void AnalyzeIfStatement(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLIfStatement* pIfStatement);
+        void AnalyzeForStatement(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLForStatement* pForStatement);
+        void AnalyzeWhileStatement(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLWhileStatement* pWhileStatement);
+        void AnalyzeFunction(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLFunction* pFunction);
 
     private:
         SRSLAnalyzedTree::Ptr m_analyzedTree;

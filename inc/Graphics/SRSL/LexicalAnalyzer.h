@@ -19,7 +19,7 @@ namespace SR_SRSL_NS {
             StructureStatement, StructureStatementBody,
         };
     public:
-        SR_NODISCARD std::pair<SRSLAnalyzedTree::Ptr, SRSLResult> Analyze(std::vector<Lexem>&& lexems);
+        SR_NODISCARD std::pair<SRSLAnalyzedTree::Ptr, SRSLResult> Analyze(SR_UTILS_NS::Vector<Lexem>&& lexems);
 
     private:
         void Clear();
@@ -45,7 +45,7 @@ namespace SR_SRSL_NS {
         SRSLResult m_result;
         std::list<LXAState> m_states;
 
-        std::vector<Lexem> m_lexems;
+        SR_UTILS_NS::Vector<Lexem> m_lexems;
         int64_t m_currentLexem = 0;
 
     };

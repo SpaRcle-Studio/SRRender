@@ -81,8 +81,8 @@ namespace SR_SRSL_NS {
         //SR_NODISCARD Vertices::VertexType GetVertexType() const;
         SR_NODISCARD SR_SRSL_NS::ShaderType GetType() const;
         SR_NODISCARD SR_UTILS_NS::Path GetPath() const { return m_path; }
-        SR_NODISCARD const SRSLAnalyzedTree::Ptr GetAnalyzedTree() const;
-        SR_NODISCARD const SRSLUseStack::Ptr GetUseStack() const;
+        SR_NODISCARD SRSLAnalyzedTree::Ptr GetAnalyzedTree() const;
+        SR_NODISCARD SRSLUseStack::Ptr GetUseStack() const;
         SR_NODISCARD const UniformBlocks& GetUniformBlocks() const { return m_uniformBlocks; }
         SR_NODISCARD const UniformBlocks& GetSSBOBlocks() const { return m_ssboBlocks; }
         SR_NODISCARD const SRSLUniformBlock& GetPushConstants() const { return m_pushConstants; }

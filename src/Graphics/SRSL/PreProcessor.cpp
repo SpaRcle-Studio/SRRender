@@ -8,7 +8,7 @@
 #include <Graphics/SRSL/Evaluator.h>
 
 namespace SR_SRSL_NS {
-    SRSLPreProcessor::OutResult SRSLPreProcessor::Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderParams& params) {
+    SRSLPreProcessor::OutResult SRSLPreProcessor::Process(SR_UTILS_NS::Vector<Lexem>&& lexems, Includes& includes, ShaderParams& params) {
         SR_TRACY_ZONE;
 
         Clear();
@@ -25,7 +25,7 @@ namespace SR_SRSL_NS {
 
         {
             SR_TRACY_ZONE_N("Remove macro end lexems");
-            std::erase_if(m_lexems, [](const Lexem &lexem) {
+            std::erase_if(m_lexems, [](const Lexem& lexem) {
                 return lexem.kind == LexemKind::MacroEnd;
             });
         }
@@ -66,8 +66,6 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLPreProcessor::ProcessMain() {
-        SR_TRACY_ZONE;
-
         if (m_lexems[m_currentLexem].kind != LexemKind::Macro && m_state == PPState::Idle) {
             if (!m_ifStack.top()) {
                 m_lexems.erase(m_lexems.begin() + m_currentLexem);

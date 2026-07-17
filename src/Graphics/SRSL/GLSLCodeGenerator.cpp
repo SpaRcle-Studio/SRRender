@@ -247,7 +247,7 @@ namespace SR_SRSL_NS {
         std::string postCode;
 
         if (isColorUsed) {
-            postCode += GenerateTab(1) + SR_SRSL_MAIN_OUT_LAYER + " = COLOR;\n";
+            postCode += "{}{} = COLOR;\n"_format(GenerateTab(1), SR_SRSL_MAIN_OUT_LAYER);
         }
 
         /// color buffer pass code
@@ -550,7 +550,7 @@ namespace SR_SRSL_NS {
     }
 
     std::string GLSLCodeGenerator::GenerateVariable(SRSLVariable* pVariable, int32_t deep) const {
-        std::string code = GenerateTab(deep);
+        std::string code = std::string(GenerateTab(deep));
 
         if (pVariable->pType) {
             code += GenerateType(pVariable->pType, 0) + " ";
@@ -645,7 +645,7 @@ namespace SR_SRSL_NS {
             return std::string();
         }
 
-        std::string code = GenerateTab(deep);
+        std::string code = std::string(GenerateTab(deep));
 
         if (pExpr->token == "++" || pExpr->token == "--") {
             code += pExpr->token;
@@ -684,7 +684,9 @@ namespace SR_SRSL_NS {
                     code += ",";
                 }
             }
-            code += "\n" + GenerateTab(deep + 1) + "}";
+            code += "\n";
+            code += GenerateTab(deep + 1);
+            code += "}";
         }
         else if (pExpr->args.empty()) {
             code += ReplaceToken(pExpr->token);
@@ -777,14 +779,6 @@ namespace SR_SRSL_NS {
         }
 
         return code;
-    }
-
-    std::string GLSLCodeGenerator::GenerateTab(int32_t deep) const {
-        if (deep <= 0) {
-            return std::string();
-        }
-
-        return std::string(deep * 4, ' ');
     }
 
     void GLSLCodeGenerator::GenerateSSBOBlock(std::string& code, SR_UTILS_NS::StringAtom name, const SRSLUniformBlock& uniformBlock, const SRSLUseStack::Ptr& pFunction) const {

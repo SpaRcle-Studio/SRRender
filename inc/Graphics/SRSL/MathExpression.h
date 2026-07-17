@@ -16,7 +16,7 @@ namespace SR_SRSL_NS {
             ~ParseTokenStackData();
         };
     public:
-        SR_NODISCARD std::pair<SRSLExpr*, SRSLResult> Analyze(std::vector<Lexem>&& lexems);
+        SR_NODISCARD std::pair<SRSLExpr*, SRSLResult> Analyze(SR_UTILS_NS::Vector<Lexem>&& lexems);
 
     private:
         void Clear();
@@ -42,12 +42,12 @@ namespace SR_SRSL_NS {
     private:
         SRSLResult m_result;
         std::string m_tokenBufferTmp;
-        std::string m_tryParseStringTokenTmp;
+        SR_UTILS_NS::String m_tryParseStringTokenTmp;
 
         std::array<std::string, 64> m_tokenStack;
         uint32_t m_tokenStackSize = 0;
 
-        std::vector<Lexem> m_lexems;
+        SR_UTILS_NS::Vector<Lexem> m_lexems;
         int64_t m_currentLexem = 0;
 
     };

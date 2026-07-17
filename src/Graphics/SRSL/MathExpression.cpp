@@ -5,7 +5,7 @@
 #include <Graphics/SRSL/MathExpression.h>
 
 namespace SR_SRSL_NS {
-    std::pair<SRSLExpr*, SRSLResult> SRSLMathExpression::Analyze(std::vector<Lexem>&& lexems) {
+    std::pair<SRSLExpr*, SRSLResult> SRSLMathExpression::Analyze(SR_UTILS_NS::Vector<Lexem>&& lexems) {
         SR_TRACY_ZONE;
 
         Clear();
@@ -159,7 +159,7 @@ namespace SR_SRSL_NS {
             if (auto&& pLexem = GetCurrentLexem(); pLexem && pLexem->kind == LexemKind::OpeningSquareBracket) {
                 ++m_currentLexem;
 
-                std::vector<Lexem> bracketLexems;
+                SR_UTILS_NS::Vector<Lexem> bracketLexems;
                 int32_t bracketCount = 1;
 
                 while (InBounds() && bracketCount > 0) {
@@ -183,7 +183,7 @@ namespace SR_SRSL_NS {
                 }
                 else {
                     const int64_t stashLexem = m_currentLexem;
-                    std::vector<Lexem> oldLexems = std::move(m_lexems);
+                    SR_UTILS_NS::Vector<Lexem> oldLexems = std::move(m_lexems);
 
                     auto&& pInnerExpr = SRSLMathExpression::Instance().Analyze(std::move(bracketLexems));
                     if (pInnerExpr.second.HasErrors()) {

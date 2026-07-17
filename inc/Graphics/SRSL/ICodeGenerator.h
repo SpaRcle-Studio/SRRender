@@ -21,12 +21,14 @@ namespace SR_SRSL_NS {
 
     protected:
         SR_NODISCARD virtual SRSLCodeGenRes GenerateStages(const SRSLShader* pShader) = 0;
+        SR_NODISCARD SR_UTILS_NS::StringView GenerateTab(int32_t deep) const;
 
     protected:
         void Clear();
 
     protected:
         SRSLResult m_result = SRSLResult();
+        mutable SR_UTILS_NS::String m_tabs;
 
     };
 }

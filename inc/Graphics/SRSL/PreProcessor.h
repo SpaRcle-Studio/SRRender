@@ -16,10 +16,10 @@ namespace SR_SRSL_NS {
         };
     public:
         using Includes = std::vector<SRSLInclude>;
-        using OutResult = std::pair<std::vector<Lexem>, SRSLResult>;
+        using OutResult = std::pair<SR_UTILS_NS::Vector<Lexem>, SRSLResult>;
 
     public:
-        SR_NODISCARD OutResult Process(std::vector<Lexem>&& lexems, Includes& includes, ShaderParams& params);
+        SR_NODISCARD OutResult Process(SR_UTILS_NS::Vector<Lexem>&& lexems, Includes& includes, ShaderParams& params);
 
     private:
         void Clear();
@@ -35,8 +35,8 @@ namespace SR_SRSL_NS {
         SRSLResult m_result;
         ShaderParams* m_params = nullptr;
 
-        std::vector<Lexem> m_expressionLexems;
-        std::vector<Lexem> m_lexems;
+        SR_UTILS_NS::Vector<Lexem> m_expressionLexems;
+        SR_UTILS_NS::Vector<Lexem> m_lexems;
         int64_t m_currentLexem = 0;
 
         std::string m_include;

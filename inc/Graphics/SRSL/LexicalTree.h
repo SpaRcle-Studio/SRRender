@@ -49,118 +49,27 @@ namespace SR_SRSL_NS {
     public:
         SRSLExpr() : SRSLLexicalUnit(LexicalUnitType::Expr) { }
 
-        static SRSLExpr* CreateStringExpression(std::string token) {
-            SR_TRACY_ZONE;
-            auto&& pExpr = new SRSLExpr(std::move(token));
-            pExpr->isString = true;
-            return pExpr;
-        }
+        static SRSLExpr* CreateStringExpression(SR_UTILS_NS::String token);
+        static SRSLExpr* CreateStringExpression(std::string_view token);
 
-        static SRSLExpr* CreateStringExpression(std::string_view token) {
-            SR_TRACY_ZONE;
-            auto&& pExpr = new SRSLExpr(std::string(token));
-            pExpr->isString = true;
-            return pExpr;
-        }
-
-        explicit SRSLExpr(std::string&& token)
-            : SRSLLexicalUnit(LexicalUnitType::Expr)
-            , token(SR_UTILS_NS::Exchange(token, { }))
-        {
-            SR_TRACY_ZONE;
-            SRAssert(this->token != "(" && this->token != ")");
-            SRAssert(this->token != "[" && this->token != "]");
-            SRAssert(this->token != "}");
-
-            if (this->token == "{") {
-                isList = true;
-            }
-        }
-
-        explicit SRSLExpr(std::string_view token)
-            : SRSLLexicalUnit(LexicalUnitType::Expr)
-            , token(token)
-        {
-            SR_TRACY_ZONE;
-            SRAssert(this->token != "(" && this->token != ")");
-            SRAssert(this->token != "[" && this->token != "]");
-            SRAssert(this->token != "}");
-
-            if (this->token == "{") {
-                isList = true;
-            }
-        }
-
-        explicit SRSLExpr(std::string_view token, SRSLExpr* pAExpr)
-            : SRSLLexicalUnit(LexicalUnitType::Expr)
-            , token(token)
-        {
-            SR_TRACY_ZONE;
-            SRAssert(pAExpr);
-            SRAssert(this->token != ")" && this->token != "(");
-            SRAssert(this->token != "[" && this->token != "]");
-            args.emplace_back(pAExpr);
-        }
-
-        explicit SRSLExpr(std::string_view token, SRSLExpr* pAExpr, SRSLExpr* pBExpr)
-            : SRSLLexicalUnit(LexicalUnitType::Expr)
-            , token(token)
-        {
-            SR_TRACY_ZONE;
-            SRAssert(pAExpr);
-            SRAssert(this->token != ")" && this->token != "(");
-            SRAssert(this->token != "]");
-
-            if (this->token == "[") {
-                isArray = true;
-            }
-
-            args.emplace_back(pAExpr);
-
-            if (pBExpr) {
-                args.emplace_back(pBExpr);
-            }
-            else {
-                SRAssert(isArray);
-                /// массив без явного размера (динамический массив вида float[] arr;)
-                SR_NOOP;
-            }
-        }
-
-        explicit SRSLExpr(SRSLExpr* pAExpr, SRSLExpr* pBExpr)
-            : SRSLLexicalUnit(LexicalUnitType::Expr)
-        {
-            SR_TRACY_ZONE;
-            SRAssert(pAExpr && pBExpr);
-            args.emplace_back(pAExpr);
-            args.emplace_back(pBExpr);
-        }
-
-        ~SRSLExpr() override {
-            for (auto&& pExpr : args) {
-                delete pExpr;
-            }
-        }
-
-        SRSLExpr(SRSLExpr&& other) noexcept
-            : SRSLLexicalUnit(LexicalUnitType::Expr)
-            , token(SR_UTILS_NS::Exchange(other.token, { }))
-            , args(SR_UTILS_NS::Exchange(other.args, { }))
-            , isCall(SR_UTILS_NS::Exchange(other.isCall, { }))
-            , isArray(SR_UTILS_NS::Exchange(other.isArray, { }))
-        { }
+        explicit SRSLExpr(SR_UTILS_NS::String token);
+        explicit SRSLExpr(std::string_view token);
+        explicit SRSLExpr(std::string_view token, SRSLExpr* pAExpr);
+        explicit SRSLExpr(std::string_view token, SRSLExpr* pAExpr, SRSLExpr* pBExpr);
+        explicit SRSLExpr(SRSLExpr* pAExpr, SRSLExpr* pBExpr);
+        SRSLExpr(SRSLExpr&& other) noexcept;
+        ~SRSLExpr() override;
 
         SR_NODISCARD std::string ToString(uint32_t deep) const override;
+        SR_UTILS_NS::StringView GetAsName();
 
-        std::string GetAsName();
+        SR_UTILS_NS::String token;
+        SR_UTILS_NS::SmallVector<SRSLExpr*, 8> args;
 
-        std::string token;
-        std::vector<SRSLExpr*> args;
-
-        bool isCall = false;       /// function(arg1, arg2, arg3)
-        bool isArray = false;      /// variable[expression]
-        bool isList = false;       /// { expr1, expr2, expr3 }
-        bool isString = false;     /// "some string" but without quotes
+        bool isCall   = false; /// function(arg1, arg2, arg3)
+        bool isArray  = false; /// variable[expression]
+        bool isList   = false; /// { expr1, expr2, expr3 }
+        bool isString = false; /// "some string" but without quotes
 
     };
 
@@ -184,8 +93,8 @@ namespace SR_SRSL_NS {
 
         SR_NODISCARD std::string ToString(uint32_t deep) const override;
 
-        std::string name;
-        std::vector<SRSLExpr*> args;
+        SR_UTILS_NS::String name;
+        SR_UTILS_NS::SmallVector<SRSLExpr*, 4> args;
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
@@ -241,8 +150,8 @@ namespace SR_SRSL_NS {
 
         SR_NODISCARD std::string ToString(uint32_t deep) const override;
 
-        SR_NODISCARD std::string GetType() const;
-        SR_NODISCARD std::string GetName() const;
+        SR_NODISCARD SR_UTILS_NS::StringView GetType() const;
+        SR_NODISCARD SR_UTILS_NS::StringView GetName() const;
 
         SRSLDecorators* pDecorators = nullptr;
         SRSLExpr* pType = nullptr;
@@ -364,15 +273,10 @@ namespace SR_SRSL_NS {
 
         SR_NODISCARD std::string ToString(uint32_t deep) const override;
 
-        SR_NODISCARD SRSLFunction* FindFunction(const std::string& name) const;
+        SR_NODISCARD SRSLFunction* FindFunction(SR_UTILS_NS::StringView name) const;
         SR_NODISCARD SRSLExpr* AsExpression() const;
 
-        void Clear() {
-            for (auto&& pUnit : lexicalTree) {
-                delete pUnit;
-            }
-            lexicalTree.clear();
-        }
+        void Clear();
 
         std::vector<SRSLLexicalUnit*> lexicalTree;
     };

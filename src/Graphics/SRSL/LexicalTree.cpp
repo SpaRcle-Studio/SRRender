@@ -34,7 +34,7 @@ namespace SR_SRSL_NS {
         return std::string();
     }
 
-    std::string SRSLExpr::GetAsName() {
+    SR_UTILS_NS::StringView SRSLExpr::GetAsName() {
         SR_TRACY_ZONE;
         if (!isArray) {
             return token;
@@ -43,8 +43,99 @@ namespace SR_SRSL_NS {
         if (args.size() >= 1) {
             return args[0]->GetAsName();
         }
-        return std::string();
+        return SR_UTILS_NS::StringView();
     }
+
+    SRSLExpr* SRSLExpr::CreateStringExpression(SR_UTILS_NS::String token) {
+        SR_TRACY_ZONE;
+        auto&& pExpr = new SRSLExpr(std::move(token));
+        pExpr->isString = true;
+        return pExpr;
+    }
+
+    SRSLExpr* SRSLExpr::CreateStringExpression(std::string_view token) {
+        SR_TRACY_ZONE;
+        auto&& pExpr = new SRSLExpr(token);
+        pExpr->isString = true;
+        return pExpr;
+    }
+
+    SRSLExpr::SRSLExpr(std::string_view token)
+        : SRSLExpr(SR_UTILS_NS::String(token))
+    { }
+
+    SRSLExpr::SRSLExpr(SR_UTILS_NS::String token)
+        : SRSLLexicalUnit(LexicalUnitType::Expr)
+        , token(token)
+    {
+        SR_TRACY_ZONE;
+        SRAssert(this->token != "(" && this->token != ")");
+        SRAssert(this->token != "[" && this->token != "]");
+        SRAssert(this->token != "}");
+
+        if (this->token == "{") {
+            isList = true;
+        }
+    }
+
+    SRSLExpr::SRSLExpr(std::string_view token, SRSLExpr* pAExpr)
+        : SRSLLexicalUnit(LexicalUnitType::Expr)
+        , token(token)
+    {
+        SR_TRACY_ZONE;
+        SRAssert(pAExpr);
+        SRAssert(this->token != ")" && this->token != "(");
+        SRAssert(this->token != "[" && this->token != "]");
+        args.emplace_back(pAExpr);
+    }
+
+    SRSLExpr::SRSLExpr(std::string_view token, SRSLExpr *pAExpr, SRSLExpr *pBExpr)
+        : SRSLLexicalUnit(LexicalUnitType::Expr)
+        , token(token)
+    {
+        SR_TRACY_ZONE;
+        SRAssert(pAExpr);
+        SRAssert(this->token != ")" && this->token != "(");
+        SRAssert(this->token != "]");
+
+        if (this->token == "[") {
+            isArray = true;
+        }
+
+        args.emplace_back(pAExpr);
+
+        if (pBExpr) {
+            args.emplace_back(pBExpr);
+        }
+        else {
+            SRAssert(isArray);
+            /// массив без явного размера (динамический массив вида float[] arr;)
+            SR_NOOP;
+        }
+    }
+
+    SRSLExpr::SRSLExpr(SRSLExpr* pAExpr, SRSLExpr* pBExpr)
+        : SRSLLexicalUnit(LexicalUnitType::Expr)
+    {
+        SR_TRACY_ZONE;
+        SRAssert(pAExpr && pBExpr);
+        args.emplace_back(pAExpr);
+        args.emplace_back(pBExpr);
+    }
+
+    SRSLExpr::~SRSLExpr() {
+        for (auto&& pExpr : args) {
+            delete pExpr;
+        }
+    }
+
+    SRSLExpr::SRSLExpr(SRSLExpr&& other) noexcept
+        : SRSLLexicalUnit(LexicalUnitType::Expr)
+        , token(SR_UTILS_NS::Exchange(other.token, { }))
+        , args(SR_UTILS_NS::Exchange(other.args, { }))
+        , isCall(SR_UTILS_NS::Exchange(other.isCall, { }))
+        , isArray(SR_UTILS_NS::Exchange(other.isArray, { }))
+    { }
 
     std::string SRSLDecorator::ToString(uint32_t deep) const {
         std::string code = "[" + name;
@@ -107,10 +198,10 @@ namespace SR_SRSL_NS {
         return code;
     }
 
-    SRSLFunction *SRSLLexicalTree::FindFunction(const std::string &name) const {
+    SRSLFunction* SRSLLexicalTree::FindFunction(SR_UTILS_NS::StringView name) const {
         for (auto&& pUnit : lexicalTree) {
             if (auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit)) {
-                if (pFunction->pName->token == name) {
+                if (SR_UTILS_NS::StringView(pFunction->pName->token) == name) {
                     return pFunction;
                 }
             }
@@ -124,6 +215,13 @@ namespace SR_SRSL_NS {
             return nullptr;
         }
         return dynamic_cast<SRSLExpr*>(lexicalTree.back());
+    }
+
+    void SRSLLexicalTree::Clear() {
+        for (auto&& pUnit : lexicalTree) {
+            delete pUnit;
+        }
+        lexicalTree.clear();
     }
 
     std::string SRSLVariable::ToString(uint32_t deep) const {
@@ -142,17 +240,17 @@ namespace SR_SRSL_NS {
         return code;
     }
 
-    std::string SRSLVariable::GetType() const {
+    SR_UTILS_NS::StringView SRSLVariable::GetType() const {
         if (pType) {
             return pType->token;
         }
 
-        return std::string();
+        return SR_UTILS_NS::StringView();
     }
 
-    std::string SRSLVariable::GetName() const {
+    SR_UTILS_NS::StringView SRSLVariable::GetName() const {
         if (!pName) {
-            return std::string();
+            return SR_UTILS_NS::StringView();
         }
 
         return pName->GetAsName();

@@ -34,11 +34,11 @@ namespace SR_SRSL_NS {
         std::string str;
 
         for (auto&& name : variables) {
-            str += std::string(SR_MAX(0, deep * 4), ' ') + "var is \"" + name + "\"\n";
+            str += std::string(SR_MAX(0, deep * 4), ' ') + "var is \"{}\"\n"_format(name);
         }
 
         for (auto&& name : forceUsedVariables) {
-            str += std::string(SR_MAX(0, deep * 4), ' ') + "force use var is \"" + name + "\"\n";
+            str += std::string(SR_MAX(0, deep * 4), ' ') + "force use var is \"{}\"\n"_format(name);
         }
 
         for (auto&& [name, function] : functions) {
@@ -51,7 +51,7 @@ namespace SR_SRSL_NS {
         }
 
         for (auto&& name : forceUsedFunctions) {
-            str += std::string(SR_MAX(0, deep * 4), ' ') + "force use function is \"" + name + "\"\n";
+            str += std::string(SR_MAX(0, deep * 4), ' ') + "force use function is \"{}\"\n"_format(name);
         }
 
         return str;
@@ -201,7 +201,7 @@ namespace SR_SRSL_NS {
         SR_TRACY_ZONE;
         SR_GLOBAL_LOCK
         m_analyzedTree = pAnalyzedTree;
-        std::list<std::string> stack;
+        Stack stack;
         auto&& pUseStack = AnalyzeTree(stack, pAnalyzedTree->pLexicalTree);
         if (pUseStack) {
             PreprocessUseStack(pUseStack, params);
@@ -236,7 +236,7 @@ namespace SR_SRSL_NS {
         }
     }
 
-    SRSLUseStack::Ptr SRSLRefAnalyzer::AnalyzeTree(std::list<std::string>& stack, SRSLLexicalTree* pTree) {
+    SRSLUseStack::Ptr SRSLRefAnalyzer::AnalyzeTree(Stack& stack, SRSLLexicalTree* pTree) {
         auto&& pUseStack = SRSLUseStack::Ptr(new SRSLUseStack());
         if (!pTree) {
             return pUseStack;
@@ -274,7 +274,7 @@ namespace SR_SRSL_NS {
         return pUseStack;
     }
 
-    void SRSLRefAnalyzer::AnalyzeExpression(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLExpr* pExpr) {
+    void SRSLRefAnalyzer::AnalyzeExpression(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLExpr* pExpr) {
         if (!pExpr) {
             return;
         }
@@ -306,7 +306,7 @@ namespace SR_SRSL_NS {
         }
 
         if (pExpr->isCall) {
-            if (auto&& pFunction = FindFunction(pExpr->token)) {
+            if (FindFunction(pExpr->token)) {
                 pUseStack->forceUsedFunctions.insert(pExpr->token);
             }
 
@@ -326,7 +326,7 @@ namespace SR_SRSL_NS {
         }
     }
 
-    void SRSLRefAnalyzer::AnalyzeIfStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLIfStatement* pIfStatement) {
+    void SRSLRefAnalyzer::AnalyzeIfStatement(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLIfStatement* pIfStatement) {
         if (pIfStatement->pExpr) {
             AnalyzeExpression(pUseStack, stack, pIfStatement->pExpr);
         }
@@ -367,14 +367,14 @@ namespace SR_SRSL_NS {
         return nullptr;
     }
 
-    void SRSLRefAnalyzer::AnalyzeArrayExpression(SRSLUseStack::Ptr& pUseStack, std::list<std::string> &stack, SRSLExpr* pExpr) {
+    void SRSLRefAnalyzer::AnalyzeArrayExpression(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLExpr* pExpr) {
         AnalyzeExpression(pUseStack, stack, pExpr->args[0]);
         if (pExpr->args.size() == 2) {
             AnalyzeExpression(pUseStack, stack, pExpr->args[1]);
         }
     }
 
-    void SRSLRefAnalyzer::AnalyzeFunction(SRSLUseStack::Ptr &pUseStack, std::list<std::string> &stack, SRSLFunction *pFunction) {
+    void SRSLRefAnalyzer::AnalyzeFunction(SRSLUseStack::Ptr &pUseStack, Stack& stack, SRSLFunction *pFunction) {
         if (pFunction->pLexicalTree) {
             pUseStack->functions[pFunction->GetName()] = AnalyzeTree(stack, pFunction->pLexicalTree);
         }
@@ -383,7 +383,7 @@ namespace SR_SRSL_NS {
         }
     }
 
-    void SRSLRefAnalyzer::AnalyzeWhileStatement(SRSLUseStack::Ptr& pUseStack, std::list<std::string>& stack, SRSLWhileStatement* pWhileStatement) {
+    void SRSLRefAnalyzer::AnalyzeWhileStatement(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLWhileStatement* pWhileStatement) {
         if (pWhileStatement->pCondition) {
             AnalyzeExpression(pUseStack, stack, pWhileStatement->pCondition);
         }
@@ -392,7 +392,7 @@ namespace SR_SRSL_NS {
         }
     }
 
-    void SRSLRefAnalyzer::AnalyzeForStatement(SRSLUseStack::Ptr &pUseStack, std::list<std::string> &stack, SRSLForStatement *pForStatement) {
+    void SRSLRefAnalyzer::AnalyzeForStatement(SRSLUseStack::Ptr &pUseStack, Stack& stack, SRSLForStatement *pForStatement) {
         if (pForStatement->pVar) {
             AnalyzeVariable(pUseStack, stack, pForStatement->pVar);
         }
@@ -410,7 +410,7 @@ namespace SR_SRSL_NS {
         }
     }
 
-    void SRSLRefAnalyzer::AnalyzeVariable(SRSLUseStack::Ptr &pUseStack, std::list<std::string> &stack, SRSLVariable *pVariable) {
+    void SRSLRefAnalyzer::AnalyzeVariable(SRSLUseStack::Ptr &pUseStack, Stack& stack, SRSLVariable *pVariable) {
         if (pVariable->pType) {
             AnalyzeExpression(pUseStack, stack, pVariable->pType);
         }

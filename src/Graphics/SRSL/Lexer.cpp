@@ -34,11 +34,11 @@ namespace SR_SRSL_NS {
 
         Clear();
 
+        m_lexems.reserve(512);
         m_source = code;
         m_fileIndex = fileIndex;
 
-        while (InBounds())
-        {
+        while (InBounds()) {
             SkipSpaces();
 
             if (!InBounds()) {
@@ -54,9 +54,9 @@ namespace SR_SRSL_NS {
     }
 
     SRSLLexer::ProcessedLexem SRSLLexer::ProcessLexem() {
-        SR_TRACY_ZONE;
+        const char actualChar = m_source[m_offset];
 
-        switch (m_source[m_offset]) {
+        switch (actualChar) {
             case '[': return Lexem(m_offset++, 1, LexemKind::OpeningSquareBracket, "[", m_fileIndex, m_line, m_position++);
             case ']': return Lexem(m_offset++, 1, LexemKind::ClosingSquareBracket, "]", m_fileIndex, m_line, m_position++);
 
@@ -121,6 +121,10 @@ namespace SR_SRSL_NS {
                 break;
         }
 
+        //if (actualChar >= '0' && actualChar <= '9') {
+        //    return Lexem(m_offset++, 1, LexemKind::Integer, "0", m_fileIndex, m_line, m_position++);
+        //}
+
         const uint64_t offset = m_offset;
         const uint64_t position = m_position;
 
@@ -136,12 +140,9 @@ namespace SR_SRSL_NS {
         uint32_t identifierLength = 0;
 
     retry:
-        for (auto&& identifierChar : SRSL_IDENTIFIER_CHARS) {
-            if (!InBounds()) {
-                break;
-            }
-
-            if (m_source[m_offset] == identifierChar) {
+        if (InBounds()) {
+            const char firstChar = m_source[m_offset];
+            if ((firstChar >= 'a' && firstChar <= 'z') || (firstChar >= 'A' && firstChar <= 'Z') || firstChar == '_' || (firstChar >= '0' && firstChar <= '9')) {
                 if (identifierStart == SR_UINT32_MAX) {
                     identifierStart = m_offset;
                 }
@@ -168,8 +169,6 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLLexer::SkipSpaces() {
-        SR_TRACY_ZONE;
-
     retry:
         while (InBounds()) {
             for (auto&& spaceChar : SRSL_SPACE_CHARS) {

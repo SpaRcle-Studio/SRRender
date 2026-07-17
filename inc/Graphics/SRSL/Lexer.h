@@ -10,9 +10,8 @@
 namespace SR_SRSL_NS {
     class SRSLLexer : public SR_UTILS_NS::Singleton<SRSLLexer> {
         SR_REGISTER_SINGLETON(SRSLLexer)
-        using Lexems = std::vector<Lexem>;
+        using Lexems = SR_UTILS_NS::Vector<Lexem>;
         using ProcessedLexem = std::optional<Lexem>;
-        using SourceCode = std::vector<std::string>;
     protected:
         ~SRSLLexer() override;
 

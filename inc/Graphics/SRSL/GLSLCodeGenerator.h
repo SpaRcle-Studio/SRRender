@@ -58,8 +58,6 @@ namespace SR_SRSL_NS {
         SR_NODISCARD std::string GenerateExpression(SRSLExpr* pExpr, int32_t deep) const;
         SR_NODISCARD std::string GenerateVariable(SRSLVariable* pVariable, int32_t deep) const;
 
-        SR_NODISCARD std::string GenerateTab(int32_t deep) const;
-
         SR_NODISCARD uint32_t GetLocationMultiplier(const std::string_view& type) const;
 
         SR_NODISCARD bool IsFlatType(const std::string_view type) const;

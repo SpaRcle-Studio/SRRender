@@ -154,11 +154,11 @@ namespace SR_SRSL_NS {
         return code;
     }
 
-    const SRSLAnalyzedTree::Ptr SRSLShader::GetAnalyzedTree() const {
+    SRSLAnalyzedTree::Ptr SRSLShader::GetAnalyzedTree() const {
         return m_analyzedTree;
     }
 
-    const SRSLUseStack::Ptr SRSLShader::GetUseStack() const {
+    SRSLUseStack::Ptr SRSLShader::GetUseStack() const {
         return m_useStack;
     }
 
@@ -235,8 +235,8 @@ namespace SR_SRSL_NS {
 
         for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
             if (auto&& pVariable = dynamic_cast<SRSLVariable*>(pUnit)) {
-                std::string& varName = pVariable->pType->token;
-                std::string& varValue = pVariable->pName->token;
+                const auto& varName = pVariable->pType->token;
+                const auto& varValue = pVariable->pName->token;
 
                 if (varName == "ShaderType") {
                     m_createInfo.shaderType = SR_UTILS_NS::EnumReflector::FromString<SR_SRSL_NS::ShaderType>(varValue);
@@ -630,7 +630,7 @@ namespace SR_SRSL_NS {
                 }
             }
 
-            m_createInfo.stages[stage].path = m_path.ToString() + "/" + m_params.GetHashStr() + "/shader." + SR_SRSL_STAGE_EXTENSIONS.at(stage);
+            m_createInfo.stages[stage].path = "{}/{}/shader.{}"_format(m_path, m_params.GetHash(), SR_SRSL_STAGE_EXTENSIONS.at(stage));
 
             /// блоки юниформ
 
@@ -875,10 +875,10 @@ namespace SR_SRSL_NS {
         }
     }
 
-    const SRSLStructureStatement* SRSLShader::FindStructure(const Utils::StringAtom &name) const {
+    const SRSLStructureStatement* SRSLShader::FindStructure(const SR_UTILS_NS::StringAtom& name) const {
         for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
             if (auto&& pStructure = dynamic_cast<SRSLStructureStatement*>(pUnit)) {
-                if (pStructure->pName->token == name) {
+                if (pStructure->pName->token == name.ToStringView()) {
                     return pStructure;
                 }
             }

@@ -21,6 +21,20 @@ namespace SR_SRSL_NS {
     public:
         SR_NODISCARD SRSLCodeGenRes GenerateStages(const SRSLShader* pShader) override;
 
+        std::string_view GenerateFunction(
+            SRSLFunction* pFunction,
+            const int32_t deep,
+            const std::string_view& preArgs = std::string_view(),
+            const std::string_view& preCode = std::string_view(),
+            const std::string_view& postCode = std::string_view(),
+            const std::string_view& returnType = std::string_view()
+        );
+
+        std::string_view GenerateStage(const SRSLShader* pShader, SRSLResult& result, ShaderStage stage, const std::string& preCode = std::string());
+        std::optional<std::string_view> GenerateVertexStage(const SRSLShader* pShader, SRSLResult& result);
+        std::optional<std::string_view> GenerateFragmentStage(const SRSLShader* pShader, SRSLResult& result);
+        std::optional<std::string_view> GenerateComputeStage(const SRSLShader* pShader, SRSLResult& result);
+
     };
 }
 
