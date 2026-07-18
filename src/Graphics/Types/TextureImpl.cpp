@@ -146,6 +146,7 @@ namespace SR_GTYPES_NS {
         }
         GetImageMetaInfoRef().addressMode = AddressMode::ClampToEdge;
         GetImageMetaInfoRef().filter = TextureFilter::LINEAR;
+        GetImageMetaInfoRef().loadMode = SR_UTILS_NS::ResourceLoadMode::Sync;
         GetActiveImageMetaInfoRef() = GetImageMetaInfoRef();
     }
 

@@ -195,6 +195,7 @@ namespace SR_GRAPH_NS {
         std::mutex m_glslLangMutex;
         SR_HTYPES_NS::RawPointerHolder<SR_UTILS_NS::MonotonicAllocator> m_glslLangAllocator;
         SR_UTILS_NS::Vector<SR_HTYPES_NS::RawPointerHolder<SR_UTILS_NS::MonotonicAllocator>> m_glslLangAllocators;
+        SR_UTILS_NS::Vector<SRTextureCreateInfo> m_asyncTextureCreateInfos;
 
         VulkanPipelineInternalData* m_internalData = nullptr;
 

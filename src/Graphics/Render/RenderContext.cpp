@@ -219,6 +219,7 @@ namespace SR_GRAPH_NS {
         imageMetaInfo.compression = TextureCompression::None;
         imageMetaInfo.mipLevels = 1;
         imageMetaInfo.cpuUsage = false;
+        imageMetaInfo.loadMode = SR_UTILS_NS::ResourceLoadMode::Sync;
 
         /// так как вписать в код данные текстуры невозможно, то она хранится в виде base64, текстура размером 1x1 белого цвета формата png
         const std::string image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABmJLR0QA/wD/AP+gvaeTAAAADUlEQVQI12N48eIFOwAINALALwGcPAAAAABJRU5ErkJggg==";
@@ -230,6 +231,8 @@ namespace SR_GRAPH_NS {
             SR_ERROR("RenderContext::LoadDefaultResources() : failed to create none texture!");
             return false;
         }
+
+        m_pipeline->SetNoneTextureId(m_noneTexture->GetId());
 
         /// ----------------------------------------------------------------------------
 

@@ -856,6 +856,12 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
+        if (createInfo.async) {
+            m_asyncTextureCreateInfos.emplace_back(createInfo);
+            SRAssert(m_noneTextureId != SR_ID_INVALID);
+            return m_memory->AllocateTextureClone(m_noneTextureId);
+        }
+
         WaitRenderIdle();
 
         SRTextureCreateInfo textureCreateInfo = createInfo;
@@ -879,33 +885,6 @@ namespace SR_GRAPH_NS {
 
         m_state.allocatedMemory += textureCreateInfo.imageSize;
 
-        //if (textureCreateInfo.compression != TextureCompression::None) {
-        //    vkFormat = VulkanTools::AbstractTextureCompToVkFormat(textureCreateInfo.compression, vkFormat);
-        //    if (vkFormat == VK_FORMAT_MAX_ENUM) {
-        //        PipelineError("VulkanPipeline::AllocateTexture() : unsupported format with compression!");
-        //        return SR_ID_INVALID;
-        //    }
-
-        //    if (auto&& size = MakeGoodSizes(textureCreateInfo.width, textureCreateInfo.height); size != std::pair(textureCreateInfo.width, textureCreateInfo.height)) {
-        //        textureCreateInfo.pData = ResizeToLess(textureCreateInfo.width, textureCreateInfo.height, size.first, size.second, textureCreateInfo.pData);
-        //        textureCreateInfo.width = size.first;
-        //        textureCreateInfo.height = size.second;
-        //    }
-
-        //    if (textureCreateInfo.pData == nullptr || textureCreateInfo.width == 0 || textureCreateInfo.height == 0) {
-        //        PipelineError("VulkanPipeline::AllocateTexture() : failed to reconstruct image!");
-        //        return SR_ID_INVALID;
-        //    }
-
-        //    SR_LOG("VulkanPipeline::CalculateTexture() : compress " + SR_UTILS_NS::ToString(textureCreateInfo.width * textureCreateInfo.height * 4 / 1024 / 1024) + "MB source image...");
-
-        //    textureCreateInfo.pData = Graphics::Compress(textureCreateInfo.width, textureCreateInfo.height, textureCreateInfo.pData, textureCreateInfo.compression);
-        //    if (textureCreateInfo.pData == nullptr) {
-        //        PipelineError("VulkanPipeline::AllocateTexture() : failed to compress image!");
-        //        return SR_ID_INVALID;
-        //    }
-        //}
-
         const VkSamplerAddressMode addressMode = VulkanTools::AbstractAddressModeToVkAddressMode(textureCreateInfo.addressMode);
         if (addressMode == VK_SAMPLER_ADDRESS_MODE_MAX_ENUM) {
             PipelineError("VulkanPipeline::AllocateTexture() : invalid address mode!");
@@ -913,10 +892,6 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& id = m_memory->AllocateTexture(textureCreateInfo, vkFormat, addressMode, VulkanTools::AbstractTextureFilterToVkFilter(textureCreateInfo.filter));
-
-        //if (textureCreateInfo.compression != TextureCompression::None) {
-        //    SRFree(const_cast<uint8_t*>(textureCreateInfo.pData)); /// Free compressed data. Original data isn't will be free.
-        //}
 
         if (id < 0) {
             PipelineError("VulkanPipeline::AllocateTexture() : failed to allocate texture!");
@@ -2353,10 +2328,6 @@ namespace SR_GRAPH_NS {
 
         Super::PrepareFrame();
 
-        //if (m_kernel) {
-        //    m_kernel->WaitFences();
-        //}
-
         if (m_kernel && (m_kernel->IsDirty() || (m_kernel->GetSwapchain() && m_kernel->GetSwapchain()->IsDirty()))) {
             m_kernel->WaitAllFences();
             m_kernel->WaitIdle();
@@ -2376,6 +2347,25 @@ namespace SR_GRAPH_NS {
 
         if (m_kernel) {
             m_kernel->PrepareFrame();
+        }
+
+        if (!m_asyncTextureCreateInfos.empty()) {
+            SRTextureCreateInfo createInfo = m_asyncTextureCreateInfos.back();
+            m_asyncTextureCreateInfos.pop_back();
+
+            if (createInfo.pTexture && !createInfo.pTexture->IsDestroyed()) {
+                m_kernel->WaitAllFences();
+                m_kernel->WaitIdle();
+                m_kernel->WaitDeviceIdle();
+
+                SR_LOG("VulkanPipeline::PrepareFrame() : processing async texture \"{}\" creation...", createInfo.pTexture->GetResourceId());
+                createInfo.async = false;
+                createInfo.replaceId = createInfo.pTexture->GetId();
+                if (!AllocateTexture(createInfo)) {
+                    SR_ERROR("VulkanPipeline::PrepareFrame() : failed to allocate async texture \"{}\"!", createInfo.pTexture->GetResourceId());
+                }
+                createInfo.pTexture->OnAsyncCalculated();
+            }
         }
     }
 

@@ -93,6 +93,8 @@ namespace SR_GRAPH_NS::VulkanTools {
             VkSamplerAddressMode addressMode,
             VkFilter filter);
 
+        SR_NODISCARD int32_t AllocateTextureClone(int32_t noneTexture);
+
         SR_NODISCARD int32_t AllocateTexture(
                 std::array<const uint8_t*, 6> pixels,
                 uint32_t w,

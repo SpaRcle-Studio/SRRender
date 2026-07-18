@@ -53,11 +53,12 @@ namespace SR_GRAPH_NS::Types {
             auto&& pIt = m_defaultSamplers.find(sampler.defaultValue);
             if (pIt != m_defaultSamplers.end()) {
                 LoadDefaultSampler(sampler.defaultValue);
-                sampler.samplerId = pIt->second->GetId();
+                SetSampler2D(hashName, pIt->second);
             }
             else {
-                sampler.samplerId = GetRenderContext()->GetDefaultTexture()->GetId();
+                SetSampler2D(hashName, GetRenderContext()->GetDefaultTexture());
             }
+            SRAssert(sampler.samplerId != SR_ID_INVALID);
         }
 
         if (GetRenderContext()->IsMacroDefined("SR_DEFINE_WIREFRAME")) {
@@ -269,7 +270,12 @@ namespace SR_GRAPH_NS::Types {
             }
         }
 
-        SetSampler(name, pSampler->GetId());
+        if (const auto textureId = pSampler->GetId(); textureId == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+            SetSampler(name, GetRenderContext()->GetNoneTexture()->GetId());
+        }
+        else {
+            SetSampler(name, pSampler->GetId());
+        }
     }
 
     bool Shader::Ready() const {

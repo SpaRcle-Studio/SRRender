@@ -53,6 +53,7 @@ namespace SR_GTYPES_NS {
         void FreeVMemory() override;
         void SetImageMetaInfo(const ImageMetaInfo& meta);
         void PrepareFrame();
+        void OnAsyncCalculated();
 
     protected:
         bool Unload() override;

@@ -341,6 +341,8 @@ namespace SR_GRAPH_NS {
 
         virtual void ResetLastShader();
 
+        void SetNoneTextureId(int32_t id) { m_noneTextureId = id; }
+
         void SetDrawInstancesCount(uint32_t count, uint32_t start = 0);
         void ResetDrawInstancesCount();
 
@@ -399,6 +401,8 @@ namespace SR_GRAPH_NS {
         uint32_t m_drawInstancesStart = 0;
         uint32_t m_framesPerSecond = 0;
         std::optional<SR_UTILS_NS::TimePointType> m_lastSecond;
+
+        int32_t m_noneTextureId = SR_ID_INVALID;
 
         bool m_isShaderChanged = true;
 

@@ -9,6 +9,7 @@
 #include <Graphics/Pipeline/FrameBufferFeatures.h>
 #include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Types/Descriptors.h>
+#include <Graphics/Types/Texture.h>
 
 #include <Utils/FileSystem/Path.h>
 #include <Utils/Math/Vector2.h>
@@ -35,6 +36,7 @@ namespace SR_GRAPH_NS {
     };
 
     struct SRTextureCreateInfo {
+        SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture> pTexture;
         const uint8_t* pData = nullptr;
         ImageFormat format = ImageFormat::None;
         TextureFilter filter = TextureFilter::Unknown;
@@ -46,6 +48,8 @@ namespace SR_GRAPH_NS {
         uint8_t mipLevels = 0;
         bool alpha = false;
         bool cpuUsage = false;
+        bool async = false;
+        int32_t replaceId = SR_ID_INVALID;
     };
 
     struct SRCubeMapCreateInfo {

@@ -6,7 +6,6 @@
 #include <Graphics/Types/TextureImpl.h>
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/RenderTarget.h>
-#include <Graphics/Font/FontAsset.h>
 #include <Graphics/Loaders/TextureLoader.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Pipeline/Pipeline.h>
@@ -212,6 +211,8 @@ namespace SR_GTYPES_NS {
         createInfo.filter = m_activeImageMetaInfo.filter;
         createInfo.addressMode = m_activeImageMetaInfo.addressMode;
         createInfo.cpuUsage = m_activeImageMetaInfo.cpuUsage;
+        createInfo.async = m_activeImageMetaInfo.loadMode == SR_UTILS_NS::ResourceLoadMode::Async;
+        createInfo.pTexture = this;
 
     #ifdef SR_USE_VULKAN
         EVK_PUSH_LOG_LEVEL(EvoVulkan::Tools::LogLevel::ErrorsOnly);
@@ -314,7 +315,7 @@ namespace SR_GTYPES_NS {
         pTexture->m_isFromMemory = true;
         pTexture->m_format = meta.format;
 
-        pTexture->SetImageMetaInfo(meta);
+        pTexture->SetImageMetaInfoInternal(meta);
         pTexture->SetId("TextureFromMemory");
 
         return pTexture;
@@ -370,6 +371,16 @@ namespace SR_GTYPES_NS {
             return 0;
         }
         return m_textureData ? m_textureData->GetChannels() : 0;
+    }
+
+    void Texture::OnAsyncCalculated() {
+        auto&& pRenderContext = GetRenderContext();
+        if (!pRenderContext) {
+            return;
+        }
+        pRenderContext->SetDirty();
+        Broadcast(SR_UTILS_NS::IResource::RELOAD_BEGIN_EVENT);
+        Broadcast(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT);
     }
 
     void Texture::PrepareFrame() {

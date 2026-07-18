@@ -372,6 +372,12 @@ namespace SR_GRAPH_NS::VulkanTools {
             return SR_ID_INVALID;
         }
 
+        if (createInfo.replaceId != SR_ID_INVALID) {
+            m_kernel->WaitAllFences();
+            delete m_texturePool.At(createInfo.replaceId);
+            m_texturePool.At(createInfo.replaceId) = pTexture;
+            return createInfo.replaceId;
+        }
         return m_texturePool.Add(pTexture);
     }
 
@@ -484,5 +490,15 @@ namespace SR_GRAPH_NS::VulkanTools {
         }
 
         return m_ssboPool.Add(pBuffer);
+    }
+
+    int32_t MemoryManager::AllocateTextureClone(int32_t noneTexture) {
+        auto&& pTexture = m_texturePool.At(noneTexture);
+        if (!pTexture) {
+            SR_ERROR("MemoryManager::AllocateTextureClone() : failed to get texture by id: {}", noneTexture);
+            return SR_ID_INVALID;
+        }
+
+        return m_texturePool.Add(pTexture->Clone());
     }
 }
