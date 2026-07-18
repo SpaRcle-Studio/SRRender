@@ -817,6 +817,7 @@ namespace SR_SRSL_NS {
     }
 
     ISRSLCodeGenerator::SRSLCodeGenRes SRSLShader::GenerateStages(ShaderLanguage shaderLanguage) const {
+        SR_TRACY_ZONE;
         ISRSLCodeGenerator::SRSLCodeGenRes codeGenRes;
 
         switch (shaderLanguage) {

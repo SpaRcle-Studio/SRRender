@@ -18,6 +18,7 @@ namespace SR_SRSL_NS {
     };
 
     ISRSLCodeGenerator::SRSLCodeGenRes GLSLCodeGenerator::GenerateStages(const SRSLShader* pShader) {
+        SR_TRACY_ZONE;
         SR_GLOBAL_LOCK
 
         Clear();
@@ -150,6 +151,7 @@ namespace SR_SRSL_NS {
     }
 
     std::optional<std::string> GLSLCodeGenerator::GenerateVertexStage() {
+        SR_TRACY_ZONE;
         auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(ShaderStage::Vertex);
         auto&& pStageFunction = m_shader->GetAnalyzedTree()->pLexicalTree->FindFunction(entryPoint);
         auto&& pUseStackFunction = m_shader->GetUseStack()->FindFunction(entryPoint);
@@ -193,6 +195,7 @@ namespace SR_SRSL_NS {
     }
 
     std::optional<std::string> GLSLCodeGenerator::GenerateFragmentStage() {
+        SR_TRACY_ZONE;
         auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment);
         auto&& pStageFunction = m_shader->GetAnalyzedTree()->pLexicalTree->FindFunction(entryPoint);
         auto&& pUseStackFunction = m_shader->GetUseStack()->FindFunction(entryPoint);
@@ -271,6 +274,7 @@ namespace SR_SRSL_NS {
     }
 
     std::optional<std::string> GLSLCodeGenerator::GenerateComputeStage() {
+        SR_TRACY_ZONE;
         auto&& entryPoint = SR_SRSL_ENTRY_POINTS.at(ShaderStage::Compute);
         auto&& pStageFunction = m_shader->GetAnalyzedTree()->pLexicalTree->FindFunction(entryPoint);
         auto&& pUseStackFunction = m_shader->GetUseStack()->FindFunction(entryPoint);

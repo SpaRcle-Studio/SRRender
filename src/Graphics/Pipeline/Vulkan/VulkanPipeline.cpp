@@ -48,6 +48,9 @@
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Vertices.h>
 #include <Utils/FileSystem/FileSystem.h>
+#include <Utils/Memory/Allocator.h>
+#include <Utils/Memory/MemoryLiterals.h>
+#include <Utils/TaskManager/TaskManager.h>
 
 namespace SR_GRAPH_NS {
     /// Структура для хранения состояния асинхронного запроса пикселей
@@ -150,8 +153,13 @@ namespace SR_GRAPH_NS {
 
     #ifdef SR_RENDER_USE_GLSL_LANG_LIB
         if (m_isGlslLangInit) {
+            SR_UTILS_NS::TaskManager::Instance().Wait(m_glslLangInitTaskId);
             m_isGlslLangInit = false;
+            m_isGlslLangCached = false;
+            SR_UTILS_NS::SetThreadLocalAllocator(m_glslLangAllocator.Get());
             glslang::FinalizeProcess();
+            SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
+            m_glslLangAllocator.Reset();
         }
     #endif
 
@@ -201,6 +209,9 @@ namespace SR_GRAPH_NS {
         if (!m_isGlslLangInit) {
             m_isGlslLangInit = true;
             glslang::InitializeProcess();
+            m_glslLangInitTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([this](auto&&) {
+                InitGLSLCompiler();
+            }, SR_UTILS_NS::TaskPriority::High);
         }
     #endif
 
@@ -1653,16 +1664,21 @@ namespace SR_GRAPH_NS {
             return true;
         };
 
-        EvoVulkan::Tools::VkFunctionsHolder::Instance().CompileGLSLtoSPIRV = [this](const std::string& input) -> std::vector<uint32_t> {
+        m_glslLangAllocators.resize(8);
+
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().CompileGLSLtoSPIRV = [this](const std::string& input, uint32_t threadIndex) -> std::vector<uint32_t> {
+            InitGLSLCompiler();
+
+            auto&& allocator = m_glslLangAllocators[threadIndex];
+            if (!allocator) {
+                allocator = new SR_UTILS_NS::MonotonicAllocator(32_MB);
+            }
+
             SR_TRACY_ZONE_N("Compile GLSL to SPIR-V");
             SR_TRACY_ZONE_TEXT(input);
 
             #ifdef SR_RENDER_USE_GLSL_LANG_LIB
-                glslang::SpvOptions spvOptions{};
-
-                EShLanguage stage = GetShaderStageFromFileExtension(input);
-                glslang::TShader shader(stage);
-                glslang::TProgram program;
+                std::vector<uint32_t> spirvOutput;
 
                 // Compile the shader
                 SR_UTILS_NS::String shaderSourceStr;
@@ -1674,17 +1690,23 @@ namespace SR_GRAPH_NS {
                 const char* shaderStrings = shaderSourceStr.c_str();
                 const char* strings[] = { shaderSourceStr.c_str() };
                 const char* names[]   = { input.c_str() };
-                std::string preamble = "#line 1\n";
+                const char* preamble = "#line 1\n";
 
-                shader.setStringsWithLengthsAndNames(strings, nullptr, names, 1);
-                shader.setPreamble(preamble.c_str());
+                SR_UTILS_NS::SetThreadLocalAllocator(allocator.Get());
 
-                shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, 450);
+                EShLanguage stage = GetShaderStageFromFileExtension(input);
+                auto shader = new glslang::TShader(stage);
+                glslang::SpvOptions spvOptions{};
+
+                shader->setStringsWithLengthsAndNames(strings, nullptr, names, 1);
+                shader->setPreamble(preamble);
+
+                shader->setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, 450);
                 //shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_3);
                 //shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
 
-                shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
-                shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5); // SPIR-V 1.5 нормально для Vulkan 1.2+
+                shader->setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
+                shader->setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5); // SPIR-V 1.5 нормально для Vulkan 1.2+
 
                 EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
                 if (m_kernel->IsValidationLayersEnabled()) {
@@ -1703,36 +1725,52 @@ namespace SR_GRAPH_NS {
 
                 {
                     SR_TRACY_ZONE_N("Parse shader");
-                    if (!shader.parse(&DefaultTBuiltInResource, 450, false, messages)) {
-                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to parse shader: {}\n{}", input, shader.getInfoLog());
+                    if (!shader->parse(&DefaultTBuiltInResource, 450, false, messages)) {
+                        delete shader;
+                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to parse shader: {}\n{}", input, shader->getInfoLog());
+                        SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
                         return {};
                     }
                 }
 
+                auto program = new glslang::TProgram();
                 {
                     SR_TRACY_ZONE_N("Link shader program");
-                    program.addShader(&shader);
-                    if (!program.link(messages)) {
-                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to link shader program: {}\n{}", input, program.getInfoLog());
+                    program->addShader(shader);
+                    if (!program->link(messages)) {
+                        delete shader;
+                        delete program;
+                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to link shader program: {}\n{}", input, program->getInfoLog());
+                        SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
                         return {};
                     }
                 }
 
-                // Generate SPIR-V.
-                std::vector<uint32_t> spirv;
-
-                auto* intermediate = program.getIntermediate(stage);
+                auto* intermediate = program->getIntermediate(stage);
                 if (!intermediate) {
+                    delete shader;
+                    delete program;
+                    SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
                     SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to get intermediate representation for shader: {}", input);
                     return {};
                 }
 
                 {
                     SR_TRACY_ZONE_N("GlslangToSpv");
+                    // Generate SPIR-V.
+                    std::vector<uint32_t> spirv;
                     glslang::GlslangToSpv(*intermediate, spirv, &spvOptions);
+                    SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
+                    spirvOutput.resize(spirv.size());
+                    std::memcpy(spirvOutput.data(), spirv.data(), spirv.size() * sizeof(uint32_t));
+                    SR_UTILS_NS::SetThreadLocalAllocator(allocator.Get());
                 }
+                delete shader;
+                delete program;
+                SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
 
-                return spirv;
+                m_isGlslLangCached = true;
+                return spirvOutput;
             #else
                 SRHalt("GLSLang lib is not supported!");
                 return std::vector<uint32_t>();
@@ -3150,5 +3188,37 @@ namespace SR_GRAPH_NS {
             PipelineError("VulkanPipeline::FlushVBOBuffers() : no VBOs to bind!");
         }
         m_internalData->isVBOsDirty = false;
+    }
+
+    void VulkanPipeline::InitGLSLCompiler() {
+        SR_TRACY_ZONE;
+        std::lock_guard<std::mutex> lock(m_glslLangMutex);
+        if (m_isGlslLangCached) {
+            return;
+        }
+        SR_LOG("VulkanPipeline::InitGLSLCompiler() : initializing GLSL compiler...");
+        m_isGlslLangCached = true;
+    #ifdef SR_RENDER_USE_GLSL_LANG_LIB
+        m_glslLangAllocator = new SR_UTILS_NS::MonotonicAllocator(64_MB);
+        SR_UTILS_NS::SetThreadLocalAllocator(m_glslLangAllocator.Get());
+        {
+            /// кешируем компилятор шейдеров, пробуем скомпилировать пустой шейдер, чтобы прогрузить все необходимые библиотеки
+            const char* shaderStrings = "#version 450\nvoid main() {}";
+            const char* strings[] = { shaderStrings };
+
+            EShLanguage stage = EShLanguage::EShLangCompute;
+            auto shader = glslang::TShader(stage);
+            glslang::SpvOptions spvOptions{};
+
+            shader.setStrings(strings, 1);
+            shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientVulkan, 450);
+            shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
+            shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
+
+            EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+            shader.parse(&DefaultTBuiltInResource, 450, false, messages);
+        }
+        SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
+    #endif
     }
 }

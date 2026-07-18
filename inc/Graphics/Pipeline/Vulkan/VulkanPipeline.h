@@ -7,6 +7,8 @@
 
 #include <Graphics/Pipeline/Pipeline.h>
 
+#include <Utils/Memory/Allocator.h>
+
 namespace SR_GRAPH_NS::VulkanTools {
     class MemoryManager;
 }
@@ -180,6 +182,7 @@ namespace SR_GRAPH_NS {
         void ResetLastShader() override;
 
     private:
+        void InitGLSLCompiler();
         bool InitEvoVulkanHooks();
         void FlushVBOBuffers();
 
@@ -187,6 +190,11 @@ namespace SR_GRAPH_NS {
 
     private:
         bool m_isGlslLangInit = false;
+        bool m_isGlslLangCached = false;
+        uint64_t m_glslLangInitTaskId = SR_ID_INVALID;
+        std::mutex m_glslLangMutex;
+        SR_HTYPES_NS::RawPointerHolder<SR_UTILS_NS::MonotonicAllocator> m_glslLangAllocator;
+        SR_UTILS_NS::Vector<SR_HTYPES_NS::RawPointerHolder<SR_UTILS_NS::MonotonicAllocator>> m_glslLangAllocators;
 
         VulkanPipelineInternalData* m_internalData = nullptr;
 

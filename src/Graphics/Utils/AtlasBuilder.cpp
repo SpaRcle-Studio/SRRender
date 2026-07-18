@@ -48,7 +48,8 @@ namespace SR_GRAPH_NS {
 
         std::vector<SR_GRAPH_NS::TextureData::Ptr> spriteList;
 
-        auto&& files = resourcePath.Concat(m_data.source).GetFiles();
+        SR_UTILS_NS::Vector<SR_UTILS_NS::Path> files;
+        resourcePath.Concat(m_data.source).GetFiles(files);
 
         if (files.empty()) {
             SR_ERROR("AtlasBuilder::Generate() : specified path does not contain any files. \nPath: \"" + m_data.source.ToString() + "\"");
