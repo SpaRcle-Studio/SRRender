@@ -58,12 +58,9 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLUseStack::IsVariableUsed(const std::string_view& name, uint8_t depth) const {
-        SR_TRACY_ZONE;
-
         depth++;
 
         if (depth > 128) {
-            SR_TRACY_ZONE_COLOR(0xFF0000);
             return false;
         }
 
@@ -140,8 +137,6 @@ namespace SR_SRSL_NS {
     }
 
     SRSLUseStack::Ptr SRSLUseStack::FindFunction(const std::string_view &name) const {
-        SR_TRACY_ZONE;
-
         for (auto&& function : functions) {
             if (function.first == name) {
                 return function.second;
@@ -152,8 +147,6 @@ namespace SR_SRSL_NS {
     }
 
     bool SRSLUseStack::IsVariableUsedInEntryPoint(SR_GRAPH_NS::ShaderStage stage, const std::string_view& name) const {
-        SR_TRACY_ZONE;
-
         if (auto&& it = SR_SRSL_ENTRY_POINTS.find(stage); it != SR_SRSL_ENTRY_POINTS.end()) {
             if (auto&& pFunction = FindFunction(it->second); pFunction && pFunction->IsVariableUsed(name)) {
                 return true;
@@ -197,7 +190,7 @@ namespace SR_SRSL_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    SRSLUseStack::Ptr SRSLRefAnalyzer::Analyze(const SRSLAnalyzedTree::Ptr& pAnalyzedTree, const SR_SRSL_NS::ShaderParams& params) {
+    SRSLUseStack::Ptr SRSLRefAnalyzer::Analyze(const SRSLAnalyzedTree* pAnalyzedTree, const SR_SRSL_NS::ShaderParams& params) {
         SR_TRACY_ZONE;
         SR_GLOBAL_LOCK
         m_analyzedTree = pAnalyzedTree;
@@ -376,7 +369,7 @@ namespace SR_SRSL_NS {
 
     void SRSLRefAnalyzer::AnalyzeFunction(SRSLUseStack::Ptr &pUseStack, Stack& stack, SRSLFunction *pFunction) {
         if (pFunction->pLexicalTree) {
-            pUseStack->functions[pFunction->GetName()] = AnalyzeTree(stack, pFunction->pLexicalTree);
+            pUseStack->functions[SR_UTILS_NS::String(pFunction->GetName())] = AnalyzeTree(stack, pFunction->pLexicalTree);
         }
         else {
             SRHalt("EntryPoint function must have a body!");

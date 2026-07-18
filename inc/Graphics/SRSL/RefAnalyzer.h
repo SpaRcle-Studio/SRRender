@@ -30,7 +30,7 @@ namespace SR_SRSL_NS {
         void Concat(const SRSLUseStack::Ptr& pOther);
         void SetRoot(SRSLUseStack* pRootStack);
 
-        std::map<std::string, SRSLUseStack::Ptr> functions;
+        std::map<SR_UTILS_NS::String, SRSLUseStack::Ptr> functions;
 
         SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> variables;
         SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> forceUsedVariables;
@@ -49,7 +49,7 @@ namespace SR_SRSL_NS {
         SR_REGISTER_SINGLETON(SRSLRefAnalyzer)
         using Stack = SR_UTILS_NS::Vector<SR_UTILS_NS::StringView>;
     public:
-        SR_NODISCARD SRSLUseStack::Ptr Analyze(const SRSLAnalyzedTree::Ptr& pAnalyzedTree, const SR_SRSL_NS::ShaderParams& params);
+        SR_NODISCARD SRSLUseStack::Ptr Analyze(const SRSLAnalyzedTree* pAnalyzedTree, const SR_SRSL_NS::ShaderParams& params);
 
     private:
         SR_NODISCARD SRSLFunction* FindFunction(const std::string& name) const;
@@ -67,7 +67,7 @@ namespace SR_SRSL_NS {
         void AnalyzeFunction(SRSLUseStack::Ptr& pUseStack, Stack& stack, SRSLFunction* pFunction);
 
     private:
-        SRSLAnalyzedTree::Ptr m_analyzedTree;
+        const SRSLAnalyzedTree* m_analyzedTree = nullptr;
 
     };
 }

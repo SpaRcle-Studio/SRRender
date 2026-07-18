@@ -19,7 +19,7 @@ namespace SR_SRSL_NS {
         using OutResult = std::pair<SR_UTILS_NS::Vector<Lexem>, SRSLResult>;
 
     public:
-        SR_NODISCARD OutResult Process(SR_UTILS_NS::Vector<Lexem>&& lexems, Includes& includes, ShaderParams& params);
+        SR_NODISCARD OutResult Process(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::Vector<Lexem>&& lexems, Includes& includes, ShaderParams& params);
 
     private:
         void Clear();
@@ -35,6 +35,7 @@ namespace SR_SRSL_NS {
         SRSLResult m_result;
         ShaderParams* m_params = nullptr;
 
+        SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
         SR_UTILS_NS::Vector<Lexem> m_expressionLexems;
         SR_UTILS_NS::Vector<Lexem> m_lexems;
         int64_t m_currentLexem = 0;

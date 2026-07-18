@@ -19,7 +19,7 @@ namespace SR_SRSL_NS {
         ~GLSLCodeGenerator() override = default;
 
     public:
-        SR_NODISCARD SRSLCodeGenRes GenerateStages(const SRSLShader* pShader) override;
+        SR_NODISCARD SRSLCodeGenRes GenerateStages(SR_UTILS_NS::IAllocator* pAllocator, const SRSLShader* pShader) override;
 
     private:
         SR_NODISCARD std::string GenerateStage(ShaderStage stage, const std::string& preCode = std::string());
@@ -66,6 +66,8 @@ namespace SR_SRSL_NS {
 
     private:
         const SRSLShader* m_shader = nullptr;
+        SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
+        mutable SR_UTILS_NS::String m_tmpBuffer;
 
     };
 }

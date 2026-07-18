@@ -12,7 +12,7 @@ namespace SR_SRSL_NS {
     class SRSLEvaluator : public SR_UTILS_NS::Singleton<SRSLEvaluator> {
         SR_REGISTER_SINGLETON(SRSLEvaluator)
     public:
-        SR_NODISCARD double_t Evaluate(const std::string& code);
+        SR_NODISCARD double_t Evaluate(SR_UTILS_NS::IAllocator* pAllocator, const std::string& code);
         SR_NODISCARD double_t Evaluate(const SRSLExpr* pExpr);
         SR_NODISCARD bool MacroEvaluate(const SRSLExpr* pExpr, ShaderParams& params) const;
 

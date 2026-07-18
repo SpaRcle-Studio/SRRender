@@ -1768,6 +1768,7 @@ namespace SR_GRAPH_NS {
                 delete shader;
                 delete program;
                 SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
+                allocator->ResetMemory();
 
                 m_isGlslLangCached = true;
                 return spirvOutput;

@@ -14,6 +14,9 @@
 #include <Utils/Resources/FileWatcher.h>
 #include <Utils/Types/DataStorage.h>
 #include <Utils/Common/Hashes.h>
+#include <Utils/Memory/Allocator.h>
+#include <Utils/Memory/MemoryLiterals.h>
+#include <Utils/Memory/AllocatorManager.h>
 
 #include <Codegen/Shader.generated.hpp>
 
@@ -378,7 +381,15 @@ namespace SR_GRAPH_NS::Types {
             return IResource::Load();
         }
 
-        auto&& pShader = SR_SRSL_NS::SRSLShader::Load(path, m_params);
+        SR_GLOBAL_LOCK;
+        SR_UTILS_NS::IAllocator* pAllocator = SR_UTILS_NS::AllocatorManager::Instance().GetAllocator("Shader");
+        if (!pAllocator) {
+            pAllocator = new SR_UTILS_NS::MonotonicAllocator(4_MB);
+            SR_UTILS_NS::AllocatorManager::Instance().RegisterAllocator("Shader", pAllocator);
+        }
+        pAllocator->ResetMemory();
+
+        auto&& pShader = SR_SRSL_NS::SRSLShader::Load(pAllocator, path, m_params);
         if (!pShader) {
             m_hasErrors = true;
             SR_ERROR("Shader::Load() : failed to load srsl shader!\n\tPath: " + path.ToString());

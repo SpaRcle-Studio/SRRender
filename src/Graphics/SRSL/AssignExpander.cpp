@@ -6,10 +6,11 @@
 #include <Graphics/SRSL/MathExpression.h>
 
 namespace SR_SRSL_NS {
-    std::pair<std::vector<Lexem>, SRSLResult> SRSLAssignExpander::Expand(std::vector<Lexem>&& lexems) {
+    std::pair<std::vector<Lexem>, SRSLResult> SRSLAssignExpander::Expand(SR_UTILS_NS::IAllocator* pAllocator, std::vector<Lexem>&& lexems) {
         Clear();
 
         m_lexems = SR_UTILS_NS::Exchange(lexems, { });
+        m_pAllocator = pAllocator;
 
         while (InBounds() && !IsHasErrors()) {
             ProcessMain();
@@ -109,9 +110,9 @@ namespace SR_SRSL_NS {
         Lexem operation = *GetLexem(1);
         Lexem assign = *GetLexem(2);
 
-        SR_UTILS_NS::Vector<Lexem> copy;
+        SR_UTILS_NS::Vector<Lexem> copy(m_pAllocator);
         copy.insert(copy.end(), m_lexems.begin() + m_currentLexem, m_lexems.end());
-        auto&& [pExpr, result] = SRSLMathExpression::Instance().Analyze(std::move(copy));
+        auto&& [pExpr, result] = SRSLMathExpression::Instance().Analyze(m_pAllocator, copy);
 
         if (result.HasErrors()) {
             m_result.AddError(SRSLReturnCode::InvalidExpression);

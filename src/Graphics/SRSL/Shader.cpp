@@ -18,10 +18,15 @@
 #include <Utils/FileSystem/FileSystem.h>
 
 namespace SR_SRSL_NS {
-    void SRSLUniformBlock::Align(const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {
+    void SRSLUniformBlock::Align(const SRSLAnalyzedTree* pAnalyzedTree) {
+        SR_TRACY_ZONE;
+
+        auto&& typeInfo = SRSLTypeInfo::Instance();
+
+        auto&& pAllocator = &pAnalyzedTree->allocator;
         for (auto&& field : fields) {
-            field.size = SRSLTypeInfo::Instance().GetTypeSize(field.type, pAnalyzedTree);
-            field.alignedSize = SRSLTypeInfo::Instance().GetAlignedTypeSize(field.type, pAnalyzedTree);
+            field.size = typeInfo.GetTypeSize(pAllocator, field.type, pAnalyzedTree);
+            field.alignedSize = typeInfo.GetAlignedTypeSize(pAllocator, field.type, pAnalyzedTree);
             size += field.alignedSize;
         }
 
@@ -39,11 +44,15 @@ namespace SR_SRSL_NS {
     }
 
     SRSLShader::SRSLShader(SR_UTILS_NS::Path path)
-        : Super()
+        : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
         , m_path(std::move(path))
     { }
 
-    SRSLShader::Ptr SRSLShader::Load(const SR_UTILS_NS::Path& path, const ShaderParams& params) {
+    SRSLShader::~SRSLShader() {
+        m_useStack.reset();
+    }
+
+    SRSLShader::Ptr SRSLShader::Load(SR_UTILS_NS::IAllocator* pAllocator, const SR_UTILS_NS::Path& path, const ShaderParams& params) {
         SR_TRACY_ZONE;
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Full) {
@@ -57,28 +66,27 @@ namespace SR_SRSL_NS {
             return nullptr;
         }
 
-        auto&& pShader = SRSLShader::Ptr(new SRSLShader(path));
+        SRSLShader::Ptr pShader = new SRSLShader(path);
         pShader->m_params = params;
+        pShader->m_pAllocator = pAllocator;
 
         SRSLPreProcessor::Includes includes;
         SRSLInclude& mainFile = includes.emplace_back();
         mainFile.name = path.ToStringRef();
 
-        auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(absPath, mainFile.buffer, 0);
+        auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(pAllocator, 512, absPath, mainFile.buffer, 0);
         if (lexems.empty()) {
             SR_ERROR("SRSLShader::Load() : failed to parse lexems!\n\tPath: " + path.ToString());
             return nullptr;
         }
 
-        auto&& [preProcessedLexems, preProcessResult] = SRSLPreProcessor::Instance().Process(std::move(lexems), includes, pShader->m_params);
+        auto&& [preProcessedLexems, preProcessResult] = SRSLPreProcessor::Instance().Process(pAllocator, std::move(lexems), includes, pShader->m_params);
         if (preProcessResult.HasErrors()) {
             SR_ERROR("SRSLShader::Load() : failed to pre-process shader!" + preProcessResult.ToString(includes));
             return nullptr;
         }
 
-        lexems = std::move(preProcessedLexems);
-
-        auto&& [pAnalyzedTree, analyzeResult] = SR_SRSL_NS::SRSLLexicalAnalyzer::Instance().Analyze(std::move(lexems));
+        auto&& [pAnalyzedTree, analyzeResult] = SR_SRSL_NS::SRSLLexicalAnalyzer::Instance().Analyze(pAllocator, preProcessedLexems);
 
         if (!pAnalyzedTree || analyzeResult.HasErrors()) {
             SR_ERROR("SRSLShader::Load() : failed to analyze shader!" + analyzeResult.ToString(includes));
@@ -154,7 +162,7 @@ namespace SR_SRSL_NS {
         return code;
     }
 
-    SRSLAnalyzedTree::Ptr SRSLShader::GetAnalyzedTree() const {
+    SRSLAnalyzedTree* SRSLShader::GetAnalyzedTree() const {
         return m_analyzedTree;
     }
 
@@ -283,9 +291,15 @@ namespace SR_SRSL_NS {
     bool SRSLShader::PrepareUniformBlocks() {
         SR_TRACY_ZONE;
 
+        SR_UTILS_NS::String tmpBuffer(m_pAllocator);
+        tmpBuffer.reserve(256);
+
         for (auto&& pUnit : m_analyzedTree->pLexicalTree->lexicalTree) {
+            if (!pUnit || pUnit->GetLexicalUnitType() != LexicalUnitType::Variable) {
+                continue;
+            }
             auto&& pVariable = dynamic_cast<SRSLVariable*>(pUnit);
-            if (!pVariable || !pVariable->pDecorators) {
+            if (!pVariable->pDecorators) {
                 continue;
             }
 
@@ -302,17 +316,21 @@ namespace SR_SRSL_NS {
             if (auto&& pDecorator = pVariable->pDecorators->Find("ssbo")) {
                 SRSLUniformBlock::Field field;
 
-                field.name = pVariable->pName->ToString(0);
-                field.type = pVariable->pType->ToString(0);
+                tmpBuffer.clear();
+                field.name = pVariable->pName->ToString(0, tmpBuffer);
+                tmpBuffer.clear();
+                field.type = pVariable->pType->ToString(0, tmpBuffer);
+
+                SRAssert(field.type != "[]");
 
                 if (pDecorator->args.empty()) {
                     SR_ERROR("SRSLShader::PrepareUniformBlocks() : ssbo block name is not set!");
                     continue;
                 }
-                std::string blockName = pDecorator->args[0]->token;
 
                 auto&& usedStages = m_useStack->IsVariableUsedInEntryPointsExt(field.name);
 
+                SR_UTILS_NS::StringView blockName = pDecorator->args[0]->token;
                 auto&& uniformBlock = m_ssboBlocks[blockName];
 
                 uniformBlock.isCoherent = static_cast<bool>(pVariable->pDecorators->Find("coherent"));
@@ -347,7 +365,8 @@ namespace SR_SRSL_NS {
             }
 
             if (auto&& pDecorator = pVariable->pDecorators->Find("shared")) {
-                SR_UTILS_NS::StringAtom vaeName = pVariable->pName->ToString(0);
+                tmpBuffer.clear();
+                SR_UTILS_NS::StringAtom vaeName = pVariable->pName->ToString(0, tmpBuffer);
 
                 if (pDecorator->args.empty()) {
                     if (std::find_if(m_shared.begin(), m_shared.end(), [vaeName](const auto& pair) -> bool {
@@ -371,8 +390,10 @@ namespace SR_SRSL_NS {
             else if ((pDecorator = pVariable->pDecorators->Find("uniform"))) {
                 SRSLUniformBlock::Field field;
 
-                field.name = pVariable->pName->ToString(0);
-                field.type = pVariable->pType->ToString(0);
+                tmpBuffer.clear();
+                field.name = pVariable->pName->ToString(0, tmpBuffer);
+                tmpBuffer.clear();
+                field.type = pVariable->pType->ToString(0, tmpBuffer);
                 field.isPublic = bool(pVariable->pDecorators->Find("public"));
                 field.defaultValue = EvalExpressionValue(pVariable->pExpr, pVariable->pType);
 
@@ -415,15 +436,21 @@ namespace SR_SRSL_NS {
         });
 
         /// sort by type size from less to more
-        std::sort(m_shared.begin(), m_shared.end(), [this](const auto& a, const auto& b) -> bool {
-            return SRSLTypeInfo::Instance().GetTypeSize(a.second->pType->ToString(0), m_analyzedTree) <
-                   SRSLTypeInfo::Instance().GetTypeSize(b.second->pType->ToString(0), m_analyzedTree);
+        std::sort(m_shared.begin(), m_shared.end(), [this, &tmpBuffer](const auto& a, const auto& b) -> bool {
+            tmpBuffer.clear();
+            const auto sizeA = SRSLTypeInfo::Instance().GetTypeSize(m_pAllocator, a.second->pType->ToString(0, tmpBuffer), m_analyzedTree);
+            tmpBuffer.clear();
+            const auto sizeB = SRSLTypeInfo::Instance().GetTypeSize(m_pAllocator, b.second->pType->ToString(0, tmpBuffer), m_analyzedTree);
+            return sizeA < sizeB;
         });
 
         /// sort by type size from less to more
-        std::sort(m_sharedWorkgroup.begin(), m_sharedWorkgroup.end(), [this](const auto& a, const auto& b) -> bool {
-            return SRSLTypeInfo::Instance().GetTypeSize(a.second->pType->ToString(0), m_analyzedTree) <
-                   SRSLTypeInfo::Instance().GetTypeSize(b.second->pType->ToString(0), m_analyzedTree);
+        std::sort(m_sharedWorkgroup.begin(), m_sharedWorkgroup.end(), [this, &tmpBuffer](const auto& a, const auto& b) -> bool {
+            tmpBuffer.clear();
+            const auto sizeA = SRSLTypeInfo::Instance().GetTypeSize(m_pAllocator, a.second->pType->ToString(0, tmpBuffer), m_analyzedTree);
+            tmpBuffer.clear();
+            const auto sizeB = SRSLTypeInfo::Instance().GetTypeSize(m_pAllocator, b.second->pType->ToString(0, tmpBuffer), m_analyzedTree);
+            return sizeA < sizeB;
         });
 
         /// ------------------------------------------------------------------
@@ -822,13 +849,13 @@ namespace SR_SRSL_NS {
 
         switch (shaderLanguage) {
             case ShaderLanguage::PseudoCode:
-                codeGenRes = SRSLPseudoCodeGenerator::Instance().GenerateStages(this);
+                codeGenRes = SRSLPseudoCodeGenerator::Instance().GenerateStages(m_pAllocator, this);
                 break;
             case ShaderLanguage::GLSL:
-                codeGenRes = GLSLCodeGenerator::Instance().GenerateStages(this);
+                codeGenRes = GLSLCodeGenerator::Instance().GenerateStages(m_pAllocator, this);
                 break;
             case ShaderLanguage::WGSL:
-                codeGenRes = WGSLCodeGenerator::Instance().GenerateStages(this);
+                codeGenRes = WGSLCodeGenerator::Instance().GenerateStages(m_pAllocator, this);
                 break;
             case ShaderLanguage::HLSL:
             case ShaderLanguage::Metal:

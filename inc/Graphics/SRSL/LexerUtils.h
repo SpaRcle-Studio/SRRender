@@ -53,7 +53,7 @@ namespace SR_SRSL_NS {
     bool IsIdentifier(SR_UTILS_NS::StringView token) noexcept;
     bool IsOperator(SR_UTILS_NS::StringView operation) noexcept;
 
-    SR_ENUM_NS_CLASS_T(LexemKind, uint16_t,
+    SR_ENUM_NS_CLASS_T(LexemKind, uint8_t,
         Unknown,
 
         OpeningSquareBracket, /// [
@@ -148,10 +148,10 @@ namespace SR_SRSL_NS {
             , position(position)
         { }
 
-        uint64_t offset = 0;
-        uint64_t position = 0;
-        uint64_t line = 0;
-        uint64_t length = 0;
+        uint32_t offset = 0;
+        uint32_t position = 0;
+        uint32_t line = 0;
+        uint32_t length = 0;
         uint16_t fileIndex = 0;
     };
 
@@ -171,12 +171,6 @@ namespace SR_SRSL_NS {
 
         LexemKind kind = LexemKind::Unknown;
         std::string_view value;
-
-        SR_NODISCARD std::string StringValue() {
-            SR_TRACY_ZONE;
-            return std::string(value);
-        }
-
     };
 
     struct SRSLMessage {
@@ -278,8 +272,8 @@ namespace SR_SRSL_NS {
         }
 
         uint64_t processedLexems = 0;
-        std::list<SRSLMessage> warnings;
-        std::list<SRSLMessage> errors;
+        SR_UTILS_NS::Vector<SRSLMessage> warnings;
+        SR_UTILS_NS::Vector<SRSLMessage> errors;
     };
 
     SR_MAYBE_UNUSED SR_INLINE_STATIC std::string LexemsToString(const std::vector<Lexem>& lexems) {

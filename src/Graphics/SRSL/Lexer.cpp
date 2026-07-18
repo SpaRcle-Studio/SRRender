@@ -10,7 +10,7 @@ namespace SR_SRSL_NS {
         Clear();
     }
 
-    SRSLLexer::Lexems SRSLLexer::Parse(const SR_UTILS_NS::Path& path, SR_UTILS_NS::String& buffer, uint16_t fileIndex) {
+    SRSLLexer::Lexems SRSLLexer::Parse(SR_UTILS_NS::IAllocator* pAllocator, uint32_t lexemsReserve, const SR_UTILS_NS::Path& path, SR_UTILS_NS::String& buffer, uint16_t fileIndex) {
         SR_TRACY_ZONE;
 
         if (!SR_UTILS_NS::FileSystem::ReadFile(path, buffer) || buffer.empty()) {
@@ -18,23 +18,26 @@ namespace SR_SRSL_NS {
             return { };
         }
 
-        return ParseInternal(buffer, fileIndex);
+        return ParseInternal(pAllocator, lexemsReserve, buffer, fileIndex);
     }
 
-    SRSLLexer::Lexems SRSLLexer::ParseString(std::string_view code, uint16_t fileIndex) {
-        return ParseInternal(code, fileIndex);
+    SRSLLexer::Lexems SRSLLexer::ParseString(SR_UTILS_NS::IAllocator* pAllocator, uint32_t lexemsReserve, std::string_view code, uint16_t fileIndex) {
+        SR_TRACY_ZONE;
+        return ParseInternal(pAllocator, lexemsReserve, code, fileIndex);
     }
 
     bool SRSLLexer::InBounds() const noexcept {
         return m_offset < m_source.size();
     }
 
-    SRSLLexer::Lexems SRSLLexer::ParseInternal(std::string_view code, uint16_t fileIndex) {
+    SRSLLexer::Lexems SRSLLexer::ParseInternal(SR_UTILS_NS::IAllocator* pAllocator, uint32_t lexemsReserve, std::string_view code, uint16_t fileIndex) {
         SR_TRACY_ZONE;
 
         Clear();
 
-        m_lexems.reserve(512);
+        m_pAllocator = pAllocator;
+        m_lexems = SR_UTILS_NS::Vector<Lexem>(m_pAllocator);
+        m_lexems.reserve(lexemsReserve);
         m_source = code;
         m_fileIndex = fileIndex;
 
@@ -228,8 +231,6 @@ namespace SR_SRSL_NS {
     }
 
     void SRSLLexer::Clear() {
-        SR_TRACY_ZONE;
-
         m_macroLine = false;
         m_source = { };
         m_fileIndex = 0;

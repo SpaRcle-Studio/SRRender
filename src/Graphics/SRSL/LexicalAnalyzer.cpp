@@ -5,13 +5,16 @@
 #include <Graphics/SRSL/LexicalAnalyzer.h>
 
 namespace SR_SRSL_NS {
-    std::pair<SRSLAnalyzedTree::Ptr, SRSLResult> SRSLLexicalAnalyzer::Analyze(SR_UTILS_NS::Vector<Lexem>&& lexems) {
+    std::pair<SRSLAnalyzedTree*, SRSLResult> SRSLLexicalAnalyzer::Analyze(SR_UTILS_NS::IAllocator* pAllocator, std::span<Lexem> lexems) {
         SR_TRACY_ZONE;
         SR_GLOBAL_LOCK
 
         Clear();
 
-        m_lexems = SR_UTILS_NS::Exchange(lexems, { });
+        m_lexems = lexems;
+
+        auto&& pAnalyzedTree = AllocateLexicalUnit<SRSLAnalyzedTree>(*pAllocator);
+        m_pAllocator = pAllocator;
 
         ProcessMain();
 
@@ -23,8 +26,6 @@ namespace SR_SRSL_NS {
             return std::make_pair(nullptr, SR_SRSL_NS::SRSLResult(SRSLReturnCode::InvalidLexicalTree));
         }
 
-        auto&& pAnalyzedTree = std::make_shared<SRSLAnalyzedTree>();
-
         pAnalyzedTree->pLexicalTree = SR_UTILS_NS::Exchange(*m_lexicalTree.begin(), { });
 
         return std::make_pair(std::move(pAnalyzedTree), SR_UTILS_NS::Exchange(m_result, { }));
@@ -33,15 +34,7 @@ namespace SR_SRSL_NS {
     void SRSLLexicalAnalyzer::Clear() {
         SR_TRACY_ZONE;
 
-        for (auto&& pLexicalTree : m_lexicalTree) {
-            delete pLexicalTree;
-        }
         m_lexicalTree.clear();
-
-        SR_SAFE_DELETE_PTR(m_decorators);
-        SR_SAFE_DELETE_PTR(m_expr);
-
-        m_lexems.clear();
         m_currentLexem = 0;
 
         m_states.clear();
@@ -50,9 +43,8 @@ namespace SR_SRSL_NS {
 
     const Lexem *SRSLLexicalAnalyzer::GetLexem(int64_t offset) const {
         if (m_currentLexem + offset < static_cast<int64_t>(m_lexems.size())) {
-            return &m_lexems.at(m_currentLexem + offset);
+            return &m_lexems[m_currentLexem + offset];
         }
-
         return nullptr;
     }
 
@@ -63,7 +55,7 @@ namespace SR_SRSL_NS {
     void SRSLLexicalAnalyzer::ProcessMain() {
         SR_TRACY_ZONE;
 
-        m_lexicalTree.emplace_back(new SRSLLexicalTree());
+        m_lexicalTree.emplace_back(AllocateLexicalUnit<SRSLLexicalTree>(*m_pAllocator));
 
         while (InBounds() && !IsHasErrors()) {
             switch (m_lexems[m_currentLexem].kind) {
@@ -83,47 +75,7 @@ namespace SR_SRSL_NS {
                 }
 
                 case LexemKind::Identifier: {
-                    if (GetCurrentLexem()->value == "else") {
-                        if (auto&& pNext = GetLexem(1); pNext->value == "if") {
-                            ++m_currentLexem;
-                        }
-                        ++m_currentLexem;
-                        m_lexicalTree.back()->lexicalTree.emplace_back(new SRSLIfStatement(true));
-                        m_states.emplace_back(LXAState::IfStatement);
-                        break;
-                    }
-
-                    if (GetCurrentLexem()->value == "if") {
-                        ++m_currentLexem;
-                        m_lexicalTree.back()->lexicalTree.emplace_back(new SRSLIfStatement());
-                        m_states.emplace_back(LXAState::IfStatement);
-                        break;
-                    }
-
-                    if (GetCurrentLexem()->value == "for") {
-                        ++m_currentLexem;
-                        m_lexicalTree.back()->lexicalTree.emplace_back(new SRSLForStatement());
-                        m_states.emplace_back(LXAState::ForStatement);
-                        break;
-                    }
-
-                    if (GetCurrentLexem()->value == "while") {
-                        ++m_currentLexem;
-                        m_lexicalTree.back()->lexicalTree.emplace_back(new SRSLWhileStatement());
-                        m_states.emplace_back(LXAState::WhileStatement);
-                        break;
-                    }
-
-                    if (GetCurrentLexem()->value == "struct") {
-                        ++m_currentLexem;
-
-                        auto&& pStructureStatement = new SRSLStructureStatement();
-                        pStructureStatement->pName = SRSLExpr::CreateStringExpression(GetCurrentLexem()->value);
-
-                        ++m_currentLexem;
-
-                        m_lexicalTree.back()->lexicalTree.emplace_back(pStructureStatement);
-                        m_states.emplace_back(LXAState::StructureStatement);
+                    if (ProcessInBuiltName()) {
                         break;
                     }
 
@@ -294,7 +246,7 @@ namespace SR_SRSL_NS {
                 return;
             }
             case LexemKind::OpeningCurlyBracket: {
-                m_lexicalTree.emplace_back(new SRSLLexicalTree());
+                m_lexicalTree.emplace_back(AllocateLexicalUnit<SRSLLexicalTree>(*m_pAllocator));
                 if (m_lexicalTree.size() > 64 * 64 * 64) {
                     SR_ERROR("SRSLLexicalAnalyzer::ProcessBracket() : too deep nesting!");
                     ++m_currentLexem;
@@ -395,10 +347,9 @@ namespace SR_SRSL_NS {
     void SRSLLexicalAnalyzer::ProcessExpression(bool isFunctionName, bool isSimpleExpr) {
         SR_TRACY_ZONE;
 
-        SRAssert(!m_expr);
-        SR_SAFE_DELETE_PTR(m_expr);
+        m_exprLexems.clear();
+        m_exprLexems.reserve(16);
 
-        SR_UTILS_NS::Vector<Lexem> exprLexems;
         uint32_t deep = 0;
         bool allowIdentifier = true;
 
@@ -409,7 +360,7 @@ namespace SR_SRSL_NS {
             case LexemKind::OpeningCurlyBracket:
                 if (auto&& pPrev = GetLexem(-1)) {
                     if (pPrev->kind == LexemKind::Assign || pPrev->kind == LexemKind::OpeningCurlyBracket || pPrev->kind == LexemKind::Comma) {
-                        exprLexems.emplace_back(m_lexems[m_currentLexem]);
+                        m_exprLexems.emplace_back(m_lexems[m_currentLexem]);
                         ++m_currentLexem;
                         ++deep;
                         goto retry;
@@ -433,7 +384,7 @@ namespace SR_SRSL_NS {
 
                     case LexemKind::Negation:
                         if (GetLexem(1) && GetLexem(1)->kind == LexemKind::Assign) {
-                            exprLexems.emplace_back(m_lexems[m_currentLexem]);
+                            m_exprLexems.emplace_back(m_lexems[m_currentLexem]);
                             ++m_currentLexem;
                         }
                         goto gotoDefault;
@@ -442,7 +393,7 @@ namespace SR_SRSL_NS {
                             goto gotoDefault;
                         }
                         if (GetLexem(1) && GetLexem(1)->kind == LexemKind::Assign) {
-                            exprLexems.emplace_back(m_lexems[m_currentLexem]);
+                            m_exprLexems.emplace_back(m_lexems[m_currentLexem]);
                             ++m_currentLexem;
                             goto gotoDefault;
                         }
@@ -463,7 +414,7 @@ namespace SR_SRSL_NS {
                             allowIdentifier = true;
                         }
 
-                        exprLexems.emplace_back(m_lexems[m_currentLexem]);
+                        m_exprLexems.emplace_back(m_lexems[m_currentLexem]);
                         ++m_currentLexem;
 
                         goto retry;
@@ -479,7 +430,7 @@ namespace SR_SRSL_NS {
                 if (deep == 0) {
                     break;
                 }
-                exprLexems.emplace_back(m_lexems[m_currentLexem]);
+                m_exprLexems.emplace_back(m_lexems[m_currentLexem]);
                 ++m_currentLexem;
                 --deep;
                 goto retry;
@@ -495,12 +446,12 @@ namespace SR_SRSL_NS {
             return;
         }
 
-        if (exprLexems.empty()) {
+        if (m_exprLexems.empty()) {
             m_result = SRSLResult(SRSLReturnCode::EmptyExpression, GetCurrentLexem());
             return;
         }
 
-        auto&& [pExpr, result] = SR_SRSL_NS::SRSLMathExpression::Instance().Analyze(std::move(exprLexems));
+        auto&& [pExpr, result] = SR_SRSL_NS::SRSLMathExpression::Instance().Analyze(m_pAllocator, m_exprLexems);
         m_expr = pExpr;
         m_result = std::move(result);
     }
@@ -508,21 +459,19 @@ namespace SR_SRSL_NS {
     void SRSLLexicalAnalyzer::ProcessDecorators() {
         SR_TRACY_ZONE;
 
-        SR_SAFE_DELETE_PTR(m_decorators);
-        m_decorators = new SRSLDecorators();
+        m_decorators = AllocateLexicalUnit<SRSLDecorators>(*m_pAllocator);
 
     retry:
         if (!InBounds()) {
-            m_result = SRSLResult(SRSLReturnCode::InvalidDecorator, 0);
+            m_result = SRSLResult(SRSLReturnCode::InvalidDecorator, nullptr);
             return;
         }
 
-        switch (m_lexems[m_currentLexem].kind)
-        {
+        switch (m_lexems[m_currentLexem].kind) {
             case LexemKind::OpeningSquareBracket: {
                 if (!m_states.empty() && m_states.back() == LXAState::Decorators) {
                     m_states.emplace_back(LXAState::Decorator);
-                    m_decorators->decorators.emplace_back(SRSLDecorator());
+                    m_decorators->decorators.emplace_back(SRSLDecorator(*m_pAllocator));
                     ++m_currentLexem;
                     goto retry;
                 }
@@ -621,7 +570,6 @@ namespace SR_SRSL_NS {
             case LexemKind::Integer:
                 if (!m_states.empty() && m_states.back() == LXAState::DecoratorArgs) {
                     ProcessExpression();
-
                     if (IsHasErrors()) {
                         return;
                     }
@@ -646,7 +594,6 @@ namespace SR_SRSL_NS {
         SR_TRACY_ZONE;
 
         auto&& pCurrent = GetCurrentLexem();
-
         const uint64_t currentLexem = m_currentLexem;
 
         if (pCurrent->value == "return") {
@@ -657,14 +604,14 @@ namespace SR_SRSL_NS {
                     return nullptr;
                 }
             }
-            return new SRSLReturn(SR_UTILS_NS::Exchange(m_expr, nullptr));
+            return AllocateLexicalUnit<SRSLReturn>(*m_pAllocator, SR_UTILS_NS::Exchange(m_expr, nullptr));
         }
 
         if (auto&& pNext = GetLexem(1); pNext && pNext->kind == LexemKind::OpeningSquareBracket) {
             ProcessExpression(true);
         }
         else {
-            m_expr = new SRSLExpr(pCurrent->value);
+            m_expr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, pCurrent->value);
             ++m_currentLexem;
         }
 
@@ -674,14 +621,12 @@ namespace SR_SRSL_NS {
             auto&& pNameExpr = SR_UTILS_NS::Exchange(m_expr, nullptr);
 
             if (IsHasErrors()) {
-                SR_SAFE_DELETE_PTR(pTypeExpr);
-                SR_SAFE_DELETE_PTR(pNameExpr);
                 return nullptr;
             }
 
             /// переменная имеющая значение: "type[...] name[...] = value;"
             if (pCurrent = GetCurrentLexem(); pCurrent && pCurrent->kind == LexemKind::Assign) {
-                auto&& pVariable = new SRSLVariable();
+                auto&& pVariable = AllocateLexicalUnit<SRSLVariable>(*m_pAllocator);
 
                 pVariable->pDecorators = SR_UTILS_NS::Exchange(m_decorators, nullptr);
                 pVariable->pType = SR_UTILS_NS::Exchange(pTypeExpr, nullptr);
@@ -694,7 +639,6 @@ namespace SR_SRSL_NS {
                 pVariable->pExpr = SR_UTILS_NS::Exchange(m_expr, nullptr);
 
                 if (IsHasErrors()) {
-                    SR_SAFE_DELETE_PTR(pVariable);
                     return nullptr;
                 }
 
@@ -702,7 +646,7 @@ namespace SR_SRSL_NS {
             }
             /// переменная имеющая значение: "type[...] name[...] = value;"
             else if (pCurrent && pCurrent->kind == LexemKind::OpeningBracket) {
-                auto&& pFunction = new SRSLFunction();
+                auto&& pFunction = AllocateLexicalUnit<SRSLFunction>(*m_pAllocator);
 
                 pFunction->pDecorators = SR_UTILS_NS::Exchange(m_decorators, nullptr);
                 pFunction->pType = SR_UTILS_NS::Exchange(pTypeExpr, nullptr);
@@ -712,7 +656,7 @@ namespace SR_SRSL_NS {
             }
             /// обычная переменная типа "type[...] name[...];"
             else if (pTypeExpr && pNameExpr) {
-                auto&& pVariable = new SRSLVariable();
+                auto&& pVariable = AllocateLexicalUnit<SRSLVariable>(*m_pAllocator);
 
                 pVariable->pType = SR_UTILS_NS::Exchange(pTypeExpr, nullptr);
                 pVariable->pName = SR_UTILS_NS::Exchange(pNameExpr, nullptr);
@@ -720,10 +664,6 @@ namespace SR_SRSL_NS {
 
                 return pVariable;
             }
-
-            SR_SAFE_DELETE_PTR(m_expr);
-            SR_SAFE_DELETE_PTR(pTypeExpr);
-            SR_SAFE_DELETE_PTR(pNameExpr);
 
             if (InBounds()) {
                 m_result = SRSLResult(SRSLReturnCode::UnexceptedLexem, GetCurrentLexem());
@@ -735,9 +675,56 @@ namespace SR_SRSL_NS {
             return nullptr;
         }
 
-        SR_SAFE_DELETE_PTR(m_expr);
         m_currentLexem = static_cast<int64_t>(currentLexem);
 
         return nullptr;
+    }
+
+    bool SRSLLexicalAnalyzer::ProcessInBuiltName() {
+        if (GetCurrentLexem()->value == "else") {
+            if (auto&& pNext = GetLexem(1); pNext->value == "if") {
+                ++m_currentLexem;
+            }
+            ++m_currentLexem;
+            m_lexicalTree.back()->lexicalTree.emplace_back(AllocateLexicalUnit<SRSLIfStatement>(*m_pAllocator, true));
+            m_states.emplace_back(LXAState::IfStatement);
+            return true;
+        }
+
+        if (GetCurrentLexem()->value == "if") {
+            ++m_currentLexem;
+            m_lexicalTree.back()->lexicalTree.emplace_back(AllocateLexicalUnit<SRSLIfStatement>(*m_pAllocator));
+            m_states.emplace_back(LXAState::IfStatement);
+            return true;
+        }
+
+        if (GetCurrentLexem()->value == "for") {
+            ++m_currentLexem;
+            m_lexicalTree.back()->lexicalTree.emplace_back(AllocateLexicalUnit<SRSLForStatement>(*m_pAllocator));
+            m_states.emplace_back(LXAState::ForStatement);
+            return true;
+        }
+
+        if (GetCurrentLexem()->value == "while") {
+            ++m_currentLexem;
+            m_lexicalTree.back()->lexicalTree.emplace_back(AllocateLexicalUnit<SRSLWhileStatement>(*m_pAllocator));
+            m_states.emplace_back(LXAState::WhileStatement);
+            return true;
+        }
+
+        if (GetCurrentLexem()->value == "struct") {
+            ++m_currentLexem;
+
+            auto&& pStructureStatement = AllocateLexicalUnit<SRSLStructureStatement>(*m_pAllocator);
+            pStructureStatement->pName = SRSLExpr::CreateStringExpression(*m_pAllocator, GetCurrentLexem()->value);
+
+            ++m_currentLexem;
+
+            m_lexicalTree.back()->lexicalTree.emplace_back(pStructureStatement);
+            m_states.emplace_back(LXAState::StructureStatement);
+            return true;
+        }
+
+        return false;
     }
 }

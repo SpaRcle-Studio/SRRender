@@ -5,11 +5,12 @@
 #include <Graphics/SRSL/MathExpression.h>
 
 namespace SR_SRSL_NS {
-    std::pair<SRSLExpr*, SRSLResult> SRSLMathExpression::Analyze(SR_UTILS_NS::Vector<Lexem>&& lexems) {
+    std::pair<SRSLExpr*, SRSLResult> SRSLMathExpression::Analyze(SR_UTILS_NS::IAllocator* pAllocator, std::span<Lexem> lexems) {
         SR_TRACY_ZONE;
 
         Clear();
 
+        m_pAllocator = pAllocator;
         m_lexems = SR_UTILS_NS::Exchange(lexems, { });
 
         if (m_lexems.empty()) {
@@ -22,7 +23,6 @@ namespace SR_SRSL_NS {
     }
 
     SRSLExpr* SRSLMathExpression::ParseBinaryExpression(int32_t minPriority) {
-        SR_TRACY_ZONE;
         SRSLExpr* pLeftExpr = ParseSimpleExpression();
 
         if (!InBounds()) {
@@ -34,7 +34,6 @@ namespace SR_SRSL_NS {
             ParseTokenStackData operation = ParseTokenStack();
 
             if (IsHasErrors()) {
-                SR_SAFE_DELETE_PTR(pLeftExpr);
                 return nullptr;
             }
 
@@ -56,7 +55,7 @@ namespace SR_SRSL_NS {
 
             if (IsIncrementOrDecrement(operation.value)) {
                 /// постинкремент
-                pLeftExpr = new SRSLExpr(pLeftExpr, new SRSLExpr(operation.value));
+                pLeftExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, pLeftExpr, AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, operation.value));
 
                 if (!InBounds()) {
                     return pLeftExpr;
@@ -79,18 +78,20 @@ namespace SR_SRSL_NS {
 
                 if (pRightExpr->args.size() != 1) {
                     m_result = SRSLResult(SRSLReturnCode::InvalidIncrementOrDecrement);
-                    SR_SAFE_DELETE_PTR(pRightExpr);
                     return pLeftExpr;
                 }
                 else {
-                    pLeftExpr = new SRSLExpr(std::move(pRightExpr->token), pLeftExpr, SR_UTILS_NS::Exchange(pRightExpr->args[0], nullptr));
-                    SR_SAFE_DELETE_PTR(pRightExpr);
+                    pLeftExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator,
+                        std::move(pRightExpr->token),
+                        pLeftExpr,
+                        SR_UTILS_NS::Exchange(pRightExpr->args[0], nullptr)
+                    );
                 }
             }
             else {
                 if (InBounds()) {
-                    auto &&pRightExpr = ParseBinaryExpression(priority);
-                    pLeftExpr = new SRSLExpr(operation.value, pLeftExpr, pRightExpr);
+                    auto&& pRightExpr = ParseBinaryExpression(priority);
+                    pLeftExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, operation.value, pLeftExpr, pRightExpr);
                 }
                 else {
                     return pLeftExpr;
@@ -104,7 +105,6 @@ namespace SR_SRSL_NS {
     }
 
     SRSLExpr* SRSLMathExpression::ParseSimpleExpression() {
-        SR_TRACY_ZONE;
         if (auto&& pExpr = TryParseString()) {
             return pExpr;
         }
@@ -121,7 +121,7 @@ namespace SR_SRSL_NS {
         }
 
         if (SR_MATH_NS::IsNumber(token.value) || IsIdentifier(token.value)) {
-            auto&& pBasicExpr = new SRSLExpr(token.value);
+            auto&& pBasicExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, token.value);
 
             /// parse function call
             if (auto&& pLexem = GetCurrentLexem(); pLexem && pLexem->kind == LexemKind::OpeningBracket) {
@@ -132,7 +132,6 @@ namespace SR_SRSL_NS {
             retryFnArg:
                 pLexem = GetCurrentLexem();
                 if (!pLexem || IsHasErrors()) {
-                    SR_SAFE_DELETE_PTR(pBasicExpr);
                     m_result = SRSLResult(SRSLReturnCode::InvalidCall);
                     return nullptr;
                 }
@@ -159,7 +158,15 @@ namespace SR_SRSL_NS {
             if (auto&& pLexem = GetCurrentLexem(); pLexem && pLexem->kind == LexemKind::OpeningSquareBracket) {
                 ++m_currentLexem;
 
-                SR_UTILS_NS::Vector<Lexem> bracketLexems;
+                if (m_bracketLexemsSize >= m_bracketLexems.size()) {
+                    SRHalt("SRSLMathExpression::ParseSimpleExpression() : too many nested brackets!");
+                    return nullptr;
+                }
+
+                auto&& bracketLexems = m_bracketLexems[m_bracketLexemsSize++];
+                bracketLexems.clear();
+                bracketLexems.reserve(16);
+
                 int32_t bracketCount = 1;
 
                 while (InBounds() && bracketCount > 0) {
@@ -179,25 +186,26 @@ namespace SR_SRSL_NS {
                 }
 
                 if (bracketLexems.empty()) {
-                    pBasicExpr = new SRSLExpr("[", pBasicExpr, nullptr);
+                    pBasicExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, "[", pBasicExpr, nullptr);
                 }
                 else {
                     const int64_t stashLexem = m_currentLexem;
-                    SR_UTILS_NS::Vector<Lexem> oldLexems = std::move(m_lexems);
+                    std::span<Lexem> oldLexems = m_lexems;
 
-                    auto&& pInnerExpr = SRSLMathExpression::Instance().Analyze(std::move(bracketLexems));
+                    auto&& pInnerExpr = SRSLMathExpression::Instance().Analyze(m_pAllocator, bracketLexems);
                     if (pInnerExpr.second.HasErrors()) {
-                        SR_SAFE_DELETE_PTR(pBasicExpr);
                         m_result = pInnerExpr.second;
                         SR_ERROR("SRSLMathExpression::ParseSimpleExpression() : failed to parse inner expression!");
+                        m_bracketLexemsSize--;
                         return nullptr;
                     }
 
                     m_currentLexem = stashLexem;
-                    m_lexems = std::move(oldLexems);
+                    m_lexems = oldLexems;
 
-                    pBasicExpr = new SRSLExpr("[", pBasicExpr, pInnerExpr.first);
+                    pBasicExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, "[", pBasicExpr, pInnerExpr.first);
                 }
+                m_bracketLexemsSize--;
 
                 //if (auto&& pNextLexem = GetCurrentLexem(); pNextLexem && pNextLexem->kind == LexemKind::ClosingSquareBracket) {
                 //    ++m_currentLexem;
@@ -212,8 +220,8 @@ namespace SR_SRSL_NS {
             else if (pLexem && pLexem->kind == LexemKind::Dot) {
                 ++m_currentLexem;
                 std::string_view field = GetCurrentLexem()->value;
-                auto&& pExpr = new SRSLExpr(field);
-                pBasicExpr = new SRSLExpr(".", pBasicExpr, pExpr);
+                auto&& pExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, field);
+                pBasicExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, ".", pBasicExpr, pExpr);
                 ++m_currentLexem;
                 goto retrySubExpr;
             }
@@ -251,14 +259,12 @@ namespace SR_SRSL_NS {
             auto&& pExpr = ParseBinaryExpression(0);
 
             if (!InBounds()) {
-                SR_SAFE_DELETE_PTR(pExpr);
                 m_result = SRSLResult(SRSLReturnCode::InvalidComplexExpression, GetCurrentLexem());
                 return nullptr;
             }
 
             ParseToken(m_tokenBufferTmp);
             if (m_tokenBufferTmp != ")") {
-                SR_SAFE_DELETE_PTR(pExpr);
                 m_result = SRSLResult(SRSLReturnCode::InvalidComplexExpression, GetCurrentLexem());
                 return nullptr;
             }
@@ -268,7 +274,7 @@ namespace SR_SRSL_NS {
 
         /// parse list { ... }
         if (token.value.size() == 1 && token.value == "{") {
-            auto&& pListExpr = new SRSLExpr(token.value);
+            auto&& pListExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, token.value);
 
         labelNextArrayElem:
             int64_t currentLexemStash = m_currentLexem;
@@ -277,7 +283,6 @@ namespace SR_SRSL_NS {
 
             if (token.value.empty()) {
                 m_result = SRSLResult(SRSLReturnCode::InvalidListEnd);
-                SR_SAFE_DELETE_PTR(pListExpr);
                 return nullptr;
             }
 
@@ -299,26 +304,23 @@ namespace SR_SRSL_NS {
         }
 
         if (!InBounds()) {
-            return new SRSLExpr(token.value);
+            return AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, token.value);
         }
 
         auto&& pArgExpr = ParseSimpleExpression();
 
         if (IsHasErrors()) {
-            SR_SAFE_DELETE_PTR(pArgExpr);
             return nullptr;
         }
 
         if (IsIncrementOrDecrement(token.value)) {
-            return new SRSLExpr(new SRSLExpr(token.value), pArgExpr);
+            return AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, token.value), pArgExpr);
         }
 
-        return new SRSLExpr(token.value, pArgExpr);
+        return AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, token.value, pArgExpr);
     }
 
     SRSLExpr* SRSLMathExpression::TryParseString() {
-        SR_TRACY_ZONE;
-
         bool isStringStarted = false;
         m_tryParseStringTokenTmp.clear();
 
@@ -331,7 +333,7 @@ namespace SR_SRSL_NS {
             case LexemKind::String: {
                 ++m_currentLexem;
                 if (isStringStarted) {
-                    return SRSLExpr::CreateStringExpression(std::move(m_tryParseStringTokenTmp));
+                    return SRSLExpr::CreateStringExpression(*m_pAllocator, m_tryParseStringTokenTmp);
                 }
                 isStringStarted = true;
                 goto retry;
@@ -365,81 +367,88 @@ namespace SR_SRSL_NS {
     }
 
     int32_t SRSLMathExpression::GetPriority(const std::string_view& operation, bool prefix) const {
-        if (operation == "") {
+        if (operation.size() == 1) {
+            const char op = operation[0];
 
+            if (prefix) {
+                switch(op) {
+                    case '~': return 35;
+                    case '!': return 40;
+                    case '+':
+                    case '-': return 45;
+                    default:
+                        break;
+                }
+            }
+
+            switch (op) {
+                case '=': return 30;
+                case '[': return 50;
+                case ']': return 50;
+
+                case '?': return 60;
+                case ':': return 60;
+                case '|': return 75;
+                case '^': return 76;
+                case '&': return 77;
+
+                case '+': return 100;
+                case '-': return 100;
+                case '>': return 85;
+                case '<': return 85;
+                case '*': return 300;
+                case '/': return 300;
+                case '%': return 300;
+                case '.': return 600;
+                default:
+                    break;
+            }
+
+            return 0;
         }
+        else if (operation.size() == 2) {
+            if (operation == "+=") return 10;
+            else if (operation == "-=") return 10;
+            else if (operation == "%=") return 10;
+            else if (operation == "|=") return 10;
+            else if (operation == "&=") return 10;
+            else if (operation == "^=") return 10;
+            else if (operation == "~=") return 10;
+            else if (operation == "*=") return 10;
+            else if (operation == "/=") return 10;
+            else if (operation == "||") return 71;
+            else if (operation == "^^") return 72;
+            else if (operation == "&&") return 73;
 
-        //else if (operation == ".") return 25;
+            else if (operation == "!=") return 80;
+            else if (operation == "==") return 80;
 
-        else if (operation == "+=") return 10;
-        else if (operation == "-=") return 10;
-        else if (operation == "%=") return 10;
-        else if (operation == "|=") return 10;
-        else if (operation == "&=") return 10;
-        else if (operation == "^=") return 10;
-        else if (operation == "~=") return 10;
-        else if (operation == "*=") return 10;
-        else if (operation == "/=") return 10;
-        else if (operation == ">>=") return 10;
-        else if (operation == "<<=") return 10;
+            else if (operation == ">=") return 85;
+            else if (operation == "<=") return 85;
 
-        else if (operation == "=") return 30;
+            else if (operation == ">>") return 90;
+            else if (operation == "<<") return 90;
 
-        else if (operation == "~" && prefix) return 35;
-        else if (operation == "!" && prefix) return 40;
-        else if (operation == "+" && prefix) return 45;
-        else if (operation == "-" && prefix) return 45;
+            else if (operation == "++") return 500;
+            else if (operation == "--") return 500;
 
-        else if (operation == "[") return 50;
-        else if (operation == "]") return 50;
-
-        else if (operation == "?") return 60;
-        else if (operation == ":") return 60;
-
-        else if (operation == "||") return 71;
-        else if (operation == "^^") return 72;
-        else if (operation == "&&") return 73;
-
-        else if (operation == "|") return 75;
-        else if (operation == "^") return 76;
-        else if (operation == "&") return 77;
-
-        else if (operation == "!=") return 80;
-        else if (operation == "==") return 80;
-
-        else if (operation == ">=") return 85;
-        else if (operation == "<=") return 85;
-        else if (operation == ">") return 85;
-        else if (operation == "<") return 85;
-
-        else if (operation == ">>") return 90;
-        else if (operation == "<<") return 90;
-
-        else if (operation == "+") return 100;
-        else if (operation == "-") return 100;
-
-        else if (operation == "*") return 300;
-        else if (operation == "/") return 300;
-        else if (operation == "%") return 300;
-
-        else if (operation == "++") return 500;
-        else if (operation == "--") return 500;
-
-        else if (operation == ".") return 600;
+            return 0;
+        }
+        else if (operation == ">>=" || operation == "<<=") {
+            return 10;
+        }
 
         return 0;
     }
 
     void SRSLMathExpression::Clear() {
-        SR_TRACY_ZONE;
         m_result.Clear();
-        m_lexems.clear();
         m_currentLexem = 0;
     }
 
     const Lexem* SRSLMathExpression::GetLexem(int64_t offset) const {
         if (m_currentLexem + offset < static_cast<int64_t>(m_lexems.size())) {
-            return &m_lexems.at(m_currentLexem + offset);
+            return &m_lexems[m_currentLexem + offset];
         }
 
         return nullptr;
@@ -457,9 +466,7 @@ namespace SR_SRSL_NS {
         return GetLexem(0);
     }
 
-    void SRSLMathExpression::ParseToken(std::string& token) {
-        SR_TRACY_ZONE;
-
+    void SRSLMathExpression::ParseToken(SR_UTILS_NS::String& token) {
         token.clear();
 
         /// пытаемся обработать как число
@@ -674,7 +681,6 @@ namespace SR_SRSL_NS {
 
         m_result = SRSLResult(SRSLReturnCode::InvalidMathToken, GetCurrentLexem());
         token.clear();
-        return;
     }
 
     bool SRSLMathExpression::IsIncrementOrDecrement(const std::string_view& operation) const {
@@ -709,7 +715,7 @@ namespace SR_SRSL_NS {
             SRHalt("SRSLMathExpression::ParseTokenStack() : token stack overflow!");
             return { };
         }
-        std::string& data = m_tokenStack[m_tokenStackSize++];
+        SR_UTILS_NS::String& data = m_tokenStack[m_tokenStackSize++];
         ParseToken(data);
         return { data };
     }

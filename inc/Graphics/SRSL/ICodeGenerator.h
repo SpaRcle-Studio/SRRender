@@ -20,7 +20,7 @@ namespace SR_SRSL_NS {
         virtual ~ISRSLCodeGenerator() = default;
 
     protected:
-        SR_NODISCARD virtual SRSLCodeGenRes GenerateStages(const SRSLShader* pShader) = 0;
+        SR_NODISCARD virtual SRSLCodeGenRes GenerateStages(SR_UTILS_NS::IAllocator* pAllocator, const SRSLShader* pShader) = 0;
         SR_NODISCARD SR_UTILS_NS::StringView GenerateTab(int32_t deep) const;
 
     protected:

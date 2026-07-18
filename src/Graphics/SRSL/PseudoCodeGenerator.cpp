@@ -6,7 +6,7 @@
 #include <Graphics/SRSL/Shader.h>
 
 namespace SR_SRSL_NS {
-    ISRSLCodeGenerator::SRSLCodeGenRes SRSLPseudoCodeGenerator::GenerateStages(const SRSLShader* pShader) {
+    ISRSLCodeGenerator::SRSLCodeGenRes SRSLPseudoCodeGenerator::GenerateStages(SR_UTILS_NS::IAllocator* pAllocator, const SRSLShader* pShader) {
         SR_GLOBAL_LOCK
 
         Clear();

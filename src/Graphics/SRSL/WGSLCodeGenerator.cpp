@@ -90,7 +90,8 @@ namespace SR_SRSL_NS {
             }
         }
 
-        std::string_view returnTypeFn = returnType.empty() ? WGSLDetail::GenerateType(pFunction->pType->ToString(0)) : returnType;
+        m_tmpBuffer.clear();
+        std::string_view returnTypeFn = returnType.empty() ? WGSLDetail::GenerateType(pFunction->pType->ToString(0, m_tmpBuffer)) : returnType;
         if (!returnTypeFn.empty() && returnTypeFn != "void") {
             result += ") -> ";
             result += returnTypeFn;
@@ -404,7 +405,7 @@ namespace SR_SRSL_NS {
         return code;
     }
 
-    ISRSLCodeGenerator::SRSLCodeGenRes WGSLCodeGenerator::GenerateStages(const SRSLShader* pShader) {
+    ISRSLCodeGenerator::SRSLCodeGenRes WGSLCodeGenerator::GenerateStages(SR_UTILS_NS::IAllocator* pAllocator, const SRSLShader* pShader) {
         SR_GLOBAL_LOCK
 
         Clear();

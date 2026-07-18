@@ -17,12 +17,13 @@ namespace SR_SRSL_NS {
         SR_UTILS_NS::VertexAttributeDescription { SR_UTILS_NS::VertexAttribute::UV0, SR_UTILS_NS::VertexAttributeFormat::Float32, 2, 0 },
     };
 
-    ISRSLCodeGenerator::SRSLCodeGenRes GLSLCodeGenerator::GenerateStages(const SRSLShader* pShader) {
+    ISRSLCodeGenerator::SRSLCodeGenRes GLSLCodeGenerator::GenerateStages(SR_UTILS_NS::IAllocator* pAllocator, const SRSLShader* pShader) {
         SR_TRACY_ZONE;
         SR_GLOBAL_LOCK
 
         Clear();
 
+        m_pAllocator = pAllocator;
         m_shader = pShader;
 
         ISRSLCodeGenerator::SRSLCodeGenRes codeGenRes;
@@ -399,7 +400,8 @@ namespace SR_SRSL_NS {
         for (auto&& [name, pVariable] : m_shader->GetConstants()) {
             if (pFunction->IsVariableUsed(name)) {
                 auto&& type = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(pVariable->pType), true);
-                code += SR_FORMAT("const {} {} = {};\n\n", type.c_str(), pVariable->pName->ToString(0), GenerateExpression(pVariable->pExpr, 0).c_str());
+                m_tmpBuffer.clear();
+                code += SR_FORMAT("const {} {} = {};\n\n", type.c_str(), pVariable->pName->ToString(0, m_tmpBuffer), GenerateExpression(pVariable->pExpr, 0).c_str());
             }
         }
 
@@ -798,8 +800,11 @@ namespace SR_SRSL_NS {
         std::string blockCode = SR_SPRINTF("layout (set = 0, binding = %d)%s buffer StorageBuffer_%s {\n", uniformBlock.binding, modifiers.c_str(), name.c_str());
 
         for (auto&& field : uniformBlock.fields) {
-            auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type), true);
-            auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
+            SR_UTILS_NS::StringView fieldType = field.type;
+            SR_UTILS_NS::StringView fieldName = field.name;
+
+            auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(m_pAllocator, fieldType), true);
+            auto&& dimension = SRSLTypeInfo::Instance().GetDimension(m_pAllocator, fieldType, nullptr);
 
             std::string strDimension;
 
@@ -846,8 +851,8 @@ namespace SR_SRSL_NS {
 
                 hasUsage |= pFunction->IsVariableUsed(field.name);
 
-                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type), true);
-                auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
+                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(m_pAllocator, field.type), true);
+                auto&& dimension = SRSLTypeInfo::Instance().GetDimension(m_pAllocator, field.type, nullptr);
 
                 std::string strDimension;
 
@@ -905,9 +910,9 @@ namespace SR_SRSL_NS {
             for (auto&& field : m_shader->GetPushConstants().fields) {
                 hasUsage |= pFunction->IsVariableUsed(field.name);
 
-                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(field.type), true);
+                auto&& typeName = ReplaceToken(SRSLTypeInfo::Instance().GetTypeName(m_pAllocator, field.type), true);
 
-                auto&& dimension = SRSLTypeInfo::Instance().GetDimension(field.type, nullptr);
+                auto&& dimension = SRSLTypeInfo::Instance().GetDimension(m_pAllocator, field.type, nullptr);
 
                 std::string strDimension;
 

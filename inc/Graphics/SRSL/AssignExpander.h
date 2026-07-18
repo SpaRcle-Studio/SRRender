@@ -12,7 +12,7 @@ namespace SR_SRSL_NS {
     class SRSLAssignExpander : public SR_UTILS_NS::Singleton<SRSLAssignExpander> {
         SR_REGISTER_SINGLETON(SRSLAssignExpander)
     public:
-        SR_NODISCARD std::pair<std::vector<Lexem>, SRSLResult> Expand(std::vector<Lexem>&& lexems);
+        SR_NODISCARD std::pair<std::vector<Lexem>, SRSLResult> Expand(SR_UTILS_NS::IAllocator* pAllocator, std::vector<Lexem>&& lexems);
 
     private:
         void Clear();
@@ -32,6 +32,7 @@ namespace SR_SRSL_NS {
 
     private:
         SRSLResult m_result;
+        SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
 
         std::vector<Lexem> m_lexems;
         int64_t m_currentLexem = 0;

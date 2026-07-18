@@ -19,12 +19,13 @@ namespace SR_SRSL_NS {
             StructureStatement, StructureStatementBody,
         };
     public:
-        SR_NODISCARD std::pair<SRSLAnalyzedTree::Ptr, SRSLResult> Analyze(SR_UTILS_NS::Vector<Lexem>&& lexems);
+        SR_NODISCARD std::pair<SRSLAnalyzedTree*, SRSLResult> Analyze(SR_UTILS_NS::IAllocator* pAllocator, std::span<Lexem> lexems);
 
     private:
         void Clear();
 
         void ProcessMain();
+        bool ProcessInBuiltName();
         void ProcessBracket();
         void ProcessDecorators();
         void ProcessExpression(bool isFunctionName = false, bool isSimpleExpr = false);
@@ -37,16 +38,18 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const Lexem* GetCurrentLexem() const;
 
     private:
-        std::list<SRSLLexicalTree*> m_lexicalTree;
+        SR_UTILS_NS::Vector<SRSLLexicalTree*> m_lexicalTree;
+        SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
+        SR_UTILS_NS::Vector<Lexem> m_exprLexems;
 
         SRSLDecorators* m_decorators = nullptr;
         SRSLExpr* m_expr = nullptr;
 
         SRSLResult m_result;
-        std::list<LXAState> m_states;
-
-        SR_UTILS_NS::Vector<Lexem> m_lexems;
         int64_t m_currentLexem = 0;
+
+        SR_UTILS_NS::Vector<LXAState> m_states;
+        std::span<Lexem> m_lexems;
 
     };
 }

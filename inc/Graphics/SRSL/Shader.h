@@ -11,6 +11,8 @@
 #include <Graphics/SRSL/ShaderType.h>
 #include <Graphics/Pipeline/ShaderUtils.h>
 
+#include <Utils/Types/RawPointerHolder.h>
+
 namespace SR_SRSL_NS {
     SR_ENUM_NS_CLASS_T(ShaderLanguage, uint8_t,
         PseudoCode, GLSL, WGSL, HLSL, Metal
@@ -36,7 +38,7 @@ namespace SR_SRSL_NS {
             std::optional<ShaderPropertyVariant> defaultValue;
         };
 
-        void Align(const SRSLAnalyzedTree::Ptr& pAnalyzedTree);
+        void Align(const SRSLAnalyzedTree* pAnalyzedTree);
 
         std::optional<bool> isReadOnly; /// true - read only, false - write only, nullopt - read/write
         bool isVolatile = false;
@@ -48,7 +50,7 @@ namespace SR_SRSL_NS {
 
         bool hasUsage = false;
 
-        std::vector<Field> fields;
+        SR_UTILS_NS::Vector<Field> fields;
         std::set<ShaderStage> stages;
     };
 
@@ -56,16 +58,20 @@ namespace SR_SRSL_NS {
 
     /** Это не шейдер в привычном понимании, это набор всех данных для генерирования любого
      * шейдерного кода и для последующей его экспортации. */
-    class SRSLShader : public SR_UTILS_NS::NonCopyable {
-        using Ptr = std::shared_ptr<SRSLShader>;
-        using Super = SR_UTILS_NS::NonCopyable;
+    class SRSLShader : public SR_HTYPES_NS::SharedPtr<SRSLShader> {
+        using Super = SR_HTYPES_NS::SharedPtr<SRSLShader>;
         using UniformBlocks = std::map<SR_UTILS_NS::StringAtom, SRSLUniformBlock>;
         friend ShaderCache;
+    public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<SRSLShader>;
+
+        ~SRSLShader() override;
+
     private:
         explicit SRSLShader(SR_UTILS_NS::Path path);
 
     public:
-        SR_NODISCARD static SRSLShader::Ptr Load(const SR_UTILS_NS::Path& path, const ShaderParams& params);
+        SR_NODISCARD static SRSLShader::Ptr Load(SR_UTILS_NS::IAllocator* pAllocator, const SR_UTILS_NS::Path& path, const ShaderParams& params);
         static void ClearShadersCache();
 
     public:
@@ -81,7 +87,7 @@ namespace SR_SRSL_NS {
         //SR_NODISCARD Vertices::VertexType GetVertexType() const;
         SR_NODISCARD SR_SRSL_NS::ShaderType GetType() const;
         SR_NODISCARD SR_UTILS_NS::Path GetPath() const { return m_path; }
-        SR_NODISCARD SRSLAnalyzedTree::Ptr GetAnalyzedTree() const;
+        SR_NODISCARD SRSLAnalyzedTree* GetAnalyzedTree() const;
         SR_NODISCARD SRSLUseStack::Ptr GetUseStack() const;
         SR_NODISCARD const UniformBlocks& GetUniformBlocks() const { return m_uniformBlocks; }
         SR_NODISCARD const UniformBlocks& GetSSBOBlocks() const { return m_ssboBlocks; }
@@ -96,6 +102,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SR_MATH_NS::UVector3& GetComputeWorkGroupSize() const { return m_computeWorkGroupSize; }
         SR_NODISCARD bool IsMacroDefined(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD bool IsGLayerUsed() const { return m_gLayerUsed; }
+        SR_NODISCARD SR_UTILS_NS::IAllocator* GetAllocator() const { return m_pAllocator; }
 
     private:
         SR_NODISCARD SR_UTILS_NS::Path GetCachePath() const;
@@ -121,6 +128,7 @@ namespace SR_SRSL_NS {
     private:
         SR_UTILS_NS::Path m_path;
 
+        SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
         bool m_gLayerUsed = false;
         ShaderParams m_params;
         std::vector<SRSLInclude> m_includes;
@@ -128,7 +136,7 @@ namespace SR_SRSL_NS {
         std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_sharedWorkgroup;
         std::map<SR_UTILS_NS::StringAtom, SRSLVariable*> m_constants;
         SRShaderCreateInfo m_createInfo;
-        SRSLAnalyzedTree::Ptr m_analyzedTree;
+        SRSLAnalyzedTree* m_analyzedTree = nullptr;
         SRSLUseStack::Ptr m_useStack;
         UniformBlocks m_ssboBlocks;
         UniformBlocks m_uniformBlocks;

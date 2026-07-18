@@ -16,15 +16,15 @@ namespace SR_SRSL_NS {
         ~SRSLLexer() override;
 
     public:
-        SR_NODISCARD Lexems Parse(const SR_UTILS_NS::Path& path, SR_UTILS_NS::String& buffer, uint16_t fileIndex);
-        SR_NODISCARD Lexems ParseString(std::string_view code, uint16_t fileIndex);
+        SR_NODISCARD Lexems Parse(SR_UTILS_NS::IAllocator* pAllocator, uint32_t lexemsReserve, const SR_UTILS_NS::Path& path, SR_UTILS_NS::String& buffer, uint16_t fileIndex);
+        SR_NODISCARD Lexems ParseString(SR_UTILS_NS::IAllocator* pAllocator, uint32_t lexemsReserve, std::string_view code, uint16_t fileIndex);
 
     private:
         SR_NODISCARD bool InBounds() const noexcept;
         SR_NODISCARD ProcessedLexem ProcessLexem();
         SR_NODISCARD std::string_view ProcessIdentifier();
 
-        SR_NODISCARD Lexems ParseInternal(std::string_view code, uint16_t fileIndex);
+        SR_NODISCARD Lexems ParseInternal(SR_UTILS_NS::IAllocator* pAllocator, uint32_t lexemsReserve, std::string_view code, uint16_t fileIndex);
 
         void Clear();
 
@@ -40,6 +40,7 @@ namespace SR_SRSL_NS {
         uint64_t m_position = 0;
 
         Lexems m_lexems;
+        SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
 
     };
 }

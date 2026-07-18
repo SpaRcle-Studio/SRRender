@@ -13,13 +13,13 @@ namespace SR_SRSL_NS {
     class SRSLUniformBlock;
 
     class WGSLCodeGenerator : public ISRSLCodeGenerator, public SR_UTILS_NS::Singleton<WGSLCodeGenerator> {
-    SR_REGISTER_SINGLETON(WGSLCodeGenerator)
+        SR_REGISTER_SINGLETON(WGSLCodeGenerator)
     private:
         WGSLCodeGenerator() = default;
         ~WGSLCodeGenerator() override = default;
 
     public:
-        SR_NODISCARD SRSLCodeGenRes GenerateStages(const SRSLShader* pShader) override;
+        SR_NODISCARD SRSLCodeGenRes GenerateStages(SR_UTILS_NS::IAllocator* pAllocator, const SRSLShader* pShader) override;
 
         std::string_view GenerateFunction(
             SRSLFunction* pFunction,
@@ -34,6 +34,9 @@ namespace SR_SRSL_NS {
         std::optional<std::string_view> GenerateVertexStage(const SRSLShader* pShader, SRSLResult& result);
         std::optional<std::string_view> GenerateFragmentStage(const SRSLShader* pShader, SRSLResult& result);
         std::optional<std::string_view> GenerateComputeStage(const SRSLShader* pShader, SRSLResult& result);
+
+    private:
+        mutable SR_UTILS_NS::String m_tmpBuffer;
 
     };
 }

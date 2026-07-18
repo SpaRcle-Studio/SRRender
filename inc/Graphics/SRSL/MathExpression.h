@@ -16,7 +16,7 @@ namespace SR_SRSL_NS {
             ~ParseTokenStackData();
         };
     public:
-        SR_NODISCARD std::pair<SRSLExpr*, SRSLResult> Analyze(SR_UTILS_NS::Vector<Lexem>&& lexems);
+        SR_NODISCARD std::pair<SRSLExpr*, SRSLResult> Analyze(SR_UTILS_NS::IAllocator* pAllocator, std::span<Lexem> lexems);
 
     private:
         void Clear();
@@ -28,7 +28,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD SRSLExpr* ParseSimpleExpression();
         SR_NODISCARD SRSLExpr* TryParseString();
 
-        void ParseToken(std::string& token);
+        void ParseToken(SR_UTILS_NS::String& token);
         ParseTokenStackData ParseTokenStack();
         void PopTokenStack();
 
@@ -40,14 +40,18 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const Lexem* GetCurrentLexem() const;
 
     private:
+        SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
         SRSLResult m_result;
-        std::string m_tokenBufferTmp;
+        SR_UTILS_NS::String m_tokenBufferTmp;
         SR_UTILS_NS::String m_tryParseStringTokenTmp;
 
-        std::array<std::string, 64> m_tokenStack;
+        std::array<SR_UTILS_NS::String, 64> m_tokenStack;
         uint32_t m_tokenStackSize = 0;
 
-        SR_UTILS_NS::Vector<Lexem> m_lexems;
+        std::array<SR_UTILS_NS::Vector<Lexem>, 32> m_bracketLexems;
+        uint32_t m_bracketLexemsSize = 0;
+
+        std::span<Lexem> m_lexems;
         int64_t m_currentLexem = 0;
 
     };

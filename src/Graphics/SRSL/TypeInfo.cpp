@@ -10,8 +10,8 @@
 #include <Graphics/SRSL/ShaderVariables.h>
 
 namespace SR_SRSL_NS {
-    std::vector<uint64_t> SRSLTypeInfo::GetDimension(const std::string &code, const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {
-        auto&& pTree = Analyze(code);
+    std::vector<uint64_t> SRSLTypeInfo::GetDimension(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code, const SRSLAnalyzedTree* pAnalyzedTree) {
+        auto&& pTree = Analyze(pAllocator, code);
         if (!pTree) {
             return { };
         }
@@ -19,7 +19,7 @@ namespace SR_SRSL_NS {
         return GetDimension(pTree->pLexicalTree->AsExpression(), pAnalyzedTree);
     }
 
-    std::vector<uint64_t> SRSLTypeInfo::GetDimension(const SRSLExpr* pExpr, const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {
+    std::vector<uint64_t> SRSLTypeInfo::GetDimension(const SRSLExpr* pExpr, const SRSLAnalyzedTree* pAnalyzedTree) {
         std::vector<uint64_t> dimension;
 
         if (pExpr->isArray) {
@@ -39,8 +39,8 @@ namespace SR_SRSL_NS {
         return dimension;
     }
 
-    uint64_t SRSLTypeInfo::GetTypeSize(const std::string& code, const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {
-        auto&& pTree = Analyze(code);
+    uint64_t SRSLTypeInfo::GetTypeSize(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code, const SRSLAnalyzedTree* pAnalyzedTree) {
+        auto&& pTree = Analyze(pAllocator, code);
         if (!pTree) {
             return 0;
         }
@@ -48,8 +48,8 @@ namespace SR_SRSL_NS {
         return GetTypeSize(pTree->pLexicalTree->AsExpression(), pAnalyzedTree);
     }
 
-    uint64_t SRSLTypeInfo::GetAlignedTypeSize(const std::string& code, const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {
-        auto&& pTree = Analyze(code);
+    uint64_t SRSLTypeInfo::GetAlignedTypeSize(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code, const SRSLAnalyzedTree* pAnalyzedTree) {
+        auto&& pTree = Analyze(pAllocator, code);
         if (!pTree) {
             return 0;
         }
@@ -57,7 +57,7 @@ namespace SR_SRSL_NS {
         return GetAlignedTypeSize(pTree->pLexicalTree->AsExpression(), pAnalyzedTree);
     }
 
-    uint64_t SRSLTypeInfo::GetTypeSize(const SRSLExpr *pExpr, const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {
+    uint64_t SRSLTypeInfo::GetTypeSize(const SRSLExpr *pExpr, const SRSLAnalyzedTree* pAnalyzedTree) {
         if (pExpr->isCall) {
             SRHalt0();
             return 0;
@@ -92,7 +92,7 @@ namespace SR_SRSL_NS {
         return typeSize * multiplier;
     }
 
-    uint64_t SRSLTypeInfo::GetAlignedTypeSize(const SRSLExpr *pExpr, const SRSLAnalyzedTree::Ptr& pAnalyzedTree) {
+    uint64_t SRSLTypeInfo::GetAlignedTypeSize(const SRSLExpr *pExpr, const SRSLAnalyzedTree* pAnalyzedTree) {
         if (pExpr->isCall) {
             SRHalt0();
             return 0;
@@ -134,14 +134,15 @@ namespace SR_SRSL_NS {
         return typeSize * multiplier;
     }
 
-    uint64_t SRSLTypeInfo::GetStructSize(const std::string& name, const SRSLAnalyzedTree::Ptr &pAnalyzedTree) {
+    uint64_t SRSLTypeInfo::GetStructSize(SR_UTILS_NS::StringView name, const SRSLAnalyzedTree* pAnalyzedTree) {
         SRHalt("TODO");
         return 0;
     }
 
-    SRSLAnalyzedTree::Ptr SRSLTypeInfo::Analyze(const std::string &code) {
-        auto&& lexems = SRSLLexer::Instance().ParseString(code, 0);
-        auto&& [pTree, result] = SRSLLexicalAnalyzer::Instance().Analyze(std::move(lexems));
+    SRSLAnalyzedTree* SRSLTypeInfo::Analyze(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code) {
+        SR_TRACY_ZONE;
+        auto&& lexems = SRSLLexer::Instance().ParseString(pAllocator, 16, code, 0);
+        auto&& [pTree, result] = SRSLLexicalAnalyzer::Instance().Analyze(pAllocator, lexems);
 
         if (result.HasErrors()) {
             SR_ERROR("SRSLTypeInfo::Analyze() : failed to parse expression!");
@@ -153,17 +154,17 @@ namespace SR_SRSL_NS {
             return nullptr;
         }
 
-        auto&& pExpr = dynamic_cast<SRSLExpr*>(pTree->pLexicalTree->lexicalTree.back());
-        if (!pExpr) {
+        auto&& pUnit = pTree->pLexicalTree->lexicalTree.back();
+        if (!pUnit || pUnit->GetLexicalUnitType() != LexicalUnitType::Expr) {
             SR_ERROR("SRSLTypeInfo::Analyze() : expression not found!");
             return nullptr;
         }
-
         return pTree;
     }
 
-    std::string SRSLTypeInfo::GetTypeName(const std::string &code) {
-        auto&& pTree = Analyze(code);
+    std::string SRSLTypeInfo::GetTypeName(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code) {
+        SR_TRACY_ZONE;
+        auto&& pTree = Analyze(pAllocator, code);
         if (!pTree) {
             return { };
         }
@@ -181,7 +182,7 @@ namespace SR_SRSL_NS {
         return pExpr->token;
     }
 
-    ShaderVarType SRSLTypeInfo::StringToType(const std::string& str) {
+    ShaderVarType SRSLTypeInfo::StringToType(SR_UTILS_NS::StringView str) {
         if (SR_SRSL_TYPE_STRINGS.count(str) == 1) {
             return SR_SRSL_TYPE_STRINGS.at(str);
         }

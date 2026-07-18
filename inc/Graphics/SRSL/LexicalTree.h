@@ -9,6 +9,12 @@
 #include <Graphics/SRSL/LexerUtils.h>
 
 namespace SR_SRSL_NS {
+    template<typename T, typename ...Args> T* AllocateLexicalUnit(SR_UTILS_NS::IAllocator& allocator, Args&&... args) {
+        T* pLexicalUnit = (T*)allocator.Allocate(sizeof(T), alignof(T));
+        new(pLexicalUnit) T(allocator, std::forward<Args>(args)...);
+        return pLexicalUnit;
+    }
+
     SR_ENUM_NS_CLASS_T(LexicalUnitType, uint8_t,
         Unknown,
         Expr,
@@ -32,8 +38,7 @@ namespace SR_SRSL_NS {
         { }
 
     public:
-        SR_NODISCARD virtual std::string ToString(uint32_t deep) const { return std::string(); }
-
+        virtual SR_UTILS_NS::StringView ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const { return { }; }
         SR_NODISCARD LexicalUnitType GetLexicalUnitType() const { return m_type; }
 
     private:
@@ -47,24 +52,20 @@ namespace SR_SRSL_NS {
 
     class SRSLExpr : public SRSLLexicalUnit {
     public:
-        SRSLExpr() : SRSLLexicalUnit(LexicalUnitType::Expr) { }
+        static SRSLExpr* CreateStringExpression(SR_UTILS_NS::IAllocator& allocator, SR_UTILS_NS::StringView token);
 
-        static SRSLExpr* CreateStringExpression(SR_UTILS_NS::String token);
-        static SRSLExpr* CreateStringExpression(std::string_view token);
-
-        explicit SRSLExpr(SR_UTILS_NS::String token);
-        explicit SRSLExpr(std::string_view token);
-        explicit SRSLExpr(std::string_view token, SRSLExpr* pAExpr);
-        explicit SRSLExpr(std::string_view token, SRSLExpr* pAExpr, SRSLExpr* pBExpr);
-        explicit SRSLExpr(SRSLExpr* pAExpr, SRSLExpr* pBExpr);
+        explicit SRSLExpr(SR_UTILS_NS::IAllocator& allocator);
+        SRSLExpr(SR_UTILS_NS::IAllocator& allocator, SR_UTILS_NS::StringView token);
+        SRSLExpr(SR_UTILS_NS::IAllocator& allocator, SR_UTILS_NS::StringView token, SRSLExpr* pAExpr);
+        SRSLExpr(SR_UTILS_NS::IAllocator& allocator, SR_UTILS_NS::StringView token, SRSLExpr* pAExpr, SRSLExpr* pBExpr);
+        SRSLExpr(SR_UTILS_NS::IAllocator& allocator, SRSLExpr* pAExpr, SRSLExpr* pBExpr);
         SRSLExpr(SRSLExpr&& other) noexcept;
-        ~SRSLExpr() override;
 
-        SR_NODISCARD std::string ToString(uint32_t deep) const override;
+        SR_UTILS_NS::StringView ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const override;
         SR_UTILS_NS::StringView GetAsName();
 
         SR_UTILS_NS::String token;
-        SR_UTILS_NS::SmallVector<SRSLExpr*, 8> args;
+        SR_UTILS_NS::Vector<SRSLExpr*> args;
 
         bool isCall   = false; /// function(arg1, arg2, arg3)
         bool isArray  = false; /// variable[expression]
@@ -77,13 +78,8 @@ namespace SR_SRSL_NS {
 
     class SRSLDecorator : public SRSLLexicalUnit {
     public:
-        SRSLDecorator() : SRSLLexicalUnit(LexicalUnitType::Decorator) { }
-
-        ~SRSLDecorator() override {
-            for (auto&& pExpr : args) {
-                delete pExpr;
-            }
-        }
+        SRSLDecorator(SR_UTILS_NS::IAllocator& allocator);
+        ~SRSLDecorator() override = default;
 
         SRSLDecorator(SRSLDecorator&& other) noexcept
             : SRSLLexicalUnit(LexicalUnitType::Decorator)
@@ -91,17 +87,17 @@ namespace SR_SRSL_NS {
             , args(SR_UTILS_NS::Exchange(other.args, { }))
         { }
 
-        SR_NODISCARD std::string ToString(uint32_t deep) const override;
+        SR_UTILS_NS::StringView ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const override;
 
         SR_UTILS_NS::String name;
-        SR_UTILS_NS::SmallVector<SRSLExpr*, 4> args;
+        SR_UTILS_NS::Vector<SRSLExpr*> args;
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
     class SRSLDecorators : public SRSLLexicalUnit {
     public:
-        SRSLDecorators() : SRSLLexicalUnit(LexicalUnitType::Decorators) { }
+        SRSLDecorators(SR_UTILS_NS::IAllocator& allocator);
 
         SRSLDecorators(SRSLDecorators&& other) noexcept
             : SRSLLexicalUnit(LexicalUnitType::Decorators)
@@ -113,17 +109,17 @@ namespace SR_SRSL_NS {
             return *this;
         }
 
-        SR_NODISCARD std::string ToString(uint32_t deep) const override;
-        SR_NODISCARD SRSLDecorator* Find(const std::string& name);
+        SR_UTILS_NS::StringView ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const override;
+        SR_NODISCARD SRSLDecorator* Find(SR_UTILS_NS::StringView name);
 
-        std::vector<SRSLDecorator> decorators;
+        SR_UTILS_NS::Vector<SRSLDecorator> decorators;
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
     class SRSLVariable : public SRSLLexicalUnit {
     public:
-        SRSLVariable() : SRSLLexicalUnit(LexicalUnitType::Variable) { }
+        SRSLVariable(SR_UTILS_NS::IAllocator&) : SRSLLexicalUnit(LexicalUnitType::Variable) { }
 
         SRSLVariable(SRSLVariable&& other) noexcept
             : SRSLLexicalUnit(LexicalUnitType::Variable)
@@ -141,14 +137,7 @@ namespace SR_SRSL_NS {
             return *this;
         }
 
-        ~SRSLVariable() override {
-            SR_SAFE_DELETE_PTR(pDecorators);
-            SR_SAFE_DELETE_PTR(pExpr);
-            SR_SAFE_DELETE_PTR(pType);
-            SR_SAFE_DELETE_PTR(pName);
-        }
-
-        SR_NODISCARD std::string ToString(uint32_t deep) const override;
+        SR_UTILS_NS::StringView ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const override;
 
         SR_NODISCARD SR_UTILS_NS::StringView GetType() const;
         SR_NODISCARD SR_UTILS_NS::StringView GetName() const;
@@ -163,14 +152,10 @@ namespace SR_SRSL_NS {
 
     class SRSLReturn : public SRSLLexicalUnit {
     public:
-        explicit SRSLReturn(SRSLExpr* pExpr)
+        explicit SRSLReturn(SR_UTILS_NS::IAllocator&, SRSLExpr* pExpr)
             : SRSLLexicalUnit(LexicalUnitType::Return)
             , pExpr(pExpr)
         { }
-
-        ~SRSLReturn() override {
-            delete pExpr;
-        }
 
         SRSLReturn(SRSLReturn&& other) noexcept
             : SRSLLexicalUnit(LexicalUnitType::Return)
@@ -189,17 +174,16 @@ namespace SR_SRSL_NS {
 
     class SRSLFunction : public SRSLLexicalUnit {
     public:
-        SRSLFunction() : SRSLLexicalUnit(LexicalUnitType::Function) { }
-        ~SRSLFunction() override;
+        SRSLFunction(SR_UTILS_NS::IAllocator&) : SRSLLexicalUnit(LexicalUnitType::Function) { }
 
-        SR_NODISCARD std::string ToString(uint32_t deep) const override;
-        SR_NODISCARD std::string GetName() const { return pName->token; }
+        SR_UTILS_NS::StringView ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const override;
+        SR_NODISCARD SR_UTILS_NS::StringView GetName() const { return pName->token; }
 
         SRSLDecorators* pDecorators = nullptr;
         SRSLExpr* pType = nullptr;
         SRSLExpr* pName = nullptr;
 
-        std::vector<SRSLVariable*> args;
+        SR_UTILS_NS::Vector<SRSLVariable*> args;
 
         SRSLLexicalTree* pLexicalTree = nullptr;
     };
@@ -208,10 +192,8 @@ namespace SR_SRSL_NS {
 
     class SRSLIfStatement : public SRSLLexicalUnit {
     public:
-        SRSLIfStatement() : SRSLLexicalUnit(LexicalUnitType::IfStatement) { }
-        explicit SRSLIfStatement(bool isElse);
-
-        ~SRSLIfStatement() override;
+        SRSLIfStatement(SR_UTILS_NS::IAllocator&) : SRSLLexicalUnit(LexicalUnitType::IfStatement) { }
+        SRSLIfStatement(SR_UTILS_NS::IAllocator&, bool isElse);
 
         SRSLExpr* pExpr = nullptr;
         SRSLLexicalTree* pLexicalTree = nullptr;
@@ -222,8 +204,7 @@ namespace SR_SRSL_NS {
 
     class SRSLForStatement : public SRSLLexicalUnit {
     public:
-        SRSLForStatement() : SRSLLexicalUnit(LexicalUnitType::ForStatement) { }
-        ~SRSLForStatement() override;
+        SRSLForStatement(SR_UTILS_NS::IAllocator&) : SRSLLexicalUnit(LexicalUnitType::ForStatement) { }
 
         SRSLVariable* pVar = nullptr;
         SRSLExpr* pCondition = nullptr;
@@ -233,8 +214,7 @@ namespace SR_SRSL_NS {
 
     class SRSLWhileStatement : public SRSLLexicalUnit {
     public:
-        SRSLWhileStatement() : SRSLLexicalUnit(LexicalUnitType::WhileStatement) { }
-        ~SRSLWhileStatement() override;
+        SRSLWhileStatement(SR_UTILS_NS::IAllocator&) : SRSLLexicalUnit(LexicalUnitType::WhileStatement) { }
 
         SRSLExpr* pCondition = nullptr;
         SRSLLexicalTree* pLexicalTree = nullptr;
@@ -242,24 +222,19 @@ namespace SR_SRSL_NS {
 
     class SRSLStructureStatement : public SRSLLexicalUnit {
     public:
-        SRSLStructureStatement() : SRSLLexicalUnit(LexicalUnitType::Struct) { }
-        ~SRSLStructureStatement() override;
+        SRSLStructureStatement(SR_UTILS_NS::IAllocator&) : SRSLLexicalUnit(LexicalUnitType::Struct) { }
 
         SRSLExpr* pName = nullptr;
         SRSLLexicalTree* pLexicalTree = nullptr;
 
-        bool HasDynamicArray() const;
+        SR_NODISCARD bool HasDynamicArray() const;
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
     class SRSLLexicalTree : public SRSLLexicalUnit {
     public:
-        SRSLLexicalTree() : SRSLLexicalUnit(LexicalUnitType::LexcialTree) { }
-
-        ~SRSLLexicalTree() override {
-            Clear();
-        }
+        SRSLLexicalTree(SR_UTILS_NS::IAllocator& allocator);
 
         SRSLLexicalTree(SRSLLexicalTree&& other) noexcept
             : SRSLLexicalUnit(LexicalUnitType::LexcialTree)
@@ -271,31 +246,25 @@ namespace SR_SRSL_NS {
             return *this;
         }
 
-        SR_NODISCARD std::string ToString(uint32_t deep) const override;
-
+        SR_UTILS_NS::StringView ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const override;
         SR_NODISCARD SRSLFunction* FindFunction(SR_UTILS_NS::StringView name) const;
         SR_NODISCARD SRSLExpr* AsExpression() const;
 
         void Clear();
 
-        std::vector<SRSLLexicalUnit*> lexicalTree;
+        SR_UTILS_NS::Vector<SRSLLexicalUnit*> lexicalTree;
     };
 
     /// ----------------------------------------------------------------------------------------------------------------
 
     class SRSLAnalyzedTree : public SR_UTILS_NS::NonCopyable {
     public:
-        using Ptr = std::shared_ptr<SRSLAnalyzedTree>;
-
-        SRSLAnalyzedTree() = default;
-
-        ~SRSLAnalyzedTree() override {
-            SR_SAFE_DELETE_PTR(pLexicalTree);
-        }
+        explicit SRSLAnalyzedTree(SR_UTILS_NS::IAllocator& allocator);
 
         void PostProcess(const ShaderParams& params);
 
         SRSLLexicalTree* pLexicalTree = nullptr;
+        SR_UTILS_NS::IAllocator& allocator;
     };
 }
 

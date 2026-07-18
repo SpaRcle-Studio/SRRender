@@ -7,18 +7,25 @@
 #include <Graphics/SRSL/MathExpression.h>
 #include <Graphics/SRSL/Evaluator.h>
 
+#include <Utils/Memory/MemoryLiterals.h>
+#include <Utils/Memory/Allocator.h>
+
 namespace SR_SRSL_NS {
-    SRSLPreProcessor::OutResult SRSLPreProcessor::Process(SR_UTILS_NS::Vector<Lexem>&& lexems, Includes& includes, ShaderParams& params) {
+    SRSLPreProcessor::OutResult SRSLPreProcessor::Process(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::Vector<Lexem>&& lexems, Includes& includes, ShaderParams& params) {
         SR_TRACY_ZONE;
 
         Clear();
 
+        m_pAllocator = pAllocator;
         m_lexems = SR_UTILS_NS::Exchange(lexems, { });
         m_includes = std::move(includes);
         m_params = &params;
 
-        while (InBounds() && !IsHasErrors()) {
-            ProcessMain();
+        {
+            SR_TRACY_ZONE_N("Process lexems");
+            while (InBounds() && !IsHasErrors()) {
+                ProcessMain();
+            }
         }
 
         includes = std::move(m_includes);
@@ -105,7 +112,7 @@ namespace SR_SRSL_NS {
                     SRSLInclude& include = m_includes.emplace_back();
                     include.name = SR_EXCHANGE(m_include, {});
 
-                    auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(includePath, include.buffer, m_include.size());
+                    auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(m_pAllocator, 256, includePath, include.buffer, m_include.size());
                     if (lexems.empty()) {
                         SR_ERROR("SRSLPreProcessor::ProcessMain() : failed to parse lexems!\n\tPath: " + includePath.ToString());
                         m_result.AddError(SRSLMessage(SRSLReturnCode::IncludeError, GetCurrentLexem())).SetDescription(includePath.ToString());
@@ -160,7 +167,7 @@ namespace SR_SRSL_NS {
 
                             m_lexems.erase(m_lexems.begin() + startLexem, m_lexems.begin() + m_currentLexem);
 
-                            auto&& result = SRSLMathExpression::Instance().Analyze(std::move(m_expressionLexems));
+                            auto&& result = SRSLMathExpression::Instance().Analyze(m_pAllocator, m_expressionLexems);
                             if (!result.first) {
                                 SR_ERROR("SRSLPreProcessor::ProcessMain() : failed to evaluate expression!\n\tExpression: {}", result.second.ToString(m_includes));
                                 m_ifStack.push(false);

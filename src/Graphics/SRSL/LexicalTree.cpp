@@ -8,34 +8,51 @@
 #include <Enum/ShaderStage.hpp>
 
 namespace SR_SRSL_NS {
-    std::string SRSLExpr::ToString(uint32_t deep) const {
+    SR_UTILS_NS::StringView SRSLExpr::ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const {
+        SR_TRACY_ZONE;
+
         if ((token == "++" || token == "--") && !args.empty()) {
             SRHalt0();
         }
 
         if (isArray) {
             if (args.size() == 2) {
-                return args[0]->ToString(deep + 1) + "[" + args[1]->ToString(deep + 1) + "]";
+                args[0]->ToString(deep + 1, buffer);
+                buffer += "[";
+                args[1]->ToString(deep + 1, buffer);
+                buffer += "]";
+                return buffer;
             }
             else {
-                return args[0]->ToString(deep + 1) + "[]";
+                args[0]->ToString(deep + 1, buffer);
+                buffer += "[]";
+                return buffer;
             }
         }
         else if (args.empty()) {
-            return token;
+            buffer += token;
+            return buffer;
         }
         else if (args.size() == 1) {
-            return "(" + token + args[0]->ToString(deep + 1) + ")";
+            buffer += "(";
+            buffer += token;
+            args[0]->ToString(deep + 1, buffer);
+            buffer += ")";
+            return buffer;
         }
         else if (args.size() == 2) {
-            return "(" + args[0]->ToString(deep + 1) + token + args[1]->ToString(deep + 1) + ")";
+            buffer += "(";
+            args[0]->ToString(deep + 1, buffer);
+            buffer += token;
+            args[1]->ToString(deep + 1, buffer);
+            buffer += ")";
+            return buffer;
         }
 
-        return std::string();
+        return SR_UTILS_NS::StringView();
     }
 
     SR_UTILS_NS::StringView SRSLExpr::GetAsName() {
-        SR_TRACY_ZONE;
         if (!isArray) {
             return token;
         }
@@ -46,62 +63,56 @@ namespace SR_SRSL_NS {
         return SR_UTILS_NS::StringView();
     }
 
-    SRSLExpr* SRSLExpr::CreateStringExpression(SR_UTILS_NS::String token) {
-        SR_TRACY_ZONE;
-        auto&& pExpr = new SRSLExpr(std::move(token));
+    SRSLExpr* SRSLExpr::CreateStringExpression(SR_UTILS_NS::IAllocator& allocator, SR_UTILS_NS::StringView token) {
+        auto&& pExpr = AllocateLexicalUnit<SRSLExpr>(allocator, token);
         pExpr->isString = true;
         return pExpr;
     }
 
-    SRSLExpr* SRSLExpr::CreateStringExpression(std::string_view token) {
-        SR_TRACY_ZONE;
-        auto&& pExpr = new SRSLExpr(token);
-        pExpr->isString = true;
-        return pExpr;
-    }
-
-    SRSLExpr::SRSLExpr(std::string_view token)
-        : SRSLExpr(SR_UTILS_NS::String(token))
+    SRSLExpr::SRSLExpr(SR_UTILS_NS::IAllocator& allocator)
+        : SRSLLexicalUnit(LexicalUnitType::Expr)
+        , token(&allocator)
+        , args(&allocator)
     { }
 
-    SRSLExpr::SRSLExpr(SR_UTILS_NS::String token)
+    SRSLExpr::SRSLExpr(SR_UTILS_NS::IAllocator& allocator, SR_UTILS_NS::StringView nToken)
         : SRSLLexicalUnit(LexicalUnitType::Expr)
-        , token(token)
+        , token(nToken, &allocator)
+        , args(&allocator)
     {
-        SR_TRACY_ZONE;
-        SRAssert(this->token != "(" && this->token != ")");
-        SRAssert(this->token != "[" && this->token != "]");
-        SRAssert(this->token != "}");
-
-        if (this->token == "{") {
+        SRAssert(token != "(" && token != ")");
+        SRAssert(token != "[" && token != "]");
+        SRAssert(token != "}");
+        if (token == "{") {
             isList = true;
         }
     }
 
-    SRSLExpr::SRSLExpr(std::string_view token, SRSLExpr* pAExpr)
+    SRSLExpr::SRSLExpr(SR_UTILS_NS::IAllocator& allocator, SR_UTILS_NS::StringView nToken, SRSLExpr* pAExpr)
         : SRSLLexicalUnit(LexicalUnitType::Expr)
-        , token(token)
+        , token(nToken, &allocator)
+        , args(&allocator)
     {
-        SR_TRACY_ZONE;
         SRAssert(pAExpr);
-        SRAssert(this->token != ")" && this->token != "(");
-        SRAssert(this->token != "[" && this->token != "]");
+        SRAssert(token != ")" && token != "(");
+        SRAssert(token != "[" && token != "]");
         args.emplace_back(pAExpr);
     }
 
-    SRSLExpr::SRSLExpr(std::string_view token, SRSLExpr *pAExpr, SRSLExpr *pBExpr)
+    SRSLExpr::SRSLExpr(SR_UTILS_NS::IAllocator& allocator, SR_UTILS_NS::StringView nToken, SRSLExpr* pAExpr, SRSLExpr* pBExpr)
         : SRSLLexicalUnit(LexicalUnitType::Expr)
-        , token(token)
+        , token(nToken, &allocator)
+        , args(&allocator)
     {
-        SR_TRACY_ZONE;
         SRAssert(pAExpr);
-        SRAssert(this->token != ")" && this->token != "(");
-        SRAssert(this->token != "]");
+        SRAssert(token != ")" && token != "(");
+        SRAssert(token != "]");
 
-        if (this->token == "[") {
+        if (token == "[") {
             isArray = true;
         }
 
+        args.reserve(2);
         args.emplace_back(pAExpr);
 
         if (pBExpr) {
@@ -114,19 +125,15 @@ namespace SR_SRSL_NS {
         }
     }
 
-    SRSLExpr::SRSLExpr(SRSLExpr* pAExpr, SRSLExpr* pBExpr)
+    SRSLExpr::SRSLExpr(SR_UTILS_NS::IAllocator& allocator, SRSLExpr* pAExpr, SRSLExpr* pBExpr)
         : SRSLLexicalUnit(LexicalUnitType::Expr)
+        , token(&allocator)
+        , args(&allocator)
     {
-        SR_TRACY_ZONE;
         SRAssert(pAExpr && pBExpr);
+        args.reserve(2);
         args.emplace_back(pAExpr);
         args.emplace_back(pBExpr);
-    }
-
-    SRSLExpr::~SRSLExpr() {
-        for (auto&& pExpr : args) {
-            delete pExpr;
-        }
     }
 
     SRSLExpr::SRSLExpr(SRSLExpr&& other) noexcept
@@ -135,200 +142,185 @@ namespace SR_SRSL_NS {
         , args(SR_UTILS_NS::Exchange(other.args, { }))
         , isCall(SR_UTILS_NS::Exchange(other.isCall, { }))
         , isArray(SR_UTILS_NS::Exchange(other.isArray, { }))
+        , isList(SR_UTILS_NS::Exchange(other.isList, { }))
+        , isString(SR_UTILS_NS::Exchange(other.isString, { }))
     { }
 
-    std::string SRSLDecorator::ToString(uint32_t deep) const {
-        std::string code = "[" + name;
+    SR_UTILS_NS::StringView SRSLDecorator::ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const {
+        buffer += "[";
+        buffer += name;
 
         if (!args.empty()) {
-            code += "(";
+            buffer += "(";
 
             for (uint32_t i = 0; i < args.size(); ++i) {
-                code += args[i]->ToString(deep + 1);
+                args[i]->ToString(deep + 1, buffer);
                 if (i + 1 < args.size()) {
-                    code += ", ";
+                    buffer += ", ";
                 }
             }
 
-            code += ")";
+            buffer += ")";
         }
 
-        return code + "]";
+        buffer += "]";
+        return buffer;
     }
 
-    std::string SRSLDecorators::ToString(uint32_t deep) const {
-        std::string code = "[";
+    SRSLDecorator::SRSLDecorator(SR_UTILS_NS::IAllocator& allocator)
+        : SRSLLexicalUnit(LexicalUnitType::Decorator)
+        , name(&allocator)
+        , args(&allocator)
+    { }
+
+    SR_UTILS_NS::StringView SRSLDecorators::ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const {
+        buffer += "[";
 
         for (uint32_t i = 0; i < decorators.size(); ++i) {
-            code += decorators[i].ToString(deep + 1);
+            decorators[i].ToString(deep + 1, buffer);
 
             if (i + 1 < decorators.size()) {
-                code += ", ";
+                buffer += ", ";
             }
         }
 
-        return code + "]";
+        buffer += "]";
+        return buffer;
     }
 
-    SRSLDecorator* SRSLDecorators::Find(const std::string &name) {
+    SRSLDecorator* SRSLDecorators::Find(SR_UTILS_NS::StringView name) {
         for (auto&& decorator : decorators) {
             if (decorator.name == name) {
                 return &decorator;
             }
         }
-
         return nullptr;
     }
 
-    std::string SRSLLexicalTree::ToString(uint32_t deep) const {
-        std::string code;
+    SRSLDecorators::SRSLDecorators(SR_UTILS_NS::IAllocator& allocator)
+        : SRSLLexicalUnit(LexicalUnitType::Decorators)
+        , decorators(&allocator)
+    { }
 
+    SRSLLexicalTree::SRSLLexicalTree(SR_UTILS_NS::IAllocator& allocator)
+        : SRSLLexicalUnit(LexicalUnitType::LexcialTree)
+        , lexicalTree(&allocator)
+    { }
+
+    SR_UTILS_NS::StringView SRSLLexicalTree::ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const {
         if (deep > 0) {
-            code += "{\n";
+            buffer += "{\n";
         }
 
         for (auto&& pUnit : lexicalTree) {
-            code += std::string(deep, '\t') + pUnit->ToString(deep + 1) + "\n";
+            for (uint32_t i = 0; i < deep; ++i) {
+                buffer += '\t';
+            }
+            pUnit->ToString(deep + 1, buffer);
+            buffer += '\n';
         }
 
         if (deep > 0) {
-            code += "}\n";
+            buffer += "}\n";
         }
 
-        return code;
+        return buffer;
     }
 
     SRSLFunction* SRSLLexicalTree::FindFunction(SR_UTILS_NS::StringView name) const {
         for (auto&& pUnit : lexicalTree) {
-            if (auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit)) {
-                if (SR_UTILS_NS::StringView(pFunction->pName->token) == name) {
-                    return pFunction;
-                }
+            if (pUnit->GetLexicalUnitType() != LexicalUnitType::Function) {
+                continue;
+            }
+            auto&& pFunction = static_cast<SRSLFunction*>(pUnit);
+            if (SR_UTILS_NS::StringView(pFunction->pName->token) == name) {
+                return pFunction;
             }
         }
-
         return nullptr;
     }
 
-    SRSLExpr *SRSLLexicalTree::AsExpression() const {
-        if (lexicalTree.size() != 1) {
+    SRSLExpr* SRSLLexicalTree::AsExpression() const {
+        if (lexicalTree.size() != 1 || lexicalTree.back()->GetLexicalUnitType() != LexicalUnitType::Expr) {
             return nullptr;
         }
-        return dynamic_cast<SRSLExpr*>(lexicalTree.back());
+        return static_cast<SRSLExpr*>(lexicalTree.back());
     }
 
     void SRSLLexicalTree::Clear() {
-        for (auto&& pUnit : lexicalTree) {
-            delete pUnit;
-        }
         lexicalTree.clear();
     }
 
-    std::string SRSLVariable::ToString(uint32_t deep) const {
-        std::string code;
-
+    SR_UTILS_NS::StringView SRSLVariable::ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const {
         if (pDecorators) {
-            code += pDecorators->ToString(deep + 1) + " ";
+            pDecorators->ToString(deep + 1, buffer);
+            buffer += " ";
         }
 
-        code += pType->ToString(deep + 1) + " " + pName->ToString(deep + 1);
+        pType->ToString(deep + 1, buffer);
+        buffer += " ";
+        pName->ToString(deep + 1, buffer);
 
         if (pExpr) {
-            code += " = " + pExpr->ToString(deep + 1);
+            buffer += " = ";
+            pExpr->ToString(deep + 1, buffer);
         }
 
-        return code;
+        return buffer;
     }
 
     SR_UTILS_NS::StringView SRSLVariable::GetType() const {
-        if (pType) {
-            return pType->token;
-        }
-
-        return SR_UTILS_NS::StringView();
+        return pType ? pType->token : SR_UTILS_NS::StringView();
     }
 
     SR_UTILS_NS::StringView SRSLVariable::GetName() const {
-        if (!pName) {
-            return SR_UTILS_NS::StringView();
-        }
-
-        return pName->GetAsName();
+        return pName ? pName->GetAsName() : SR_UTILS_NS::StringView();
     }
 
-    std::string SRSLFunction::ToString(uint32_t deep) const {
-        std::string code;
-
+    SR_UTILS_NS::StringView SRSLFunction::ToString(uint32_t deep, SR_UTILS_NS::String& buffer) const {
         if (pDecorators) {
-            code += pDecorators->ToString(deep + 1) + " ";
+            pDecorators->ToString(deep + 1, buffer);
+            buffer += " ";
         }
 
-        code += pType->ToString(deep + 1) + " " + pName->ToString(deep + 1) + "(";
+        pType->ToString(deep + 1, buffer);
+        buffer += " ";
+        pName->ToString(deep + 1, buffer);
+        buffer += "(";
 
         for (uint32_t i = 0; i < args.size(); ++i) {
-            code += args[i]->ToString(deep + 1);
-
+            args[i]->ToString(deep + 1, buffer);
             if (i + 1 < args.size()) {
-                code += ", ";
+                buffer += ", ";
             }
         }
 
-        code += ")\n";
+        buffer += ")\n";
 
         if (pLexicalTree) {
-            code += pLexicalTree->ToString(deep + 1);
+            pLexicalTree->ToString(deep + 1, buffer);
         }
 
-        return code;
+        return buffer;
     }
 
-    SRSLFunction::~SRSLFunction() {
-        SR_SAFE_DELETE_PTR(pDecorators);
-        SR_SAFE_DELETE_PTR(pType);
-        SR_SAFE_DELETE_PTR(pName);
-        SR_SAFE_DELETE_PTR(pLexicalTree);
 
-        for (auto&& pArg : args) {
-            delete pArg;
-        }
-    }
-
-    SRSLIfStatement::~SRSLIfStatement() {
-        SR_SAFE_DELETE_PTR(pExpr);
-        SR_SAFE_DELETE_PTR(pLexicalTree);
-    }
-
-    SRSLIfStatement::SRSLIfStatement(bool isElse)
+    SRSLIfStatement::SRSLIfStatement(SR_UTILS_NS::IAllocator& allocator, bool isElse)
         : SRSLLexicalUnit(LexicalUnitType::IfStatement)
         , isElse(isElse)
     { }
 
-    SRSLForStatement::~SRSLForStatement() {
-        SR_SAFE_DELETE_PTR(pExpr);
-        SR_SAFE_DELETE_PTR(pCondition);
-        SR_SAFE_DELETE_PTR(pVar);
-        SR_SAFE_DELETE_PTR(pLexicalTree);
-    }
-
-    SRSLStructureStatement::~SRSLStructureStatement() {
-        SR_SAFE_DELETE_PTR(pName);
-        SR_SAFE_DELETE_PTR(pLexicalTree);
-    }
-
     bool SRSLStructureStatement::HasDynamicArray() const {
         for (auto&& pUnit : pLexicalTree->lexicalTree) {
-            if (auto&& pVar = dynamic_cast<SRSLVariable*>(pUnit)) {
-                if (pVar->pName && pVar->pName->isArray && pVar->pName->args.size() == 1) {
-                    return true;
-                }
+            if (pUnit->GetLexicalUnitType() != LexicalUnitType::Variable) {
+                continue;
+            }
+            auto&& pVar = static_cast<SRSLVariable*>(pUnit);
+            if (pVar->pName && pVar->pName->isArray && pVar->pName->args.size() == 1) {
+                return true;
             }
         }
         return false;
-    }
-
-    SRSLWhileStatement::~SRSLWhileStatement() {
-        SR_SAFE_DELETE_PTR(pCondition);
-        SR_SAFE_DELETE_PTR(pLexicalTree);
     }
 
     void SRSLAnalyzedTree::PostProcess(const ShaderParams& params) {
@@ -340,13 +332,19 @@ namespace SR_SRSL_NS {
         const bool isNeedRemoveFragmentEntryPoint = isColorPassDefined || isCascadedMapPassDefined;
 
         for (auto&& pUnit : pLexicalTree->lexicalTree) {
-            if (auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit)) {
-                if (isNeedRemoveFragmentEntryPoint && pFunction->pName->GetAsName() == SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment)) {
-                    if (pFunction->pLexicalTree) {
-                        pFunction->pLexicalTree->Clear();
-                    }
+            if (pUnit->GetLexicalUnitType() != LexicalUnitType::Function) {
+                continue;
+            }
+            auto&& pFunction = static_cast<SRSLFunction*>(pUnit);
+            if (isNeedRemoveFragmentEntryPoint && pFunction->pName->GetAsName() == SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment)) {
+                if (pFunction->pLexicalTree) {
+                    pFunction->pLexicalTree->Clear();
                 }
             }
         }
     }
+
+    SRSLAnalyzedTree::SRSLAnalyzedTree(SR_UTILS_NS::IAllocator& allocator)
+        : allocator(allocator)
+    { }
 }

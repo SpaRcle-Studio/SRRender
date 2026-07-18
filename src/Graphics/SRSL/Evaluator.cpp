@@ -10,11 +10,12 @@
 #include <Utils/Common/LexicalCast.h>
 
 namespace SR_SRSL_NS {
-    double_t SRSLEvaluator::Evaluate(const std::string& code) {
-        SR_GLOBAL_LOCK
+    double_t SRSLEvaluator::Evaluate(SR_UTILS_NS::IAllocator* pAllocator, const std::string& code) {
+        SR_TRACY_ZONE;
+        SR_GLOBAL_LOCK;
 
-        auto&& lexems = SRSLLexer::Instance().ParseString(code, 0);
-        auto&& [pTree, result] = SRSLLexicalAnalyzer::Instance().Analyze(std::move(lexems));
+        auto&& lexems = SRSLLexer::Instance().ParseString(pAllocator, 16, code, 0);
+        auto&& [pTree, result] = SRSLLexicalAnalyzer::Instance().Analyze(pAllocator, lexems);
 
         if (result.HasErrors()) {
             SR_ERROR("SSRSLEvaluator::Evaluate() : failed to parse expression!");
