@@ -30,6 +30,26 @@ namespace SR_ANIMATIONS_NS {
         return false;
     }
 
+    AnimationLink* AnimationGraphNode::GetInputPin(SR_UTILS_NS::StringView name) {
+        for (auto&& pin : m_inputPins) {
+            if (pin.name == name) {
+                return &pin;
+            }
+        }
+
+        return nullptr;
+    }
+
+    AnimationLink* AnimationGraphNode::GetOutputPin(SR_UTILS_NS::StringView name) {
+        for (auto&& pin : m_outputPins) {
+            if (pin.name == name) {
+                return &pin;
+            }
+        }
+
+        return nullptr;
+    }
+
     uint64_t AnimationGraphNode::GetIndex() const {
         return m_graph->GetNodeIndex(this);
     }
@@ -50,8 +70,8 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
-        m_outputPins[fromPinIndex] = AnimationLink(pNode->GetIndex(), toPinIndex);
-        pNode->m_inputPins[toPinIndex] = AnimationLink(GetIndex(), fromPinIndex);
+        m_outputPins[fromPinIndex].Connect(pNode->GetIndex(), toPinIndex);
+        pNode->m_inputPins[toPinIndex].Connect(GetIndex(), fromPinIndex);
     }
 
     void AnimationGraphNode::Compile(CompileContext& context) {
@@ -60,7 +80,70 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
+    void AnimationGraphNode::OnNodeRemoved(AnimationGraphNode* pNode) {
+        for (auto&& pin : m_inputPins) {
+            if (pin.m_targetNodeIndex == pNode->GetIndex()) {
+                pin.Disconnect();
+            }
+        }
+
+        for (auto&& pin : m_outputPins) {
+            if (pin.m_targetNodeIndex == pNode->GetIndex()) {
+                pin.Disconnect();
+            }
+        }
+
+        const auto index = m_graph->GetNodeIndex(pNode);
+        for (auto&& pin : m_inputPins) {
+            if (pin.m_targetNodeIndex > index) {
+                --pin.m_targetNodeIndex;
+            }
+        }
+        for (auto&& pin : m_outputPins) {
+            if (pin.m_targetNodeIndex > index) {
+                --pin.m_targetNodeIndex;
+            }
+        }
+    }
+
+    void AnimationGraphNode::CloneTo(SR_UTILS_NS::SRClass& clone) const {
+        Serializable::CloneTo(clone);
+        auto&& target = static_cast<AnimationGraphNode&>(clone);
+        for (size_t i = 0; i < m_inputPins.size(); ++i) {
+            target.m_inputPins[i].name = m_inputPins[i].name;
+        }
+        for (size_t i = 0; i < m_outputPins.size(); ++i) {
+            target.m_outputPins[i].name = m_outputPins[i].name;
+        }
+    }
+
+    void AnimationGraphNode::BreakLink(uint32_t inputPinIndex) {
+        if (inputPinIndex >= m_inputPins.size()) {
+            SRHalt("Out of range!");
+            return;
+        }
+
+        auto&& link = m_inputPins[inputPinIndex];
+        if (!link.IsConnected()) {
+            return;
+        }
+
+        if (auto&& pNode = m_graph->GetNode(link.m_targetNodeIndex)) {
+            if (link.m_targetPinIndex < pNode->m_outputPins.size()) {
+                pNode->m_outputPins[link.m_targetPinIndex].Disconnect();
+            }
+        }
+
+        m_graph->InvalidateCompile();
+        link.Disconnect();
+    }
+
     /// ----------------------------------------------------------------------------------------------------------------
+
+    void AnimationGraphNodeFinal::OnPostLoad() {
+        Super::OnPostLoad();
+        m_inputPins[0].name = "Pose";
+    }
 
     AnimationPose* AnimationGraphNodeFinal::Update(UpdateContext& context, const AnimationLink& from) {
         SR_TRACY_ZONE;
@@ -136,6 +219,7 @@ namespace SR_ANIMATIONS_NS {
 
     void AnimationGraphNodeStateMachine::OnPostLoad() {
         Super::OnPostLoad();
+        m_outputPins[0].name = "Pose";
         if (m_stateMachine) {
             m_stateMachine->SetNode(this);
         }
@@ -154,6 +238,11 @@ namespace SR_ANIMATIONS_NS {
         : Super(0, 1)
     { }
 
+    void AnimationGraphNodeExternalPose::OnPostLoad() {
+        m_outputPins[0].name = "Pose";
+        Super::OnPostLoad();
+    }
+
     AnimationPose* AnimationGraphNodeExternalPose::Update(UpdateContext& context, const AnimationLink& from) {
         return m_pose;
     }
@@ -163,6 +252,13 @@ namespace SR_ANIMATIONS_NS {
     AnimationGraphNodeLinearBlend::AnimationGraphNodeLinearBlend()
         : Super(2, 1)
     { }
+
+    void AnimationGraphNodeLinearBlend::OnPostLoad() {
+        m_inputPins[0].name = "Pose A";
+        m_inputPins[1].name = "Pose B";
+        m_outputPins[0].name = "Pose";
+        Super::OnPostLoad();
+    }
 
     void AnimationGraphNodeLinearBlend::Compile(CompileContext& context) {
         SR_TRACY_ZONE;
@@ -191,7 +287,7 @@ namespace SR_ANIMATIONS_NS {
             return nullptr;
         }
 
-        for (size_t i = 0; i < m_inputPins.size(); ++i) {
+        for (size_t i = 0; i < m_poses.size(); ++i) {
             auto& inputPin = m_inputPins[i];
             if (inputPin.IsConnected()) {
                 if (auto&& pNode = m_graph->GetNode(inputPin.m_targetNodeIndex)) {

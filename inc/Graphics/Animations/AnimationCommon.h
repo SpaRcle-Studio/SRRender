@@ -7,6 +7,8 @@
 
 #include <Graphics/macros.h>
 
+#include <ImmediateGUI/GUI/ImmediateGUI.h>
+
 #include <Utils/Types/Time.h>
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Common/Enumerations.h>
@@ -51,10 +53,6 @@ namespace SR_ANIMATIONS_NS {
     }
 #endif
 
-    //SR_ENUM_NS_CLASS_T(AnimationGraphNodeType, uint8_t,
-    //    None, Final, Mix, Clip, StateMachine, InverseKinematic
-    //);
-
     SR_ENUM_NS_CLASS_T(QuaternionBlendMode, uint8_t,
         Nlerp,
         Slerp
@@ -79,11 +77,25 @@ namespace SR_ANIMATIONS_NS {
             , m_targetPinIndex(targetPinIndex)
         { }
 
-        SR_NODISCARD bool IsConnected() const {
-            return m_connected;
+        SR_NODISCARD bool IsConnected() const { return m_connected; }
+        SR_NODISCARD uint16_t GetTargetNodeIndex() const { return m_targetNodeIndex; }
+        SR_NODISCARD uint16_t GetTargetPinIndex() const { return m_targetPinIndex; }
+
+        void Connect(uint16_t targetNodeIndex, uint16_t targetPinIndex) {
+            m_connected = true;
+            m_targetNodeIndex = targetNodeIndex;
+            m_targetPinIndex = targetPinIndex;
+        }
+
+        void Disconnect() {
+            m_connected = false;
+            m_targetNodeIndex = 0;
+            m_targetPinIndex = 0;
         }
 
     public:
+        SR_UTILS_NS::StringAtom name;
+
         /// @property
         bool m_connected = false;
         /// @property

@@ -47,6 +47,14 @@ namespace SR_ANIMATIONS_NS {
         void AddOutputPin(const AnimationLink& link) { m_outputPins.emplace_back(link); }
         void ClearInputPins() { m_inputPins.clear(); }
         void ClearOutputPins() { m_outputPins.clear(); }
+        void OnNodeRemoved(AnimationGraphNode* pNode);
+
+        void BreakLink(uint32_t inputPinIndex);
+
+        void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
+
+        SR_NODISCARD AnimationLink* GetInputPin(SR_UTILS_NS::StringView name);
+        SR_NODISCARD AnimationLink* GetOutputPin(SR_UTILS_NS::StringView name);
 
         SR_NODISCARD uint64_t GetIndex() const;
         SR_NODISCARD void* GetUserData() const noexcept { return m_userData; }
@@ -81,6 +89,8 @@ namespace SR_ANIMATIONS_NS {
         explicit AnimationGraphNodeFinal()
             : Super(1, 0)
         { }
+
+        void OnPostLoad() override;
 
     public:
         SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
@@ -126,6 +136,8 @@ namespace SR_ANIMATIONS_NS {
     public:
         AnimationGraphNodeExternalPose();
 
+        void OnPostLoad() override;
+
         SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
 
     protected:
@@ -143,6 +155,8 @@ namespace SR_ANIMATIONS_NS {
         AnimationGraphNodeLinearBlend();
 
         void Compile(CompileContext& context) override;
+
+        void OnPostLoad() override;
 
         SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
 

@@ -51,8 +51,6 @@ namespace SR_GRAPH_NS::GUI {
     private:
         bool SetStage(Stage stage);
 
-        //SR_NODISCARD ImTextureID GetTextureId() const;
-
     private:
         SR_GTYPES_NS::Texture* m_texture = nullptr;
 

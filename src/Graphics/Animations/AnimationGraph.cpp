@@ -178,6 +178,25 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
+    void AnimationGraph::ForEachNode(const SR_HTYPES_NS::Function<void(AnimationGraphNode&)>& callback) {
+        SR_TRACY_ZONE;
+        for (auto&& pNode : m_nodes) {
+            if (!pNode) {
+                continue;
+            }
+            callback(*pNode);
+        }
+    }
+
+    void AnimationGraph::ForEachNode(const SR_HTYPES_NS::Function<void(const AnimationGraphNode&)>& callback) const {
+        for (auto&& pNode : m_nodes) {
+            if (!pNode) {
+                continue;
+            }
+            callback(*pNode);
+        }
+    }
+
     void AnimationGraph::SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip) {
         SR_TRACY_ZONE;
 
@@ -238,8 +257,17 @@ namespace SR_ANIMATIONS_NS {
             return false;
         }
 
+        /// remove links to this node
+        for (auto&& pNode : m_nodes) {
+            if (pNode == m_nodes[index]) {
+                continue;
+            }
+            pNode->OnNodeRemoved(m_nodes[index].Get());
+        }
+
         m_nodes.erase(m_nodes.begin() + index);
         m_isCompiled = false;
+
         return true;
     }
 

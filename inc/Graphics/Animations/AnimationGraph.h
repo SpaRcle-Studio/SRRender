@@ -41,6 +41,9 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationGraphAsset* GetAsset() const noexcept { return m_pAsset; }
         void InvalidateCompile() noexcept { m_isCompiled = false; }
 
+        void ForEachNode(const SR_HTYPES_NS::Function<void(AnimationGraphNode&)>& callback);
+        void ForEachNode(const SR_HTYPES_NS::Function<void(const AnimationGraphNode&)>& callback) const;
+
         void Update(UpdateContext& context);
 
         template<class T, typename... Args> T* CreateNode(Args&& ...args) {

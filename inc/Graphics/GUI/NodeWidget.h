@@ -65,8 +65,6 @@ namespace SR_GRAPH_GUI_NS {
         void OnClose() override;
 
     protected:
-        void* m_editor = nullptr;
-
         SR_UTILS_NS::Path m_currentFile;
 
         float_t m_leftPaneWidth = 400.0f;
