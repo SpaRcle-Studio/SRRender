@@ -12,7 +12,7 @@
     #include <Graphics/Window/GLFWWindow.h>
 #endif
 
-#if defined(SR_LINUX) && defined(SR_RENDER_USE_NATIVE_WAYLAND)
+#if defined(SR_LINUX) && defined(SR_COMMON_USE_NATIVE_WAYLAND)
     #include <Graphics/Window/WaylandWindow.h>
 #endif
 
@@ -60,7 +60,7 @@ namespace SR_GRAPH_NS {
         m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::Win32;
     #elif defined(SR_LINUX) && defined(SR_RENDER_GLFW)
         m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::GLFW;
-    #elif defined(SR_LINUX) && defined(SR_RENDER_USE_NATIVE_WAYLAND)
+    #elif defined(SR_LINUX) && defined(SR_COMMON_USE_NATIVE_WAYLAND)
         m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::WaylandCustom;
     #elif defined(SR_ANDROID)
         m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::Android;
@@ -165,7 +165,7 @@ namespace SR_GRAPH_NS {
 
         SR_GRAPH_GUI_NS::Immediate::PlatformNewFrameInfo frameInfo = { };
 
-    #if defined(SR_LINUX) && defined(SR_RENDER_USE_NATIVE_WAYLAND)
+    #if defined(SR_LINUX) && defined(SR_COMMON_USE_NATIVE_WAYLAND)
         if (auto&& pNativeWindow = m_pipeline->GetWindow()->GetImplementation<WaylandWindow>()) {
             const float_t scale = pNativeWindow->GetScale();
             frameInfo.framebufferScale = { scale, scale };
