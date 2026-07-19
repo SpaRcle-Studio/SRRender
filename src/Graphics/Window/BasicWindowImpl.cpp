@@ -98,7 +98,7 @@ namespace SR_GRAPH_NS {
                 const auto protocolType = SR_PLATFORM_NS::GetWindowProtocolType();
                 SR_LOG("BasicWindowImpl::CreatePlatformWindow() : detected window protocol type: {}", protocolType);
                 switch (protocolType) {
-                #ifdef SR_RENDER_USE_NATIVE_WAYLAND
+                #ifdef SR_COMMON_USE_NATIVE_WAYLAND
                     case SR_PLATFORM_NS::WindowProtocolType::Wayland:
                         return new WaylandWindow();
                 #endif
@@ -109,7 +109,7 @@ namespace SR_GRAPH_NS {
                 break;
             }
 
-        #ifdef SR_RENDER_USE_NATIVE_WAYLAND
+        #ifdef SR_COMMON_USE_NATIVE_WAYLAND
             case WindowType::Wayland:
                 return new WaylandWindow();
         #endif

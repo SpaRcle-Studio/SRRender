@@ -2,7 +2,7 @@
 // Created by monika on 2/4/26.
 //
 
-#ifdef SR_RENDER_USE_NATIVE_WAYLAND
+#ifdef SR_COMMON_USE_NATIVE_WAYLAND
 
     #include <Graphics/Window/WaylandWindow.h>
 

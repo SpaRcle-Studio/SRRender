@@ -24,34 +24,15 @@ option(SR_RENDER_USE_GLSL_LANG_LIB "" ON)
 option(SR_RENDER_USE_NATIVE_WEBGPU "" OFF)
 option(SR_RENDER_USE_EELY "" OFF)
 
-option(SR_RENDER_USE_NATIVE_WAYLAND "" ON)
-option(SR_RENDER_GLFW "" OFF)
 option(SR_RENDER_USE_YOGA "" OFF)
 option(SR_RENDER_USE_MSDFGEN "" ON)
 
 SRUseAssimpIfPossible(Graphics)
 
+
 if (SR_RENDER_USE_VULKAN)
     message("$ENV{VULKAN_SDK}")
     find_package(Vulkan REQUIRED)
-endif()
-
-if (NOT ANDROID_NDK AND UNIX AND NOT APPLE AND NOT SR_EMSCRIPTEN AND NOT WIN32)
-    if (SR_RENDER_USE_NATIVE_WAYLAND)
-        include(cmake/wayland-protocols.cmake)
-
-        set(SR_RENDER_USE_NATIVE_WAYLAND_SUPPORTED OFF)
-        if (SR_WAYLAND_HAS_XDG_SHELL AND SR_WAYLAND_HAS_FRACTIONAL_SCALE AND SR_WAYLAND_HAS_XDG_DECORATION)
-            set(SR_RENDER_USE_NATIVE_WAYLAND_SUPPORTED ON)
-            add_compile_definitions(SR_RENDER_USE_NATIVE_WAYLAND)
-        else()
-            message(WARNING "Native Wayland support is not fully available. Falling back to GLFW.")
-        endif()
-    endif()
-
-    if (NOT SR_RENDER_USE_NATIVE_WAYLAND_SUPPORTED)
-        set(SR_RENDER_GLFW ON)
-    endif()
 endif()
 
 if (SR_RENDER_GLFW)
@@ -209,7 +190,7 @@ if (NOT ANDROID_NDK)
     endif()
 endif()
 
-if (SR_RENDER_USE_NATIVE_WAYLAND_SUPPORTED)
+if (SR_COMMON_USE_NATIVE_WAYLAND)
     target_include_directories(Graphics PUBLIC ${SR_WAYLAND_GEN_DIR})
     target_link_libraries(Graphics PUBLIC wayland-client wayland-cursor xkbcommon)
 endif()

@@ -1,4 +1,4 @@
-#ifdef SR_RENDER_USE_NATIVE_WAYLAND
+#ifdef SR_COMMON_USE_NATIVE_WAYLAND
 extern "C" {
     #include <fractional-scale-v1-client-protocol.h>
     #include <pointer-constraints-unstable-v1.h>

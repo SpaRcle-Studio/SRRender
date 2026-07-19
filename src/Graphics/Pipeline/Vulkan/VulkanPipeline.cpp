@@ -35,7 +35,7 @@
     #include <Graphics/Pipeline/GLSLDefaultTBuiltInResource.h>
 #endif
 
-#ifdef SR_RENDER_USE_NATIVE_WAYLAND
+#ifdef SR_COMMON_USE_NATIVE_WAYLAND
     #include <Graphics/Window/WaylandWindow.h>
 #endif
 
@@ -286,7 +286,7 @@ namespace SR_GRAPH_NS {
         for (uint32_t i = 0; i < count; ++i) {
             instanceExtensions.emplace_back(glfwInstanceExtensions[i]);
         }
-#elif defined(SR_RENDER_USE_NATIVE_WAYLAND)
+#elif defined(SR_COMMON_USE_NATIVE_WAYLAND)
         instanceExtensions.emplace_back(VK_KHR_SURFACE_EXTENSION_NAME);
         instanceExtensions.emplace_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #endif //SR_LINUX
@@ -380,7 +380,7 @@ namespace SR_GRAPH_NS {
                 PipelineError("VulkanPipeline::Init() : failed to get window implementation!");
                 return VK_NULL_HANDLE;
             }
-        #elif defined(SR_RENDER_USE_NATIVE_WAYLAND)
+        #elif defined(SR_COMMON_USE_NATIVE_WAYLAND)
             if (auto&& pImpl = m_window->GetImplementation<WaylandWindow>()) {
                 VkWaylandSurfaceCreateInfoKHR surfaceInfo = { };
                 surfaceInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;

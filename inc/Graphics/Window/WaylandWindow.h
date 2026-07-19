@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_WAYLAND_WINDOW_H
 #define SR_ENGINE_GRAPHICS_WAYLAND_WINDOW_H
 
-#ifdef SR_RENDER_USE_NATIVE_WAYLAND
+#ifdef SR_COMMON_USE_NATIVE_WAYLAND
     #include <Graphics/Window/BasicWindowImpl.h>
 
     #include <Utils/Math/Rect.h>
