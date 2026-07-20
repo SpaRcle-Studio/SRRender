@@ -84,6 +84,15 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
+    void AnimationStateMachine::ForEachState(const SR_HTYPES_NS::Function<void(AnimationState&)>& callback) {
+        for (auto&& pState : m_states) {
+            if (!pState) {
+                continue;
+            }
+            callback(*pState);
+        }
+    }
+
     bool AnimationStateMachine::SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip) {
         SR_TRACY_ZONE;
 
@@ -310,5 +319,15 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return false;
+    }
+
+    void AnimationStateMachine::FastForwardState(AnimationState* pState) {
+        if (!pState) {
+            return;
+        }
+
+        pState->ResetState();
+        m_activeStates.clear();
+        m_activeStates.insert(pState);
     }
 }

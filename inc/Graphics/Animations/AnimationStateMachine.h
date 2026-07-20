@@ -30,6 +30,9 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const std::vector<AnimationState::Ptr>& GetStates() const noexcept { return m_states; }
         SR_NODISCARD std::vector<AnimationState::Ptr>& GetStatesMutable() noexcept { return m_states; }
 
+        void ForEachState(const SR_HTYPES_NS::Function<void(AnimationState&)>& callback);
+        void FastForwardState(AnimationState* pState);
+
         bool SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
         void Compile(CompileContext& context);
         void Update(UpdateContext& context);
