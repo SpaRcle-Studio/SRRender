@@ -12,71 +12,19 @@
 
 #include <Utils/SRLM/LogicalMachine.h>
 #include <Utils/SRLM/LogicalNodeManager.h>
+#include <Utils/Common/StringUtils.h>
 
 #include <Codegen/NodeWidget.generated.hpp>
 
 namespace SR_GRAPH_GUI_NS {
-        void INodeWidgetDataContainer::RemoveLink(Link *pLink) {
-        pLink->Broke(nullptr);
-    }
-
-    void INodeWidgetDataContainer::RemoveNode(Node* pNode) {
-        auto&& pIt = m_nodes.find(pNode->GetId());
-        if (pIt == m_nodes.end()) {
-            SRHalt0();
-            return;
-        }
-
-        m_nodes.erase(pIt);
-        delete pNode;
-    }
-
-    Node& INodeWidgetDataContainer::AddNode(Node* pNode) {
-        static Node def;
-
-        if (!pNode) {
-            SRHalt0();
-            return def;
-        }
-
-        if (!CanAddNode(pNode)) {
-            return def;
-        }
-
-        SRAssert(m_nodes.count(pNode->GetId()) == 0);
-        m_nodes.insert(std::make_pair(pNode->GetId(), pNode));
-
-        return *pNode;
-    }
-
-    Link& INodeWidgetDataContainer::AddLink(Link* pLink) {
-        if (!pLink) {
-            SRHalt0();
-            static Link def;
-            return def;
-        }
-
-        SRAssert(m_links.count(pLink->GetId()) == 0);
-        m_links.insert(std::make_pair(pLink->GetId(), pLink));
-
-        return *pLink;
-    }
-
-    void INodeWidgetDataContainer::ClearContainer() {
-        for (auto&& [id, pLink] : m_links) {
-            delete pLink;
-        }
-
-        for (auto&& [id, pNode] : m_nodes) {
-            delete pNode;
-        }
-
-        m_nodes.clear();
-        m_links.clear();
-    }
+    NodeWidget::NodeWidget()
+        : Super()
+        , m_nodeGraphEditor(SR_IMMEDIATE_GUI_NS::NodeEditorInstance::Create())
+    { }
 
     NodeWidget::NodeWidget(std::string name, SR_MATH_NS::IVector2 size)
         : Super(std::move(name), size)
+        , m_nodeGraphEditor(SR_IMMEDIATE_GUI_NS::NodeEditorInstance::Create())
     { }
 
     NodeWidget::~NodeWidget() {
@@ -91,12 +39,32 @@ namespace SR_GRAPH_GUI_NS {
 
     }
 
+    void NodeWidget::Zoom() {
+        if (m_nodeGraphEditor) {
+            m_nodeGraphEditor->Zoom();
+        }
+    }
+
     void NodeWidget::Clear() {
-        ClearContainer();
+
     }
 
     void NodeWidget::Draw() {
+        DrawTopPanel();
 
+        SR_GRAPH_GUI_NS::Immediate::Separator();
+
+        auto&& availableSize = SR_GRAPH_GUI_NS::Immediate::GetContentRegionAvail();
+
+        SR_GRAPH_GUI_NS::Immediate::BeginChild("InspectPanel", SR_MATH_NS::FVector2(m_leftPaneWidth, availableSize.y));
+        DrawInspectPanel();
+        SR_GRAPH_GUI_NS::Immediate::EndChild();
+
+        SR_GRAPH_GUI_NS::Immediate::SameLine();
+
+        SR_GRAPH_GUI_NS::Immediate::BeginChild("NodeEditor", SR_MATH_NS::FVector2(availableSize.x - m_leftPaneWidth - 10, availableSize.y));
+        DrawNodeEditor();
+        SR_GRAPH_GUI_NS::Immediate::EndChild();
     }
 
     void NodeWidget::OnClose() {
@@ -188,11 +156,115 @@ namespace SR_GRAPH_GUI_NS {
         Close();
     }
 
-    void NodeWidget::DrawLeftPanel() {
+    void NodeWidget::DrawInspectPanel() {
 
     }
 
     void NodeWidget::DrawNodeEditor() {
 
+    }
+
+    void NodeWidget::BuildNodeMenu(std::map<std::string, std::vector<SR_UTILS_NS::StringAtom>>& categories, SR_UTILS_NS::StringAtom baseClass) {
+        SR_TRACY_ZONE;
+        categories.clear();
+
+        if (m_availableNodeTypes.empty()) {
+            m_availableNodeTypes = SR_UTILS_NS::Factory::Instance().GetInheritances(baseClass);
+
+            /// Фильтруем абстрактные и скрытые классы
+            std::erase_if(m_availableNodeTypes, [](auto&& name) {
+                auto&& pMeta = SR_UTILS_NS::Factory::Instance().GetType(name);
+                if (!pMeta) {
+                    return true;
+                }
+                return pMeta->IsAbstract() || pMeta->IsHidden();
+            });
+        }
+
+        for (auto&& nodeTypeName : m_availableNodeTypes) {
+            auto&& pMeta = SR_UTILS_NS::Factory::Instance().GetType(nodeTypeName);
+            if (!pMeta) {
+                continue;
+            }
+
+            auto&& category = pMeta->GetCategory();
+            std::string categoryPath = "Nodes";
+            if (!category.empty()) {
+                categoryPath.clear();
+                for (size_t i = 0; i < category.size(); ++i) {
+                    if (i > 0) {
+                        categoryPath += "/";
+                    }
+                    categoryPath += category[i].ToStringRef();
+                }
+            }
+
+            categories[categoryPath].emplace_back(nodeTypeName);
+        }
+    }
+
+    void NodeWidget::DrawNodeMenuRecursive(const std::map<std::string, std::vector<SR_UTILS_NS::StringAtom>>& categories, const std::string& prefix, SR_MATH_NS::FVector2 popupPos) {
+        /// Группируем ноды по следующему уровню категорий
+        std::map<std::string, std::vector<SR_UTILS_NS::StringAtom>> subCategories;
+        std::vector<SR_UTILS_NS::StringAtom> directNodes;
+
+        for (auto&& [categoryPath, nodeTypes] : categories) {
+            if (categoryPath == prefix) {
+                /// Ноды напрямую в этой категории
+                directNodes.insert(directNodes.end(), nodeTypes.begin(), nodeTypes.end());
+            }
+            else if (prefix.empty() || (categoryPath.size() >= prefix.size() + 1 && categoryPath.substr(0, prefix.size() + 1) == prefix + "/")) {
+                /// Определяем следующий уровень
+                std::string remaining = prefix.empty() ? categoryPath : categoryPath.substr(prefix.size() + 1);
+                auto&& nextSlash = remaining.find('/');
+
+                if (nextSlash == std::string::npos) {
+                    /// Это конечный уровень для этой категории
+                    directNodes.insert(directNodes.end(), nodeTypes.begin(), nodeTypes.end());
+                }
+                else {
+                    /// Есть подкатегория
+                    std::string nextLevel = prefix.empty() ? remaining.substr(0, nextSlash) : prefix + "/" + remaining.substr(0, nextSlash);
+                    subCategories[nextLevel].insert(subCategories[nextLevel].end(), nodeTypes.begin(), nodeTypes.end());
+                }
+            }
+        }
+
+        // Рисуем прямые элементы
+        for (auto&& nodeTypeName : directNodes) {
+            auto&& pMeta = SR_UTILS_NS::Factory::Instance().GetType(nodeTypeName);
+            if (!pMeta) {
+                continue;
+            }
+
+            auto&& displayName = pMeta->GetDisplayName();
+            SR_UTILS_NS::StringAtom menuName = displayName.empty() ? nodeTypeName : displayName;
+
+            if (!m_createNodeSearch.empty() && !SR_UTILS_NS::StringUtils::CheckSearchMatch(m_createNodeSearch, menuName.ToStringView())) {
+                continue;
+            }
+
+            if (SR_GRAPH_GUI_NS::Immediate::MenuItem(menuName.c_str())) {
+                OnNodeTypeSelected(nodeTypeName, popupPos);
+            }
+        }
+
+        // Рисуем подменю
+        for (auto&& [nextLevel, nodeTypes] : subCategories) {
+            // Извлекаем имя следующего уровня
+            std::string levelName = nextLevel;
+            if (!prefix.empty()) {
+                levelName = nextLevel.substr(prefix.size() + 1);
+            }
+            auto&& nextSlash = levelName.find('/');
+            if (nextSlash != std::string::npos) {
+                levelName = levelName.substr(0, nextSlash);
+            }
+
+            if (SR_GRAPH_GUI_NS::Immediate::BeginMenu(levelName.c_str())) {
+                DrawNodeMenuRecursive(categories, nextLevel, popupPos);
+                SR_GRAPH_GUI_NS::Immediate::EndMenu();
+            }
+        }
     }
 }
