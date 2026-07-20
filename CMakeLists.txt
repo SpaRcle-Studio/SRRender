@@ -190,7 +190,7 @@ if (NOT ANDROID_NDK)
     endif()
 endif()
 
-if (SR_COMMON_USE_NATIVE_WAYLAND)
+if (SR_COMMON_USE_NATIVE_WAYLAND_SUPPORTED)
     target_include_directories(Graphics PUBLIC ${SR_WAYLAND_GEN_DIR})
     target_link_libraries(Graphics PUBLIC wayland-client wayland-cursor xkbcommon)
 endif()
