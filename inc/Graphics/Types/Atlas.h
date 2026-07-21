@@ -31,8 +31,6 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom prefix;
 
-
-
     };
 
     /// @extension(sratlas)
@@ -50,7 +48,7 @@ namespace SR_GRAPH_NS {
         AtlasType m_type = AtlasType::SpriteSheet;
 
         /// @property @condition(This.m_type == AtlasType::SpriteSheet)
-        std::vector<AtlasSpriteSheetSettings> m_spriteSheets;
+        SR_UTILS_NS::Vector<AtlasSpriteSheetSettings> m_spriteSheets;
 
         /// @property @hidden
         SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, AtlasEntry> m_entries;

@@ -41,7 +41,7 @@ namespace SR_GRAPH_NS {
         /// @property @notNull
         BasePass::Ptr pass;
         /// @property
-        std::vector<FrameBufferController::Ptr> frameBuffers;
+        SR_UTILS_NS::Vector<FrameBufferController::Ptr> frameBuffers;
 
     };
 
@@ -102,7 +102,7 @@ namespace SR_GRAPH_NS {
         }
 
         SR_NODISCARD const FrameBufferController::Ptr& GetFrameBufferController(SR_UTILS_NS::StringAtom name) const;
-        SR_NODISCARD const std::vector<FrameBufferController::Ptr>& GetFrameBufferControllers() const;
+        SR_NODISCARD const SR_UTILS_NS::Vector<FrameBufferController::Ptr>& GetFrameBufferControllers() const;
 
     private:
         bool Init();

@@ -23,8 +23,8 @@ namespace SR_GRAPH_NS {
     class FrameBufferController final : public SR_HTYPES_NS::SharedPtr<FrameBufferController>, public SR_UTILS_NS::Serializable {
         SR_CLASS()
         using Super = SR_HTYPES_NS::SharedPtr<FrameBufferController>;
-        using ColorFormats = std::vector<ImageFormat>;
-        using ClearColors = std::vector<SR_MATH_NS::FColor>;
+        using ColorFormats = SR_UTILS_NS::Vector<ImageFormat>;
+        using ClearColors = SR_UTILS_NS::Vector<SR_MATH_NS::FColor>;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<FrameBufferController>;
 

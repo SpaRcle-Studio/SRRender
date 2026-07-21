@@ -16,12 +16,12 @@ namespace SR_ANIMATIONS_NS {
     public:
         bool dirty = false;
 
-        SR_HTYPES_NS::Optional<SR_MATH_NS::FVector3> translation;
-        SR_HTYPES_NS::Optional<SR_MATH_NS::Quaternion> rotation;
-        SR_HTYPES_NS::Optional<SR_MATH_NS::FVector3> scaling;
+        SR_UTILS_NS::Optional<SR_MATH_NS::FVector3> translation;
+        SR_UTILS_NS::Optional<SR_MATH_NS::Quaternion> rotation;
+        SR_UTILS_NS::Optional<SR_MATH_NS::FVector3> scaling;
 
-        SR_HTYPES_NS::Optional<bool> enable;
-        SR_HTYPES_NS::Optional<SR_UTILS_NS::StringAtom> layer;
+        SR_UTILS_NS::Optional<bool> enable;
+        SR_UTILS_NS::Optional<SR_UTILS_NS::StringAtom> layer;
 
     };
 

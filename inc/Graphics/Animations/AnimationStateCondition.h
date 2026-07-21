@@ -64,7 +64,7 @@ namespace SR_ANIMATIONS_NS {
 
     protected:
         /// @property @notNull
-        std::vector<AnimationStateCondition::Ptr> m_conditions;
+        SR_UTILS_NS::Vector<AnimationStateCondition::Ptr> m_conditions;
 
     };
 
@@ -86,7 +86,7 @@ namespace SR_ANIMATIONS_NS {
 
     protected:
         /// @property @notNull
-        std::vector<AnimationStateCondition::Ptr> m_conditions;
+        SR_UTILS_NS::Vector<AnimationStateCondition::Ptr> m_conditions;
 
     };
 

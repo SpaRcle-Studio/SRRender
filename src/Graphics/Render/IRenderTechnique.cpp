@@ -246,7 +246,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    const std::vector<FrameBufferController::Ptr>& IRenderTechnique::GetFrameBufferControllers() const {
+    const SR_UTILS_NS::Vector<FrameBufferController::Ptr>& IRenderTechnique::GetFrameBufferControllers() const {
         return m_data.frameBuffers;
     }
 

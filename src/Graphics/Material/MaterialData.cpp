@@ -635,7 +635,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void MaterialData::AddShaderDefine(SR_UTILS_NS::StringAtom define, const std::string& value) {
+    void MaterialData::AddShaderDefine(SR_UTILS_NS::StringAtom define, SR_UTILS_NS::StringView value) {
         SR_TRACY_ZONE;
         if (m_shaderDefines.find(define) != m_shaderDefines.end()) {
             return;

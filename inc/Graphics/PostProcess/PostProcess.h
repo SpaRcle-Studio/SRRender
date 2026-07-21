@@ -64,7 +64,7 @@ namespace SR_GTYPES_NS {
         /// @customArg(filter value: srsl)
         SR_UTILS_NS::Path shaderPath;
         /// @property @notNull
-        std::vector<PostProcessModule::Ptr> modules;
+        SR_UTILS_NS::Vector<PostProcessModule::Ptr> modules;
 
     };
 

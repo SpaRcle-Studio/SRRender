@@ -17,7 +17,7 @@ namespace SR_ANIMATIONS_NS {
     /// @abstract
     class AnimationState : public SR_HTYPES_NS::SharedPtr<AnimationState>, public SR_UTILS_NS::Serializable {
         SR_CLASS()
-        using Transitions = std::vector<AnimationStateTransition::Ptr>;
+        using Transitions = SR_UTILS_NS::Vector<AnimationStateTransition::Ptr>;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<AnimationState>;
 

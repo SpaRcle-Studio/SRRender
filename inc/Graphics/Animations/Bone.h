@@ -35,7 +35,7 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         SR_UTILS_NS::StringAtom name;
         /// @property
-        std::vector<Bone::Ptr> bones;
+        SR_UTILS_NS::Vector<Bone::Ptr> bones;
 
         Bone* pParent = nullptr;
         Bone* pRoot = nullptr;

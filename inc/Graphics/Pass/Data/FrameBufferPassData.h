@@ -23,7 +23,7 @@ namespace SR_GRAPH_NS {
         SR_CLASS()
         using Super = SR_UTILS_NS::Serializable;
     public:
-        using ClearColors = std::vector<SR_MATH_NS::FColor>;
+        using ClearColors = SR_UTILS_NS::Vector<SR_MATH_NS::FColor>;
         using FBRenderCallback = SR_HTYPES_NS::Function<bool()>;
         using FBUpdateCallback = SR_HTYPES_NS::Function<void()>;
 
@@ -46,7 +46,7 @@ namespace SR_GRAPH_NS {
         void SetFrameBufferName(SR_UTILS_NS::StringAtom name) noexcept { m_frameBufferName = name; }
         void SetClearColors(const ClearColors& colors) { m_clearColors = colors; }
         void SetClearDepth(float_t depth) { m_depth = depth; }
-        void SetClearDepth(SR_HTYPES_NS::Optional<float_t> depth) { m_depth = depth; }
+        void SetClearDepth(SR_UTILS_NS::Optional<float_t> depth) { m_depth = depth; }
 
     private:
         bool RenderFrameBuffer(const FBRenderCallback& callback, uint8_t layers);
@@ -64,7 +64,7 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom m_frameBufferName;
         /// @property
-        SR_HTYPES_NS::Optional<float_t> m_depth = 1.f;
+        SR_UTILS_NS::Optional<float_t> m_depth = 1.f;
 
     };
 }

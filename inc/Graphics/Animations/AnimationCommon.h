@@ -154,7 +154,7 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         std::map<SR_UTILS_NS::StringAtom, float_t> m_floatTable;
         /// @property
-        std::map<SR_UTILS_NS::StringAtom, std::string> m_stringTable;
+        std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String> m_stringTable;
 
         IAnimationDataSet* m_parent = nullptr;
 

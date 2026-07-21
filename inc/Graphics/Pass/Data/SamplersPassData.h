@@ -85,7 +85,7 @@ namespace SR_GRAPH_NS {
 
     private:
         /// @property
-        std::vector<SamplerData> m_samplers;
+        SR_UTILS_NS::Vector<SamplerData> m_samplers;
 
     private:
         bool m_dirtySamplers = true;

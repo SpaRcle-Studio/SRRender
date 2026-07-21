@@ -61,8 +61,8 @@ namespace SR_GTYPES_NS {
     private:
         mutable SR_HTYPES_NS::SharedPtr<RenderScene> m_renderScene;
         SR_HTYPES_NS::SharedPtr<IRenderTechnique> m_usedRenderTechnique;
-        std::vector<SR_HTYPES_NS::SharedPtr<BasePass>> m_cachedPasses;
-        std::vector<ImageFormat> m_cachedFormats;
+        SR_UTILS_NS::Vector<SR_HTYPES_NS::SharedPtr<BasePass>> m_cachedPasses;
+        SR_UTILS_NS::Vector<ImageFormat> m_cachedFormats;
         RenderTargetMode m_cachedMode = RenderTargetMode::CameraIntegration;
 
     private:
@@ -75,7 +75,7 @@ namespace SR_GTYPES_NS {
         SR_UTILS_NS::EntityRef<Camera> m_camera;
 
         /// @property @onChanged(Deactivate) @condition(This.m_mode != RenderTargetMode::CameraShare)
-        std::vector<SR_HTYPES_NS::SharedPtr<BasePass>> m_passes;
+        SR_UTILS_NS::Vector<SR_HTYPES_NS::SharedPtr<BasePass>> m_passes;
 
         /// @property @onChanged(Deactivate) @condition(This.m_mode == RenderTargetMode::CameraShare)
         SR_UTILS_NS::StringAtom m_frameBufferName;
@@ -89,9 +89,9 @@ namespace SR_GTYPES_NS {
         /// @property @group(Framebuffer) @onChanged(Deactivate) @condition(This.m_mode != RenderTargetMode::CameraShare)
         uint32_t m_sampleCount = 1;
         /// @property @group(Framebuffer) @onChanged(Deactivate) @condition(This.m_mode != RenderTargetMode::CameraShare)
-        std::vector<RenderTargetLayer> m_layers;
+        SR_UTILS_NS::Vector<RenderTargetLayer> m_layers;
         /// @property @group(Framebuffer)@onChanged(Deactivate) @condition(This.m_mode != RenderTargetMode::CameraShare)
-        SR_HTYPES_NS::Optional<float_t> m_clearDepth = 1.f;
+        SR_UTILS_NS::Optional<float_t> m_clearDepth = 1.f;
 
     };
 }

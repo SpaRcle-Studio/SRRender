@@ -64,7 +64,7 @@ namespace SR_GRAPH_NS {
         /// @property
         BaseMaterial::Ptr m_material;
         /// @property
-        std::vector<SR_UTILS_NS::StringAtom> m_useSSBOFromPasses;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> m_useSSBOFromPasses;
 
     };
 }

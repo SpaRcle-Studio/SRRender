@@ -288,7 +288,7 @@ namespace SR_GRAPH_NS {
 
             pMainGroupPass = SR_UTILS_NS::StaticPointerCast<GroupPass>(pFrameBuffer);
 
-            std::vector<ImageFormat> colorFormats;
+            SR_UTILS_NS::Vector<ImageFormat> colorFormats;
             colorFormats.reserve(mainRenderColorLayers);
 
             if (params.activeGraphicsSettings.hdr) {

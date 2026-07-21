@@ -71,7 +71,7 @@ namespace SR_ANIMATIONS_NS {
         /// @property @group(Advanced)
         bool m_fpsCompensation = false;
         /// @property @group(Advanced)
-        std::vector<SR_UTILS_NS::EntityRef<IKSystem>> m_IKSystems;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::EntityRef<IKSystem>> m_IKSystems;
 
         /// @property
         SR_UTILS_NS::ResourceRef<AnimationClip> m_clip;

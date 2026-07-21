@@ -190,7 +190,7 @@ namespace SR_GRAPH_NS {
         pPass->SetParent(this);
     }
 
-    void GroupPass::SetPasses(const std::vector<BasePass::Ptr>& passes) {
+    void GroupPass::SetPasses(const SR_UTILS_NS::Vector<BasePass::Ptr>& passes) {
         SR_TRACY_ZONE;
         m_passes = passes;
         for (auto&& pPass : m_passes) {

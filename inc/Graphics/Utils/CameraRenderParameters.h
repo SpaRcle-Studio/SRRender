@@ -19,23 +19,23 @@ namespace SR_GRAPH_NS {
         /// @property
         std::set<SR_UTILS_NS::StringAtom> excludeLayers;
         /// @property
-        SR_HTYPES_NS::Optional<bool> postProcess;
+        SR_UTILS_NS::Optional<bool> postProcess;
         /// @property
-        SR_HTYPES_NS::Optional<bool> hdr;
+        SR_UTILS_NS::Optional<bool> hdr;
         /// @property
-        SR_HTYPES_NS::Optional<bool> autoExposure;
+        SR_UTILS_NS::Optional<bool> autoExposure;
         /// @property
-        SR_HTYPES_NS::Optional<Quality> shadowsQuality;
+        SR_UTILS_NS::Optional<Quality> shadowsQuality;
         /// @property
-        SR_HTYPES_NS::Optional<Quality> colorBufferQuality;
+        SR_UTILS_NS::Optional<Quality> colorBufferQuality;
         /// @property
-        SR_HTYPES_NS::Optional<bool> multisampling;
+        SR_UTILS_NS::Optional<bool> multisampling;
         /// @property
-        SR_HTYPES_NS::Optional<SR_MATH_NS::IVector2> screenSize;
+        SR_UTILS_NS::Optional<SR_MATH_NS::IVector2> screenSize;
         /// @property
-        SR_HTYPES_NS::Optional<SR_MATH_NS::FVector2> screenScale;
+        SR_UTILS_NS::Optional<SR_MATH_NS::FVector2> screenScale;
         /// @property
-        SR_HTYPES_NS::Optional<Quality> SSAO;
+        SR_UTILS_NS::Optional<Quality> SSAO;
 
     };
 }

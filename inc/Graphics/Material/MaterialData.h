@@ -62,9 +62,9 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Path shaderPath;
 
         /// @property
-        std::vector<MaterialShaderProperty> uniforms;
+        SR_UTILS_NS::Vector<MaterialShaderProperty> uniforms;
         /// @property
-        std::vector<MaterialShaderProperty> samplers;
+        SR_UTILS_NS::Vector<MaterialShaderProperty> samplers;
         /// @property
         MaterialStageUseType useType = MaterialStageUseType::Full;
 
@@ -122,13 +122,13 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD MaterialShaderData& GetDefaultShaderData() noexcept { return m_defaultShader; }
         SR_NODISCARD const MaterialShaderData& GetDefaultShaderData() const noexcept { return m_defaultShader; }
-        SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, std::string>& GetShaderDefines() const noexcept { return m_shaderDefines; }
+        SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String>& GetShaderDefines() const noexcept { return m_shaderDefines; }
 
         void SR_FASTCALL SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept;
         void SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
 
         void OnPropertyChanged(bool onlyUniforms);
-        void AddShaderDefine(SR_UTILS_NS::StringAtom define, const std::string& value = "");
+        void AddShaderDefine(SR_UTILS_NS::StringAtom define, SR_UTILS_NS::StringView value = SR_UTILS_NS::StringView());
         void RemoveShaderDefine(SR_UTILS_NS::StringAtom define);
         void SwitchShaderDefine(SR_UTILS_NS::StringAtom define, bool enabled);
 
@@ -161,7 +161,7 @@ namespace SR_GRAPH_NS {
 
     private:
         /// @property @onChanged(OnShaderDefinesChanged)
-        std::map<SR_UTILS_NS::StringAtom, std::string> m_shaderDefines;
+        std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String> m_shaderDefines;
 
         /// @property @hidden
         MaterialShaderData m_defaultShader;

@@ -63,7 +63,7 @@ namespace SR_GTYPES_NS {
         SR_UTILS_NS::ResourceRef<FontAsset> m_font;
         /// @property @onChanged(OnTextDirty)
         /// @customArg(text-box: enabled)
-        std::string m_text;
+        SR_UTILS_NS::String m_text;
         /// @property @range(0.1f, std::numeric_limits<float_t>::max())
         /// @onChanged(OnTextDirty)
         float_t m_fontSize = 16.f;

@@ -35,8 +35,8 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD uint32_t GetInputCount() const noexcept { return static_cast<uint32_t>(m_inputPins.size()); }
         SR_NODISCARD uint32_t GetOutputCount() const noexcept { return static_cast<uint32_t>(m_outputPins.size()); }
-        SR_NODISCARD const std::vector<AnimationLink>& GetInputLinks() const noexcept { return m_inputPins; }
-        SR_NODISCARD const std::vector<AnimationLink>& GetOutputLinks() const noexcept { return m_outputPins; }
+        SR_NODISCARD const SR_UTILS_NS::Vector<AnimationLink>& GetInputLinks() const noexcept { return m_inputPins; }
+        SR_NODISCARD const SR_UTILS_NS::Vector<AnimationLink>& GetOutputLinks() const noexcept { return m_outputPins; }
         SR_NODISCARD SR_MATH_NS::FVector2 GetEditorPosition() const noexcept { return m_editorPosition; }
         void SetEditorPosition(const SR_MATH_NS::FVector2& pos) noexcept { m_editorPosition = pos; }
         SR_NODISCARD virtual AnimationPose* Update(UpdateContext& context, const AnimationLink& from) { return nullptr; }
@@ -70,12 +70,12 @@ namespace SR_ANIMATIONS_NS {
         void* m_userData = nullptr;
 
         /// @property @hidden
-        std::vector<AnimationLink> m_inputPins;
+        SR_UTILS_NS::Vector<AnimationLink> m_inputPins;
 
         /// @property @group(Editor) @hidden
         SR_MATH_NS::FVector2 m_editorPosition = SR_MATH_NS::FVector2(0.f, 0.f);
 
-        std::vector<AnimationLink> m_outputPins;
+        SR_UTILS_NS::Vector<AnimationLink> m_outputPins;
 
     };
 

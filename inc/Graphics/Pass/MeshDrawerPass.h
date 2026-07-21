@@ -129,7 +129,7 @@ namespace SR_GRAPH_NS {
         /// @property
         std::set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
         /// @property
-        std::set<std::string> m_shaderDefines;
+        std::set<SR_UTILS_NS::String> m_shaderDefines;
         /// @property
         SamplersPassData m_samplers;
         /// @property

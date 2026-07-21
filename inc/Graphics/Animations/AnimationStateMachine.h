@@ -27,8 +27,8 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD AnimationState* FindState(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD AnimationState* GetState(uint32_t index) const;
         SR_NODISCARD AnimationState* GetStateOrNull(uint32_t index) const;
-        SR_NODISCARD const std::vector<AnimationState::Ptr>& GetStates() const noexcept { return m_states; }
-        SR_NODISCARD std::vector<AnimationState::Ptr>& GetStatesMutable() noexcept { return m_states; }
+        SR_NODISCARD const SR_UTILS_NS::Vector<AnimationState::Ptr>& GetStates() const noexcept { return m_states; }
+        SR_NODISCARD SR_UTILS_NS::Vector<AnimationState::Ptr>& GetStatesMutable() noexcept { return m_states; }
 
         void ForEachState(const SR_HTYPES_NS::Function<void(AnimationState&)>& callback);
         void FastForwardState(AnimationState* pState);
@@ -60,7 +60,7 @@ namespace SR_ANIMATIONS_NS {
         AnimationGraphNode* m_node = nullptr;
 
         /// @property @hidden
-        std::vector<AnimationState::Ptr> m_states;
+        SR_UTILS_NS::Vector<AnimationState::Ptr> m_states;
 
         std::set<AnimationState*> m_activeStates;
 

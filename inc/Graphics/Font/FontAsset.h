@@ -67,7 +67,7 @@ namespace SR_GRAPH_NS {
         /// @customArg(filter value: ttf) @group(Generation)
         SR_UTILS_NS::ResourceRef<SR_GTYPES_NS::Font> m_font;
         /// @property @group(Generation)
-        std::vector<GlyphRange> m_preloadGlyphRanges;
+        SR_UTILS_NS::Vector<GlyphRange> m_preloadGlyphRanges;
         /// @property @group(Generation)
         float_t m_samplingPointSize = 86;
         /// @property @group(Generation)
@@ -80,7 +80,7 @@ namespace SR_GRAPH_NS {
         /// @property
         /// @customArgs(pick: enabled, filter name: Font, relative: resources)
         /// @customArg(filter value: font)
-        std::vector<SR_UTILS_NS::ResourceRef<FontAsset>> m_fallbacks;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::ResourceRef<FontAsset>> m_fallbacks;
 
     private:
         float_t m_ascender = 0.f;

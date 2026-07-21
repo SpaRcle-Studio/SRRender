@@ -118,7 +118,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom editorSceneImageName = "SceneView";
 
         /// @property
-        std::vector<RenderSettingsPreset> presets;
+        SR_UTILS_NS::Vector<RenderSettingsPreset> presets;
         /// @property
         RenderSettingsPreset defaultPreset;
 
