@@ -34,7 +34,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD uint32_t GetAtlasWidth() const noexcept { return m_atlasSize.x; }
         SR_NODISCARD uint32_t GetAtlasHeight() const noexcept { return m_atlasSize.y; }
 
-        SR_NODISCARD const SR_HTYPES_NS::UnicodeString& GetText() const { return m_text; }
+        SR_NODISCARD const SR_UTILS_NS::UnicodeString& GetText() const { return m_text; }
 
         void SetText(const std::string& text);
         void SetText(const std::u16string& text);
@@ -59,7 +59,7 @@ namespace SR_GTYPES_NS {
     protected:
         /// @property @setter(SetText) @getter(GetText)
         /// @customArg(text-box: enabled)
-        SR_HTYPES_NS::UnicodeString m_text;
+        SR_UTILS_NS::UnicodeString m_text;
         /// @virtualProperty(font) @setter(SetFont) @getter(GetFontPath)
         /// @customArgs(pick: enabled, filter name: Fonts, relative: resources)
         /// @customArg(filter value: ttf)
