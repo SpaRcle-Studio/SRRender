@@ -122,7 +122,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD MaterialShaderData& GetDefaultShaderData() noexcept { return m_defaultShader; }
         SR_NODISCARD const MaterialShaderData& GetDefaultShaderData() const noexcept { return m_defaultShader; }
-        SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String>& GetShaderDefines() const noexcept { return m_shaderDefines; }
+        SR_NODISCARD const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String>& GetShaderDefines() const noexcept { return m_shaderDefines; }
 
         void SR_FASTCALL SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept;
         void SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
@@ -161,7 +161,7 @@ namespace SR_GRAPH_NS {
 
     private:
         /// @property @onChanged(OnShaderDefinesChanged)
-        std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String> m_shaderDefines;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String> m_shaderDefines;
 
         /// @property @hidden
         MaterialShaderData m_defaultShader;

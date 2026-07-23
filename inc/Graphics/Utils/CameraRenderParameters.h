@@ -15,9 +15,9 @@ namespace SR_GRAPH_NS {
         SR_STRUCT()
 
         /// @property
-        std::set<SR_UTILS_NS::StringAtom> includeLayers;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> includeLayers;
         /// @property
-        std::set<SR_UTILS_NS::StringAtom> excludeLayers;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> excludeLayers;
         /// @property
         SR_UTILS_NS::Optional<bool> postProcess;
         /// @property

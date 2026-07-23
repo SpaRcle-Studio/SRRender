@@ -148,13 +148,13 @@ namespace SR_ANIMATIONS_NS {
 
     protected:
         /// @property
-        std::map<SR_UTILS_NS::StringAtom, bool> m_boolTable;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, bool> m_boolTable;
         /// @property
-        std::map<SR_UTILS_NS::StringAtom, int32_t> m_intTable;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, int32_t> m_intTable;
         /// @property
-        std::map<SR_UTILS_NS::StringAtom, float_t> m_floatTable;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, float_t> m_floatTable;
         /// @property
-        std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String> m_stringTable;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String> m_stringTable;
 
         IAnimationDataSet* m_parent = nullptr;
 

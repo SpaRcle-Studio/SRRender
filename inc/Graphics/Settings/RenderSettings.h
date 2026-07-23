@@ -12,13 +12,13 @@
 #include <Utils/Resources/Asset.h>
 
 namespace SR_GRAPH_NS {
-    template<typename K, typename V> const V& FindSuitableQuality(Quality quality, const std::map<K, V>& presets, bool findLowerFirst = false) {
+    template<typename K, typename V> const V& FindSuitableQuality(Quality quality, const SR_UTILS_NS::Map<K, V>& presets, bool findLowerFirst = false) {
         if (auto&& pIt = presets.find(quality); pIt != presets.end()) {
             return pIt->second;
         }
 
         auto pAboveIt = presets.upper_bound(quality);
-        auto tryLower = [&]() -> const V* { return (pAboveIt != presets.begin()) ? &std::prev(pAboveIt)->second : nullptr; };
+        auto tryLower = [&]() -> const V* { return (pAboveIt != presets.begin()) ? &pAboveIt.prev()->second : nullptr; };
         auto tryUpper = [&]() -> const V* { return (pAboveIt != presets.end()) ? &pAboveIt->second : nullptr; };
 
         if (findLowerFirst) {
@@ -74,7 +74,7 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom name;
         /// @property
-        std::set<SR_UTILS_NS::StringAtom> shaderDefines;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> shaderDefines;
         /// @property
         /// @customArgs(pick: enabled, filter name: Render Techniques, relative: resources)
         /// @customArg(filter value: srtech,srptech)
@@ -123,11 +123,11 @@ namespace SR_GRAPH_NS {
         RenderSettingsPreset defaultPreset;
 
         /// @property
-        std::map<Quality, ShadowQualityPreset> shadowQualityPresets;
+        SR_UTILS_NS::Map<Quality, ShadowQualityPreset> shadowQualityPresets;
         /// @property
-        std::map<Quality, float_t> colorBufferQualityPresets;
+        SR_UTILS_NS::Map<Quality, float_t> colorBufferQualityPresets;
         /// @property
-        std::map<Quality, SSAOPreset> SSAOQualityPresets;
+        SR_UTILS_NS::Map<Quality, SSAOPreset> SSAOQualityPresets;
 
     };
 }

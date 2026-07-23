@@ -31,7 +31,7 @@ namespace SR_GRAPH_NS {
         /// @property
         bool light = true;
         /// @property
-        std::set<SR_UTILS_NS::StringAtom> useFromPass;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> useFromPass;
 
     };
 
@@ -100,8 +100,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const SR_SRSL_NS::ShaderParams& GetShaderParams() const noexcept { return m_shaderParams; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept { return m_renderLayers; }
         SR_NODISCARD const RenderQueuePtr& GetRenderQueue(uint32_t index) const;
-        SR_NODISCARD std::set<SR_UTILS_NS::StringAtom>& GetAllowedLayers() { return m_allowedLayers; }
-        SR_NODISCARD std::set<SR_UTILS_NS::StringAtom>& GetDisallowedLayers() { return m_disallowedLayers; }
+        SR_NODISCARD SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom>& GetAllowedLayers() { return m_allowedLayers; }
+        SR_NODISCARD SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom>& GetDisallowedLayers() { return m_disallowedLayers; }
         SR_NODISCARD SamplersPassData& GetSamplersData() { return m_samplers; }
         SR_NODISCARD MeshDrawerUniforms& GetUniformsData() { return m_uniforms; }
 
@@ -125,11 +125,11 @@ namespace SR_GRAPH_NS {
         /// @property
         uint8_t m_renderLayers = 1;
         /// @property
-        std::set<SR_UTILS_NS::StringAtom> m_allowedLayers;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> m_allowedLayers;
         /// @property
-        std::set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> m_disallowedLayers;
         /// @property
-        std::set<SR_UTILS_NS::String> m_shaderDefines;
+        SR_UTILS_NS::Set<SR_UTILS_NS::String> m_shaderDefines;
         /// @property
         SamplersPassData m_samplers;
         /// @property

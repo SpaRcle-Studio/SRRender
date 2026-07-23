@@ -97,7 +97,7 @@ namespace SR_ANIMATIONS_NS {
         SkeletonAutoRigRules m_autoRigRules;
 
         /// @property
-        std::unordered_map<SR_UTILS_NS::StringAtom, SkeletonRigBoneChain> m_mapping;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SkeletonRigBoneChain> m_mapping;
 
     };
 }

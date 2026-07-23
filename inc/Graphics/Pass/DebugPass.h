@@ -69,7 +69,7 @@ namespace SR_GRAPH_NS {
         bool m_updateMeshesOnDemand = false;
 
         /// @property
-        std::map<SR_UTILS_NS::StringAtom, DebugPassShaderInfo> m_shaders;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, DebugPassShaderInfo> m_shaders;
         /// @property
         bool m_isOverlay = false;
 

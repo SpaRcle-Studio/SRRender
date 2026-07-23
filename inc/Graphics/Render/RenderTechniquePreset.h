@@ -51,9 +51,9 @@ namespace SR_GRAPH_NS {
         SR_CLASS()
     public:
         /// @property
-        std::set<SR_UTILS_NS::StringAtom> allowedLayers;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> allowedLayers;
         /// @property
-        std::set<SR_UTILS_NS::StringAtom> disallowedLayers;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> disallowedLayers;
         /// @property
         bool mainRenderer = true;
         /// @property
@@ -88,7 +88,7 @@ namespace SR_GRAPH_NS {
 
     private:
         /// @property
-        std::set<SR_UTILS_NS::StringAtom> m_specialShadowLayers;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> m_specialShadowLayers;
 
     };
 

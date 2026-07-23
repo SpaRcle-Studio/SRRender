@@ -8,6 +8,7 @@
 #include <Graphics/stdInclude.h>
 
 #include <Utils/Common/Enumerations.h>
+#include <Utils/Types/Vector.h>
 
 namespace SR_ANIMATIONS_NS {
     SR_ENUM_NS_CLASS_T(HumanoidBoneType, uint16_t,
