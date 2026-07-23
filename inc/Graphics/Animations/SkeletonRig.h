@@ -26,6 +26,13 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         uint32_t index = SR_ID_INVALID;
 
+        bool operator==(const SkeletonRigBoneInfo& other) const noexcept {
+            return name == other.name && index == other.index;
+        }
+
+        bool operator!=(const SkeletonRigBoneInfo& other) const noexcept {
+            return !(*this == other);
+        }
     };
 
     struct SkeletonRigBoneChain : public SR_UTILS_NS::Serializable {

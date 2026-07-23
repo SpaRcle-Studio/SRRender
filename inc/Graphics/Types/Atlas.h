@@ -31,6 +31,13 @@ namespace SR_GRAPH_NS {
         /// @property
         SR_UTILS_NS::StringAtom prefix;
 
+        bool operator==(const AtlasSpriteSheetSettings& other) const noexcept {
+            return prefix == other.prefix;
+        }
+
+        bool operator!=(const AtlasSpriteSheetSettings& other) const noexcept {
+            return !(*this == other);
+        }
     };
 
     /// @extension(sratlas)

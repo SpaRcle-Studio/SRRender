@@ -81,6 +81,16 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD uint16_t GetTargetNodeIndex() const { return m_targetNodeIndex; }
         SR_NODISCARD uint16_t GetTargetPinIndex() const { return m_targetPinIndex; }
 
+        bool operator==(const AnimationLink& other) const noexcept {
+            return m_connected == other.m_connected &&
+                m_targetNodeIndex == other.m_targetNodeIndex &&
+                m_targetPinIndex == other.m_targetPinIndex;
+        }
+
+        bool operator!=(const AnimationLink& other) const noexcept {
+            return !(*this == other);
+        }
+
         void Connect(uint16_t targetNodeIndex, uint16_t targetPinIndex) {
             m_connected = true;
             m_targetNodeIndex = targetNodeIndex;

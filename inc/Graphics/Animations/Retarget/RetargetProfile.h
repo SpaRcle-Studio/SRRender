@@ -60,6 +60,18 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD static RetargetProfileEmbedded CreateDefault();
 
+        bool operator==(const RetargetProfileEmbedded& other) const noexcept {
+            return sourceRig == other.sourceRig &&
+                targetRig == other.targetRig &&
+                algorithm == other.algorithm &&
+                IKCorrection == other.IKCorrection &&
+                poseRefinement == other.poseRefinement;
+        }
+
+        bool operator!=(const RetargetProfileEmbedded& other) const noexcept {
+            return !(*this == other);
+        }
+
     public:
         /// @property @tooltip(Опционален если использовать напрямую в AnimationClip)
         SR_UTILS_NS::ResourceRef<SkeletonRig> sourceRig;
@@ -72,7 +84,6 @@ namespace SR_ANIMATIONS_NS {
         RetargetIKCorrectionBase::Ptr IKCorrection;
         /// @property
         RetargetPoseRefinementBase::Ptr poseRefinement;
-
     };
 
     /// @extension(retargetProfile)

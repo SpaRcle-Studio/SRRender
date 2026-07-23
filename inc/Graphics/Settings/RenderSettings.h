@@ -84,6 +84,15 @@ namespace SR_GRAPH_NS {
         /// @customArg(filter value: srtech,srptech)
         SR_UTILS_NS::Path editorCameraRenderTechnique;
 
+        bool operator==(const RenderSettingsPreset& other) const noexcept {
+            return name == other.name && shaderDefines == other.shaderDefines &&
+                mainCameraRenderTechnique == other.mainCameraRenderTechnique &&
+                editorCameraRenderTechnique == other.editorCameraRenderTechnique;
+        }
+
+        bool operator!=(const RenderSettingsPreset& other) const noexcept {
+            return !(*this == other);
+        }
     };
 
     class RenderSettings : public SR_UTILS_NS::Asset {

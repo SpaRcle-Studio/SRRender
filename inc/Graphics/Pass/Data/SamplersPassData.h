@@ -30,6 +30,13 @@ namespace SR_GRAPH_NS {
         SamplerData& operator=(SamplerData&& other) noexcept;
         SamplerData& operator=(const SamplerData& other);
 
+        bool operator==(const SamplerData& other) const noexcept {
+            return id == other.id && usageType == other.usageType && fboName == other.fboName &&
+                global == other.global && index == other.index && texturePath == other.texturePath;
+        }
+
+        bool operator!=(const SamplerData& other) const noexcept { return !(*this == other); }
+
         void OnPostLoad() override;
 
         SR_NODISCARD uint32_t GetTextureId(uint8_t frame) const noexcept;

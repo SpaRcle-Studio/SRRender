@@ -30,6 +30,14 @@ namespace SR_GTYPES_NS {
         ImageFormat format = ImageFormat::RGBA8_UNORM;
         /// @property
         SR_MATH_NS::FColor clearColor;
+
+        bool operator==(const RenderTargetLayer& other) const noexcept {
+            return format == other.format && clearColor == other.clearColor;
+        }
+
+        bool operator!=(const RenderTargetLayer& other) const noexcept {
+            return !(*this == other);
+        }
     };
 
     SR_ENUM_NS_CLASS_T(RenderTargetMode, uint8_t,

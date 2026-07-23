@@ -46,6 +46,14 @@ namespace SR_GRAPH_NS {
             , end(end)
         { }
 
+        bool operator==(const GlyphRange& other) const noexcept {
+            return type == other.type && start == other.start && end == other.end;
+        }
+
+        bool operator!=(const GlyphRange& other) const noexcept {
+            return !(*this == other);
+        }
+
         /// @property
         GlyphRangeType type = GlyphRangeType::Custom;
         /// @property @condition(This.type == GlyphRangeType::Custom)
