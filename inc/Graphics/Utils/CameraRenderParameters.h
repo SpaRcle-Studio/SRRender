@@ -9,6 +9,7 @@
 
 #include <Utils/Serialization/Serializable.h>
 #include <Utils/Types/Optional.h>
+#include <Utils/Types/Set.h>
 
 namespace SR_GRAPH_NS {
     struct CameraRenderParameters : public SR_UTILS_NS::Serializable {
