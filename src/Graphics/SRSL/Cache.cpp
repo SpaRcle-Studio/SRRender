@@ -66,7 +66,7 @@ namespace SR_SRSL_NS {
             }
         }
 
-        void SaveStages(SR_HTYPES_NS::Marshal& marshal, const std::set<ShaderStage>& stages) {
+        void SaveStages(SR_HTYPES_NS::Marshal& marshal, const SR_UTILS_NS::Set<ShaderStage>& stages) {
             SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, stages.size());
             for (const auto& stage : stages) {
                 SR_UTILS_NS::MarshalUtils::SaveValue<uint32_t>(marshal, static_cast<uint32_t>(stage));
@@ -110,7 +110,7 @@ namespace SR_SRSL_NS {
             SaveStages(marshal, block.stages);
         }
 
-        void SaveUniforms(SR_HTYPES_NS::Marshal& marshal, const std::map<SR_UTILS_NS::StringAtom, SRSLUniformBlock>& uniforms) {
+        void SaveUniforms(SR_HTYPES_NS::Marshal& marshal, const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SRSLUniformBlock>& uniforms) {
             SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, uniforms.size());
             for (const auto& [name, block] : uniforms) {
                 SR_UTILS_NS::MarshalUtils::SaveString(marshal, name);
@@ -281,7 +281,7 @@ namespace SR_SRSL_NS {
                 const auto stage = static_cast<ShaderStage>(SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal));
                 SRShaderStageInfo info;
                 info.path = SR_UTILS_NS::Path(SR_UTILS_NS::MarshalUtils::LoadString(marshal));
-                info.pushConstants = SR_UTILS_NS::MarshalUtils::LoadVector<std::vector<SRShaderPushConstant>>(marshal);
+                info.pushConstants = SR_UTILS_NS::MarshalUtils::LoadVector<SR_UTILS_NS::Vector<SRShaderPushConstant>>(marshal);
                 createInfo.stages[stage] = info;
             }
 
@@ -331,7 +331,7 @@ namespace SR_GRAPH_NS {
         SaveUBOBlock(marshal, pShader->m_constBlock);
 
         SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, pShader->m_defaultSamplers.size());
-        for (SR_UTILS_NS::StringAtom sampler : pShader->m_defaultSamplers | std::views::keys) {
+        for (auto&& [sampler, _] : pShader->m_defaultSamplers) {
             SR_UTILS_NS::MarshalUtils::SaveString(marshal, sampler);
         }
 
@@ -390,7 +390,7 @@ namespace SR_GRAPH_NS {
         const auto hash = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
         uint64_t currentHash = 0;
 
-        std::vector<SR_SRSL_NS::SRSLInclude> includes;
+        SR_UTILS_NS::Vector<SR_SRSL_NS::SRSLInclude> includes;
         const auto includesSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
         for (uint64_t i = 0; i < includesSize; ++i) {
             SR_SRSL_NS::SRSLInclude& inc = includes.emplace_back();

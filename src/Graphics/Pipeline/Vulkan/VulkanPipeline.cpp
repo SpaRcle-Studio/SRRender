@@ -490,7 +490,7 @@ namespace SR_GRAPH_NS {
         return SR_ID_INVALID;
     }
 
-    int32_t VulkanPipeline::AllocDescriptorSet(const std::vector<DescriptorType>& types) {
+    int32_t VulkanPipeline::AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) {
         SR_TRACY_ZONE;
 
         if (!m_isComputeState && !m_isRenderState) SR_UNLIKELY_ATTRIBUTE {
@@ -507,7 +507,13 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
         ++m_state.allocations;
 
-        auto&& vkTypes = VulkanTools::ReferenceCastAbsDescriptorTypeToVk(types);
+        static std::vector<DescriptorType> temp;
+        temp.clear();
+        temp.reserve(types.size());
+        for (auto&& type : types) {
+            temp.emplace_back(type);
+        }
+        auto&& vkTypes = VulkanTools::ReferenceCastAbsDescriptorTypeToVk(temp);
 
         if (m_state.shaderId < 0) SR_UNLIKELY_ATTRIBUTE {
             PipelineError("VulkanPipeline::AllocDescriptorSet() : shader program is not set!");
@@ -545,7 +551,7 @@ namespace SR_GRAPH_NS {
         return (void*)(VkRenderPass)m_kernel->GetRenderPass(); /// Ну типо кадровый буфер
     }
 
-    void VulkanPipeline::GetFBOHandles(std::vector<void*>& handles) const {
+    void VulkanPipeline::GetFBOHandles(SR_UTILS_NS::Vector<void*>& handles) const {
         SR_TRACY_ZONE;
 
         handles.reserve(m_memory->GetFBOsCount() + 1);
@@ -565,7 +571,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void VulkanPipeline::GetShaderHandles(std::vector<void*>& handles) const {
+    void VulkanPipeline::GetShaderHandles(SR_UTILS_NS::Vector<void*>& handles) const {
         SR_TRACY_ZONE;
 
         handles.reserve(m_memory->GetShaderProgramsCount() + 1);

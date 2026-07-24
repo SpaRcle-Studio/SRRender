@@ -53,8 +53,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD std::string GetVersion() const override { return "VK_API_VERSION_1_3"; }
 
         SR_NODISCARD void* GetCurrentFBOHandle() const override;
-        void GetFBOHandles(std::vector<void*>& handles) const override;
-        void GetShaderHandles(std::vector<void*>& handles) const override;
+        void GetFBOHandles(SR_UTILS_NS::Vector<void*>& handles) const override;
+        void GetShaderHandles(SR_UTILS_NS::Vector<void*>& handles) const override;
         SR_NODISCARD uint8_t GetFrameBufferSampleCount() const override;
         SR_NODISCARD uint8_t GetBuildIterationsCount() const noexcept override;
         SR_NODISCARD SR_MATH_NS::FColor GetPixelColor(uint32_t textureId, uint32_t x, uint32_t y) override;
@@ -88,7 +88,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t AllocateUBO(uint32_t uboSize) override;
         SR_NODISCARD int32_t AllocateVBO(int32_t VBO, uint64_t size, const void* pData) override;
         SR_NODISCARD int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) override;
-        SR_NODISCARD int32_t AllocDescriptorSet(const std::vector<DescriptorType>& types) override;
+        SR_NODISCARD int32_t AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) override;
         SR_NODISCARD int32_t AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) override;
         SR_NODISCARD int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) override;
         SR_NODISCARD int32_t AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) override;

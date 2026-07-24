@@ -344,7 +344,7 @@ namespace SR_SRSL_NS {
                 }
 
                 if (GetCurrentLexem()->value.empty()) {
-                    if (std::string str = LexemKindToString(GetCurrentLexem()->kind); str.empty()) {
+                    if (auto str = LexemKindToString(GetCurrentLexem()->kind); str.empty()) {
                         SRHalt("Unknown lexem kind and empty value!");
                     }
                     else {

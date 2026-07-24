@@ -126,7 +126,7 @@ namespace SR_GRAPH_NS {
     MaterialShaderData::~MaterialShaderData() {
         SR_SAFE_DELETE_PTR(m_shaderSubscription);
 
-        for (auto&& subscription : m_textureSubscriptions | std::views::values) {
+        for (auto&& [pTexture, subscription] : m_textureSubscriptions) {
             SR_SAFE_DELETE_PTR(subscription.first);
         }
         m_textureSubscriptions.clear();

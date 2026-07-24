@@ -95,8 +95,8 @@ namespace SR_SRSL_NS {
         Identifier            /// _az_AZ_19_
     );
 
-    SR_MAYBE_UNUSED static std::string LexemKindToString(LexemKind lexem) {
-        static std::map<LexemKind, std::string> lexemToString = {
+    SR_MAYBE_UNUSED static SR_UTILS_NS::StringView LexemKindToString(LexemKind lexem) {
+        static SR_UTILS_NS::Map<LexemKind, SR_UTILS_NS::StringView> lexemToString = {
                 { LexemKind::OpeningSquareBracket, "[" },
                 { LexemKind::ClosingSquareBracket, "]" },
                 { LexemKind::OpeningAngleBracket, "<" },
@@ -126,7 +126,7 @@ namespace SR_SRSL_NS {
         if (lexemToString.find(lexem) != lexemToString.end()) {
             return lexemToString[lexem];
         }
-        return std::string();
+        return SR_UTILS_NS::StringView();
     }
 
     SR_ENUM_NS_CLASS_T(SRSLReturnCode, uint16_t,
@@ -191,8 +191,8 @@ namespace SR_SRSL_NS {
             : SRSLMessage(code, *pLexem)
         { }
 
-        SR_NODISCARD std::string ToString(const std::vector<SRSLInclude>& files, uint8_t tab) const {
-            std::string message = SR_UTILS_NS::EnumReflector::ToStringAtom(code);
+        SR_NODISCARD SR_UTILS_NS::String ToString(const SR_UTILS_NS::Vector<SRSLInclude>& files, uint8_t tab) const {
+            SR_UTILS_NS::String message = SR_UTILS_NS::EnumReflector::ToStringAtom(code);
 
             if (fileIndex != SR_UINT16_MAX) {
                 if (fileIndex >= files.size()) {
@@ -257,8 +257,8 @@ namespace SR_SRSL_NS {
         SR_NODISCARD bool HasWarnings() const { return !warnings.empty(); }
         SR_NODISCARD bool HasAny() const { return HasErrors() || HasWarnings(); }
 
-        SR_NODISCARD std::string ToString(const std::vector<SRSLInclude>& files, uint8_t tab = 1) const {
-            std::string message;
+        SR_NODISCARD SR_UTILS_NS::String ToString(const SR_UTILS_NS::Vector<SRSLInclude>& files, uint8_t tab = 1) const {
+            SR_UTILS_NS::String message;
 
             for (auto&& msg : errors) {
                 message += "\n" + std::string(tab, '\t') + "Error code: " + msg.ToString(files, tab + 1);

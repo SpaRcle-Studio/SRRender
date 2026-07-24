@@ -431,7 +431,7 @@ namespace SR_SRSL_NS {
         }
 
         /// remove unused ssbo blocks
-        std::erase_if(m_ssboBlocks, [](const auto& pair) -> bool {
+        m_ssboBlocks.erase_if([](const auto& pair) -> bool {
             return !pair.second.hasUsage;
         });
 
@@ -471,8 +471,7 @@ namespace SR_SRSL_NS {
         }
 
         for (auto&& [defaultUniform, type] : SR_SRSL_DEFAULT_SHARED_UNIFORMS) {
-            std::set<ShaderStage> usedStages = m_useStack->IsVariableUsedInEntryPointsExt(defaultUniform);
-
+            auto&& usedStages = m_useStack->IsVariableUsedInEntryPointsExt(defaultUniform);
             if (!usedStages.empty()) {
                 SRSLUniformBlock::Field field;
 

@@ -33,7 +33,7 @@ namespace SR_GRAPH_NS {
     public:
         RenderScenePtr m_renderScene;
 
-        std::array<std::set<ILightComponent*>, SR_UTILS_NS::EnumTraits<LightType>::NumItems> m_lights;
+        std::array<SR_UTILS_NS::Set<ILightComponent*>, SR_UTILS_NS::EnumTraits<LightType>::NumItems> m_lights;
 
     private:
         DirectionalLightParams m_directionalLightParams;

@@ -52,13 +52,13 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD DescriptorSet AllocateMemory(SR_GTYPES_NS::Shader* pShader) const;
 
     private:
-        SR_HTYPES_NS::ObjectPool<std::vector<DescriptorSetInfo>, VirtualDescriptorSet> m_descriptorPool;
+        SR_HTYPES_NS::ObjectPool<SR_UTILS_NS::Vector<DescriptorSetInfo>, VirtualDescriptorSet> m_descriptorPool;
         SR_HTYPES_NS::SharedPtr<Pipeline> m_pipeline;
-        std::vector<void*> m_handles;
+        SR_UTILS_NS::Vector<void*> m_handles;
 
         bool m_multiFrameMode = false;
 
-        mutable std::vector<DescriptorType> m_allocationTypesCache;
+        mutable SR_UTILS_NS::Vector<DescriptorType> m_allocationTypesCache;
 
     };
 }

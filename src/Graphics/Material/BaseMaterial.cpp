@@ -19,7 +19,7 @@ namespace SR_GRAPH_NS {
     BaseMaterial::~BaseMaterial() {
         SRAssert2(m_registerObjects.IsEmpty(), "Material is not unregistered from all render objects! Application may will crash!");
 
-        for (auto&& pVariant : m_variants | std::views::values) {
+        for (auto&& [_, pVariant] : m_variants) {
             pVariant->RemoveUsePoint();
         }
         m_variants.clear();
@@ -97,7 +97,7 @@ namespace SR_GRAPH_NS {
     void BaseMaterial::OnShaderChanged() {
         SR_TRACY_ZONE;
 
-        for (auto&& pVariant : m_variants | std::views::values) {
+        for (auto&& [_, pVariant] : m_variants) {
             pVariant->RemoveUsePoint();
         }
         m_variants.clear();

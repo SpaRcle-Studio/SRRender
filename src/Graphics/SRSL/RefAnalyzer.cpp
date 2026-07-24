@@ -167,8 +167,8 @@ namespace SR_SRSL_NS {
         return false;
     }
 
-    std::set<ShaderStage> SRSLUseStack::IsVariableUsedInEntryPointsExt(const std::string_view& name) const {
-        std::set<ShaderStage> stages;
+    SR_UTILS_NS::Set<ShaderStage> SRSLUseStack::IsVariableUsedInEntryPointsExt(const std::string_view& name) const {
+        SR_UTILS_NS::Set<ShaderStage> stages;
 
         for (auto&& [stage, entryPoint] : SR_SRSL_ENTRY_POINTS) {
             if (auto&& pFunction = FindFunction(entryPoint); pFunction && pFunction->IsVariableUsed(name)) {

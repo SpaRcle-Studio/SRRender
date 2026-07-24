@@ -419,7 +419,7 @@ namespace SR_SRSL_NS {
             return codeGenRes;
         }
 
-        std::string& code = stages[ShaderStage::All];
+        auto& code = stages[ShaderStage::All];
         code.reserve(4096);
 
         code += "/// [WARNING: THIS FILE WAS CREATED BY SRSL CODE GENERATION]\n\n";

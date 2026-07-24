@@ -440,7 +440,7 @@ namespace SR_GRAPH_NS {
         return m_internalData->SSBOs.Add(std::move(pBuffer));
     }
 
-    SR_NODISCARD int32_t WebGPUPipeline::AllocDescriptorSet(const std::vector<DescriptorType>& types) {
+    SR_NODISCARD int32_t WebGPUPipeline::AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) {
         static int32_t uniqueId = 0;
         return ++uniqueId;
     }
@@ -465,12 +465,12 @@ namespace SR_GRAPH_NS {
         return ++uniqueId;
     }
 
-    void WebGPUPipeline::GetShaderHandles(std::vector<void *>& handles) const {
+    void WebGPUPipeline::GetShaderHandles(SR_UTILS_NS::Vector<void *>& handles) const {
         handles.clear();
         handles.emplace_back(reinterpret_cast<void*>(1));
     }
 
-    void WebGPUPipeline::GetFBOHandles(std::vector<void *>& handles) const {
+    void WebGPUPipeline::GetFBOHandles(SR_UTILS_NS::Vector<void *>& handles) const {
         handles.clear();
         handles.emplace_back(reinterpret_cast<void*>(1));
     }

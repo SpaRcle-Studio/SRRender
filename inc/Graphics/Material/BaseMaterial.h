@@ -81,8 +81,8 @@ namespace SR_GRAPH_NS {
         mutable SR_UTILS_NS::Subscription m_shaderChangedSubscription;
         mutable SR_UTILS_NS::Subscription m_propertyChangedSubscription;
 
-        mutable std::map<SR_UTILS_NS::SRHashType, SR_GTYPES_NS::Shader::Ptr> m_variants;
-        mutable std::map<SR_UTILS_NS::SRHashType, SR_SRSL_NS::ShaderParams> m_hashRedirect;
+        mutable SR_UTILS_NS::Map<SR_UTILS_NS::SRHashType, SR_GTYPES_NS::Shader::Ptr> m_variants;
+        mutable SR_UTILS_NS::Map<SR_UTILS_NS::SRHashType, SR_SRSL_NS::ShaderParams> m_hashRedirect;
 
     };
 }

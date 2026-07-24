@@ -8,14 +8,14 @@
 #include <Enum/ShaderStage.hpp>
 
 namespace SR_SRSL_NS {
-    const std::map<SR_UTILS_NS::StringView, SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_PUSH_CONSTANTS = { /** NOLINT */
+    const SR_UTILS_NS::Map<SR_UTILS_NS::StringView, SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_PUSH_CONSTANTS = { /** NOLINT */
         { "PC_SHADOW_CASCADE_INDEX",           "int"        },
         { "PC_COLOR_BUFFER_MODE",              "int"        },
         { "COMPUTE_STAGE",                     "int"        },
         { "PC_COLOR_BUFFER_VALUE",             "vec3"       },
     };
 
-    const std::map<SR_UTILS_NS::StringView, SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_SHARED_UNIFORMS = { /** NOLINT */
+    const SR_UTILS_NS::Map<SR_UTILS_NS::StringView, SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_SHARED_UNIFORMS = { /** NOLINT */
         { "VIEW_MATRIX",                    "mat4"          },
         { "INVERSE_VIEW_MATRIX",            "mat4"          },
         { "PROJECTION_MATRIX",              "mat4"          },
@@ -51,8 +51,8 @@ namespace SR_SRSL_NS {
         { "GROUND_COLOR",                   "vec3"          },
     };
 
-    const std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom>& GetDefaultUniforms() {
-        static const std::map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom> defaultUniforms = { /** NOLINT */
+    const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom>& GetDefaultUniforms() {
+        static const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom> defaultUniforms = { /** NOLINT */
             { "MODEL_MATRIX",                   "mat4"          },
             { "MODEL_NO_SCALE_MATRIX",          "mat4"          },
 
@@ -97,7 +97,7 @@ namespace SR_SRSL_NS {
         return defaultUniforms;
     }
 
-    const std::map<SR_UTILS_NS::StringView, SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_SAMPLERS = { /** NOLINT */
+    const SR_UTILS_NS::Map<SR_UTILS_NS::StringView, SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_SAMPLERS = { /** NOLINT */
         { "SKYBOX_DIFFUSE",                 "samplerCube"   },
         { "TEXT_ATLAS_TEXTURE",             "sampler2D"     },
         { "SSAO_NOISE",                     "sampler2D"     },
@@ -105,7 +105,7 @@ namespace SR_SRSL_NS {
 
     const SR_UTILS_NS::StringView SR_SRSL_MAIN_OUT_LAYER = "COLOR_INDEX_0"; /** NOLINT */
 
-    const std::set<SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_OUT_LAYERS = { /** NOLINT */
+    const SR_UTILS_NS::Set<SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_OUT_LAYERS = { /** NOLINT */
         { "COLOR_INDEX_0" },
         { "COLOR_INDEX_1" },
         { "COLOR_INDEX_2" },
@@ -117,7 +117,7 @@ namespace SR_SRSL_NS {
         { "COLOR_INDEX_8" },
     };
 
-    const std::vector<SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO = { /** NOLINT */
+    const SR_UTILS_NS::Vector<SR_UTILS_NS::StringView> SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO = { /** NOLINT */
         { "USE_COLOR_INDEX_0" },
         { "USE_COLOR_INDEX_1" },
         { "USE_COLOR_INDEX_2" },
@@ -129,13 +129,13 @@ namespace SR_SRSL_NS {
         { "USE_COLOR_INDEX_8" },
     };
 
-    const std::map<ShaderStage, SR_UTILS_NS::StringView> SR_SRSL_ENTRY_POINTS = { /** NOLINT */
+    const SR_UTILS_NS::Map<ShaderStage, SR_UTILS_NS::StringView> SR_SRSL_ENTRY_POINTS = { /** NOLINT */
         { ShaderStage::Vertex,   "vertex"    },
         { ShaderStage::Fragment, "fragment"  },
         { ShaderStage::Compute,  "compute"   },
     };
 
-    const std::map<ShaderStage, SR_UTILS_NS::StringView> SR_SRSL_STAGE_EXTENSIONS = { /** NOLINT */
+    const SR_UTILS_NS::Map<ShaderStage, SR_UTILS_NS::StringView> SR_SRSL_STAGE_EXTENSIONS = { /** NOLINT */
         { ShaderStage::Vertex,        "vert"        },
         { ShaderStage::Fragment,      "frag"        },
         { ShaderStage::Compute,       "comp"        },
@@ -147,7 +147,7 @@ namespace SR_SRSL_NS {
         { ShaderStage::MissSecondary, "rmiss"       },
     };
 
-    const std::map<SR_UTILS_NS::StringView, ShaderVarType> SR_SRSL_TYPE_STRINGS = { /** NOLINT */
+    const SR_UTILS_NS::Map<SR_UTILS_NS::StringView, ShaderVarType> SR_SRSL_TYPE_STRINGS = { /** NOLINT */
         { "bool",               ShaderVarType::Bool             },
 
         { "int",                ShaderVarType::Int              },
@@ -178,7 +178,7 @@ namespace SR_SRSL_NS {
         { "samplerCube",        ShaderVarType::SamplerCube      },
     };
 
-    const std::map<SR_UTILS_NS::StringView, uint64_t> SR_SRSL_TYPE_SIZE_TABLE = { /** NOLINT */
+    const SR_UTILS_NS::Map<SR_UTILS_NS::StringView, uint64_t> SR_SRSL_TYPE_SIZE_TABLE = { /** NOLINT */
         { "bool",         4         },
 
         { "uint",         4         },
@@ -225,7 +225,7 @@ namespace SR_SRSL_NS {
             return 0;
         }
 
-        static const std::map<SR_UTILS_NS::StringView, uint64_t> typeSizes = {
+        static const SR_UTILS_NS::Map<SR_UTILS_NS::StringView, uint64_t> typeSizes = {
             { "float", 4 }, { "int", 4 },
             { "vec2", 8 }, { "ivec2", 8 },
             { "vec3", 12 }, { "ivec3", 12 },

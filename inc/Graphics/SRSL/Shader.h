@@ -23,10 +23,10 @@ namespace SR_SRSL_NS {
         bool isPublic = false;
         uint64_t binding = 0;
         int32_t attachment = -1;
-        std::set<ShaderStage> stages;
+        SR_UTILS_NS::Set<ShaderStage> stages;
         SR_UTILS_NS::StringAtom defaultValue;
     };
-    typedef std::map<SR_UTILS_NS::StringAtom, SRSLSampler> SRSLSamplers;
+    typedef SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SRSLSampler> SRSLSamplers;
 
     struct SRSLUniformBlock {
         struct Field {
@@ -51,7 +51,7 @@ namespace SR_SRSL_NS {
         bool hasUsage = false;
 
         SR_UTILS_NS::Vector<Field> fields;
-        std::set<ShaderStage> stages;
+        SR_UTILS_NS::Set<ShaderStage> stages;
     };
 
     class ShaderCache;
@@ -60,7 +60,7 @@ namespace SR_SRSL_NS {
      * шейдерного кода и для последующей его экспортации. */
     class SRSLShader : public SR_HTYPES_NS::SharedPtr<SRSLShader> {
         using Super = SR_HTYPES_NS::SharedPtr<SRSLShader>;
-        using UniformBlocks = std::map<SR_UTILS_NS::StringAtom, SRSLUniformBlock>;
+        using UniformBlocks = SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SRSLUniformBlock>;
         friend ShaderCache;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<SRSLShader>;
@@ -95,10 +95,10 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SRSLSamplers& GetSamplers() const { return m_samplers; }
         SR_NODISCARD const SRShaderCreateInfo& GetCreateInfo() const { return m_createInfo; }
         SR_NODISCARD SRShaderCreateInfo& GetCreateInfo() { return m_createInfo; }
-        SR_NODISCARD const std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetShared() const { return m_shared; }
-        SR_NODISCARD const std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetSharedWorkgroup() const { return m_sharedWorkgroup; }
-        SR_NODISCARD const std::map<SR_UTILS_NS::StringAtom, SRSLVariable*>& GetConstants() const { return m_constants; }
-        SR_NODISCARD const std::vector<SRSLInclude>& GetIncludes() const { return m_includes; }
+        SR_NODISCARD const SR_UTILS_NS::Vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetShared() const { return m_shared; }
+        SR_NODISCARD const SR_UTILS_NS::Vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetSharedWorkgroup() const { return m_sharedWorkgroup; }
+        SR_NODISCARD const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SRSLVariable*>& GetConstants() const { return m_constants; }
+        SR_NODISCARD const SR_UTILS_NS::Vector<SRSLInclude>& GetIncludes() const { return m_includes; }
         SR_NODISCARD const SR_MATH_NS::UVector3& GetComputeWorkGroupSize() const { return m_computeWorkGroupSize; }
         SR_NODISCARD bool IsMacroDefined(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD bool IsGLayerUsed() const { return m_gLayerUsed; }
@@ -131,10 +131,10 @@ namespace SR_SRSL_NS {
         SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
         bool m_gLayerUsed = false;
         ShaderParams m_params;
-        std::vector<SRSLInclude> m_includes;
-        std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_shared;
-        std::vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_sharedWorkgroup;
-        std::map<SR_UTILS_NS::StringAtom, SRSLVariable*> m_constants;
+        SR_UTILS_NS::Vector<SRSLInclude> m_includes;
+        SR_UTILS_NS::Vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_shared;
+        SR_UTILS_NS::Vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_sharedWorkgroup;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SRSLVariable*> m_constants;
         SRShaderCreateInfo m_createInfo;
         SRSLAnalyzedTree* m_analyzedTree = nullptr;
         SRSLUseStack::Ptr m_useStack;

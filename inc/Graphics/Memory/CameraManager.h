@@ -61,7 +61,7 @@ namespace SR_GRAPH_NS::Memory {
         void DestroyCamera(const CameraPtr& camera);
 
     private:
-        std::map<CameraPtr, CameraInfo> m_cameras;
+        SR_UTILS_NS::Map<CameraPtr, CameraInfo> m_cameras;
         PipelinePtr m_pipeline;
 
     };

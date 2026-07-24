@@ -172,8 +172,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual uint8_t GetCurrentImageIndex() const { return 0; }
         SR_NODISCARD virtual void* GetCurrentShaderHandle() const { return nullptr; }
         SR_NODISCARD virtual void* GetCurrentFBOHandle() const { return nullptr; }
-        virtual void GetFBOHandles(std::vector<void*>& handles) const { }
-        virtual void GetShaderHandles(std::vector<void*>& handles) const { }
+        virtual void GetFBOHandles(SR_UTILS_NS::Vector<void*>& handles) const { }
+        virtual void GetShaderHandles(SR_UTILS_NS::Vector<void*>& handles) const { }
         SR_NODISCARD virtual uint8_t GetFrameBufferSampleCount() const { ++m_state.operations; return 0; }
         SR_NODISCARD virtual uint8_t GetBuildIterationsCount() const noexcept { ++m_state.operations; return 0; }
         SR_NODISCARD virtual uint8_t GetSupportedSamples() const noexcept { return m_supportedSampleCount; }
@@ -247,7 +247,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsShaderChanged() const noexcept { return m_isShaderChanged; }
         SR_NODISCARD bool IsRenderState() const noexcept { return m_isRenderState; }
         SR_NODISCARD bool IsFBOQueueValid() const noexcept;
-        SR_NODISCARD const std::vector<uint32_t>& GetCmdBuffersQueue() const noexcept { return m_cmdBuffersQueue; }
+        SR_NODISCARD const SR_UTILS_NS::Vector<uint32_t>& GetCmdBuffersQueue() const noexcept { return m_cmdBuffersQueue; }
 
         /// ------------------------------------------ Работа с памятью ------------------------------------------------
 
@@ -257,7 +257,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateUBO(uint32_t uboSize) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) { return SR_ID_INVALID; }
-        SR_NODISCARD virtual int32_t AllocDescriptorSet(const std::vector<DescriptorType>& types) { return SR_ID_INVALID; }
+        SR_NODISCARD virtual int32_t AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) { return SR_ID_INVALID; };
         SR_NODISCARD virtual int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) { return SR_ID_INVALID; };
         SR_NODISCARD virtual int32_t AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) { return SR_ID_INVALID; };
@@ -350,11 +350,11 @@ namespace SR_GRAPH_NS {
         Memory::UBOManager* m_uboManager = nullptr;
         DescriptorManager* m_descriptorManager = nullptr;
 
-        std::map<OverlayType, SR_HTYPES_NS::SharedPtr<Overlay>> m_overlays;
+        SR_UTILS_NS::Map<OverlayType, SR_HTYPES_NS::SharedPtr<Overlay>> m_overlays;
 
         PipelinePreInitInfo m_preInitInfo;
 
-        std::vector<uint32_t> m_cmdBuffersQueue;
+        SR_UTILS_NS::Vector<uint32_t> m_cmdBuffersQueue;
 
         bool m_isComputeState = false;
         bool m_isRenderState = false;
@@ -387,7 +387,7 @@ namespace SR_GRAPH_NS {
         PipelineState m_state;
         PipelineState m_previousState;
         /// Состояние, которое было на момент постоения сцены рендера
-        std::vector<PipelineState> m_buildStates;
+        SR_UTILS_NS::Vector<PipelineState> m_buildStates;
 
         /// Все параметры, относящиется к мультисемплингу
         std::optional<uint8_t> m_newSampleCount;
@@ -406,7 +406,7 @@ namespace SR_GRAPH_NS {
 
         bool m_isShaderChanged = true;
 
-        std::vector<SR_MATH_NS::IRect> m_scissorsStack;
+        SR_UTILS_NS::Vector<SR_MATH_NS::IRect> m_scissorsStack;
 
     };
 }

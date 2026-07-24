@@ -37,7 +37,7 @@ namespace SR_GRAPH_NS {
         return ++uniqueId;
     }
 
-    SR_NODISCARD int32_t HeadlessPipeline::AllocDescriptorSet(const std::vector<DescriptorType>& types) {
+    SR_NODISCARD int32_t HeadlessPipeline::AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) {
         static int32_t uniqueId = 0;
         return ++uniqueId;
     }
@@ -62,12 +62,12 @@ namespace SR_GRAPH_NS {
         return ++uniqueId;
     }
 
-    void HeadlessPipeline::GetShaderHandles(std::vector<void *>& handles) const {
+    void HeadlessPipeline::GetShaderHandles(SR_UTILS_NS::Vector<void *>& handles) const {
         handles.clear();
         handles.emplace_back(reinterpret_cast<void*>(1));
     }
 
-    void HeadlessPipeline::GetFBOHandles(std::vector<void *>& handles) const {
+    void HeadlessPipeline::GetFBOHandles(SR_UTILS_NS::Vector<void *>& handles) const {
         handles.clear();
         handles.emplace_back(reinterpret_cast<void*>(1));
     }

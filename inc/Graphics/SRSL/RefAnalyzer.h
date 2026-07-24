@@ -16,7 +16,7 @@ namespace SR_SRSL_NS {
     struct SRSLUseStack {
         using Ptr = std::shared_ptr<SRSLUseStack>;
 
-        SR_NODISCARD std::set<SR_GRAPH_NS::ShaderStage> IsVariableUsedInEntryPointsExt(const std::string_view& name) const;
+        SR_NODISCARD SR_UTILS_NS::Set<SR_GRAPH_NS::ShaderStage> IsVariableUsedInEntryPointsExt(const std::string_view& name) const;
         SR_NODISCARD bool IsVariableUsedInEntryPoints(const std::string_view& name) const;
         SR_NODISCARD bool IsVariableUsedInEntryPoint(SR_GRAPH_NS::ShaderStage stage, const std::string_view& name) const;
         SR_NODISCARD bool IsVariableUsed(const std::string_view& name, uint8_t depth = 0) const;
@@ -30,7 +30,7 @@ namespace SR_SRSL_NS {
         void Concat(const SRSLUseStack::Ptr& pOther);
         void SetRoot(SRSLUseStack* pRootStack);
 
-        std::map<SR_UTILS_NS::String, SRSLUseStack::Ptr> functions;
+        SR_UTILS_NS::Map<SR_UTILS_NS::String, SRSLUseStack::Ptr> functions;
 
         SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> variables;
         SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> forceUsedVariables;

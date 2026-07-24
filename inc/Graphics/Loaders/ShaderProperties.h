@@ -116,20 +116,20 @@ namespace SR_GRAPH_NS {
     typedef std::list<ShaderProperty> ShaderProperties;
 
     struct ShaderSampler {
-        uint32_t binding = SR_ID_INVALID;
-        uint32_t samplerId = SR_ID_INVALID;
+        uint32_t binding = SR_UINT32_MAX;
+        uint32_t samplerId = SR_UINT32_MAX;
         bool isArray = false;
         bool isAttachment = false;
         SR_UTILS_NS::StringAtom defaultValue;
     };
-    typedef std::map<SR_UTILS_NS::StringAtom, ShaderSampler> ShaderSamplers;
+    typedef SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, ShaderSampler> ShaderSamplers;
 
     struct SSBOBinding {
         SR_UTILS_NS::StringAtom name;
-        uint32_t binding = SR_ID_INVALID;
-        uint32_t ssbo = SR_ID_INVALID;
+        uint32_t binding = SR_UINT32_MAX;
+        uint32_t ssbo = SR_UINT32_MAX;
     };
-    typedef std::vector<SSBOBinding> SSBOBindings;
+    typedef SR_UTILS_NS::Vector<SSBOBinding> SSBOBindings;
 
     SR_MAYBE_UNUSED static bool SR_FASTCALL IsSamplerType(const ShaderVarType type) {
         switch (type) {

@@ -92,7 +92,7 @@ namespace SR_GRAPH_NS {
         SR_GTYPES_NS::Shader::Ptr pShader = nullptr;
 
         SR_UTILS_NS::Subscription* m_shaderSubscription = nullptr;
-        std::map<SR_GTYPES_NS::Texture::Ptr, std::pair<SR_UTILS_NS::Subscription*, uint32_t>> m_textureSubscriptions;
+        SR_UTILS_NS::Map<SR_GTYPES_NS::Texture::Ptr, std::pair<SR_UTILS_NS::Subscription*, uint32_t>> m_textureSubscriptions;
 
         bool operator==(const MaterialShaderData& other) const;
         bool operator!=(const MaterialShaderData& other) const { return !(*this == other); }

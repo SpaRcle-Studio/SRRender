@@ -115,7 +115,7 @@ namespace SR_GRAPH_NS {
 
     protected:
         std::optional<SR_MATH_NS::UVector2> m_surfaceSize;
-        std::set<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::RenderTarget>> m_attachedRenderTargets;
+        SR_UTILS_NS::Set<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::RenderTarget>> m_attachedRenderTargets;
         RenderTechniqueData m_data;
         RenderScenePtr m_renderScene;
         CameraPtr m_camera = nullptr;

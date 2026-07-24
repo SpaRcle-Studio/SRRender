@@ -15,7 +15,7 @@ namespace SR_SRSL_NS {
             Idle, Macro, MacroName, IncludeOpen, IncludePath
         };
     public:
-        using Includes = std::vector<SRSLInclude>;
+        using Includes = SR_UTILS_NS::Vector<SRSLInclude>;
         using OutResult = std::pair<SR_UTILS_NS::Vector<Lexem>, SRSLResult>;
 
     public:

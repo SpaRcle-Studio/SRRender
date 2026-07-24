@@ -58,7 +58,7 @@ namespace SR_GRAPH_NS {
         info.pShaderHandle = pShaderHandle;
         info.descriptorSets[frameIndex] = descriptorSet;
 
-        std::vector<DescriptorSetInfo> descriptorSetInfos;
+        SR_UTILS_NS::Vector<DescriptorSetInfo> descriptorSetInfos;
         descriptorSetInfos.reserve(256);
         descriptorSetInfos.emplace_back(info);
 
@@ -202,7 +202,7 @@ namespace SR_GRAPH_NS {
 
         uint32_t count = 0;
 
-        m_descriptorPool.ForEach([&](VirtualDescriptorSet, std::vector<DescriptorSetInfo>& descriptorSetInfos) {
+        m_descriptorPool.ForEach([&](VirtualDescriptorSet, SR_UTILS_NS::Vector<DescriptorSetInfo>& descriptorSetInfos) {
             for (auto pIt = descriptorSetInfos.begin(); pIt != descriptorSetInfos.end(); ) {
                 DescriptorSetInfo& data = *pIt;
 

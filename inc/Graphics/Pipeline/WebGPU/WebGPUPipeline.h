@@ -38,7 +38,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) override;
         SR_NODISCARD int32_t AllocateUBO(uint32_t uboSize) override;
         SR_NODISCARD int32_t AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) override;
-        SR_NODISCARD int32_t AllocDescriptorSet(const std::vector<DescriptorType>& types) override;
+        SR_NODISCARD int32_t AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) override;
         SR_NODISCARD int32_t AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) override;
         SR_NODISCARD int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) override;
         SR_NODISCARD int32_t AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) override;
@@ -56,8 +56,8 @@ namespace SR_GRAPH_NS {
         bool FreeTexture(int32_t* id) override;
         bool FreeCmdBuffer(int32_t* id) override;
 
-        void GetFBOHandles(std::vector<void*>& handles) const override;
-        void GetShaderHandles(std::vector<void*>& handles) const override;
+        void GetFBOHandles(SR_UTILS_NS::Vector<void*>& handles) const override;
+        void GetShaderHandles(SR_UTILS_NS::Vector<void*>& handles) const override;
 
         bool IsSamplerValid(int32_t id) const override { return true; }
 

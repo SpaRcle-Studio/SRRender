@@ -220,7 +220,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     Pin::PinType Pin::GetType() const {
-        return m_dataType ? m_dataType->GetClass() : PinType::None;
+        return PinType::None;
     }
 
     uint32_t Pin::GetIndex() const {

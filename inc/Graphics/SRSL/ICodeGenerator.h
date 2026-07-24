@@ -13,7 +13,7 @@ namespace SR_SRSL_NS {
 
     class ISRSLCodeGenerator {
     public:
-        using SRSLCodeGenRes = std::pair<SRSLResult, std::map<ShaderStage, std::string>>;
+        using SRSLCodeGenRes = std::pair<SRSLResult, SR_UTILS_NS::Map<ShaderStage, SR_UTILS_NS::String>>;
 
     protected:
         ISRSLCodeGenerator() = default;

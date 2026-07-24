@@ -196,7 +196,7 @@ namespace SR_GRAPH_NS {
         uint64_t size = 0;
     };
 
-    typedef std::vector<Uniform> UBOInfo;
+    typedef SR_UTILS_NS::Vector<Uniform> UBOInfo;
 
     struct SR_GRAPHICS_DLL_API SRShaderPushConstant {
         uint64_t size = 0;
@@ -206,7 +206,7 @@ namespace SR_GRAPH_NS {
     struct SR_GRAPHICS_DLL_API SRShaderStageInfo {
     public:
         SR_UTILS_NS::Path path;
-        std::vector<SRShaderPushConstant> pushConstants;
+        SR_UTILS_NS::Vector<SRShaderPushConstant> pushConstants;
 
     };
 
@@ -221,7 +221,7 @@ namespace SR_GRAPH_NS {
         SRShaderCreateInfo(const SRShaderCreateInfo&) = default;
         SRShaderCreateInfo& operator=(const SRShaderCreateInfo&) = default;
 
-        std::map<ShaderStage, SRShaderStageInfo> stages;
+        SR_UTILS_NS::Map<ShaderStage, SRShaderStageInfo> stages;
 
         SR_SRSL_NS::ShaderType shaderType = SR_SRSL_NS::ShaderType::Unknown;
 
