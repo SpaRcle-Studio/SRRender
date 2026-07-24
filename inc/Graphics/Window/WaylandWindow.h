@@ -209,8 +209,8 @@ namespace SR_GRAPH_NS {
         xkb_context* m_xkbContext = nullptr;
         xkb_keymap* m_pXkbKeymap = nullptr; xkb_state* m_pXkbState = nullptr;
 
-        std::vector<Output> m_outputs;
-        std::set<wl_output*> m_enteredOutputs;
+        SR_UTILS_NS::Vector<Output> m_outputs;
+        SR_UTILS_NS::Set<wl_output*> m_enteredOutputs;
         int m_scale = 1;
         float m_fractionalScaleValue = 1.f;
 
