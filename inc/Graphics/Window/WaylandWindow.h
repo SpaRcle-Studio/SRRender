@@ -38,6 +38,7 @@ namespace SR_GRAPH_NS {
             char* name = nullptr;
             int fd = -1;
             int stride = 0, size = 0;
+            int poolCapacity = 0;
             struct wl_shm_pool* pool = nullptr;
             struct wl_buffer* buffer = nullptr;
             uint32_t* pixels = nullptr;
@@ -137,6 +138,8 @@ namespace SR_GRAPH_NS {
         }
         SR_NODISCARD uint32_t GetPointerEnterSerial() const { return m_pointerEnterSerial; }
         SR_NODISCARD bool IsCursorLocked() const { return m_cursorLocked; }
+
+        SR_MATH_NS::IVector2 GetMaxOutputResolution() const;
 
         void InternalSetWindowSize(int width, int height);
         void SetFractionalScale(const float scale) { m_fractionalScaleValue = scale; }

@@ -143,7 +143,14 @@ namespace SR_GRAPH_NS {
         static void output_geometry(
             void*, wl_output*, int32_t, int32_t, int32_t, int32_t, int32_t, const char*, const char*, int32_t
         ) {}
-        static void output_mode(void*, wl_output*, uint32_t, int32_t, int32_t, int32_t) {}
+        static void output_mode(void* pData, wl_output* pOutput, uint32_t flags, int32_t width, int32_t height, int32_t) {
+            if (flags & WL_OUTPUT_MODE_CURRENT) {
+                auto& out = static_cast<WaylandWindow*>(pData)->FindOutput(pOutput);
+                out.width = width;
+                out.height = height;
+                SR_LOG("output_mode() : output {} mode set to {}x{}", static_cast<void*>(pOutput), width, height);
+            }
+        }
         static void output_done(void*, wl_output*) {}
 
         static const wl_output_listener output_listener = {
@@ -355,6 +362,8 @@ namespace SR_GRAPH_NS {
         void pointer_enter(
             void* pData, wl_pointer* pointer, uint32_t serial, wl_surface* surface, wl_fixed_t x, wl_fixed_t y
         ) {
+            SR_TRACY_ZONE;
+
             auto&& pWindow = static_cast<WaylandWindow*>(pData);
 
             pWindow->SetPointerEnterSerial(serial);
@@ -386,6 +395,8 @@ namespace SR_GRAPH_NS {
         }
 
         void pointer_motion(void* pData, wl_pointer* pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy) {
+            SR_TRACY_ZONE;
+
             const float_t x = wl_fixed_to_double(sx);
             const float_t y = wl_fixed_to_double(sy);
 
@@ -400,6 +411,8 @@ namespace SR_GRAPH_NS {
         void pointer_button(
             void* data, wl_pointer* pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state
         ) {
+            SR_TRACY_ZONE;
+
             auto&& mouseState = SR_PLATFORM_NS::GetOverriddenMouseState();
             if (!mouseState) {
                 mouseState = SR_PLATFORM_NS::GetMouseState();
@@ -452,6 +465,8 @@ namespace SR_GRAPH_NS {
         }
 
         void xdg_surface_handle_configure(void* data, xdg_surface* xdg_surface, uint32_t serial) {
+            SR_TRACY_ZONE;
+
             xdg_surface_ack_configure(xdg_surface, serial);
             auto&& pWindow = static_cast<WaylandWindow*>(data);
 
@@ -467,6 +482,8 @@ namespace SR_GRAPH_NS {
         }
 
         void xdg_toplevel_handle_configure(void* data, xdg_toplevel*, int32_t width, int32_t height, wl_array* states) {
+            SR_TRACY_ZONE;
+
             auto&& pWindow = static_cast<WaylandWindow*>(data);
 
             pWindow->SetWaitingForConfigure(false);
@@ -588,16 +605,22 @@ namespace SR_GRAPH_NS {
 
         bool CreateSurfaceBuffer(
             WaylandWindow::SurfaceBuffer* buffer, wl_shm* shm, struct wl_surface* surface, const char* name,
-            uint32_t color
+            uint32_t color, int poolCapacity
         ) {
+            SR_TRACY_ZONE; 
+
             SR_LOG(
-                "WaylandWindow::CreateSurfaceBuffer() : creating surface buffer ({}x{}, name={})", buffer->width,
-                buffer->height, name ? name : "unnamed"
+                "WaylandWindow::CreateSurfaceBuffer() : creating surface buffer ({}x{}, name={}, poolCapacity={})",
+                buffer->width, buffer->height, name ? name : "unnamed", poolCapacity
             );
-            // get buffer sizes
-            int oldSize = buffer->size;
+
             buffer->stride = buffer->width * sizeof(uint32_t);
             buffer->size = buffer->height * buffer->stride;
+
+            if (poolCapacity < buffer->size) {
+                poolCapacity = buffer->size;
+            }
+            buffer->poolCapacity = poolCapacity;
 
             // alloc name if needed
             if (name) {
@@ -618,27 +641,23 @@ namespace SR_GRAPH_NS {
                 }
             }
 
-            // set file size
-            if (buffer->size > oldSize) // only increase file size or we can get buffer access violations in pool
-            {
-                int result = ftruncate(buffer->fd, buffer->size);
-                if (result < 0 || errno == EINTR) {
-                    SR_ERROR("WaylandWindow::CreateSurfaceBuffer() : failed to set shm file size!");
-                    return false;
-                }
+            int result = ftruncate(buffer->fd, buffer->poolCapacity);
+            if (result < 0 || errno == EINTR) {
+                SR_ERROR("WaylandWindow::CreateSurfaceBuffer() : failed to set shm file size!");
+                return false;
             }
 
-            // map memory
-            buffer->pixels = (uint32_t*)mmap(NULL, buffer->size, PROT_READ | PROT_WRITE, MAP_SHARED, buffer->fd, 0);
-            shm_unlink(buffer->name); // call after mmap according to docs
+            buffer->pixels =
+                (uint32_t*)mmap(NULL, buffer->poolCapacity, PROT_READ | PROT_WRITE, MAP_SHARED, buffer->fd, 0);
+            if (buffer->name) {
+                shm_unlink(buffer->name);
+            }
 
-            /// memset(buffer->pixels, color, buffer->width * buffer->height * sizeof(uint32_t));// clear to color
             for (int i = 0; i < buffer->width * buffer->height; ++i) {
                 buffer->pixels[i] = color;
             }
 
-            // create pool
-            buffer->pool = wl_shm_create_pool(shm, buffer->fd, buffer->size);
+            buffer->pool = wl_shm_create_pool(shm, buffer->fd, buffer->poolCapacity);
             buffer->buffer = wl_shm_pool_create_buffer(
                 buffer->pool, 0, buffer->width, buffer->height, buffer->stride, WL_SHM_FORMAT_XRGB8888
             );
@@ -646,8 +665,8 @@ namespace SR_GRAPH_NS {
 
             wl_surface_attach(surface, buffer->buffer, 0, 0);
             SR_LOG(
-                "WaylandWindow::CreateSurfaceBuffer() : created surface buffer ({}x{}, fd={}, size={})", buffer->width,
-                buffer->height, buffer->fd, buffer->size
+                "WaylandWindow::CreateSurfaceBuffer() : created surface buffer ({}x{}, fd={}, poolCapacity={})",
+                buffer->width, buffer->height, buffer->fd, buffer->poolCapacity
             );
             return true;
         }
@@ -690,6 +709,8 @@ namespace SR_GRAPH_NS {
     } // namespace Details
 
     void WaylandWindow::InternalSetWindowSize(int width, int height) {
+        SR_TRACY_ZONE;
+
         m_internalWidth = width;
         m_internalHeight = height;
 
@@ -748,26 +769,58 @@ namespace SR_GRAPH_NS {
     }
 
     bool WaylandWindow::ResizeSurfaceBuffer(SurfaceBuffer* pBuffer, wl_surface* pSurface) {
-        SR_LOG(
-            "WaylandWindow::ResizeSurfaceBuffer() : resizing surface buffer to {}x{}", pBuffer->width, pBuffer->height
-        );
+        SR_TRACY_ZONE;
 
-        // pre-dispose old buffers
-        munmap(pBuffer->pixels, pBuffer->size);
-        wl_shm_pool_destroy(pBuffer->pool);
-        wl_buffer* oldBuffer = pBuffer->buffer; // dispose after new buffer is created
+        // SR_LOG(
+        //     "WaylandWindow::ResizeSurfaceBuffer() : resizing surface buffer to {}x{} (poolCapacity={})",
+        //     pBuffer->width, pBuffer->height, pBuffer->poolCapacity
+        // );
 
-        // create new buffer
-        const bool result = Details::CreateSurfaceBuffer(pBuffer, m_shm, pSurface, NULL, pBuffer->color);
+        const int newStride = pBuffer->width * static_cast<int>(sizeof(uint32_t));
+        const int newSize = pBuffer->height * newStride;
+        wl_buffer* oldBuffer = pBuffer->buffer;
 
-        // post-dispose old buffer
+        if (newSize <= pBuffer->poolCapacity) {
+            // fast path: existing pool is large enough, just create a new wl_buffer
+            pBuffer->stride = newStride;
+            pBuffer->size = newSize;
+            pBuffer->pool = wl_shm_create_pool(m_shm, pBuffer->fd, pBuffer->poolCapacity);
+            pBuffer->buffer = wl_shm_pool_create_buffer(
+                pBuffer->pool, 0, pBuffer->width, pBuffer->height, pBuffer->stride, WL_SHM_FORMAT_XRGB8888
+            );
+        } else {
+            // slow path: need to grow the underlying pool
+            const int newPoolCapacity = ((pBuffer->width * 2) * (pBuffer->height * 2)
+                                         * static_cast<int>(sizeof(uint32_t)) + 4095) & ~4095;
+            const int cappedCapacity = std::max(newPoolCapacity, newSize);
+
+            munmap(pBuffer->pixels, pBuffer->poolCapacity);
+            ftruncate(pBuffer->fd, cappedCapacity);
+            pBuffer->pixels =
+                (uint32_t*)mmap(NULL, cappedCapacity, PROT_READ | PROT_WRITE, MAP_SHARED, pBuffer->fd, 0);
+            pBuffer->poolCapacity = cappedCapacity;
+            pBuffer->stride = newStride;
+            pBuffer->size = newSize;
+
+            wl_shm_pool_destroy(pBuffer->pool);
+            pBuffer->pool = wl_shm_create_pool(m_shm, pBuffer->fd, pBuffer->poolCapacity);
+            pBuffer->buffer = wl_shm_pool_create_buffer(
+                pBuffer->pool, 0, pBuffer->width, pBuffer->height, pBuffer->stride, WL_SHM_FORMAT_XRGB8888
+            );
+
+            // SR_LOG(
+            //     "WaylandWindow::ResizeSurfaceBuffer() : pool grown to {}", pBuffer->poolCapacity
+            // );
+        }
+
         wl_buffer_destroy(oldBuffer);
+        wl_surface_attach(pSurface, pBuffer->buffer, 0, 0);
 
         if (m_resizeCallback) {
             m_resizeCallback(this, pBuffer->width, pBuffer->height);
         }
 
-        return result;
+        return true;
     }
 
     auto wait_for_data_on_fd(int filde, int waitms) -> bool {
@@ -785,6 +838,8 @@ namespace SR_GRAPH_NS {
     }
 
     void WaylandWindow::RecalculateScale() {
+        SR_TRACY_ZONE;
+
         int max_scale = 1;
 
         for (wl_output* pOutput : m_enteredOutputs) {
@@ -796,7 +851,25 @@ namespace SR_GRAPH_NS {
         SR_LOG("WaylandWindow::RecalculateScale() : recalculated scale to {}", m_scale);
     }
 
+    SR_MATH_NS::IVector2 WaylandWindow::GetMaxOutputResolution() const {
+        int maxArea = 0;
+        SR_MATH_NS::IVector2 best(1920, 1080);
+        for (const auto& out : m_outputs) {
+            if (out.width > 0 && out.height > 0) {
+                int area = out.width * out.height;
+                if (area > maxArea) {
+                    maxArea = area;
+                    best = {out.width, out.height};
+                }
+            }
+        }
+
+        return best;
+    }
+
     bool WaylandWindow::DoWaylandPollEvents() {
+        SR_TRACY_ZONE;
+
         while (wl_display_prepare_read(m_display) != 0)
             wl_display_dispatch_pending(m_display);
         wl_display_flush(m_display);
@@ -868,6 +941,8 @@ namespace SR_GRAPH_NS {
         const std::string& name, const SR_MATH_NS::IVector2& position, const SR_MATH_NS::UVector2& size,
         bool fullScreen, bool resizable
     ) {
+        SR_TRACY_ZONE;
+
         m_display = wl_display_connect(NULL);
         if (!m_display) {
             SR_ERROR("WaylandWindow::Initialize() : failed to connect to Wayland display!");
@@ -878,6 +953,7 @@ namespace SR_GRAPH_NS {
         wl_registry* pRegistry = wl_display_get_registry(m_display);
         wl_registry_add_listener(pRegistry, &Details::registry_listener, this);
         wl_display_roundtrip(m_display);
+        wl_display_roundtrip(m_display); // second roundtrip: output mode events arrive after bind is processed
         m_useClientDecorations = (m_decorationManager == nullptr) ? 1 : 0;
         if (m_useClientDecorations) {
             SR_LOG("WaylandWindow::Initialize() : using client-side decorations.");
@@ -921,8 +997,10 @@ namespace SR_GRAPH_NS {
         // surface buffers
         uint32_t color =
             m_useClientDecorations ? Details::ToColor(127, 127, 127, 255) : Details::ToColor(50, 50, 50, 255);
+        const SR_MATH_NS::IVector2 maxRes = GetMaxOutputResolution();
+        const int poolCapacity = maxRes.x * maxRes.y * static_cast<int>(sizeof(uint32_t));
         if (Details::CreateSurfaceBuffer(
-                &m_surfaceBuffer, GetShm(), m_surface, "WaylandClientWindow_Decorations", color
+                &m_surfaceBuffer, GetShm(), m_surface, "WaylandClientWindow_Decorations", color, poolCapacity
             ) != 1) {
             SR_ERROR("WaylandWindow::Initialize() : failed to create surface buffer!");
             return false;
@@ -937,7 +1015,7 @@ namespace SR_GRAPH_NS {
             wl_subsurface_set_position(m_clientSubSurface, DECORATIONS_BAR_SIZE, DECORATIONS_TOPBAR_SIZE);
             if (Details::CreateSurfaceBuffer(
                     &m_clientSurfaceBuffer, GetShm(), m_clientSurface, "WaylandClientWindow_Client",
-                    Details::ToColor(255, 255, 255, 255)
+                    Details::ToColor(255, 255, 255, 255), poolCapacity
                 ) != 1) {
                 SR_ERROR("WaylandWindow::Initialize() : failed to create client surface buffer!");
                 return false;
@@ -988,6 +1066,8 @@ namespace SR_GRAPH_NS {
     }
 
     void WaylandWindow::LockPointer() {
+        SR_TRACY_ZONE;
+
         if (!m_pointerConstraints || !m_relativePointerManager || !m_pointer) {
             SR_ERROR("WaylandWindow::LockPointer() : missing pointer constraints or relative pointer manager!");
             return;
@@ -1011,6 +1091,8 @@ namespace SR_GRAPH_NS {
     }
 
     void WaylandWindow::UnlockPointer() {
+        SR_TRACY_ZONE;
+
         if (m_relativePointer) {
             zwp_relative_pointer_v1_destroy(m_relativePointer);
             m_relativePointer = nullptr;
@@ -1049,6 +1131,8 @@ namespace SR_GRAPH_NS {
     }
 
     void WaylandWindow::PollEvents() {
+        SR_TRACY_ZONE;
+
         Super::PollEvents();
 
         DoWaylandPollEvents();
@@ -1134,12 +1218,12 @@ namespace SR_GRAPH_NS {
 
         // shutdown
         if (m_useClientDecorations) {
-            munmap(m_clientSurfaceBuffer.pixels, m_clientSurfaceBuffer.size);
+            munmap(m_clientSurfaceBuffer.pixels, m_clientSurfaceBuffer.poolCapacity);
             wl_shm_pool_destroy(m_clientSurfaceBuffer.pool);
             wl_buffer_destroy(m_clientSurfaceBuffer.buffer);
         }
 
-        munmap(m_surfaceBuffer.pixels, m_surfaceBuffer.size);
+        munmap(m_surfaceBuffer.pixels, m_surfaceBuffer.poolCapacity);
         wl_shm_pool_destroy(m_surfaceBuffer.pool);
         wl_buffer_destroy(m_surfaceBuffer.buffer);
 
