@@ -176,9 +176,9 @@ namespace SR_GRAPH_NS::Memory {
             SRHalt("CameraManager::RegisterCamera() : scene is invalid!");
         }
 
-        m_cameras.insert(std::make_pair(
-                pCamera,
-                info
+        m_cameras.insert(SR_UTILS_NS::MakePair(
+            pCamera,
+            info
         ));
 
         auto&& renderScene = info.pRenderScene;

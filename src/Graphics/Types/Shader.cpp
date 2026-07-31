@@ -493,7 +493,7 @@ namespace SR_GRAPH_NS::Types {
             m_samplers[name].defaultValue = sampler.defaultValue;
 
             if (!sampler.defaultValue.empty()) {
-                m_defaultSamplers.insert(std::make_pair(sampler.defaultValue, nullptr));
+                m_defaultSamplers.insert(SR_UTILS_NS::MakePair(sampler.defaultValue, nullptr));
             }
 
             const ShaderVarType varType = SR_SRSL_NS::SRSLTypeInfo::Instance().StringToType(sampler.type);
