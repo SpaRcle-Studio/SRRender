@@ -58,7 +58,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Vector<AtlasSpriteSheetSettings> m_spriteSheets;
 
         /// @property @hidden
-        SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, AtlasEntry> m_entries;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, AtlasEntry> m_entries;
 
     };
 }

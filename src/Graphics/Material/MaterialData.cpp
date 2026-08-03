@@ -385,8 +385,8 @@ namespace SR_GRAPH_NS {
         samplers.reserve(16);
         uniforms.reserve(16);
 
-        std::set<SR_UTILS_NS::StringAtom> uniformsIds;
-        std::set<SR_UTILS_NS::StringAtom> samplersIds;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> uniformsIds;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> samplersIds;
 
         uint32_t order = 0;
 

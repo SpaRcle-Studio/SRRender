@@ -62,7 +62,7 @@ namespace SR_ANIMATIONS_NS {
         /// @property @hidden
         SR_UTILS_NS::Vector<AnimationState::Ptr> m_states;
 
-        std::set<AnimationState*> m_activeStates;
+        SR_UTILS_NS::Set<AnimationState*> m_activeStates;
 
     };
 }

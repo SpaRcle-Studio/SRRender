@@ -47,17 +47,17 @@ namespace SR_GRAPH_GUI_NS {
         void Draw() override;
         void OnClose() override;
 
-        void BuildNodeMenu(std::map<std::string, std::vector<SR_UTILS_NS::StringAtom>>& categories, SR_UTILS_NS::StringAtom baseClass);
-        void DrawNodeMenuRecursive(const std::map<std::string, std::vector<SR_UTILS_NS::StringAtom>>& categories, const std::string& prefix, SR_MATH_NS::FVector2 popupPos);
+        void BuildNodeMenu(SR_UTILS_NS::Map<SR_UTILS_NS::String, SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom>>& categories, SR_UTILS_NS::StringAtom baseClass);
+        void DrawNodeMenuRecursive(const SR_UTILS_NS::Map<SR_UTILS_NS::String, SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom>>& categories, SR_UTILS_NS::StringView prefix, SR_MATH_NS::FVector2 popupPos);
 
     protected:
         SR_HTYPES_NS::RawPointerHolder<SR_IMMEDIATE_GUI_NS::NodeEditorInstance> m_nodeGraphEditor;
         std::unique_ptr<SR_UTILS_NS::ISerializer> m_serializer;
         SR_UTILS_NS::Path m_currentFile;
 
-        std::vector<SR_UTILS_NS::StringAtom> m_availableNodeTypes;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> m_availableNodeTypes;
         std::string m_createNodeSearch;
-        std::map<std::string, std::vector<SR_UTILS_NS::StringAtom>> m_categories;
+        SR_UTILS_NS::Map<SR_UTILS_NS::String, SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom>> m_categories;
 
         float_t m_leftPaneWidth = 400.0f;
         float_t m_rightPaneWidth = 800.0f;

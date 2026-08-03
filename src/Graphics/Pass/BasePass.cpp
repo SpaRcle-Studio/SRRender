@@ -17,8 +17,8 @@
 namespace SR_GRAPH_NS {
     BasePass::BasePass()
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
-        , m_uboManager(Memory::UBOManager::Instance())
-        , m_descriptorManager(DescriptorManager::Instance())
+        , m_uboManager(&Memory::UBOManager::Instance())
+        , m_descriptorManager(&DescriptorManager::Instance())
     { }
 
     void BasePass::OnMultisampleChanged() {

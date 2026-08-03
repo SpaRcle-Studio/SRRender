@@ -15,7 +15,7 @@ namespace SR_ANIMATIONS_NS {
             SR_MATH_NS::Quaternion sourceToTargetOffset;
             SR_MATH_NS::Quaternion lastLocal;
         };
-        using RotationFollowStateMap = std::map<SR_UTILS_NS::StringAtom, RotationFollowState>;
+        using RotationFollowStateMap = SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, RotationFollowState>;
 
         struct RetargetFrameContext {
             explicit RetargetFrameContext(RotationFollowStateMap& rotationFollowStates)

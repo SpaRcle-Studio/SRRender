@@ -60,8 +60,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsNeedCheckMeshActivity() const noexcept { return m_isNeedCheckMeshActivity; }
         SR_NODISCARD bool IsDebugModeEnabled() const noexcept { return m_enableDebugMode; }
         SR_NODISCARD bool IsUniformsDirty() const noexcept { return m_isUniformsDirty; }
-        SR_NODISCARD const std::set<SR_UTILS_NS::StringAtom>& GetErrors() const noexcept { return m_errors; }
-        SR_NODISCARD const std::set<RenderObjectPtr>& GetProblemObjects() const noexcept { return m_problemObjects; }
+        SR_NODISCARD const SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom>& GetErrors() const noexcept { return m_errors; }
+        SR_NODISCARD const SR_UTILS_NS::Set<RenderObjectPtr>& GetProblemObjects() const noexcept { return m_problemObjects; }
 
         void ClearErrors();
         void AddError(SR_UTILS_NS::StringAtom error) { m_errors.insert(error); }
@@ -84,8 +84,8 @@ namespace SR_GRAPH_NS {
 
         RenderScene* m_renderScene = nullptr;
 
-        std::set<SR_UTILS_NS::StringAtom> m_errors;
-        std::set<RenderObjectPtr> m_problemObjects;
+        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> m_errors;
+        SR_UTILS_NS::Set<RenderObjectPtr> m_problemObjects;
 
         bool m_isNeedCheckMeshActivity = true;
         bool m_enableDebugMode = false;

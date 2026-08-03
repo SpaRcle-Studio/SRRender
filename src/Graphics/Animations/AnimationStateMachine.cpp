@@ -66,9 +66,9 @@ namespace SR_ANIMATIONS_NS {
 
                 if (UpdateTransition(context, pTransition.Get(), hasActiveTransitions)) {
                     if (m_activeStates.count(pTransition->GetSource()) == 1) {
-                        pIt = m_activeStates.erase(pIt);
+                        m_activeStates.erase(pIt);
                     }
-                    pIt = m_activeStates.insert(pIt, pTransition->GetDestination());
+                    pIt = m_activeStates.insert(pTransition->GetDestination()).first;
                     transitionCount++;
                     changed = true;
                 }

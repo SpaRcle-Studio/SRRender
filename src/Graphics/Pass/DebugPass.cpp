@@ -210,8 +210,8 @@ namespace SR_GRAPH_NS {
 
         for (auto& [id, shaderInfo] : m_shaders) {
             for (DebugPassShaderInfo::MemInfo& UBO : shaderInfo.UBOs) {
-                m_uboManager.FreeUBO(&UBO.virtualUBO);
-                m_descriptorManager.FreeDescriptorSet(&UBO.virtualDescriptor);
+                m_uboManager->FreeUBO(&UBO.virtualUBO);
+                m_descriptorManager->FreeDescriptorSet(&UBO.virtualDescriptor);
             }
             shaderInfo.Reset();
         }
@@ -309,32 +309,32 @@ namespace SR_GRAPH_NS {
 
                 switch (drawInfo.type) {
                     case DebugRenderer::DrawType::Line:
-                        memInfo.virtualUBO = m_uboManager.AllocateUBO(SR_ID_INVALID);
+                        memInfo.virtualUBO = m_uboManager->AllocateUBO(SR_ID_INVALID);
                         break;
                     case DebugRenderer::DrawType::None:
                         SRHalt("DebugPass::DrawQueue() : invalid draw type!");
                         break;
                     default:
-                        memInfo.virtualUBO = m_uboManager.AllocateUBO(SR_ID_INVALID);
+                        memInfo.virtualUBO = m_uboManager->AllocateUBO(SR_ID_INVALID);
                         break;
                 }
 
-                memInfo.virtualDescriptor = m_descriptorManager.AllocateDescriptorSet(SR_ID_INVALID);
+                memInfo.virtualDescriptor = m_descriptorManager->AllocateDescriptorSet(SR_ID_INVALID);
             }
 
-            if (m_uboManager.BindUBO(shaderInfo.UBOs[shaderInfo.uboUsed].virtualUBO) == Memory::UBOManager::BindResult::Failed) {
+            if (m_uboManager->BindUBO(shaderInfo.UBOs[shaderInfo.uboUsed].virtualUBO) == Memory::UBOManager::BindResult::Failed) {
                 SR_ERROR("DebugPass::DrawQueue() : failed to bind UBO!");
                 continue;
             }
 
-            const auto bindResult = m_descriptorManager.Bind(shaderInfo.UBOs[shaderInfo.uboUsed].virtualDescriptor);
+            const auto bindResult = m_descriptorManager->Bind(shaderInfo.UBOs[shaderInfo.uboUsed].virtualDescriptor);
             if (bindResult == DescriptorManager::BindResult::Failed) {
                 SR_ERROR("DebugPass::DrawQueue() : failed to bind descriptor set!");
                 continue;
             }
 
             if (shaderInfo.UBOs[shaderInfo.uboUsed].isDirty || bindResult == DescriptorManager::BindResult::Duplicated) {
-                m_descriptorManager.Flush();
+                m_descriptorManager->Flush();
                 shaderInfo.UBOs[shaderInfo.uboUsed].isDirty = false;
             }
 
@@ -379,7 +379,7 @@ namespace SR_GRAPH_NS {
         for (auto& drawQueue : shaderInfo.drawQueues) {
             for (auto& drawInfo : drawQueue) {
                 /** Если меш не был отрисован, то бинд не пройдет */
-                if (m_uboManager.BindNoDublicateUBO(shaderInfo.UBOs[index].virtualUBO) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
+                if (m_uboManager->BindNoDublicateUBO(shaderInfo.UBOs[index].virtualUBO) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
                     if (type == DebugRenderer::DrawType::Line) {
                         shaderInfo.pShader->SetVec3(SHADER_LINE_START_POINT, drawInfo.start);
                         shaderInfo.pShader->SetVec3(SHADER_LINE_END_POINT, drawInfo.end);

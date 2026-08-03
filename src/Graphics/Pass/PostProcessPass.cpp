@@ -63,20 +63,20 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
-            m_virtualUBO = m_uboManager.AllocateUBO(m_virtualUBO);
+            m_virtualUBO = m_uboManager->AllocateUBO(m_virtualUBO);
             if (m_virtualUBO == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
                 pShader->UnUse();
                 return false;
             }
 
-            m_virtualDescriptor = DescriptorManager::Instance().AllocateDescriptorSet(m_virtualDescriptor);
+            m_virtualDescriptor = m_descriptorManager->AllocateDescriptorSet(m_virtualDescriptor);
         }
 
-        m_uboManager.BindUBO(m_virtualUBO);
+        m_uboManager->BindUBO(m_virtualUBO);
 
         UseSSBO();
 
-        const auto result = m_descriptorManager.Bind(m_virtualDescriptor);
+        const auto result = m_descriptorManager->Bind(m_virtualDescriptor);
 
         for (SR_UTILS_NS::StringAtom passName : m_useSSBOFromPasses) {
             if (auto&& pPass = GetTechnique()->FindPass(passName)) {
@@ -90,7 +90,7 @@ namespace SR_GRAPH_NS {
         UseConstants(*pShader);
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
             UseSamplers(*pShader);
-            m_descriptorManager.Flush();
+            m_descriptorManager->Flush();
         }
         GetPipeline()->GetCurrentShader()->FlushConstants();
 
@@ -152,7 +152,7 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        if (m_uboManager.BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Failed) {
+        if (m_uboManager->BindUBO(m_virtualUBO) == Memory::UBOManager::BindResult::Failed) {
             SR_ERROR("PostProcessPass::Update() : failed to bind UBO!");
         }
         else {

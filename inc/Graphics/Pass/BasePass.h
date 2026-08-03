@@ -120,8 +120,8 @@ namespace SR_GRAPH_NS {
         virtual bool UpdateFrustum() { return false; }
 
     protected:
-        Memory::UBOManager& m_uboManager;
-        DescriptorManager& m_descriptorManager;
+        Memory::UBOManager* m_uboManager = nullptr;
+        DescriptorManager* m_descriptorManager = nullptr;
 
     private:
         /// @property

@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS {
         using RenderTechniquePtr = SR_HTYPES_NS::SharedPtr<IRenderTechnique>;
         using WindowPtr = SR_HTYPES_NS::SharedPtr<Window>;
         using RenderScenes = std::list<std::pair<SR_WORLD_NS::Scene::Ptr, RenderScenePtr>>;
-        using Definitions = std::map<SR_UTILS_NS::StringAtom, std::string>;
+        using Definitions = SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, std::string>;
     public:
         using Ptr = SR_HTYPES_NS::SafePtr<RenderContext>;
 

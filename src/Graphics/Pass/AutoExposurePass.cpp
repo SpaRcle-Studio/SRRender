@@ -135,7 +135,7 @@ namespace SR_GRAPH_NS {
 
         if (m_pReductionShader) {
             GetPipeline()->SetCurrentShader(m_pReductionShader.Get());
-            if (m_uboManager.BindUBO(m_reductionUBOFirst.uboId) == Memory::UBOManager::BindResult::Failed) {
+            if (m_uboManager->BindUBO(m_reductionUBOFirst.uboId) == Memory::UBOManager::BindResult::Failed) {
                 SR_ERROR("AutoExposurePass::Update() : failed to bind UBO!");
             }
             else {
@@ -147,7 +147,7 @@ namespace SR_GRAPH_NS {
         if (m_pReductionLinearShader) {
             GetPipeline()->SetCurrentShader(m_pReductionLinearShader.Get());
             for (auto&& info : m_reductionUBOLinear) {
-                if (m_uboManager.BindUBO(info.uboId) == Memory::UBOManager::BindResult::Failed) {
+                if (m_uboManager->BindUBO(info.uboId) == Memory::UBOManager::BindResult::Failed) {
                     SR_ERROR("AutoExposurePass::Update() : failed to bind UBO!");
                 }
                 m_pReductionLinearShader->SetInt(Details::ElementCountAtom, static_cast<int32_t>(info.elementCount));
@@ -157,7 +157,7 @@ namespace SR_GRAPH_NS {
 
         if (m_pAdaptationShader) {
             GetPipeline()->SetCurrentShader(m_pAdaptationShader.Get());
-            if (m_uboManager.BindUBO(m_adaptationUBO.uboId) == Memory::UBOManager::BindResult::Failed) {
+            if (m_uboManager->BindUBO(m_adaptationUBO.uboId) == Memory::UBOManager::BindResult::Failed) {
                 SR_ERROR("AutoExposurePass::Update() : failed to bind UBO!");
             }
             else {
@@ -320,7 +320,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_dirtyShader) {
-            m_reductionUBOFirst.uboId = m_uboManager.AllocateUBO(m_reductionUBOFirst.uboId);
+            m_reductionUBOFirst.uboId = m_uboManager->AllocateUBO(m_reductionUBOFirst.uboId);
             m_reductionUBOFirst.descriptorSetId = DescriptorManager::Instance().AllocateDescriptorSet(m_reductionUBOFirst.descriptorSetId);
         }
 
@@ -329,14 +329,14 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_uboManager.BindUBO(m_reductionUBOFirst.uboId);
+        m_uboManager->BindUBO(m_reductionUBOFirst.uboId);
 
         const auto frame = m_multiFrameSSBOResources ? GetPipeline()->GetCurrentImageIndex() : 0;
-        const auto result = m_descriptorManager.Bind(m_reductionUBOFirst.descriptorSetId);
+        const auto result = m_descriptorManager->Bind(m_reductionUBOFirst.descriptorSetId);
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
             UseSamplers(*m_pReductionShader);
             m_pReductionShader->BindSSBO(Details::ReductionOutAtom, m_reductionSSBOA[frame]);
-            m_descriptorManager.Flush();
+            m_descriptorManager->Flush();
         }
 
         GetPipeline()->Dispatch(groupsX, groupsY, 1u);
@@ -362,7 +362,7 @@ namespace SR_GRAPH_NS {
 
         if (m_dirtyShader) {
             for (auto&& info : m_reductionUBOLinear) {
-                info.uboId = m_uboManager.AllocateUBO(info.uboId);
+                info.uboId = m_uboManager->AllocateUBO(info.uboId);
                 info.descriptorSetId = DescriptorManager::Instance().AllocateDescriptorSet(info.descriptorSetId);
             }
         }
@@ -371,7 +371,7 @@ namespace SR_GRAPH_NS {
         while (elementCount > 1u) {
             if (index >= m_reductionUBOLinear.size()) {
                 UBOInfo& info = m_reductionUBOLinear.emplace_back();
-                info.uboId = m_uboManager.AllocateUBO(SR_ID_INVALID);
+                info.uboId = m_uboManager->AllocateUBO(SR_ID_INVALID);
                 info.descriptorSetId = DescriptorManager::Instance().AllocateDescriptorSet(SR_ID_INVALID);
             }
 
@@ -382,13 +382,13 @@ namespace SR_GRAPH_NS {
             }
             info.elementCount = elementCount;
 
-            m_uboManager.BindUBO(info.uboId);
+            m_uboManager->BindUBO(info.uboId);
 
-            const auto result = m_descriptorManager.Bind(info.descriptorSetId);
+            const auto result = m_descriptorManager->Bind(info.descriptorSetId);
             if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
                 m_pReductionLinearShader->BindSSBO(Details::ReductionInAtom, readSSBO);
                 m_pReductionLinearShader->BindSSBO(Details::ReductionOutAtom, writeSSBO);
-                m_descriptorManager.Flush();
+                m_descriptorManager->Flush();
             }
 
             uint32_t dispatchGroups = (elementCount + REDUCTION_LINEAR_GROUP_SIZE - 1u) / REDUCTION_LINEAR_GROUP_SIZE;
@@ -426,7 +426,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_dirtyShader) {
-            m_adaptationUBO.uboId = m_uboManager.AllocateUBO(m_adaptationUBO.uboId);
+            m_adaptationUBO.uboId = m_uboManager->AllocateUBO(m_adaptationUBO.uboId);
             m_adaptationUBO.descriptorSetId = DescriptorManager::Instance().AllocateDescriptorSet(m_adaptationUBO.descriptorSetId);
         }
 
@@ -435,15 +435,15 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_uboManager.BindUBO(m_adaptationUBO.uboId);
+        m_uboManager->BindUBO(m_adaptationUBO.uboId);
 
         const auto frame = m_multiFrameSSBOResources ? GetPipeline()->GetCurrentImageIndex() : 0;
-        const auto result = m_descriptorManager.Bind(m_adaptationUBO.descriptorSetId);
+        const auto result = m_descriptorManager->Bind(m_adaptationUBO.descriptorSetId);
 
         if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
             m_pAdaptationShader->BindSSBO(Details::LuminanceInAtom, luminanceSSBO);
             m_pAdaptationShader->BindSSBO(Details::ExposureOutAtom, m_exposureSSBO[frame]);
-            m_descriptorManager.Flush();
+            m_descriptorManager->Flush();
         }
 
         GetPipeline()->Dispatch(1u, 1u, 1u);

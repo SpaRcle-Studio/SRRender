@@ -68,7 +68,7 @@ namespace SR_GRAPH_NS {
         /// @property
         bool sRGB = true;
         /// @property
-        bool textureCompression = true;
+        bool textureCompression = false;
         /// @property
         Quality SSAO = Quality::High;
         /// @property

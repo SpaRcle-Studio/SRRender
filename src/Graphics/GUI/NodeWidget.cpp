@@ -164,7 +164,7 @@ namespace SR_GRAPH_GUI_NS {
 
     }
 
-    void NodeWidget::BuildNodeMenu(std::map<std::string, std::vector<SR_UTILS_NS::StringAtom>>& categories, SR_UTILS_NS::StringAtom baseClass) {
+    void NodeWidget::BuildNodeMenu(SR_UTILS_NS::Map<SR_UTILS_NS::String, SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom>>& categories, SR_UTILS_NS::StringAtom baseClass) {
         SR_TRACY_ZONE;
         categories.clear();
 
@@ -203,9 +203,9 @@ namespace SR_GRAPH_GUI_NS {
         }
     }
 
-    void NodeWidget::DrawNodeMenuRecursive(const std::map<std::string, std::vector<SR_UTILS_NS::StringAtom>>& categories, const std::string& prefix, SR_MATH_NS::FVector2 popupPos) {
+    void NodeWidget::DrawNodeMenuRecursive(const SR_UTILS_NS::Map<SR_UTILS_NS::String, SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom>>& categories, SR_UTILS_NS::StringView prefix, SR_MATH_NS::FVector2 popupPos) {
         /// Группируем ноды по следующему уровню категорий
-        std::map<std::string, std::vector<SR_UTILS_NS::StringAtom>> subCategories;
+        SR_UTILS_NS::Map<SR_UTILS_NS::String, SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom>> subCategories;
         std::vector<SR_UTILS_NS::StringAtom> directNodes;
 
         for (auto&& [categoryPath, nodeTypes] : categories) {
@@ -215,16 +215,16 @@ namespace SR_GRAPH_GUI_NS {
             }
             else if (prefix.empty() || (categoryPath.size() >= prefix.size() + 1 && categoryPath.substr(0, prefix.size() + 1) == prefix + "/")) {
                 /// Определяем следующий уровень
-                std::string remaining = prefix.empty() ? categoryPath : categoryPath.substr(prefix.size() + 1);
+                SR_UTILS_NS::String remaining = prefix.empty() ? categoryPath : categoryPath.substr(prefix.size() + 1);
                 auto&& nextSlash = remaining.find('/');
 
-                if (nextSlash == std::string::npos) {
+                if (nextSlash == SR_UTILS_NS::String::npos) {
                     /// Это конечный уровень для этой категории
                     directNodes.insert(directNodes.end(), nodeTypes.begin(), nodeTypes.end());
                 }
                 else {
                     /// Есть подкатегория
-                    std::string nextLevel = prefix.empty() ? remaining.substr(0, nextSlash) : prefix + "/" + remaining.substr(0, nextSlash);
+                    SR_UTILS_NS::String nextLevel = prefix.empty() ? remaining.substr(0, nextSlash) : prefix + "/" + remaining.substr(0, nextSlash);
                     subCategories[nextLevel].insert(subCategories[nextLevel].end(), nodeTypes.begin(), nodeTypes.end());
                 }
             }

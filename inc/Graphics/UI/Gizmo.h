@@ -135,8 +135,8 @@ namespace SR_GRAPH_UI_NS {
             SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> pSelection;
             bool isHovered = false;
         };
-        std::map<GizmoOperation, MeshInfo> m_meshes;
-        std::vector<SR_UTILS_NS::SceneObject::Ptr> m_destroyCache;
+        SR_UTILS_NS::Map<GizmoOperation, MeshInfo> m_meshes;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::SceneObject::Ptr> m_destroyCache;
 
         bool m_isGizmoDirty = false;
 
