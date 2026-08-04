@@ -1432,6 +1432,8 @@ namespace SR_SRSL_NS {
         // ShaderStage::All was already filled as 'code' above — keep it for consumers that
         // read stages[ShaderStage::All] directly (e.g. SRSLTest).
 
+        stages.erase(ShaderStage::All);
+
         result = SR_UTILS_NS::Exchange(m_result, { });
 
         return codeGenRes;
