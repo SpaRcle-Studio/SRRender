@@ -1416,10 +1416,10 @@ namespace SR_SRSL_NS {
         }
 
         // WGSL uses a single combined source file for all entry points.
-        // Export() iterates over stages from the generator result and writes each to
-        // the path registered by PrepareStages(). We emit the combined code under every
-        // stage key that the shader actually has so Export() can write it to the
-        // per-stage cache files that AllocateShaderProgram() reads later.
+        // Keep ShaderStage::All populated so that tests and any code reading result.second[All]
+        // still get the full shader source.
+        // Also store the same combined code under each individual stage key so Export()
+        // can write it to the per-stage cache files that AllocateShaderProgram() reads later.
         if (hasVertex) {
             stages[ShaderStage::Vertex] = code;
         }
@@ -1429,9 +1429,8 @@ namespace SR_SRSL_NS {
         if (hasCompute) {
             stages[ShaderStage::Compute] = code;
         }
-
-        // Clear the All-stage entry we built above — the individual stage entries hold the content.
-        stages.erase(ShaderStage::All);
+        // ShaderStage::All was already filled as 'code' above — keep it for consumers that
+        // read stages[ShaderStage::All] directly (e.g. SRSLTest).
 
         result = SR_UTILS_NS::Exchange(m_result, { });
 
