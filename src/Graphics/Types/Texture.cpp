@@ -342,9 +342,7 @@ namespace SR_GTYPES_NS {
 
         if (m_syncLoadTaskId) {
             SR_INFO("Texture::FreeTextureData() : the texture is still loading asynchronously! Waiting for the loading to finish...\n\tPath: {}", GetResourcePath());
-            while (SR_UTILS_NS::TaskManager::Instance().IsActive(*m_syncLoadTaskId)) {
-                SR_PLATFORM_NS::Sleep(5);
-            }
+            SR_UTILS_NS::TaskManager::Instance().Wait(*m_syncLoadTaskId);
         }
         m_textureData.Reset();
     }

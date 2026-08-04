@@ -341,6 +341,7 @@ namespace SR_GRAPH_NS {
     {
         m_supportedSampleCount = 1;
         m_internalData = new WebGPUPipelineInternalData();
+        m_internalData->frameBuffers.Add(WebGPUFrameBuffer()); /// Add a dummy framebuffer at index 0 to avoid confusion with valid framebuffers.
     }
 
     WebGPUPipeline::~WebGPUPipeline() {
@@ -687,6 +688,17 @@ namespace SR_GRAPH_NS {
             return WGPUTextureFormat_Undefined;
         }
         return static_cast<WGPUTextureFormat>(m_internalData->surfaceFormat);
+    }
+
+    WGPUTextureView WebGPUPipeline::GetTextureView(uint32_t textureId) const {
+        if (!m_internalData) {
+            return nullptr;
+        }
+        const auto id = static_cast<int32_t>(textureId);
+        if (id < 0 || !m_internalData->textures.IsAlive(id)) {
+            return nullptr;
+        }
+        return m_internalData->textures.At(id).view.Get();
     }
 
     // ----------------------------------------------------------------------------------------------------------------

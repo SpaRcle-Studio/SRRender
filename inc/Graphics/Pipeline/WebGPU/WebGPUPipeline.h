@@ -75,6 +75,10 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t GetFramesInFlightCount() const { return 3; }
         SR_NODISCARD WGPUTextureFormat GetSurfaceFormat() const;
 
+        /// Returns the WGPUTextureView for the texture with the given pool id,
+        /// or nullptr if the id is invalid / not alive.
+        SR_NODISCARD WGPUTextureView GetTextureView(uint32_t textureId) const;
+
     private:
         WebGPUPipelineInternalData* m_internalData = nullptr;
 

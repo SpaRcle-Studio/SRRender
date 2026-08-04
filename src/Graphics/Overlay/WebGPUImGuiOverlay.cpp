@@ -61,6 +61,10 @@ namespace SR_GRAPH_NS {
     }
 
     void WebGPUImGuiOverlay::Destroy() {
+#if defined(SR_RENDER_USE_WEBGPU)
+        m_textureViewCache.clear();
+#endif
+
         if (m_wgpuRenderer) {
             SR_GRAPH_GUI_NS::Immediate::WebGPUDestroyRenderer(m_wgpuRenderer);
             m_wgpuRenderer = nullptr;
@@ -114,6 +118,44 @@ namespace SR_GRAPH_NS {
     void WebGPUImGuiOverlay::Render(WGPURenderPassEncoder pass) {
         SR_TRACY_ZONE;
         SR_GRAPH_GUI_NS::Immediate::WebGPURenderDrawData(m_wgpuRenderer, pass);
+    }
+
+    void* WebGPUImGuiOverlay::GetTextureDescriptorSet(uint32_t textureId) {
+#if defined(SR_RENDER_USE_WEBGPU)
+        if (textureId == SR_ID_INVALID) {
+            SR_ERROR("WebGPUImGuiOverlay::GetTextureDescriptorSet() : invalid id!");
+            return nullptr;
+        }
+
+        if (!m_context || !m_wgpuRenderer) {
+            SR_ERROR("WebGPUImGuiOverlay::GetTextureDescriptorSet() : ImGui is not initialized!");
+            return nullptr;
+        }
+
+        auto&& pWebGPUPipeline = SR_UTILS_NS::DynamicPointerCast<WebGPUPipeline>(m_pipeline);
+        if (!pWebGPUPipeline) {
+            return nullptr;
+        }
+
+        WGPUTextureView view = pWebGPUPipeline->GetTextureView(textureId);
+        if (!view) {
+            return nullptr;
+        }
+
+        m_textureViewCache[textureId] = view;
+
+        // In the WebGPU imgui backend (imgui_impl_wgpu), ImTextureID is directly
+        // a WGPUTextureView raw handle — no descriptor set allocation needed.
+        return reinterpret_cast<void*>(view);
+#else
+        return nullptr;
+#endif
+    }
+
+    void WebGPUImGuiOverlay::OnTextureFreed(uint32_t textureId) {
+#if defined(SR_RENDER_USE_WEBGPU)
+        m_textureViewCache.erase(textureId);
+#endif
     }
 }
 
