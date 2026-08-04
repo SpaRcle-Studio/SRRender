@@ -83,6 +83,12 @@ namespace SR_ANIMATIONS_NS {
         });
     }
 
+    void AnimationState::RemoveTransition(AnimationStateTransition* pTransition) {
+        std::erase_if(m_transitions, [pTransition](const SR_HTYPES_NS::SharedPtr<AnimationStateTransition>& pT) {
+            return pT.Get() == pTransition;
+        });
+    }
+
     void AnimationClipState::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 

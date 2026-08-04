@@ -93,7 +93,6 @@ namespace SR_ANIMATIONS_NS {
         SR_TRACY_ZONE;
 
         if (m_clipPath.empty()) {
-            SR_ERROR("AnimationClip::Load() : clip path is empty!");
             return;
         }
 

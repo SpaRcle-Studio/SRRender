@@ -45,6 +45,8 @@ namespace SR_ANIMATIONS_NS {
         void OnTransitionDone();
         virtual void Update(const UpdateContext& context) { }
 
+        void RemoveTransition(AnimationStateTransition* pTransition);
+
         void SetMachine(AnimationStateMachine* pMachine) { m_machine = pMachine; }
         void SetResetOnPlay(bool reset) { m_resetOnPlay = reset; }
 
