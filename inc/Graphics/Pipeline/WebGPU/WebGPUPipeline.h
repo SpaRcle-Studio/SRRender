@@ -59,10 +59,13 @@ namespace SR_GRAPH_NS {
         void GetFBOHandles(SR_UTILS_NS::Vector<void*>& handles) const override;
         void GetShaderHandles(SR_UTILS_NS::Vector<void*>& handles) const override;
 
-        bool IsSamplerValid(int32_t id) const override { return true; }
+        bool IsSamplerValid(int32_t id) const override { return id >= 0; }
 
-        SR_NODISCARD void* GetCurrentShaderHandle() const override { return reinterpret_cast<void*>(1); }
-        SR_NODISCARD void* GetCurrentFBOHandle() const override { return reinterpret_cast<void*>(1); }
+        void UpdateUBO(uint32_t UBO, void* pData, uint64_t size, bool sizesMustBeEqual) override;
+        void UpdateSSBO(uint32_t SSBO, void* pData, uint64_t size) override;
+
+        SR_NODISCARD void* GetCurrentShaderHandle() const override;
+        SR_NODISCARD void* GetCurrentFBOHandle() const override;
 
         SR_NODISCARD uint16_t GetSwapchainImagesCount() const override { return 1; }
         SR_NODISCARD uint8_t GetCurrentImageIndex() const override { return 0; }

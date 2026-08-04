@@ -122,6 +122,7 @@ namespace SR_GRAPH_NS {
     protected:
         Memory::UBOManager* m_uboManager = nullptr;
         DescriptorManager* m_descriptorManager = nullptr;
+        bool m_valid = true;
 
     private:
         /// @property

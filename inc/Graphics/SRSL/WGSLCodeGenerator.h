@@ -21,6 +21,7 @@ namespace SR_SRSL_NS {
     public:
         SR_NODISCARD SRSLCodeGenRes GenerateStages(SR_UTILS_NS::IAllocator* pAllocator, const SRSLShader* pShader) override;
 
+        /// Entry-point function wrapper (adds @vertex / @fragment / @compute decorator in the caller).
         std::string_view GenerateFunction(
             SRSLFunction* pFunction,
             const int32_t deep,
@@ -36,8 +37,31 @@ namespace SR_SRSL_NS {
         std::optional<std::string_view> GenerateComputeStage(const SRSLShader* pShader, SRSLResult& result);
 
     private:
-        mutable SR_UTILS_NS::String m_tmpBuffer;
+        /// Non-entry-point function (regular function body without stage decorator).
+        SR_NODISCARD std::string GenerateFunctionBody(const SRSLFunction* pFunction, int32_t deep) const;
 
+        SR_NODISCARD std::string GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep) const;
+        SR_NODISCARD std::string GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep, const std::string& preCode, const std::string& postCode) const;
+
+        SR_NODISCARD std::string GenerateExpression(const SRSLExpr* pExpr, int32_t deep) const;
+        SR_NODISCARD std::string GenerateVariable(const SRSLVariable* pVariable, int32_t deep) const;
+        SR_NODISCARD std::string GenerateStructure(const SRSLStructureStatement* pStructure, int32_t deep) const;
+
+        SR_NODISCARD std::string GenerateIfStatement(const SRSLIfStatement* pIfStatement, int32_t deep) const;
+        SR_NODISCARD std::string GenerateForStatement(const SRSLForStatement* pForStatement, int32_t deep) const;
+        SR_NODISCARD std::string GenerateWhileStatement(const SRSLWhileStatement* pWhileStatement, int32_t deep) const;
+
+        SR_NODISCARD std::string GenerateUniforms(const SRSLShader* pShader) const;
+
+        /// Generates function-local `let` aliases for push constant fields used in the given stage.
+        SR_NODISCARD std::string GeneratePushConstantAliases(const SRSLShader* pShader, ShaderStage stage) const;
+
+        /// Generates function-local `let` aliases for all UBO block fields used in the given stage.
+        /// In GLSL UBO fields are globally visible; in WGSL they require `block.field` access.
+        SR_NODISCARD std::string GenerateUniformBlockAliases(const SRSLShader* pShader, ShaderStage stage) const;
+
+    private:
+        mutable SR_UTILS_NS::String m_tmpBuffer;
     };
 }
 

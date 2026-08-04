@@ -53,9 +53,14 @@ namespace SR_GRAPH_NS {
     bool GroupPass::Prepare() {
         SR_TRACY_ZONE;
 
+        if (!m_valid) {
+            return false;
+        }
+
         for (auto&& pPass : m_passes) {
             if (!pPass->Prepare()) {
-                SR_ERROR("GroupPass::Prepare() : failed to prepare pass \"{}\"!", pPass->GetPassName());
+                SR_ERROR("GroupPass::Prepare() : failed to prepare pass \"{}\"! Disabling group pass.", pPass->GetPassName());
+                m_valid = false;
                 return false;
             }
         }

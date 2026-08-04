@@ -408,6 +408,14 @@ namespace SR_GRAPH_NS::Types {
             return false;
         }
 
+    #if defined(SR_EMSCRIPTEN) || defined(SR_RENDER_USE_WEBGPU)
+        if (!pShader->Export(SRSL2::ShaderLanguage::WGSL)) {
+            m_hasErrors = true;
+            SR_ERROR("Shader::Load() : failed to export WGSL shader!\n\tPath: " + path.ToString());
+            return false;
+        }
+    #endif
+
         m_shaderCreateInfo = pShader->GetCreateInfo();
 
         m_type = pShader->GetType();

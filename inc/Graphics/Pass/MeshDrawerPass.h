@@ -118,7 +118,6 @@ namespace SR_GRAPH_NS {
         std::vector<RenderQueuePtr> m_renderQueues;
         SR_HTYPES_NS::Time& m_time;
         std::vector<BasePass*> m_useSharedFromPass;
-        bool m_valid = true;
 
         /// @property
         bool m_frustumCulling = true;
