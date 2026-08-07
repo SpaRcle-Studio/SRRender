@@ -62,11 +62,20 @@ namespace SR_SRSL_NS {
         /// In GLSL UBO fields are globally visible; in WGSL they require `block.field` access.
         SR_NODISCARD std::string GenerateUniformBlockAliases(const SRSLShader* pShader, ShaderStage stage) const;
 
+        /// Generates function-local `let` aliases for SSBO fields used in the given stage.
+        /// For non-array fields: `let field = blockVar.field;`
+        /// For dynamic-array fields: emits nothing (access is rewritten at expression level via m_ssboFieldToBlock).
+        SR_NODISCARD SR_UTILS_NS::String GenerateSSBOBlockAliases(const SRSLShader* pShader, ShaderStage stage) const;
+
     private:
         mutable SR_UTILS_NS::String m_tmpBuffer;
         /// Set for the duration of a GenerateStages() call so that GenerateExpression()
         /// can look up sampler names when rewriting texture() calls.
         const SRSLShader* m_pCurrentShader = nullptr;
+
+        /// Populated during GenerateUniforms(): maps SSBO field name → "blockVarName.fieldName"
+        /// so that GenerateExpression() can rewrite bare field references.
+        mutable SR_UTILS_NS::Map<SR_UTILS_NS::String, SR_UTILS_NS::String> m_ssboFieldToQualified;
     };
 }
 

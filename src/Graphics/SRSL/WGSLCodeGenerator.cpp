@@ -323,7 +323,14 @@ namespace SR_SRSL_NS {
             code += ")";
         }
         else if (pExpr->args.empty()) {
-            code += WGSLDetail::ReplaceToken(pExpr->token);
+            // If this token is a bare SSBO field name, rewrite it to blockVar.fieldName
+            auto ssboIt = m_ssboFieldToQualified.find(pExpr->token);
+            if (ssboIt != m_ssboFieldToQualified.end()) {
+                code += ssboIt->second;
+            }
+            else {
+                code += WGSLDetail::ReplaceToken(pExpr->token);
+            }
         }
         else if (pExpr->args.size() == 1) {
             // Unary: e.g. !x, -x
@@ -334,8 +341,19 @@ namespace SR_SRSL_NS {
             code += GenerateExpression(pExpr->args[0], 0) + "." + GenerateExpression(pExpr->args[1], 0);
         }
         else if (pExpr->args.size() == 2 && (pExpr->token == "=" || WGSLDetail::IsCompoundAssignment(pExpr->token))) {
-            // Assignment / compound-assignment: emit without wrapping parens (WGSL disallows assignment in expression)
-            code += GenerateExpression(pExpr->args[0], 0) + " " + pExpr->token + " " + GenerateExpression(pExpr->args[1], 0);
+            // Assignment / compound-assignment: emit without wrapping parens (WGSL disallows assignment in expression).
+            // WGSL does NOT support compound-assignment operators on swizzles (e.g. offset.xyz /= offset.w is illegal).
+            // To be safe, always expand every compound-assignment a OP= b → a = a OP b.
+            if (WGSLDetail::IsCompoundAssignment(pExpr->token)) {
+                // Strip trailing '=' to get the base operator (e.g. "/=" → "/", "+=" → "+")
+                const std::string baseOp = pExpr->token.substr(0, pExpr->token.size() - 1);
+                const std::string lhs = GenerateExpression(pExpr->args[0], 0);
+                const std::string rhs = GenerateExpression(pExpr->args[1], 0);
+                code += lhs + " = (" + lhs + " " + baseOp + " " + rhs + ")";
+            }
+            else {
+                code += GenerateExpression(pExpr->args[0], 0) + " " + pExpr->token + " " + GenerateExpression(pExpr->args[1], 0);
+            }
         }
         else if (pExpr->args.size() == 2 && pExpr->token.empty()) {
             // Concatenation: used for prefix/postfix ++/-- patterns like { "++", i } or { i, "++" }
@@ -690,7 +708,11 @@ namespace SR_SRSL_NS {
                 uniformBlock.binding, name.ToStringView(), structName);
         }
 
-        // ---- SSBO Blocks → @group(0) @binding(N) var<storage, read_write/read> Name ----
+        // ---- SSBO Blocks → struct StorageBuffer_<Name> + var<storage> ----
+        // Always emit a wrapper struct so that field names remain stable and accessible
+        // via blockVar.fieldName. The expression generator rewrites bare field references
+        // (e.g. `samples[i]`) to their qualified form (e.g. `SSAOKernel.samples[i]`).
+        m_ssboFieldToQualified.clear();
         for (auto&& [name, ssboBlock] : pShader->GetSSBOBlocks()) {
             // Determine access mode
             std::string_view accessMode = "read_write";
@@ -698,28 +720,9 @@ namespace SR_SRSL_NS {
                 accessMode = ssboBlock.isReadOnly.value() ? "read" : "read_write";
             }
 
-            // Special case: single dynamic-array field → emit as var<storage> name : array<T>
-            // This allows shaders to use name[i] directly instead of name.field[i]
-            if (ssboBlock.fields.size() == 1) {
-                auto&& field = ssboBlock.fields[0];
-                auto&& dims = SRSLTypeInfo::Instance().GetDimension(pShader->GetAllocator(), field.type, pShader->GetAnalyzedTree());
-                if (!dims.empty() && dims.back() == 0) { // last dim == 0 means runtime-sized []
-                    auto&& baseType = WGSLDetail::GenerateType(
-                        SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), field.type)
-                    );
-                    if (!baseType.empty()) {
-                        // Build array<baseType> (dropping the last runtime dim, since it is implicit)
-                        std::vector<uint64_t> staticDims(dims.begin(), dims.end() - 1);
-                        std::string elemType = WGSLDetail::ToWGSLArrayType(baseType, staticDims);
-                        code += SR_FORMAT("@group(0) @binding({}) var<storage, {}> {} : array<{}>;\n\n",
-                            ssboBlock.binding, accessMode, name.ToStringView(), elemType);
-                        continue;
-                    }
-                }
-            }
+            const std::string blockVarName = std::string(name.ToStringView());
+            const std::string structName   = "StorageBuffer_" + blockVarName;
 
-            // General case: emit as struct
-            std::string structName = std::string(name.ToStringView()) + "_t";
             code += "struct " + structName + " {\n";
             for (auto&& field : ssboBlock.fields) {
                 auto&& baseType = WGSLDetail::GenerateType(
@@ -730,10 +733,14 @@ namespace SR_SRSL_NS {
                 auto&& dimensions = SRSLTypeInfo::Instance().GetDimension(pShader->GetAllocator(), field.type, pShader->GetAnalyzedTree());
                 std::string fieldType = WGSLDetail::ToWGSLArrayType(baseType, dimensions);
                 code += SR_FORMAT("\t{} : {},\n", field.name.ToStringView(), fieldType);
+
+                // Register field → qualified access for expression rewriting
+                const std::string fieldName = std::string(field.name.ToStringView());
+                m_ssboFieldToQualified[fieldName] = blockVarName + "." + fieldName;
             }
             code += "};\n";
             code += SR_FORMAT("@group(0) @binding({}) var<storage, {}> {} : {};\n\n",
-                ssboBlock.binding, accessMode, name.ToStringView(), structName);
+                ssboBlock.binding, accessMode, blockVarName, structName);
         }
 
         // ---- Samplers → @group(1) @binding(N) var tex : texture_2d<f32> + sampler ----
@@ -826,6 +833,40 @@ namespace SR_SRSL_NS {
         for (auto&& [blockName, uniformBlock] : pShader->GetUniformBlocks()) {
             for (auto&& field : uniformBlock.fields) {
                 if (!pFunction->IsVariableUsed(field.name)) {
+                    continue;
+                }
+                auto&& typeName = WGSLDetail::GenerateType(
+                    SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), field.type)
+                );
+                if (typeName.empty()) { continue; }
+                const std::string safeField = WGSLDetail::SafeIdentifier(std::string(field.name.ToStringView()));
+                code += SR_FORMAT("{}let {} : {} = {}.{};\n",
+                    GenerateTab(1), field.name.ToStringView(), typeName,
+                    blockName.ToStringView(), safeField);
+            }
+        }
+
+        return code;
+    }
+
+    SR_UTILS_NS::String WGSLCodeGenerator::GenerateSSBOBlockAliases(const SRSLShader* pShader, ShaderStage stage) const {
+        SR_UTILS_NS::String code;
+
+        auto&& pFunction = pShader->GetUseStack()->FindFunction(SR_SRSL_ENTRY_POINTS.at(stage));
+        if (!pFunction) {
+            return code;
+        }
+
+        // For SSBO blocks, dynamic-array fields are rewritten at expression level via m_ssboFieldToQualified.
+        // Non-array fields (e.g. a plain uint counter) can be aliased with a let-binding.
+        for (auto&& [blockName, ssboBlock] : pShader->GetSSBOBlocks()) {
+            for (auto&& field : ssboBlock.fields) {
+                if (!pFunction->IsVariableUsed(field.name)) {
+                    continue;
+                }
+                auto&& dims = SRSLTypeInfo::Instance().GetDimension(pShader->GetAllocator(), field.type, pShader->GetAnalyzedTree());
+                // Dynamic arrays cannot be aliased with let — they are handled by expression rewriting
+                if (!dims.empty() && dims.back() == 0) {
                     continue;
                 }
                 auto&& typeName = WGSLDetail::GenerateType(
@@ -1037,8 +1078,9 @@ namespace SR_SRSL_NS {
 
         const bool isOutPositionUsed = pUseStackFunction->IsVariableUsed("OUT_POSITION");
 
-        // Inject UBO field aliases and push constant aliases (must be inside function, not module scope)
+        // Inject UBO field aliases, SSBO scalar aliases and push constant aliases (must be inside function, not module scope)
         preCode += GenerateUniformBlockAliases(pShader, ShaderStage::Vertex);
+        preCode += GenerateSSBOBlockAliases(pShader, ShaderStage::Vertex);
         preCode += GeneratePushConstantAliases(pShader, ShaderStage::Vertex);
 
         preCode += std::string(GenerateTab(1));
@@ -1127,8 +1169,9 @@ namespace SR_SRSL_NS {
 
         code = GenerateStage(pShader, result, ShaderStage::Fragment, variablesCode);
 
-        // Inject UBO field aliases and push constant aliases
+        // Inject UBO field aliases, SSBO scalar aliases and push constant aliases
         preCode += GenerateUniformBlockAliases(pShader, ShaderStage::Fragment);
+        preCode += GenerateSSBOBlockAliases(pShader, ShaderStage::Fragment);
         preCode += GeneratePushConstantAliases(pShader, ShaderStage::Fragment);
 
         // Fragment input: vertex output interpolants
@@ -1241,8 +1284,9 @@ namespace SR_SRSL_NS {
             return std::optional<std::string_view>();
         }
 
-        // Inject UBO field aliases and push constant aliases
+        // Inject UBO field aliases, SSBO scalar aliases and push constant aliases
         preCode += GenerateUniformBlockAliases(pShader, ShaderStage::Compute);
+        preCode += GenerateSSBOBlockAliases(pShader, ShaderStage::Compute);
         preCode += GeneratePushConstantAliases(pShader, ShaderStage::Compute);
 
         // Always declare ALL compute builtins as parameters.
@@ -1312,6 +1356,7 @@ namespace SR_SRSL_NS {
         SR_GLOBAL_LOCK
 
         Clear();
+        m_ssboFieldToQualified.clear();
         m_pCurrentShader = pShader;
 
         ISRSLCodeGenerator::SRSLCodeGenRes codeGenRes;

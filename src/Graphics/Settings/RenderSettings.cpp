@@ -5,6 +5,7 @@
 #include <Graphics/Settings/RenderSettings.h>
 
 #include <Utils/FileSystem/PathDataAccessor.h>
+#include <Utils/Platform/Platform.h>
 
 #include <Codegen/RenderSettings.generated.hpp>
 
@@ -39,7 +40,18 @@ namespace SR_GRAPH_NS {
         return coefficient;
     }
 
-   const SSAOPreset& RenderSettings::GetSSAOResolutionPreset(Quality quality) const {
-        return FindSuitableQuality(quality, SSAOQualityPresets);
+    const SSAOPreset& RenderSettings::GetSSAOResolutionPreset(Quality quality) const {
+       return FindSuitableQuality(quality, SSAOQualityPresets);
+    }
+
+    const ActiveGraphicsSettings& RenderSettings::GetDefaultGraphicsSettings() const {
+        for (auto&& settings : defaultPlatformGraphicsSettings) {
+            if (settings.platform.has_value() && settings.platform.value() != SR_PLATFORM_NS::GetType()) {
+                continue;
+            }
+            return settings.graphics;
+        }
+        static ActiveGraphicsSettings defaultSettings;
+        return defaultSettings;
     }
 }

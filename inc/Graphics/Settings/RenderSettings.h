@@ -8,8 +8,10 @@
 #include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/SRSL/ShaderVariables.h>
 #include <Graphics/Settings/Quality.h>
+#include <Graphics/Settings/ActiveGraphicsSettings.h>
 
 #include <Utils/Resources/Asset.h>
+#include <Utils/Platform/PlatformType.h>
 
 namespace SR_GRAPH_NS {
     template<typename K, typename V> const V& FindSuitableQuality(Quality quality, const SR_UTILS_NS::Map<K, V>& presets, bool findLowerFirst = false) {
@@ -95,6 +97,23 @@ namespace SR_GRAPH_NS {
         }
     };
 
+    class DefaultPlatformGraphicsSettings : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+    public:
+        SR_NODISCARD bool operator==(const DefaultPlatformGraphicsSettings& other) const noexcept {
+            return platform == other.platform && graphics == other.graphics;
+        }
+        SR_NODISCARD bool operator!=(const DefaultPlatformGraphicsSettings& other) const noexcept {
+            return !(*this == other);
+        }
+
+    public:
+        /// @property
+        SR_UTILS_NS::Optional<SR_UTILS_NS::PlatformType> platform;
+        /// @property
+        ActiveGraphicsSettings graphics;
+    };
+
     class RenderSettings : public SR_UTILS_NS::Asset {
         SR_CLASS()
     public:
@@ -105,6 +124,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const ShadowQualityPreset& GetShadowQualityPreset(Quality quality) const;
         SR_NODISCARD float_t GetColorBufferResolutionCoefficient(Quality quality) const;
         SR_NODISCARD const SSAOPreset& GetSSAOResolutionPreset(Quality quality) const;
+        SR_NODISCARD const ActiveGraphicsSettings& GetDefaultGraphicsSettings() const;
 
     public:
         /// @property
@@ -137,6 +157,9 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Map<Quality, float_t> colorBufferQualityPresets;
         /// @property
         SR_UTILS_NS::Map<Quality, SSAOPreset> SSAOQualityPresets;
+
+        /// @property
+        SR_UTILS_NS::Vector<DefaultPlatformGraphicsSettings> defaultPlatformGraphicsSettings;
 
     };
 }

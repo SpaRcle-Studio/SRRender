@@ -64,6 +64,10 @@ namespace SR_GRAPH_NS {
         void UpdateUBO(uint32_t UBO, void* pData, uint64_t size, bool sizesMustBeEqual) override;
         void UpdateSSBO(uint32_t SSBO, void* pData, uint64_t size) override;
 
+        bool MapSSBO(uint32_t SSBO, void** ppData) override;
+        void UnMapSSBO(uint32_t SSBO) override;
+        void FlushSSBO(uint32_t SSBO, uint64_t offset, uint64_t size) override;
+
         SR_NODISCARD void* GetCurrentShaderHandle() const override;
         SR_NODISCARD void* GetCurrentFBOHandle() const override;
 

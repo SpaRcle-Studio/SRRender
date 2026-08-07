@@ -861,6 +861,8 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
+        SR_UTILS_NS::StringView shaderName;
+
         const bool isCompute = (createInfo.shaderType == SR_SRSL_NS::ShaderType::Compute);
 
         // ---- 1. Read WGSL source ----
@@ -882,6 +884,7 @@ namespace SR_GRAPH_NS {
             if (!f.is_open()) {
                 return false;
             }
+            shaderName = SR_UTILS_NS::StringView(it->second.path.c_str(), it->second.path.size());
             wgslSource = std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
             return !wgslSource.empty();
         };
@@ -902,6 +905,7 @@ namespace SR_GRAPH_NS {
 
         wgpu::ShaderModuleDescriptor shaderDesc{};
         shaderDesc.nextInChain = &wgslDesc;
+        shaderDesc.label = shaderName.c_str();
 
         m_internalData->device.PushErrorScope(wgpu::ErrorFilter::Validation);
 
@@ -1013,6 +1017,7 @@ namespace SR_GRAPH_NS {
         wgpu::PipelineLayoutDescriptor plDesc{};
         plDesc.bindGroupLayoutCount = bglEntries1.empty() ? 1u : 2u;
         plDesc.bindGroupLayouts     = bglArray;
+        plDesc.label = shaderName.c_str();
 
         wgpu::PipelineLayout pipelineLayout = m_internalData->device.CreatePipelineLayout(&plDesc);
         if (!pipelineLayout) {
@@ -1592,6 +1597,57 @@ namespace SR_GRAPH_NS {
             auto&& buf = m_internalData->SSBOs.At(static_cast<int32_t>(SSBO));
             m_internalData->queue.WriteBuffer(buf, 0, pData, std::min(size, buf.GetSize()));
         }
+    }
+
+    static SR_HTYPES_NS::FastMemoryArray<uint8_t> g_tempSSBOBuffer;
+
+    bool WebGPUPipeline::MapSSBO(uint32_t SSBO, void** ppData) {
+        if (!m_internalData->queue || !ppData) {
+            return false;
+        }
+        if (m_internalData->SSBOs.IsAlive(static_cast<int32_t>(SSBO))) {
+            /*auto&& buf = m_internalData->SSBOs.At(static_cast<int32_t>(SSBO));
+            const uint64_t size = buf.GetSize();
+            g_tempSSBOBuffer.resize(size);
+            *ppData = g_tempSSBOBuffer.data();
+
+            auto&& device = m_internalData->device;
+
+            wgpu::BufferDescriptor desc{};
+            desc.size  = size;
+            desc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
+            const auto  readBuffer = device.CreateBuffer(&desc);
+
+            const auto encoder = device.CreateCommandEncoder();
+
+            encoder.CopyBufferToBuffer(
+                buf,   // источник
+                0,
+                readBuffer,  // приемник
+                0,
+                size
+            );
+
+            const auto commandBuffer = encoder.Finish();
+            m_internalData->queue.Submit(1, &commandBuffer);
+
+            //await readBuffer.mapAsync(GPUMapMode.READ);
+
+            const data = readBuffer.getMappedRange();
+            const values = new Float32Array(data.slice(0));
+
+            readBuffer.unmap();
+
+
+            return true;*/
+        }
+        return false;
+    }
+
+    void WebGPUPipeline::UnMapSSBO(uint32_t SSBO) {
+    }
+
+    void WebGPUPipeline::FlushSSBO(uint32_t SSBO, uint64_t offset, uint64_t size) {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
