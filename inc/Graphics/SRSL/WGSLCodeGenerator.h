@@ -37,6 +37,8 @@ namespace SR_SRSL_NS {
         std::optional<std::string_view> GenerateComputeStage(const SRSLShader* pShader, SRSLResult& result);
 
     private:
+        SR_NODISCARD SR_UTILS_NS::String GenerateConstants(const SRSLShader* pShader) const;
+
         /// Non-entry-point function (regular function body without stage decorator).
         SR_NODISCARD std::string GenerateFunctionBody(const SRSLFunction* pFunction, int32_t deep) const;
 
@@ -62,6 +64,9 @@ namespace SR_SRSL_NS {
 
     private:
         mutable SR_UTILS_NS::String m_tmpBuffer;
+        /// Set for the duration of a GenerateStages() call so that GenerateExpression()
+        /// can look up sampler names when rewriting texture() calls.
+        const SRSLShader* m_pCurrentShader = nullptr;
     };
 }
 

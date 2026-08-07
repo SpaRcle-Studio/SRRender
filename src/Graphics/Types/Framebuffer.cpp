@@ -272,6 +272,7 @@ namespace SR_GTYPES_NS {
 
         auto&& frames = m_colors.at(layer).texture;
         if (frames.empty()) {
+            SR_ERROR("Framebuffer::GetColorTexture() : no textures in layer {}!", layer);
             return SR_ID_INVALID;
         }
 

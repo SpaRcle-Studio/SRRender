@@ -16,9 +16,6 @@
 
 #include <webgpu/webgpu_cpp.h>
 
-#include <algorithm>
-#include <fstream>
-
 namespace SR_GRAPH_NS {
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -28,14 +25,16 @@ namespace SR_GRAPH_NS {
     struct WebGPUShaderProgram {
         wgpu::RenderPipeline    renderPipeline;
         wgpu::ComputePipeline   computePipeline;
-        wgpu::BindGroupLayout   bindGroupLayout;
+        wgpu::BindGroupLayout   bindGroupLayout;   // group 0: UBOs / SSBOs
+        wgpu::BindGroupLayout   bindGroupLayout1;  // group 1: textures + samplers (may be null if unused)
         wgpu::PipelineLayout    pipelineLayout;
         bool                    isCompute = false;
 
         void Destroy() {
             renderPipeline  = nullptr;
             computePipeline = nullptr;
-            bindGroupLayout = nullptr;
+            bindGroupLayout  = nullptr;
+            bindGroupLayout1 = nullptr;
             pipelineLayout  = nullptr;
         }
     };
@@ -558,17 +557,46 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_internalData->instance.RequestAdapter(&options, wgpu::CallbackMode::AllowProcessEvents, [this](wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, const char *message) {
+        m_internalData->instance.RequestAdapter(&options, wgpu::CallbackMode::AllowProcessEvents, [this](wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
             if (status != wgpu::RequestAdapterStatus::Success) {
-                SR_ERROR("WebGPUPipeline::PreInit() : failed to request adapter: {}", message);
+                const std::string_view msgView =
+                    (message.length != WGPU_STRLEN)
+                        ? std::string_view(message.data, message.length)
+                        : std::string_view(message.data ? message.data : "(unknown error)");
+                SR_ERROR("WebGPUPipeline::PreInit() : failed to request adapter: {}", msgView);
                 return;
             }
 
             SR_INFO("WebGPUPipeline::PreInit() : WebGPU adapter successfully obtained.");
 
-            adapter.RequestDevice(nullptr, wgpu::CallbackMode::AllowProcessEvents, [this](wgpu::RequestDeviceStatus status, wgpu::Device dev, const char *message) {
+            // ---- DeviceDescriptor with uncaptured-error callback ----
+            // SetUncapturedErrorCallback lives on DeviceDescriptor (not on wgpu::Device).
+            // It must be configured before RequestDevice is called.
+            wgpu::DeviceDescriptor deviceDesc{};
+            deviceDesc.SetUncapturedErrorCallback(
+                [](const wgpu::Device& /*device*/, wgpu::ErrorType type, wgpu::StringView message) {
+                    const char* typeStr = "Unknown";
+                    switch (type) {
+                        case wgpu::ErrorType::Validation:  typeStr = "Validation";  break;
+                        case wgpu::ErrorType::OutOfMemory: typeStr = "OutOfMemory"; break;
+                        case wgpu::ErrorType::Internal:    typeStr = "Internal";    break;
+                        case wgpu::ErrorType::Unknown:     typeStr = "Unknown";     break;
+                        case wgpu::ErrorType::NoError:     return;
+                        default: break;
+                    }
+                    SR_ERROR("UncapturedErrorCallback() : WebGPU [{}] error: {}", typeStr,
+                        message.length != WGPU_STRLEN
+                            ? std::string_view(message.data, message.length)
+                            : std::string_view(message.data ? message.data : "(null)"));
+                }
+            );
+
+            adapter.RequestDevice(&deviceDesc, wgpu::CallbackMode::AllowProcessEvents, [this](wgpu::RequestDeviceStatus status, wgpu::Device dev, wgpu::StringView message) {
                 if (status != wgpu::RequestDeviceStatus::Success) {
-                    SR_ERROR("WebGPUPipeline::PreInit() : failed to request device: {}", message);
+                    SR_ERROR("WebGPUPipeline::PreInit() : failed to request device: {}",
+                        message.length != WGPU_STRLEN
+                            ? std::string_view(message.data, message.length)
+                            : std::string_view(message.data ? message.data : "(unknown error)"));
                     return;
                 }
 
@@ -875,44 +903,68 @@ namespace SR_GRAPH_NS {
         wgpu::ShaderModuleDescriptor shaderDesc{};
         shaderDesc.nextInChain = &wgslDesc;
 
+        m_internalData->device.PushErrorScope(wgpu::ErrorFilter::Validation);
+
         wgpu::ShaderModule shaderModule = m_internalData->device.CreateShaderModule(&shaderDesc);
+
+        m_internalData->device.PopErrorScope(wgpu::CallbackMode::AllowProcessEvents, [wgslSource](wgpu::PopErrorScopeStatus /*status*/, wgpu::ErrorType type, wgpu::StringView message) {
+            if (type != wgpu::ErrorType::NoError) {
+                const std::string_view msgView =
+                    (message.length != WGPU_STRLEN)
+                        ? std::string_view(message.data, message.length)
+                        : std::string_view(message.data ? message.data : "(no message)");
+                SR_ERROR("WebGPUPipeline : WGSL shader compilation failed: {}", msgView);
+                std::istringstream stream(wgslSource);
+                std::string line;
+                uint32_t lineNum = 1;
+                SR_UTILS_NS::String text;
+                while (std::getline(stream, line)) {
+                    text += "  {:>4} | {}\n"_format(lineNum++, line);
+                }
+                SR_ERROR("WebGPUPipeline : dumping WGSL source:\n{}", text);
+            }
+        });
+
         if (!shaderModule) {
-            SR_ERROR("WebGPUPipeline::AllocateShaderProgram() : failed to create shader module!");
+            SR_ERROR("WebGPUPipeline::AllocateShaderProgram() : CreateShaderModule returned null (WGSL parse likely failed)!");
             return SR_ID_INVALID;
         }
 
         // ---- 3. Build BindGroupLayout entries from uniforms ----
-        // All resources live in a single bind group (group 0) with sequential bindings.
-        // UBOs and SSBOs come first, then textures+samplers (each sampler pair takes 2 slots).
-        // This mirrors the layout the WGSL generator emits (@group(0) for buffers, @group(1) for textures).
-        SR_UTILS_NS::Vector<wgpu::BindGroupLayoutEntry> bglEntries;
+        // The WGSL generator places resources in two bind groups:
+        //   @group(0) — UBOs and SSBOs (sequential bindings)
+        //   @group(1) — textures + samplers (pairs, sequential bindings starting at 0)
+        // We must declare a BindGroupLayout for every group index the shader references.
 
-        // Use sequential auto-assigned binding indices to avoid any collision
-        uint32_t nextBinding = 0;
+        // Group 0: UBOs and SSBOs
+        SR_UTILS_NS::Vector<wgpu::BindGroupLayoutEntry> bglEntries0;
+        uint32_t nextBinding0 = 0;
 
-        // Pass 1: UBOs and SSBOs
         for (auto&& uniform : createInfo.uniforms) {
             if (uniform.type != LayoutBinding::Uniform && uniform.type != LayoutBinding::SSBO) {
                 continue;
             }
             wgpu::BindGroupLayoutEntry entry{};
-            entry.binding = nextBinding++;
+            entry.binding = nextBinding0++;
 
             if (uniform.type == LayoutBinding::Uniform) {
-                entry.visibility          = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
-                entry.buffer.type         = wgpu::BufferBindingType::Uniform;
+                entry.visibility            = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
+                entry.buffer.type           = wgpu::BufferBindingType::Uniform;
                 entry.buffer.minBindingSize = uniform.size;
             }
             else { // SSBO
                 // WebGPU: read-write storage NOT allowed in Vertex stage
-                entry.visibility          = wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
-                entry.buffer.type         = wgpu::BufferBindingType::Storage;
+                entry.visibility            = wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
+                entry.buffer.type           = wgpu::BufferBindingType::Storage;
                 entry.buffer.minBindingSize = uniform.size;
             }
-            bglEntries.push_back(entry);
+            bglEntries0.push_back(entry);
         }
 
-        // Pass 2: Samplers (texture + sampler pairs)
+        // Group 1: textures + samplers (each sampler2D/attachment occupies 2 bindings: texture then sampler)
+        SR_UTILS_NS::Vector<wgpu::BindGroupLayoutEntry> bglEntries1;
+        uint32_t nextBinding1 = 0;
+
         for (auto&& uniform : createInfo.uniforms) {
             if (uniform.type != LayoutBinding::Sampler2D && uniform.type != LayoutBinding::Attachhment) {
                 continue;
@@ -923,30 +975,44 @@ namespace SR_GRAPH_NS {
                 : (wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute);
 
             wgpu::BindGroupLayoutEntry texEntry{};
-            texEntry.binding               = nextBinding++;
+            texEntry.binding               = nextBinding1++;
             texEntry.visibility            = texVis;
             texEntry.texture.sampleType    = wgpu::TextureSampleType::Float;
             texEntry.texture.viewDimension = wgpu::TextureViewDimension::e2D;
-            bglEntries.push_back(texEntry);
+            bglEntries1.push_back(texEntry);
 
             wgpu::BindGroupLayoutEntry samplerEntry{};
-            samplerEntry.binding      = nextBinding++;
+            samplerEntry.binding      = nextBinding1++;
             samplerEntry.visibility   = texVis;
             samplerEntry.sampler.type = isAttachment
                 ? wgpu::SamplerBindingType::NonFiltering
                 : wgpu::SamplerBindingType::Filtering;
-            bglEntries.push_back(samplerEntry);
+            bglEntries1.push_back(samplerEntry);
         }
 
-        wgpu::BindGroupLayoutDescriptor bglDesc{};
-        bglDesc.entryCount = static_cast<size_t>(bglEntries.size());
-        bglDesc.entries    = bglEntries.data();
+        // Create BindGroupLayout for group 0 (always present, even if empty)
+        wgpu::BindGroupLayoutDescriptor bglDesc0{};
+        bglDesc0.entryCount = static_cast<size_t>(bglEntries0.size());
+        bglDesc0.entries    = bglEntries0.empty() ? nullptr : bglEntries0.data();
 
-        wgpu::BindGroupLayout bindGroupLayout = m_internalData->device.CreateBindGroupLayout(&bglDesc);
+        wgpu::BindGroupLayout bindGroupLayout = m_internalData->device.CreateBindGroupLayout(&bglDesc0);
+
+        // Create BindGroupLayout for group 1 (only when samplers are present)
+        wgpu::BindGroupLayout bindGroupLayout1;
+        if (!bglEntries1.empty()) {
+            wgpu::BindGroupLayoutDescriptor bglDesc1{};
+            bglDesc1.entryCount = static_cast<size_t>(bglEntries1.size());
+            bglDesc1.entries    = bglEntries1.data();
+            bindGroupLayout1 = m_internalData->device.CreateBindGroupLayout(&bglDesc1);
+        }
+
+        // Build the pipeline layout covering all used bind group indices.
+        // If group 1 is used, we must include both group 0 and group 1 layouts.
+        wgpu::BindGroupLayout bglArray[2] = { bindGroupLayout, bindGroupLayout1 };
 
         wgpu::PipelineLayoutDescriptor plDesc{};
-        plDesc.bindGroupLayoutCount = 1;
-        plDesc.bindGroupLayouts     = &bindGroupLayout;
+        plDesc.bindGroupLayoutCount = bglEntries1.empty() ? 1u : 2u;
+        plDesc.bindGroupLayouts     = bglArray;
 
         wgpu::PipelineLayout pipelineLayout = m_internalData->device.CreatePipelineLayout(&plDesc);
         if (!pipelineLayout) {
@@ -955,7 +1021,8 @@ namespace SR_GRAPH_NS {
         }
 
         WebGPUShaderProgram program;
-        program.bindGroupLayout = bindGroupLayout;
+        program.bindGroupLayout  = bindGroupLayout;
+        program.bindGroupLayout1 = bindGroupLayout1;
         program.pipelineLayout  = pipelineLayout;
         program.isCompute       = isCompute;
 
@@ -1189,10 +1256,35 @@ namespace SR_GRAPH_NS {
                 texDesc.sampleCount   = std::max<uint8_t>(1, createInfo.sampleCount);
                 texDesc.dimension     = wgpu::TextureDimension::e2D;
 
+                wgpu::SamplerDescriptor samplerDesc{};
+                samplerDesc.addressModeU  = wgpu::AddressMode::ClampToEdge;
+                samplerDesc.addressModeV  = wgpu::AddressMode::ClampToEdge;
+                samplerDesc.addressModeW  = wgpu::AddressMode::ClampToEdge;
+                samplerDesc.magFilter     = wgpu::FilterMode::Linear;
+                samplerDesc.minFilter     = wgpu::FilterMode::Linear;
+                samplerDesc.mipmapFilter  = wgpu::MipmapFilterMode::Linear;
+                samplerDesc.maxAnisotropy = 1;
+
+                WebGPUTexture webTexture;
+
                 att.texture = m_internalData->device.CreateTexture(&texDesc);
                 if (att.texture) {
                     att.view = att.texture.CreateView();
+                    webTexture.view = att.texture.CreateView();
                 }
+
+                for (auto&& oldTexture : colorLayer.texture) {
+                    if (oldTexture != SR_ID_INVALID) {
+                        m_internalData->textures.RemoveByIndex(oldTexture);
+                    }
+                }
+                colorLayer.texture.clear();
+
+                webTexture.view    = att.view;
+                webTexture.sampler = m_internalData->device.CreateSampler(&samplerDesc);
+
+                const auto colorId = m_internalData->textures.Add(std::move(webTexture));
+                colorLayer.texture.emplace_back(colorId);
 
                 fbo.colorAttachments.push_back(std::move(att));
             }

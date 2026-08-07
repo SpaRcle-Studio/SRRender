@@ -203,8 +203,16 @@ namespace SR_SRSL_NS {
             if (token == "fma")         return "fma";
             if (token == "mod")         return ""; // handled in GenerateExpression as %
             if (token == "atan")        return "atan2";
+            // texture/textureSample/textureLod are handled specially in GenerateExpression
+            // to inject the sampler argument — these mappings are kept as fallback identifiers.
             if (token == "texture")     return "textureSample";
             if (token == "textureLod")  return "textureSampleLevel";
+
+            // GLSL textureSize → WGSL textureDimensions
+            if (token == "textureSize") return "textureDimensions";
+
+            // GLSL barrier → WGSL workgroupBarrier
+            if (token == "barrier") return "workgroupBarrier";
 
             // GLSL builtins → WGSL equivalents
             if (token == "gl_Position")        return "vsOut.position";
@@ -245,16 +253,49 @@ namespace SR_SRSL_NS {
             }
         }
         else if (pExpr->isCall) {
-            const std::string funcName = WGSLDetail::ReplaceToken(pExpr->token);
+            const std::string& rawToken = pExpr->token;
+            const std::string funcName = WGSLDetail::ReplaceToken(rawToken);
 
-            code += funcName + "(";
-            for (uint32_t i = 0; i < pExpr->args.size(); ++i) {
-                code += GenerateExpression(pExpr->args[i], 0);
-                if (i + 1 < pExpr->args.size()) {
-                    code += ", ";
+            // ---- texture() / textureLod() → inject sampler argument ----
+            // WGSL requires an explicit sampler: textureSample(tex, tex_sampler, uv)
+            // SRSL/GLSL calls: texture(tex, uv)  or  textureLod(tex, uv, lod)
+            if ((rawToken == "texture" || rawToken == "textureLod") && pExpr->args.size() >= 2) {
+                // Extract the texture variable name from the first argument
+                std::string texName = GenerateExpression(pExpr->args[0], 0);
+                // Strip any trailing whitespace / tab indentation from the recursive call
+                // (GenerateTab(0) returns empty string, so this should be clean already)
+                const std::string samplerName = texName + "_sampler";
+
+                // textureSample(tex, tex_sampler, uv [, lod])
+                code += funcName + "(" + texName + ", " + samplerName;
+                for (uint32_t i = 1; i < pExpr->args.size(); ++i) {
+                    code += ", " + GenerateExpression(pExpr->args[i], 0);
                 }
+                code += ")";
             }
-            code += ")";
+            // ---- textureSize(tex, lod) → textureDimensions(tex) ----
+            // WGSL's textureDimensions() does not take a mip level for non-mipmapped textures.
+            // We drop the second argument (lod) here; for shaders that need mip-aware
+            // dimensions, users should use textureDimensions(tex, lod) directly in a future version.
+            else if (rawToken == "textureSize" && !pExpr->args.empty()) {
+                std::string texName = GenerateExpression(pExpr->args[0], 0);
+                code += "textureDimensions(" + texName;
+                // Pass lod argument if provided (WGSL supports textureDimensions(t, level))
+                if (pExpr->args.size() >= 2) {
+                    code += ", " + GenerateExpression(pExpr->args[1], 0);
+                }
+                code += ")";
+            }
+            else {
+                code += funcName + "(";
+                for (uint32_t i = 0; i < pExpr->args.size(); ++i) {
+                    code += GenerateExpression(pExpr->args[i], 0);
+                    if (i + 1 < pExpr->args.size()) {
+                        code += ", ";
+                    }
+                }
+                code += ")";
+            }
         }
         else if (pExpr->isArray) {
             if (pExpr->args.size() == 1) {
@@ -1171,7 +1212,11 @@ namespace SR_SRSL_NS {
         postCode += "return fsOut;\n";
 
         code += "@fragment\n";
-        code += GenerateFunction(pStageFunction, 0, fragArgs, preCode, postCode);
+        // The fragment entry point always returns FragmentOutput (even if it has zero fields,
+        // WGSL allows returning an empty struct). The SRSL function is declared void, but
+        // the generated wrapper must declare -> FragmentOutput to match the "return fsOut;" we inject.
+        static const std::string fragmentOutputId = "FragmentOutput";
+        code += GenerateFunction(pStageFunction, 0, fragArgs, preCode, postCode, fragmentOutputId);
 
         return code;
     }
@@ -1267,6 +1312,7 @@ namespace SR_SRSL_NS {
         SR_GLOBAL_LOCK
 
         Clear();
+        m_pCurrentShader = pShader;
 
         ISRSLCodeGenerator::SRSLCodeGenRes codeGenRes;
 
@@ -1291,6 +1337,15 @@ namespace SR_SRSL_NS {
             auto&& uniformsCode = GenerateUniforms(pShader);
             if (!uniformsCode.empty()) {
                 code += uniformsCode;
+                code += "\n";
+            }
+        }
+
+        // constants (emitted once for the whole module)
+        {
+            auto&& constantsCode = GenerateConstants(pShader);
+            if (!constantsCode.empty()) {
+                code += constantsCode;
                 code += "\n";
             }
         }
@@ -1436,6 +1491,21 @@ namespace SR_SRSL_NS {
 
         result = SR_UTILS_NS::Exchange(m_result, { });
 
+        m_pCurrentShader = nullptr;
         return codeGenRes;
+    }
+
+    SR_UTILS_NS::String WGSLCodeGenerator::GenerateConstants(const SRSLShader* pShader) const {
+        SR_UTILS_NS::String code;
+        for (auto&& [name, pVariable] : pShader->GetConstants()) {
+            if (pVariable->pType && pVariable->pExpr) {
+                m_tmpBuffer.clear();
+                std::string typeName = WGSLDetail::GenerateType(SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), std::string(pVariable->pType->ToString(0, m_tmpBuffer))));
+                if (!typeName.empty()) {
+                    code += SR_FORMAT("const {} : {} = {};\n", name.ToStringView(), typeName, GenerateExpression(pVariable->pExpr, 0));
+                }
+            }
+        }
+        return code;
     }
 } // namespace SR_SRSL_NS
