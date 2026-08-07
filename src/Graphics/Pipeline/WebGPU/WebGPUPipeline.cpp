@@ -6,6 +6,7 @@
 #include <Graphics/Overlay/WebGPUImGuiOverlay.h>
 #include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Pipeline/TextureHelper.h>
+#include <Graphics/Types/Framebuffer.h>
 
 #include <Utils/Types/ObjectPool.h>
 #include <Utils/Common/Features.h>
@@ -106,6 +107,18 @@ namespace SR_GRAPH_NS {
         wgpu::TextureFormat surfaceFormat = wgpu::TextureFormat::Undefined;
         uint32_t surfaceWidth  = 0;
         uint32_t surfaceHeight = 0;
+
+        // ---- Per-render-pass state ----
+        // Kept alive for the duration of BeginRender..EndRender
+        wgpu::RenderPassEncoder activeRenderPass;
+        // Clear values set by ClearBuffers before BeginRender
+        wgpu::Color        clearColor  = { 0.0, 0.0, 0.0, 1.0 };
+        float              clearDepth  = 1.0f;
+        bool               hasClearColor = false;
+        bool               hasClearDepth = false;
+        // Tracks whether BeginRender was called for the swapchain (no FBO) this frame.
+        // Used in DrawFrame to decide loadOp for the ImGui pass.
+        bool               surfaceWasRendered = false;
 
         SR_HTYPES_NS::ObjectPool<wgpu::Buffer>         VBOs;
         SR_HTYPES_NS::ObjectPool<wgpu::Buffer>         IBOs;
@@ -360,72 +373,37 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        wgpu::RenderPassColorAttachment color{};
-        color.view      = m_internalData->surfaceTextureView;
-        color.loadOp    = wgpu::LoadOp::Clear;
-        color.storeOp   = wgpu::StoreOp::Store;
-        color.clearValue = {0.10f, 0.10f, 0.12f, 1.0f};
-
-        wgpu::RenderPassDescriptor passDesc{};
-        passDesc.colorAttachmentCount = 1;
-        passDesc.colorAttachments     = &color;
-
-        auto pass = m_internalData->activeEncoder.BeginRenderPass(&passDesc);
-
-        // ---- Scene geometry ----
-        // Use the pipeline state tracked by the base class to issue draw calls.
-        const int32_t shaderId    = m_state.shaderId;
-        const int32_t descriptorId = m_state.descriptorSetId;
-        const int32_t iboId       = m_state.IBOId;
-        const int32_t vboId       = m_state.VBOId;
-
-        if (shaderId >= 0 && m_internalData->shaderPrograms.IsAlive(shaderId)) {
-            auto&& shaderProgram = m_internalData->shaderPrograms.At(shaderId);
-            if (shaderProgram.renderPipeline) {
-                pass.SetPipeline(shaderProgram.renderPipeline);
-            }
-        }
-
-        if (descriptorId >= 0 && m_internalData->bindGroups.IsAlive(descriptorId)) {
-            auto&& bindGroup = m_internalData->bindGroups.At(descriptorId);
-            if (bindGroup.bindGroup) {
-                pass.SetBindGroup(0, bindGroup.bindGroup, 0, nullptr);
-            }
-        }
-
-        if (vboId >= 0 && m_internalData->VBOs.IsAlive(vboId)) {
-            auto&& vbo = m_internalData->VBOs.At(vboId);
-            if (vbo) {
-                pass.SetVertexBuffer(0, vbo, 0, WGPU_WHOLE_SIZE);
-            }
-        }
-
-        if (iboId >= 0 && m_internalData->IBOs.IsAlive(iboId)) {
-            auto&& ibo = m_internalData->IBOs.At(iboId);
-            if (ibo) {
-                pass.SetIndexBuffer(ibo, wgpu::IndexFormat::Uint32, 0, WGPU_WHOLE_SIZE);
-                // Vertex count is tracked by the engine; use draw call count from state if available
-                pass.DrawIndexed(m_state.vertices > 0 ? m_state.vertices : 3,
-                    m_drawInstancesCount, 0, 0, m_drawInstancesStart);
-            }
-        }
-        else if (vboId >= 0 && m_internalData->VBOs.IsAlive(vboId)) {
-            // Fallback: no IBO — draw arrays
-            pass.Draw(m_state.vertices > 0 ? m_state.vertices : 3,
-                m_drawInstancesCount, 0, m_drawInstancesStart);
-        }
-
+        // ---- ImGui pass into swapchain ----
+        // All scene geometry has already been rendered into FBOs via BeginRender/EndRender.
+        // Here we open a final swapchain pass to render the ImGui UI on top.
+        // If nothing was rendered to the swapchain by SwapchainPass, we still clear it
+        // so it is not undefined/transparent.
     #ifdef SR_USE_IMGUI
         if (auto&& pOverlayBase = GetOverlay(OverlayType::ImGui)) {
             if (pOverlayBase->IsEnabled() && !pOverlayBase->IsSurfaceDirty()) {
                 if (auto&& pImGuiOverlay = SR_UTILS_NS::DynamicPointerCast<WebGPUImGuiOverlay>(pOverlayBase)) {
+                    wgpu::RenderPassColorAttachment color{};
+                    color.view       = m_internalData->surfaceTextureView;
+                    // Use Load to preserve anything written by a SwapchainPass via BeginRender/EndRender.
+                    // The surface starts as undefined each frame; if no SwapchainPass ran, it will appear
+                    // as black/transparent. That is acceptable — the ImGui layer renders the editor UI.
+                    // If SwapchainPass already rendered to surface this frame → preserve it (Load).
+                    // Otherwise clear to a neutral dark color so ImGui has a clean background.
+                    color.loadOp     = m_internalData->surfaceWasRendered ? wgpu::LoadOp::Load : wgpu::LoadOp::Clear;
+                    color.storeOp    = wgpu::StoreOp::Store;
+                    color.clearValue = { 0.1, 0.1, 0.12, 1.0 };
+
+                    wgpu::RenderPassDescriptor passDesc{};
+                    passDesc.colorAttachmentCount = 1;
+                    passDesc.colorAttachments     = &color;
+
+                    auto pass = m_internalData->activeEncoder.BeginRenderPass(&passDesc);
                     pImGuiOverlay->Render(pass.Get());
+                    pass.End();
                 }
             }
         }
     #endif
-
-        pass.End();
 
         m_internalData->surfaceCommandBuffer = m_internalData->activeEncoder.Finish();
         m_internalData->surfaceCommandBuffer.SetLabel("Surface command buffer");
@@ -512,6 +490,7 @@ namespace SR_GRAPH_NS {
 
         m_internalData->activeEncoder = m_internalData->device.CreateCommandEncoder();
         m_internalData->activeEncoder.SetLabel("Surface command encoder");
+        m_internalData->surfaceWasRendered = false;
     }
 
     void WebGPUPipeline::OnFrameBuildEnd() {
@@ -649,6 +628,331 @@ namespace SR_GRAPH_NS {
 
     bool WebGPUPipeline::PostInit() {
         return true;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // FrameBuffer binding & render pass management
+    // ----------------------------------------------------------------------------------------------------------------
+
+    void WebGPUPipeline::BindFrameBuffer(Pipeline::FramebufferPtr pFBO) {
+        Super::BindFrameBuffer(pFBO);
+        // m_state.pFrameBuffer is set by Super.
+        // Also set frameBufferId so GetCurrentFrameBufferId() returns the correct value
+        // (used by ShaderProgramManager to key per-FBO shader variants).
+        m_state.frameBufferId = pFBO ? pFBO->GetId() : 0;
+    }
+
+    bool WebGPUPipeline::BeginRender() {
+        if (!Super::BeginRender()) {
+            return false;
+        }
+
+        if (!m_internalData->activeEncoder) {
+            SR_ERROR("WebGPUPipeline::BeginRender() : no active command encoder! Call OnFrameBuildBegin first.");
+            return false;
+        }
+
+        auto&& pFBO = m_state.pFrameBuffer;
+
+        if (pFBO) {
+            // Render into the FBO's color + depth attachments
+            const int32_t fboId = pFBO->GetId();
+            if (fboId < 0 || !m_internalData->frameBuffers.IsAlive(fboId)) {
+                SR_ERROR("WebGPUPipeline::BeginRender() : FBO id {} is invalid or not alive!", fboId);
+                return false;
+            }
+
+            auto&& fbo = m_internalData->frameBuffers.At(fboId);
+            if (fbo.colorAttachments.empty() || !fbo.colorAttachments[0].view) {
+                SR_ERROR("WebGPUPipeline::BeginRender() : FBO {} has no valid color attachment!", fboId);
+                return false;
+            }
+
+            SR_UTILS_NS::Vector<wgpu::RenderPassColorAttachment> colorAttachments;
+            colorAttachments.reserve(fbo.colorAttachments.size());
+
+            for (auto&& att : fbo.colorAttachments) {
+                wgpu::RenderPassColorAttachment colorAtt{};
+                colorAtt.view     = att.view;
+                colorAtt.loadOp   = m_internalData->hasClearColor ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
+                colorAtt.storeOp  = wgpu::StoreOp::Store;
+                colorAtt.clearValue = m_internalData->hasClearColor
+                    ? m_internalData->clearColor
+                    : wgpu::Color{ 0.0, 0.0, 0.0, 1.0 };
+                colorAttachments.push_back(colorAtt);
+            }
+
+            wgpu::RenderPassDescriptor passDesc{};
+            passDesc.colorAttachmentCount = static_cast<size_t>(colorAttachments.size());
+            passDesc.colorAttachments     = colorAttachments.data();
+
+            wgpu::RenderPassDepthStencilAttachment depthAtt{};
+            if (fbo.depthAttachment.view) {
+                const bool hasStencil = fbo.depthAttachment.format == wgpu::TextureFormat::Depth24PlusStencil8
+                                     || fbo.depthAttachment.format == wgpu::TextureFormat::Depth32FloatStencil8;
+
+                depthAtt.view              = fbo.depthAttachment.view;
+                depthAtt.depthLoadOp       = m_internalData->hasClearDepth ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
+                depthAtt.depthStoreOp      = wgpu::StoreOp::Store;
+                depthAtt.depthClearValue   = m_internalData->hasClearDepth ? m_internalData->clearDepth : 1.0f;
+                // Stencil ops must be Undefined for depth-only formats (no stencil component).
+                depthAtt.stencilLoadOp     = hasStencil ? wgpu::LoadOp::Clear   : wgpu::LoadOp::Undefined;
+                depthAtt.stencilStoreOp    = hasStencil ? wgpu::StoreOp::Discard : wgpu::StoreOp::Undefined;
+                depthAtt.stencilClearValue = 0;
+                passDesc.depthStencilAttachment = &depthAtt;
+            }
+
+            m_internalData->activeRenderPass = m_internalData->activeEncoder.BeginRenderPass(&passDesc);
+        }
+        else {
+            // Render directly into swapchain (SwapchainPass)
+            if (!m_internalData->surfaceTextureView) {
+                SR_ERROR("WebGPUPipeline::BeginRender() : no surface texture view for swapchain pass!");
+                return false;
+            }
+
+            wgpu::RenderPassColorAttachment color{};
+            color.view       = m_internalData->surfaceTextureView;
+            // Always clear on first swapchain render pass of the frame to avoid undefined content.
+            color.loadOp     = wgpu::LoadOp::Clear;
+            color.storeOp    = wgpu::StoreOp::Store;
+            color.clearValue = m_internalData->hasClearColor
+                ? m_internalData->clearColor
+                : wgpu::Color{ 0.1, 0.1, 0.12, 1.0 };
+
+            wgpu::RenderPassDescriptor passDesc{};
+            passDesc.colorAttachmentCount = 1;
+            passDesc.colorAttachments     = &color;
+
+            m_internalData->activeRenderPass = m_internalData->activeEncoder.BeginRenderPass(&passDesc);
+            m_internalData->surfaceWasRendered = true;
+        }
+
+        // Reset clear flags after use
+        m_internalData->hasClearColor = false;
+        m_internalData->hasClearDepth = false;
+
+        return true;
+    }
+
+    void WebGPUPipeline::EndRender() {
+        if (m_internalData->activeRenderPass) {
+            m_internalData->activeRenderPass.End();
+            m_internalData->activeRenderPass = nullptr;
+        }
+        Super::EndRender();
+    }
+
+    void WebGPUPipeline::ClearBuffers() {
+        Super::ClearBuffers();
+        m_internalData->clearColor    = { 0.0, 0.0, 0.0, 1.0 };
+        m_internalData->clearDepth    = 1.0f;
+        m_internalData->hasClearColor = true;
+        m_internalData->hasClearDepth = true;
+    }
+
+    void WebGPUPipeline::ClearBuffers(float_t r, float_t g, float_t b, float_t a, float_t depth, uint8_t colorCount) {
+        Super::ClearBuffers(r, g, b, a, depth, colorCount);
+        m_internalData->clearColor    = { r, g, b, a };
+        m_internalData->clearDepth    = depth;
+        m_internalData->hasClearColor = true;
+        m_internalData->hasClearDepth = true;
+    }
+
+    void WebGPUPipeline::ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth) {
+        Super::ClearBuffers(clearColors, depth);
+        if (!clearColors.empty()) {
+            const auto& c = clearColors[0];
+            m_internalData->clearColor    = { c.r, c.g, c.b, c.a };
+            m_internalData->hasClearColor = true;
+        }
+        if (depth.has_value()) {
+            m_internalData->clearDepth    = depth.value();
+            m_internalData->hasClearDepth = true;
+        }
+    }
+
+    void WebGPUPipeline::SetViewport(int32_t width, int32_t height) {
+        Super::SetViewport(width, height);
+
+        if (!m_internalData->activeRenderPass) {
+            return;
+        }
+
+        auto&& pFBO = m_state.pFrameBuffer;
+        const uint32_t w = (width  > 0) ? static_cast<uint32_t>(width)  : (pFBO ? pFBO->GetWidth()  : m_internalData->surfaceWidth);
+        const uint32_t h = (height > 0) ? static_cast<uint32_t>(height) : (pFBO ? pFBO->GetHeight() : m_internalData->surfaceHeight);
+
+        m_internalData->activeRenderPass.SetViewport(0.f, 0.f, static_cast<float>(w), static_cast<float>(h), 0.f, 1.f);
+    }
+
+    void WebGPUPipeline::SetScissor(int32_t width, int32_t height) {
+        Super::SetScissor(width, height);
+
+        if (!m_internalData->activeRenderPass) {
+            return;
+        }
+
+        auto&& pFBO = m_state.pFrameBuffer;
+        const uint32_t w = (width  > 0) ? static_cast<uint32_t>(width)  : (pFBO ? pFBO->GetWidth()  : m_internalData->surfaceWidth);
+        const uint32_t h = (height > 0) ? static_cast<uint32_t>(height) : (pFBO ? pFBO->GetHeight() : m_internalData->surfaceHeight);
+
+        m_internalData->activeRenderPass.SetScissorRect(0, 0, w, h);
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Draw commands — delegated to the currently open render pass
+    // ----------------------------------------------------------------------------------------------------------------
+
+    void WebGPUPipeline::UseShader(uint32_t shaderProgram) {
+        Super::UseShader(shaderProgram);
+
+        if (!m_internalData->activeRenderPass) {
+            return;
+        }
+
+        const int32_t id = static_cast<int32_t>(shaderProgram);
+        if (id >= 0 && m_internalData->shaderPrograms.IsAlive(id)) {
+            auto&& prog = m_internalData->shaderPrograms.At(id);
+            if (prog.renderPipeline) {
+                m_internalData->activeRenderPass.SetPipeline(prog.renderPipeline);
+            }
+        }
+    }
+
+    void WebGPUPipeline::BindVBO(uint32_t VBO, uint32_t slot, VertexInputRate inputRate) {
+        Super::BindVBO(VBO, slot, inputRate);
+
+        if (!m_internalData->activeRenderPass) {
+            return;
+        }
+
+        const int32_t id = static_cast<int32_t>(VBO);
+        if (id >= 0 && m_internalData->VBOs.IsAlive(id)) {
+            auto&& buf = m_internalData->VBOs.At(id);
+            if (buf) {
+                m_internalData->activeRenderPass.SetVertexBuffer(slot, buf, 0, WGPU_WHOLE_SIZE);
+            }
+        }
+    }
+
+    void WebGPUPipeline::BindIBO(uint32_t IBO) {
+        Super::BindIBO(IBO);
+
+        if (!m_internalData->activeRenderPass) {
+            return;
+        }
+
+        const int32_t id = static_cast<int32_t>(IBO);
+        if (id >= 0 && m_internalData->IBOs.IsAlive(id)) {
+            auto&& buf = m_internalData->IBOs.At(id);
+            if (buf) {
+                m_internalData->activeRenderPass.SetIndexBuffer(buf, wgpu::IndexFormat::Uint32, 0, WGPU_WHOLE_SIZE);
+            }
+        }
+    }
+
+    bool WebGPUPipeline::BindDescriptorSet(uint32_t descriptorSet) {
+        if (!Super::BindDescriptorSet(descriptorSet)) {
+            return false;
+        }
+
+        if (!m_internalData->activeRenderPass) {
+            return true;
+        }
+
+        const int32_t id = static_cast<int32_t>(descriptorSet);
+        if (id >= 0 && m_internalData->bindGroups.IsAlive(id)) {
+            auto&& bg = m_internalData->bindGroups.At(id);
+            if (bg.bindGroup) {
+                m_internalData->activeRenderPass.SetBindGroup(0, bg.bindGroup, 0, nullptr);
+            }
+        }
+        return true;
+    }
+
+    void WebGPUPipeline::Draw(uint32_t count) {
+        Super::Draw(count);
+
+        if (!m_internalData->activeRenderPass || count == 0) {
+            return;
+        }
+
+        m_internalData->activeRenderPass.Draw(count, m_drawInstancesCount, 0, m_drawInstancesStart);
+    }
+
+    void WebGPUPipeline::DrawIndices(uint32_t count) {
+        Super::DrawIndices(count);
+
+        if (!m_internalData->activeRenderPass || count == 0) {
+            return;
+        }
+
+        m_internalData->activeRenderPass.DrawIndexed(count, m_drawInstancesCount, 0, 0, m_drawInstancesStart);
+    }
+
+    void WebGPUPipeline::UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) {
+        Super::UpdateDescriptorSets(descriptorSet, updateInfo);
+
+        const int32_t id = static_cast<int32_t>(descriptorSet);
+        if (id < 0 || !m_internalData->bindGroups.IsAlive(id)) {
+            return;
+        }
+
+        // WebGPU BindGroups are immutable — rebuild the BindGroup with updated buffer bindings.
+        // First we need the BindGroupLayout from the currently bound shader program.
+        const int32_t shaderId = m_state.shaderId;
+        wgpu::BindGroupLayout bgl;
+        if (shaderId >= 0 && m_internalData->shaderPrograms.IsAlive(shaderId)) {
+            bgl = m_internalData->shaderPrograms.At(shaderId).bindGroupLayout;
+        }
+
+        if (!bgl) {
+            // No shader bound yet; defer until UseShader is called.
+            return;
+        }
+
+        SR_UTILS_NS::Vector<wgpu::BindGroupEntry> entries;
+        entries.reserve(updateInfo.size());
+
+        for (auto&& info : updateInfo) {
+            wgpu::BindGroupEntry entry{};
+            entry.binding = info.binding;
+
+            if (info.descriptorType == DescriptorType::Uniform) {
+                const int32_t uboId = static_cast<int32_t>(info.ubo);
+                if (uboId >= 0 && m_internalData->UBOs.IsAlive(uboId)) {
+                    auto&& buf = m_internalData->UBOs.At(uboId);
+                    entry.buffer = buf;
+                    entry.offset = 0;
+                    entry.size   = buf.GetSize();
+                }
+            }
+            else if (info.descriptorType == DescriptorType::Storage) {
+                const int32_t ssboId = static_cast<int32_t>(info.ubo);
+                if (ssboId >= 0 && m_internalData->SSBOs.IsAlive(ssboId)) {
+                    auto&& buf = m_internalData->SSBOs.At(ssboId);
+                    entry.buffer = buf;
+                    entry.offset = 0;
+                    entry.size   = buf.GetSize();
+                }
+            }
+            entries.push_back(entry);
+        }
+
+        if (entries.empty()) {
+            return;
+        }
+
+        wgpu::BindGroupDescriptor bgDesc{};
+        bgDesc.layout     = bgl;
+        bgDesc.entryCount = static_cast<size_t>(entries.size());
+        bgDesc.entries    = entries.data();
+
+        wgpu::BindGroup newBG = m_internalData->device.CreateBindGroup(&bgDesc);
+        if (newBG) {
+            m_internalData->bindGroups.At(id).bindGroup = std::move(newBG);
+        }
     }
 
     bool WebGPUPipeline::Destroy() {
@@ -981,7 +1285,7 @@ namespace SR_GRAPH_NS {
             wgpu::BindGroupLayoutEntry texEntry{};
             texEntry.binding               = nextBinding1++;
             texEntry.visibility            = texVis;
-            texEntry.texture.sampleType    = wgpu::TextureSampleType::Float;
+            texEntry.texture.sampleType    = isAttachment ? wgpu::TextureSampleType::UnfilterableFloat : wgpu::TextureSampleType::Float;
             texEntry.texture.viewDimension = wgpu::TextureViewDimension::e2D;
             bglEntries1.push_back(texEntry);
 
@@ -1065,38 +1369,70 @@ namespace SR_GRAPH_NS {
             vertexBufferLayout.attributeCount = static_cast<size_t>(vertexAttributes.size());
             vertexBufferLayout.attributes     = vertexAttributes.data();
 
-            // Determine output color format from FBO or surface
-            wgpu::TextureFormat colorFormat = m_internalData->surfaceFormat != wgpu::TextureFormat::Undefined
-                ? m_internalData->surfaceFormat
-                : wgpu::TextureFormat::BGRA8Unorm;
+            // ---- Determine color target formats from FBO or surface ----
+            // The RenderPipeline must declare exactly the same color attachment formats
+            // as the RenderPass it will be used with. We get them from the FBO that was
+            // passed to AllocateShaderProgram (fbo argument = the FBO id from the pipeline).
+            SR_UTILS_NS::Vector<wgpu::TextureFormat> colorFormats;
+
+            if (fbo > 0 && m_internalData->frameBuffers.IsAlive(fbo)) {
+                // FBO exists: collect its color attachment formats
+                auto&& fboData = m_internalData->frameBuffers.At(fbo);
+                for (auto&& att : fboData.colorAttachments) {
+                    colorFormats.push_back(att.format);
+                }
+            }
+
+            if (colorFormats.empty()) {
+                // Fallback: swapchain format (also used by SwapchainPass shaders where fbo == 0)
+                colorFormats.push_back(m_internalData->surfaceFormat != wgpu::TextureFormat::Undefined
+                    ? m_internalData->surfaceFormat
+                    : wgpu::TextureFormat::BGRA8Unorm);
+            }
+
+            // Determine depth format from FBO
+            wgpu::TextureFormat depthFormat = wgpu::TextureFormat::Depth32Float; // sensible default
+            if (fbo > 0 && m_internalData->frameBuffers.IsAlive(fbo)) {
+                auto&& fboData = m_internalData->frameBuffers.At(fbo);
+                if (fboData.depthAttachment.format != wgpu::TextureFormat::Undefined) {
+                    depthFormat = fboData.depthAttachment.format;
+                }
+            }
 
             bool depthEnabled = createInfo.depthTest || createInfo.depthWrite;
 
-            wgpu::ColorTargetState colorTarget{};
-            colorTarget.format = colorFormat;
-
+            // Build per-target blend state (shared value, same for all targets)
+            wgpu::BlendState blendState{};
             if (createInfo.blendEnabled) {
-                wgpu::BlendState blend{};
-                blend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
-                blend.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
-                blend.color.operation = wgpu::BlendOperation::Add;
-                blend.alpha.srcFactor = wgpu::BlendFactor::One;
-                blend.alpha.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
-                blend.alpha.operation = wgpu::BlendOperation::Add;
+                blendState.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
+                blendState.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
+                blendState.color.operation = wgpu::BlendOperation::Add;
+                blendState.alpha.srcFactor = wgpu::BlendFactor::One;
+                blendState.alpha.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
+                blendState.alpha.operation = wgpu::BlendOperation::Add;
+            }
 
-                static wgpu::BlendState blendState = blend;
-                colorTarget.blend = &blendState;
+            SR_UTILS_NS::Vector<wgpu::ColorTargetState> colorTargets;
+            colorTargets.reserve(colorFormats.size());
+            for (auto fmt : colorFormats) {
+                wgpu::ColorTargetState ct{};
+                ct.format = fmt;
+                ct.writeMask = wgpu::ColorWriteMask::All;
+                if (createInfo.blendEnabled) {
+                    ct.blend = &blendState;
+                }
+                colorTargets.push_back(ct);
             }
 
             wgpu::FragmentState fragmentState{};
             fragmentState.module      = shaderModule;
             fragmentState.entryPoint  = "fragment";
-            fragmentState.targetCount = 1;
-            fragmentState.targets     = &colorTarget;
+            fragmentState.targetCount = static_cast<size_t>(colorTargets.size());
+            fragmentState.targets     = colorTargets.data();
 
             wgpu::DepthStencilState depthStencilState{};
             if (depthEnabled) {
-                depthStencilState.format              = wgpu::TextureFormat::Depth32Float;
+                depthStencilState.format              = depthFormat;
                 depthStencilState.depthWriteEnabled   = createInfo.depthWrite;
                 depthStencilState.depthCompare        = DepthCompareToWGPU(createInfo.depthCompare);
             }
@@ -1280,12 +1616,12 @@ namespace SR_GRAPH_NS {
 
                 for (auto&& oldTexture : colorLayer.texture) {
                     if (oldTexture != SR_ID_INVALID) {
+                        m_internalData->textures.At(oldTexture).Destroy();
                         m_internalData->textures.RemoveByIndex(oldTexture);
                     }
                 }
                 colorLayer.texture.clear();
 
-                webTexture.view    = att.view;
                 webTexture.sampler = m_internalData->device.CreateSampler(&samplerDesc);
 
                 const auto colorId = m_internalData->textures.Add(std::move(webTexture));
@@ -1368,18 +1704,19 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        // Register texture IDs in the color layer vectors
-        if (createInfo.colors) {
-            for (size_t i = 0; i < createInfo.colors->size() && i < fbo.colorAttachments.size(); ++i) {
-                // Each color layer holds a list of texture IDs. We store the FBO attachment index.
-                // The engine uses these IDs with BindTexture / BindAttachment.
-            }
-        }
-
         ++m_state.operations;
         ++m_state.allocations;
 
-        return m_internalData->frameBuffers.Add(std::move(fbo));
+        const int32_t fboId = m_internalData->frameBuffers.Add(std::move(fbo));
+
+        // Write the allocated id back into every slot of pFBO so that Framebuffer::GetId() works.
+        if (createInfo.pFBO) {
+            for (auto& slot : *createInfo.pFBO) {
+                slot = fboId;
+            }
+        }
+
+        return fboId;
     }
 
     // ----------------------------------------------------------------------------------------------------------------

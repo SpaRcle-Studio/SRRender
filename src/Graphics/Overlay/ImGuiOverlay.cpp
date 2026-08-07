@@ -56,7 +56,7 @@ namespace SR_GRAPH_NS {
         SR_GRAPH_GUI_NS::Immediate::ImmediateGUICreateContext createContext;
         createContext.iniPath = m_iniPathEditor;
         createContext.viewportsEnabled = SR_UTILS_NS::Features::Instance().Enabled("Undocking", false);
-        if (!IsDynamicRenderingEnabled()) {
+        if (createContext.viewportsEnabled && !IsDynamicRenderingEnabled()) {
             SR_WARN("ImGuiOverlay::Init() : dynamic rendering is disabled! Undocking is not available!");
             createContext.viewportsEnabled = false;
         }

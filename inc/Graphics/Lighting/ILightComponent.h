@@ -51,7 +51,7 @@ namespace SR_GRAPH_NS {
         /// @property @onChanged(UpdateLightParams)
         float_t m_temperature = 6500.f;
         /// @property @onChanged(UpdateLightParams)
-        SR_MATH_NS::FVector3 m_filter = SR_MATH_NS::FVector3::One();
+        SR_MATH_NS::FColor m_filter = SR_MATH_NS::FColor(1.f);
         /// @property @onChanged(UpdateLightParams)
         ShadowType m_shadowType = ShadowType::Soft;
 

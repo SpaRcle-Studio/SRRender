@@ -14,7 +14,7 @@ namespace SR_GRAPH_NS {
         , m_renderScene(pRenderScene)
     {
         m_directionalLightParams.direction = SR_MATH_NS::FVector3(20, 60, 5).Normalize();
-        m_directionalLightParams.lightColor = SR_MATH_NS::FVector3(1.0f, 0.95f, 0.85f);
+        m_directionalLightParams.lightColor = SR_MATH_NS::FColor(1.0f, 0.95f, 0.85f);
     }
 
     LightSystem::~LightSystem() {

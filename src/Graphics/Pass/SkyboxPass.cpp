@@ -138,9 +138,9 @@ namespace SR_GRAPH_NS {
             auto&& dirLightParams = GetRenderScene()->GetLightSystem()->GetDirectionalLightParams();
 
             pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, dirLightParams.direction);
-            pShader->SetVec3(SHADER_SUN_COLOR, dirLightParams.lightColor);
-            pShader->SetVec3(SHADER_SKY_COLOR, dirLightParams.skyColor);
-            pShader->SetVec3(SHADER_GROUND_COLOR, dirLightParams.groundColor);
+            pShader->SetVec3(SHADER_SUN_COLOR, dirLightParams.lightColor.RGB());
+            pShader->SetVec3(SHADER_SKY_COLOR, dirLightParams.skyColor.RGB());
+            pShader->SetVec3(SHADER_GROUND_COLOR, dirLightParams.groundColor.RGB());
             pShader->SetFloat(SHADER_SUN_INTENSITY, dirLightParams.intensity);
             pShader->SetFloat(SHADER_SHADOW_STRENGTH, dirLightParams.shadowStrength);
             pShader->SetFloat(SHADER_AMBIENT_INTENSITY, dirLightParams.ambientIntensity);

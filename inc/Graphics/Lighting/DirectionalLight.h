@@ -23,11 +23,11 @@ namespace SR_GRAPH_NS {
         /// @property @onChanged(UpdateLightParams)
         bool m_interactsWithSky = true;
         /// @property @onChanged(UpdateLightParams) @group(Sky)
-        SR_MATH_NS::FVector3 m_sunsetSky = SR_MATH_NS::FVector3(0.06f, 0.0f, 0.0f);
+        SR_MATH_NS::FColor m_sunsetSky = SR_MATH_NS::FColor(0.06f, 0.0f, 0.0f);
         /// @property @onChanged(UpdateLightParams) @group(Sky)
-        SR_MATH_NS::FVector3 m_daySkyColor = SR_MATH_NS::FVector3(0.514f, 0.734f, 0.997f);
+        SR_MATH_NS::FColor m_daySkyColor = SR_MATH_NS::FColor(0.514f, 0.734f, 0.997f);
         /// @property @onChanged(UpdateLightParams) @group(Sky)
-        SR_MATH_NS::FVector3 m_groundSky = SR_MATH_NS::FVector3(0.7f, 0.6f, 0.5f);
+        SR_MATH_NS::FColor m_groundSky = SR_MATH_NS::FColor(0.7f, 0.6f, 0.5f);
         /// @property @onChanged(UpdateLightParams) @group(Sky)
         float_t m_saturationMin = 0.5f;
         /// @property @onChanged(UpdateLightParams) @group(Sky)

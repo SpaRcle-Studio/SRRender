@@ -21,9 +21,9 @@ namespace SR_GRAPH_NS {
 
     struct DirectionalLightParams {
         SR_MATH_NS::FVector3 direction;
-        SR_MATH_NS::FVector3 lightColor;
-        SR_MATH_NS::FVector3 skyColor;
-        SR_MATH_NS::FVector3 groundColor;
+        SR_MATH_NS::FColor lightColor;
+        SR_MATH_NS::FColor skyColor;
+        SR_MATH_NS::FColor groundColor;
         float_t intensity = 1.f;
         float_t ambientIntensity = 1.f;
         float_t shadowStrength = 0.9f;

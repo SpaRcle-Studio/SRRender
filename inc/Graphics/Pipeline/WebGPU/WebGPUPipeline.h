@@ -68,6 +68,23 @@ namespace SR_GRAPH_NS {
         void UnMapSSBO(uint32_t SSBO) override;
         void FlushSSBO(uint32_t SSBO, uint64_t offset, uint64_t size) override;
 
+        void BindFrameBuffer(FramebufferPtr pFBO) override;
+        bool BeginRender() override;
+        void EndRender() override;
+        void ClearBuffers() override;
+        void ClearBuffers(float_t r, float_t g, float_t b, float_t a, float_t depth, uint8_t colorCount) override;
+        void ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth) override;
+        void SetViewport(int32_t width, int32_t height) override;
+        void SetScissor(int32_t width, int32_t height) override;
+
+        void UseShader(uint32_t shaderProgram) override;
+        void BindVBO(uint32_t VBO, uint32_t slot, VertexInputRate inputRate) override;
+        void BindIBO(uint32_t IBO) override;
+        bool BindDescriptorSet(uint32_t descriptorSet) override;
+        void Draw(uint32_t count) override;
+        void DrawIndices(uint32_t count) override;
+        void UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) override;
+
         SR_NODISCARD void* GetCurrentShaderHandle() const override;
         SR_NODISCARD void* GetCurrentFBOHandle() const override;
 

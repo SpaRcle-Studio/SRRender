@@ -29,8 +29,8 @@ namespace SR_GRAPH_NS {
         // ------------------------------------------------------------
         // Base sun color (Kelvin + Filter)
         // ------------------------------------------------------------
-        const SR_MATH_NS::FVector3 tempColor = SR_MATH_NS::KelvinToRGB(m_temperature);
-        SR_MATH_NS::FVector3 sunBaseColor = tempColor * m_filter;
+        const SR_MATH_NS::FColor tempColor = SR_MATH_NS::KelvinToRGB(m_temperature);
+        SR_MATH_NS::FColor sunBaseColor = tempColor * m_filter;
 
         // ------------------------------------------------------------
         // Atmospheric absorption
@@ -39,13 +39,13 @@ namespace SR_GRAPH_NS {
         const float greenLoss = SR_MATH_NS::Mix(0.7f, 1.0f, sunHeight);
         const float blueLoss  = SR_MATH_NS::Mix(0.2f, 1.0f, sunHeight);
 
-        const SR_MATH_NS::FVector3 atmosphereAbsorb(
+        const SR_MATH_NS::FColor atmosphereAbsorb(
             redLoss,
             greenLoss,
             blueLoss
         );
 
-        SR_MATH_NS::FVector3 sunColor = sunBaseColor * atmosphereAbsorb;
+        SR_MATH_NS::FColor sunColor = sunBaseColor * atmosphereAbsorb;
 
         // ------------------------------------------------------------
         // Desaturate sun on sunset
@@ -53,7 +53,7 @@ namespace SR_GRAPH_NS {
         const float saturation = SR_MATH_NS::Mix(m_saturationMin, m_saturationMax, sunHeight);
         const float luminance = sunColor.x * 0.2126f + sunColor.y * 0.7152f + sunColor.z * 0.0722f;
 
-        const SR_MATH_NS::FVector3 gray(luminance);
+        const SR_MATH_NS::FColor gray(luminance);
 
         sunColor = SR_MATH_NS::Mix(gray, sunColor, saturation);
 
@@ -61,7 +61,7 @@ namespace SR_GRAPH_NS {
             // Чем ниже солнце — тем БЕЛЕЕ direct light
             const float skyInfluence = SR_MATH_NS::Curve::SmoothStep(0.0f, 0.35f, sunHeight);
             sunColor = SR_MATH_NS::Mix(
-                SR_MATH_NS::FVector3(1.0f),
+                SR_MATH_NS::FColor(1.0f),
                 sunColor,
                 skyInfluence
             );
