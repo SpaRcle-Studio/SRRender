@@ -7,7 +7,6 @@
 #include <Graphics/GUI/Link.h>
 #include <Graphics/GUI/Node.h>
 
-#include <Utils/SRLM/DataType.h>
 #include <Utils/Platform/Platform.h>
 
 namespace SR_GRAPH_GUI_NS {
@@ -42,36 +41,6 @@ namespace SR_GRAPH_GUI_NS {
         }
 
         m_node = nullptr;
-    }
-
-    IconType Pin::GetIconType(const PinType &type) {
-        switch (type) {
-            case PinType::None: return IconType::Flow;
-            case PinType::Flow: return IconType::Flow;
-            case PinType::Bool: return IconType::Circle;
-            case PinType::Int8:
-            case PinType::Int16:
-            case PinType::Int32:
-            case PinType::Int64:
-            case PinType::UInt8:
-            case PinType::UInt16:
-            case PinType::UInt32:
-            case PinType::UInt64:
-                return IconType::Circle;
-            case PinType::Float:  return IconType::Circle;
-            case PinType::String: return IconType::Circle;
-            case PinType::Struct: return IconType::Square;
-            /// case PinType::Numeric:  return IconType::Circle;
-            /// case PinType::Object:   return IconType::Circle;
-            /// case PinType::Function: return IconType::Circle;
-            /// case PinType::Delegate: return IconType::Square;
-            /// case PinType::Event:    return IconType::Square;
-            case PinType::Enum: return IconType::Circle;
-            case PinType::Array: return IconType::Grid;
-            default:
-                SRHalt("Unknown icon type!");
-                return IconType::Square;
-        }
     }
 
     void Pin::SetNode(Node* node) {
@@ -167,11 +136,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Pin::DrawPinIcon(bool connected, uint32_t alpha) {
-        IconType iconType = GetIconType(GetType());
-        //ImColor color = GetIconColor(GetType());
-        //color.Value.w = alpha / 255.0f;
 
-        const float_t pinIconSize = 24.f;
     }
 
     void Pin::PostDrawOption() {
@@ -180,47 +145,9 @@ namespace SR_GRAPH_GUI_NS {
             m_editEnum = false;
         }
 
-        switch (GetType()) {
-            case PinType::Enum: {
-                /*auto&& pEnum = dynamic_cast<SR_SRLM_NS::DataTypeEnum*>(m_dataType);
-                if (!pEnum) {
-                    break;
-                }
-
-                auto&& pReflector = pEnum->GetReflector();
-                if (!pReflector) {
-                    break;
-                }
-
-                if (ImGui::BeginPopup(SR_FORMAT_C("pin_enum_popup{}", (void*)this))) {
-                    ImGui::TextDisabled("Select:");
-                    ImGui::BeginChild("pin_enum_popup_scrollbar", ImVec2(100, 300), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
-                    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.f);
-                    for (auto&& selectable : pReflector->GetNamesInternal()) {
-                        if (ImGui::Button(selectable.c_str(), ImVec2(100, 20))) {
-                            if (auto&& enumNewValue = pReflector->FromStringInternal(selectable)) {
-                                pEnum->SetValue(enumNewValue.value());
-                            }
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    ImGui::PopStyleVar();
-                    ImGui::EndChild();
-                    ImGui::EndPopup();
-                }
-                */
-                break;
-            }
-            default:
-                break;
-        }
     }
 
     void Pin::DrawOption() {
-    }
-
-    Pin::PinType Pin::GetType() const {
-        return PinType::None;
     }
 
     uint32_t Pin::GetIndex() const {

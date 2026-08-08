@@ -10,8 +10,6 @@
 
 #include <ImmediateGUI/GUI/ImmediateGUI.h>
 
-#include <Utils/SRLM/LogicalMachine.h>
-#include <Utils/SRLM/LogicalNodeManager.h>
 #include <Utils/Common/StringUtils.h>
 
 #include <Codegen/NodeWidget.generated.hpp>

@@ -7,9 +7,6 @@
 
 #include <Graphics/GUI/Icons.h>
 
-#include <Utils/SRLM/DataType.h>
-#include <Utils/SRLM/LogicalNode.h>
-
 namespace SR_GRAPH_GUI_NS {
     SR_ENUM_NS_CLASS(NodeType,
         None,

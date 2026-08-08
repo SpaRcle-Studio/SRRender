@@ -5,8 +5,6 @@
 #include <Graphics/GUI/NodeCreation.h>
 #include <Graphics/GUI/NodeWidget.h>
 #include <Graphics/Render/RenderTechnique.h>
-#include <Utils/SRLM/LogicalMachine.h>
-#include <Utils/SRLM/DataTypeManager.h>
 
 namespace SR_GRAPH_GUI_NS {
     Node* CreateNode(const SR_MATH_NS::FVector2& pos, uint64_t identifier) {

@@ -30,7 +30,6 @@ namespace SR_GRAPH_NS::GUI {
     class Pin : private SR_UTILS_NS::NonCopyable {
         friend class Node;
         friend class Link;
-        using PinType = SR_SRLM_NS::DataTypeClass;
         using DataTypePtr = SR_SRLM_NS::DataType*;
     public:
         Pin();
@@ -41,8 +40,6 @@ namespace SR_GRAPH_NS::GUI {
         ~Pin() override;
 
     public:
-        static IconType GetIconType(const PinType& type);
-
         void DrawPinIcon(bool connected, uint32_t alpha);
 
         void DrawOption();
@@ -61,7 +58,6 @@ namespace SR_GRAPH_NS::GUI {
         SR_NODISCARD bool IsLinked() const;
         SR_NODISCARD bool CanLink() const;
         SR_NODISCARD float_t GetWidth() const;
-        SR_NODISCARD PinType GetType() const;
         SR_NODISCARD PinKind GetKind() const { return m_kind; }
         SR_NODISCARD Node* GetNode() const { return m_node; }
         SR_NODISCARD DataTypePtr GetDataType() const { return m_dataType; }
