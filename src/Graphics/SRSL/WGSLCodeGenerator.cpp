@@ -995,7 +995,7 @@ namespace SR_SRSL_NS {
     // GenerateStage
     // ----------------------------------------------------------------------------------------------------------------
 
-    std::string_view WGSLCodeGenerator::GenerateStage(const SRSLShader* pShader, SRSLResult& result, ShaderStage stage, const std::string& preCode) {
+    std::string_view WGSLCodeGenerator::GenerateStage(const SRSLShader* pShader, SR_UTILS_NS::LexerDetails::LexerResult& result, ShaderStage stage, const std::string& preCode) {
         static std::string code;
         code.clear();
 
@@ -1056,7 +1056,7 @@ namespace SR_SRSL_NS {
     // Vertex stage
     // ----------------------------------------------------------------------------------------------------------------
 
-    std::optional<std::string_view> WGSLCodeGenerator::GenerateVertexStage(const SRSLShader* pShader, SRSLResult& result) {
+    std::optional<std::string_view> WGSLCodeGenerator::GenerateVertexStage(const SRSLShader* pShader, SR_UTILS_NS::LexerDetails::LexerResult& result) {
         static std::string resultCode;
         static std::string preArgs;
         static std::string preCode;
@@ -1144,7 +1144,7 @@ namespace SR_SRSL_NS {
     // Fragment stage
     // ----------------------------------------------------------------------------------------------------------------
 
-    std::optional<std::string_view> WGSLCodeGenerator::GenerateFragmentStage(const SRSLShader* pShader, SRSLResult& result) {
+    std::optional<std::string_view> WGSLCodeGenerator::GenerateFragmentStage(const SRSLShader* pShader, SR_UTILS_NS::LexerDetails::LexerResult& result) {
         static std::string code;
         static std::string variablesCode;
         static std::string preCode;
@@ -1268,7 +1268,7 @@ namespace SR_SRSL_NS {
     // Compute stage
     // ----------------------------------------------------------------------------------------------------------------
 
-    std::optional<std::string_view> WGSLCodeGenerator::GenerateComputeStage(const SRSLShader* pShader, SRSLResult& result) {
+    std::optional<std::string_view> WGSLCodeGenerator::GenerateComputeStage(const SRSLShader* pShader, SR_UTILS_NS::LexerDetails::LexerResult& result) {
         static std::string code;
         static std::string preCode;
         static std::string preArgs;
@@ -1364,7 +1364,7 @@ namespace SR_SRSL_NS {
         auto&& [result, stages] = codeGenRes;
 
         if (!pShader->GetAnalyzedTree()) {
-            result = SRSLResult(SRSLReturnCode::InvalidLexicalTree);
+            result = SR_UTILS_NS::LexerDetails::LexerResult(SR_UTILS_NS::LexerDetails::LexerReturnCode::InvalidLexicalTree);
             return codeGenRes;
         }
 

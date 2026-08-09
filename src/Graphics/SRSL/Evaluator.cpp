@@ -3,18 +3,18 @@
 //
 
 #include <Graphics/SRSL/Evaluator.h>
-#include <Graphics/SRSL/Lexer.h>
 #include <Graphics/SRSL/LexicalAnalyzer.h>
 #include <Graphics/SRSL/MathExpression.h>
 
 #include <Utils/Common/LexicalCast.h>
+#include <Utils/Lexer/Lexer.h>
 
 namespace SR_SRSL_NS {
     double_t SRSLEvaluator::Evaluate(SR_UTILS_NS::IAllocator* pAllocator, const std::string& code) {
         SR_TRACY_ZONE;
         SR_GLOBAL_LOCK;
 
-        auto&& lexems = SRSLLexer::Instance().ParseString(pAllocator, 16, code, 0);
+        auto&& lexems = SR_UTILS_NS::Lexer::Instance().ParseString(pAllocator, 16, code, 0);
         auto&& [pTree, result] = SRSLLexicalAnalyzer::Instance().Analyze(pAllocator, lexems);
 
         if (result.HasErrors()) {

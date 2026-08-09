@@ -6,7 +6,6 @@
 #define SR_ENGINE_SRSL_LEXICALTREE_H
 
 #include <Graphics/Loaders/SRSL.h>
-#include <Graphics/SRSL/LexerUtils.h>
 
 namespace SR_SRSL_NS {
     template<typename T, typename ...Args> T* AllocateLexicalUnit(SR_UTILS_NS::IAllocator& allocator, Args&&... args) {

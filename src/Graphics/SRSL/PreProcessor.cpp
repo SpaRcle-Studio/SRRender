@@ -3,14 +3,20 @@
 //
 
 #include <Graphics/SRSL/PreProcessor.h>
-#include <Graphics/SRSL/Lexer.h>
 #include <Graphics/SRSL/MathExpression.h>
 #include <Graphics/SRSL/Evaluator.h>
 
 #include <Utils/Memory/MemoryLiterals.h>
 #include <Utils/Memory/Allocator.h>
+#include <Utils/Lexer/Lexer.h>
+#include <Utils/Resources/ResourceManager.h>
 
 namespace SR_SRSL_NS {
+    using SRSLResult = SR_UTILS_NS::LexerDetails::LexerResult;
+    using SRSLReturnCode = SR_UTILS_NS::LexerDetails::LexerReturnCode;
+    using Lexem = SR_UTILS_NS::LexerDetails::Lexem;
+    using LexemKind = SR_UTILS_NS::LexerDetails::LexemKind;
+
     SRSLPreProcessor::OutResult SRSLPreProcessor::Process(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::Vector<Lexem>&& lexems, Includes& includes, ShaderParams& params) {
         SR_TRACY_ZONE;
 
@@ -83,7 +89,7 @@ namespace SR_SRSL_NS {
         switch (m_lexems[m_currentLexem].kind) {
             case LexemKind::Macro:
                 if (m_state != PPState::Idle) {
-                    m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected macro!"));
+                    m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected macro!"));
                     return;
                 }
                 m_state = PPState::MacroName;
@@ -104,18 +110,18 @@ namespace SR_SRSL_NS {
 
                     auto&& includePath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(m_include);
                     if (!includePath.Exists(SR_UTILS_NS::Path::Type::File)) {
-                        m_result.AddError(SRSLMessage(SRSLReturnCode::IncludeNotExists, GetCurrentLexem()))
+                        m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::IncludeNotExists, GetCurrentLexem()))
                             .SetDescription(m_include);
                         return;
                     }
 
-                    SRSLInclude& include = m_includes.emplace_back();
+                    SR_UTILS_NS::LexerDetails::LexerInclude& include = m_includes.emplace_back();
                     include.name = SR_EXCHANGE(m_include, {});
 
-                    auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(m_pAllocator, 256, includePath, include.buffer, m_include.size());
+                    auto&& lexems = SR_UTILS_NS::Lexer::Instance().Parse(m_pAllocator, 256, includePath, include.buffer, m_include.size());
                     if (lexems.empty()) {
                         SR_ERROR("SRSLPreProcessor::ProcessMain() : failed to parse lexems!\n\tPath: " + includePath.ToString());
-                        m_result.AddError(SRSLMessage(SRSLReturnCode::IncludeError, GetCurrentLexem())).SetDescription(includePath.ToString());
+                        m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::IncludeError, GetCurrentLexem())).SetDescription(includePath.ToString());
                         return;
                     }
 
@@ -195,7 +201,7 @@ namespace SR_SRSL_NS {
                     else if (value == "else" && m_deadBranches == 0) {
                         m_state = PPState::Idle;
                         if (m_ifStack.size() <= 1) {
-                            m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected else!"));
+                            m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected else!"));
                             return;
                         }
                         bool top = m_ifStack.top();
@@ -213,14 +219,14 @@ namespace SR_SRSL_NS {
 
                         m_state = PPState::Idle;
                         if (m_ifStack.size() <= 1) {
-                            m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected endif!"));
+                            m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected endif!"));
                             return;
                         }
                         m_ifStack.pop();
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
                     else if (m_ifStack.top()) {
-                        m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unknown macro!"));
+                        m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unknown macro!"));
                     }
                     else {
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
@@ -260,7 +266,7 @@ namespace SR_SRSL_NS {
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                         break;
                     default:
-                        m_result.AddError(SRSLMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()));
+                        m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()));
                         return;
                 }
                 break;

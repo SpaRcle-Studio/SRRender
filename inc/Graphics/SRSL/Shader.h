@@ -98,7 +98,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SR_UTILS_NS::Vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetShared() const { return m_shared; }
         SR_NODISCARD const SR_UTILS_NS::Vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>>& GetSharedWorkgroup() const { return m_sharedWorkgroup; }
         SR_NODISCARD const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SRSLVariable*>& GetConstants() const { return m_constants; }
-        SR_NODISCARD const SR_UTILS_NS::Vector<SRSLInclude>& GetIncludes() const { return m_includes; }
+        SR_NODISCARD const SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::LexerInclude>& GetIncludes() const { return m_includes; }
         SR_NODISCARD const SR_MATH_NS::UVector3& GetComputeWorkGroupSize() const { return m_computeWorkGroupSize; }
         SR_NODISCARD bool IsMacroDefined(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD bool IsGLayerUsed() const { return m_gLayerUsed; }
@@ -131,7 +131,7 @@ namespace SR_SRSL_NS {
         SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
         bool m_gLayerUsed = false;
         ShaderParams m_params;
-        SR_UTILS_NS::Vector<SRSLInclude> m_includes;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::LexerInclude> m_includes;
         SR_UTILS_NS::Vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_shared;
         SR_UTILS_NS::Vector<std::pair<SR_UTILS_NS::StringAtom, SRSLVariable*>> m_sharedWorkgroup;
         SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SRSLVariable*> m_constants;

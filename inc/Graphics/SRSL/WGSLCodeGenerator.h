@@ -31,10 +31,10 @@ namespace SR_SRSL_NS {
             const std::string_view& returnType = std::string_view()
         );
 
-        std::string_view GenerateStage(const SRSLShader* pShader, SRSLResult& result, ShaderStage stage, const std::string& preCode = std::string());
-        std::optional<std::string_view> GenerateVertexStage(const SRSLShader* pShader, SRSLResult& result);
-        std::optional<std::string_view> GenerateFragmentStage(const SRSLShader* pShader, SRSLResult& result);
-        std::optional<std::string_view> GenerateComputeStage(const SRSLShader* pShader, SRSLResult& result);
+        std::string_view GenerateStage(const SRSLShader* pShader, SR_UTILS_NS::LexerDetails::LexerResult& result, ShaderStage stage, const std::string& preCode = std::string());
+        std::optional<std::string_view> GenerateVertexStage(const SRSLShader* pShader, SR_UTILS_NS::LexerDetails::LexerResult& result);
+        std::optional<std::string_view> GenerateFragmentStage(const SRSLShader* pShader, SR_UTILS_NS::LexerDetails::LexerResult& result);
+        std::optional<std::string_view> GenerateComputeStage(const SRSLShader* pShader, SR_UTILS_NS::LexerDetails::LexerResult& result);
 
     private:
         SR_NODISCARD SR_UTILS_NS::String GenerateConstants(const SRSLShader* pShader) const;

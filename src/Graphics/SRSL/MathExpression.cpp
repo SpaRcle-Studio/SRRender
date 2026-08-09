@@ -5,6 +5,11 @@
 #include <Graphics/SRSL/MathExpression.h>
 
 namespace SR_SRSL_NS {
+    using SRSLResult = SR_UTILS_NS::LexerDetails::LexerResult;
+    using SRSLReturnCode = SR_UTILS_NS::LexerDetails::LexerReturnCode;
+    using Lexem = SR_UTILS_NS::LexerDetails::Lexem;
+    using LexemKind = SR_UTILS_NS::LexerDetails::LexemKind;
+
     std::pair<SRSLExpr*, SRSLResult> SRSLMathExpression::Analyze(SR_UTILS_NS::IAllocator* pAllocator, std::span<Lexem> lexems) {
         SR_TRACY_ZONE;
 
@@ -120,7 +125,7 @@ namespace SR_SRSL_NS {
             return nullptr;
         }
 
-        if (SR_MATH_NS::IsNumber(token.value) || IsIdentifier(token.value)) {
+        if (SR_MATH_NS::IsNumber(token.value) || SR_UTILS_NS::LexerDetails::IsIdentifier(token.value)) {
             auto&& pBasicExpr = AllocateLexicalUnit<SRSLExpr>(*m_pAllocator, token.value);
 
             /// parse function call
@@ -694,7 +699,7 @@ namespace SR_SRSL_NS {
             return true;
         }
 
-        if (IsOperator(pLexem->value)) {
+        if (SR_UTILS_NS::LexerDetails::IsOperator(pLexem->value)) {
             return false;
         }
 

@@ -8,6 +8,7 @@
 
 #include <Utils/Types/Marshal.h>
 #include <Utils/Common/BaseMarshal.h>
+#include <Utils/Resources/ResourceManager.h>
 
 namespace SR_SRSL_NS {
     namespace Details {
@@ -390,10 +391,10 @@ namespace SR_GRAPH_NS {
         const auto hash = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
         uint64_t currentHash = 0;
 
-        SR_UTILS_NS::Vector<SR_SRSL_NS::SRSLInclude> includes;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::LexerInclude> includes;
         const auto includesSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
         for (uint64_t i = 0; i < includesSize; ++i) {
-            SR_SRSL_NS::SRSLInclude& inc = includes.emplace_back();
+            auto& inc = includes.emplace_back();
             inc.name = SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal);
             auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(inc.name);
             currentHash = SR_UTILS_NS::CombineTwoHashes(currentHash, absPath.GetFileHash());

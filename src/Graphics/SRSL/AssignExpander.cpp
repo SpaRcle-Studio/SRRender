@@ -6,6 +6,11 @@
 #include <Graphics/SRSL/MathExpression.h>
 
 namespace SR_SRSL_NS {
+    using SRSLResult = SR_UTILS_NS::LexerDetails::LexerResult;
+    using SRSLReturnCode = SR_UTILS_NS::LexerDetails::LexerReturnCode;
+    using Lexem = SR_UTILS_NS::LexerDetails::Lexem;
+    using LexemKind = SR_UTILS_NS::LexerDetails::LexemKind;
+
     std::pair<std::vector<Lexem>, SRSLResult> SRSLAssignExpander::Expand(SR_UTILS_NS::IAllocator* pAllocator, std::vector<Lexem>&& lexems) {
         Clear();
 

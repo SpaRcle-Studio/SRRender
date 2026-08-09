@@ -5,6 +5,8 @@
 #include <Graphics/SRSL/RefAnalyzer.h>
 #include <Graphics/SRSL/ShaderVariables.h>
 
+#include <Utils/Lexer/LexerUtils.h>
+
 #include <Enum/ShaderStage.hpp>
 
 namespace SR_SRSL_NS {
@@ -310,7 +312,7 @@ namespace SR_SRSL_NS {
             return;
         }
 
-        if (IsIdentifier(pExpr->token) && !pExpr->token.empty()) {
+        if (SR_UTILS_NS::LexerDetails::IsIdentifier(pExpr->token) && !pExpr->token.empty()) {
             pUseStack->variables.insert(pExpr->token);
         }
 

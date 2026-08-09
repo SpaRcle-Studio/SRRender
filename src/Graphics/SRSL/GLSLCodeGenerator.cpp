@@ -31,7 +31,7 @@ namespace SR_SRSL_NS {
         auto&& [result, stages] = codeGenRes;
 
         if (!pShader->GetAnalyzedTree()) {
-            result = SRSLResult(SRSLReturnCode::InvalidLexicalTree);
+            result = SR_UTILS_NS::LexerDetails::LexerResult(SR_UTILS_NS::LexerDetails::LexerReturnCode::InvalidLexicalTree);
             return codeGenRes;
         }
 

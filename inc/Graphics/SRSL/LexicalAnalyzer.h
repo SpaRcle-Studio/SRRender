@@ -7,6 +7,8 @@
 
 #include <Graphics/SRSL/MathExpression.h>
 
+#include <Utils/Common/Singleton.h>
+
 namespace SR_SRSL_NS {
     class SRSLLexicalAnalyzer : public SR_UTILS_NS::Singleton<SRSLLexicalAnalyzer> {
         SR_REGISTER_SINGLETON(SRSLLexicalAnalyzer)
@@ -19,7 +21,7 @@ namespace SR_SRSL_NS {
             StructureStatement, StructureStatementBody,
         };
     public:
-        SR_NODISCARD std::pair<SRSLAnalyzedTree*, SRSLResult> Analyze(SR_UTILS_NS::IAllocator* pAllocator, std::span<Lexem> lexems);
+        SR_NODISCARD std::pair<SRSLAnalyzedTree*, SR_UTILS_NS::LexerDetails::LexerResult> Analyze(SR_UTILS_NS::IAllocator* pAllocator, std::span<SR_UTILS_NS::LexerDetails::Lexem> lexems);
 
     private:
         void Clear();
@@ -34,22 +36,22 @@ namespace SR_SRSL_NS {
 
         SR_NODISCARD bool InBounds() const noexcept;
         SR_NODISCARD bool IsHasErrors() const noexcept;
-        SR_NODISCARD const Lexem* GetLexem(int64_t offset) const;
-        SR_NODISCARD const Lexem* GetCurrentLexem() const;
+        SR_NODISCARD const SR_UTILS_NS::LexerDetails::Lexem* GetLexem(int64_t offset) const;
+        SR_NODISCARD const SR_UTILS_NS::LexerDetails::Lexem* GetCurrentLexem() const;
 
     private:
         SR_UTILS_NS::Vector<SRSLLexicalTree*> m_lexicalTree;
         SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
-        SR_UTILS_NS::Vector<Lexem> m_exprLexems;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::Lexem> m_exprLexems;
 
         SRSLDecorators* m_decorators = nullptr;
         SRSLExpr* m_expr = nullptr;
 
-        SRSLResult m_result;
+        SR_UTILS_NS::LexerDetails::LexerResult m_result;
         int64_t m_currentLexem = 0;
 
         SR_UTILS_NS::Vector<LXAState> m_states;
-        std::span<Lexem> m_lexems;
+        std::span<SR_UTILS_NS::LexerDetails::Lexem> m_lexems;
 
     };
 }

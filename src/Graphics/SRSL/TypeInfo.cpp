@@ -3,11 +3,12 @@
 //
 
 #include <Graphics/SRSL/TypeInfo.h>
-#include <Graphics/SRSL/Lexer.h>
 #include <Graphics/SRSL/LexicalAnalyzer.h>
 #include <Graphics/SRSL/MathExpression.h>
 #include <Graphics/SRSL/Evaluator.h>
 #include <Graphics/SRSL/ShaderVariables.h>
+
+#include <Utils/Lexer/Lexer.h>
 
 namespace SR_SRSL_NS {
     std::vector<uint64_t> SRSLTypeInfo::GetDimension(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code, const SRSLAnalyzedTree* pAnalyzedTree) {
@@ -141,7 +142,7 @@ namespace SR_SRSL_NS {
 
     SRSLAnalyzedTree* SRSLTypeInfo::Analyze(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code) {
         SR_TRACY_ZONE;
-        auto&& lexems = SRSLLexer::Instance().ParseString(pAllocator, 16, code, 0);
+        auto&& lexems = SR_UTILS_NS::Lexer::Instance().ParseString(pAllocator, 16, code, 0);
         auto&& [pTree, result] = SRSLLexicalAnalyzer::Instance().Analyze(pAllocator, lexems);
 
         if (result.HasErrors()) {

@@ -15,6 +15,7 @@
 #include <Utils/Common/Hashes.h>
 #include <Utils/Resources/IResource.h>
 #include <Utils/Math/Rect.h>
+#include <Utils/Lexer/LexerUtils.h>
 
 namespace SR_GTYPES_NS {
     class Texture;
@@ -160,7 +161,7 @@ namespace SR_GTYPES_NS {
 
         SR_SRSL_NS::ShaderParams m_params;
 
-        SR_UTILS_NS::Vector<SR_SRSL_NS::SRSLInclude> m_includes;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::LexerInclude> m_includes;
         Memory::ShaderUBOBlock m_uniformBlock;
         Memory::ShaderUBOBlock m_uniformSharedBlock;
         Memory::ShaderUBOBlock m_constBlock;

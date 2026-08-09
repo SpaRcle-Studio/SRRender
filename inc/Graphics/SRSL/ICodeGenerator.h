@@ -8,12 +8,14 @@
 #include <Graphics/SRSL/LexicalTree.h>
 #include <Graphics/Pipeline/ShaderUtils.h>
 
+#include <Utils/Lexer/LexerUtils.h>
+
 namespace SR_SRSL_NS {
     class SRSLShader;
 
     class ISRSLCodeGenerator {
     public:
-        using SRSLCodeGenRes = std::pair<SRSLResult, SR_UTILS_NS::Map<ShaderStage, SR_UTILS_NS::String>>;
+        using SRSLCodeGenRes = std::pair<SR_UTILS_NS::LexerDetails::LexerResult, SR_UTILS_NS::Map<ShaderStage, SR_UTILS_NS::String>>;
 
     protected:
         ISRSLCodeGenerator() = default;
@@ -27,7 +29,7 @@ namespace SR_SRSL_NS {
         void Clear();
 
     protected:
-        SRSLResult m_result = SRSLResult();
+        SR_UTILS_NS::LexerDetails::LexerResult m_result;
         mutable SR_UTILS_NS::String m_tabs;
 
     };

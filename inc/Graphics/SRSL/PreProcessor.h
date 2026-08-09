@@ -5,8 +5,10 @@
 #ifndef SR_ENGINE_SRSL_PREPROCESSOR_H
 #define SR_ENGINE_SRSL_PREPROCESSOR_H
 
-#include <Utils/Common/Singleton.h>
 #include <Graphics/SRSL/LexicalTree.h>
+
+#include <Utils/Common/Singleton.h>
+#include <Utils/Lexer/LexerUtils.h>
 
 namespace SR_SRSL_NS {
     class SRSLPreProcessor : public SR_UTILS_NS::Singleton<SRSLPreProcessor> {
@@ -15,11 +17,11 @@ namespace SR_SRSL_NS {
             Idle, Macro, MacroName, IncludeOpen, IncludePath
         };
     public:
-        using Includes = SR_UTILS_NS::Vector<SRSLInclude>;
-        using OutResult = std::pair<SR_UTILS_NS::Vector<Lexem>, SRSLResult>;
+        using Includes = SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::LexerInclude>;
+        using OutResult = std::pair<SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::Lexem>, SR_UTILS_NS::LexerDetails::LexerResult>;
 
     public:
-        SR_NODISCARD OutResult Process(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::Vector<Lexem>&& lexems, Includes& includes, ShaderParams& params);
+        SR_NODISCARD OutResult Process(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::Lexem>&& lexems, Includes& includes, ShaderParams& params);
 
     private:
         void Clear();
@@ -28,16 +30,16 @@ namespace SR_SRSL_NS {
 
         SR_NODISCARD bool InBounds() const noexcept;
         SR_NODISCARD bool IsHasErrors() const noexcept;
-        SR_NODISCARD const Lexem* GetLexem(int64_t offset) const;
-        SR_NODISCARD const Lexem* GetCurrentLexem() const;
+        SR_NODISCARD const SR_UTILS_NS::LexerDetails::Lexem* GetLexem(int64_t offset) const;
+        SR_NODISCARD const SR_UTILS_NS::LexerDetails::Lexem* GetCurrentLexem() const;
 
     private:
-        SRSLResult m_result;
+        SR_UTILS_NS::LexerDetails::LexerResult m_result;
         ShaderParams* m_params = nullptr;
 
         SR_UTILS_NS::IAllocator* m_pAllocator = nullptr;
-        SR_UTILS_NS::Vector<Lexem> m_expressionLexems;
-        SR_UTILS_NS::Vector<Lexem> m_lexems;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::Lexem> m_expressionLexems;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::Lexem> m_lexems;
         int64_t m_currentLexem = 0;
 
         std::string m_include;

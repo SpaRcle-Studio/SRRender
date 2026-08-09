@@ -5,6 +5,11 @@
 #include <Graphics/SRSL/LexicalAnalyzer.h>
 
 namespace SR_SRSL_NS {
+    using SRSLResult = SR_UTILS_NS::LexerDetails::LexerResult;
+    using SRSLReturnCode = SR_UTILS_NS::LexerDetails::LexerReturnCode;
+    using Lexem = SR_UTILS_NS::LexerDetails::Lexem;
+    using LexemKind = SR_UTILS_NS::LexerDetails::LexemKind;
+
     std::pair<SRSLAnalyzedTree*, SRSLResult> SRSLLexicalAnalyzer::Analyze(SR_UTILS_NS::IAllocator* pAllocator, std::span<Lexem> lexems) {
         SR_TRACY_ZONE;
         SR_GLOBAL_LOCK

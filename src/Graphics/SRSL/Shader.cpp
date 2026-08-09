@@ -3,7 +3,6 @@
 //
 
 #include <Graphics/SRSL/Shader.h>
-#include <Graphics/SRSL/Lexer.h>
 #include <Graphics/SRSL/PseudoCodeGenerator.h>
 #include <Graphics/SRSL/GLSLCodeGenerator.h>
 #include <Graphics/SRSL/WGSLCodeGenerator.h>
@@ -16,6 +15,9 @@
 #include <Utils/Platform/Platform.h>
 #include <Utils/Common/LexicalCast.h>
 #include <Utils/FileSystem/FileSystem.h>
+#include <Utils/Lexer/Lexer.h>
+#include <Utils/Resources/ResourceManager.h>
+#include <Utils/Debug.h>
 
 namespace SR_SRSL_NS {
     void SRSLUniformBlock::Align(const SRSLAnalyzedTree* pAnalyzedTree) {
@@ -71,10 +73,10 @@ namespace SR_SRSL_NS {
         pShader->m_pAllocator = pAllocator;
 
         SRSLPreProcessor::Includes includes;
-        SRSLInclude& mainFile = includes.emplace_back();
+        auto& mainFile = includes.emplace_back();
         mainFile.name = path.ToStringRef();
 
-        auto&& lexems = SR_SRSL_NS::SRSLLexer::Instance().Parse(pAllocator, 512, absPath, mainFile.buffer, 0);
+        auto&& lexems = SR_UTILS_NS::Lexer::Instance().Parse(pAllocator, 512, absPath, mainFile.buffer, 0);
         if (lexems.empty()) {
             SR_ERROR("SRSLShader::Load() : failed to parse lexems!\n\tPath: " + path.ToString());
             return nullptr;
@@ -860,7 +862,7 @@ namespace SR_SRSL_NS {
             case ShaderLanguage::Metal:
             default:
                 SR_ERROR("SRSLShader::ToStringAtom() : unknown shader language! Language: " + SR_UTILS_NS::EnumReflector::ToStringAtom(shaderLanguage).ToStringRef());
-                codeGenRes.first = SRSLReturnCode::UnknownShaderLanguage;
+                codeGenRes.first = SR_UTILS_NS::LexerDetails::LexerReturnCode::UnknownShaderLanguage;
                 return codeGenRes;
         }
 

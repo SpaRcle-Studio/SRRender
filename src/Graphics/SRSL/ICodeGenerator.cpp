@@ -7,7 +7,7 @@
 namespace SR_SRSL_NS {
     void ISRSLCodeGenerator::Clear() {
         SR_TRACY_ZONE;
-        m_result = SRSLResult();
+        m_result.Clear();
         m_tabs.reserve(128);
     }
 
