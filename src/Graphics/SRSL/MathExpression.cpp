@@ -326,49 +326,15 @@ namespace SR_SRSL_NS {
     }
 
     SRSLExpr* SRSLMathExpression::TryParseString() {
-        bool isStringStarted = false;
-        m_tryParseStringTokenTmp.clear();
-
-    retry:
-        if (!InBounds()) {
+        if (!InBounds() || GetCurrentLexem()->kind != LexemKind::String) {
             return nullptr;
         }
 
-        switch (GetCurrentLexem()->kind) {
-            case LexemKind::String: {
-                ++m_currentLexem;
-                if (isStringStarted) {
-                    return SRSLExpr::CreateStringExpression(*m_pAllocator, m_tryParseStringTokenTmp);
-                }
-                isStringStarted = true;
-                goto retry;
-            }
-            default: {
-                if (!isStringStarted) {
-                    return nullptr;
-                }
+        /// the lexer gives the whole string as a single lexem without quotes, so only escape sequences have to be decoded
+        m_tryParseStringTokenTmp = SR_UTILS_NS::LexerDetails::UnescapeString(GetCurrentLexem()->value);
+        ++m_currentLexem;
 
-                if (GetCurrentLexem()->value.empty()) {
-                    if (auto str = LexemKindToString(GetCurrentLexem()->kind); str.empty()) {
-                        SRHalt("Unknown lexem kind and empty value!");
-                    }
-                    else {
-                        m_tryParseStringTokenTmp += str;
-                    }
-                }
-                else {
-                    if (GetCurrentLexem()->value == "\"" && GetLexem(1) && GetLexem(1)->kind == LexemKind::String) {
-                        ++m_currentLexem;
-                        m_tryParseStringTokenTmp += "\"";
-                    }
-                    else {
-                        m_tryParseStringTokenTmp += GetCurrentLexem()->value;
-                    }
-                }
-                ++m_currentLexem;
-                goto retry;
-            }
-        }
+        return SRSLExpr::CreateStringExpression(*m_pAllocator, m_tryParseStringTokenTmp);
     }
 
     int32_t SRSLMathExpression::GetPriority(const std::string_view& operation, bool prefix) const {
