@@ -270,7 +270,7 @@ namespace SR_SRSL_NS {
     }
 
     SR_UTILS_NS::StringView SRSLVariable::GetType() const {
-        return pType ? pType->token : SR_UTILS_NS::StringView();
+        return pType ? SR_UTILS_NS::StringView(pType->token) : SR_UTILS_NS::StringView();
     }
 
     SR_UTILS_NS::StringView SRSLVariable::GetName() const {
