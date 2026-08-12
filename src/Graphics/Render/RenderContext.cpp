@@ -222,9 +222,11 @@ namespace SR_GRAPH_NS {
         imageMetaInfo.loadMode = SR_UTILS_NS::ResourceLoadMode::Sync;
 
         /// так как вписать в код данные текстуры невозможно, то она хранится в виде base64, текстура размером 1x1 белого цвета формата png
-        const std::string image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABmJLR0QA/wD/AP+gvaeTAAAADUlEQVQI12N48eIFOwAINALALwGcPAAAAABJRU5ErkJggg==";
+        const SR_UTILS_NS::StringView image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABmJLR0QA/wD/AP+gvaeTAAAADUlEQVQI12N48eIFOwAINALALwGcPAAAAABJRU5ErkJggg==";
+        SR_UTILS_NS::String decodedImage;
+        SR_UTILS_NS::StringUtils::Instance().Base64Decode(image, decodedImage);
 
-        if ((m_noneTexture = SR_GTYPES_NS::Texture::LoadFromMemory(SR_UTILS_NS::StringUtils::Base64Decode(image), imageMetaInfo))) {
+        if ((m_noneTexture = SR_GTYPES_NS::Texture::LoadFromMemory(decodedImage, imageMetaInfo))) {
             m_noneTexture->AddUsePoint();
         }
         else {
