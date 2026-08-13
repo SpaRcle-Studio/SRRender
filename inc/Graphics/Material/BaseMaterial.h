@@ -26,7 +26,7 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class RenderContext;
 
-    /// @abstract
+    /// @abstract @noCopyable @noMovable
     class BaseMaterial : public SR_UTILS_NS::Serializable, public SR_UTILS_NS::NonCopyable, public SR_HTYPES_NS::SharedPtr<BaseMaterial> {
         SR_CLASS()
     public:

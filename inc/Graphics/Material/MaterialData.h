@@ -99,7 +99,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    /// @inspector(MaterialDataPropertyDrawer)
+    /// @inspector(MaterialDataPropertyDrawer) @noCopyable @noMovable
     class MaterialData final : public SR_UTILS_NS::Serializable
         , public SR_UTILS_NS::NonCopyable
         , public SR_HTYPES_NS::SharedPtr<MaterialData>

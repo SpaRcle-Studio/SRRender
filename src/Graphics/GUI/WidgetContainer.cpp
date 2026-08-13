@@ -6,6 +6,8 @@
 
 #include <ImmediateGUI/GUI/ImmediateGUI.h>
 
+#include <Codegen/WidgetContainer.generated.hpp>
+
 namespace SR_GRAPH_GUI_NS {
     WidgetContainerElement::WidgetContainerElement()
         : SR_HTYPES_NS::SharedPtr<WidgetContainerElement>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)

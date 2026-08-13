@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_GRAPHICS_WIDGET_H
 #define SR_ENGINE_GRAPHICS_WIDGET_H
 
+#include <Graphics/stdInclude.h>
+
 #include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 #include <Utils/Common/NonCopyable.h>
@@ -37,7 +39,7 @@ namespace SR_GRAPH_GUI_NS {
     };
     typedef uint32_t WidgetFlagBits;
 
-    /// @abstract
+    /// @abstract @noCopyable @noMovable
     class Widget : public SR_UTILS_NS::Serializable, public SR_UTILS_NS::InputHandler, public SR_HTYPES_NS::SharedPtr<Widget> {
         friend class WidgetManager;
         SR_CLASS()

@@ -39,7 +39,10 @@ namespace SR_GRAPH_GUI_NS {
 
     class WidgetContainer : public Widget {
         using Super = Widget;
+        SR_CLASS()
     public:
+        WidgetContainer() = default;
+
         explicit WidgetContainer(std::string name)
             : Super(std::move(name))
         {
