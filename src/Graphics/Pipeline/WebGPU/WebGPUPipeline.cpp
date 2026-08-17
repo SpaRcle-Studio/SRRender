@@ -7,6 +7,7 @@
 #include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Pipeline/TextureHelper.h>
 #include <Graphics/Types/Framebuffer.h>
+#include <Graphics/Types/Shader.h>
 
 #include <Utils/Types/ObjectPool.h>
 #include <Utils/Common/Features.h>
@@ -773,6 +774,7 @@ namespace SR_GRAPH_NS {
                 colorAtt.clearValue = m_internalData->hasClearColor
                     ? m_internalData->clearColor
                     : wgpu::Color{ 0.0, 0.0, 0.0, 1.0 };
+
                 colorAttachments.push_back(colorAtt);
             }
 
@@ -1085,6 +1087,21 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void WebGPUPipeline::InvalidateBufferBindGroups() {
+        /// То же самое для буферов: BindGroup держит сам объект буфера, а не его идентификатор,
+        /// поэтому после освобождения UBO/SSBO (индекс в пуле переиспользуется) группу
+        /// обязательно нужно пересобрать, иначе шейдер будет читать уничтоженный буфер.
+        for (uint32_t i = 0; i < m_internalData->bindGroups.GetCapacity(); ++i) {
+            if (!m_internalData->bindGroups.IsAlive(i)) {
+                continue;
+            }
+
+            auto&& bindGroup = m_internalData->bindGroups.At(i);
+            bindGroup.bufferBindGroup = nullptr;
+            bindGroup.isBuffersDirty = true;
+        }
+    }
+
     bool WebGPUPipeline::BindDescriptorSet(uint32_t descriptorSet) {
         if (!Super::BindDescriptorSet(descriptorSet)) {
             return false;
@@ -1269,7 +1286,13 @@ namespace SR_GRAPH_NS {
     }
 
     void* WebGPUPipeline::GetCurrentShaderHandle() const {
-        const int32_t id = m_state.shaderId;
+        /// Хендл резолвится через объект шейдера (как в VulkanPipeline), а не через m_state.shaderId:
+        /// последний выставляется только UseShader() при записи отрисовки и сбрасывается UnUseShader(),
+        /// а этот хендл используется как ключ в UBOManager и DescriptorManager в том числе вне прохода
+        /// (см. Shader::BeginSharedUBO(), который делает только SetCurrentShader()). Иначе на запись
+        /// и на привязку shared-UBO приходятся разные ключи, и шейдер читает не тот буфер.
+        const int32_t id = m_state.pShader ? m_state.pShader->GetId() : m_state.shaderId;
+
         if (id >= 0 && m_internalData && m_internalData->shaderPrograms.IsAlive(id)) {
             auto&& prog = m_internalData->shaderPrograms.At(id);
             if (prog.isCompute) {
@@ -1277,17 +1300,23 @@ namespace SR_GRAPH_NS {
             }
             return reinterpret_cast<void*>(prog.renderPipeline.Get());
         }
-        return reinterpret_cast<void*>(1);
+
+        return nullptr;
     }
 
     void* WebGPUPipeline::GetCurrentFBOHandle() const {
-        const int32_t id = m_state.frameBufferId;
+        /// Тоже как в Vulkan: приоритет у объекта кадрового буфера, т.к. m_state.frameBufferId
+        /// обновляется только в BindFrameBuffer(), а идентификатор нужен и вне прохода.
+        const int32_t id = m_state.pFrameBuffer ? m_state.pFrameBuffer->GetId() : m_state.frameBufferId;
+
         if (id >= 0 && m_internalData && m_internalData->frameBuffers.IsAlive(id)) {
             auto&& fbo = m_internalData->frameBuffers.At(id);
             if (!fbo.colorAttachments.empty() && fbo.colorAttachments[0].texture) {
                 return reinterpret_cast<void*>(fbo.colorAttachments[0].texture.Get());
             }
         }
+
+        /// Идентификатор swapchain'а
         return reinterpret_cast<void*>(1);
     }
 
@@ -1809,6 +1838,7 @@ namespace SR_GRAPH_NS {
                 SR_ERROR("WebGPUPipeline::AllocateShaderProgram() : failed to create render pipeline!");
                 return SR_ID_INVALID;
             }
+
         }
 
         ++m_state.operations;
@@ -2254,6 +2284,8 @@ namespace SR_GRAPH_NS {
     // ----------------------------------------------------------------------------------------------------------------
 
     void WebGPUPipeline::GetShaderHandles(SR_UTILS_NS::Vector<void*>& handles) const {
+        SR_TRACY_ZONE;
+
         handles.clear();
         for (uint32_t i = 0; i < static_cast<uint32_t>(m_internalData->shaderPrograms.GetCapacity()); ++i) {
             if (!m_internalData->shaderPrograms.IsAlive(i)) { continue; }
@@ -2263,12 +2295,18 @@ namespace SR_GRAPH_NS {
                 : reinterpret_cast<void*>(prog.renderPipeline.Get());
             handles.emplace_back(h);
         }
-        if (handles.empty()) {
-            handles.emplace_back(reinterpret_cast<void*>(1));
-        }
+
+        /// Значение по умолчанию для GetCurrentShaderHandle(), когда шейдер не привязан
+        handles.emplace_back(reinterpret_cast<void*>(1));
+
+        /// Обязательно: по этому списку ищут бинарным поиском (см. UBOManager::CollectUnused
+        /// и DescriptorManager::CollectUnused), поэтому он должен быть отсортирован.
+        std::sort(handles.begin(), handles.end());
     }
 
     void WebGPUPipeline::GetFBOHandles(SR_UTILS_NS::Vector<void*>& handles) const {
+        SR_TRACY_ZONE;
+
         handles.clear();
         for (uint32_t i = 0; i < static_cast<uint32_t>(m_internalData->frameBuffers.GetCapacity()); ++i) {
             if (!m_internalData->frameBuffers.IsAlive(i)) { continue; }
@@ -2277,9 +2315,13 @@ namespace SR_GRAPH_NS {
                 handles.emplace_back(reinterpret_cast<void*>(fbo.colorAttachments[0].texture.Get()));
             }
         }
-        if (handles.empty()) {
-            handles.emplace_back(reinterpret_cast<void*>(1));
-        }
+
+        /// Идентификатор swapchain'а: GetCurrentFBOHandle() возвращает его, когда кадровый буфер
+        /// не привязан, иначе шейдеры SwapchainPass будут собираться как неиспользуемые каждый кадр
+        handles.emplace_back(reinterpret_cast<void*>(1));
+
+        /// Обязательно: по этому списку ищут бинарным поиском (см. ShaderProgramManager::CollectUnused)
+        std::sort(handles.begin(), handles.end());
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -2319,6 +2361,7 @@ namespace SR_GRAPH_NS {
         if (*id >= 0 && m_internalData->UBOs.IsAlive(*id)) {
             m_internalData->UBOs.At(*id).Destroy();
             m_internalData->UBOs.RemoveByIndex(*id);
+            InvalidateBufferBindGroups();
         }
         *id = SR_ID_INVALID;
         ++m_state.deletions;
@@ -2340,6 +2383,7 @@ namespace SR_GRAPH_NS {
         if (*id >= 0 && m_internalData->SSBOs.IsAlive(*id)) {
             m_internalData->SSBOs.At(*id).Destroy();
             m_internalData->SSBOs.RemoveByIndex(*id);
+            InvalidateBufferBindGroups();
         }
         *id = SR_ID_INVALID;
         ++m_state.deletions;

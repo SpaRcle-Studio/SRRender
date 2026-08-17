@@ -118,6 +118,9 @@ namespace SR_GRAPH_NS {
         /// иначе в кеше останутся группы со ссылками на уничтоженные ресурсы.
         void InvalidateTextureBindGroups();
 
+        /// То же самое для BindGroup'ов буферов (UBO/SSBO).
+        void InvalidateBufferBindGroups();
+
     private:
         WebGPUPipelineInternalData* m_internalData = nullptr;
 
