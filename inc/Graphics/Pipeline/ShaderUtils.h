@@ -161,6 +161,27 @@ namespace SR_GRAPH_NS {
     )
 
     SR_ENUM_NS_CLASS(LayoutBinding, Unknown = 0, Uniform, Sampler2D, Attachhment, SSBO)
+
+    /// Размерность сэмплера. Vulkan не нуждается в этой информации (тип дескриптора одинаковый для
+    /// всех сэмплеров), но WebGPU объявляет размерность вьюшки прямо в layout'е,
+    /// и она обязана совпадать с типом текстуры в шейдере.
+    SR_ENUM_NS_CLASS_T(SamplerDimension, uint8_t,
+        Unknown = 0,
+        Texture2D,
+        Texture3D,
+        TextureCube,
+        Texture2DArray,
+        Texture2DShadow
+    )
+
+    SR_MAYBE_UNUSED static SamplerDimension SamplerDimensionFromTypeName(std::string_view type) {
+        if (type == "sampler3D")       { return SamplerDimension::Texture3D;      }
+        if (type == "samplerCube")     { return SamplerDimension::TextureCube;    }
+        if (type == "sampler2DArray")  { return SamplerDimension::Texture2DArray; }
+        if (type == "sampler2DShadow") { return SamplerDimension::Texture2DShadow;}
+        return SamplerDimension::Texture2D;
+    }
+
     SR_ENUM_NS_CLASS(PolygonMode, Unknown, Fill, Line, Point)
     SR_ENUM_NS_CLASS(CullMode, Unknown, None, Front, Back, FrontAndBack)
 
@@ -192,6 +213,8 @@ namespace SR_GRAPH_NS {
     struct SR_GRAPHICS_DLL_API Uniform {
         LayoutBinding type = LayoutBinding::Unknown;
         ShaderStage stage = ShaderStage::Unknown;
+        /// Заполняется только для сэмплеров и аттачментов
+        SamplerDimension samplerDimension = SamplerDimension::Unknown;
         uint64_t binding = 0;
         uint64_t size = 0;
     };

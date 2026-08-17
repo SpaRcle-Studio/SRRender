@@ -746,21 +746,24 @@ namespace SR_SRSL_NS {
         // ---- Samplers → @group(1) @binding(N) var tex : texture_2d<f32> + sampler ----
         uint32_t samplerBinding = 0;
         for (auto&& [name, sampler] : pShader->GetSamplers()) {
+            /// Размерность обязана совпадать с той, что бэкенд объявляет в layout'е,
+            /// поэтому берется из общего маппинга (см. SamplerDimensionFromTypeName)
             std::string_view wgslTextureType = "texture_2d<f32>";
-            if (sampler.type == "sampler3D") {
-                wgslTextureType = "texture_3d<f32>";
-            }
-            else if (sampler.type == "samplerCube") {
-                wgslTextureType = "texture_cube<f32>";
-            }
-            else if (sampler.type == "sampler2DShadow") {
-                wgslTextureType = "texture_depth_2d";
-            }
-            else if (sampler.type == "sampler2DArray") {
-                wgslTextureType = "texture_2d_array<f32>";
-            }
-            else if (sampler.type == "subpassInput" || sampler.attachment >= 0) {
-                wgslTextureType = "texture_2d<f32>";
+            switch (SamplerDimensionFromTypeName(sampler.type.ToStringView())) {
+                case SamplerDimension::Texture3D:
+                    wgslTextureType = "texture_3d<f32>";
+                    break;
+                case SamplerDimension::TextureCube:
+                    wgslTextureType = "texture_cube<f32>";
+                    break;
+                case SamplerDimension::Texture2DArray:
+                    wgslTextureType = "texture_2d_array<f32>";
+                    break;
+                case SamplerDimension::Texture2DShadow:
+                    wgslTextureType = "texture_depth_2d";
+                    break;
+                default:
+                    break;
             }
 
             code += SR_FORMAT("@group(1) @binding({}) var {} : {};\n", samplerBinding * 2, name.ToStringView(), wgslTextureType);

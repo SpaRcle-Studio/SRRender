@@ -80,6 +80,8 @@ namespace SR_GRAPH_NS {
         void UseShader(uint32_t shaderProgram) override;
         void BindVBO(uint32_t VBO, uint32_t slot, VertexInputRate inputRate) override;
         void BindIBO(uint32_t IBO) override;
+        void BindTexture(uint8_t activeTexture, uint32_t textureId) override;
+        void BindAttachment(uint8_t activeTexture, uint32_t textureId) override;
         bool BindDescriptorSet(uint32_t descriptorSet) override;
         void Draw(uint32_t count) override;
         void DrawIndices(uint32_t count) override;
@@ -99,6 +101,22 @@ namespace SR_GRAPH_NS {
         /// Returns the WGPUTextureView for the texture with the given pool id,
         /// or nullptr if the id is invalid / not alive.
         SR_NODISCARD WGPUTextureView GetTextureView(uint32_t textureId) const;
+
+    private:
+        /// Запоминает текстуру в привязанном наборе дескрипторов. Как и в Vulkan, текстуры
+        /// принадлежат набору, а не шейдеру: движок привязывает их только при изменении.
+        void BindTextureToDescriptorSet(uint8_t binding, uint32_t textureId, bool isAttachment);
+
+        /// Пересобирает (если нужно) и привязывает BindGroup набора дескрипторов к @group(0).
+        void FlushDescriptorBindGroup();
+
+        /// Создает (или достает из кеша) BindGroup для @group(1) и привязывает его к активному проходу.
+        /// В WebGPU все группы, объявленные в layout'е пайплайна, обязаны быть привязаны перед отрисовкой.
+        void FlushTextureBindGroup();
+
+        /// Сбрасывает кеш BindGroup'ов текстур. Обязательно вызывать при удалении текстур,
+        /// иначе в кеше останутся группы со ссылками на уничтоженные ресурсы.
+        void InvalidateTextureBindGroups();
 
     private:
         WebGPUPipelineInternalData* m_internalData = nullptr;

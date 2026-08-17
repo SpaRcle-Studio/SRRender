@@ -23,12 +23,27 @@ namespace SR_GRAPH_NS {
     // Internal resource structs
     // ----------------------------------------------------------------------------------------------------------------
 
+    /// Слот сэмплера в group 1. Индекс слота — это порядковый номер сэмплера в шейдере,
+    /// он же определяет биндинги: slot * 2 (текстура) и slot * 2 + 1 (сэмплер).
+    struct WebGPUSamplerSlot {
+        uint32_t binding = 0;        // биндинг из SRSL, с которым приходит BindTexture()
+        bool     isAttachment = false;
+    };
+
+    /// Слот буфера в group 0.
+    struct WebGPUBufferSlot {
+        uint32_t binding = 0;
+        bool     isStorage = false;
+    };
+
     struct WebGPUShaderProgram {
         wgpu::RenderPipeline    renderPipeline;
         wgpu::ComputePipeline   computePipeline;
         wgpu::BindGroupLayout   bindGroupLayout;   // group 0: UBOs / SSBOs
         wgpu::BindGroupLayout   bindGroupLayout1;  // group 1: textures + samplers (may be null if unused)
         wgpu::PipelineLayout    pipelineLayout;
+        SR_UTILS_NS::Vector<WebGPUBufferSlot>  bufferSlots;
+        SR_UTILS_NS::Vector<WebGPUSamplerSlot> samplerSlots;
         bool                    isCompute = false;
 
         void Destroy() {
@@ -37,6 +52,8 @@ namespace SR_GRAPH_NS {
             bindGroupLayout  = nullptr;
             bindGroupLayout1 = nullptr;
             pipelineLayout  = nullptr;
+            bufferSlots.clear();
+            samplerSlots.clear();
         }
     };
 
@@ -82,11 +99,43 @@ namespace SR_GRAPH_NS {
         }
     };
 
+    /// Накопленное состояние набора дескрипторов. BindGroup в WebGPU неизменяемый, а движок
+    /// обновляет биндинги по одному (и только когда они меняются), поэтому состояние накапливается
+    /// здесь, а сами BindGroup'ы пересоздаются лениво, перед отрисовкой, по layout'у шейдера.
     struct WebGPUBindGroup {
-        wgpu::BindGroup bindGroup;
+        struct BufferBinding {
+            uint32_t binding = 0;
+            DescriptorType type = DescriptorType::Unknown;
+            int32_t resourceId = SR_ID_INVALID;
+        };
+
+        struct TextureBinding {
+            uint32_t binding = 0;
+            int32_t textureId = SR_ID_INVALID;
+            bool isAttachment = false;
+        };
+
+        SR_UTILS_NS::Vector<BufferBinding>  buffers;   // group 0
+        SR_UTILS_NS::Vector<TextureBinding> textures;  // group 1
+
+        wgpu::BindGroup bufferBindGroup;
+        wgpu::BindGroup textureBindGroup;
+
+        int32_t buffersBuiltForShader  = SR_ID_INVALID;
+        int32_t texturesBuiltForShader = SR_ID_INVALID;
+
+        bool isBuffersDirty  = true;
+        bool isTexturesDirty = true;
 
         void Destroy() {
-            bindGroup = nullptr;
+            bufferBindGroup  = nullptr;
+            textureBindGroup = nullptr;
+            buffers.clear();
+            textures.clear();
+            buffersBuiltForShader  = SR_ID_INVALID;
+            texturesBuiltForShader = SR_ID_INVALID;
+            isBuffersDirty  = true;
+            isTexturesDirty = true;
         }
     };
 
@@ -119,6 +168,14 @@ namespace SR_GRAPH_NS {
         // Tracks whether BeginRender was called for the swapchain (no FBO) this frame.
         // Used in DrawFrame to decide loadOp for the ImGui pass.
         bool               surfaceWasRendered = false;
+
+        // Descriptor set (group 0) selected by BindDescriptorSet. Bound at draw time, because the
+        // engine keeps updating its bindings after BindDescriptorSet was called.
+        int32_t activeBindGroupId = SR_ID_INVALID;
+
+        // Attachment layout entries are declared as non-filtering, so they can't be bound
+        // with the linear sampler that comes with the attachment texture.
+        wgpu::Sampler nonFilteringSampler;
 
         SR_HTYPES_NS::ObjectPool<wgpu::Buffer>         VBOs;
         SR_HTYPES_NS::ObjectPool<wgpu::Buffer>         IBOs;
@@ -341,6 +398,43 @@ namespace SR_GRAPH_NS {
             case SR_GRAPH_NS::DepthCompare::GreaterOrEqual: return wgpu::CompareFunction::GreaterEqual;
             case SR_GRAPH_NS::DepthCompare::Always:         return wgpu::CompareFunction::Always;
             default:                                        return wgpu::CompareFunction::LessEqual;
+        }
+    }
+
+    /// Аттачменты объявляются в layout'е как non-filtering, поэтому их нельзя привязать
+    /// с линейным сэмплером, который создается вместе с текстурой аттачмента.
+    static const wgpu::Sampler& GetNonFilteringSampler(WebGPUPipelineInternalData* pInternalData) {
+        if (!pInternalData->nonFilteringSampler) SR_UNLIKELY_ATTRIBUTE {
+            wgpu::SamplerDescriptor samplerDesc{};
+            samplerDesc.addressModeU  = wgpu::AddressMode::ClampToEdge;
+            samplerDesc.addressModeV  = wgpu::AddressMode::ClampToEdge;
+            samplerDesc.addressModeW  = wgpu::AddressMode::ClampToEdge;
+            samplerDesc.magFilter     = wgpu::FilterMode::Nearest;
+            samplerDesc.minFilter     = wgpu::FilterMode::Nearest;
+            samplerDesc.mipmapFilter  = wgpu::MipmapFilterMode::Nearest;
+            samplerDesc.maxAnisotropy = 1;
+
+            pInternalData->nonFilteringSampler = pInternalData->device.CreateSampler(&samplerDesc);
+        }
+
+        return pInternalData->nonFilteringSampler;
+    }
+
+    static wgpu::TextureViewDimension SamplerDimensionToWGPU(SR_GRAPH_NS::SamplerDimension dimension) {
+        switch (dimension) {
+            case SR_GRAPH_NS::SamplerDimension::Texture3D:      return wgpu::TextureViewDimension::e3D;
+            case SR_GRAPH_NS::SamplerDimension::TextureCube:    return wgpu::TextureViewDimension::Cube;
+            case SR_GRAPH_NS::SamplerDimension::Texture2DArray: return wgpu::TextureViewDimension::e2DArray;
+            default:                                            return wgpu::TextureViewDimension::e2D;
+        }
+    }
+
+    static wgpu::ShaderStage ShaderStageToWGPU(SR_GRAPH_NS::ShaderStage stage) {
+        switch (stage) {
+            case SR_GRAPH_NS::ShaderStage::Vertex:   return wgpu::ShaderStage::Vertex;
+            case SR_GRAPH_NS::ShaderStage::Fragment: return wgpu::ShaderStage::Fragment;
+            case SR_GRAPH_NS::ShaderStage::Compute:  return wgpu::ShaderStage::Compute;
+            default: return wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
         }
     }
 
@@ -740,6 +834,10 @@ namespace SR_GRAPH_NS {
             m_internalData->activeRenderPass.End();
             m_internalData->activeRenderPass = nullptr;
         }
+
+        /// Набор дескрипторов привязывается заново в каждом проходе
+        m_internalData->activeBindGroupId = SR_ID_INVALID;
+
         Super::EndRender();
     }
 
@@ -852,23 +950,221 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void WebGPUPipeline::BindTexture(const uint8_t activeTexture, const uint32_t textureId) {
+        Super::BindTexture(activeTexture, textureId);
+        BindTextureToDescriptorSet(activeTexture, textureId, false);
+    }
+
+    void WebGPUPipeline::BindAttachment(const uint8_t activeTexture, const uint32_t textureId) {
+        Super::BindAttachment(activeTexture, textureId);
+        BindTextureToDescriptorSet(activeTexture, textureId, true);
+    }
+
+    void WebGPUPipeline::BindTextureToDescriptorSet(const uint8_t binding, const uint32_t textureId, const bool isAttachment) {
+        /// Текстуры, как и в Vulkan, принадлежат набору дескрипторов: движок привязывает их
+        /// только когда они меняются, а не перед каждой отрисовкой.
+        const int32_t id = m_internalData->activeBindGroupId;
+        if (id < 0 || !m_internalData->bindGroups.IsAlive(id)) SR_UNLIKELY_ATTRIBUTE {
+            PipelineError("WebGPUPipeline::BindTextureToDescriptorSet() : descriptor set is not binded!");
+            return;
+        }
+
+        auto&& bindGroup = m_internalData->bindGroups.At(id);
+
+        auto&& pIt = std::find_if(bindGroup.textures.begin(), bindGroup.textures.end(), [binding](auto&& texture) {
+            return texture.binding == binding;
+        });
+
+        if (pIt != bindGroup.textures.end()) {
+            if (pIt->textureId == static_cast<int32_t>(textureId) && pIt->isAttachment == isAttachment) {
+                return;
+            }
+            pIt->textureId = static_cast<int32_t>(textureId);
+            pIt->isAttachment = isAttachment;
+        }
+        else {
+            bindGroup.textures.push_back(WebGPUBindGroup::TextureBinding { binding, static_cast<int32_t>(textureId), isAttachment });
+        }
+
+        bindGroup.isTexturesDirty = true;
+    }
+
+    void WebGPUPipeline::FlushTextureBindGroup() {
+        if (!m_internalData->activeRenderPass) {
+            return;
+        }
+
+        const int32_t shaderId = m_state.shaderId;
+        if (shaderId < 0 || !m_internalData->shaderPrograms.IsAlive(shaderId)) {
+            return;
+        }
+
+        auto&& program = m_internalData->shaderPrograms.At(shaderId);
+        if (!program.bindGroupLayout1) {
+            return;
+        }
+
+        const int32_t id = m_internalData->activeBindGroupId;
+        if (id < 0 || !m_internalData->bindGroups.IsAlive(id)) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("WebGPUPipeline::FlushTextureBindGroup() : shader has samplers, but no descriptor set is binded!");
+            return;
+        }
+
+        auto&& bindGroup = m_internalData->bindGroups.At(id);
+
+        if (bindGroup.isTexturesDirty || bindGroup.texturesBuiltForShader != shaderId) {
+            /// Помечаем группу собранной до попытки сборки, чтобы не спамить ошибками каждую отрисовку
+            bindGroup.isTexturesDirty = false;
+            bindGroup.texturesBuiltForShader = shaderId;
+            bindGroup.textureBindGroup = nullptr;
+
+            SR_UTILS_NS::Vector<wgpu::BindGroupEntry> entries;
+            entries.reserve(program.samplerSlots.size() * 2);
+
+            for (uint32_t slot = 0; slot < static_cast<uint32_t>(program.samplerSlots.size()); ++slot) {
+                auto&& samplerSlot = program.samplerSlots[slot];
+
+                auto&& pIt = std::find_if(bindGroup.textures.begin(), bindGroup.textures.end(), [&samplerSlot](auto&& texture) {
+                    return texture.binding == samplerSlot.binding;
+                });
+
+                /// Группу нельзя привязать частично, поэтому непривязанные слоты получают заглушку
+                int32_t textureId = pIt != bindGroup.textures.end() ? pIt->textureId : SR_ID_INVALID;
+                if (textureId < 0 || !m_internalData->textures.IsAlive(textureId)) {
+                    textureId = m_noneTextureId;
+                }
+
+                if (textureId < 0 || !m_internalData->textures.IsAlive(textureId)) SR_UNLIKELY_ATTRIBUTE {
+                    SR_ERROR("WebGPUPipeline::FlushTextureBindGroup() : no texture for the sampler at binding {}!", samplerSlot.binding);
+                    return;
+                }
+
+                auto&& texture = m_internalData->textures.At(textureId);
+
+                wgpu::BindGroupEntry texEntry{};
+                texEntry.binding     = slot * 2;
+                texEntry.textureView = texture.view;
+                entries.push_back(texEntry);
+
+                wgpu::BindGroupEntry samplerEntry{};
+                samplerEntry.binding = slot * 2 + 1;
+                samplerEntry.sampler = (samplerSlot.isAttachment || !texture.sampler)
+                    ? GetNonFilteringSampler(m_internalData)
+                    : texture.sampler;
+                entries.push_back(samplerEntry);
+            }
+
+            wgpu::BindGroupDescriptor bgDesc{};
+            bgDesc.layout     = program.bindGroupLayout1;
+            bgDesc.entryCount = static_cast<size_t>(entries.size());
+            bgDesc.entries    = entries.empty() ? nullptr : entries.data();
+
+            bindGroup.textureBindGroup = m_internalData->device.CreateBindGroup(&bgDesc);
+            if (!bindGroup.textureBindGroup) {
+                SR_ERROR("WebGPUPipeline::FlushTextureBindGroup() : failed to create bind group!");
+                return;
+            }
+        }
+
+        if (bindGroup.textureBindGroup) SR_LIKELY_ATTRIBUTE {
+            m_internalData->activeRenderPass.SetBindGroup(1, bindGroup.textureBindGroup, 0, nullptr);
+        }
+    }
+
+    void WebGPUPipeline::InvalidateTextureBindGroups() {
+        /// Закешированные группы могут ссылаться на уничтоженную текстуру, а идентификаторы
+        /// в пуле переиспользуются, поэтому пересобираем их все.
+        for (uint32_t i = 0; i < m_internalData->bindGroups.GetCapacity(); ++i) {
+            if (!m_internalData->bindGroups.IsAlive(i)) {
+                continue;
+            }
+
+            auto&& bindGroup = m_internalData->bindGroups.At(i);
+            bindGroup.textureBindGroup = nullptr;
+            bindGroup.isTexturesDirty = true;
+        }
+    }
+
     bool WebGPUPipeline::BindDescriptorSet(uint32_t descriptorSet) {
         if (!Super::BindDescriptorSet(descriptorSet)) {
             return false;
         }
 
+        /// Сам BindGroup привязывается перед отрисовкой: движок обновляет биндинги набора
+        /// уже после этого вызова, а BindGroup в WebGPU неизменяемый и пересоздается при обновлении.
+        m_internalData->activeBindGroupId = static_cast<int32_t>(descriptorSet);
+
+        return true;
+    }
+
+    void WebGPUPipeline::FlushDescriptorBindGroup() {
         if (!m_internalData->activeRenderPass) {
-            return true;
+            return;
         }
 
-        const int32_t id = static_cast<int32_t>(descriptorSet);
-        if (id >= 0 && m_internalData->bindGroups.IsAlive(id)) {
-            auto&& bg = m_internalData->bindGroups.At(id);
-            if (bg.bindGroup) {
-                m_internalData->activeRenderPass.SetBindGroup(0, bg.bindGroup, 0, nullptr);
+        const int32_t id = m_internalData->activeBindGroupId;
+        if (id < 0 || !m_internalData->bindGroups.IsAlive(id)) {
+            return;
+        }
+
+        const int32_t shaderId = m_state.shaderId;
+        if (shaderId < 0 || !m_internalData->shaderPrograms.IsAlive(shaderId)) {
+            return;
+        }
+
+        auto&& program = m_internalData->shaderPrograms.At(shaderId);
+        auto&& bindGroup = m_internalData->bindGroups.At(id);
+
+        if (bindGroup.isBuffersDirty || bindGroup.buffersBuiltForShader != shaderId) {
+            /// Помечаем группу собранной до попытки сборки, чтобы не спамить ошибками каждую отрисовку
+            bindGroup.isBuffersDirty = false;
+            bindGroup.buffersBuiltForShader = shaderId;
+            bindGroup.bufferBindGroup = nullptr;
+
+            SR_UTILS_NS::Vector<wgpu::BindGroupEntry> entries;
+            entries.reserve(program.bufferSlots.size());
+
+            for (auto&& slot : program.bufferSlots) {
+                auto&& pIt = std::find_if(bindGroup.buffers.begin(), bindGroup.buffers.end(), [&slot](auto&& binding) {
+                    return binding.binding == slot.binding;
+                });
+
+                if (pIt == bindGroup.buffers.end()) SR_UNLIKELY_ATTRIBUTE {
+                    SR_ERROR("WebGPUPipeline::FlushDescriptorBindGroup() : binding {} of the shader is not updated!", slot.binding);
+                    return;
+                }
+
+                auto&& pool = slot.isStorage ? m_internalData->SSBOs : m_internalData->UBOs;
+                if (pIt->resourceId < 0 || !pool.IsAlive(pIt->resourceId)) SR_UNLIKELY_ATTRIBUTE {
+                    SR_ERROR("WebGPUPipeline::FlushDescriptorBindGroup() : invalid buffer at binding {}!", slot.binding);
+                    return;
+                }
+
+                auto&& buffer = pool.At(pIt->resourceId);
+
+                wgpu::BindGroupEntry entry{};
+                entry.binding = slot.binding;
+                entry.buffer  = buffer;
+                entry.offset  = 0;
+                entry.size    = buffer.GetSize();
+                entries.push_back(entry);
+            }
+
+            wgpu::BindGroupDescriptor bgDesc{};
+            bgDesc.layout     = program.bindGroupLayout;
+            bgDesc.entryCount = static_cast<size_t>(entries.size());
+            bgDesc.entries    = entries.empty() ? nullptr : entries.data();
+
+            bindGroup.bufferBindGroup = m_internalData->device.CreateBindGroup(&bgDesc);
+            if (!bindGroup.bufferBindGroup) {
+                SR_ERROR("WebGPUPipeline::FlushDescriptorBindGroup() : failed to create bind group!");
+                return;
             }
         }
-        return true;
+
+        if (bindGroup.bufferBindGroup) SR_LIKELY_ATTRIBUTE {
+            m_internalData->activeRenderPass.SetBindGroup(0, bindGroup.bufferBindGroup, 0, nullptr);
+        }
     }
 
     void WebGPUPipeline::Draw(uint32_t count) {
@@ -877,6 +1173,9 @@ namespace SR_GRAPH_NS {
         if (!m_internalData->activeRenderPass || count == 0) {
             return;
         }
+
+        FlushDescriptorBindGroup();
+        FlushTextureBindGroup();
 
         m_internalData->activeRenderPass.Draw(count, m_drawInstancesCount, 0, m_drawInstancesStart);
     }
@@ -887,6 +1186,9 @@ namespace SR_GRAPH_NS {
         if (!m_internalData->activeRenderPass || count == 0) {
             return;
         }
+
+        FlushDescriptorBindGroup();
+        FlushTextureBindGroup();
 
         m_internalData->activeRenderPass.DrawIndexed(count, m_drawInstancesCount, 0, 0, m_drawInstancesStart);
     }
@@ -899,59 +1201,33 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        // WebGPU BindGroups are immutable — rebuild the BindGroup with updated buffer bindings.
-        // First we need the BindGroupLayout from the currently bound shader program.
-        const int32_t shaderId = m_state.shaderId;
-        wgpu::BindGroupLayout bgl;
-        if (shaderId >= 0 && m_internalData->shaderPrograms.IsAlive(shaderId)) {
-            bgl = m_internalData->shaderPrograms.At(shaderId).bindGroupLayout;
-        }
-
-        if (!bgl) {
-            // No shader bound yet; defer until UseShader is called.
-            return;
-        }
-
-        SR_UTILS_NS::Vector<wgpu::BindGroupEntry> entries;
-        entries.reserve(updateInfo.size());
+        // WebGPU BindGroups are immutable and the engine updates bindings one at a time, so the
+        // update is only accumulated here — the BindGroup itself is rebuilt before the draw call.
+        auto&& bindGroup = m_internalData->bindGroups.At(id);
 
         for (auto&& info : updateInfo) {
-            wgpu::BindGroupEntry entry{};
-            entry.binding = info.binding;
-
-            if (info.descriptorType == DescriptorType::Uniform) {
-                const int32_t uboId = static_cast<int32_t>(info.ubo);
-                if (uboId >= 0 && m_internalData->UBOs.IsAlive(uboId)) {
-                    auto&& buf = m_internalData->UBOs.At(uboId);
-                    entry.buffer = buf;
-                    entry.offset = 0;
-                    entry.size   = buf.GetSize();
-                }
+            if (info.descriptorType != DescriptorType::Uniform && info.descriptorType != DescriptorType::Storage) {
+                continue;
             }
-            else if (info.descriptorType == DescriptorType::Storage) {
-                const int32_t ssboId = static_cast<int32_t>(info.ubo);
-                if (ssboId >= 0 && m_internalData->SSBOs.IsAlive(ssboId)) {
-                    auto&& buf = m_internalData->SSBOs.At(ssboId);
-                    entry.buffer = buf;
-                    entry.offset = 0;
-                    entry.size   = buf.GetSize();
+
+            const auto resourceId = static_cast<int32_t>(info.ubo);
+
+            auto&& pIt = std::find_if(bindGroup.buffers.begin(), bindGroup.buffers.end(), [&info](auto&& binding) {
+                return binding.binding == info.binding;
+            });
+
+            if (pIt != bindGroup.buffers.end()) {
+                if (pIt->resourceId == resourceId && pIt->type == info.descriptorType) {
+                    continue;
                 }
+                pIt->resourceId = resourceId;
+                pIt->type = info.descriptorType;
             }
-            entries.push_back(entry);
-        }
+            else {
+                bindGroup.buffers.push_back(WebGPUBindGroup::BufferBinding { info.binding, info.descriptorType, resourceId });
+            }
 
-        if (entries.empty()) {
-            return;
-        }
-
-        wgpu::BindGroupDescriptor bgDesc{};
-        bgDesc.layout     = bgl;
-        bgDesc.entryCount = static_cast<size_t>(entries.size());
-        bgDesc.entries    = entries.data();
-
-        wgpu::BindGroup newBG = m_internalData->device.CreateBindGroup(&bgDesc);
-        if (newBG) {
-            m_internalData->bindGroups.At(id).bindGroup = std::move(newBG);
+            bindGroup.isBuffersDirty = true;
         }
     }
 
@@ -1240,62 +1516,127 @@ namespace SR_GRAPH_NS {
 
         // ---- 3. Build BindGroupLayout entries from uniforms ----
         // The WGSL generator places resources in two bind groups:
-        //   @group(0) — UBOs and SSBOs (sequential bindings)
-        //   @group(1) — textures + samplers (pairs, sequential bindings starting at 0)
+        //   @group(0) — UBOs and SSBOs, each one at its own SRSL binding
+        //   @group(1) — textures + samplers: the N-th sampler of the shader (ordered by its SRSL
+        //               binding) occupies bindings N * 2 (texture) and N * 2 + 1 (sampler)
         // We must declare a BindGroupLayout for every group index the shader references.
+        //
+        // createInfo.uniforms holds one entry per (resource, stage) pair, so the same binding may
+        // be listed several times — duplicates are merged and their visibility is ORed together.
 
         // Group 0: UBOs and SSBOs
         SR_UTILS_NS::Vector<wgpu::BindGroupLayoutEntry> bglEntries0;
-        uint32_t nextBinding0 = 0;
+        SR_UTILS_NS::Vector<WebGPUBufferSlot> bufferSlots;
+
+        auto findEntry = [](SR_UTILS_NS::Vector<wgpu::BindGroupLayoutEntry>& entries, uint32_t binding) -> wgpu::BindGroupLayoutEntry* {
+            for (auto&& entry : entries) {
+                if (entry.binding == binding) {
+                    return &entry;
+                }
+            }
+            return nullptr;
+        };
 
         for (auto&& uniform : createInfo.uniforms) {
             if (uniform.type != LayoutBinding::Uniform && uniform.type != LayoutBinding::SSBO) {
                 continue;
             }
-            wgpu::BindGroupLayoutEntry entry{};
-            entry.binding = nextBinding0++;
 
-            if (uniform.type == LayoutBinding::Uniform) {
-                entry.visibility            = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
-                entry.buffer.type           = wgpu::BufferBindingType::Uniform;
-                entry.buffer.minBindingSize = uniform.size;
+            const auto binding = static_cast<uint32_t>(uniform.binding);
+            const bool isUniform = uniform.type == LayoutBinding::Uniform;
+
+            // WebGPU: read-write storage NOT allowed in Vertex stage
+            const wgpu::ShaderStage visibility = isUniform
+                ? (wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute)
+                : (wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute);
+
+            if (auto&& pEntry = findEntry(bglEntries0, binding)) {
+                pEntry->visibility |= visibility;
+                continue;
             }
-            else { // SSBO
-                // WebGPU: read-write storage NOT allowed in Vertex stage
-                entry.visibility            = wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
-                entry.buffer.type           = wgpu::BufferBindingType::Storage;
-                entry.buffer.minBindingSize = uniform.size;
-            }
+
+            wgpu::BindGroupLayoutEntry entry{};
+            entry.binding               = binding;
+            entry.visibility            = visibility;
+            entry.buffer.type           = isUniform ? wgpu::BufferBindingType::Uniform : wgpu::BufferBindingType::Storage;
+            entry.buffer.minBindingSize = uniform.size;
+
             bglEntries0.push_back(entry);
+            bufferSlots.push_back(WebGPUBufferSlot { binding, !isUniform });
         }
 
-        // Group 1: textures + samplers (each sampler2D/attachment occupies 2 bindings: texture then sampler)
-        SR_UTILS_NS::Vector<wgpu::BindGroupLayoutEntry> bglEntries1;
-        uint32_t nextBinding1 = 0;
+        // Group 1: textures + samplers (each sampler occupies 2 bindings: texture then sampler)
+        struct SamplerLayoutInfo {
+            uint32_t binding = 0;
+            bool isAttachment = false;
+            SamplerDimension dimension = SamplerDimension::Unknown;
+            wgpu::ShaderStage visibility = wgpu::ShaderStage::None;
+        };
+
+        SR_UTILS_NS::Vector<SamplerLayoutInfo> samplerInfos;
 
         for (auto&& uniform : createInfo.uniforms) {
             if (uniform.type != LayoutBinding::Sampler2D && uniform.type != LayoutBinding::Attachhment) {
                 continue;
             }
-            const bool isAttachment = (uniform.type == LayoutBinding::Attachhment);
-            const wgpu::ShaderStage texVis = isAttachment
-                ? wgpu::ShaderStage::Fragment
-                : (wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute);
+
+            const auto binding = static_cast<uint32_t>(uniform.binding);
+            const wgpu::ShaderStage visibility = ShaderStageToWGPU(uniform.stage);
+
+            auto&& pIt = std::find_if(samplerInfos.begin(), samplerInfos.end(), [binding](auto&& info) {
+                return info.binding == binding;
+            });
+
+            if (pIt != samplerInfos.end()) {
+                pIt->visibility |= visibility;
+                continue;
+            }
+
+            SamplerLayoutInfo info;
+            info.binding = binding;
+            info.isAttachment = uniform.type == LayoutBinding::Attachhment;
+            info.dimension = uniform.samplerDimension;
+            info.visibility = visibility;
+
+            samplerInfos.push_back(info);
+        }
+
+        // The WGSL generator numbers samplers in ascending binding order, so the layout must too.
+        std::sort(samplerInfos.begin(), samplerInfos.end(), [](auto&& left, auto&& right) {
+            return left.binding < right.binding;
+        });
+
+        SR_UTILS_NS::Vector<wgpu::BindGroupLayoutEntry> bglEntries1;
+        SR_UTILS_NS::Vector<WebGPUSamplerSlot> samplerSlots;
+
+        for (uint32_t slot = 0; slot < static_cast<uint32_t>(samplerInfos.size()); ++slot) {
+            auto&& info = samplerInfos[slot];
+            const bool isShadow = info.dimension == SamplerDimension::Texture2DShadow;
+
+            wgpu::TextureSampleType sampleType = wgpu::TextureSampleType::Float;
+            if (isShadow) {
+                sampleType = wgpu::TextureSampleType::Depth;
+            }
+            else if (info.isAttachment) {
+                sampleType = wgpu::TextureSampleType::UnfilterableFloat;
+            }
 
             wgpu::BindGroupLayoutEntry texEntry{};
-            texEntry.binding               = nextBinding1++;
-            texEntry.visibility            = texVis;
-            texEntry.texture.sampleType    = isAttachment ? wgpu::TextureSampleType::UnfilterableFloat : wgpu::TextureSampleType::Float;
-            texEntry.texture.viewDimension = wgpu::TextureViewDimension::e2D;
+            texEntry.binding               = slot * 2;
+            texEntry.visibility            = info.visibility;
+            texEntry.texture.sampleType    = sampleType;
+            texEntry.texture.viewDimension = SamplerDimensionToWGPU(info.dimension);
             bglEntries1.push_back(texEntry);
 
             wgpu::BindGroupLayoutEntry samplerEntry{};
-            samplerEntry.binding      = nextBinding1++;
-            samplerEntry.visibility   = texVis;
-            samplerEntry.sampler.type = isAttachment
+            samplerEntry.binding      = slot * 2 + 1;
+            samplerEntry.visibility   = info.visibility;
+            samplerEntry.sampler.type = info.isAttachment
                 ? wgpu::SamplerBindingType::NonFiltering
                 : wgpu::SamplerBindingType::Filtering;
             bglEntries1.push_back(samplerEntry);
+
+            samplerSlots.push_back(WebGPUSamplerSlot { info.binding, info.isAttachment });
         }
 
         // Create BindGroupLayout for group 0 (always present, even if empty)
@@ -1333,6 +1674,8 @@ namespace SR_GRAPH_NS {
         program.bindGroupLayout  = bindGroupLayout;
         program.bindGroupLayout1 = bindGroupLayout1;
         program.pipelineLayout  = pipelineLayout;
+        program.bufferSlots     = std::move(bufferSlots);
+        program.samplerSlots    = std::move(samplerSlots);
         program.isCompute       = isCompute;
 
         // ---- 4a. Compute pipeline ----
@@ -1618,6 +1961,7 @@ namespace SR_GRAPH_NS {
                     if (oldTexture != SR_ID_INVALID) {
                         m_internalData->textures.At(oldTexture).Destroy();
                         m_internalData->textures.RemoveByIndex(oldTexture);
+                        InvalidateTextureBindGroups();
                     }
                 }
                 colorLayer.texture.clear();
@@ -1808,97 +2152,15 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        // Build BindGroupLayoutEntries to match the types array
-        SR_UTILS_NS::Vector<wgpu::BindGroupLayoutEntry> entries;
-        entries.reserve(types.size());
-
-        for (uint32_t i = 0; i < static_cast<uint32_t>(types.size()); ++i) {
-            wgpu::BindGroupLayoutEntry entry{};
-            entry.binding    = i;
-            entry.visibility = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
-
-            switch (types[i]) {
-                case DescriptorType::Uniform:
-                    entry.buffer.type = wgpu::BufferBindingType::Uniform;
-                    break;
-                case DescriptorType::Storage:
-                    // WebGPU: read-write storage NOT allowed in Vertex
-                    entry.visibility  = wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
-                    entry.buffer.type = wgpu::BufferBindingType::Storage;
-                    break;
-                case DescriptorType::CombinedImage:
-                    entry.texture.sampleType    = wgpu::TextureSampleType::Float;
-                    entry.texture.viewDimension = wgpu::TextureViewDimension::e2D;
-                    break;
-                default:
-                    entry.buffer.type = wgpu::BufferBindingType::Uniform;
-                    break;
-            }
-            entries.push_back(entry);
-        }
-
-        wgpu::BindGroupLayoutDescriptor bglDesc{};
-        bglDesc.entryCount = entries.size();
-        bglDesc.entries    = entries.data();
-
-        wgpu::BindGroupLayout bgl = m_internalData->device.CreateBindGroupLayout(&bglDesc);
-        if (!bgl) {
-            SR_ERROR("WebGPUPipeline::AllocDescriptorSet() : failed to create bind group layout!");
-            return SR_ID_INVALID;
-        }
-
-        // Create empty BindGroup (resources are bound later via UpdateDescriptorSets)
-        SR_UTILS_NS::Vector<wgpu::BindGroupEntry> bgEntries;
-        bgEntries.reserve(types.size());
-
-        for (uint32_t i = 0; i < static_cast<uint32_t>(types.size()); ++i) {
-            wgpu::BindGroupEntry bgEntry{};
-            bgEntry.binding = i;
-
-            switch (types[i]) {
-                case DescriptorType::Uniform:
-                case DescriptorType::Storage: {
-                    // Attach a dummy zero-size buffer for initial creation
-                    // (will be updated with UpdateDescriptorSets)
-                    wgpu::BufferDescriptor dummyDesc{};
-                    dummyDesc.size  = 16;
-                    dummyDesc.usage = (types[i] == DescriptorType::Uniform)
-                        ? (wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst)
-                        : (wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst);
-                    bgEntry.buffer = m_internalData->device.CreateBuffer(&dummyDesc);
-                    bgEntry.size   = 16;
-                    break;
-                }
-                case DescriptorType::CombinedImage: {
-                    // Attach a 1×1 white texture as placeholder
-                    if (m_noneTextureId >= 0 && m_internalData->textures.IsAlive(m_noneTextureId)) {
-                        bgEntry.textureView = m_internalData->textures.At(m_noneTextureId).view;
-                    }
-                    break;
-                }
-                default: break;
-            }
-            bgEntries.push_back(bgEntry);
-        }
-
-        wgpu::BindGroupDescriptor bgDesc{};
-        bgDesc.layout     = bgl;
-        bgDesc.entryCount = bgEntries.size();
-        bgDesc.entries    = bgEntries.data();
-
-        wgpu::BindGroup bindGroup = m_internalData->device.CreateBindGroup(&bgDesc);
-        if (!bindGroup) {
-            SR_ERROR("WebGPUPipeline::AllocDescriptorSet() : failed to create bind group!");
-            return SR_ID_INVALID;
-        }
-
-        WebGPUBindGroup bg;
-        bg.bindGroup = std::move(bindGroup);
+        // The types array is positional and says nothing about the actual bindings, while a WebGPU
+        // BindGroup must exactly match the layout of the shader it is used with. So only a slot is
+        // reserved here: the BindGroup is built from the accumulated bindings before the draw call
+        // (see UpdateDescriptorSets and FlushDescriptorBindGroup).
 
         ++m_state.operations;
         ++m_state.allocations;
 
-        return m_internalData->bindGroups.Add(std::move(bg));
+        return m_internalData->bindGroups.Add(WebGPUBindGroup());
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -2067,6 +2329,7 @@ namespace SR_GRAPH_NS {
         if (*id >= 0 && m_internalData->frameBuffers.IsAlive(*id)) {
             m_internalData->frameBuffers.At(*id).Destroy();
             m_internalData->frameBuffers.RemoveByIndex(*id);
+            InvalidateTextureBindGroups();
         }
         *id = SR_ID_INVALID;
         ++m_state.deletions;
@@ -2088,6 +2351,7 @@ namespace SR_GRAPH_NS {
         if (*id >= 0 && m_internalData->textures.IsAlive(*id)) {
             m_internalData->textures.At(*id).Destroy();
             m_internalData->textures.RemoveByIndex(*id);
+            InvalidateTextureBindGroups();
         }
         *id = SR_ID_INVALID;
         ++m_state.deletions;
@@ -2098,6 +2362,7 @@ namespace SR_GRAPH_NS {
         if (*id >= 0 && m_internalData->shaderPrograms.IsAlive(*id)) {
             m_internalData->shaderPrograms.At(*id).Destroy();
             m_internalData->shaderPrograms.RemoveByIndex(*id);
+            InvalidateTextureBindGroups();
         }
         *id = SR_ID_INVALID;
         ++m_state.deletions;
@@ -2108,6 +2373,7 @@ namespace SR_GRAPH_NS {
         if (*id >= 0 && m_internalData->textures.IsAlive(*id)) {
             m_internalData->textures.At(*id).Destroy();
             m_internalData->textures.RemoveByIndex(*id);
+            InvalidateTextureBindGroups();
         }
         *id = SR_ID_INVALID;
         ++m_state.deletions;

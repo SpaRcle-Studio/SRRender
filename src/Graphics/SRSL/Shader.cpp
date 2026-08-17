@@ -701,6 +701,7 @@ namespace SR_SRSL_NS {
                 uniform.binding = sampler.binding;
                 uniform.size = 0;
                 uniform.stage = stage;
+                uniform.samplerDimension = SamplerDimensionFromTypeName(sampler.type.ToStringView());
 
                 if (sampler.attachment >= 0) {
                     uniform.type = LayoutBinding::Attachhment;
