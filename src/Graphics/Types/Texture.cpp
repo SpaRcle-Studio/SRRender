@@ -171,7 +171,8 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE_TEXT(GetResourceId());
 
         if (m_syncLoadTaskId) {
-            SRHalt("Texture::Calculate() : the texture is still loading asynchronously!");
+            SR_LOG("Texture::Calculate() : waiting for async load task to finish for \"{}\" texture...", GetResourceId());
+            SR_UTILS_NS::TaskManager::Instance().Wait(*m_syncLoadTaskId);
             return false;
         }
 

@@ -3181,9 +3181,6 @@ namespace SR_GRAPH_NS {
             static VkDeviceSize offsets[SR_MAX_VERTEX_INPUT_BINDINGS] = { 0 };
             vkCmdBindVertexBuffers(m_internalData->currentCmd, 0, buffers.size(), buffers.data(), offsets);
         }
-        else {
-            PipelineError("VulkanPipeline::FlushVBOBuffers() : no VBOs to bind!");
-        }
         m_internalData->isVBOsDirty = false;
     }
 

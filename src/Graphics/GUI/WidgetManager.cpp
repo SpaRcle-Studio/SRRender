@@ -24,7 +24,7 @@ namespace SR_GRAPH_NS::GUI {
     void WidgetManager::Draw() {
         SR_SCOPED_LOCK;
 
-        for (auto&&[name, widget] : m_widgets) {
+        for (auto&& [name, widget] : m_widgets) {
             if (widget->IsOpen()) {
                 widget->DrawWindow();
             }

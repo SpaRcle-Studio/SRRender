@@ -40,7 +40,7 @@ namespace SR_SRSL_NS {
     };
 
     struct SRSLUseStackHolder {
-        using Ptr = SR_HTYPES_NS::RawPointerHolder<SRSLUseStackHolder>;
+        using Ptr = SR_UTILS_NS::RawPointerHolder<SRSLUseStackHolder>;
 
         
     };

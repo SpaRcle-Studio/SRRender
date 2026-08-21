@@ -68,7 +68,7 @@ namespace SR_GTYPES_NS {
     private:
         SR_HTYPES_NS::SharedPtr<TextureData> m_textureData;
 
-        SR_HTYPES_NS::RawPointerHolder<TextureImpl> m_impl;
+        SR_UTILS_NS::RawPointerHolder<TextureImpl> m_impl;
         int32_t m_id = SR_ID_INVALID;
 
         std::atomic<bool> m_hasErrors = false;

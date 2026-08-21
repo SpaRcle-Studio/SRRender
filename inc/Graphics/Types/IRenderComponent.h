@@ -102,7 +102,7 @@ namespace SR_GTYPES_NS {
         /// @property @setter(SetMaterial) @getter(GetMaterial) @inspector(MaterialPropertyDrawer)
         SR_HTYPES_NS::SharedPtr<BaseMaterial> m_material;
 
-        mutable SR_HTYPES_NS::RawPointerHolder<IRenderComponentInternalData> m_internalData;
+        mutable SR_UTILS_NS::RawPointerHolder<IRenderComponentInternalData> m_internalData;
         mutable RenderScene* m_renderScene = nullptr;
         std::optional<RenderObjectRegistrationInfoInternal> m_registrationInfo;
 

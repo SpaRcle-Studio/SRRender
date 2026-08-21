@@ -25,7 +25,7 @@ namespace SR_GTYPES_NS {
         virtual ~TextureImpl() = default;
 
     public:
-        SR_NODISCARD static SR_HTYPES_NS::RawPointerHolder<TextureImpl> TryCreate(Texture& texture);
+        SR_NODISCARD static SR_UTILS_NS::RawPointerHolder<TextureImpl> TryCreate(Texture& texture);
 
     public:
         virtual void PrepareFrame() = 0;

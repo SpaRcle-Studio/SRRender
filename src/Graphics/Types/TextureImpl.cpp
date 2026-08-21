@@ -37,7 +37,7 @@ namespace SR_GTYPES_NS {
         return m_texture.m_isDirty;
     }
 
-    SR_HTYPES_NS::RawPointerHolder<TextureImpl> TextureImpl::TryCreate(Texture& texture) {
+    SR_UTILS_NS::RawPointerHolder<TextureImpl> TextureImpl::TryCreate(Texture& texture) {
         auto&& path = texture.GetResourcePath();
 
         if (path.View().starts_with("RenderTarget/")) {
@@ -45,9 +45,9 @@ namespace SR_GTYPES_NS {
             auto&& parts = SR_UTILS_NS::StringUtils::SplitView(path.View(), "/");
             if (parts.size() != 3) {
                 SR_ERROR("TextureImpl::TryCreate() : invalid render target texture path! Path: {}", path);
-                return SR_HTYPES_NS::RawPointerHolder<TextureImpl>();
+                return SR_UTILS_NS::RawPointerHolder<TextureImpl>();
             }
-            SR_HTYPES_NS::RawPointerHolder<TextureImpl> pImpl = (TextureImpl*)(new TextureImplRenderTarget(texture, parts));
+            SR_UTILS_NS::RawPointerHolder<TextureImpl> pImpl = (TextureImpl*)(new TextureImplRenderTarget(texture, parts));
             texture.m_textureData = TextureData::CreateEmpty();
             return pImpl;
         }
@@ -56,13 +56,13 @@ namespace SR_GTYPES_NS {
             auto&& parts = SR_UTILS_NS::StringUtils::SplitView(path.View(), "/");
             if (parts.size() != 4) {
                 SR_ERROR("TextureImpl::TryCreate() : invalid font atlas texture path! Path: {}", path);
-                return SR_HTYPES_NS::RawPointerHolder<TextureImpl>();
+                return SR_UTILS_NS::RawPointerHolder<TextureImpl>();
             }
-            SR_HTYPES_NS::RawPointerHolder<TextureImpl> pImpl = (TextureImpl*)(new TextureImplFontAtlas(texture, parts));
+            SR_UTILS_NS::RawPointerHolder<TextureImpl> pImpl = (TextureImpl*)(new TextureImplFontAtlas(texture, parts));
             return pImpl;
         }
 
-        return SR_HTYPES_NS::RawPointerHolder<TextureImpl>();
+        return SR_UTILS_NS::RawPointerHolder<TextureImpl>();
     }
 
     /// ----------------------------------------------------------------------------------------------------------------
