@@ -1579,6 +1579,8 @@ namespace SR_GRAPH_NS {
         EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationErrorAsAssert = SR_UTILS_NS::Features::Instance().Enabled("VulkanValidationErrorAsAssert", false) &&
             SR_PLATFORM_NS::IsRunningUnderDebugger();
 
+        EvoVulkan::Tools::VkFunctionsHolder::Instance().ValidationMuteSmallMemoryAllocations = true;
+
         EvoVulkan::Tools::VkFunctionsHolder::Instance().LogCallback = [GetUsedMemoryFn](const std::string& msg) {
             SR_VULKAN_LOG("[{} MB] {}", GetUsedMemoryFn(), msg);
         };
