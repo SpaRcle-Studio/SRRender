@@ -3,9 +3,6 @@
 //
 
 #include <Graphics/GUI/NodeWidget.h>
-#include <Graphics/GUI/NodeCreation.h>
-#include <Graphics/GUI/Node.h>
-#include <Graphics/GUI/Link.h>
 #include <Graphics/Types/Texture.h>
 
 #include <ImmediateGUI/GUI/ImmediateGUI.h>
