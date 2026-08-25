@@ -38,10 +38,14 @@ namespace SR_ANIMATIONS_NS {
 
         void SetGraph(const SR_UTILS_NS::Path& path);
 
-        void SetBool(const SR_UTILS_NS::StringAtom& name, bool value);
-        void SetInt(const SR_UTILS_NS::StringAtom& name, int32_t value);
-        void SetFloat(const SR_UTILS_NS::StringAtom& name, float_t value);
-        void SetString(const SR_UTILS_NS::StringAtom& name, const std::string& value);
+        /// @method
+        void SetBool(SR_UTILS_NS::StringAtom name, bool value);
+        /// @method
+        void SetInt(SR_UTILS_NS::StringAtom name, int32_t value);
+        /// @method
+        void SetFloat(SR_UTILS_NS::StringAtom name, float_t value);
+        /// @method
+        void SetString(SR_UTILS_NS::StringAtom name, SR_UTILS_NS::StringView value);
 
         SR_NODISCARD std::optional<bool> GetBool(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD std::optional<int32_t> GetInt(const SR_UTILS_NS::StringAtom& name) const;

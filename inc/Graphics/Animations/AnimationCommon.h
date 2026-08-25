@@ -144,7 +144,7 @@ namespace SR_ANIMATIONS_NS {
         void SetFloat(const SR_UTILS_NS::StringAtom& name, const float_t value) {
             m_floatTable[name] = value;
         }
-        void SetString(const SR_UTILS_NS::StringAtom& name, const std::string& value) {
+        void SetString(const SR_UTILS_NS::StringAtom& name, SR_UTILS_NS::StringView value) {
             m_stringTable[name] = value;
         }
 

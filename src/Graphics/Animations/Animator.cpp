@@ -110,25 +110,25 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    void Animator::SetBool(const SR_UTILS_NS::StringAtom& name, const bool value) {
+    void Animator::SetBool(SR_UTILS_NS::StringAtom name, const bool value) {
         if (m_graph) {
             m_graph->SetBool(name, value);
         }
     }
 
-    void Animator::SetInt(const SR_UTILS_NS::StringAtom& name, const int32_t value) {
+    void Animator::SetInt(SR_UTILS_NS::StringAtom name, const int32_t value) {
         if (m_graph) {
             m_graph->SetInt(name, value);
         }
     }
 
-    void Animator::SetFloat(const SR_UTILS_NS::StringAtom& name, const float_t value) {
+    void Animator::SetFloat(SR_UTILS_NS::StringAtom name, const float_t value) {
         if (m_graph) {
             m_graph->SetFloat(name, value);
         }
     }
 
-    void Animator::SetString(const SR_UTILS_NS::StringAtom& name, const std::string& value) {
+    void Animator::SetString(SR_UTILS_NS::StringAtom name, SR_UTILS_NS::StringView value) {
         if (m_graph) {
             m_graph->SetString(name, value);
         }
