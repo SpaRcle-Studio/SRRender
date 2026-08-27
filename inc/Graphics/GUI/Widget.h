@@ -120,6 +120,9 @@ namespace SR_GRAPH_GUI_NS {
         void SetFlags(WindowFlags flags) { m_windowFlags = flags; }
         void AddFlags(WindowFlags flags) { m_windowFlags |= flags; }
 
+        SR_NODISCARD virtual bool IsHoveredImpl() const;
+        SR_NODISCARD virtual bool IsFocusedImpl() const;
+
         void TextCenter(const std::string& text) const;
 
         void ResetWeakStorage();

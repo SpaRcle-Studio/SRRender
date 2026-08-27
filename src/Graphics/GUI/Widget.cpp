@@ -105,6 +105,14 @@ namespace SR_GRAPH_GUI_NS {
         SR_GRAPH_GUI_NS::Immediate::End();
     }
 
+    bool Widget::IsHoveredImpl() const {
+        return SR_GRAPH_GUI_NS::Immediate::IsWindowHovered();
+    }
+
+    bool Widget::IsFocusedImpl() const {
+        return SR_GRAPH_GUI_NS::Immediate::IsWindowFocused();
+    }
+
     void Widget::TextCenter(const std::string &text) const {
         float font_size = SR_GRAPH_GUI_NS::Immediate::GetFontSize() * text.size() / 2;
         SR_GRAPH_GUI_NS::Immediate::SameLine(SR_GRAPH_GUI_NS::Immediate::GetWindowSize().x / 2 - font_size + (font_size / 2));
@@ -132,7 +140,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Widget::InternalCheckFocused() {
-        if (SR_GRAPH_GUI_NS::Immediate::IsWindowFocused() || m_widgetFlags & WIDGET_FLAG_FOCUSED) {
+        if (IsFocusedImpl() || m_widgetFlags & WIDGET_FLAG_FOCUSED) {
             m_internalFlags |= WIDGET_FLAG_FOCUSED;
         }
         else if (IsFocused()) {
@@ -141,7 +149,7 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Widget::InternalCheckHovered() {
-        if (SR_GRAPH_GUI_NS::Immediate::IsWindowHovered() || m_widgetFlags & WIDGET_FLAG_HOVERED) {
+        if (IsHoveredImpl() || m_widgetFlags & WIDGET_FLAG_HOVERED) {
             m_internalFlags |= WIDGET_FLAG_HOVERED;
         }
         else if (IsHovered()) {
@@ -150,11 +158,11 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void Widget::CheckFocused() {
-        m_widgetFlags |= SR_GRAPH_GUI_NS::Immediate::IsWindowFocused() ? WIDGET_FLAG_FOCUSED : WIDGET_FLAG_NONE;
+        m_widgetFlags |= IsFocusedImpl() ? WIDGET_FLAG_FOCUSED : WIDGET_FLAG_NONE;
     }
 
     void Widget::CheckHovered() {
-        m_widgetFlags |= SR_GRAPH_GUI_NS::Immediate::IsWindowHovered() ? WIDGET_FLAG_HOVERED : WIDGET_FLAG_NONE;
+        m_widgetFlags |= IsHoveredImpl() ? WIDGET_FLAG_HOVERED : WIDGET_FLAG_NONE;
     }
 
     void Widget::SetManager(WidgetManager* manager) {
