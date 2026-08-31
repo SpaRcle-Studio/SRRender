@@ -47,7 +47,7 @@ namespace SR_GRAPH_NS {
         virtual bool BeginDraw() = 0;
         virtual void EndDraw() = 0;
 
-        void SetEnabled(bool enabled) { m_enabled = enabled; }
+        virtual void SetEnabled(bool enabled) { m_enabled = enabled; }
         void SetSurfaceDirty() { m_surfaceDirty = true; }
 
     protected:

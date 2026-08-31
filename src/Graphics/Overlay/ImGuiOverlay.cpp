@@ -196,4 +196,8 @@ namespace SR_GRAPH_NS {
         return m_smallFont;
     }
 
+    void ImGuiOverlay::SetEnabled(bool enabled) {
+        SR_IMMEDIATE_GUI_NS::SetEnabled(enabled);
+        Overlay::SetEnabled(enabled);
+    }
 }

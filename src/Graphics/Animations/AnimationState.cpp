@@ -17,16 +17,12 @@ namespace SR_ANIMATIONS_NS {
     AnimationState::~AnimationState() = default;
 
     void AnimationState::OnTransitionBegin(AnimationStateTransition* pTransition) {
-        m_activeTransition = pTransition;
-
         if (m_resetOnPlay) {
             ResetState();
         }
     }
 
     void AnimationState::OnTransitionDone() {
-        m_activeTransition = nullptr;
-
         for (auto&& pTransition : m_transitions) {
             pTransition->ResetTransition();
         }

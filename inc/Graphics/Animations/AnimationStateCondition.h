@@ -8,6 +8,15 @@
 #include <Graphics/Animations/AnimationContext.h>
 
 namespace SR_ANIMATIONS_NS {
+    SR_ENUM_NS_CLASS_T(CompareType, uint8_t,
+        Equal,
+        NotEqual,
+        Less,
+        LessOrEqual,
+        Greater,
+        GreaterOrEqual
+    );
+
     class AnimationStateTransition;
 
     /// @abstract
@@ -26,12 +35,10 @@ namespace SR_ANIMATIONS_NS {
             return IsSuitable(context);
         }
 
-        SR_NODISCARD virtual bool IsNeedBreakUpdate() const noexcept { return false; }
-
-        SR_NODISCARD virtual std::optional<float_t> GetProgress() const noexcept { return std::nullopt; }
+        SR_NODISCARD virtual bool IsNeedBreakEvaluation() const noexcept { return false; }
 
         virtual void ResetCondition() { }
-        virtual void Update(const StateConditionContext& context) { }
+        virtual void Evaluate(const StateConditionContext& context) { }
 
     };
 
@@ -56,11 +63,10 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
-        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override;
-        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
+        SR_NODISCARD bool IsNeedBreakEvaluation() const noexcept override;
 
         void ResetCondition() override;
-        void Update(const StateConditionContext& context) override;
+        void Evaluate(const StateConditionContext& context) override;
 
     protected:
         /// @property @notNull
@@ -79,8 +85,7 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
-        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override;
-        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
+        SR_NODISCARD bool IsNeedBreakEvaluation() const noexcept override;
 
         void ResetCondition() override;
 
@@ -101,10 +106,9 @@ namespace SR_ANIMATIONS_NS {
     public:
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
-        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override;
-        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
+        SR_NODISCARD bool IsNeedBreakEvaluation() const noexcept override;
 
-        void Update(const StateConditionContext& context) override;
+        void Evaluate(const StateConditionContext& context) override;
         void ResetCondition() override;
 
     protected:
@@ -115,17 +119,16 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationStateConditionExitTime : public AnimationStateCondition {
+    class AnimationTransitionExitTime : public SR_UTILS_NS::Serializable {
         SR_CLASS()
-        using Super = AnimationStateCondition;
     public:
-        SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
-        SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept;
+        SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept;
 
-        SR_NODISCARD std::optional<float_t> GetProgress() const noexcept override;
+        SR_NODISCARD float_t GetProgress() const noexcept;
 
-        void ResetCondition() override;
-        void Update(const StateConditionContext& context) override;
+        void Reset();
+        void Update(const StateConditionContext& context);
 
     protected:
         float_t m_dtCapacity = 0.f;
@@ -155,9 +158,9 @@ namespace SR_ANIMATIONS_NS {
         SR_CLASS()
         using Super = AnimationStateCondition;
     public:
+        void Evaluate(const StateConditionContext& context) override;
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
-        void Update(const StateConditionContext& context) override;
-        SR_NODISCARD bool IsNeedBreakUpdate() const noexcept override { return !m_checked; }
+        SR_NODISCARD bool IsNeedBreakEvaluation() const noexcept override { return !m_checked; }
 
         void ResetCondition() override;
 
@@ -166,6 +169,28 @@ namespace SR_ANIMATIONS_NS {
         SR_UTILS_NS::StringAtom m_variableName;
         /// @property
         bool m_value = false;
+
+        bool m_checked = false;
+
+    };
+
+    class AnimationStateConditionFloat : public AnimationStateCondition {
+        SR_CLASS()
+        using Super = AnimationStateCondition;
+    public:
+        void Evaluate(const StateConditionContext& context) override;
+        SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept override;
+        SR_NODISCARD bool IsNeedBreakEvaluation() const noexcept override { return !m_checked; }
+
+        void ResetCondition() override;
+
+    private:
+        /// @property
+        SR_UTILS_NS::StringAtom m_variableName;
+        /// @property
+        float_t m_value = 0.f;
+        /// @property
+        CompareType m_comparison = CompareType::Equal;
 
         bool m_checked = false;
 

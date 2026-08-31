@@ -18,14 +18,22 @@ namespace SR_ANIMATIONS_NS {
     }
 
     bool AnimationStateTransition::IsSuitable(const StateConditionContext& context) const noexcept {
-        if (m_condition) {
-            return m_condition->IsSuitable(context);
+        if (m_condition && !m_condition->IsSuitable(context)) {
+            return false;
         }
+
+        //if (!m_exitTime.IsSuitable(context)) {
+        //    return false;
+        //}
 
         return true;
     }
 
     bool AnimationStateTransition::IsFinished(const StateConditionContext& context) const noexcept {
+        if (!m_exitTime.IsFinished(context)) {
+            return false;
+        }
+
         if (m_condition) {
             return m_condition->IsFinished(context);
         }
@@ -45,11 +53,16 @@ namespace SR_ANIMATIONS_NS {
         if (m_condition) {
             m_condition->ResetCondition();
         }
+        m_exitTime.Reset();
+    }
+
+    void AnimationStateTransition::Evaluate(const StateConditionContext& context) {
+        if (m_condition) {
+            m_condition->Evaluate(context);
+        }
     }
 
     void AnimationStateTransition::Update(const StateConditionContext& context) {
-        if (m_condition) {
-            m_condition->Update(context);
-        }
+        m_exitTime.Update(context);
     }
 }

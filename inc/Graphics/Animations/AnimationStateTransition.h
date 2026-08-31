@@ -31,7 +31,7 @@ namespace SR_ANIMATIONS_NS {
 
         SR_NODISCARD bool IsActive() const noexcept { return m_isActive; }
 
-        SR_NODISCARD float_t GetProgress() const noexcept { return m_condition ? m_condition->GetProgress().value_or(1.f) : 1.f; }
+        SR_NODISCARD float_t GetProgress() const noexcept { return m_exitTime.GetProgress(); }
 
         void SetSourceState(AnimationState* state) { m_sourceState = state; }
         void SetDestinationState(AnimationState* state) { m_destinationState = state; }
@@ -42,13 +42,16 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD int32_t GetTargetIndex() const noexcept { return m_targetIndex; }
 
         virtual void ResetTransition();
-        virtual void Update(const StateConditionContext& context);
+        virtual void Evaluate(const StateConditionContext& context);
+        void Update(const StateConditionContext& context);
 
     protected:
         /// @property @hidden
         int32_t m_targetIndex = -1;
         /// @property
         AnimationStateCondition::Ptr m_condition;
+        /// @property
+        AnimationTransitionExitTime m_exitTime;
 
         bool m_isActive = false;
         AnimationState* m_sourceState = nullptr;

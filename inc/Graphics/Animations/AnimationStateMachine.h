@@ -58,6 +58,7 @@ namespace SR_ANIMATIONS_NS {
 
     private:
         AnimationGraphNode* m_node = nullptr;
+        AnimationStateTransition* m_activeTransition = nullptr;
 
         /// @property @hidden
         SR_UTILS_NS::Vector<AnimationState::Ptr> m_states;

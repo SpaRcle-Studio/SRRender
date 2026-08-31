@@ -29,6 +29,7 @@ namespace SR_GRAPH_NS {
 
     protected:
         virtual void ReloadFonts();
+        void SetEnabled(bool enabled) override;
 
     protected:
         void* m_context = nullptr;

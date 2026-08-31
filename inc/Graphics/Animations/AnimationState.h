@@ -34,8 +34,6 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD virtual float_t GetDuration() const noexcept { return 0.f; }
         SR_NODISCARD virtual float_t GetTime() const noexcept { return 0.f; }
 
-        SR_NODISCARD AnimationStateTransition* GetActiveTransition() const noexcept { return m_activeTransition; }
-
         SR_NODISCARD Transitions& GetTransitions() noexcept { return m_transitions; }
         SR_NODISCARD const Transitions& GetTransitions() const noexcept { return m_transitions; }
         SR_NODISCARD bool IsResetOnPlay() const noexcept { return m_resetOnPlay; }
@@ -74,7 +72,6 @@ namespace SR_ANIMATIONS_NS {
         /// @property @notNull @hidden
         Transitions m_transitions;
 
-        AnimationStateTransition* m_activeTransition = nullptr;
         AnimationStateMachine* m_machine = nullptr;
         void* m_userData = nullptr;
 
