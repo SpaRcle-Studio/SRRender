@@ -2,6 +2,7 @@
 // Created by monika on 2/4/26.
 //
 
+#include "Graphics/Window/BasicWindowImpl.h"
 #ifdef SR_COMMON_USE_NATIVE_WAYLAND
 
     #include <Graphics/Window/WaylandWindow.h>
@@ -530,6 +531,16 @@ namespace SR_GRAPH_NS {
                 SR_LOG("xdg_toplevel_handle_configure() : window unmaximized");
             }
 
+            // manage fullscreen state
+            if (!pWindow->IsFullScreen() && fullscreen) {
+                pWindow->SetFullscreenState(true);
+                SR_LOG("xdg_toplevel_handle_configure() : window entered fullscreen");
+            } else if (pWindow->IsFullScreen() && !fullscreen) {
+                pWindow->SetFullscreenState(false);
+                SR_LOG("xdg_toplevel_handle_configure() : window exited fullscreen");
+            }
+
+            
             pWindow->SetPendingSize({width, height});
 
             // resize window
@@ -1054,6 +1065,19 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
+    WindowState WaylandWindow::GetState() const {
+        if (m_isFullScreen) {
+            return WindowState::FullScreen;
+        }
+        if (m_isMaximized) {
+            return WindowState::Maximized;
+        }
+        if (m_collapsed) {
+            return WindowState::Collapsed;
+        }
+        return WindowState::Default;
+    }
+    
     WaylandWindow::Output& WaylandWindow::FindOutput(wl_output* pOutput) {
         for (auto& output : m_outputs) {
             if (output.output == pOutput) {
@@ -1130,6 +1154,20 @@ namespace SR_GRAPH_NS {
         SR_LOG("WaylandWindow::UnlockPointer() : pointer unlocked");
     }
 
+    void WaylandWindow::Maximize() {
+        xdg_toplevel_set_maximized(m_xdgToplevel);
+    }
+    
+    void WaylandWindow::Restore() {
+        if (m_isFullScreen) {
+            SetFullScreen(false);
+        }
+
+        if (m_isMaximized) {
+            xdg_toplevel_unset_maximized(m_xdgToplevel);
+        }
+    }
+    
     void WaylandWindow::PollEvents() {
         SR_TRACY_ZONE;
 
@@ -1174,6 +1212,18 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void WaylandWindow::SetFullScreen(bool value) {
+        if (value && !m_isFullScreen) {
+            xdg_toplevel_set_fullscreen(m_xdgToplevel, nullptr);
+            m_isFullScreen = true;
+            SR_LOG("WaylandWindow::SetFullScreen() : entered fullscreen mode");
+        } else if (!value && m_isFullScreen) {
+            xdg_toplevel_unset_fullscreen(m_xdgToplevel);
+            m_isFullScreen = false;
+            SR_LOG("WaylandWindow::SetFullScreen() : exited fullscreen mode");
+        }
+    }
+    
     void WaylandWindow::Close() {
         SR_LOG("WaylandWindow::Close() : closing window...");
 

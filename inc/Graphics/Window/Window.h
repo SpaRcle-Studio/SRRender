@@ -71,6 +71,8 @@ namespace SR_GRAPH_NS {
         void SetScrollCallback(const ScrollCallback& callback);
 
         void SetFullScreen(bool value);
+        void Maximize();
+        void Restore();
 
         SR_NODISCARD BasicWindowImpl* GetBaseWindow() const noexcept { return m_windowImpl; }
 

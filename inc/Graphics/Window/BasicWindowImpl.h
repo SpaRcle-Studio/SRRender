@@ -58,6 +58,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual bool IsValid() const { return m_isValid; };
         SR_NODISCARD virtual bool IsCollapsed() const { return m_collapsed; };
         SR_NODISCARD virtual bool IsMaximized() const { return m_maximize; };
+        SR_NODISCARD virtual bool IsFullScreen() { return false; }
         SR_NODISCARD virtual bool IsHeaderEnabled() const { return m_headerEnabled; };
         SR_NODISCARD virtual bool IsFocused() const { return m_isFocused; };
         SR_NODISCARD virtual float_t GetScreenDPI() const { return 0.0f; }
@@ -84,7 +85,7 @@ namespace SR_GRAPH_NS {
         virtual void SwapBuffers() const { };
         virtual void SetIcon(const std::string& path) { }
         virtual void SetHeaderEnabled(bool enable) { }
-        virtual bool IsFullScreen() { return false; }
+        virtual void SetFullScreen(bool value) { };
 
         SR_NODISCARD virtual void* GetHandle() const;
 
@@ -116,7 +117,6 @@ namespace SR_GRAPH_NS {
         SR_MATH_NS::IVector2 m_position;
         SR_MATH_NS::UVector2 m_size;
         SR_MATH_NS::UVector2 m_surfaceSize;
-
     };
 }
 
