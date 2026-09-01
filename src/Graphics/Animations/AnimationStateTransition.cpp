@@ -22,9 +22,9 @@ namespace SR_ANIMATIONS_NS {
             return false;
         }
 
-        //if (!m_exitTime.IsSuitable(context)) {
-        //    return false;
-        //}
+        if (!m_exitTime.IsSuitable(context)) {
+            return false;
+        }
 
         return true;
     }
@@ -57,6 +57,8 @@ namespace SR_ANIMATIONS_NS {
     }
 
     void AnimationStateTransition::Evaluate(const StateConditionContext& context) {
+        m_exitTime.Evaluate(context);
+
         if (m_condition) {
             m_condition->Evaluate(context);
         }

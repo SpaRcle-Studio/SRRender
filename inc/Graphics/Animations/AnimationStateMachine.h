@@ -55,6 +55,8 @@ namespace SR_ANIMATIONS_NS {
 
     private:
         bool UpdateTransition(UpdateContext& context, AnimationStateTransition* pTransition, bool& hasActiveTransitions);
+        /// Обновляет стейт не более одного раза за кадр.
+        void UpdateState(AnimationState* pState, UpdateContext& context);
 
     private:
         AnimationGraphNode* m_node = nullptr;
@@ -64,6 +66,9 @@ namespace SR_ANIMATIONS_NS {
         SR_UTILS_NS::Vector<AnimationState::Ptr> m_states;
 
         SR_UTILS_NS::Set<AnimationState*> m_activeStates;
+        /// Стейты, которые уже обновились в текущем кадре. Переход может завершиться в том же кадре,
+        /// в котором начался, и тогда стейт не должен проиграться дважды.
+        SR_UTILS_NS::Set<AnimationState*> m_updatedStates;
 
     };
 }

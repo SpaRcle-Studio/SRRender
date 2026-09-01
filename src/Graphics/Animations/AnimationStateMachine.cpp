@@ -41,6 +41,7 @@ namespace SR_ANIMATIONS_NS {
         SR_TRACY_ZONE;
 
         uint32_t retryCount = 0;
+        m_updatedStates.clear();
     retry:
         for (auto pIt = m_activeStates.begin(); pIt != m_activeStates.end(); ) {
             AnimationState* pState = *pIt;
@@ -67,7 +68,7 @@ namespace SR_ANIMATIONS_NS {
             }
 
             if (!hasActiveTransitions) {
-                pState->Update(context);
+                UpdateState(pState, context);
             }
 
             ++pIt;
@@ -305,13 +306,13 @@ namespace SR_ANIMATIONS_NS {
         UpdateContext transitionFromContext = context;
         if (1.f - progress > 0.f) {
             transitionFromContext.weight = 1.f - progress;
-            pTransition->GetSource()->Update(transitionFromContext);
+            UpdateState(pTransition->GetSource(), transitionFromContext);
         }
 
         if (progress > 0.f) {
             UpdateContext transitionToContext = context;
             transitionToContext.weight = progress;
-            pDestinationState->Update(transitionToContext);
+            UpdateState(pDestinationState, transitionToContext);
         }
 
         if (pTransition->IsFinished(stateConditionContext)) {
@@ -321,6 +322,14 @@ namespace SR_ANIMATIONS_NS {
         }
 
         return false;
+    }
+
+    void AnimationStateMachine::UpdateState(AnimationState* pState, UpdateContext& context) {
+        if (!pState || m_updatedStates.count(pState) == 1) {
+            return;
+        }
+        m_updatedStates.insert(pState);
+        pState->Update(context);
     }
 
     void AnimationStateMachine::FastForwardState(AnimationState* pState) {

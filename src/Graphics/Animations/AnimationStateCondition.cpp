@@ -148,56 +148,99 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    bool AnimationTransitionExitTime::IsSuitable(const StateConditionContext& context) const noexcept {
+    float_t AnimationTransitionExitTime::GetSourceProgress(const StateConditionContext& context) noexcept {
         if (!context.pState) {
-            return false;
+            return 0.f;
         }
-
-        if (m_hasExitTime) {
-            return m_dtCapacity >= m_dtExitTime;
+        /// стейты без длительности (например, точка входа) считаются проигранными сразу же
+        if (context.pState->GetDuration() <= 0.f) {
+            return 1.f;
         }
+        return SR_CLAMP(context.pState->GetProgress(), 0.f, 1.f);
+    }
 
-        return true;
+    bool AnimationTransitionExitTime::IsSuitable(const StateConditionContext& context) const noexcept {
+        return !m_hasExitTime || m_exitTimeReached;
     }
 
     bool AnimationTransitionExitTime::IsFinished(const StateConditionContext& context) const noexcept {
-        if (!context.pState) {
+        /// переход еще не начинался
+        if (m_dtDuration < 0.f) {
             return false;
-        }
-
-        if (m_hasExitTime) {
-            return (m_dtCapacity - m_dtExitTime) >= m_dtDuration;
         }
         return m_dtCapacity >= m_dtDuration;
     }
 
     float_t AnimationTransitionExitTime::GetProgress() const noexcept {
+        /// переход еще не начинался - целевой стейт не должен вносить вклад
+        if (m_dtDuration < 0.f) {
+            return 0.f;
+        }
+
+        /// мгновенный переход без блендинга
         if (m_dtDuration <= 0.f) {
             return 1.f;
         }
 
-        if (m_hasExitTime) {
-            const float_t progress = (m_dtCapacity - m_dtExitTime) / m_dtDuration;
-            return SR_CLAMP(progress, 0.f, 1.f);
-        }
-
-        const float_t progress = m_dtCapacity / m_dtDuration;
-        return SR_CLAMP(progress, 0.f, 1.f);
+        return SR_CLAMP(m_dtCapacity / m_dtDuration, 0.f, 1.f);
     }
 
     void AnimationTransitionExitTime::Reset() {
-        m_dtDuration = 0.f;
         m_dtCapacity = 0.f;
-        m_dtExitTime = 0.f;
+        m_dtDuration = -1.f;
+        m_lastSourceProgress = -1.f;
+        m_sourceLoops = 0;
+        m_exitTimeReached = false;
+    }
+
+    void AnimationTransitionExitTime::Evaluate(const StateConditionContext& context) {
+        if (!m_hasExitTime || m_exitTimeReached) {
+            return;
+        }
+
+        /// у стейта нет длительности (например, точка входа) - ждать нечего
+        if (!context.pState || context.pState->GetDuration() <= 0.f) {
+            m_exitTimeReached = true;
+            return;
+        }
+
+        if (m_exitTime <= 0.f) {
+            m_exitTimeReached = true;
+            return;
+        }
+
+        const float_t progress = GetSourceProgress(context);
+
+        /// первый кадр наблюдения - запоминаем, с какого места играет стейт, и ждем пересечения exitTime
+        if (m_lastSourceProgress < 0.f) SR_UNLIKELY_ATTRIBUTE {
+            m_lastSourceProgress = progress;
+            return;
+        }
+
+        /// прогресс откатился назад - значит стейт зациклился, то есть доиграл до конца
+        const bool looped = progress + static_cast<float_t>(SR_EPSILON) < m_lastSourceProgress;
+        if (looped) {
+            ++m_sourceLoops;
+        }
+
+        if (m_exitTime > 1.f) {
+            /// exitTime больше единицы - стейт должен проиграться несколько раз
+            m_exitTimeReached = static_cast<float_t>(m_sourceLoops) + progress >= m_exitTime;
+        }
+        else {
+            /// стейт должен именно пересечь exitTime, а не просто оказаться за ним в момент входа в стейт,
+            /// иначе переход сработает мгновенно, если стейт был начат не с нуля
+            m_exitTimeReached = m_lastSourceProgress < m_exitTime && (looped || progress >= m_exitTime);
+        }
+
+        m_lastSourceProgress = progress;
     }
 
     void AnimationTransitionExitTime::Update(const StateConditionContext& context) {
-        if (m_hasExitTime && m_dtExitTime <= 0.f) SR_UNLIKELY_ATTRIBUTE {
-            m_dtExitTime = context.pState ? (context.pState->GetDuration() * m_exitTime) : 0.f;
-        }
-
-        if (m_dtDuration <= 0.f) SR_UNLIKELY_ATTRIBUTE {
-            m_dtDuration = context.pState ? (context.pState->GetDuration() * m_duration) : 0.f;
+        /// длительность блендинга фиксируется в момент начала перехода
+        if (m_dtDuration < 0.f) SR_UNLIKELY_ATTRIBUTE {
+            const float_t stateDuration = context.pState ? context.pState->GetDuration() : 0.f;
+            m_dtDuration = SR_MAX(stateDuration * m_duration, 0.f);
         }
 
         m_dtCapacity += context.dt;

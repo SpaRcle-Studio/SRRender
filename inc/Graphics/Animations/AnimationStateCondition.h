@@ -119,29 +119,53 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
+    /**
+        Работает по аналогии с Unity.
+
+        exitTime измеряется в нормализованном времени исходного стейта (0..1, значения больше 1
+        означают проигрывание нескольких циклов). Переход не может начаться, пока исходный стейт
+        не проиграется до exitTime. Если hasExitTime = false, то переход начнется сразу же,
+        как только выполнятся условия.
+
+        duration - длительность блендинга, задается в долях от длительности исходного стейта.
+        Отсчитывается с момента фактического начала перехода. Если duration = 0, то переход
+        происходит мгновенно, без блендинга.
+    */
     class AnimationTransitionExitTime : public SR_UTILS_NS::Serializable {
         SR_CLASS()
     public:
+        /// Достигнуто ли время выхода, то есть можно ли начинать переход.
         SR_NODISCARD bool IsSuitable(const StateConditionContext& context) const noexcept;
+        /// Отработал ли блендинг уже начатого перехода.
         SR_NODISCARD bool IsFinished(const StateConditionContext& context) const noexcept;
 
+        /// Прогресс блендинга (0 - полностью исходный стейт, 1 - полностью целевой).
         SR_NODISCARD float_t GetProgress() const noexcept;
 
+        SR_NODISCARD bool HasExitTime() const noexcept { return m_hasExitTime; }
+
         void Reset();
+
+        /// Вызывается каждый кадр, пока переход еще не начался. Следит за проигрыванием исходного стейта.
+        void Evaluate(const StateConditionContext& context);
+        /// Вызывается каждый кадр, пока переход активен. Накапливает время блендинга.
         void Update(const StateConditionContext& context);
 
-    protected:
-        float_t m_dtCapacity = 0.f;
-        float_t m_dtDuration = 0.f;
-        float_t m_dtExitTime = 0.f;
+    private:
+        SR_NODISCARD static float_t GetSourceProgress(const StateConditionContext& context) noexcept;
 
-        /**
-            Измеряется в отношении времени относительно состоянияни из которого переходим.
-            Если exitTime = 0.75, то переход начнется через 75% времени состояния.
-            А если hasExitTime = false, то переход начнется сразу.
-            duration - время за которое происходит переход.
-            Если duration больше чем 1 - exitTime, то стейт начнется сначала.
-        */
+    protected:
+        /// Накопленное время блендинга в секундах.
+        float_t m_dtCapacity = 0.f;
+        /// Длительность блендинга в секундах. Вычисляется в момент начала перехода, -1 - еще не вычислена.
+        float_t m_dtDuration = -1.f;
+        /// Прогресс исходного стейта на предыдущем кадре. Нужен для отлова пересечения exitTime
+        /// и зацикливания стейта. Отрицательное значение - стейт еще ни разу не опрашивался.
+        float_t m_lastSourceProgress = -1.f;
+        /// Сколько раз исходный стейт успел зациклиться с момента сброса перехода.
+        uint32_t m_sourceLoops = 0;
+        /// Исходный стейт доиграл до exitTime.
+        bool m_exitTimeReached = false;
 
         /// @property
         float_t m_duration = 0.25f;
