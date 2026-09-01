@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS {
         using RenderTechniquePtr = SR_HTYPES_NS::SharedPtr<IRenderTechnique>;
         using WindowPtr = SR_HTYPES_NS::SharedPtr<Window>;
         using RenderScenes = std::list<std::pair<SR_WORLD_NS::Scene::Ptr, RenderScenePtr>>;
-        using Definitions = SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, std::string>;
+        using Definitions = SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String>;
     public:
         using Ptr = SR_HTYPES_NS::SafePtr<RenderContext>;
 
@@ -111,7 +111,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const std::vector<SkyboxPtr>& GetSkyboxes() const noexcept;
         SR_NODISCARD const RenderScenes& GetScenes() const noexcept { return m_scenes; }
         SR_NODISCARD const RenderSettingsPreset& GetSettingsPreset() const noexcept;
-        SR_NODISCARD Definitions GetShaderMacros() const;
+        SR_NODISCARD const Definitions& GetShaderMacros() const;
         SR_NODISCARD const RenderSettings& GetSettings() const noexcept;
         SR_NODISCARD const ActiveGraphicsSettings& GetActiveGraphicsSettings() const noexcept { return m_activeGraphicsSettings; }
         SR_NODISCARD ActiveGraphicsSettings& GetActiveGraphicsSettings() noexcept { return m_activeGraphicsSettings; }

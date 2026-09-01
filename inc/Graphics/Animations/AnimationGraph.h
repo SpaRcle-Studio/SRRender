@@ -39,7 +39,6 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD SR_UTILS_NS::Vector<AnimationGraphNode::Ptr>& GetNodes() noexcept { return m_nodes; }
         SR_NODISCARD const SR_UTILS_NS::Path& GetPath() const noexcept;
         SR_NODISCARD AnimationGraphAsset* GetAsset() const noexcept { return m_pAsset; }
-        void InvalidateCompile() noexcept { m_isCompiled = false; }
 
         void ForEachNode(const SR_HTYPES_NS::Function<void(AnimationGraphNode&)>& callback);
         void ForEachNode(const SR_HTYPES_NS::Function<void(const AnimationGraphNode&)>& callback) const;
@@ -66,14 +65,12 @@ namespace SR_ANIMATIONS_NS {
 
     private:
         void Apply(AnimationPose* pPose);
-        void Compile();
 
     private:
-        bool m_isCompiled = false;
         Animator* m_pAnimator = nullptr;
         AnimationGraphAsset* m_pAsset = nullptr;
-        std::vector<SR_UTILS_NS::GameObject::Ptr> m_gameObjects;
-        std::vector<AnimationGameObjectData> m_gameObjectsCache;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::GameObject::Ptr> m_gameObjects;
+        SR_UTILS_NS::Vector<AnimationGameObjectData> m_gameObjectsCache;
 
     private:
         /// @property

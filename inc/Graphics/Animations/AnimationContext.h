@@ -16,7 +16,9 @@ namespace SR_ANIMATIONS_NS {
     class Skeleton;
     class SkeletonRig;
 
-    struct UpdateContext {
+    struct UpdateContext : public SR_UTILS_NS::SRClass {
+        SR_STRUCT()
+
         float_t dt = 0.f;
         float_t weight = 1.f;
         bool fpsCompensation = false;
@@ -25,6 +27,8 @@ namespace SR_ANIMATIONS_NS {
         AnimationGraph* pGraph = nullptr;
         const SkeletonRig* pRig = nullptr;
         float_t tolerance = 0.001f;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::GameObject::Ptr>* pGameObjects = nullptr;
+        Skeleton* pSkeleton = nullptr;
     };
 
     struct ChannelAnimationUpdateContext {
@@ -44,17 +48,6 @@ namespace SR_ANIMATIONS_NS {
 
     struct ChannelUpdateContext {
         std::optional<uint16_t> gameObjectIndex;
-    };
-
-    struct CompileContext {
-        explicit CompileContext(std::vector<SR_UTILS_NS::GameObject::Ptr>& gameObjects)
-            : gameObjects(gameObjects)
-        { }
-
-        Skeleton* pSkeleton = nullptr;
-        const SkeletonRig* pRig = nullptr;
-
-        std::vector<SR_UTILS_NS::GameObject::Ptr>& gameObjects;
     };
 }
 

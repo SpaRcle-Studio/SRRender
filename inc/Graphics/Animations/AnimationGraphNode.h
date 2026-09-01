@@ -33,15 +33,16 @@ namespace SR_ANIMATIONS_NS {
         ~AnimationGraphNode() override;
 
     public:
+        /// @method
+        SR_NODISCARD virtual SR_HTYPES_NS::SharedPtr<AnimationPose> Update(UpdateContext& context);
+
         SR_NODISCARD uint32_t GetInputCount() const noexcept { return static_cast<uint32_t>(m_inputPins.size()); }
         SR_NODISCARD uint32_t GetOutputCount() const noexcept { return static_cast<uint32_t>(m_outputPins.size()); }
         SR_NODISCARD const SR_UTILS_NS::Vector<AnimationLink>& GetInputLinks() const noexcept { return m_inputPins; }
         SR_NODISCARD const SR_UTILS_NS::Vector<AnimationLink>& GetOutputLinks() const noexcept { return m_outputPins; }
         SR_NODISCARD SR_MATH_NS::FVector2 GetEditorPosition() const noexcept { return m_editorPosition; }
         void SetEditorPosition(const SR_MATH_NS::FVector2& pos) noexcept { m_editorPosition = pos; }
-        SR_NODISCARD virtual AnimationPose* Update(UpdateContext& context, const AnimationLink& from) { return nullptr; }
         SR_NODISCARD virtual bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
-		virtual void Compile(CompileContext& context);
         void SetGraph(AnimationGraph* pGraph) { m_graph = pGraph; }
         void AddInputPin(const AnimationLink& link) { m_inputPins.emplace_back(link); }
         void AddOutputPin(const AnimationLink& link) { m_outputPins.emplace_back(link); }
@@ -65,8 +66,8 @@ namespace SR_ANIMATIONS_NS {
         void ConnectTo(AnimationGraphNode* pNode, uint16_t fromPinIndex, uint16_t toPinIndex);
 
     protected:
+        SR_HTYPES_NS::SharedPtr<AnimationPose> m_pose;
         AnimationGraph* m_graph = nullptr;
-        AnimationPose* m_pose = nullptr;
         void* m_userData = nullptr;
 
         /// @property @hidden
@@ -93,7 +94,7 @@ namespace SR_ANIMATIONS_NS {
         void OnPostLoad() override;
 
     public:
-        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<AnimationPose> Update(UpdateContext& context) override;
 
     };
 
@@ -114,11 +115,11 @@ namespace SR_ANIMATIONS_NS {
         void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
 
         void SetStateMachine(AnimationStateMachine* pMachine);
-        void Compile(CompileContext& context) override;
         bool SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
 
         SR_NODISCARD bool IsStateActive(SR_UTILS_NS::StringAtom name) const override;
-        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
+
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<AnimationPose> Update(UpdateContext& context) override;
 
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<AnimationStateMachine>& GetMachine() const noexcept { return m_stateMachine; }
 
@@ -138,7 +139,7 @@ namespace SR_ANIMATIONS_NS {
 
         void OnPostLoad() override;
 
-        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<AnimationPose> Update(UpdateContext& context) override;
 
     protected:
         /// @property
@@ -154,14 +155,12 @@ namespace SR_ANIMATIONS_NS {
     public:
         AnimationGraphNodeLinearBlend();
 
-        void Compile(CompileContext& context) override;
-
         void OnPostLoad() override;
 
-        SR_NODISCARD AnimationPose* Update(UpdateContext& context, const AnimationLink& from) override;
+        SR_NODISCARD SR_HTYPES_NS::SharedPtr<AnimationPose> Update(UpdateContext& context) override;
 
     private:
-        std::array<AnimationPose*, 2> m_poses;
+        std::array<SR_HTYPES_NS::SharedPtr<AnimationPose>, 2> m_poses;
 
         /// @property
         float_t m_blendFactor = 0.5f;

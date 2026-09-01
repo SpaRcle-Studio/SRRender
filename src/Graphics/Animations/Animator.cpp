@@ -77,6 +77,7 @@ namespace SR_ANIMATIONS_NS {
 
         if (auto&& pSkeleton = m_skeleton.Get()) {
             context.pRig = pSkeleton->GetRig();
+            context.pSkeleton = pSkeleton.Get();
         }
 
         context.tolerance = m_tolerance / 1000.f / 1000.f;

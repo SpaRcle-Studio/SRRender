@@ -34,7 +34,6 @@ namespace SR_ANIMATIONS_NS {
         void FastForwardState(AnimationState* pState);
 
         bool SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
-        void Compile(CompileContext& context);
         void Update(UpdateContext& context);
 
         bool RemoveState(uint32_t index);
@@ -61,14 +60,15 @@ namespace SR_ANIMATIONS_NS {
     private:
         AnimationGraphNode* m_node = nullptr;
         AnimationStateTransition* m_activeTransition = nullptr;
+        bool m_started = false;
 
         /// @property @hidden
         SR_UTILS_NS::Vector<AnimationState::Ptr> m_states;
 
-        SR_UTILS_NS::Set<AnimationState*> m_activeStates;
+        SR_HTYPES_NS::SortedVector<AnimationState*> m_activeStates;
         /// Стейты, которые уже обновились в текущем кадре. Переход может завершиться в том же кадре,
         /// в котором начался, и тогда стейт не должен проиграться дважды.
-        SR_UTILS_NS::Set<AnimationState*> m_updatedStates;
+        SR_HTYPES_NS::SortedVector<AnimationState*> m_updatedStates;
 
     };
 }

@@ -60,33 +60,25 @@ namespace SR_ANIMATIONS_NS {
     void AnimationGraph::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 
-        Compile();
-
-        if (!m_isCompiled) {
-            SR_WARN("AnimationGraph::Update() : graph is not compiled!");
-            return;
-        }
-
         if (m_nodes.empty()) {
             return;
         }
 
         context.pGraph = this;
+        context.pGameObjects = &m_gameObjects;
 
-        auto&& pAnimationPose = GetFinal()->Update(context, AnimationLink(SR_ID_INVALID, SR_ID_INVALID));
+        auto&& pAnimationPose = GetFinal()->Update(context);
         if (!pAnimationPose) {
             return;
         }
 
-        Apply(pAnimationPose);
+        Apply(pAnimationPose.Get());
     }
 
     void AnimationGraph::Apply(AnimationPose* pPose) {
         SR_TRACY_ZONE;
 
-        //const bool isRetargeted = Retarget(pPose);
-        //std::vector<AnimationGameObjectData>& gameObjectsData = isRetargeted ? m_gameObjectsCache : pPose->GetGameObjects();
-        std::vector<AnimationGameObjectData>& gameObjectsData = pPose->GetGameObjects();
+        auto&& gameObjectsData = pPose->GetGameObjects();
 
         {
             SR_TRACY_ZONE_N("Normalize");
@@ -112,36 +104,6 @@ namespace SR_ANIMATIONS_NS {
                 data.scaling
             );
         }
-    }
-
-    void AnimationGraph::Compile() {
-        SR_TRACY_ZONE;
-
-        if (m_isCompiled) SR_UNLIKELY_ATTRIBUTE {
-            return;
-        }
-
-        if (!m_pAnimator) SR_UNLIKELY_ATTRIBUTE {
-            SR_WARN("AnimationGraph::Compile() : animator is nullptr!");
-            return;
-        }
-
-        m_gameObjects.clear();
-
-        auto&& compileContext = CompileContext(m_gameObjects);
-
-        if (auto&& pSkeleton = m_pAnimator->GetSkeleton().Get()) {
-            compileContext.pSkeleton = m_pAnimator->GetSkeleton().Get();
-            compileContext.pRig = pSkeleton->GetRig();
-        }
-
-        for (auto&& pNode : m_nodes) {
-            pNode->Compile(compileContext);
-        }
-
-        SR_DEBUG_LOG(SR_FORMAT("AnimationGraph::Compile() : game objects count = {}", m_gameObjects.size()));
-
-        m_isCompiled = true;
     }
 
     AnimationGraphNode* AnimationGraph::GetNode(uint64_t index) const {
@@ -218,7 +180,7 @@ namespace SR_ANIMATIONS_NS {
         m_nodes[1]->SetGraph(this);
 
         if (m_nodes[1].StaticCast<AnimationGraphNodeStateMachine>()->SetSimpleClip(pClip)) {
-            m_isCompiled = false;
+
         }
 
         m_nodes[0]->ClearInputPins();
@@ -266,7 +228,6 @@ namespace SR_ANIMATIONS_NS {
         }
 
         m_nodes.erase(m_nodes.begin() + index);
-        m_isCompiled = false;
 
         return true;
     }

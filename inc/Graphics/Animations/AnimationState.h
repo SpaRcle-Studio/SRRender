@@ -55,8 +55,8 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD virtual SR_UTILS_NS::StringAtom GetDefaultStateName() const noexcept;
         SR_NODISCARD SR_UTILS_NS::StringAtom GetStateName() const noexcept;
 
-        virtual void Update(UpdateContext& context) { }
-        virtual bool Compile(CompileContext& context);
+        virtual bool Compile(UpdateContext& context);
+        virtual void Update(UpdateContext& context);
 
         void SetUserData(void* pUserData) { m_userData = pUserData; }
         SR_NODISCARD void* GetUserData() const noexcept { return m_userData; }
@@ -74,6 +74,7 @@ namespace SR_ANIMATIONS_NS {
 
         AnimationStateMachine* m_machine = nullptr;
         void* m_userData = nullptr;
+        bool m_compiled = false;
 
     };
 
@@ -101,7 +102,6 @@ namespace SR_ANIMATIONS_NS {
         void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
 
         void Update(UpdateContext& context) override;
-        bool Compile(CompileContext& context) override;
         void ResetState() override;
         bool SetClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
 
@@ -112,6 +112,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD SR_UTILS_NS::StringAtom GetDefaultStateName() const noexcept override;
 
     private:
+        bool Compile(UpdateContext& context) override;
         void UpdateClip();
 
     protected:

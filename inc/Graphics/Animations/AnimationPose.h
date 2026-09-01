@@ -2,21 +2,26 @@
 // Created by Monika on 25.04.2023.
 //
 
-#ifndef SR_ENGINE_ANIMATIONPOSE_H
-#define SR_ENGINE_ANIMATIONPOSE_H
-
-#include <Utils/ECS/GameObject.h>
+#ifndef SR_ENGINE_GRAPHICS_ANIMATION_POSE_H
+#define SR_ENGINE_GRAPHICS_ANIMATION_POSE_H
 
 #include <Graphics/Animations/AnimationCommon.h>
+
+#include <Utils/ECS/GameObject.h>
 
 namespace SR_ANIMATIONS_NS {
     class Skeleton;
     class AnimationGameObjectData;
     class AnimationClip;
 
-    class AnimationPose : public SR_UTILS_NS::NonCopyable {
+    class AnimationPose : public SR_HTYPES_NS::SharedPtr<AnimationPose>, public SR_UTILS_NS::SRClass {
+        SR_CLASS()
         using Index = uint32_t;
     public:
+        using Ptr = SR_HTYPES_NS::SharedPtr<AnimationPose>;
+
+    public:
+        AnimationPose();
         ~AnimationPose() override;
 
     public:
@@ -26,13 +31,12 @@ namespace SR_ANIMATIONS_NS {
         void BlendAdditive(AnimationPose& base, AnimationPose& additive, float_t factor);
 
         SR_NODISCARD AnimationGameObjectData& GetGameObjectData(Index index) noexcept;
-
-        SR_NODISCARD std::vector<AnimationGameObjectData>& GetGameObjects() noexcept { return m_gameObjects; }
+        SR_NODISCARD SR_UTILS_NS::Vector<AnimationGameObjectData>& GetGameObjects() noexcept { return m_gameObjects; }
 
     private:
-        std::vector<AnimationGameObjectData> m_gameObjects;
+        SR_UTILS_NS::Vector<AnimationGameObjectData> m_gameObjects;
 
     };
 }
 
-#endif //SR_ENGINE_ANIMATIONPOSE_H
+#endif //SR_ENGINE_GRAPHICS_ANIMATION_POSE_H

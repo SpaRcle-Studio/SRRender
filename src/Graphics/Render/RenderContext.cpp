@@ -693,8 +693,9 @@ namespace SR_GRAPH_NS {
         return m_renderSettings->GetPreset(m_activePreset);
     }
 
-    RenderContext::Definitions RenderContext::GetShaderMacros() const {
-        Definitions macros = m_definitions;
+    const RenderContext::Definitions& RenderContext::GetShaderMacros() const {
+        SR_THREAD_LOCAL static Definitions macros;
+        macros = m_definitions;
         const auto& preset = GetSettingsPreset();
         for (const auto define : preset.shaderDefines) {
             macros[define];

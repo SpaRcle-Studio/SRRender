@@ -91,7 +91,7 @@ namespace SR_GRAPH_NS {
                 DWORD styles = GetWindowLongPtr(hwnd, GWL_STYLE);
                 m_maximize = styles & WS_MAXIMIZE;
                 m_collapsed = styles & WS_MINIMIZE;
-                SR_LOG("Win32Window::ReadWmdProcedure() : WM_WINDOWPOSCHANGED. Window position has been changed! Maximize: {}, Collapsed: {}", m_maximize, m_collapsed);
+                SR_DEBUG_LOG("Win32Window::ReadWmdProcedure() : WM_WINDOWPOSCHANGED. Window position has been changed! Maximize: {}, Collapsed: {}", m_maximize, m_collapsed);
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             case WM_SETFOCUS: {
@@ -99,7 +99,7 @@ namespace SR_GRAPH_NS {
                     m_focusCallback(this, true);
                 }
                 m_isFocused = true;
-                SR_LOG("Win32Window::ReadWmdProcedure() : WM_SETFOCUS. Window is focused now.");
+                SR_DEBUG_LOG("Win32Window::ReadWmdProcedure() : WM_SETFOCUS. Window is focused now.");
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             case WM_KILLFOCUS: {
@@ -107,7 +107,7 @@ namespace SR_GRAPH_NS {
                     m_focusCallback(this, false);
                 }
                 m_isFocused = false;
-                SR_LOG("Win32Window::ReadWmdProcedure() : WM_KILLFOCUS. Window is not focused now.");
+                SR_DEBUG_LOG("Win32Window::ReadWmdProcedure() : WM_KILLFOCUS. Window is not focused now.");
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             case WM_MOVE: {

@@ -5,20 +5,17 @@
 #include <Graphics/Animations/AnimationPose.h>
 #include <Graphics/Animations/AnimationData.h>
 #include <Graphics/Animations/AnimationChannel.h>
-#include <Graphics/Animations/AnimationClip.h>
-#include <Graphics/Animations/Skeleton.h>
-#include <Graphics/Animations/Bone.h>
 
 #include <Utils/ECS/Transform.h>
 
+#include <Codegen/AnimationPose.generated.hpp>
+
 namespace SR_ANIMATIONS_NS {
-    AnimationPose::~AnimationPose() {
-        //for (auto&& [boneHashName, pData] : m_data) {
-        //    delete pData;
-        //}
-        //m_indices.clear();
-        //m_data.clear();
-    }
+    AnimationPose::AnimationPose()
+        : SR_HTYPES_NS::SharedPtr<AnimationPose>(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
+    { }
+
+    AnimationPose::~AnimationPose() = default;
 
     void AnimationPose::SetGameObjectsCount(uint32_t count) {
         m_gameObjects.resize(count);
@@ -48,53 +45,55 @@ namespace SR_ANIMATIONS_NS {
             const AnimationGameObjectData& firstData = firstGameObjects[i];
             const AnimationGameObjectData& secondData = secondGameObjects[i];
 
-            m_gameObjects[i].dirty = firstData.dirty || secondGameObjects[i].dirty;
-            if (!m_gameObjects[i].dirty) {
+            AnimationGameObjectData& resultData = m_gameObjects[i];
+
+            resultData.dirty = firstData.dirty || secondGameObjects[i].dirty;
+            if (!resultData.dirty) {
                 continue;
             }
 
             if (firstData.translation.has_value() && secondGameObjects[i].translation.has_value()) {
-                m_gameObjects[i].translation = SR_MATH_NS::FVector3::Lerp(firstData.translation.value(), secondData.translation.value(), factor);
+                resultData.translation = SR_MATH_NS::FVector3::Lerp(firstData.translation.value(), secondData.translation.value(), factor);
             }
             else if (firstData.translation.has_value()) {
-                m_gameObjects[i].translation = firstData.translation;
+                resultData.translation = firstData.translation;
             }
             else if (secondData.translation.has_value()) {
-                m_gameObjects[i].translation = secondData.translation;
+                resultData.translation = secondData.translation;
             }
             else {
-                m_gameObjects[i].translation.FastReset();
+                resultData.translation.FastReset();
             }
 
             if (firstData.rotation.has_value() && secondData.rotation.has_value()) {
                 if (quatBlendMode == QuaternionBlendMode::Nlerp) {
-                    m_gameObjects[i].rotation = SR_MATH_NS::Quaternion::Nlerp(firstData.rotation.value(), secondData.rotation.value(), factor);
+                    resultData.rotation = SR_MATH_NS::Quaternion::Nlerp(firstData.rotation.value(), secondData.rotation.value(), factor);
                 }
                 else {
-                    m_gameObjects[i].rotation = SR_MATH_NS::Quaternion::Slerp(firstData.rotation.value(), secondData.rotation.value(), factor);
+                    resultData.rotation = SR_MATH_NS::Quaternion::Slerp(firstData.rotation.value(), secondData.rotation.value(), factor);
                 }
             }
             else if (firstData.rotation.has_value()) {
-                m_gameObjects[i].rotation = firstData.rotation;
+                resultData.rotation = firstData.rotation;
             }
             else if (secondData.rotation.has_value()) {
-                m_gameObjects[i].rotation = secondData.rotation;
+                resultData.rotation = secondData.rotation;
             }
             else {
-                m_gameObjects[i].rotation.FastReset();
+                resultData.rotation.FastReset();
             }
 
             if (firstData.scaling.has_value() && secondData.scaling.has_value()) {
-                m_gameObjects[i].scaling = SR_MATH_NS::FVector3::Lerp(firstData.scaling.value(), secondData.scaling.value(), factor);
+                resultData.scaling = SR_MATH_NS::FVector3::Lerp(firstData.scaling.value(), secondData.scaling.value(), factor);
             }
             else if (firstData.scaling.has_value()) {
-                m_gameObjects[i].scaling = firstData.scaling;
+                resultData.scaling = firstData.scaling;
             }
             else if (secondData.scaling.has_value()) {
-                m_gameObjects[i].scaling = secondData.scaling;
+                resultData.scaling = secondData.scaling;
             }
             else {
-                m_gameObjects[i].scaling.FastReset();
+                resultData.scaling.FastReset();
             }
         }
 
@@ -123,48 +122,50 @@ namespace SR_ANIMATIONS_NS {
             const AnimationGameObjectData& baseData = baseGameObjects[i];
             const AnimationGameObjectData& additiveData = additiveGameObjects[i];
 
-            m_gameObjects[i].dirty = baseData.dirty || additiveData.dirty;
-            if (!m_gameObjects[i].dirty) {
+            AnimationGameObjectData& resultData = m_gameObjects[i];
+
+            resultData.dirty = baseData.dirty || additiveData.dirty;
+            if (!resultData.dirty) {
                 continue;
             }
 
             if (baseData.translation.has_value() && additiveData.translation.has_value()) {
-                m_gameObjects[i].translation = baseData.translation.value() + additiveData.translation.value() * factor;
+                resultData.translation = baseData.translation.value() + additiveData.translation.value() * factor;
             }
             else if (baseData.translation.has_value()) {
-                m_gameObjects[i].translation = baseData.translation;
+                resultData.translation = baseData.translation;
             }
             else if (additiveData.translation.has_value()) {
-                m_gameObjects[i].translation = additiveData.translation;
+                resultData.translation = additiveData.translation;
             }
             else {
-                m_gameObjects[i].translation.FastReset();
+                resultData.translation.FastReset();
             }
 
             if (baseData.rotation.has_value() && additiveData.rotation.has_value()) {
-                m_gameObjects[i].rotation = baseData.rotation.value() * SR_MATH_NS::Quaternion::FromEulerAngles(additiveData.rotation.value().EulerAngle() * factor);
+                resultData.rotation = baseData.rotation.value() * SR_MATH_NS::Quaternion::FromEulerAngles(additiveData.rotation.value().EulerAngle() * factor);
             }
             else if (baseData.rotation.has_value()) {
-                m_gameObjects[i].rotation = baseData.rotation;
+                resultData.rotation = baseData.rotation;
             }
             else if (additiveData.rotation.has_value()) {
-                m_gameObjects[i].rotation = additiveData.rotation;
+                resultData.rotation = additiveData.rotation;
             }
             else {
-                m_gameObjects[i].rotation.FastReset();
+                resultData.rotation.FastReset();
             }
 
             if (baseData.scaling.has_value() && additiveData.scaling.has_value()) {
-                m_gameObjects[i].scaling = baseData.scaling.value() + additiveData.scaling.value() * factor;
+                resultData.scaling = baseData.scaling.value() + additiveData.scaling.value() * factor;
             }
             else if (baseData.scaling.has_value()) {
-                m_gameObjects[i].scaling = baseData.scaling;
+                resultData.scaling = baseData.scaling;
             }
             else if (additiveData.scaling.has_value()) {
-                m_gameObjects[i].scaling = additiveData.scaling;
+                resultData.scaling = additiveData.scaling;
             }
             else {
-                m_gameObjects[i].scaling.FastReset();
+                resultData.scaling.FastReset();
             }
         }
 
@@ -177,160 +178,4 @@ namespace SR_ANIMATIONS_NS {
             }
         }
     }
-
-    /*AnimationData* AnimationPose::GetData(SR_UTILS_NS::StringAtom boneName) const noexcept {
-        if (auto&& pIt = m_indices.find(boneName); pIt != m_indices.end()) {
-            return pIt->second;
-        }
-
-        return nullptr;
-    }
-
-    AnimationData* AnimationPose::GetDataByIndex(uint16_t index) const noexcept {
-        if (index < m_data.size()) {
-            return m_data[index].second;
-        }
-
-        return nullptr;
-    }
-
-    void AnimationPose::Reset() {
-        for (auto&& [boneHashName, pData] : m_data) {
-            pData->Reset();
-        }
-    }
-
-    void AnimationPose::Initialize(const Skeleton* pSkeleton) {
-        SR_TRACY_ZONE;
-
-        SRAssert(!m_isInitialized);
-
-        auto&& bones = pSkeleton->GetBones();
-
-        m_indices.reserve(bones.size());
-        m_data.reserve(bones.size());
-
-        for (auto&& pBone : bones) {
-            auto&& pair = std::make_pair(
-                pBone->name,
-                new AnimationData()
-            );
-
-            m_indices.insert(pair);
-            m_data.emplace_back(pair);
-        }
-
-        m_isInitialized = true;
-    }
-
-    void AnimationPose::Apply(Skeleton* pSkeleton) {
-        SR_TRACY_ZONE;
-
-        if (!m_isInitialized) {
-            Initialize(pSkeleton);
-        }
-
-        for (auto&& [boneHashName, pWorkingData] : m_data) {
-            auto&& pBone = pSkeleton->TryGetBone(boneHashName);
-            if (!pBone || !pBone->gameObject) {
-                continue;
-            }
-
-            Apply(pWorkingData, pBone->gameObject);
-        }
-    }
-
-    void AnimationPose::Apply(const AnimationData* pWorkingData, const SR_UTILS_NS::GameObject::Ptr& pGameObject) {
-        auto&& pTransform = pGameObject->GetTransform();
-
-        if (pWorkingData->translation.has_value()) {
-            pTransform->SetTranslation(pWorkingData->translation.value());
-        }
-
-        if (pWorkingData->rotation.has_value()) {
-            pTransform->SetRotation(pWorkingData->rotation.value());
-        }
-
-        if (pWorkingData->scale.has_value()) {
-            pTransform->SetScale(pWorkingData->scale.value());
-        }
-    }
-
-    void AnimationPose::Update(Skeleton* pSkeleton, AnimationPose* pWorkingPose) {
-        SR_TRACY_ZONE;
-
-        if (!pWorkingPose) {
-            SRHalt0();
-            return;
-        }
-
-        if (!m_isInitialized) {
-            Initialize(pSkeleton);
-        }
-
-        for (auto&& [boneHashName, pData] : m_data) {
-            auto&& pBone = pSkeleton->TryGetBone(boneHashName);
-            if (!pBone || !pBone->gameObject) {
-                continue;
-            }
-
-            auto&& pWorkingData = pWorkingPose->GetData(boneHashName);
-            if (!pWorkingData) {
-                return;
-            }
-
-            Update(pData, pWorkingData, pBone->gameObject);
-        }
-    }
-
-    void AnimationPose::Update(AnimationData* pStaticData, const AnimationData* pWorkingData, const SR_UTILS_NS::GameObject::Ptr& pGameObject) {
-        auto&& pTransform = pGameObject->GetTransform();
-
-        /// ------------------------------------------------------------------------------------------------------------
-
-        if (!pStaticData->translation.has_value() || !pWorkingData->translation.has_value()) {
-            pStaticData->translation = pTransform->GetTranslation();
-        }
-        else {
-            auto&& delta = pTransform->GetTranslation() - pWorkingData->translation.value();
-
-            if (!delta.Empty()) {
-                pStaticData->translation.value() += delta;
-            }
-        }
-
-        /// ------------------------------------------------------------------------------------------------------------
-
-        if (!pStaticData->rotation.has_value() || !pWorkingData->rotation.has_value()) {
-            pStaticData->rotation = pTransform->GetQuaternion();
-        }
-        else {
-            auto&& delta = pTransform->GetQuaternion() * pWorkingData->rotation.value().Inverse();
-
-            if (!delta.IsIdentity()) {
-                pStaticData->rotation.value() *= delta;
-            }
-        }
-
-        /// ------------------------------------------------------------------------------------------------------------
-    }
-
-    void AnimationPose::SetPose(AnimationClip* pClip) {
-        auto&& channels = pClip->GetChannels();
-
-        for (auto&& pChannel : channels) {
-            for (auto&& [time, pKey] : pChannel->GetKeys()) {
-                if (time > 0) {
-                    continue;
-                }
-
-                auto&& pData = GetData(pChannel->GetChannelName());
-                if (!pData) {
-                    continue;
-                }
-
-                pKey->Set(1.f, pData);
-            }
-        }
-    }*/
 }

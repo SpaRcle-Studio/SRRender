@@ -40,24 +40,6 @@ namespace SR_ANIMATIONS_NS {
         return GetMeta()->GetFactoryName();
     }
 
-    bool AnimationState::Compile(CompileContext& context) {
-        SR_TRACY_ZONE;
-
-        if (m_machine) {
-            for (auto&& pTransition : m_transitions) {
-                auto&& pDestinationState = m_machine->GetStateOrNull(pTransition->GetTargetIndex());
-                if (!pDestinationState) {
-                    SR_ERROR("AnimationState::Compile() : failed to get destination state! State name: {}, Target index: {}", GetStateName(), pTransition->GetTargetIndex());
-                    return false;
-                }
-                pTransition->SetSourceState(this);
-                pTransition->SetDestinationState(pDestinationState);
-            }
-        }
-
-        return true;
-    }
-
     uint32_t AnimationState::GetStateIndex() const noexcept {
         if (!m_machine) {
             return SR_ID_INVALID;
@@ -85,8 +67,30 @@ namespace SR_ANIMATIONS_NS {
         });
     }
 
+    bool AnimationState::Compile(UpdateContext& context) {
+        if (!m_compiled && m_machine) {
+            m_compiled = true;
+            for (auto&& pTransition : m_transitions) {
+                auto&& pDestinationState = m_machine->GetStateOrNull(pTransition->GetTargetIndex());
+                if (!pDestinationState) {
+                    SR_ERROR("AnimationState::Update() : failed to get destination state! State name: {}, Target index: {}", GetStateName(), pTransition->GetTargetIndex());
+                    return false;
+                }
+                pTransition->SetSourceState(this);
+                pTransition->SetDestinationState(pDestinationState);
+            }
+        }
+        return true;
+    }
+
+    void AnimationState::Update(UpdateContext& context) {
+
+    }
+
     void AnimationClipState::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
+
+        Compile(context);
 
         if (!m_clip) {
             Super::Update(context);
@@ -112,6 +116,7 @@ namespace SR_ANIMATIONS_NS {
                 continue;
             }
 
+            context.pPose->SetGameObjectsCount(context.pGameObjects->size());
             auto&& data = context.pPose->GetGameObjectData(channelContext.gameObjectIndex.value());
 
             uint32_t keyFrame = 0;
@@ -131,7 +136,6 @@ namespace SR_ANIMATIONS_NS {
             memset(m_channelPlayState.data(), 0, m_channelPlayState.size() * sizeof(uint32_t));
             m_time = 0.f;
         }
-
         Super::Update(context);
     }
 
@@ -177,7 +181,13 @@ namespace SR_ANIMATIONS_NS {
         return m_time / m_duration;
     }
 
-    bool AnimationClipState::Compile(CompileContext& context) {
+    bool AnimationClipState::Compile(UpdateContext& context) {
+        if (m_compiled) {
+            return true;
+        }
+
+        Super::Compile(context);
+
         if (!m_clip) {
             SR_ERROR("AnimationClipState::Compile() : clip is nullptr! Clip name: {}", m_animation);
             return false;
@@ -220,14 +230,15 @@ namespace SR_ANIMATIONS_NS {
                     continue;
                 }
 
-                auto&& pIt = std::find(context.gameObjects.begin(), context.gameObjects.end(), pBoneGameObject);
-                if (pIt != context.gameObjects.end()) {
-                    channelContext.gameObjectIndex = static_cast<uint16_t>(std::distance(context.gameObjects.begin(), pIt));
+                auto&& gameObjects = *context.pGameObjects;
+                auto&& pIt = std::find(gameObjects.begin(), gameObjects.end(), pBoneGameObject);
+                if (pIt != gameObjects.end()) {
+                    channelContext.gameObjectIndex = static_cast<uint16_t>(std::distance(gameObjects.begin(), pIt));
                     continue;
                 }
 
-                channelContext.gameObjectIndex = static_cast<uint16_t>(context.gameObjects.size());
-                context.gameObjects.emplace_back(pBoneGameObject);
+                channelContext.gameObjectIndex = static_cast<uint16_t>(gameObjects.size());
+                gameObjects.emplace_back(pBoneGameObject);
             }
             else {
                 SR_ERROR("AnimationClipState::Compile() : channel \"{}\" has no bone index!", channel.GetChannelName());

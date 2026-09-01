@@ -40,6 +40,16 @@ namespace SR_ANIMATIONS_NS {
     void AnimationStateMachine::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 
+        if (!m_started && m_activeStates.empty()) {
+            if (auto&& pEntryPoint = GetEntryPoint()) {
+                m_activeStates.insert(pEntryPoint);
+            }
+            else {
+                SR_WARN("AnimationStateMachine::Update() : entry point state not found!");
+            }
+            m_started = true;
+        }
+
         uint32_t retryCount = 0;
         m_updatedStates.clear();
     retry:
@@ -49,6 +59,8 @@ namespace SR_ANIMATIONS_NS {
                 SRHalt("Invalid state in active states!");
                 continue;
             }
+
+            pState->Compile(context);
 
             bool hasActiveTransitions = false;
 
@@ -179,21 +191,6 @@ namespace SR_ANIMATIONS_NS {
         return true;
     }
 
-    void AnimationStateMachine::Compile(CompileContext& context) {
-        for (auto&& pState : m_states) {
-            pState->Compile(context);
-        }
-
-        if (m_activeStates.empty()) {
-            if (auto&& pEntryPoint = GetEntryPoint()) {
-                m_activeStates.insert(pEntryPoint);
-            }
-            else {
-                SR_WARN("AnimationStateMachine::Compile() : entry point state not found!");
-            }
-        }
-    }
-
     bool AnimationStateMachine::IsStateActive(SR_UTILS_NS::StringAtom name) const {
         SR_TRACY_ZONE;
 
@@ -273,7 +270,8 @@ namespace SR_ANIMATIONS_NS {
         }
 
         auto&& pDestinationState = pTransition->GetDestination();
-        if (!SRVerify(pDestinationState)) {
+        if (!pDestinationState) {
+            SRHaltOnce("AnimationStateMachine::UpdateTransition() : transition destination state is nullptr!");
             return false;
         }
 
