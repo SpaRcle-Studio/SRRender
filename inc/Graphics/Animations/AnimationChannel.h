@@ -19,7 +19,7 @@ namespace SR_ANIMATIONS_NS {
     class AnimationPose;
 
     class AnimationChannel final {
-        using Keys = std::vector<UnionAnimationKey>;
+        using Keys = SR_UTILS_NS::Vector<UnionAnimationKey>;
     public:
         ~AnimationChannel();
 

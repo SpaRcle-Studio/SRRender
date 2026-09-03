@@ -19,6 +19,28 @@ namespace SR_HTYPES_NS {
 namespace SR_ANIMATIONS_NS {
     class AnimationChannel;
 
+    struct ExcludeBoneTransforms : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+        /// @property
+        bool translation = true;
+        /// @property
+        bool rotation = true;
+        /// @property
+        bool scale = true;
+
+    };
+
+    struct LockTransformAxis : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+        /// @property
+        SR_MATH_NS::Axis translation;
+        /// @property
+        SR_MATH_NS::Axis rotation;
+        /// @property
+        SR_MATH_NS::Axis scale;
+
+    };
+
     /// @extension(animation)
     class AnimationClip : public SR_UTILS_NS::Asset {
         SR_CLASS()
@@ -60,9 +82,13 @@ namespace SR_ANIMATIONS_NS {
         /// @property @condition(!This.m_rig.IsValid())
         SR_HTYPES_NS::RawMeshHolder m_skeleton;
         /// @property
-        SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> m_excludedBones;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, ExcludeBoneTransforms> m_excludedBones;
+        /// @property
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, LockTransformAxis> m_lockedBones;
         /// @property
         SR_UTILS_NS::Vector<RetargetProfileEmbedded> m_retargetProfiles;
+        /// @property
+        SR_UTILS_NS::Optional<float_t> m_startTime;
 
         Channels m_channels;
         mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Channels> m_retargetCache;

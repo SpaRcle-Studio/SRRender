@@ -157,15 +157,51 @@ namespace SR_ANIMATIONS_NS {
     void AnimationClip::PostProcess() {
         SR_TRACY_ZONE;
 
-        for (SR_UTILS_NS::StringAtom excludedBone : m_excludedBones) {
-            auto pIt = std::remove_if(
-                m_channels.begin(),
-                m_channels.end(),
-                [&](const AnimationChannel& channel) {
-                    return channel.GetChannelName() == excludedBone;
+        if (m_startTime) {
+            for (auto&& channel : m_channels) {
+                for (auto&& key : channel.GetKeys()) {
+                    key.time -= m_startTime.value();
                 }
-            );
-            m_channels.erase(pIt, m_channels.end());
+            }
+            m_duration -= m_startTime.value();
+            m_channels.erase_if([&](const AnimationChannel& channel) {
+                return !channel.GetKeys().empty() && channel.GetKeys().back().time < 0.f;
+            });
+        }
+
+        for (auto&& [name, transforms] : m_excludedBones) {
+            for (auto&& channel : m_channels) {
+                if (channel.GetChannelName() != name) {
+                    continue;
+                }
+                channel.GetKeys().erase_if([&](const UnionAnimationKey& key) {
+                    return (transforms.translation && key.type == AnimationKeyType::Translation)
+                        || (transforms.rotation && key.type == AnimationKeyType::Rotation)
+                        || (transforms.scale && key.type == AnimationKeyType::Scaling);
+                });
+            }
+            m_channels.erase_if([&](const AnimationChannel& channel) {
+                return channel.GetKeys().empty() && channel.GetChannelName() == name;
+            });
+        }
+
+        for (auto&& [name, lock] : m_lockedBones) {
+            for (auto&& channel : m_channels) {
+                if (channel.GetChannelName() != name) {
+                    continue;
+                }
+                for (auto&& key : channel.GetKeys()) {
+                    if (lock.translation != SR_MATH_NS::Axis::None && key.type == AnimationKeyType::Translation) {
+                        key.data.translation.translation = key.data.translation.translation.ZeroAxis(lock.translation);
+                    }
+                    if (lock.rotation != SR_MATH_NS::Axis::None && key.type == AnimationKeyType::Rotation) {
+                        key.data.rotation.rotation = key.data.rotation.rotation.EulerAngle().ZeroAxis(lock.rotation).ToQuat();
+                    }
+                    if (lock.scale != SR_MATH_NS::Axis::None && key.type == AnimationKeyType::Scaling) {
+                        key.data.scaling.scaling = key.data.scaling.scaling.ZeroAxis(lock.scale);
+                    }
+                }
+            }
         }
     }
 

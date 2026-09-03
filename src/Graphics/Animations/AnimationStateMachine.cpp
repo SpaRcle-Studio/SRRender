@@ -338,6 +338,9 @@ namespace SR_ANIMATIONS_NS {
         pState->ResetState();
         m_activeStates.clear();
         m_activeStates.insert(pState);
+        if (m_activeTransition) {
+            m_activeTransition->ResetTransition();
+        }
         m_activeTransition = nullptr;
     }
 
