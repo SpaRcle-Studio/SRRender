@@ -36,12 +36,13 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD bool IsStateActive(SR_UTILS_NS::StringAtom name) const;
         SR_NODISCARD uint32_t GetNodesCount() const noexcept { return static_cast<uint32_t>(m_nodes.size()); }
         SR_NODISCARD const SR_UTILS_NS::Vector<AnimationGraphNode::Ptr>& GetNodes() const noexcept { return m_nodes; }
-        SR_NODISCARD SR_UTILS_NS::Vector<AnimationGraphNode::Ptr>& GetNodes() noexcept { return m_nodes; }
         SR_NODISCARD const SR_UTILS_NS::Path& GetPath() const noexcept;
         SR_NODISCARD AnimationGraphAsset* GetAsset() const noexcept { return m_pAsset; }
 
         void ForEachNode(const SR_HTYPES_NS::Function<void(AnimationGraphNode&)>& callback);
         void ForEachNode(const SR_HTYPES_NS::Function<void(const AnimationGraphNode&)>& callback) const;
+
+        void FastForwardState(SR_UTILS_NS::StringAtom stateName);
 
         void Update(UpdateContext& context);
 

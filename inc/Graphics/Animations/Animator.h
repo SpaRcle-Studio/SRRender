@@ -46,6 +46,8 @@ namespace SR_ANIMATIONS_NS {
         void SetFloat(SR_UTILS_NS::StringAtom name, float_t value);
         /// @method
         void SetString(SR_UTILS_NS::StringAtom name, SR_UTILS_NS::StringView value);
+        /// @method
+        void FastForwardState(SR_UTILS_NS::StringAtom name);
 
         SR_NODISCARD std::optional<bool> GetBool(const SR_UTILS_NS::StringAtom& name) const;
         SR_NODISCARD std::optional<int32_t> GetInt(const SR_UTILS_NS::StringAtom& name) const;

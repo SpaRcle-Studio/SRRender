@@ -32,9 +32,12 @@ namespace SR_ANIMATIONS_NS {
 
         void ForEachState(const SR_HTYPES_NS::Function<void(AnimationState&)>& callback);
         void FastForwardState(AnimationState* pState);
+        void FastForwardState(SR_UTILS_NS::StringAtom stateName);
 
         bool SetSimpleClip(const SR_HTYPES_NS::SharedPtr<AnimationClip>& pClip);
         void Update(UpdateContext& context);
+
+        void AddTransition(AnimationState* pFrom, AnimationState* pTo);
 
         bool RemoveState(uint32_t index);
         bool RemoveState(AnimationState* pState);

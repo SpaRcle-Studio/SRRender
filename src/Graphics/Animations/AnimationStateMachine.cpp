@@ -338,5 +338,27 @@ namespace SR_ANIMATIONS_NS {
         pState->ResetState();
         m_activeStates.clear();
         m_activeStates.insert(pState);
+        m_activeTransition = nullptr;
+    }
+
+    void AnimationStateMachine::AddTransition(AnimationState* pFrom, AnimationState* pTo) {
+        if (!pFrom || !pTo) {
+            return;
+        }
+
+        for (auto&& pTransition : pFrom->GetTransitions()) {
+            if (pTransition->GetDestination() == pTo) {
+                return;
+            }
+        }
+        auto&& pTransition = SRNew<AnimationStateTransition>();
+        pTransition->SetTargetIndex(m_states.index_of(pTo));
+        pFrom->GetTransitions().emplace_back(pTransition);
+    }
+
+    void AnimationStateMachine::FastForwardState(SR_UTILS_NS::StringAtom stateName) {
+        if (auto&& pState = FindState(stateName)) {
+            FastForwardState(pState);
+        }
     }
 }

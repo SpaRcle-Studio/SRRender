@@ -54,9 +54,6 @@ namespace SR_ANIMATIONS_NS {
 
         void CloneTo(SR_UTILS_NS::SRClass& clone) const override;
 
-        SR_NODISCARD AnimationLink* GetInputPin(SR_UTILS_NS::StringView name);
-        SR_NODISCARD AnimationLink* GetOutputPin(SR_UTILS_NS::StringView name);
-
         SR_NODISCARD uint64_t GetIndex() const;
         SR_NODISCARD void* GetUserData() const noexcept { return m_userData; }
         void SetUserData(void* pUserData) noexcept { m_userData = pUserData; }

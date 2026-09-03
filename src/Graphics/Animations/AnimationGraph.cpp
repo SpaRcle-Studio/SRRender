@@ -252,6 +252,14 @@ namespace SR_ANIMATIONS_NS {
         return !nodesToRemove.empty();
     }
 
+    void AnimationGraph::FastForwardState(SR_UTILS_NS::StringAtom stateName) {
+        for (auto&& pNode : m_nodes) {
+            if (pNode->GetMeta() == AnimationGraphNodeStateMachine::GetMetaStatic()) {
+                pNode->StaticCast<AnimationGraphNodeStateMachine>()->GetMachine()->FastForwardState(stateName);
+            }
+        }
+    }
+
     const AnimationGraph& AnimationGraphAsset::GetData() const noexcept {
         if (!m_data) {
             m_data = new AnimationGraph();

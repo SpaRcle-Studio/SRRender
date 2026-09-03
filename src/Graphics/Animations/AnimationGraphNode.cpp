@@ -28,27 +28,8 @@ namespace SR_ANIMATIONS_NS {
         return false;
     }
 
-    AnimationLink* AnimationGraphNode::GetInputPin(SR_UTILS_NS::StringView name) {
-        for (auto&& pin : m_inputPins) {
-            if (pin.name == name) {
-                return &pin;
-            }
-        }
-
-        return nullptr;
-    }
-
-    AnimationLink* AnimationGraphNode::GetOutputPin(SR_UTILS_NS::StringView name) {
-        for (auto&& pin : m_outputPins) {
-            if (pin.name == name) {
-                return &pin;
-            }
-        }
-
-        return nullptr;
-    }
-
     uint64_t AnimationGraphNode::GetIndex() const {
+        SRAssert(m_graph);
         return m_graph->GetNodeIndex(this);
     }
 

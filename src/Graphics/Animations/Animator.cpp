@@ -189,4 +189,10 @@ namespace SR_ANIMATIONS_NS {
         message.SetInt("EntityId", GetEntityId());
         SR_UTILS_NS::Broadcaster::Instance().Broadcast(SR_UTILS_NS::Events::EVENT_DO_INSPECT_ENTITY_ID, message);
     }
+
+    void Animator::FastForwardState(SR_UTILS_NS::StringAtom name) {
+        if (m_graph) {
+            m_graph->FastForwardState(name);
+        }
+    }
 }
