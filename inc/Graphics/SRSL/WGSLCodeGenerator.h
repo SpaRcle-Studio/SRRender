@@ -9,6 +9,9 @@
 #include <Graphics/SRSL/ShaderType.h>
 #include <Graphics/SRSL/RefAnalyzer.h>
 
+#include <unordered_map>
+#include <unordered_set>
+
 namespace SR_SRSL_NS {
     class SRSLUniformBlock;
 
@@ -38,6 +41,23 @@ namespace SR_SRSL_NS {
 
     private:
         SR_NODISCARD SR_UTILS_NS::String GenerateConstants(const SRSLShader* pShader) const;
+
+        /// Собирает таблицу типов (uniform/ssbo/push-constant поля, shared-переменные, атрибуты вершин,
+        /// константы и возвращаемые типы функций), чтобы InferExprType() мог определять типы выражений.
+        void CollectDeclaredTypes(const SRSLShader* pShader) const;
+
+        /// Регистрирует тип переменной в таблице типов (имя -> WGSL тип).
+        void RegisterVariableType(const std::string& name, const std::string& wgslType) const;
+
+        /// WGSL-тип shared (межстадийной) переменной. Пустая строка, если тип не поддерживается.
+        SR_NODISCARD std::string GetSharedVariableType(const SRSLShader* pShader, const SRSLVariable* pVariable) const;
+
+        /// Пытается определить WGSL-тип выражения. Возвращает пустую строку, если тип неизвестен.
+        SR_NODISCARD std::string InferExprType(const SRSLExpr* pExpr) const;
+
+        /// Генерирует тела вспомогательных функций (inverse, преобразования матриц и т.д.),
+        /// которые были использованы при генерации кода. В WGSL нет этих встроенных функций.
+        SR_NODISCARD std::string GenerateHelperFunctions() const;
 
         /// Non-entry-point function (regular function body without stage decorator).
         SR_NODISCARD std::string GenerateFunctionBody(const SRSLFunction* pFunction, int32_t deep) const;
@@ -76,6 +96,15 @@ namespace SR_SRSL_NS {
         /// Populated during GenerateUniforms(): maps SSBO field name → "blockVarName.fieldName"
         /// so that GenerateExpression() can rewrite bare field references.
         mutable SR_UTILS_NS::Map<SR_UTILS_NS::String, SR_UTILS_NS::String> m_ssboFieldToQualified;
+
+        /// Таблица типов (имя переменной -> WGSL тип), нужна для вывода типов в GenerateExpression().
+        mutable std::unordered_map<std::string, std::string> m_variableTypes;
+
+        /// Возвращаемые типы пользовательских функций (имя -> WGSL тип).
+        mutable std::unordered_map<std::string, std::string> m_functionReturnTypes;
+
+        /// Имена вспомогательных функций, которые понадобились при генерации кода.
+        mutable std::unordered_set<std::string> m_usedHelpers;
     };
 }
 

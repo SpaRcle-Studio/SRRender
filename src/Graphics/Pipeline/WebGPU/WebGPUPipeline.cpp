@@ -235,6 +235,32 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    /// Не для всех форматов WebGPU разрешает блендинг: 32-битные float и целочисленные
+    /// форматы не являются blendable, и попытка включить для них блендинг ломает пайплайн
+    /// (Validation error: "Blending is enabled but color format ... is not blendable").
+    static bool IsBlendableFormat(wgpu::TextureFormat fmt) {
+        switch (fmt) {
+            case wgpu::TextureFormat::R8Unorm:
+            case wgpu::TextureFormat::R8Snorm:
+            case wgpu::TextureFormat::R16Float:
+            case wgpu::TextureFormat::RG8Unorm:
+            case wgpu::TextureFormat::RG8Snorm:
+            case wgpu::TextureFormat::RG16Float:
+            case wgpu::TextureFormat::RGBA8Unorm:
+            case wgpu::TextureFormat::RGBA8UnormSrgb:
+            case wgpu::TextureFormat::RGBA8Snorm:
+            case wgpu::TextureFormat::BGRA8Unorm:
+            case wgpu::TextureFormat::BGRA8UnormSrgb:
+            case wgpu::TextureFormat::RGB10A2Unorm:
+            case wgpu::TextureFormat::RG11B10Ufloat:
+            case wgpu::TextureFormat::RGBA16Float:
+                return true;
+            default:
+                /// R32Float / RG32Float / RGBA32Float и все *Uint / *Sint форматы
+                return false;
+        }
+    }
+
     static bool IsDepthFormat(wgpu::TextureFormat fmt) {
         return fmt == wgpu::TextureFormat::Depth16Unorm
             || fmt == wgpu::TextureFormat::Depth24Plus
@@ -1588,7 +1614,14 @@ namespace SR_GRAPH_NS {
             entry.binding               = binding;
             entry.visibility            = visibility;
             entry.buffer.type           = isUniform ? wgpu::BufferBindingType::Uniform : wgpu::BufferBindingType::Storage;
-            entry.buffer.minBindingSize = uniform.size;
+            /// minBindingSize намеренно оставлен нулевым (= проверка минимального размера отключена).
+            /// uniform.size приходит из SRSLUniformBlock::Align(), который просто складывает размеры
+            /// полей (vec3 = 12 байт), а реальный буфер выделяется по Memory::ShaderUBOBlock, который
+            /// раскладывает поля по правилам std140 (vec3 занимает свой 16-байтный слот) — как и WGSL.
+            /// Из-за этого uniform.size меньше того, что видит шейдер, и валидация падала с
+            /// "The shader uses more bytes of the buffer (208) than the layout's minBindingSize (192)".
+            /// Фактический размер привязки всё равно проверяется при создании bind group и при отрисовке.
+            entry.buffer.minBindingSize = 0;
 
             bglEntries0.push_back(entry);
             bufferSlots.push_back(WebGPUBufferSlot { binding, !isUniform });
@@ -1790,7 +1823,9 @@ namespace SR_GRAPH_NS {
                 wgpu::ColorTargetState ct{};
                 ct.format = fmt;
                 ct.writeMask = wgpu::ColorWriteMask::All;
-                if (createInfo.blendEnabled) {
+                /// Блендинг включаем только для тех вложений, формат которых его поддерживает.
+                /// Вспомогательные вложения (глубина в R32Float, id объекта и т.п.) блендинг не поддерживают.
+                if (createInfo.blendEnabled && IsBlendableFormat(fmt)) {
                     ct.blend = &blendState;
                 }
                 colorTargets.push_back(ct);

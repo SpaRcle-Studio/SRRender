@@ -7,6 +7,7 @@
 #include <Graphics/SRSL/TypeInfo.h>
 #include <Graphics/SRSL/ShaderVariables.h>
 
+#include <cctype>
 #include <unordered_set>
 
 namespace SR_SRSL_NS {
@@ -172,6 +173,181 @@ namespace SR_SRSL_NS {
             return result;
         }
 
+        /// Возвращает размерность квадратной матрицы по WGSL-типу ("mat3x3<f32>" -> 3).
+        /// Для неквадратных матриц и не-матриц возвращает 0.
+        uint32_t SquareMatrixDimension(const std::string& wgslType) {
+            if (wgslType == "mat2x2<f32>") return 2;
+            if (wgslType == "mat3x3<f32>") return 3;
+            if (wgslType == "mat4x4<f32>") return 4;
+            return 0;
+        }
+
+        /// Количество столбцов матрицы ("mat3x2<f32>" -> 3), 0 если тип не матрица.
+        uint32_t MatrixColumns(const std::string& wgslType) {
+            if (wgslType.size() >= 7 && wgslType.compare(0, 3, "mat") == 0 && wgslType[4] == 'x') {
+                return static_cast<uint32_t>(wgslType[3] - '0');
+            }
+            return 0;
+        }
+
+        /// Тип столбца матрицы ("mat3x2<f32>" -> "vec2<f32>"), пустая строка если тип не матрица.
+        std::string MatrixColumnType(const std::string& wgslType) {
+            if (MatrixColumns(wgslType) == 0) {
+                return std::string();
+            }
+            return std::string("vec") + wgslType[5] + "<f32>";
+        }
+
+        bool IsScalarType(const std::string& wgslType) {
+            return wgslType == "f32" || wgslType == "i32" || wgslType == "u32";
+        }
+
+        /// Целочисленные интерполянты в WGSL обязаны быть объявлены как @interpolate(flat).
+        bool NeedsFlatInterpolation(const std::string& wgslType) {
+            return wgslType.find("i32") != std::string::npos
+                || wgslType.find("u32") != std::string::npos
+                || wgslType.find("bool") != std::string::npos;
+        }
+
+        bool IsNumericLiteral(const std::string& token) {
+            if (token.empty()) {
+                return false;
+            }
+            return std::isdigit(static_cast<unsigned char>(token.front())) || token.front() == '.';
+        }
+
+        /// Имя вспомогательной функции преобразования матрицы: sr_mat3_from_mat4 и т.п.
+        std::string MatrixCastHelperName(uint32_t target, uint32_t source) {
+            return "sr_mat" + std::to_string(target) + "_from_mat" + std::to_string(source);
+        }
+
+        std::string MatrixDiagonalHelperName(uint32_t target) {
+            return "sr_mat" + std::to_string(target) + "_diag";
+        }
+
+        std::string MatrixTypeName(uint32_t dimension) {
+            return "mat" + std::to_string(dimension) + "x" + std::to_string(dimension) + "<f32>";
+        }
+
+        std::string VectorTypeName(uint32_t dimension) {
+            return "vec" + std::to_string(dimension) + "<f32>";
+        }
+
+        /// Тело функции преобразования матрицы matSxS -> matTxT.
+        /// Недостающие компоненты берутся из единичной матрицы (как в GLSL).
+        std::string GenerateMatrixCastHelper(uint32_t target, uint32_t source) {
+            std::string code = "fn " + MatrixCastHelperName(target, source) + "(m : " + MatrixTypeName(source)
+                + ") -> " + MatrixTypeName(target) + " {\n\treturn " + MatrixTypeName(target) + "(";
+
+            for (uint32_t column = 0; column < target; ++column) {
+                if (column > 0) {
+                    code += ", ";
+                }
+                code += VectorTypeName(target) + "(";
+                for (uint32_t row = 0; row < target; ++row) {
+                    if (row > 0) {
+                        code += ", ";
+                    }
+                    if (column < source && row < source) {
+                        code += "m[" + std::to_string(column) + "][" + std::to_string(row) + "]";
+                    }
+                    else {
+                        code += (column == row) ? "1.0" : "0.0";
+                    }
+                }
+                code += ")";
+            }
+
+            code += ");\n}\n\n";
+            return code;
+        }
+
+        /// Тело функции matN(scalar) — диагональная матрица (поведение GLSL).
+        std::string GenerateMatrixDiagonalHelper(uint32_t target) {
+            std::string code = "fn " + MatrixDiagonalHelperName(target) + "(s : f32) -> " + MatrixTypeName(target)
+                + " {\n\treturn " + MatrixTypeName(target) + "(";
+
+            for (uint32_t column = 0; column < target; ++column) {
+                if (column > 0) {
+                    code += ", ";
+                }
+                code += VectorTypeName(target) + "(";
+                for (uint32_t row = 0; row < target; ++row) {
+                    if (row > 0) {
+                        code += ", ";
+                    }
+                    code += (column == row) ? "s" : "0.0";
+                }
+                code += ")";
+            }
+
+            code += ");\n}\n\n";
+            return code;
+        }
+
+        /// В WGSL нет inverse() — генерируем реализацию вручную.
+        std::string GenerateInverseHelper(uint32_t dimension) {
+            switch (dimension) {
+                case 2:
+                    return
+                        "fn sr_inverse2(m : mat2x2<f32>) -> mat2x2<f32> {\n"
+                        "\tlet invDet = 1.0 / (m[0][0] * m[1][1] - m[1][0] * m[0][1]);\n"
+                        "\treturn mat2x2<f32>(vec2<f32>( m[1][1], -m[0][1]) * invDet,\n"
+                        "\t                   vec2<f32>(-m[1][0],  m[0][0]) * invDet);\n"
+                        "}\n\n";
+                case 3:
+                    return
+                        "fn sr_inverse3(m : mat3x3<f32>) -> mat3x3<f32> {\n"
+                        "\tlet r0 = cross(m[1], m[2]);\n"
+                        "\tlet r1 = cross(m[2], m[0]);\n"
+                        "\tlet r2 = cross(m[0], m[1]);\n"
+                        "\tlet invDet = 1.0 / dot(m[0], r0);\n"
+                        "\treturn mat3x3<f32>(vec3<f32>(r0.x, r1.x, r2.x),\n"
+                        "\t                   vec3<f32>(r0.y, r1.y, r2.y),\n"
+                        "\t                   vec3<f32>(r0.z, r1.z, r2.z)) * invDet;\n"
+                        "}\n\n";
+                case 4:
+                default:
+                    return
+                        "fn sr_inverse4(m : mat4x4<f32>) -> mat4x4<f32> {\n"
+                        "\tlet a00 = m[0][0]; let a01 = m[0][1]; let a02 = m[0][2]; let a03 = m[0][3];\n"
+                        "\tlet a10 = m[1][0]; let a11 = m[1][1]; let a12 = m[1][2]; let a13 = m[1][3];\n"
+                        "\tlet a20 = m[2][0]; let a21 = m[2][1]; let a22 = m[2][2]; let a23 = m[2][3];\n"
+                        "\tlet a30 = m[3][0]; let a31 = m[3][1]; let a32 = m[3][2]; let a33 = m[3][3];\n"
+                        "\tlet b00 = a00 * a11 - a01 * a10;\n"
+                        "\tlet b01 = a00 * a12 - a02 * a10;\n"
+                        "\tlet b02 = a00 * a13 - a03 * a10;\n"
+                        "\tlet b03 = a01 * a12 - a02 * a11;\n"
+                        "\tlet b04 = a01 * a13 - a03 * a11;\n"
+                        "\tlet b05 = a02 * a13 - a03 * a12;\n"
+                        "\tlet b06 = a20 * a31 - a21 * a30;\n"
+                        "\tlet b07 = a20 * a32 - a22 * a30;\n"
+                        "\tlet b08 = a20 * a33 - a23 * a30;\n"
+                        "\tlet b09 = a21 * a32 - a22 * a31;\n"
+                        "\tlet b10 = a21 * a33 - a23 * a31;\n"
+                        "\tlet b11 = a22 * a33 - a23 * a32;\n"
+                        "\tlet invDet = 1.0 / (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06);\n"
+                        "\treturn mat4x4<f32>(\n"
+                        "\t\tvec4<f32>(a11 * b11 - a12 * b10 + a13 * b09,\n"
+                        "\t\t          a02 * b10 - a01 * b11 - a03 * b09,\n"
+                        "\t\t          a31 * b05 - a32 * b04 + a33 * b03,\n"
+                        "\t\t          a22 * b04 - a21 * b05 - a23 * b03) * invDet,\n"
+                        "\t\tvec4<f32>(a12 * b08 - a10 * b11 - a13 * b07,\n"
+                        "\t\t          a00 * b11 - a02 * b08 + a03 * b07,\n"
+                        "\t\t          a32 * b02 - a30 * b05 - a33 * b01,\n"
+                        "\t\t          a20 * b05 - a22 * b02 + a23 * b01) * invDet,\n"
+                        "\t\tvec4<f32>(a10 * b10 - a11 * b08 + a13 * b06,\n"
+                        "\t\t          a01 * b08 - a00 * b10 - a03 * b06,\n"
+                        "\t\t          a30 * b04 - a31 * b02 + a33 * b00,\n"
+                        "\t\t          a21 * b02 - a20 * b04 - a23 * b00) * invDet,\n"
+                        "\t\tvec4<f32>(a11 * b07 - a10 * b09 - a12 * b06,\n"
+                        "\t\t          a00 * b09 - a01 * b07 + a02 * b06,\n"
+                        "\t\t          a31 * b01 - a30 * b03 - a32 * b00,\n"
+                        "\t\t          a20 * b03 - a21 * b01 + a22 * b00) * invDet);\n"
+                        "}\n\n";
+            }
+        }
+
         /// Replace a GLSL token with its WGSL equivalent for expressions.
         std::string ReplaceToken(const std::string& token) {
             // Type replacements inside expressions (constructors, casts)
@@ -285,6 +461,54 @@ namespace SR_SRSL_NS {
                     code += ", " + GenerateExpression(pExpr->args[1], 0);
                 }
                 code += ")";
+            }
+            // ---- inverse(m) → sr_inverseN(m) ----
+            // В WGSL нет встроенной inverse(), поэтому подставляем свою реализацию,
+            // выбирая её по выведенному типу аргумента.
+            else if (rawToken == "inverse" && pExpr->args.size() == 1) {
+                uint32_t dimension = WGSLDetail::SquareMatrixDimension(InferExprType(pExpr->args[0]));
+                if (dimension == 0) {
+                    dimension = 4; /// самый частый случай, если тип вывести не удалось
+                }
+                const std::string helper = "sr_inverse" + std::to_string(dimension);
+                m_usedHelpers.insert(helper);
+                code += helper + "(" + GenerateExpression(pExpr->args[0], 0) + ")";
+            }
+            // ---- matN(x) с одним аргументом ----
+            // В WGSL нет ни конструктора матрицы из матрицы другого размера, ни из скаляра.
+            else if (pExpr->args.size() == 1 && (rawToken == "mat2" || rawToken == "mat3" || rawToken == "mat4"
+                || rawToken == "mat2x2" || rawToken == "mat3x3" || rawToken == "mat4x4"))
+            {
+                const uint32_t target = static_cast<uint32_t>(rawToken[3] - '0');
+                const std::string argType = InferExprType(pExpr->args[0]);
+                const uint32_t source = WGSLDetail::SquareMatrixDimension(argType);
+                const std::string argCode = GenerateExpression(pExpr->args[0], 0);
+
+                if (source == target) {
+                    /// тип уже совпадает — конструктор не нужен
+                    code += argCode;
+                }
+                else if (source != 0) {
+                    const std::string helper = WGSLDetail::MatrixCastHelperName(target, source);
+                    m_usedHelpers.insert(helper);
+                    code += helper + "(" + argCode + ")";
+                }
+                else if (WGSLDetail::IsScalarType(argType) || WGSLDetail::IsNumericLiteral(pExpr->args[0]->token)) {
+                    const std::string helper = WGSLDetail::MatrixDiagonalHelperName(target);
+                    m_usedHelpers.insert(helper);
+                    code += helper + "(f32(" + argCode + "))";
+                }
+                else if (target < 4) {
+                    /// тип неизвестен: усечение mat4 — самый частый случай (например mat3(MODEL_MATRIX))
+                    const std::string helper = WGSLDetail::MatrixCastHelperName(target, 4);
+                    m_usedHelpers.insert(helper);
+                    code += helper + "(" + argCode + ")";
+                }
+                else {
+                    const std::string helper = WGSLDetail::MatrixDiagonalHelperName(target);
+                    m_usedHelpers.insert(helper);
+                    code += helper + "(f32(" + argCode + "))";
+                }
             }
             else {
                 code += funcName + "(";
@@ -426,6 +650,10 @@ namespace SR_SRSL_NS {
             std::string typeName = WGSLDetail::GenerateType(pVariable->pType->ToString(0, m_tmpBuffer));
             if (!typeName.empty()) {
                 code += " : " + typeName;
+                if (pVariable->pName) {
+                    m_tmpBuffer.clear();
+                    RegisterVariableType(std::string(pVariable->pName->ToString(0, m_tmpBuffer)), typeName);
+                }
             }
         }
 
@@ -655,6 +883,7 @@ namespace SR_SRSL_NS {
                 m_tmpBuffer.clear();
                 argType = WGSLDetail::GenerateType(pArg->pType->ToString(0, m_tmpBuffer));
             }
+            RegisterVariableType(argName, argType);
             code += argName + " : " + argType;
             if (i + 1 < pFunction->args.size()) {
                 code += ", ";
@@ -1129,7 +1358,19 @@ namespace SR_SRSL_NS {
 
         // Copy shared vars into vsOut for interpolation to fragment (using _s_ prefix to avoid name clash)
         for (auto&& [name, pVariable] : pShader->GetShared()) {
-            postCode += SR_FORMAT("{}vsOut._s_{} = {};\n", GenerateTab(1), name.ToStringView(), name.ToStringView());
+            const std::string typeName = GetSharedVariableType(pShader, pVariable);
+            if (typeName.empty()) {
+                continue;
+            }
+            /// Матрицы передаются постолбцово — WGSL не разрешает матрицы в межстадийном интерфейсе
+            if (const uint32_t columns = WGSLDetail::MatrixColumns(typeName)) {
+                for (uint32_t column = 0; column < columns; ++column) {
+                    postCode += SR_FORMAT("{}vsOut._s_{}_{} = {}[{}];\n", GenerateTab(1), name.ToStringView(), column, name.ToStringView(), column);
+                }
+            }
+            else {
+                postCode += SR_FORMAT("{}vsOut._s_{} = {};\n", GenerateTab(1), name.ToStringView(), name.ToStringView());
+            }
         }
 
         postCode += std::string(GenerateTab(1));
@@ -1202,7 +1443,21 @@ namespace SR_SRSL_NS {
 
         // Copy shared (inter-stage) interpolants into private vars (using _s_ prefix from VertexOutput)
         for (auto&& [name, pVariable] : sharedVarsF) {
-            preCode += SR_FORMAT("{}{} = fsIn._s_{};\n", GenerateTab(1), name.ToStringView(), name.ToStringView());
+            const std::string typeName = GetSharedVariableType(pShader, pVariable);
+            if (typeName.empty()) {
+                continue;
+            }
+            /// Матрица собирается обратно из столбцов
+            if (const uint32_t columns = WGSLDetail::MatrixColumns(typeName)) {
+                preCode += SR_FORMAT("{}{} = {}(", GenerateTab(1), name.ToStringView(), typeName);
+                for (uint32_t column = 0; column < columns; ++column) {
+                    preCode += SR_FORMAT("{}fsIn._s_{}_{}", column > 0 ? ", " : "", name.ToStringView(), column);
+                }
+                preCode += ");\n";
+            }
+            else {
+                preCode += SR_FORMAT("{}{} = fsIn._s_{};\n", GenerateTab(1), name.ToStringView(), name.ToStringView());
+            }
         }
 
         uint64_t outLocation = 0;
@@ -1360,6 +1615,9 @@ namespace SR_SRSL_NS {
 
         Clear();
         m_ssboFieldToQualified.clear();
+        m_variableTypes.clear();
+        m_functionReturnTypes.clear();
+        m_usedHelpers.clear();
         m_pCurrentShader = pShader;
 
         ISRSLCodeGenerator::SRSLCodeGenRes codeGenRes;
@@ -1379,6 +1637,8 @@ namespace SR_SRSL_NS {
             code += "/// WARNING: GLayer (viewport layer) is not supported in WGSL. Remove GLayer usage or use a different shader target.\n\n";
         }
         code += "/// Shader type: " + SR_UTILS_NS::EnumReflector::ToStringAtom(pShader->GetType()).ToStringRef() + "\n\n";
+
+        CollectDeclaredTypes(pShader);
 
         // ---- Uniforms / SSBOs / Samplers (emitted once for the whole module) ----
         {
@@ -1424,18 +1684,27 @@ namespace SR_SRSL_NS {
             uint32_t locationIdx = 0;
             vertexLayoutDescriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& vertexAttribute, uint32_t) {
                 std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute);
-                std::string_view attributeType = WGSLDetail::VertexAttributeFormatToString(vertexAttribute.format, vertexAttribute.count);
-                code += "\t@location({}) {} : {},\n"_format(locationIdx++, attributeName, attributeType);
+                const std::string attributeType = std::string(WGSLDetail::VertexAttributeFormatToString(vertexAttribute.format, vertexAttribute.count));
+                /// целочисленные интерполянты в WGSL обязаны быть flat
+                const std::string_view interpolate = WGSLDetail::NeedsFlatInterpolation(attributeType) ? "@interpolate(flat) " : "";
+                code += "\t@location({}) {}{} : {},\n"_format(locationIdx++, interpolate, attributeName, attributeType);
             });
             // Add shared (inter-stage) variables as interpolants with "_s_" prefix
             for (auto&& [name, pVariable] : sharedVars) {
-                if (pVariable->pType) {
-                    m_tmpBuffer.clear();
-                    std::string strippedType = SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), std::string(pVariable->pType->ToString(0, m_tmpBuffer)));
-                    std::string typeName = WGSLDetail::GenerateType(strippedType.empty() ? std::string(pVariable->pType->ToString(0, m_tmpBuffer)) : strippedType);
-                    if (!typeName.empty()) {
-                        code += "\t@location({}) _s_{} : {},\n"_format(locationIdx++, name.ToStringView(), typeName);
+                const std::string typeName = GetSharedVariableType(pShader, pVariable);
+                if (typeName.empty()) {
+                    continue;
+                }
+                /// Матрицы нельзя передавать между стадиями — разбиваем их на столбцы
+                if (const uint32_t columns = WGSLDetail::MatrixColumns(typeName)) {
+                    const std::string columnType = WGSLDetail::MatrixColumnType(typeName);
+                    for (uint32_t column = 0; column < columns; ++column) {
+                        code += "\t@location({}) _s_{}_{} : {},\n"_format(locationIdx++, name.ToStringView(), column, columnType);
                     }
+                }
+                else {
+                    const std::string_view interpolate = WGSLDetail::NeedsFlatInterpolation(typeName) ? "@interpolate(flat) " : "";
+                    code += "\t@location({}) {}_s_{} : {},\n"_format(locationIdx++, interpolate, name.ToStringView(), typeName);
                 }
             }
             code += "};\n\n";
@@ -1453,14 +1722,9 @@ namespace SR_SRSL_NS {
 
         // Private module-scope vars for shared (inter-stage) variables
         for (auto&& [name, pVariable] : sharedVars) {
-            if (pVariable->pType) {
-                m_tmpBuffer.clear();
-                std::string rawType = std::string(pVariable->pType->ToString(0, m_tmpBuffer));
-                std::string strippedType = SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), rawType);
-                std::string typeName = WGSLDetail::GenerateType(strippedType.empty() ? rawType : strippedType);
-                if (!typeName.empty()) {
-                    code += "var<private> {} : {};\n"_format(name.ToStringView(), typeName);
-                }
+            const std::string typeName = GetSharedVariableType(pShader, pVariable);
+            if (!typeName.empty()) {
+                code += "var<private> {} : {};\n"_format(name.ToStringView(), typeName);
             }
         }
         if (!sharedVars.empty()) {
@@ -1501,22 +1765,29 @@ namespace SR_SRSL_NS {
         // ---- Generate each stage ----
         bool hasVertex = false, hasFragment = false, hasCompute = false;
 
+        /// Код стадий генерируется в отдельный буфер: только после этого известно,
+        /// какие вспомогательные функции понадобились (их нужно объявить до использования).
+        std::string stagesCode;
+
         if (auto&& stageCode = GenerateVertexStage(pShader, result)) {
-            code += stageCode.value();
-            code += "\n";
+            stagesCode += stageCode.value();
+            stagesCode += "\n";
             hasVertex = true;
         }
 
         if (auto&& stageCode = GenerateFragmentStage(pShader, result)) {
-            code += stageCode.value();
-            code += "\n";
+            stagesCode += stageCode.value();
+            stagesCode += "\n";
             hasFragment = true;
         }
 
         if (auto&& stageCode = GenerateComputeStage(pShader, result)) {
-            code += stageCode.value();
+            stagesCode += stageCode.value();
             hasCompute = true;
         }
+
+        code += GenerateHelperFunctions();
+        code += stagesCode;
 
         // WGSL uses a single combined source file for all entry points.
         // Keep ShaderStage::All populated so that tests and any code reading result.second[All]
@@ -1554,6 +1825,207 @@ namespace SR_SRSL_NS {
                 }
             }
         }
+        return code;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Вывод типов и вспомогательные функции
+    // ----------------------------------------------------------------------------------------------------------------
+
+    std::string WGSLCodeGenerator::GetSharedVariableType(const SRSLShader* pShader, const SRSLVariable* pVariable) const {
+        if (!pVariable || !pVariable->pType) {
+            return std::string();
+        }
+        m_tmpBuffer.clear();
+        const std::string rawType = std::string(pVariable->pType->ToString(0, m_tmpBuffer));
+        const std::string strippedType = SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), rawType);
+        return WGSLDetail::GenerateType(strippedType.empty() ? rawType : strippedType);
+    }
+
+    void WGSLCodeGenerator::RegisterVariableType(const std::string& name, const std::string& wgslType) const {
+        if (name.empty() || wgslType.empty()) {
+            return;
+        }
+        m_variableTypes[name] = wgslType;
+    }
+
+    void WGSLCodeGenerator::CollectDeclaredTypes(const SRSLShader* pShader) const {
+        auto&& registerField = [this, pShader](const auto& field) {
+            const std::string typeName = WGSLDetail::GenerateType(
+                SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), field.type)
+            );
+            RegisterVariableType(std::string(field.name.ToStringView()), typeName);
+        };
+
+        for (auto&& [blockName, uniformBlock] : pShader->GetUniformBlocks()) {
+            for (auto&& field : uniformBlock.fields) {
+                registerField(field);
+            }
+        }
+
+        for (auto&& [blockName, ssboBlock] : pShader->GetSSBOBlocks()) {
+            for (auto&& field : ssboBlock.fields) {
+                registerField(field);
+            }
+        }
+
+        for (auto&& field : pShader->GetPushConstants().fields) {
+            registerField(field);
+        }
+
+        for (auto&& [name, pVariable] : pShader->GetShared()) {
+            RegisterVariableType(std::string(name.ToStringView()), GetSharedVariableType(pShader, pVariable));
+        }
+
+        for (auto&& [name, pVariable] : pShader->GetSharedWorkgroup()) {
+            RegisterVariableType(std::string(name.ToStringView()), GetSharedVariableType(pShader, pVariable));
+        }
+
+        for (auto&& [name, pVariable] : pShader->GetConstants()) {
+            RegisterVariableType(std::string(name.ToStringView()), GetSharedVariableType(pShader, pVariable));
+        }
+
+        pShader->GetCreateInfo().vertexLayoutDescriptions.ForEachAttribute(
+            [this](const SR_UTILS_NS::VertexAttributeDescription& vertexAttribute, uint32_t) {
+                RegisterVariableType(
+                    std::string(SR_UTILS_NS::VertexAttributeToName(vertexAttribute.attribute)),
+                    std::string(WGSLDetail::VertexAttributeFormatToString(vertexAttribute.format, vertexAttribute.count))
+                );
+            });
+
+        RegisterVariableType("OUT_POSITION", "vec4<f32>");
+        RegisterVariableType("COLOR", "vec4<f32>");
+        RegisterVariableType("FRAG_COORD", "vec4<f32>");
+
+        if (pShader->GetAnalyzedTree() && pShader->GetAnalyzedTree()->pLexicalTree) {
+            for (auto&& pUnit : pShader->GetAnalyzedTree()->pLexicalTree->lexicalTree) {
+                auto&& pFunction = dynamic_cast<SRSLFunction*>(pUnit);
+                if (!pFunction || !pFunction->pName || !pFunction->pType) {
+                    continue;
+                }
+                m_tmpBuffer.clear();
+                const std::string returnType = WGSLDetail::GenerateType(pFunction->pType->ToString(0, m_tmpBuffer));
+                if (!returnType.empty() && returnType != "void") {
+                    m_functionReturnTypes[std::string(pFunction->pName->token)] = returnType;
+                }
+            }
+        }
+    }
+
+    std::string WGSLCodeGenerator::InferExprType(const SRSLExpr* pExpr) const {
+        if (!pExpr) {
+            return std::string();
+        }
+
+        if (pExpr->isCall) {
+            const std::string& token = pExpr->token;
+
+            /// конструктор типа: GenerateType() меняет имя только для известных типов
+            const std::string asType = WGSLDetail::GenerateType(token);
+            if (asType != token && !asType.empty()) {
+                return asType;
+            }
+
+            /// функции, не меняющие тип аргумента
+            static const std::unordered_set<std::string> passThrough = {
+                "transpose", "inverse", "normalize", "abs", "min", "max", "clamp", "mix",
+                "floor", "ceil", "round", "fract", "sign", "saturate", "pow", "sqrt", "exp", "log"
+            };
+            if (passThrough.count(token) > 0 && !pExpr->args.empty()) {
+                return InferExprType(pExpr->args[0]);
+            }
+
+            auto&& it = m_functionReturnTypes.find(token);
+            if (it != m_functionReturnTypes.end()) {
+                return it->second;
+            }
+
+            return std::string();
+        }
+
+        if (pExpr->isArray && pExpr->args.size() == 2) {
+            const std::string baseType = InferExprType(pExpr->args[0]);
+            /// индексация матрицы даёт её столбец
+            if (WGSLDetail::MatrixColumns(baseType) > 0) {
+                return WGSLDetail::MatrixColumnType(baseType);
+            }
+            return std::string();
+        }
+
+        if (pExpr->args.empty()) {
+            if (WGSLDetail::IsNumericLiteral(pExpr->token)) {
+                return pExpr->token.find('.') != std::string::npos ? "f32" : "i32";
+            }
+            auto&& it = m_variableTypes.find(pExpr->token);
+            if (it != m_variableTypes.end()) {
+                return it->second;
+            }
+            return std::string();
+        }
+
+        if (pExpr->args.size() == 1) {
+            return InferExprType(pExpr->args[0]);
+        }
+
+        if (pExpr->args.size() == 2) {
+            const std::string& token = pExpr->token;
+            if (token == "+" || token == "-" || token == "*" || token == "/") {
+                const std::string left = InferExprType(pExpr->args[0]);
+                const std::string right = InferExprType(pExpr->args[1]);
+                if (left == right) {
+                    return left;
+                }
+                if (WGSLDetail::IsScalarType(left)) {
+                    return right;
+                }
+                if (WGSLDetail::IsScalarType(right)) {
+                    return left;
+                }
+                /// матрица * вектор даёт вектор
+                if (token == "*") {
+                    if (WGSLDetail::MatrixColumns(left) > 0 && WGSLDetail::MatrixColumns(right) == 0) {
+                        return right;
+                    }
+                    if (WGSLDetail::MatrixColumns(right) > 0 && WGSLDetail::MatrixColumns(left) == 0) {
+                        return left;
+                    }
+                }
+            }
+        }
+
+        return std::string();
+    }
+
+    std::string WGSLCodeGenerator::GenerateHelperFunctions() const {
+        if (m_usedHelpers.empty()) {
+            return std::string();
+        }
+
+        std::string code = "/// Вспомогательные функции: в WGSL нет аналогов этих встроенных функций GLSL\n";
+
+        for (uint32_t dimension = 2; dimension <= 4; ++dimension) {
+            if (m_usedHelpers.count("sr_inverse" + std::to_string(dimension)) > 0) {
+                code += WGSLDetail::GenerateInverseHelper(dimension);
+            }
+        }
+
+        for (uint32_t target = 2; target <= 4; ++target) {
+            for (uint32_t source = 2; source <= 4; ++source) {
+                if (target == source) {
+                    continue;
+                }
+                if (m_usedHelpers.count(WGSLDetail::MatrixCastHelperName(target, source)) > 0) {
+                    code += WGSLDetail::GenerateMatrixCastHelper(target, source);
+                }
+            }
+        }
+
+        for (uint32_t target = 2; target <= 4; ++target) {
+            if (m_usedHelpers.count(WGSLDetail::MatrixDiagonalHelperName(target)) > 0) {
+                code += WGSLDetail::GenerateMatrixDiagonalHelper(target);
+            }
+        }
+
         return code;
     }
 } // namespace SR_SRSL_NS
