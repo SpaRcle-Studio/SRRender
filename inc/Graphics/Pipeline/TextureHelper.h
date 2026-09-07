@@ -112,10 +112,16 @@ namespace SR_GRAPH_NS {
         None = 0, BC1 = 1, BC2 = 2, BC3 = 3, BC4 = 4, BC5 = 5, BC6 = 6, BC7 = 7
     );
 
+    enum class TextureLoadMode : uint8_t {
+        STBImage, LibsPNG
+    };
+
     struct TextureLoadInfo {
         TextureCompression compression = TextureCompression::None;
         uint32_t mips = 0;
         uint8_t channels = 0;
+        TextureLoadMode loadMode = TextureLoadMode::STBImage;
+        bool caching = false;
     };
 
     uint32_t Find4(uint32_t i);

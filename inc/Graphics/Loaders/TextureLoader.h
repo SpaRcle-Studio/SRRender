@@ -63,7 +63,8 @@ namespace SR_GRAPH_NS {
         static TextureData::Ptr Load(const SR_UTILS_NS::Path& path, TextureLoadInfo info);
         static TextureData::Ptr LoadFromMemory(const std::string& data, const ImageMetaInfo& meta);
 
-        static bool Free(unsigned char* data);
+        static bool Free(uint8_t* data, TextureLoadMode mode);
+        static uint8_t* LoadRaw(SR_UTILS_NS::StringView buffer, uint32_t& width, uint32_t& height, uint8_t& channels, const SR_UTILS_NS::Path& path, TextureLoadMode mode);
         static int GetAlignedChannels(ImageFormat format);
         static bool IsAllowedChannelsCount(uint8_t channels);
 

@@ -136,6 +136,7 @@ namespace SR_GTYPES_NS {
 
         TextureLoadInfo loadInfo;
         loadInfo.compression = compression;
+        loadInfo.caching = SR_UTILS_NS::Features::Instance().Enabled("TextureCaching", true) && GetRenderContext()->IsTextureCachingEnabled();
         loadInfo.mips = metaInfo.mipLevels;
         loadInfo.channels = TextureLoader::GetAlignedChannels(m_format);
 

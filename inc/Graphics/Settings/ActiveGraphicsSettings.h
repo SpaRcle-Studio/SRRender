@@ -70,6 +70,8 @@ namespace SR_GRAPH_NS {
         /// @property
         bool textureCompression = false;
         /// @property
+        bool textureCaching = false;
+        /// @property
         Quality SSAO = Quality::High;
         /// @property
         Quality shadowsQuality = Quality::High;
