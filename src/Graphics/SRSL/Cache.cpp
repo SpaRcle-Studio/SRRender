@@ -310,7 +310,8 @@ namespace SR_GRAPH_NS {
         uint64_t hash = 0;
 
         for (auto&& include : pShader->m_includes) {
-            auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(include.name);
+            SR_UTILS_NS::Path includePath = include.name;
+            auto&& absPath = CoreResLoader::GetResPath().Concat(includePath.RemoveSubPath(CoreResLoader::GetResPath()));
             hash = SR_UTILS_NS::CombineTwoHashes(hash, absPath.GetFileHash());
         }
 
@@ -359,11 +360,6 @@ namespace SR_GRAPH_NS {
         marshal.Write<bool>(pShader->m_isGLayerUsed);
 
         auto&& cacheFile = cachePath.ConcatExt("cache");
-
-        if (cacheFile.IsFile()) {
-            SR_PLATFORM_NS::Delete(cacheFile);
-        }
-
         if (!marshal.Save(cacheFile)) {
             SR_ERROR("SRSLShaderCache::SaveShaderToCache() : failed to save shader to cache! Path: {}", cacheFile);
         }
@@ -396,7 +392,8 @@ namespace SR_GRAPH_NS {
         for (uint64_t i = 0; i < includesSize; ++i) {
             auto& inc = includes.emplace_back();
             inc.name = SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal);
-            auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(inc.name);
+            SR_UTILS_NS::Path includePath = inc.name;
+            auto&& absPath = CoreResLoader::GetResPath().Concat(includePath.RemoveSubPath(CoreResLoader::GetResPath()));
             currentHash = SR_UTILS_NS::CombineTwoHashes(currentHash, absPath.GetFileHash());
         }
 

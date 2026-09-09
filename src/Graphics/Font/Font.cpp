@@ -6,6 +6,7 @@
 #include <Graphics/Font/SDF.h>
 
 #include <Utils/Resources/ResourceManager.h>
+#include <Utils/FileSystem/VFS.h>
 
 #ifdef SR_USE_FREETYPE
     #include <freetype/include/freetype/ftglyph.h>
@@ -38,10 +39,8 @@ namespace SR_GTYPES_NS {
     bool Font::Load() {
         SR_TRACY_ZONE;
 
-        SR_UTILS_NS::Path&& path = SR_UTILS_NS::Path(GetResourceId());
-        if (!path.IsAbs()) {
-            path = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
-        }
+        SR_UTILS_NS::Path path = CoreResLoader::GetResPath().Concat(GetResourcePath());
+        SR_UTILS_NS::VFS::Instance().ResolvePath(path);
 
     #ifdef SR_USE_FREETYPE
         FT_Init_FreeType(&m_library);

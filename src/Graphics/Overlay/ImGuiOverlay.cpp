@@ -12,6 +12,7 @@
 #include <Utils/Common/Features.h>
 #include <Utils/Common/CLIManager.h>
 #include <Utils/FileSystem/FileSystem.h>
+#include <Utils/FileSystem/VFS.h>
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Platform/Platform.h>
 
@@ -33,25 +34,28 @@ namespace SR_GRAPH_NS {
         m_iniPathEditor = resourcesManager.GetCachePath().Concat(editorConfigPath);
         m_iniPathWidgets = resourcesManager.GetCachePath().Concat(widgetsConfigPath);
 
-        if (!m_iniPathEditor.Exists()) {
-            SR_UTILS_NS::Path engineEditorConfigPath = resourcesManager.GetEngineCachePath().Concat(editorConfigPath);
-            if (engineEditorConfigPath.Exists()) {
-                SR_PLATFORM_NS::Copy(engineEditorConfigPath, m_iniPathEditor);
+        if (!m_iniPathEditor.IsFile()) {
+            SR_UTILS_NS::Path engineEditorConfigPath = resourcesManager.GetCachePath().Concat(editorConfigPath);
+            if (engineEditorConfigPath.IsFile()) {
+                SR_UTILS_NS::VFS::Instance().Copy(engineEditorConfigPath, m_iniPathEditor);
             }
             else {
-                SR_UTILS_NS::Platform::Copy(resourcesManager.GetResPath().Concat(editorConfigPath), m_iniPathEditor);
+                SR_UTILS_NS::VFS::Instance().Copy(resourcesManager.GetResPath().Concat(editorConfigPath), m_iniPathEditor);
             }
         }
 
-        if (!m_iniPathWidgets.Exists()) {
-            SR_UTILS_NS::Path engineWidgetsConfigPath = resourcesManager.GetEngineCachePath().Concat(widgetsConfigPath);
-            if (engineWidgetsConfigPath.Exists()) {
-                SR_PLATFORM_NS::Copy(engineWidgetsConfigPath, m_iniPathWidgets);
+        if (!m_iniPathWidgets.IsFile()) {
+            SR_UTILS_NS::Path engineWidgetsConfigPath = resourcesManager.GetCachePath().Concat(widgetsConfigPath);
+            if (engineWidgetsConfigPath.IsFile()) {
+                SR_UTILS_NS::VFS::Instance().Copy(engineWidgetsConfigPath, m_iniPathWidgets);
             }
             else {
-                SR_UTILS_NS::Platform::Copy(resourcesManager.GetResPath().Concat(widgetsConfigPath), m_iniPathWidgets);
+                SR_UTILS_NS::VFS::Instance().Copy(resourcesManager.GetResPath().Concat(widgetsConfigPath), m_iniPathWidgets);
             }
         }
+
+        SR_UTILS_NS::VFS::Instance().ResolvePath(m_iniPathEditor);
+        SR_UTILS_NS::VFS::Instance().ResolvePath(m_iniPathWidgets);
 
         SR_GRAPH_GUI_NS::Immediate::ImmediateGUICreateContext createContext;
         createContext.iniPath = m_iniPathEditor;
@@ -100,10 +104,8 @@ namespace SR_GRAPH_NS {
 
         SR_UTILS_NS::String fontData;
 
-        auto&& rm = SR_UTILS_NS::ResourceManager::Instance();
-
         auto loadFontOwnedByAtlas = [&](const SR_UTILS_NS::Path& fontPath, float size, const SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig& cfg, const uint32_t* glyphRanges) -> void* {
-            if (!fontPath.Exists()) {
+            if (!fontPath.IsFile()) {
                 SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found!\n\tPath: " + fontPath.ToString());
                 return nullptr;
             }
@@ -128,8 +130,8 @@ namespace SR_GRAPH_NS {
         /// Main font
         {
             SR_TRACY_ZONE_N("Load main font");
-            auto&& fontPath = rm.GetResPath().Concat("Engine/Fonts/tahoma.ttf");
-            SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: " + fontPath.ToString());
+            auto&& fontPath = CoreResLoader::GetResPath().Concat("Engine/Fonts/tahoma.ttf");
+            SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: {}", fontPath);
 
             SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
             m_smallFont = loadFontOwnedByAtlas(fontPath, 12.f * 0.75f, config, mainFontRanges);
@@ -139,8 +141,8 @@ namespace SR_GRAPH_NS {
         /// Warning font - for icons like "⚠" merge with main font
         {
             SR_TRACY_ZONE_N("Load warning font");
-            auto&& fontPath = rm.GetResPath().Concat("Engine/Fonts/seguisym.ttf");
-            SR_GRAPH("ImGuiOverlay::ReloadFonts() : load warning font...\n\tPath: " + fontPath.ToString());
+            auto&& fontPath = CoreResLoader::GetResPath().Concat("Engine/Fonts/seguisym.ttf");
+            SR_GRAPH("ImGuiOverlay::ReloadFonts() : load warning font...\n\tPath: {}", fontPath);
             SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
             config.mergeMode = true;
             loadFontOwnedByAtlas(fontPath, 12.0, config, ranges);
@@ -149,9 +151,9 @@ namespace SR_GRAPH_NS {
         /// Icons font
         {
             SR_TRACY_ZONE_N("Load icons font");
-            auto&& iconsFont = rm.GetResPath().Concat("Engine/Fonts/fa-solid-900.ttf");
+            auto&& iconsFont = CoreResLoader::GetResPath().Concat("Engine/Fonts/fa-solid-900.ttf");
 
-            SR_GRAPH("ImGuiOverlay::ReloadFonts() : load icon font...\n\tPath: " + iconsFont.ToString());
+            SR_GRAPH("ImGuiOverlay::ReloadFonts() : load icon font...\n\tPath: {}", iconsFont);
             SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
             config.mergeMode = false;
             config.glyphMinAdvanceX = 13.0f;

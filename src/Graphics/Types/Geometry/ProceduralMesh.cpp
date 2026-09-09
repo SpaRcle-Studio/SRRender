@@ -98,11 +98,6 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
-        if (!path.CreateIfNotExists()) {
-            SR_ERROR("ProceduralMesh::Export() : failed to create directory for export! Path: {}", path.ToString());
-            return false;
-        }
-
         std::string content;
         content += "# Exported IndexedMesh\n";
         //content += "o " + GetMeshIdentifier() + "\n";
@@ -127,10 +122,6 @@ namespace SR_GTYPES_NS {
         //               std::to_string(m_indices[i * 3 + 1] + 1) + " " +
         //               std::to_string(m_indices[i * 3 + 2] + 1) + "\n";
         //}
-
-        if (path.IsFile()) {
-            SR_PLATFORM_NS::Delete(path);
-        }
 
         if (!SR_UTILS_NS::FileSystem::WriteToFile(path.ToStringRef(), content)) {
             SR_ERROR("ProceduralMesh::Export() : failed to write to file! Path: {}", path.ToString());

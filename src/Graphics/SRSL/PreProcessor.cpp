@@ -109,9 +109,8 @@ namespace SR_SRSL_NS {
                     m_lexems.erase(m_lexems.begin() + m_currentLexem);
 
                     auto&& includePath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(m_include);
-                    if (!includePath.Exists(SR_UTILS_NS::Path::Type::File)) {
-                        m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::IncludeNotExists, GetCurrentLexem()))
-                            .SetDescription(m_include);
+                    if (!includePath.IsFile()) {
+                        m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::IncludeNotExists, GetCurrentLexem())).SetDescription(m_include);
                         return;
                     }
 

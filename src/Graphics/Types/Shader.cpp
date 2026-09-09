@@ -365,7 +365,7 @@ namespace SR_GRAPH_NS::Types {
 
         m_isDirty = true;
 
-        const SR_UTILS_NS::Path& path = GetResourcePath();
+        SR_UTILS_NS::Path path = GetResourcePath();
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
             SR_LOG("Shader::Load() : loading shader \"{}\"\n\tMacros: {}", path, m_params.ToString());
@@ -395,6 +395,7 @@ namespace SR_GRAPH_NS::Types {
         }
         pAllocator->ResetMemory();
 
+        path = CoreResLoader::GetResPath().Concat(path);
         auto&& pShader = SR_SRSL_NS::SRSLShader::Load(pAllocator, path, m_params);
         if (!pShader) {
             m_hasErrors = true;
@@ -402,16 +403,16 @@ namespace SR_GRAPH_NS::Types {
             return false;
         }
 
-        if (!pShader->Export(SRSL2::ShaderLanguage::GLSL)) {
-            m_hasErrors = true;
-            SR_ERROR("Shader::Load() : failed to export srsl shader!\n\tPath: " + path.ToString());
-            return false;
-        }
-
     #if defined(SR_EMSCRIPTEN) || defined(SR_RENDER_USE_WEBGPU)
         if (!pShader->Export(SRSL2::ShaderLanguage::WGSL)) {
             m_hasErrors = true;
             SR_ERROR("Shader::Load() : failed to export WGSL shader!\n\tPath: " + path.ToString());
+            return false;
+        }
+    #else
+        if (!pShader->Export(SRSL2::ShaderLanguage::GLSL)) {
+            m_hasErrors = true;
+            SR_ERROR("Shader::Load() : failed to export srsl shader!\n\tPath: " + path.ToString());
             return false;
         }
     #endif

@@ -15,7 +15,7 @@
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Types/Marshal.h>
 #include <Utils/FileSystem/FileSystem.h>
-#include <Utils/FileSystem/MappedFile.h>
+#include <Utils/FileSystem/VFS.h>
 #include <Utils/Common/CLIManager.h>
 
 #include <Enum/TextureCompression.hpp>
@@ -115,13 +115,13 @@ namespace SR_GRAPH_NS {
 
         const bool isUnitTests = SR_UTILS_NS::CLIManager::Instance().IsFlagPresent(SR_UTILS_NS::CLIFlagsEnumWrappper::UnitTests);
         const bool canCompress = info.compression != TextureCompression::None && !isUnitTests && compressionEnabled;
-        const bool compressedTextureExists = info.compression != TextureCompression::None && compressedTexturePath.Exists(SR_UTILS_NS::Path::Type::File);
+        const bool compressedTextureExists = info.compression != TextureCompression::None && compressedTexturePath.IsFile();
 
         auto&& cache = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Textures");
         auto&& cacheHashPath = cache.Concat("Hashes").Concat(path).ConcatExt(".cache.hash");
         auto&& cacheFilePath = cache.Concat("Dump").Concat(path).ConcatExt(".cache");
 
-        const bool isOnlyPackedMode = !fullPath.Exists(SR_UTILS_NS::Path::Type::File) && compressedTextureExists;
+        const bool isOnlyPackedMode = !fullPath.IsFile() && compressedTextureExists;
 
         uint64_t fileHash = 0;
 
@@ -139,13 +139,13 @@ namespace SR_GRAPH_NS {
                 fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.mips));
             }
 
-            if (cacheHashPath.Exists(SR_UTILS_NS::Path::Type::File) && SR_UTILS_NS::FileSystem::ReadHashFromFile(cacheHashPath) == fileHash) {
+            if (cacheHashPath.IsFile() && SR_UTILS_NS::FileSystem::ReadHashFromFile(cacheHashPath) == fileHash) {
                 if (compressedTextureExists) {
                     if (auto&& pTextureData = LoadFromCache(compressedTexturePath)) {
                         return pTextureData;
                     }
                 }
-                if (info.caching) {
+                if (info.caching && cacheFilePath.IsFile()) {
                     if (auto&& pTextureData = LoadFromCache(cacheFilePath)) {
                         if (canCompress) {
                             AsyncCompressTexture(pTextureData, info.compression);
@@ -344,7 +344,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
         SR_TRACY_ZONE_TEXT(path);
 
-        SR_UTILS_NS::MappedFile mappedFile = SR_UTILS_NS::MappedFile::Open(path);
+        SR_UTILS_NS::File mappedFile = SR_UTILS_NS::VFS::Instance().OpenFile(path, SR_UTILS_NS::FileMode::ReadMap);
         if (!mappedFile) {
             SR_ERROR("TextureLoader::LoadFromCache() : failed to load marshal from path \"{}\"!", path);
             return nullptr;
@@ -373,10 +373,10 @@ namespace SR_GRAPH_NS {
 
         const uint64_t offset = marshal.GetPosition();
 
-        uint8_t* pOriginData = (uint8_t*)mappedFile.GetData();
+        uint8_t* pOriginData = (uint8_t*)mappedFile.Data().data();
         uint8_t* pData = pOriginData + offset;
 
-        SR_UTILS_NS::MappedFile* pMappedFile = new SR_UTILS_NS::MappedFile(std::move(mappedFile));
+        SR_UTILS_NS::File* pMappedFile = new SR_UTILS_NS::File(std::move(mappedFile));
         auto&& pTextureData = TextureData::Create(width, height, pData, [pMappedFile](uint8_t*) {
             delete pMappedFile;
         }, info);

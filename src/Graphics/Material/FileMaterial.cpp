@@ -18,11 +18,6 @@ namespace SR_GRAPH_NS {
 
         SR_UTILS_NS::Path&& path = rawPath.RemoveSubPath(SR_UTILS_NS::ResourceManager::Instance().GetResPath());
 
-        if (!path.CreateIfNotExists()) {
-            SR_ERROR("FileMaterialResource::CreateTemplateMaterial() : failed to create path for the material! \n\tPath: " + path.ToString());
-            return false;
-        }
-
         auto&& pResource = SR_UTILS_NS::Asset::CreateNew<FileMaterialResource>(path);
         if (!pResource) {
             SR_ERROR("FileMaterialResource::CreateTemplateMaterial() : failed to create material resource! \n\tPath: " + path.ToString());

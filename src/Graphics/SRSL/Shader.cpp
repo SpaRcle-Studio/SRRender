@@ -15,6 +15,7 @@
 #include <Utils/Platform/Platform.h>
 #include <Utils/Common/LexicalCast.h>
 #include <Utils/FileSystem/FileSystem.h>
+#include <Utils/FileSystem/VFS.h>
 #include <Utils/Lexer/Lexer.h>
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Debug.h>
@@ -61,10 +62,8 @@ namespace SR_SRSL_NS {
             SR_LOG("SRSLShader::Load() : loading shader \"{}\"...", path);
         }
 
-        auto&& absPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
-
-        if (!absPath.Exists()) {
-            SR_ERROR("SRSLShader::Load() : file not exists!\n\tPath: " + absPath.ToString());
+        if (!path.IsFile()) {
+            SR_ERROR("SRSLShader::Load() : file not exists!\n\tPath: {}", path);
             return nullptr;
         }
 
@@ -76,9 +75,9 @@ namespace SR_SRSL_NS {
         auto& mainFile = includes.emplace_back();
         mainFile.name = path.ToStringRef();
 
-        auto&& lexems = SR_UTILS_NS::Lexer::Instance().Parse(pAllocator, 512, absPath, mainFile.buffer, 0);
+        auto&& lexems = SR_UTILS_NS::Lexer::Instance().Parse(pAllocator, 512, path, mainFile.buffer, 0);
         if (lexems.empty()) {
-            SR_ERROR("SRSLShader::Load() : failed to parse lexems!\n\tPath: " + path.ToString());
+            SR_ERROR("SRSLShader::Load() : failed to parse lexems!\n\tPath: {}", path);
             return nullptr;
         }
 
@@ -103,12 +102,12 @@ namespace SR_SRSL_NS {
         }
 
         if (!pShader->Prepare()) {
-            SR_ERROR("SRSLShader::Load() : failed to prepare shader!\n\tPath: " + path.ToString());
+            SR_ERROR("SRSLShader::Load() : failed to prepare shader!\n\tPath: {}", path);
             return nullptr;
         }
 
         if (!pShader->SaveCache()) {
-            SR_WARN("SRSLShader::Load() : failed to save shader cache shader!\n\tPath: " + path.ToString());
+            SR_WARN("SRSLShader::Load() : failed to save shader cache shader!\n\tPath: {}", path);
         }
 
         return pShader;
@@ -595,8 +594,7 @@ namespace SR_SRSL_NS {
             }
 
             auto&& path = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").Concat(m_createInfo.stages.at(stage).path);
-
-            if (!path.Create() || !SR_UTILS_NS::FileSystem::WriteToFile(path, code)) {
+            if (!SR_UTILS_NS::FileSystem::WriteToFile(path, code)) {
                 SR_ERROR("SRSLShader::Export() : failed to write file!\n\tPath: " + path.ToString());
                 return false;
             }
@@ -896,8 +894,8 @@ namespace SR_SRSL_NS {
 
     void SRSLShader::ClearShadersCache() {
         auto&& cachedPath = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders");
-        if (cachedPath.Exists(SR_UTILS_NS::Path::Type::Folder)) {
-            SR_PLATFORM_NS::Delete(cachedPath);
+        if (cachedPath.IsDir()) {
+            SR_UTILS_NS::VFS::Instance().Delete(cachedPath);
             SR_LOG("SRSLShader::ClearShadersCache() : cache was cleared.");
         }
         else {

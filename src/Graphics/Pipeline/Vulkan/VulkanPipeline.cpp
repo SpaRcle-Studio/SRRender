@@ -2,7 +2,6 @@
 // Created by Monika on 15.09.2023.
 //
 
-
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/Shader.h>
@@ -48,6 +47,7 @@
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Vertices.h>
 #include <Utils/FileSystem/FileSystem.h>
+#include <Utils/FileSystem/VFS.h>
 #include <Utils/Memory/Allocator.h>
 #include <Utils/Memory/MemoryLiterals.h>
 #include <Utils/TaskManager/TaskManager.h>
@@ -770,8 +770,12 @@ namespace SR_GRAPH_NS {
         {
             SR_TRACY_ZONE_N("Load Evo Vulkan shader");
 
+            auto&& cacheShaders = SR_UTILS_NS::ResourceManager::Instance().GetCachePath();
+            SR_UTILS_NS::VFS::Instance().ResolvePath(cacheShaders);
+            cacheShaders = cacheShaders.Concat("Shaders");
+
             if (!pShaderProgram->Load(
-                SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders").ToString(),
+                cacheShaders.ToString(),
                 vkModules,
                 descriptorLayoutBindings.value(),
                 pushConstants
@@ -1602,7 +1606,7 @@ namespace SR_GRAPH_NS {
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().CreateFolder = [](const std::string& path) -> bool {
-            return SR_PLATFORM_NS::CreateFolder(path);
+            return SR_UTILS_NS::VFS::Instance().CreateDirectories(path);
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().IsSupportGLSLang = []() -> bool {
@@ -1768,15 +1772,12 @@ namespace SR_GRAPH_NS {
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().Delete = [](const std::string& path) -> bool {
-            return SR_PLATFORM_NS::Delete(path);
+            SR_UTILS_NS::VFS::Instance().Delete(path);
+            return true;
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().IsExists = [](const std::string& path) -> bool {
-            return SR_UTILS_NS::FileSystem::IsFileExists(path);
-        };
-
-        EvoVulkan::Tools::VkFunctionsHolder::Instance().Copy = [](const std::string& from, const std::string& to) -> bool {
-            return SR_PLATFORM_NS::Copy(from, to);
+            return SR_UTILS_NS::VFS::Instance().IsFileExists(path);
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().ReadHash = [](const std::string& path) -> uint64_t {

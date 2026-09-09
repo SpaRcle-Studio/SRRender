@@ -53,7 +53,7 @@ namespace SR_GRAPH_NS {
         m_lightSystem = new LightSystem(GetThis());
 
         auto&& configPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat("Engine/Configs/RenderScene.yml");
-        if (configPath.Exists(SR_UTILS_NS::Path::Type::File)) {
+        if (configPath.IsFile()) {
             auto&& document = SR_UTILS_NS::Yaml::Document::Load(configPath);
             if (document.IsValid() && document.GetRoot()) {
                 auto&& root = document.GetRoot();

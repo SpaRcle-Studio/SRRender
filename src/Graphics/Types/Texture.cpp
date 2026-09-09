@@ -66,7 +66,7 @@ namespace SR_GTYPES_NS {
 
         auto&& fullPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(GetResourcePath());
         ImageMetaInfo metaInfo = ImageMetaInfo();
-        if (auto&& metaPath = fullPath.ConcatExt(".meta"); metaPath.Exists(SR_UTILS_NS::Path::Type::File)) {
+        if (auto&& metaPath = fullPath.ConcatExt(".meta"); metaPath.IsFile()) {
             SR_UTILS_NS::SRADeserializer deserializer;
             if (deserializer.LoadFromFile(metaPath)) {
                 if (!metaInfo.Load(deserializer)) {
