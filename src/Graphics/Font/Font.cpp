@@ -40,7 +40,7 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         SR_UTILS_NS::Path path = CoreResLoader::GetResPath().Concat(GetResourcePath());
-        SR_UTILS_NS::VFS::Instance().ResolvePath(path);
+        SR_UTILS_NS::VFS::Instance().ResolvePath(path, SR_UTILS_NS::FileMode::Read);
 
     #ifdef SR_USE_FREETYPE
         FT_Init_FreeType(&m_library);

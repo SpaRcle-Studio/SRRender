@@ -54,8 +54,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        SR_UTILS_NS::VFS::Instance().ResolvePath(m_iniPathEditor);
-        SR_UTILS_NS::VFS::Instance().ResolvePath(m_iniPathWidgets);
+        SR_UTILS_NS::VFS::Instance().ResolvePath(m_iniPathEditor, SR_UTILS_NS::FileMode::Read);
+        SR_UTILS_NS::VFS::Instance().ResolvePath(m_iniPathWidgets, SR_UTILS_NS::FileMode::Read);
 
         SR_GRAPH_GUI_NS::Immediate::ImmediateGUICreateContext createContext;
         createContext.iniPath = m_iniPathEditor;

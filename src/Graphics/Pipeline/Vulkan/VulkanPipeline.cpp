@@ -771,7 +771,7 @@ namespace SR_GRAPH_NS {
             SR_TRACY_ZONE_N("Load Evo Vulkan shader");
 
             auto&& cacheShaders = SR_UTILS_NS::ResourceManager::Instance().GetCachePath();
-            SR_UTILS_NS::VFS::Instance().ResolvePath(cacheShaders);
+            SR_UTILS_NS::VFS::Instance().ResolvePath(cacheShaders, SR_UTILS_NS::FileMode::Write);
             cacheShaders = cacheShaders.Concat("Shaders");
 
             if (!pShaderProgram->Load(
