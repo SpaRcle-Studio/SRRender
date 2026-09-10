@@ -297,6 +297,7 @@ namespace SR_GRAPH_NS {
             SR_UTILS_NS::ResourceManager::Instance().Synchronize(true);
 
             if (maxErrStep == syncStep) {
+                SR_MAYBE_UNUSED auto&& debuggerInfo = SR_UTILS_NS::GetAliveEntityDebuggerInfo();
                 SR_ERROR("RenderContext::Close() : [FATAL] resources can not be released! Render resources:\n"
                     "\tSkyboxes: {}\n"
                     "\tShaders: {}\n"
