@@ -346,7 +346,7 @@ namespace SR_GRAPH_NS {
 
         SR_UTILS_NS::File mappedFile = SR_UTILS_NS::VFS::Instance().OpenFile(path, SR_UTILS_NS::FileMode::ReadMap);
         if (!mappedFile) {
-            SR_ERROR("TextureLoader::LoadFromCache() : failed to load marshal from path \"{}\"!", path);
+            SR_ERROR("TextureLoader::LoadFromCache() : failed to load file from path \"{}\"!", path);
             return nullptr;
         }
 
