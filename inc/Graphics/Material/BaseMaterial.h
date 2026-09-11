@@ -14,7 +14,6 @@
 #include <Utils/Math/Vector3.h>
 #include <Utils/Math/Vector4.h>
 #include <Utils/Types/ObjectPool.h>
-#include <Utils/Types/SafePointer.h>
 #include <Utils/Serialization/Serializable.h>
 
 namespace SR_GTYPES_NS {
@@ -33,7 +32,7 @@ namespace SR_GRAPH_NS {
         using Ptr = SR_HTYPES_NS::SharedPtr<BaseMaterial>;
 
     protected:
-        using RenderContextPtr = SR_HTYPES_NS::SafePtr<RenderContext>;
+        using RenderContextPtr = SR_HTYPES_NS::SharedPtr<RenderContext>;
         using ShaderPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>;
         using TexturePtr = SR_GTYPES_NS::Texture*;
 
@@ -49,7 +48,7 @@ namespace SR_GRAPH_NS {
         void SR_FASTCALL SetTexture(SR_UTILS_NS::StringAtom id, const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>& pTexture) noexcept;
 
         SR_NODISCARD bool IsValid() const;
-        SR_NODISCARD RenderContextPtr GetContext() const { return m_context; }
+        SR_NODISCARD const RenderContextPtr& GetContext() const;
         SR_NODISCARD virtual const MaterialData::Ptr& GetMaterialData() const noexcept;
         SR_NODISCARD SR_GTYPES_NS::Shader* GetDefaultShader() const noexcept;
         SR_NODISCARD SR_GTYPES_NS::Shader* GetShader(const SR_SRSL_NS::ShaderParams& params) const noexcept;
@@ -69,7 +68,6 @@ namespace SR_GRAPH_NS {
         void UseSamplers(SR_GTYPES_NS::Shader& shader);
 
     protected:
-        virtual void InitContext() const;
         void InitMaterialDataSubscriptions();
         void DeInitMaterialDataSubscriptions();
 

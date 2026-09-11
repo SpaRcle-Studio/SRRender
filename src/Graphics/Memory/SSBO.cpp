@@ -8,6 +8,7 @@
 #include <Graphics/Pipeline/Pipeline.h>
 
 #include <Utils/Common/CLIManager.h>
+#include <Utils/Common/StoreUtils.h>
 
 namespace SR_GRAPH_NS {
     SSBOInstance::SSBOInstance() = default;
@@ -63,8 +64,7 @@ namespace SR_GRAPH_NS {
 
     const SR_GRAPH_NS::RenderContext::Ptr& SSBOInstance::GetRenderContext() const noexcept {
         if (!m_renderContext) SR_UNLIKELY_ATTRIBUTE {
-            SRAssert2(SR_THIS_THREAD, "SSBOInstance::GetPipeline() : SR_THIS_THREAD is nullptr!");
-            m_renderContext = SR_THIS_THREAD->GetContext()->GetValue<SR_GRAPH_NS::RenderContext::Ptr>();
+            m_renderContext = (RenderContext*)SR_UTILS_NS::StoreUtils::Temp::GetPointer("RenderContext");
             SRAssert2(m_renderContext, "Failed to get render context from thread context!");
         }
         return m_renderContext;

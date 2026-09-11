@@ -15,6 +15,7 @@
 #include <Utils/ECS/Transform3D.h>
 #include <Utils/World/Scene.h>
 #include <Utils/Common/Features.h>
+#include <Utils/Common/StoreUtils.h>
 #include <Utils/Events/Broadcaster.h>
 
 #include <Codegen/Skeleton.generated.hpp>
@@ -153,7 +154,7 @@ namespace SR_ANIMATIONS_NS {
         ReCalculateSkeleton();
 
         if (auto&& pScene = TryGetScene()) {
-            auto&& pRenderScene = pScene->GetDataStorage().GetValue<RenderScenePtr>();
+            auto&& pRenderScene = dynamic_cast<SR_GRAPH_NS::RenderScene*>(pScene->GetModule("Render"));
             if (pRenderScene) {
                 pRenderScene->SetDirty();
             }
@@ -353,8 +354,7 @@ namespace SR_ANIMATIONS_NS {
 
     const SR_GRAPH_NS::RenderContext::Ptr& Skeleton::GetRenderContext() const noexcept {
         if (!m_renderContext) SR_UNLIKELY_ATTRIBUTE {
-            SRAssert2(SR_THIS_THREAD, "Skeleton::GetPipeline() : SR_THIS_THREAD is nullptr!");
-            m_renderContext = SR_THIS_THREAD->GetContext()->GetValue<SR_GRAPH_NS::RenderContext::Ptr>();
+            m_renderContext = (RenderContext*)SR_UTILS_NS::StoreUtils::Temp::GetPointer("RenderContext");
             SRAssert2(m_renderContext, "Failed to get render context from thread context!");
         }
         return m_renderContext;

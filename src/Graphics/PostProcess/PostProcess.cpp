@@ -11,7 +11,6 @@
 
 #include <Utils/FileSystem/PathDataAccessor.h>
 #include <Utils/World/Scene.h>
-#include <Utils/Types/DataStorage.h>
 
 #include <Codegen/PostProcess.generated.hpp>
 
@@ -22,9 +21,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (auto&& pScene = TryGetScene()) {
-            if (auto&& pRenderScene = pScene->GetDataStorage().GetValue<RenderScene::Ptr>()) {
-                m_renderScene = pRenderScene;
-            }
+            m_renderScene = dynamic_cast<RenderScene*>(pScene->GetModule("Render"));
         }
         return m_renderScene.Get();
     }

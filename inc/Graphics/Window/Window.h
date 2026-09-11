@@ -12,7 +12,6 @@
 #include <Utils/Types/Function.h>
 #include <Utils/Math/Vector2.h>
 #include <Utils/Math/Rect.h>
-#include <Utils/Types/SafePointer.h>
 #include <Utils/Types/SharedPtr.h>
 
 namespace SR_GRAPH_NS {
@@ -33,7 +32,7 @@ namespace SR_GRAPH_NS {
         using FocusCallback = SR_HTYPES_NS::Function<void(bool)>;
         using DrawCallback = SR_HTYPES_NS::Function<void(void)>;
         using CloseCallback = SR_HTYPES_NS::Function<void(void)>;
-        using RenderContextPtr = SR_HTYPES_NS::SafePtr<RenderContext>;
+        using RenderContextPtr = SR_HTYPES_NS::SharedPtr<RenderContext>;
         using ResizeCallback = SR_HTYPES_NS::Function<void(const SR_MATH_NS::UVector2&)>;
     public:
         Window();

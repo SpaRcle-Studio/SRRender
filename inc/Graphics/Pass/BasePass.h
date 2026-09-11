@@ -12,7 +12,6 @@
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Math/Vector2.h>
 #include <Utils/Types/Function.h>
-#include <Utils/Types/SafePointer.h>
 #include <Utils/Types/Time.h>
 #include <Utils/Resources/Xml.h>
 #include <Utils/Resources/ResourceContainer.h>

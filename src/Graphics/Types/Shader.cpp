@@ -12,7 +12,6 @@
 
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Resources/FileWatcher.h>
-#include <Utils/Types/DataStorage.h>
 #include <Utils/Common/Hashes.h>
 #include <Utils/Memory/Allocator.h>
 #include <Utils/Memory/MemoryLiterals.h>
@@ -325,9 +324,7 @@ namespace SR_GRAPH_NS::Types {
         }
 
         /// пока ресурс жив, контекст будет существовать (если ресурс зарегистрирован)
-        pContext->Do([](RenderContext* ptr) {
-            ptr->SetDirty();
-        });
+        pContext->SetDirty();
         pContext->GetPipeline()->WaitDeviceIdle();
         pContext->GetPipeline()->WaitRenderIdle();
 

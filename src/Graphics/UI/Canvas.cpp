@@ -16,7 +16,7 @@
 namespace SR_GRAPH_UI_NS {
     void Canvas::OnAttached() {
         if (auto&& pScene = GetScene()) {
-            m_renderScene = pScene->GetDataStorage().GetValue<RenderScenePtr>();
+            m_renderScene = dynamic_cast<RenderScene*>(pScene->GetModule("Render"));
         }
 
         Super::OnAttached();

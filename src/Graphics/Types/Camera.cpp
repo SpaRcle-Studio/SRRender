@@ -10,7 +10,6 @@
 #include <Graphics/Window/Window.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
-#include <Utils/Types/DataStorage.h>
 #include <Utils/Types/SafePtrLockGuard.h>
 #include <Utils/Platform/Platform.h>
 #include <Utils/Events/Broadcaster.h>
@@ -143,13 +142,14 @@ namespace SR_GTYPES_NS {
     }
 
     Camera::RenderScenePtr Camera::TryGetRenderScene() const {
-        auto&& scene = TryGetScene();
-        if (!scene) {
+        SR_TRACY_ZONE
+        auto&& pScene = TryGetScene();
+        if (!pScene) {
             return RenderScenePtr();
         }
 
-        if (scene->Valid()) {
-            return scene->GetDataStorage().GetValue<RenderScenePtr>();
+        if (pScene->Valid()) {
+            return dynamic_cast<RenderScene*>(pScene->GetModule("Render"));
         }
 
         return RenderScenePtr();

@@ -163,8 +163,8 @@ namespace SR_GRAPH_NS::Memory {
         info.destroyed = false;
 
         /// Каждая камера должга иметь сцену рендера, иначе будет непонятно куда рендерить
-        if (auto&& scene = pCamera->GetScene()) {
-            info.pRenderScene = scene->GetDataStorage().GetValueDef<RenderScenePtr>(RenderScenePtr());
+        if (auto&& pScene = pCamera->GetScene()) {
+            info.pRenderScene = dynamic_cast<RenderScene*>(pScene->GetModule("Render"));
             if (info.pRenderScene.Valid()) {
                 info.pRenderScene->SetDirty();
             }

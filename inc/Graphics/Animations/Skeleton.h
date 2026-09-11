@@ -63,7 +63,7 @@ namespace SR_ANIMATIONS_NS {
         void ForEachBone(const SR_HTYPES_NS::Function<void(Bone&)>& callback);
         void ForEachTransform(const SR_HTYPES_NS::Function<void(SR_UTILS_NS::Transform&)>& callback);
 
-        SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;
+        SR_NODISCARD const SR_HTYPES_NS::SharedPtr<RenderContext>& GetRenderContext() const noexcept;
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<Pipeline>& GetPipeline() const noexcept;
 
         void SetRig(const SR_UTILS_NS::ResourceRef<SkeletonRig>& rig) { m_rig = rig; OnRawMeshChanged(); }
@@ -107,7 +107,7 @@ namespace SR_ANIMATIONS_NS {
         mutable std::unique_ptr<SSBOInstance> m_offsetsSSBO;
         mutable std::array<std::unique_ptr<SSBOInstance>, SR_MAX_FRAMES_IN_FLIGHT> m_bonesSSBO;
         mutable SR_HTYPES_NS::SharedPtr<Pipeline> m_pipeline;
-        mutable SR_HTYPES_NS::SafePtr<RenderContext> m_renderContext;
+        mutable SR_HTYPES_NS::SharedPtr<RenderContext> m_renderContext;
 
     private:
         /// @property

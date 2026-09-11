@@ -13,7 +13,6 @@
 
 #include <Utils/Math/Vector3.h>
 #include <Utils/Math/Rect.h>
-#include <Utils/Types/SafePointer.h>
 #include <Utils/Types/PoolSet.h>
 #include <Utils/Types/SortedVector.h>
 
@@ -68,7 +67,7 @@ namespace SR_GRAPH_NS {
         using Ptr = SR_HTYPES_NS::SharedPtr<Pipeline>;
         using ShaderPtr = SR_GTYPES_NS::Shader*;
         using FramebufferPtr = SR_GTYPES_NS::Framebuffer*;
-        using RenderContextPtr = SR_HTYPES_NS::SafePtr<SR_GRAPH_NS::RenderContext>;
+        using RenderContextPtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::RenderContext>;
         using WindowPtr = SR_HTYPES_NS::SharedPtr<Window>;
         using ShaderProgram = int32_t;
     public:

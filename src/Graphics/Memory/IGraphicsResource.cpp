@@ -6,7 +6,7 @@
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Render/RenderContext.h>
 
-#include <Utils/Types/DataStorage.h>
+#include <Utils/Common/StoreUtils.h>
 
 namespace SR_GRAPH_NS::Memory {
     IGraphicsResource::~IGraphicsResource() {
@@ -20,13 +20,12 @@ namespace SR_GRAPH_NS::Memory {
             return;
         }
 
-        auto&& pContext = SR_THIS_THREAD->GetContext()->GetValue<SR_HTYPES_NS::SafePtr<RenderContext>>();
-        if (!pContext) {
+        m_renderContext = (RenderContext*)SR_UTILS_NS::StoreUtils::Temp::GetPointer("RenderContext");
+        if (!m_renderContext) {
             SRHalt("Render context is nullptr!");
             return;
         }
 
-        m_renderContext = pContext.Get();
         m_pipeline = m_renderContext->GetPipeline();
 
         if (!m_pipeline) {

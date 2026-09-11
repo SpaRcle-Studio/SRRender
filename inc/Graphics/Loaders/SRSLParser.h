@@ -7,8 +7,6 @@
 
 #include <Graphics/Pipeline/ShaderUtils.h>
 
-#include <Utils/Common/Singleton.h>
-
 namespace SR_GRAPH_NS::SRSL {
 
 }

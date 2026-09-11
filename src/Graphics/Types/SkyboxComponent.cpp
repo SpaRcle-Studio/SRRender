@@ -14,7 +14,6 @@
 
 #include <Utils/FileSystem/PathDataAccessor.h>
 #include <Utils/World/Scene.h>
-#include <Utils/Types/DataStorage.h>
 
 #include <Codegen/SkyboxComponent.generated.hpp>
 

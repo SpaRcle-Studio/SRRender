@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_SRSL_SHADER_CACHE_H
 #define SR_ENGINE_GRAPHICS_SRSL_SHADER_CACHE_H
 
-#include <Graphics/macros.h>
+#include <Graphics/stdInclude.h>
 
 #include <Utils/FileSystem/Path.h>
 #include <Utils/Common/Singleton.h>

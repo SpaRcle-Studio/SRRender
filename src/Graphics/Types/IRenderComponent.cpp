@@ -50,7 +50,7 @@ namespace SR_GTYPES_NS {
             return m_renderScene;
         }
 
-        m_renderScene = pScene->GetDataStorage().GetPointer<RenderScene>();
+        m_renderScene = dynamic_cast<RenderScene*>(pScene->GetModule("Render"));
 
         return m_renderScene;
     }

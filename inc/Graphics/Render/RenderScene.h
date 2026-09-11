@@ -13,8 +13,8 @@
 
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Common/Subscription.h>
-#include <Utils/Types/SafePointer.h>
 #include <Utils/Types/SafeVariable.h>
+#include <Utils/World/ISceneModule.h>
 
 namespace SR_WORLD_NS {
     class Scene;
@@ -39,7 +39,7 @@ namespace SR_GRAPH_NS {
     class Pipeline;
     class DebugRenderer;
 
-    class RenderScene : public SR_HTYPES_NS::SharedPtr<RenderScene> {
+    class RenderScene : public SR_HTYPES_NS::SharedPtr<RenderScene>, public SR_UTILS_NS::ISceneModule {
         using Super = SR_HTYPES_NS::SharedPtr<RenderScene>;
     public:
         using WidgetManagerPtr = GUI::WidgetManager*;

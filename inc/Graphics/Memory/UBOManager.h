@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_UBO_MANAGER_H
 #define SR_ENGINE_UBO_MANAGER_H
 
-#include <Graphics/macros.h>
+#include <Graphics/stdInclude.h>
 
 #include <Utils/Common/Singleton.h>
 #include <Utils/Types/Map.h>

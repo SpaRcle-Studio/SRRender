@@ -7,7 +7,7 @@
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Render/RenderContext.h>
 
-#include <Utils/Types/DataStorage.h>
+#include <Utils/Common/StoreUtils.h>
 
 namespace SR_GTYPES_NS {
     ComputeShader::ComputeShader() = default;
@@ -92,9 +92,7 @@ namespace SR_GTYPES_NS {
 
         SR_TRACY_ZONE;
 
-        SRAssert2(SR_THIS_THREAD, "ComputeShader::GetPipeline() : SR_THIS_THREAD is nullptr!");
-
-        auto&& pRenderContext = SR_THIS_THREAD->GetContext()->GetValue<SR_GRAPH_NS::RenderContext::Ptr>();
+        RenderContext::Ptr pRenderContext = (RenderContext*)SR_UTILS_NS::StoreUtils::Temp::GetPointer("RenderContext");
         SRAssert2(pRenderContext, "ComputeShader::GetPipeline() : pRenderContext is nullptr!");
 
         m_pipeline = pRenderContext->GetPipeline();

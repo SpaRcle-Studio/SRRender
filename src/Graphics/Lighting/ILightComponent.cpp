@@ -83,14 +83,11 @@ namespace SR_GRAPH_NS {
         if (m_renderScene) {
             return m_renderScene;
         }
-
         auto&& pScene = TryGetScene();
         if (!pScene) {
             return m_renderScene;
         }
-
-        m_renderScene = pScene->GetDataStorage().GetPointer<RenderScene>();
-
+        m_renderScene = dynamic_cast<RenderScene*>(pScene->GetModule("Render"));
         return m_renderScene;
     }
 

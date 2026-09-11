@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_IGRAHPICSRESOURCE_H
 #define SR_ENGINE_IGRAHPICSRESOURCE_H
 
-#include <Graphics/macros.h>
+#include <Graphics/stdInclude.h>
 
 #include <Utils/Common/PassKey.h>
 #include <Utils/Types/SharedPtr.h>

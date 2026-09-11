@@ -12,7 +12,6 @@
 
 #include <Utils/World/Scene.h>
 #include <Utils/Math/Vector2.h>
-#include <Utils/Types/SafePointer.h>
 #include <Utils/Common/PassKey.h>
 
 namespace SR_GTYPES_NS {
@@ -39,10 +38,10 @@ namespace SR_GRAPH_NS {
      * Здесь хранятся все контекстные ресурсы.
      * Исключение - меши, потому что они могут быть в нескольких экземплярах.
      */
-    class RenderContext : public SR_HTYPES_NS::SafePtr<RenderContext> {
+    class RenderContext : public SR_HTYPES_NS::SharedPtr<RenderContext> {
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::Pipeline>;
-        using Super = SR_HTYPES_NS::SafePtr<RenderContext>;
+        using Super = SR_HTYPES_NS::SharedPtr<RenderContext>;
         using MaterialPtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::BaseMaterial>;
         using TexturePtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>;
         using SkyboxPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Skybox>;
@@ -54,7 +53,7 @@ namespace SR_GRAPH_NS {
         using RenderScenes = std::list<std::pair<SR_WORLD_NS::Scene::Ptr, RenderScenePtr>>;
         using Definitions = SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String>;
     public:
-        using Ptr = SR_HTYPES_NS::SafePtr<RenderContext>;
+        using Ptr = SR_HTYPES_NS::SharedPtr<RenderContext>;
 
     public:
         RenderContext();

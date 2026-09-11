@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_TEXTUREHELPER_H
 #define SR_ENGINE_TEXTUREHELPER_H
 
-#include <Graphics/macros.h>
+#include <Graphics/stdInclude.h>
 
 #include <Utils/Common/Enumerations.h>
 

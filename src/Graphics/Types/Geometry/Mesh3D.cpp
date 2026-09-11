@@ -3,7 +3,6 @@
 //
 
 #include <Utils/Types/RawMesh.h>
-#include <Utils/Types/DataStorage.h>
 #include <Utils/ECS/ComponentManager.h>
 
 #include <Graphics/Types/Geometry/Mesh3D.h>

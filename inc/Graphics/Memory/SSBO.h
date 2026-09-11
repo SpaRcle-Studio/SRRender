@@ -8,7 +8,6 @@
 #include <Graphics/Memory/SSBOUsage.h>
 
 #include <Utils/Types/SharedPtr.h>
-#include <Utils/Types/SafePointer.h>
 
 namespace SR_GRAPH_NS {
     class RenderContext;
@@ -72,7 +71,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t GetSSBO() const noexcept;
         SR_NODISCARD uint32_t GetCounter() const;
         SR_NODISCARD void* GetMappedData() const;
-        SR_NODISCARD const SR_HTYPES_NS::SafePtr<RenderContext>& GetRenderContext() const noexcept;
+        SR_NODISCARD const SR_HTYPES_NS::SharedPtr<RenderContext>& GetRenderContext() const noexcept;
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<Pipeline>& GetPipeline() const noexcept;
 
     private:
@@ -90,7 +89,7 @@ namespace SR_GRAPH_NS {
         SSBOUsage m_usage = SSBOUsage::Auto;
         SSBOFlags m_flags = SSBOFlags::None;
         mutable SR_HTYPES_NS::SharedPtr<Pipeline> m_pipeline;
-        mutable SR_HTYPES_NS::SafePtr<RenderContext> m_renderContext;
+        mutable SR_HTYPES_NS::SharedPtr<RenderContext> m_renderContext;
 
     };
 }

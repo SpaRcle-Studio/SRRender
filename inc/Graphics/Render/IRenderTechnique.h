@@ -12,7 +12,6 @@
 
 #include <Utils/Settings.h>
 #include <Utils/Math/Vector2.h>
-#include <Utils/Types/SafePointer.h>
 
 namespace SR_GTYPES_NS {
     class Camera;

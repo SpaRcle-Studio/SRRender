@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_CAMERAMANAGER_H
 #define SR_ENGINE_CAMERAMANAGER_H
 
-#include <Graphics/macros.h>
+#include <Graphics/stdInclude.h>
 
 #include <Utils/Common/Singleton.h>
 #include <Utils/Types/SharedPtr.h>

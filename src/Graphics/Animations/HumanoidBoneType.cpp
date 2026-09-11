@@ -4,6 +4,8 @@
 
 #include <Graphics/Animations/HumanoidBoneType.h>
 
+#include <Utils/Profile/TracyContext.h>
+
 namespace SR_ANIMATIONS_NS {
     static int32_t ExtractFingerSegmentIndex(const SR_UTILS_NS::String& name) {
         /// Common patterns:

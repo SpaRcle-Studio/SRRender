@@ -10,8 +10,6 @@
 #include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 #include <Utils/Common/NonCopyable.h>
-#include <Utils/Types/DataStorage.h>
-#include <Utils/Types/SafePointer.h>
 #include <Utils/Types/SharedPtr.h>
 #include <Utils/Types/Function.h>
 #include <Utils/Input/InputSystem.h>
@@ -70,8 +68,6 @@ namespace SR_GRAPH_GUI_NS {
         SR_NODISCARD const std::string& GetName() const { return m_name; }
         SR_NODISCARD RenderScenePtr GetRenderScene() const;
         SR_NODISCARD ContextPtr GetContext() const;
-        SR_NODISCARD SR_HTYPES_NS::DataStorage& GetWeakStorage() const { return m_weakStorage; }
-        SR_NODISCARD SR_HTYPES_NS::DataStorage& GetStrongStorage() const { return m_strongStorage; }
 
         void SetDefaultSize(const SR_MATH_NS::IVector2& size) { m_defaultSize = size; }
 
@@ -125,9 +121,6 @@ namespace SR_GRAPH_GUI_NS {
 
         void TextCenter(const std::string& text) const;
 
-        void ResetWeakStorage();
-        void ResetStrongStorage();
-
         void CheckFocused();
         void CheckHovered();
 
@@ -148,9 +141,6 @@ namespace SR_GRAPH_GUI_NS {
         SR_MATH_NS::IVector2 m_size;
         SR_MATH_NS::IVector2 m_defaultSize;
         WidgetManager* m_manager = nullptr;
-
-        mutable SR_HTYPES_NS::DataStorage m_weakStorage;
-        mutable SR_HTYPES_NS::DataStorage m_strongStorage;
 
     protected:
         mutable std::recursive_mutex m_mutex;

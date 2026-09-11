@@ -548,7 +548,7 @@ namespace SR_GRAPH_UI_NS {
             return nullptr;
         }
 
-        if (auto&& pRenderScene = pScene->GetDataStorage().GetPointer<RenderScene>()) {
+        if (auto&& pRenderScene = dynamic_cast<RenderScene*>(pScene->GetModule("Render"))) {
             return pRenderScene->GetMainCamera().Get();
         }
         return nullptr;

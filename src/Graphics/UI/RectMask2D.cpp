@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS::UI {
             }
 
             if (!m_renderScene) {
-                m_renderScene = GetScene()->GetDataStorage().GetValue<SR_HTYPES_NS::SharedPtr<RenderScene>>();
+                m_renderScene = dynamic_cast<RenderScene*>(GetScene()->GetModule("Render"));
             }
 
             if (m_renderScene) {

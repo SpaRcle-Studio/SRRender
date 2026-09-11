@@ -45,7 +45,7 @@ namespace SR_SRSL_NS {
         std::string m_include;
         Includes m_includes;
 
-        std::stack<bool> m_ifStack;
+        SR_UTILS_NS::Vector<bool> m_ifStack;
         int m_deadBranches = 0;
         PPState m_state = PPState::Idle;
 

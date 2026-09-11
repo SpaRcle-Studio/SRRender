@@ -180,14 +180,6 @@ namespace SR_GRAPH_GUI_NS {
         return m_manager->GetContext();
     }
 
-    void Widget::ResetWeakStorage() {
-        m_weakStorage.Clear();
-    }
-
-    void Widget::ResetStrongStorage() {
-        m_strongStorage.Clear();
-    }
-
     void Widget::AddSubWidget(Widget::Ptr pWidget) {
         m_subWidgets.emplace_back(pWidget);
         pWidget->SetManager(m_manager);

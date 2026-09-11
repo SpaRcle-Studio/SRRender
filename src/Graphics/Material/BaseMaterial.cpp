@@ -8,6 +8,7 @@
 #include <Graphics/Types/Mesh.h>
 
 #include <Utils/Common/SubscriptionMessage.h>
+#include <Utils/Common/StoreUtils.h>
 
 #include <Codegen/BaseMaterial.generated.hpp>
 
@@ -27,35 +28,30 @@ namespace SR_GRAPH_NS {
 
     void BaseMaterial::SetVec4(const SR_UTILS_NS::StringAtom id, const SR_MATH_NS::FVector4& v) noexcept {
         if (auto&& pData = GetMaterialData()) {
-            InitContext();
             pData->SetData(id, v, ShaderVarType::Vec4);
         }
     }
 
     void BaseMaterial::SetColor(const SR_UTILS_NS::StringAtom id, const SR_MATH_NS::FColor& v) noexcept {
         if (auto&& pData = GetMaterialData()) {
-            InitContext();
             pData->SetData(id, SR_MATH_NS::FVector4(v.r, v.g, v.b, v.a), ShaderVarType::Vec4);
         }
     }
 
     void BaseMaterial::SetBool(const SR_UTILS_NS::StringAtom id, bool v) noexcept {
         if (auto&& pData = GetMaterialData()) {
-            InitContext();
             pData->SetData(id, v, ShaderVarType::Bool);
         }
     }
 
     void BaseMaterial::SetFloat(const SR_UTILS_NS::StringAtom id, float_t v) noexcept {
         if (auto&& pData = GetMaterialData()) {
-            InitContext();
             pData->SetData(id, v, ShaderVarType::Float);
         }
     }
 
     void BaseMaterial::SetTexture(const SR_UTILS_NS::StringAtom id, const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>& pTexture) noexcept {
         if (auto&& pData = GetMaterialData()) {
-            InitContext();
             pData->SetData(id, const_cast<SR_GTYPES_NS::Texture*>(pTexture.Get()), ShaderVarType::Sampler2D);
         }
     }
@@ -88,9 +84,7 @@ namespace SR_GRAPH_NS {
             m_registerObjects.ForEach([](uint32_t, auto&& pObject) {
                 pObject->MarkMaterialDirty();
             });
-            GetContext().Do([](RenderContext* ptr) {
-                ptr->SetDirty();
-            });
+            GetContext()->SetDirty();
         }
     }
 
@@ -148,13 +142,14 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    void BaseMaterial::InitContext() const {
+    const BaseMaterial::RenderContextPtr& BaseMaterial::GetContext() const {
         if (!m_context) SR_UNLIKELY_ATTRIBUTE {
-            if (!((m_context = SR_THIS_THREAD->GetContext()->GetValue<RenderContextPtr>()))) {
-                SRHalt("Is not in render context!");
-                return;
+            m_context = (RenderContext*)SR_UTILS_NS::StoreUtils::Temp::GetPointer("RenderContext");
+            if (!m_context) {
+                SRHaltTerminate("Failed to get render context!");
             }
         }
+        return m_context;
     }
 
     void BaseMaterial::InitMaterialDataSubscriptions() {

@@ -53,7 +53,7 @@ namespace SR_SRSL_NS {
         m_result = SRSLResult();
         m_state = PPState::Idle;
         m_ifStack = {};
-        m_ifStack.push(true);
+        m_ifStack.emplace_back(true);
         m_includes.clear();
         m_include.clear();
     }
@@ -80,7 +80,7 @@ namespace SR_SRSL_NS {
 
     void SRSLPreProcessor::ProcessMain() {
         if (m_lexems[m_currentLexem].kind != LexemKind::Macro && m_state == PPState::Idle) {
-            if (!m_ifStack.top()) {
+            if (!m_ifStack.back()) {
                 m_lexems.erase(m_lexems.begin() + m_currentLexem);
                 return;
             }
@@ -134,7 +134,7 @@ namespace SR_SRSL_NS {
                 if (m_state == PPState::MacroName) {
                     std::string_view value = GetCurrentLexem()->value;
 
-                    if (m_ifStack.top() && value == "include") {
+                    if (m_ifStack.back() && value == "include") {
                         m_state = PPState::IncludeOpen;
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
@@ -154,7 +154,7 @@ namespace SR_SRSL_NS {
                     }
                     else if (value == "if" || value == "ifdef" || value == "ifndef")
                     {
-                        if (!m_ifStack.top()) {
+                        if (!m_ifStack.back()) {
                             m_lexems.erase(m_lexems.begin() + m_currentLexem);
                             m_state = PPState::Idle;
                             ++m_deadBranches;
@@ -175,23 +175,23 @@ namespace SR_SRSL_NS {
                             auto&& result = SRSLMathExpression::Instance().Analyze(m_pAllocator, m_expressionLexems);
                             if (!result.first) {
                                 SR_ERROR("SRSLPreProcessor::ProcessMain() : failed to evaluate expression!\n\tExpression: {}", result.second.ToString(m_includes));
-                                m_ifStack.push(false);
+                                m_ifStack.emplace_back(false);
                             }
                             else {
                                 const bool expression = SRSLEvaluator::Instance().MacroEvaluate(result.first, *m_params);
-                                m_ifStack.push(expression && m_ifStack.top());
+                                m_ifStack.emplace_back(expression && m_ifStack.back());
                                 delete result.first;
                             }
                         }
                         else if (value == "ifdef") {
                             std::string_view macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
                             m_lexems.erase(m_lexems.begin() + m_currentLexem);
-                            m_ifStack.push(m_params->IsDefined(macroName) && m_ifStack.top());
+                            m_ifStack.emplace_back(m_params->IsDefined(macroName) && m_ifStack.back());
                         }
                         else if (value == "ifndef") {
                             std::string_view macroName = GetCurrentLexem() ? GetCurrentLexem()->value : "";
                             m_lexems.erase(m_lexems.begin() + m_currentLexem);
-                            m_ifStack.push(!m_params->IsDefined(macroName) && m_ifStack.top());
+                            m_ifStack.emplace_back(!m_params->IsDefined(macroName) && m_ifStack.back());
                         }
                         else {
                             SRHalt("Not implemented!");
@@ -203,9 +203,9 @@ namespace SR_SRSL_NS {
                             m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected else!"));
                             return;
                         }
-                        bool top = m_ifStack.top();
-                        m_ifStack.pop();
-                        m_ifStack.push(!top && m_ifStack.top());
+                        bool top = m_ifStack.back();
+                        m_ifStack.pop_back();
+                        m_ifStack.emplace_back(!top && m_ifStack.back());
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
                     else if (value == "endif") {
@@ -221,10 +221,10 @@ namespace SR_SRSL_NS {
                             m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unexpected endif!"));
                             return;
                         }
-                        m_ifStack.pop();
+                        m_ifStack.pop_back();
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
-                    else if (m_ifStack.top()) {
+                    else if (m_ifStack.back()) {
                         m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unknown macro!"));
                     }
                     else {
@@ -253,7 +253,7 @@ namespace SR_SRSL_NS {
             case LexemKind::Divide:
                 switch (m_state) {
                     case PPState::Idle: {
-                        if (!m_ifStack.top()) {
+                        if (!m_ifStack.back()) {
                             m_lexems.erase(m_lexems.begin() + m_currentLexem);
                             break;
                         }
