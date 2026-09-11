@@ -11,6 +11,7 @@
 #include <Utils/Types/Time.h>
 #include <Utils/Types/RawMesh.h>
 #include <Utils/Common/Features.h>
+#include <Utils/Common/Bind.h>
 
 #include <Codegen/DebugRenderer.generated.hpp>
 
@@ -42,16 +43,16 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        using namespace std::placeholders;
+        using namespace SR_UTILS_NS::Placeholders;
 
         SR_UTILS_NS::IDebugDraw::Callbacks callbacks;
-        callbacks.removeCallback = std::bind(&DebugRenderer::Remove, this, _1, true);
-        callbacks.drawLineCallback = std::bind(&DebugRenderer::AddLine, this, _1, _2, _3, _4, _5);
-        callbacks.drawCubeCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 0, _2, _3, _4, _5, _6);
-        callbacks.drawPlaneCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 1, _2, _3, _4, _5, _6);
-        callbacks.drawSphereCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 2, _2, _3, _4, _5, _6);
-        callbacks.drawCapsuleCallback = std::bind(&DebugRenderer::AddMesh, this, _1, 3, _2, _3, _4, _5, _6);
-        callbacks.drawMeshCallback = std::bind(&DebugRenderer::AddCustomMesh, this, _1, _2, _3, _4, _5, _6, _7, _8);
+        callbacks.removeCallback = SR_UTILS_NS::Bind(&DebugRenderer::Remove, this, _1, true);
+        callbacks.drawLineCallback = SR_UTILS_NS::Bind(&DebugRenderer::AddLine, this, _1, _2, _3, _4, _5);
+        callbacks.drawCubeCallback = SR_UTILS_NS::Bind(&DebugRenderer::AddMesh, this, _1, 0, _2, _3, _4, _5, _6);
+        callbacks.drawPlaneCallback = SR_UTILS_NS::Bind(&DebugRenderer::AddMesh, this, _1, 1, _2, _3, _4, _5, _6);
+        callbacks.drawSphereCallback = SR_UTILS_NS::Bind(&DebugRenderer::AddMesh, this, _1, 2, _2, _3, _4, _5, _6);
+        callbacks.drawCapsuleCallback = SR_UTILS_NS::Bind(&DebugRenderer::AddMesh, this, _1, 3, _2, _3, _4, _5, _6);
+        callbacks.drawMeshCallback = SR_UTILS_NS::Bind(&DebugRenderer::AddCustomMesh, this, _1, _2, _3, _4, _5, _6, _7, _8);
 
         if (IsOverlayRenderer()) {
             SR_UTILS_NS::DebugOverlayDraw::Instance().SetCallbacks(this, std::move(callbacks));

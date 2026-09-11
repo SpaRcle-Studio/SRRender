@@ -13,7 +13,6 @@
 
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Common/Subscription.h>
-#include <Utils/Types/SafeVariable.h>
 #include <Utils/World/ISceneModule.h>
 
 namespace SR_WORLD_NS {

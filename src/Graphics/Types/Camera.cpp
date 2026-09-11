@@ -142,7 +142,7 @@ namespace SR_GTYPES_NS {
     }
 
     Camera::RenderScenePtr Camera::TryGetRenderScene() const {
-        SR_TRACY_ZONE
+        SR_TRACY_ZONE;
         auto&& pScene = TryGetScene();
         if (!pScene) {
             return RenderScenePtr();

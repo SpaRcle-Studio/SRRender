@@ -16,6 +16,7 @@
 #include <Utils/World/Scene.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/StoreUtils.h>
+#include <Utils/Common/Bind.h>
 #include <Utils/Events/Broadcaster.h>
 
 #include <Codegen/Skeleton.generated.hpp>
@@ -139,7 +140,7 @@ namespace SR_ANIMATIONS_NS {
     }
 
     void Skeleton::OnEnable() {
-        m_prepareFrameSubscription = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_PREPARE_FRAME, std::bind(&Skeleton::UpdateBonesSSBO, this));
+        m_prepareFrameSubscription = SR_UTILS_NS::Broadcaster::Instance().Subscribe(SR_UTILS_NS::Events::EVENT_ON_PREPARE_FRAME, SR_UTILS_NS::Bind(&Skeleton::UpdateBonesSSBO, this));
     }
 
     void Skeleton::OnDisable() {
