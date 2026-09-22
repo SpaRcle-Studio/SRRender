@@ -29,7 +29,9 @@ namespace SR_GRAPH_NS {
     /// Geometry data
     static const auto ParticleEmitterGeometryVertexLayout = SR_UTILS_NS::VertexLayoutDescription()
         .AddAttribute(SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
-    ;
+        .AddAttribute(SR_UTILS_NS::VertexAttribute::UV0, SR_UTILS_NS::VertexAttributeFormat::Float32, 2)
+        .AddAttribute(SR_UTILS_NS::VertexAttribute::Normal, SR_UTILS_NS::VertexAttributeFormat::Float32, 3)
+        .AddAttribute(SR_UTILS_NS::VertexAttribute::Tangent, SR_UTILS_NS::VertexAttributeFormat::Float32, 4);
 
     void ParticleEmitter::InitializeParticle() {
         m_particles.resize(m_maxParticles);
@@ -38,11 +40,7 @@ namespace SR_GRAPH_NS {
         m_instanceVertexBuffer.SetLayout(ParticleEmitterVertexLayout);
         m_instanceVertexBuffer.Allocate(m_maxParticles);
 
-        ParticleBurst burst;
-        burst.time = 1.0f;
-        burst.count = 100;
-
-        m_emission.bursts.emplace_back(burst);
+        m_emission.CreateBurst(1.0, 50);
 
         m_VBO = GetPipeline()->AllocateVBO(
                 m_VBO,
@@ -123,7 +121,7 @@ namespace SR_GRAPH_NS {
     }
 
     void ParticleEmitter::SpawnParticle(){
-        if (m_aliveParticles >= m_maxParticles){
+        if (m_aliveParticles >= m_maxParticles || !m_shape){
             return;
         }
 
@@ -189,13 +187,22 @@ namespace SR_GRAPH_NS {
         m_spawnTimer += dt;
         m_emitterTimer += dt;
 
-        for(auto& burst : m_emission.bursts) {
-            if(!burst.emitted && m_emitterTimer >= burst.time) {
-                for(uint32_t i = 0; i < burst.count; i++){
-                    SpawnParticle();
-                }
+        if(m_emission.mode == EmissionType::Burst) {
+            for(auto& burst : m_emission.bursts) {
+                if(!burst.emitted && m_emitterTimer >= burst.time) {
+                    for(uint32_t i = 0; i < burst.count; i++){
+                        SpawnParticle();
+                    }
 
-                burst.emitted = true;
+                    burst.emitted = true;
+                }
+            }
+        } else if ( m_emission.mode == EmissionType::OverTime) {
+            const float_t spawnInterval = 1.0f / m_emission.rateOverTime;
+
+            while (canSpawn && m_spawnTimer >= spawnInterval){
+                SpawnParticle();
+                m_spawnTimer -= spawnInterval;
             }
         }
 
@@ -211,31 +218,15 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        const float_t spawnInterval = 1.0f / m_emission.rateOverTime;
-
-        while (canSpawn && m_spawnTimer >= spawnInterval){
-            SpawnParticle();
-            m_spawnTimer -= spawnInterval;
-        }
-
         UpdateParticle(dt);
 
         m_isParticlesVBODirty = true;
     }
 
     void ParticleEmitter::OnEnable(){
-        m_shape = new ConusShape();
-
-        //SetRawMesh(SR_UTILS_NS::Path("Samples/diamond.fbx"));
-
-        //auto& buf = GetVertexBuffer(GetVertexLayoutDescription());
-
-        //SR_INFO("VERTICES: {}", buf.GetVertexCount());
-        //SR_INFO("INDICES: {}", GetIndices().size());
+        //m_shape = new ConusShape();
 
         InitializeParticle();
-
-        //LoadMesh();
 
         Super::OnEnable();
 

@@ -72,6 +72,7 @@ namespace SR_GRAPH_NS {
 
         uint32_t m_maxParticles = 1000;
         uint32_t m_aliveParticles = 0;
+        ///@property
         ParticleEmissionModule m_emission;
         bool canSpawn = true;
         float_t m_spawnTimer = 0.0f;
@@ -90,6 +91,7 @@ namespace SR_GRAPH_NS {
         bool m_isGeometryVBODirty = true;
         bool m_isParticlesVBODirty = true;
         ParticleMainModule m_main;
+        /// @property @notNull
         ParticleShape::Ptr m_shape;
         //ParticleRenderMode m_renderer = ParticleRenderMode::Billboard;
     };

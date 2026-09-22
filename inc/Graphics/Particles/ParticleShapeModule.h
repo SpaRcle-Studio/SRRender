@@ -66,7 +66,9 @@ namespace SR_GRAPH_NS {
     private:
         /// @property
         float m_width = 80.0f;
+        /// @property
         float m_depth = 40.0f;
+        /// @property
         float m_height = 2.0f;
     };
 
@@ -80,6 +82,7 @@ namespace SR_GRAPH_NS {
     private:
         /// @property
         float m_radius = 0.1f;
+        /// @property
         float m_height = 5.0f;
         mutable SR_MATH_NS::FVector3 m_point = SR_MATH_NS::FVector3(0.0f, 1.0f, 0.0);
     };
