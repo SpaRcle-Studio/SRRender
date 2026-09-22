@@ -15,6 +15,7 @@ namespace SR_SRSL_NS {
         SR_UTILS_NS::VertexAttributeDescription { SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3, 0 },
         SR_UTILS_NS::VertexAttributeDescription { SR_UTILS_NS::VertexAttribute::Normal, SR_UTILS_NS::VertexAttributeFormat::Float32, 3, 0 },
         SR_UTILS_NS::VertexAttributeDescription { SR_UTILS_NS::VertexAttribute::UV0, SR_UTILS_NS::VertexAttributeFormat::Float32, 2, 0 },
+        SR_UTILS_NS::VertexAttributeDescription { SR_UTILS_NS::VertexAttribute::Tangent, SR_UTILS_NS::VertexAttributeFormat::Float32, 4, 0 },
     };
 
     ISRSLCodeGenerator::SRSLCodeGenRes GLSLCodeGenerator::GenerateStages(SR_UTILS_NS::IAllocator* pAllocator, const SRSLShader* pShader) {
@@ -451,6 +452,26 @@ namespace SR_SRSL_NS {
 
             if (pFunction->IsVariableUsed("VERTEX_INDEX")) {
                 code += SR_FORMAT("layout (location = {}) in int VERTEX_INDEX;\n", location);
+            }
+
+            for (auto&& builtInAttribute : BuiltInGLSLAttributes) {
+                std::string_view attributeName = SR_UTILS_NS::VertexAttributeToName(builtInAttribute.attribute);
+                if (descriptions.Find(builtInAttribute.attribute)) {
+                    continue;
+                }
+                bool isUsed = false;
+                for (auto&& [name, pVariable] : m_shader->GetShared()) {
+                    if (name == attributeName) {
+                        isUsed = true;
+                        break;
+                    }
+                }
+                if (isUsed) {
+                    continue;
+                }
+
+                std::string_view attributeType = ToGLSLType(builtInAttribute.format, builtInAttribute.count);
+                code += "{} {}; /// added by builtin\n"_format(attributeType, attributeName);
             }
         }
 

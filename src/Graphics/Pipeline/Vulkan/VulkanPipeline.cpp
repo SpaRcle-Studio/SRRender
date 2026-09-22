@@ -1714,7 +1714,7 @@ namespace SR_GRAPH_NS {
                     SR_TRACY_ZONE_N("Parse shader");
                     if (!shader->parse(&DefaultTBuiltInResource, 450, false, messages)) {
                         delete shader;
-                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to parse shader: {}\n{}", input, shader->getInfoLog());
+                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to parse shader: {}\n{}\n{}", input, shader->getInfoLog(), shader->getInfoDebugLog());
                         SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
                         return {};
                     }
@@ -1727,7 +1727,7 @@ namespace SR_GRAPH_NS {
                     if (!program->link(messages)) {
                         delete shader;
                         delete program;
-                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to link shader program: {}\n{}", input, program->getInfoLog());
+                        SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to link shader program: {}\n{}\n{}", input, shader->getInfoLog(), shader->getInfoDebugLog());
                         SR_UTILS_NS::SetThreadLocalAllocator(nullptr);
                         return {};
                     }
