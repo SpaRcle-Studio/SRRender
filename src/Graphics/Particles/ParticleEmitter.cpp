@@ -42,20 +42,56 @@ namespace SR_GRAPH_NS {
 
         m_emission.CreateBurst(1.0, 50);
 
-        m_VBO = GetPipeline()->AllocateVBO(
-                m_VBO,
-                m_maxParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
-                m_instanceVertexBuffer.GetRawData());
+        /// Все частицы изначально мёртвые - гасим размер, чтобы шейдер их не рисовал.
+        static constexpr float_t zeroSize = 0.0f;
+        for (uint32_t i = 0; i < m_maxParticles; ++i) {
+            m_instanceVertexBuffer.SetVertexT(i, SR_UTILS_NS::VertexAttribute::Custom0, zeroSize);
+        }
+
+        AllocateInstanceVBOs();
+
+        m_particlesVBODirtyFrames.set();
     }
 
-    void ParticleEmitter::Draw() {
-        if (m_aliveParticles == 0) {
+    void ParticleEmitter::AllocateInstanceVBOs() {
+        auto* pPipeline = TryGetPipeline();
+
+        if (!pPipeline) SR_UNLIKELY_ATTRIBUTE {
+            SR_ERROR("ParticleEmitter::AllocateInstanceVBOs() : pipeline is nullptr!");
             return;
         }
 
+        /// Буферы выделяются сразу для всех кадров: GetVBO() должен возвращать стабильный
+        /// идентификатор, так как RenderQueue использует его как ключ сортировки и удаления.
+        const uint64_t size = m_maxParticles * m_instanceVertexBuffer.GetLayout().GetStride();
+        const uint32_t framesCount = GetInstanceVBOsCount();
+
+        for (uint32_t i = 0; i < framesCount; ++i) {
+            m_VBOs[i] = pPipeline->AllocateVBO(m_VBOs[i], size, m_instanceVertexBuffer.GetRawData());
+
+            if (m_VBOs[i] == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
+                SR_ERROR("ParticleEmitter::AllocateInstanceVBOs() : failed to allocate VBO for frame {}!", i);
+                m_hasErrors = true;
+                return;
+            }
+        }
+    }
+
+    uint32_t ParticleEmitter::GetInstanceVBOsCount() const {
+        auto* pPipeline = TryGetPipeline();
+        const uint32_t framesCount = pPipeline ? pPipeline->GetSwapchainImagesCount() : 0;
+        /// На бэкендах без свапчейна (headless, WebGPU) кадр всегда один.
+        return SR_MATH_NS::Clamp<uint32_t>(framesCount, 1, static_cast<uint32_t>(m_VBOs.size()));
+    }
+
+    void ParticleEmitter::Draw() {
         Calculate();
 
-        GetPipeline()->SetDrawInstancesCount(m_aliveParticles);
+        /// Количество инстансов запекается в командный буфер, а он кешируется между кадрами.
+        /// Поэтому рисуется всегда m_maxParticles инстансов, а мёртвые частицы гасятся нулевым
+        /// размером в BuildInstanceVertexBuffer() - шейдер вырождает их в точку.
+        /// Иначе буфер кадра пришлось бы перезаписывать при каждом изменении числа частиц.
+        GetPipeline()->SetDrawInstancesCount(m_maxParticles);
 
         if (IsValidMeshId()) {
             GetPipeline()->BindVBO(m_geometryVBO, 1, VertexInputRate::Vertex);
@@ -90,8 +126,6 @@ namespace SR_GRAPH_NS {
     }
 
     void ParticleEmitter::BuildInstanceVertexBuffer() {
-       //SR_INFO("BUILD INSTANCE BUFFER");
-
         BuildInstanceData();
 
         for (uint32_t i = 0; i < m_aliveParticles; ++i){
@@ -105,6 +139,14 @@ namespace SR_GRAPH_NS {
                                               m_instanceData[i].rotation);
         }
 
+        /// Гасим весь хвост: отрисовка всегда идёт на m_maxParticles инстансов,
+        /// поэтому в слотах мёртвых частиц не должно оставаться данных с прошлых кадров.
+        static constexpr float_t zeroSize = 0.0f;
+
+        for (uint32_t i = m_aliveParticles; i < m_maxParticles; ++i) {
+            m_instanceVertexBuffer.SetVertexT(i, SR_UTILS_NS::VertexAttribute::Custom0, zeroSize);
+        }
+
         auto* pPipeline = GetPipeline();
 
         if (!pPipeline) {
@@ -112,12 +154,32 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        //SR_INFO("VBO {}", m_VBO);
+        /// Обновляется только буфер текущего кадра: AllocateVBO() при совпадении размера пишет
+        /// напрямую в host-visible память, не дожидаясь фенсов, поэтому писать в буфер кадра,
+        /// который ещё читает GPU, нельзя.
+        const uint32_t frameIndex = GetCurrentFrameSlot();
 
-        m_VBO = GetPipeline()->AllocateVBO(
-                m_VBO,
+        m_VBOs[frameIndex] = pPipeline->AllocateVBO(
+                m_VBOs[frameIndex],
                 m_maxParticles * m_instanceVertexBuffer.GetLayout().GetStride(),
                 m_instanceVertexBuffer.GetRawData());
+    }
+
+    uint32_t ParticleEmitter::GetCurrentFrameSlot() const {
+        auto* pPipeline = TryGetPipeline();
+        const uint32_t frameIndex = pPipeline ? pPipeline->GetCurrentImageIndex() : 0;
+        const uint32_t framesCount = GetInstanceVBOsCount();
+
+        if (frameIndex >= framesCount) SR_UNLIKELY_ATTRIBUTE {
+            SRHalt("ParticleEmitter::GetCurrentFrameSlot() : frame index out of range! Index: {}, count: {}", frameIndex, framesCount);
+            return 0;
+        }
+
+        return frameIndex;
+    }
+
+    int32_t ParticleEmitter::GetCurrentVBO() const {
+        return m_VBOs[GetCurrentFrameSlot()];
     }
 
     void ParticleEmitter::SpawnParticle(){
@@ -197,7 +259,7 @@ namespace SR_GRAPH_NS {
                     burst.emitted = true;
                 }
             }
-        } else if ( m_emission.mode == EmissionType::OverTime) {
+        } else if ( m_emission.mode == EmissionType::OverTime && m_emission.rateOverTime > 0.0f) {
             const float_t spawnInterval = 1.0f / m_emission.rateOverTime;
 
             while (canSpawn && m_spawnTimer >= spawnInterval){
@@ -220,7 +282,9 @@ namespace SR_GRAPH_NS {
 
         UpdateParticle(dt);
 
-        m_isParticlesVBODirty = true;
+        /// Данные меняются каждый кадр, поэтому грязными считаются буферы всех кадров свапчейна.
+        /// Перезапись командных буферов при этом не требуется: число инстансов постоянно.
+        m_particlesVBODirtyFrames.set();
     }
 
     void ParticleEmitter::OnEnable(){
@@ -261,10 +325,13 @@ namespace SR_GRAPH_NS {
 
     std::optional<int32_t> ParticleEmitter::GetVBO() const {
         const_cast<ParticleEmitter&>(*this).Calculate();
-        if (m_VBO == SR_ID_INVALID){
+        /// Возвращается буфер нулевого кадра, а не текущего: RenderQueue использует это значение
+        /// как ключ сортировки и удаления из очереди, поэтому оно обязано быть стабильным.
+        /// Фактическая привязка буфера текущего кадра происходит в Bind().
+        if (m_VBOs[0] == SR_ID_INVALID){
             return std::nullopt;
         }
-        return m_VBO;
+        return m_VBOs[0];
     }
 
     std::optional<int32_t> ParticleEmitter::GetIBO() const {
@@ -277,18 +344,21 @@ namespace SR_GRAPH_NS {
 
     bool ParticleEmitter::Bind() {
         Calculate();
-        if (m_VBO == SR_ID_INVALID) {
+        const int32_t VBO = GetCurrentVBO();
+        if (VBO == SR_ID_INVALID) {
             return false;
         }
-        GetPipeline()->BindVBO(m_VBO, 0, VertexInputRate::Instance);
+        GetPipeline()->BindVBO(VBO, 0, VertexInputRate::Instance);
         return true;
     }
 
     void ParticleEmitter::FreeVideoMemory() {
         Super::FreeVideoMemory();
 
-        if (m_VBO != SR_ID_INVALID){
-            GetPipeline()->FreeVBO(&m_VBO);
+        for (auto& VBO : m_VBOs) {
+            if (VBO != SR_ID_INVALID) {
+                GetPipeline()->FreeVBO(&VBO);
+            }
         }
         if (m_geometryVBO != SR_ID_INVALID){
             GetPipeline()->FreeVBO(&m_geometryVBO);
@@ -310,9 +380,12 @@ namespace SR_GRAPH_NS {
     }
 
     void ParticleEmitter::Calculate() {
-        if (m_isParticlesVBODirty) {
+        const uint32_t frameIndex = GetCurrentFrameSlot();
+
+        /// Сбрасывается только бит текущего кадра: остальные кадры обновят свои буферы сами.
+        if (m_particlesVBODirtyFrames[frameIndex]) {
             BuildInstanceVertexBuffer();
-            m_isParticlesVBODirty = false;
+            m_particlesVBODirtyFrames.reset(frameIndex);
         }
 
         if (m_isGeometryVBODirty && IsValidMeshId()) {

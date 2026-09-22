@@ -66,6 +66,20 @@ namespace SR_GRAPH_NS {
         /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)
         SR_VIRTUAL_PROPERTY
 
+        /// Выделяет инстанс-буферы для всех кадров свапчейна.
+        void AllocateInstanceVBOs();
+
+        /// Инстанс-буфер, соответствующий текущему кадру свапчейна.
+        SR_NODISCARD int32_t GetCurrentVBO() const;
+        SR_NODISCARD uint32_t GetCurrentFrameSlot() const;
+        SR_NODISCARD uint32_t GetInstanceVBOsCount() const;
+
+        SR_NODISCARD static std::array<int32_t, SR_MAX_FRAMES_IN_FLIGHT> MakeInvalidVBOs() noexcept {
+            std::array<int32_t, SR_MAX_FRAMES_IN_FLIGHT> vbos{};
+            vbos.fill(SR_ID_INVALID);
+            return vbos;
+        }
+
         SR_HTYPES_NS::FastMemoryArray<ParticleData> m_particles;
         SR_HTYPES_NS::FastMemoryArray<ParticleInstanceData> m_instanceData;
         SR_UTILS_NS::VertexDataBuffer m_instanceVertexBuffer;
@@ -78,7 +92,9 @@ namespace SR_GRAPH_NS {
         float_t m_spawnTimer = 0.0f;
         float_t m_emitterTimer = 0.0f;
 
-        int32_t m_VBO = SR_ID_INVALID;
+        /// Отдельный инстанс-буфер на каждый кадр свапчейна.
+        /// Командные буферы кешируются, поэтому в буфер кадра, который ещё читает GPU, писать нельзя.
+        std::array<int32_t, SR_MAX_FRAMES_IN_FLIGHT> m_VBOs = MakeInvalidVBOs();
 
         int32_t m_virtualUBO = SR_ID_INVALID;
         int32_t m_virtualDescriptor = SR_ID_INVALID;
@@ -89,7 +105,9 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::VertexDataBuffer m_geometryBuffer;
 
         bool m_isGeometryVBODirty = true;
-        bool m_isParticlesVBODirty = true;
+        /// Данные частиц меняются каждый кадр, поэтому грязными помечаются буферы всех кадров,
+        /// а каждый кадр обновляет только свой.
+        std::bitset<SR_MAX_FRAMES_IN_FLIGHT> m_particlesVBODirtyFrames;
         ParticleMainModule m_main;
         /// @property @notNull
         ParticleShape::Ptr m_shape;
