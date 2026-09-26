@@ -82,7 +82,12 @@ namespace SR_SRSL_NS {
 
         code += "/// [WARNING: THIS FILE WAS CREATED BY SRSL CODE GENERATION]\n\n";
         code += "/// Shader stage: " + SR_UTILS_NS::EnumReflector::ToStringAtom(stage).ToStringRef() + "\n";
-        code += "/// Shader type: " + SR_UTILS_NS::EnumReflector::ToStringAtom(m_shader->GetType()).ToStringRef() + "\n\n";
+        code += "/// Shader type: " + SR_UTILS_NS::EnumReflector::ToStringAtom(m_shader->GetType()).ToStringRef() + "\n";
+        code += "/// Shader macros:\n";
+        m_shader->GetMacros().ForEach([&](auto&& key, auto&& value) {
+            code += "///\t\t{} = {}\n"_format(key, value);
+        });
+        code += "\n";
 
         code += "#version " + GetVersion(stage) + "\n\n";
 

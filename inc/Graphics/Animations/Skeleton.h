@@ -123,7 +123,7 @@ namespace SR_ANIMATIONS_NS {
         /// @property @dontSave @readOnly @debugOnly
         bool m_hasInvalidBones = false;
 
-        /// @property @notNull @debugOnly @dontSave @readOnly
+        /// @property @notNull @debugOnly @dontSave @readOnly @dontInitNull
         SR_HTYPES_NS::SharedPtr<Bone> m_rootBone;
 
     };

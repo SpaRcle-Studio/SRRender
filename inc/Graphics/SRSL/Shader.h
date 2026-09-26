@@ -86,6 +86,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD const SRSLUniformBlock::Field* FindField(const SR_UTILS_NS::StringAtom& name) const;
         //SR_NODISCARD Vertices::VertexType GetVertexType() const;
         SR_NODISCARD SR_SRSL_NS::ShaderType GetType() const;
+        SR_NODISCARD const ShaderParams& GetMacros() const { return m_params; }
         SR_NODISCARD SR_UTILS_NS::Path GetPath() const { return m_path; }
         SR_NODISCARD SRSLAnalyzedTree* GetAnalyzedTree() const;
         SR_NODISCARD SRSLUseStack::Ptr GetUseStack() const;

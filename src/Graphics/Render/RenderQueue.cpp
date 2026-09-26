@@ -235,7 +235,7 @@ namespace SR_GRAPH_NS {
             }
 
             const auto pShader = pElement->pInfo->pShader;
-            if (pShader->HasErrors()) SR_UNLIKELY_ATTRIBUTE {
+            if (!pShader || pShader->HasErrors()) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
             m_pipeline->SetCurrentShader(pShader);

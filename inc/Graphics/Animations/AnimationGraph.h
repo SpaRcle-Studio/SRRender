@@ -97,7 +97,7 @@ namespace SR_ANIMATIONS_NS {
         AnimationGraph& GetDataMutable() const noexcept;
 
     private:
-        /// @property @noHeader @notNull
+        /// @property @noHeader @notNull @dontInitNull
         mutable AnimationGraph::Ptr m_data;
 
     };

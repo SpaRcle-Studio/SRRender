@@ -121,7 +121,7 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<AnimationStateMachine>& GetMachine() const noexcept { return m_stateMachine; }
 
     protected:
-        /// @property @notNull
+        /// @property @notNull @dontInitNull
         SR_HTYPES_NS::SharedPtr<AnimationStateMachine> m_stateMachine;
 
     };

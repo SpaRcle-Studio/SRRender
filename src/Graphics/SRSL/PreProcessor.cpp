@@ -225,7 +225,7 @@ namespace SR_SRSL_NS {
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);
                     }
                     else if (m_ifStack.back()) {
-                        m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unknown macro!"));
+                        m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::UnknownLexem, GetCurrentLexem()).SetDescription("Unknown macro! Macro: {}"_format(value)));
                     }
                     else {
                         m_lexems.erase(m_lexems.begin() + m_currentLexem);

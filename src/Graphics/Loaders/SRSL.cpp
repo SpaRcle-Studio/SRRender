@@ -84,6 +84,12 @@ namespace SR_SRSL_NS {
         }
     }
 
+    void ShaderParams::ForEach(const SR_HTYPES_NS::Function<void(SR_UTILS_NS::StringView, SR_UTILS_NS::StringView)>& callback) const {
+        for (const auto& entry : m_params) {
+            callback(entry.key, entry.GetValue(m_buffer));
+        }
+    }
+
     void ShaderParams::Clear() {
         m_params.clear();
         m_buffer.clear();

@@ -51,6 +51,11 @@ namespace SR_GTYPES_NS {
 
     const SR_UTILS_NS::VertexDataBuffer& Mesh3D::GetVertices() const {
         SR_TRACY_ZONE;
-        return GetRawMesh()->GetVertexBuffer(GetMeshId(), GetVertexLayoutDescription());
+        auto&& pRawMesh = GetRawMesh();
+        if (!pRawMesh) {
+            static SR_UTILS_NS::VertexDataBuffer empty;
+            return empty;
+        }
+        return pRawMesh->GetVertexBuffer(GetMeshId(), GetVertexLayoutDescription());
     }
 }
