@@ -686,7 +686,9 @@ namespace SR_GRAPH_NS {
         macros = m_definitions;
         const auto& preset = GetSettingsPreset();
         for (const auto define : preset.shaderDefines) {
-            macros[define];
+            if (macros.find_if([define](const auto& macro) { return macro.define == define; }) == macros.end()) {
+                macros.emplace_back(define, SR_UTILS_NS::StringView{});
+            }
         }
         return macros;
     }
@@ -705,25 +707,27 @@ namespace SR_GRAPH_NS {
         ReloadShaders();
     }
 
-    void RenderContext::SetMacro(SR_UTILS_NS::StringAtom define, std::optional<std::string> value) {
-        if (auto&& pIt = m_definitions.find(define); pIt != m_definitions.end()) {
-            if (value) {
-                pIt->second = *value;
+    bool RenderContext::IsMacroDefined(SR_UTILS_NS::StringAtom define) const {
+        return m_definitions.find_if([define](const auto& macro) { return macro.define == define; }) != m_definitions.end();
+    }
+
+    void RenderContext::SetMacro(SR_UTILS_NS::StringAtom define, std::optional<SR_UTILS_NS::StringView> value) {
+        for (auto&& macro : m_definitions) {
+            if (macro.define == define) {
+                if (value) {
+                    macro.value = *value;
+                }
+                else {
+                    macro.value.clear();
+                }
+                return;
             }
-            else {
-                pIt->second.clear();
-            }
         }
-        else if (value) {
-            m_definitions[define] = *value;
-        }
-        else {
-            m_definitions[define];
-        }
+        m_definitions.emplace_back(define, value ? *value : SR_UTILS_NS::StringView{});
     }
 
     void RenderContext::RemoveMacro(SR_UTILS_NS::StringAtom define) {
-        if (auto it = m_definitions.find(define); it != m_definitions.end()) {
+        if (auto it = m_definitions.find_if([define](const auto& macro) { return macro.define == define; }); it != m_definitions.end()) {
             m_definitions.erase(it);
         }
     }
