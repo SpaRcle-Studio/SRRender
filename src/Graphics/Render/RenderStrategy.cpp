@@ -48,10 +48,12 @@ namespace SR_GRAPH_NS {
 
             m_objectPool.RemoveByIndex(info.internal.poolId);
 
-            Register(CreateRegistrationInfo(info.pObject));
-            info.pObject->OnReRegistered();
-            if (inUpdateQueue) {
-                info.pObject->MarkUniformsDirty();
+            if (info.pObject->IsActive()) {
+                Register(CreateRegistrationInfo(info.pObject));
+                info.pObject->OnReRegistered();
+                if (inUpdateQueue) {
+                    info.pObject->MarkUniformsDirty();
+                }
             }
         }
         m_reRegisterQueue.clear();

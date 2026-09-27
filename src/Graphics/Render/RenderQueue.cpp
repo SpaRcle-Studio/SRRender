@@ -302,6 +302,12 @@ namespace SR_GRAPH_NS {
                 continue;
             }
 
+            if (!info.pObject->IsActive()) {
+                pElement->state = QUEUE_STATE_NOT_RENDERED;
+                ++pElement;
+                continue;
+            }
+
             if (!info.pShader) SR_UNLIKELY_ATTRIBUTE {
                 pElement->state = QUEUE_STATE_MISSING_SHADER;
                 ++pElement;
