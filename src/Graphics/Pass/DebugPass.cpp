@@ -15,6 +15,7 @@
 #include <Graphics/Render/RenderContext.h>
 
 #include <Utils/Common/Features.h>
+#include <Utils/Common/StoreUtils.h>
 #include <Utils/FileSystem/PathDataAccessor.h>
 
 #include <Codegen/DebugPass.generated.hpp>
@@ -100,6 +101,10 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        if (!SR_UTILS_NS::StoreUtils::User::GetBool("DebugDraw", true)) {
+            return false;
+        }
+
         auto&& pDebugRenderer = GetDebugRenderer();
         auto&& pPipeline = GetPipeline();
         if (!pDebugRenderer || !pPipeline) {
@@ -165,6 +170,10 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         if (!m_hasRendered || !GetCamera()) {
+            return;
+        }
+
+        if (!SR_UTILS_NS::StoreUtils::User::GetBool("DebugDraw", true)) {
             return;
         }
 

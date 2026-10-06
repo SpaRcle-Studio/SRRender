@@ -23,6 +23,7 @@ namespace SR_GRAPH_NS {
         void SetCelestialBody(CelestialBodyShading shading, float_t angularDiameter, float_t diskIntensity, const SR_MATH_NS::FColor& tint);
         void SetIntensity(float_t intensity) { m_intensity = intensity; UpdateLightParams(); }
         void SetTemperature(float_t temperature) { m_temperature = temperature; UpdateLightParams(); }
+        void SetDiskIntensity(float_t diskIntensity) { m_diskIntensity = diskIntensity; UpdateLightParams(); }
 
     private:
         /// @property @onChanged(UpdateLightParams)
