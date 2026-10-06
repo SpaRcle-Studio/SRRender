@@ -171,6 +171,8 @@ namespace SR_SRSL_NS {
                             }
 
                             m_lexems.erase(m_lexems.begin() + startLexem, m_lexems.begin() + m_currentLexem);
+                            /// лексемы выражения удалены - текущая лексема снова на startLexem (MacroEnd)
+                            m_currentLexem = startLexem;
 
                             auto&& result = SRSLMathExpression::Instance().Analyze(m_pAllocator, m_expressionLexems);
                             if (!result.first) {
@@ -179,8 +181,8 @@ namespace SR_SRSL_NS {
                             }
                             else {
                                 const bool expression = SRSLEvaluator::Instance().MacroEvaluate(result.first, *m_params);
+                                /// выражение выделено в m_pAllocator (арена), освобождается вместе с ним
                                 m_ifStack.emplace_back(expression && m_ifStack.back());
-                                delete result.first;
                             }
                         }
                         else if (value == "ifdef") {

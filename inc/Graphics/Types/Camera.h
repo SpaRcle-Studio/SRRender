@@ -135,7 +135,7 @@ namespace SR_GTYPES_NS {
         /// @property @setter(SetFar)
         float_t m_far = 750.f;
         /// @property @setter(SetNear)
-        float_t m_near = 0.01f;
+        float_t m_near = 0.25f;
         /// @property @setter(SetFOV)
         float_t m_FOV = 60.f;
 

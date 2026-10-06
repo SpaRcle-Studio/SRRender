@@ -12,6 +12,7 @@
 #include <Graphics/Pass/SSAOPass.h>
 #include <Graphics/Pass/BlurPass.h>
 #include <Graphics/Pass/VolumetricCloudsPass.h>
+#include <Graphics/Pass/VolumetricFogPass.h>
 #include <Graphics/Settings/RenderSettings.h>
 
 #include <Utils/ECS/LayerManager.h>
@@ -586,6 +587,16 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    static void AddPostProcessPositionSampler(PostProcessPass& postProcessPass, SR_UTILS_NS::StringAtom offscreenName) {
+        /// позиции полного разрешения - для апсемпла с учетом глубины (без лесенки на границах объектов)
+        SamplerData positionSampler;
+        positionSampler.fboName = offscreenName;
+        positionSampler.index = 2;
+        positionSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+        positionSampler.id = "positionMap";
+        postProcessPass.GetSamplersData().AddSampler(positionSampler);
+    }
+
     void RenderTechniquePresetIntegrationVolumetricClouds::Integrate(const Technique& technique, const Params& params) const {
         SR_TRACY_ZONE;
 
@@ -667,9 +678,115 @@ namespace SR_GRAPH_NS {
             cloudsSampler.usageType = SamplerDataUsageType::FrameBufferColor;
             cloudsSampler.id = shaderVariableName;
             pPostProcessPass->GetSamplersData().AddSampler(cloudsSampler);
+            AddPostProcessPositionSampler(*pPostProcessPass, pMainViewIntegration->offscreenControllerName);
         }
         else {
             SR_ERROR("RenderTechniquePresetIntegrationVolumetricClouds::Integrate() : failed to find post process pass!");
+        }
+    }
+
+    void RenderTechniquePresetIntegrationVolumetricFog::Integrate(const Technique& technique, const Params& params) const {
+        SR_TRACY_ZONE;
+
+        const Quality quality = params.activeGraphicsSettings.volumetricFog;
+        if (quality == Quality::None || !params.activeGraphicsSettings.postProcess) {
+            return;
+        }
+
+        auto&& pMainViewIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationMainView>();
+        if (!pMainViewIntegration) {
+            SR_ERROR("RenderTechniquePresetIntegrationVolumetricFog::Integrate() : failed to find main view integration!");
+            return;
+        }
+
+        if (pMainViewIntegration->mainRenderColorLayers < 3) {
+            SR_ERROR("RenderTechniquePresetIntegrationVolumetricFog::Integrate() : main view has no position layer!");
+            return;
+        }
+
+        float_t preScale = 0.5f;
+        switch (quality) {
+            case Quality::Low: preScale = 0.25f; break;
+            case Quality::Medium: preScale = 0.35f; break;
+            case Quality::High: preScale = 0.5f; break;
+            default: preScale = 0.75f; break;
+        }
+
+        auto&& data = technique.GetInternalData();
+
+        FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
+        pFrameBufferController->SetName(fogControllerName);
+        pFrameBufferController->SetColorFormats({ ImageFormat::RGBA16_SFLOAT });
+        pFrameBufferController->SetSamples(1);
+
+        if (params.pCameraParams && params.pCameraParams->screenSize) {
+            pFrameBufferController->SetSize(params.pCameraParams->screenSize.value());
+            pFrameBufferController->SetDynamicResizing(false);
+        }
+        if (params.pCameraParams && params.pCameraParams->screenScale) {
+            pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value() * preScale);
+        }
+        else {
+            pFrameBufferController->SetPreScale(preScale);
+        }
+
+        data.frameBuffers.emplace_back(pFrameBufferController);
+
+        auto&& pMainGroup = SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass);
+
+        const int32_t index = pMainGroup->IndexOfPass(pMainViewIntegration->offscreenControllerName);
+        if (index < 0) {
+            SRHalt("RenderTechniquePresetIntegrationVolumetricFog::Integrate() : failed to find offscreen controller pass! Controller name: {}", pMainViewIntegration->offscreenControllerName);
+            return;
+        }
+
+        VolumetricFogPass::Ptr pFogPass = new VolumetricFogPass();
+        pFogPass->SetCustomName("VolumetricFogPass");
+
+        SamplerData positionSampler;
+        positionSampler.fboName = pMainViewIntegration->offscreenControllerName;
+        positionSampler.index = 2;
+        positionSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+        positionSampler.id = "positionMap";
+        pFogPass->GetSamplersData().AddSampler(positionSampler);
+
+        /// объемные лучи используют каскадные тени
+        auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>();
+        if (pShadowIntegration && params.activeGraphicsSettings.shadowsQuality != Quality::None) {
+            SamplerData shadowSampler;
+            shadowSampler.fboName = pShadowIntegration->shadowMapControllerName;
+            shadowSampler.id = pShadowIntegration->shaderVariableName;
+            shadowSampler.usageType = SamplerDataUsageType::FrameBufferDepth;
+            pFogPass->GetSamplersData().AddSampler(shadowSampler);
+            pFogPass->SetShadowPassName(pShadowIntegration->shadowMapControllerName);
+        }
+
+        FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
+        pFrameBufferPass->SetCustomName(fogControllerName);
+        pFrameBufferPass->SetFrameBufferName(fogControllerName);
+        /// пропускание = 1, если тумана нет
+        pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
+        pFrameBufferPass->AddPass(pFogPass.StaticCast<BasePass>());
+
+        pMainGroup->InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass), index + 1);
+
+        if (auto&& pPostProcessPass = pMainGroup->FindPassAs<PostProcessPass>(PostProcessPass::GetClassStaticName())) {
+            SamplerData fogSampler;
+            fogSampler.fboName = fogControllerName;
+            fogSampler.index = 0;
+            fogSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            fogSampler.id = shaderVariableName;
+            pPostProcessPass->GetSamplersData().AddSampler(fogSampler);
+
+            /// positionMap уже добавлен интеграцией облаков, если она активна
+            const bool hasClouds = technique.FindIntegration<RenderTechniquePresetIntegrationVolumetricClouds>()
+                && params.activeGraphicsSettings.volumetricClouds != Quality::None;
+            if (!hasClouds) {
+                AddPostProcessPositionSampler(*pPostProcessPass, pMainViewIntegration->offscreenControllerName);
+            }
+        }
+        else {
+            SR_ERROR("RenderTechniquePresetIntegrationVolumetricFog::Integrate() : failed to find post process pass!");
         }
     }
 }

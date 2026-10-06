@@ -136,6 +136,19 @@ namespace SR_GRAPH_NS {
 
     };
 
+    class RenderTechniquePresetIntegrationVolumetricFog : public RenderTechniquePresetIntegrationBase {
+        SR_CLASS()
+    public:
+        void Integrate(const Technique& technique, const Params& params) const override;
+
+    public:
+        /// @property
+        SR_UTILS_NS::StringAtom fogControllerName = "VolumetricFog";
+        /// @property
+        SR_UTILS_NS::StringAtom shaderVariableName = "fogMap";
+
+    };
+
     class RenderTechniquePresetIntegrationMainView : public RenderTechniquePresetIntegrationBase {
         SR_CLASS()
     public:

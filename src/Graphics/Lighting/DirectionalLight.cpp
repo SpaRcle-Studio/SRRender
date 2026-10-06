@@ -92,7 +92,7 @@ namespace SR_GRAPH_NS {
         const float_t twilight = SR_MATH_NS::Curve::SmoothStep(-0.17f, 0.02f, rawHeight);
 
         /// у горизонта прямой свет не обрывается в ноль, а затухает вместе с сумерками
-        const float visibility = SR_MATH_NS::Max(pow(SR_MATH_NS::Max(sunHeight, 0.f), 0.6f), 0.15f * twilight) * twilight;
+        const float visibility = SR_MATH_NS::Max(SR_MATH_NS::Pow(SR_MATH_NS::Max(sunHeight, 0.f), 0.6f), 0.15f * twilight) * twilight;
         m_params.intensity = m_intensity * visibility;
         /// вклад в окружение (небо/ambient) - для плавного смешивания солнца и луны в LightSystem
         m_params.environmentWeight = m_intensity * twilight;

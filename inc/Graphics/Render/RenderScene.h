@@ -38,6 +38,7 @@ namespace SR_GRAPH_NS {
     class Pipeline;
     class DebugRenderer;
     class VolumetricClouds;
+    class VolumetricFog;
 
     class RenderScene : public SR_HTYPES_NS::SharedPtr<RenderScene>, public SR_UTILS_NS::ISceneModule {
         using Super = SR_HTYPES_NS::SharedPtr<RenderScene>;
@@ -111,6 +112,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD LightSystem* GetLightSystem() const { return m_lightSystem; }
         SR_NODISCARD VolumetricClouds* GetVolumetricClouds() const { return m_volumetricClouds; }
         void SetVolumetricClouds(VolumetricClouds* pClouds) { m_volumetricClouds = pClouds; }
+        SR_NODISCARD VolumetricFog* GetVolumetricFog() const { return m_volumetricFog; }
+        void SetVolumetricFog(VolumetricFog* pFog) { m_volumetricFog = pFog; }
         SR_NODISCARD SR_ANIMATIONS_NS::Skeleton* GetCurrentSkeleton() const { return m_currentSkeleton; }
         SR_NODISCARD const RenderScene::PipelinePtr& GetPipelineRef() const;
         SR_NODISCARD const RenderScene::PipelinePtr& GetPipeline() const;
@@ -147,6 +150,7 @@ namespace SR_GRAPH_NS {
 
         LightSystem* m_lightSystem = nullptr;
         VolumetricClouds* m_volumetricClouds = nullptr;
+        VolumetricFog* m_volumetricFog = nullptr;
         CameraPtr m_mainCamera;
 
         std::vector<CameraPtr> m_editorCameras;

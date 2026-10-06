@@ -28,7 +28,8 @@ namespace SR_GRAPH_NS {
                    && shadowsQuality == lrs.shadowsQuality
                    && colorBufferQuality == lrs.colorBufferQuality
                    && SSAO == lrs.SSAO
-                   && volumetricClouds == lrs.volumetricClouds;
+                   && volumetricClouds == lrs.volumetricClouds
+                   && volumetricFog == lrs.volumetricFog;
         }
 
         bool operator!=(const ActiveGraphicsSettings& lrs) const {
@@ -80,6 +81,8 @@ namespace SR_GRAPH_NS {
         Quality colorBufferQuality = Quality::High;
         /// @property
         Quality volumetricClouds = Quality::High;
+        /// @property
+        Quality volumetricFog = Quality::High;
     };
 }
 
