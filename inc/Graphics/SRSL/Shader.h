@@ -35,7 +35,7 @@ namespace SR_SRSL_NS {
             uint64_t size = 0;
             uint64_t alignedSize = 0;
             bool isPublic = false;
-            std::optional<ShaderPropertyVariant> defaultValue;
+            std::optional<ShaderPropertyData> defaultValue;
         };
 
         void Align(const SRSLAnalyzedTree* pAnalyzedTree);
@@ -113,7 +113,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD SR_MATH_NS::FVector3 EvalExpressionVec3(SRSLExpr* pExpression) const;
         SR_NODISCARD SR_MATH_NS::IVector3 EvalExpressionIVec3(SRSLExpr* pExpression) const;
         SR_NODISCARD SR_MATH_NS::FVector4 EvalExpressionVec4(SRSLExpr* pExpression) const;
-        SR_NODISCARD std::optional<ShaderPropertyVariant> EvalExpressionValue(SRSLExpr* pExpression, SRSLExpr* pType) const;
+        SR_NODISCARD std::optional<ShaderPropertyData> EvalExpressionValue(SRSLExpr* pExpression, SRSLExpr* pType) const;
 
         SR_NODISCARD ISRSLCodeGenerator::SRSLCodeGenRes GenerateStages(ShaderLanguage shaderLanguage) const;
 

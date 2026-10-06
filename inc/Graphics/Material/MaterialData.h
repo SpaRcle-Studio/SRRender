@@ -29,7 +29,7 @@ namespace SR_GRAPH_NS {
     public:
         uint32_t editorOrder = 0;
         SR_UTILS_NS::StringAtom displayName;
-        std::optional<ShaderPropertyVariant> data;
+        std::optional<ShaderPropertyData> data;
 
         /// @property
         SR_UTILS_NS::StringAtom id;
@@ -73,7 +73,7 @@ namespace SR_GRAPH_NS {
         void ForEachProperty(const SR_HTYPES_NS::Function<void(MaterialShaderProperty&)>& func);
         void ForEachProperty(const SR_HTYPES_NS::Function<void(const MaterialShaderProperty&)>& func) const;
 
-        MaterialPropertyChangeResult SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
+        MaterialPropertyChangeResult SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyData& v, ShaderVarType type) noexcept;
 
         SR_NODISCARD SR_GTYPES_NS::Texture::Ptr GetSamplerTexture(SR_UTILS_NS::StringAtom id) const noexcept;
 
@@ -82,8 +82,10 @@ namespace SR_GRAPH_NS {
 
         void SR_FASTCALL OnSamplerChanged(SR_GTYPES_NS::Texture::Ptr pOldTexture, SR_GTYPES_NS::Texture::Ptr pNewTexture) noexcept;
 
+        SR_NODISCARD SR_GTYPES_NS::Shader* GetShader() const noexcept { return pShader ? pShader.GetResource().Get() : nullptr; }
+
         MaterialData* pOwnedMaterialData = nullptr;
-        SR_GTYPES_NS::Shader::Ptr pShader = nullptr;
+        SR_UTILS_NS::ResourceRef<SR_GTYPES_NS::Shader> pShader;
 
         SR_UTILS_NS::Subscription* m_shaderSubscription = nullptr;
         SR_UTILS_NS::Map<SR_GTYPES_NS::Texture::Ptr, std::pair<SR_UTILS_NS::Subscription*, uint32_t>> m_textureSubscriptions;
@@ -119,7 +121,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::String>& GetShaderDefines() const noexcept { return m_shaderDefines; }
 
         void SR_FASTCALL SetSampler(SR_UTILS_NS::StringAtom id, const SR_UTILS_NS::Path& path) noexcept;
-        void SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyVariant& v, ShaderVarType type) noexcept;
+        void SR_FASTCALL SetData(SR_UTILS_NS::StringAtom id, const ShaderPropertyData& v, ShaderVarType type) noexcept;
 
         void OnPropertyChanged(bool onlyUniforms);
         void AddShaderDefine(SR_UTILS_NS::StringAtom define, SR_UTILS_NS::StringView value = SR_UTILS_NS::StringView());

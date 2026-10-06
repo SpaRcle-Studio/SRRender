@@ -12,6 +12,7 @@
 
 namespace SR_GRAPH_NS {
     class DescriptorManager;
+    class BaseMaterial;
 }
 
 namespace SR_GRAPH_NS::Memory {
@@ -43,7 +44,7 @@ namespace SR_GTYPES_NS {
 
         void FreeVMemory() override;
         bool Draw();
-        bool Draw(Shader* pShader, bool& dirtyShader, bool& hasErrors, int32_t& virtualUBO, int32_t& virtualDescriptor);
+        bool Draw(Shader* pShader, BaseMaterial* pMaterial, bool& dirtyShader, bool& hasErrors, int32_t& virtualUBO, int32_t& virtualDescriptor);
 
         bool Load() override;
         bool Unload() override;

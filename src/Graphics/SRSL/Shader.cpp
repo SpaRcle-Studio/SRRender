@@ -809,7 +809,7 @@ namespace SR_SRSL_NS {
         return SR_MATH_NS::FVector4();
     }
 
-    std::optional<ShaderPropertyVariant> SRSLShader::EvalExpressionValue(SRSLExpr* pExpression, SRSLExpr* pType) const {
+    std::optional<ShaderPropertyData> SRSLShader::EvalExpressionValue(SRSLExpr* pExpression, SRSLExpr* pType) const {
         if (!pExpression) {
             return std::nullopt;
         }

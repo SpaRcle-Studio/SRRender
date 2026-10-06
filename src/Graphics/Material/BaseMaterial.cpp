@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS {
 
     void BaseMaterial::SetTexture(const SR_UTILS_NS::StringAtom id, const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>& pTexture) noexcept {
         if (auto&& pData = GetMaterialData()) {
-            pData->SetData(id, const_cast<SR_GTYPES_NS::Texture*>(pTexture.Get()), ShaderVarType::Sampler2D);
+            pData->SetData(id, SR_UTILS_NS::ResourceRef<SR_GTYPES_NS::Texture>(pTexture), ShaderVarType::Sampler2D);
         }
     }
 
@@ -115,7 +115,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         if (auto&& pData = GetMaterialData()) {
-            auto&& pShader = pData->GetDefaultShaderData().pShader;
+            auto&& pShader = pData->GetDefaultShaderData().GetShader();
             if (pShader && pShader->GetResourcePath() == path) {
                 return;
             }
@@ -179,14 +179,6 @@ namespace SR_GRAPH_NS {
         return pData->GetDefaultShaderData().pShader;
     }
 
-    SR_GTYPES_NS::Shader* BaseMaterial::GetDefaultShader() const noexcept {
-        auto&& pData = GetMaterialData();
-        if (!pData) SR_UNLIKELY_ATTRIBUTE {
-            return nullptr;
-        }
-        return pData->GetDefaultShaderData().pShader.Get();
-    }
-
     SR_GTYPES_NS::Shader* BaseMaterial::GetShader(const SR_SRSL_NS::ShaderParams& params) const noexcept {
         SR_TRACY_ZONE;
 
@@ -195,7 +187,7 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        auto&& pDefaultShader = pData->GetDefaultShaderData().pShader.Get();
+        auto&& pDefaultShader = pData->GetDefaultShaderData().GetShader();
         if (!pDefaultShader) {
             return nullptr;
         }

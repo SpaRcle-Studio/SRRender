@@ -8,9 +8,11 @@
 #include <Graphics/Types/Texture.h>
 
 #include <Utils/Types/SharedPtr.h>
+#include <Utils/Types/Optional.h>
 #include <Utils/Common/Hashes.h>
 #include <Utils/Common/Enumerations.h>
 #include <Utils/Profile/TracyContext.h>
+#include <Utils/Resources/ResourceRef.h>
 
 namespace SR_GTYPES_NS {
     class Texture;
@@ -45,15 +47,85 @@ namespace SR_GRAPH_NS {
 
     /// Реализация аттачментов (выходов кадровых буферов) сделана на уровне проходов рендера.
     /// См. ISamplersPass. На уровне шейдера не должны поддерживаться аттачменты, т.к. это не безопасно.
-    typedef std::variant<
-        SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>,
-        float_t,
-        int32_t,
-        SR_MATH_NS::FVector2,
-        SR_MATH_NS::FVector3,
-        SR_MATH_NS::IVector3,
-        SR_MATH_NS::FVector4
-    > ShaderPropertyVariant;
+
+    struct ShaderPropertyData {
+        enum class Type : uint8_t {
+            Unknown,
+            Sampler,
+            Float,
+            Int,
+            Vec2,
+            Vec3,
+            IVec3,
+            Vec4
+        };
+
+        ShaderPropertyData() = default;
+        ShaderPropertyData(const ShaderPropertyData& other) = default;
+        ShaderPropertyData(ShaderPropertyData&& other) noexcept = default;
+        ShaderPropertyData& operator=(const ShaderPropertyData& other) = default;
+        ShaderPropertyData& operator=(ShaderPropertyData&& other) noexcept = default;
+        ShaderPropertyData(const float_t value) { data.floatValue = value; type = Type::Float; }
+        ShaderPropertyData(const int32_t value) { data.intValue = value; type = Type::Int; }
+        ShaderPropertyData(const SR_MATH_NS::FVector2& value) { data.vec2Value = value; type = Type::Vec2; }
+        ShaderPropertyData(const SR_MATH_NS::FVector3& value) { data.vec3Value = value; type = Type::Vec3; }
+        ShaderPropertyData(const SR_MATH_NS::IVector3& value) { data.ivec3Value = value; type = Type::IVec3; }
+        ShaderPropertyData(const SR_MATH_NS::FVector4& value) { data.vec4Value = value; type = Type::Vec4; }
+        ShaderPropertyData(const SR_UTILS_NS::ResourceRef<SR_GTYPES_NS::Texture>& value) { sampler = value; type = Type::Sampler; }
+        ShaderPropertyData(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>& value) { sampler = value; type = Type::Sampler; }
+
+        SR_NODISCARD bool operator==(const ShaderPropertyData& other) const {
+            if (type != other.type) {
+                return false;
+            }
+
+            switch (type) {
+                case Type::Sampler:
+                    return sampler == other.sampler;
+                case Type::Float:
+                    return SR_EQUALS(data.floatValue, other.data.floatValue);
+                case Type::Int:
+                    return data.intValue == other.data.intValue;
+                case Type::Vec2:
+                    return data.vec2Value == other.data.vec2Value;
+                case Type::Vec3:
+                    return data.vec3Value == other.data.vec3Value;
+                case Type::IVec3:
+                    return data.ivec3Value == other.data.ivec3Value;
+                case Type::Vec4:
+                    return data.vec4Value == other.data.vec4Value;
+                default:
+                    return false;
+            }
+        }
+
+        SR_NODISCARD SR_GTYPES_NS::Texture* GetSampler() const;
+
+        SR_NODISCARD float_t& GetFloat();
+        SR_NODISCARD int32_t& GetInt();
+        SR_NODISCARD SR_MATH_NS::FVector2& GetVec2();
+        SR_NODISCARD SR_MATH_NS::FVector3& GetVec3();
+        SR_NODISCARD SR_MATH_NS::IVector3& GetIVec3();
+        SR_NODISCARD SR_MATH_NS::FVector4& GetVec4();
+
+        SR_NODISCARD const float_t& GetFloat() const;
+        SR_NODISCARD const int32_t& GetInt() const;
+        SR_NODISCARD const SR_MATH_NS::FVector2& GetVec2() const;
+        SR_NODISCARD const SR_MATH_NS::FVector3& GetVec3() const;
+        SR_NODISCARD const SR_MATH_NS::IVector3& GetIVec3() const;
+        SR_NODISCARD const SR_MATH_NS::FVector4& GetVec4() const;
+
+        SR_UTILS_NS::ResourceRef<SR_GTYPES_NS::Texture> sampler;
+        union Data {
+            float_t floatValue = 0.f;
+            int32_t intValue;
+            SR_MATH_NS::FVector2 vec2Value;
+            SR_MATH_NS::FVector3 vec3Value;
+            SR_MATH_NS::IVector3 ivec3Value;
+            SR_MATH_NS::FVector4 vec4Value;
+        } data;
+        Type type = Type::Unknown;
+    };
 
     SR_ENUM_NS_CLASS_T(ShaderRenderPassType, uint32_t,
         Undefined,
@@ -95,7 +167,7 @@ namespace SR_GRAPH_NS {
             , type(type)
             , pushConstant(pushConstant)
         { }
-        ShaderProperty(const SR_UTILS_NS::StringAtom id, const ShaderVarType type, const bool pushConstant, const std::optional<ShaderPropertyVariant>& defaultData)
+        ShaderProperty(const SR_UTILS_NS::StringAtom id, const ShaderVarType type, const bool pushConstant, const std::optional<ShaderPropertyData>& defaultData)
             : id(id)
             , type(type)
             , pushConstant(pushConstant)
@@ -105,12 +177,12 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom id;
         ShaderVarType type = ShaderVarType::Unknown;
         bool pushConstant = false;
-        std::optional<ShaderPropertyVariant> defaultData;
+        std::optional<ShaderPropertyData> defaultData;
 
         SR_NODISCARD bool IsPushConstant() const { return pushConstant; }
         SR_NODISCARD bool HasDefaultData() const { return defaultData.has_value(); }
-        SR_NODISCARD ShaderPropertyVariant GetData() const;
-        SR_NODISCARD ShaderPropertyVariant GetDefaultData() const;
+        SR_NODISCARD const ShaderPropertyData& GetData() const;
+        SR_NODISCARD const ShaderPropertyData& GetDefaultData() const;
     };
 
     typedef SR_UTILS_NS::Vector<ShaderProperty> ShaderProperties;
@@ -206,7 +278,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    SR_MAYBE_UNUSED ShaderPropertyVariant GetVariantFromShaderVarType(ShaderVarType type);
+    SR_MAYBE_UNUSED ShaderPropertyData GetVariantFromShaderVarType(ShaderVarType type);
 
     SR_MAYBE_UNUSED static ShaderVarType GetShaderVarTypeFromString(std::string str) {
         if (!str.empty()) {

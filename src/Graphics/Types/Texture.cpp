@@ -242,8 +242,16 @@ namespace SR_GTYPES_NS {
     }
 
     void Texture::FreeVMemory() {
+        SR_TRACY_ZONE;
+
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Low) {
             SR_LOG("Texture::FreeVMemory() : free \"" + std::string(GetResourceId()) + "\" texture's video memory...");
+        }
+
+        if (m_syncLoadTaskId) {
+            SR_LOG("Texture::FreeVMemory() : the texture is still loading asynchronously! Waiting for the loading to finish...\n\tPath: {}", GetResourcePath());
+            SR_UTILS_NS::TaskManager::Instance().Wait(*m_syncLoadTaskId);
+            m_syncLoadTaskId = std::nullopt;
         }
 
         const bool isReference = m_impl && m_impl->IsReference();

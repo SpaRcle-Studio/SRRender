@@ -50,7 +50,6 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsValid() const;
         SR_NODISCARD const RenderContextPtr& GetContext() const;
         SR_NODISCARD virtual const MaterialData::Ptr& GetMaterialData() const noexcept;
-        SR_NODISCARD SR_GTYPES_NS::Shader* GetDefaultShader() const noexcept;
         SR_NODISCARD SR_GTYPES_NS::Shader* GetShader(const SR_SRSL_NS::ShaderParams& params) const noexcept;
 
         SR_NODISCARD virtual MaterialType GetMaterialType() const noexcept { return MaterialType::None; }

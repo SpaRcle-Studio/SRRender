@@ -12,52 +12,59 @@
 
 namespace SR_SRSL_NS {
     namespace Details {
-        void SaveShaderPropertyVariant(SR_HTYPES_NS::Marshal& marshal, const ShaderPropertyVariant& propertyVariant) {
-            SR_UTILS_NS::MarshalUtils::SaveValue<uint32_t>(marshal, static_cast<uint32_t>(propertyVariant.index()));
-            std::visit([&marshal](ShaderPropertyVariant&& arg) {
-                if (std::holds_alternative<int32_t>(arg)) {
-                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, std::get<int32_t>(arg));
-                }
-                else if (std::holds_alternative<float_t>(arg)) {
-                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, std::get<float_t>(arg));
-                }
-                else if (std::holds_alternative<SR_MATH_NS::FVector2>(arg)) {
-                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, std::get<SR_MATH_NS::FVector2>(arg));
-                }
-                else if (std::holds_alternative<SR_MATH_NS::FVector3>(arg)) {
-                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, std::get<SR_MATH_NS::FVector3>(arg));
-                }
-                else if (std::holds_alternative<SR_MATH_NS::IVector3>(arg)) {
-                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, std::get<SR_MATH_NS::IVector3>(arg));
-                }
-                else if (std::holds_alternative<SR_MATH_NS::FVector4>(arg)) {
-                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, std::get<SR_MATH_NS::FVector4>(arg));
-                }
-                else {
+        void SaveShaderPropertyVariant(SR_HTYPES_NS::Marshal& marshal, const ShaderPropertyData& propertyVariant) {
+            SR_UTILS_NS::MarshalUtils::SaveValue<uint32_t>(marshal, static_cast<uint32_t>(propertyVariant.type));
+            switch (propertyVariant.type) {
+                case ShaderPropertyData::Type::Sampler:
+                    SR_UTILS_NS::MarshalUtils::SaveString(marshal, propertyVariant.sampler.GetId());
+                    break;
+                case ShaderPropertyData::Type::Float:
+                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, propertyVariant.GetFloat());
+                    break;
+                case ShaderPropertyData::Type::Int:
+                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, propertyVariant.GetInt());
+                    break;
+                case ShaderPropertyData::Type::Vec2:
+                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, propertyVariant.GetVec2());
+                    break;
+                case ShaderPropertyData::Type::Vec3:
+                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, propertyVariant.GetVec3());
+                    break;
+                case ShaderPropertyData::Type::IVec3:
+                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, propertyVariant.GetIVec3());
+                    break;
+                case ShaderPropertyData::Type::Vec4:
+                    SR_UTILS_NS::MarshalUtils::SaveValue(marshal, propertyVariant.GetVec4());
+                    break;
+                default:
                     SRHalt("Unsupported type!");
-                }
-            }, propertyVariant);
+                    return;
+            }
         }
 
-        ShaderPropertyVariant LoadShaderPropertyVariant(SR_HTYPES_NS::Marshal& marshal) {
-            const auto index = SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal);
-            switch (index) {
-                case 1: {
+        ShaderPropertyData LoadShaderPropertyVariant(SR_HTYPES_NS::Marshal& marshal) {
+            const auto type = static_cast<ShaderPropertyData::Type>(SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal));
+            switch (type) {
+                case ShaderPropertyData::Type::Sampler: {
+                    SR_UTILS_NS::StringAtom id = SR_UTILS_NS::MarshalUtils::LoadString(marshal);
+                    return SR_UTILS_NS::ResourceRef<SR_GTYPES_NS::Texture>(id);
+                }
+                case ShaderPropertyData::Type::Float: {
                     return SR_UTILS_NS::MarshalUtils::LoadValue<float_t>(marshal);
                 }
-                case 2: {
+                case ShaderPropertyData::Type::Int: {
                     return SR_UTILS_NS::MarshalUtils::LoadValue<int32_t>(marshal);
                 }
-                case 3: {
+                case ShaderPropertyData::Type::Vec2: {
                     return SR_UTILS_NS::MarshalUtils::LoadValue<SR_MATH_NS::FVector2>(marshal);
                 }
-                case 4: {
+                case ShaderPropertyData::Type::Vec3: {
                     return SR_UTILS_NS::MarshalUtils::LoadValue<SR_MATH_NS::FVector3>(marshal);
                 }
-                case 5: {
+                case ShaderPropertyData::Type::IVec3: {
                     return SR_UTILS_NS::MarshalUtils::LoadValue<SR_MATH_NS::IVector3>(marshal);
                 }
-                case 6: {
+                case ShaderPropertyData::Type::Vec4: {
                     return SR_UTILS_NS::MarshalUtils::LoadValue<SR_MATH_NS::FVector4>(marshal);
                 }
                 default: {
@@ -332,11 +339,6 @@ namespace SR_GRAPH_NS {
         SaveUBOBlock(marshal, pShader->m_uniformSharedBlock);
         SaveUBOBlock(marshal, pShader->m_constBlock);
 
-        SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, pShader->m_defaultSamplers.size());
-        for (auto&& [sampler, _] : pShader->m_defaultSamplers) {
-            SR_UTILS_NS::MarshalUtils::SaveString(marshal, sampler);
-        }
-
         SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, pShader->m_properties.size());
         for (const auto& property : pShader->m_properties) {
             SR_UTILS_NS::MarshalUtils::SaveString(marshal, property.id);
@@ -407,12 +409,6 @@ namespace SR_GRAPH_NS {
         LoadUBOBlock(marshal, pShader->m_uniformBlock);
         LoadUBOBlock(marshal, pShader->m_uniformSharedBlock);
         LoadUBOBlock(marshal, pShader->m_constBlock);
-
-        pShader->m_defaultSamplers.clear();
-        const auto defaultSamplersSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
-        for (uint64_t i = 0; i < defaultSamplersSize; ++i) {
-            pShader->m_defaultSamplers[SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal)];
-        }
 
         pShader->m_properties.clear();
         const auto propertiesSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
@@ -512,6 +508,6 @@ namespace SR_GRAPH_NS {
 
     uint64_t ShaderCache::GetVersion() {
         /// Обязательно менять при изменении формата кеша (например, при добавлении полей в Uniform)
-        return 0xBAD8F00E;
+        return 0xBAD8FFFF;
     }
 }

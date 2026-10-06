@@ -81,7 +81,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (auto&& pShader = GetPipeline()->GetCurrentShader(); SRVerify(pShader)) {
-            m_isRendered = m_skybox->Draw(pShader, m_dirtyMaterial, m_hasErrors, m_virtualUBO, m_virtualDescriptor);
+            m_isRendered = m_skybox->Draw(pShader, GetMaterial().Get(), m_dirtyMaterial, m_hasErrors, m_virtualUBO, m_virtualDescriptor);
         }
     }
 

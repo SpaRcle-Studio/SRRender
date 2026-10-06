@@ -28,7 +28,6 @@ namespace SR_GRAPH_NS::Types {
 
     Shader::~Shader() {
         m_samplers.clear();
-        SRAssert(m_defaultSamplers.empty());
         SRAssert(m_shaderProgram == SR_ID_INVALID);
         SRAssert(m_virtualUBO.first == SR_ID_INVALID);
     }
@@ -46,17 +45,25 @@ namespace SR_GRAPH_NS::Types {
             return false;
         }
 
-        for (auto&& [hashName, sampler] : m_samplers) {
+        for (auto&& [name, sampler] : m_samplers) {
             if (sampler.isAttachment || sampler.isArray) {
                 continue;
             }
-            auto&& pIt = m_defaultSamplers.find(sampler.defaultValue);
-            if (pIt != m_defaultSamplers.end()) {
-                LoadDefaultSampler(sampler.defaultValue);
-                SetSampler2D(hashName, pIt->second);
+
+            auto&& pIt = m_properties.find_if([&](const auto& property) {
+                return property.id == name && property.HasDefaultData();
+            });
+
+            if (pIt != m_properties.end()) {
+                if (auto&& pTexture = pIt->GetDefaultData().GetSampler()) {
+                    SetSampler2D(name, pTexture);
+                }
+                else {
+                    SetSampler2D(name, GetRenderContext()->GetDefaultTexture());
+                }
             }
             else {
-                SetSampler2D(hashName, GetRenderContext()->GetDefaultTexture());
+                SetSampler2D(name, GetRenderContext()->GetDefaultTexture());
             }
             SRAssert(sampler.samplerId != SR_ID_INVALID);
         }
@@ -332,32 +339,6 @@ namespace SR_GRAPH_NS::Types {
         IResource::OnReloadDone();
     }
 
-    void Shader::LoadDefaultSampler(SR_UTILS_NS::StringAtom name) {
-        if (m_defaultSamplers.count(name) == 1) {
-            if (auto&& pTexture = CoreResLoader::Load<SR_GTYPES_NS::Texture>(name)) {
-                AddDependency(SR_UTILS_NS::StaticPointerCast<SR_UTILS_NS::ResourceContainer>(pTexture));
-                m_defaultSamplers[name] = pTexture;
-            }
-            else {
-                SR_ERROR("Shader::AddDefaultSampler() : failed to load default sampler! Use none texture. \n\tPath: " + name.ToString());
-                m_defaultSamplers[name] = GetRenderContext()->GetNoneTexture();
-            }
-        }
-        else {
-            SR_ERROR("Shader::AddDefaultSampler() : default sampler isn't registered! \n\tPath: " + name.ToString());
-        }
-    }
-
-    void Shader::UnloadDefaultSamplers() {
-        for (auto&& [name, pTexture] : m_defaultSamplers) {
-            if (!pTexture) {
-                continue;
-            }
-            RemoveDependency(SR_UTILS_NS::StaticPointerCast<SR_UTILS_NS::ResourceContainer>(pTexture));
-        }
-        m_defaultSamplers.clear();
-    }
-
     bool Shader::Load() {
         SR_TRACY_ZONE;
 
@@ -502,14 +483,17 @@ namespace SR_GRAPH_NS::Types {
             m_samplers[name].isArray = sampler.type.Contains("Array");
             m_samplers[name].defaultValue = sampler.defaultValue;
 
-            if (!sampler.defaultValue.empty()) {
-                m_defaultSamplers.insert(SR_UTILS_NS::MakePair(sampler.defaultValue, nullptr));
-            }
-
             const ShaderVarType varType = SR_SRSL_NS::SRSLTypeInfo::Instance().StringToType(sampler.type);
 
             if (sampler.isPublic && varType != ShaderVarType::Unknown) {
-                m_properties.emplace_back(ShaderProperty(name, varType, false));
+                if (!sampler.defaultValue.empty()) {
+                    SR_UTILS_NS::ResourceRef<SR_GTYPES_NS::Texture> defaultSampler;
+                    defaultSampler.SetResource(sampler.defaultValue);
+                    m_properties.emplace_back(ShaderProperty(name, varType, false, defaultSampler));
+                }
+                else {
+                    m_properties.emplace_back(ShaderProperty(name, varType, false));
+                }
             }
         }
 
@@ -552,8 +536,6 @@ namespace SR_GRAPH_NS::Types {
         m_includes.clear();
         m_properties.clear();
         m_samplers.clear();
-
-        UnloadDefaultSamplers();
 
         return !hasErrors;
     }

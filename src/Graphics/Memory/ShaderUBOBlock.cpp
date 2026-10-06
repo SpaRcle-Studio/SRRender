@@ -133,36 +133,15 @@ namespace SR_GRAPH_NS::Memory {
         }
     }
 
-    void ShaderUBOBlock::SetField(uint64_t hashId, const ShaderPropertyVariant& property) noexcept {
-        std::visit([this, hashId](ShaderPropertyVariant&& arg) {
-            if (std::holds_alternative<int32_t>(arg)) {
-                const auto v = std::get<int32_t>(arg);
-                SetField(hashId, static_cast<const void*>(&v));
-            }
-            else if (std::holds_alternative<float_t>(arg)) {
-                const auto v = std::get<float_t>(arg);
-                SetField(hashId, static_cast<const void*>(&v));
-            }
-            else if (std::holds_alternative<SR_MATH_NS::FVector2>(arg)) {
-                const auto v = std::get<SR_MATH_NS::FVector2>(arg);
-                SetField(hashId, static_cast<const void*>(&v));
-            }
-            else if (std::holds_alternative<SR_MATH_NS::FVector3>(arg)) {
-                const auto v = std::get<SR_MATH_NS::FVector3>(arg);
-                SetField(hashId, static_cast<const void*>(&v));
-            }
-            else if (std::holds_alternative<SR_MATH_NS::IVector3>(arg)) {
-                const auto v = std::get<SR_MATH_NS::IVector3>(arg);
-                SetField(hashId, static_cast<const void*>(&v));
-            }
-            else if (std::holds_alternative<SR_MATH_NS::FVector4>(arg)) {
-                const auto v = std::get<SR_MATH_NS::FVector4>(arg);
-                SetField(hashId, static_cast<const void*>(&v));
-            }
-            else {
-                SRHalt("Unsupported type!");
-            }
-        }, property);
+    void ShaderUBOBlock::SetField(uint64_t hashId, const ShaderPropertyData& property) noexcept {
+        switch (property.type) {
+            case ShaderPropertyData::Type::Sampler:
+                SRHalt("ShaderUBOBlock::SetField() : Sampler type is not supported!");
+                break;
+            default:
+                SetField(hashId, static_cast<const void*>(&property.data));
+                break;
+        }
     }
 
     bool ShaderUBOBlock::HasField(uint64_t hashId) const noexcept {
@@ -238,7 +217,7 @@ namespace SR_GRAPH_NS::Memory {
         return static_cast<uint32_t>(static_cast<float_t>((block + (m_align - 1)) / static_cast<float_t>(m_align))) * m_align;
     }
 
-    void ShaderUBOBlock::SetDefault(const SR_UTILS_NS::StringAtom& name, const ShaderPropertyVariant& value) {
+    void ShaderUBOBlock::SetDefault(const SR_UTILS_NS::StringAtom& name, const ShaderPropertyData& value) {
         SR_TRACY_ZONE;
         SetField(name.GetHash(), value);
 
@@ -269,35 +248,12 @@ namespace SR_GRAPH_NS::Memory {
                 continue;
             }
 
-            std::visit([this, &defaultValue](ShaderPropertyVariant&& arg) {
-                if (std::holds_alternative<int32_t>(arg)) {
-                    const auto v = std::get<int32_t>(arg);
-                    std::memcpy(m_memory + defaultValue.offset, &v, defaultValue.size);
-                }
-                else if (std::holds_alternative<float_t>(arg)) {
-                    const auto v = std::get<float_t>(arg);
-                    std::memcpy(m_memory + defaultValue.offset, &v, defaultValue.size);
-                }
-                else if (std::holds_alternative<SR_MATH_NS::FVector2>(arg)) {
-                    const auto v = std::get<SR_MATH_NS::FVector2>(arg);
-                    std::memcpy(m_memory + defaultValue.offset, &v, defaultValue.size);
-                }
-                else if (std::holds_alternative<SR_MATH_NS::FVector3>(arg)) {
-                    const auto v = std::get<SR_MATH_NS::FVector3>(arg);
-                    std::memcpy(m_memory + defaultValue.offset, &v, defaultValue.size);
-                }
-                else if (std::holds_alternative<SR_MATH_NS::IVector3>(arg)) {
-                    const auto v = std::get<SR_MATH_NS::IVector3>(arg);
-                    std::memcpy(m_memory + defaultValue.offset, &v, defaultValue.size);
-                }
-                else if (std::holds_alternative<SR_MATH_NS::FVector4>(arg)) {
-                    const auto v = std::get<SR_MATH_NS::FVector4>(arg);
-                    std::memcpy(m_memory + defaultValue.offset, &v, defaultValue.size);
-                }
-                else {
-                    SRHalt("Unsupported type!");
-                }
-            }, defaultValue.value);
+            if (defaultValue.value.type == ShaderPropertyData::Type::Sampler) {
+                SRHalt("ShaderUBOBlock::ResetDefaultValues() : Sampler type is not supported!");
+                continue;
+            }
+
+            std::memcpy(m_memory + defaultValue.offset, &defaultValue.value.data, defaultValue.size);
         }
     }
 

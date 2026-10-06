@@ -138,9 +138,6 @@ namespace SR_GTYPES_NS {
 
         void OnReloadDone() override;
 
-        void LoadDefaultSampler(SR_UTILS_NS::StringAtom name);
-        void UnloadDefaultSamplers();
-
     private:
         void SetSampler(SR_UTILS_NS::StringAtom name, int32_t sampler) noexcept;
 
@@ -169,7 +166,6 @@ namespace SR_GTYPES_NS {
         ShaderSamplers m_samplers;
         ShaderProperties m_properties;
         SSBOBindings m_ssboBindings;
-        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_HTYPES_NS::SharedPtr<Texture>> m_defaultSamplers;
         bool m_isGLayerUsed = false;
 
         SR_SRSL_NS::ShaderType m_type = SR_SRSL_NS::ShaderType::Unknown;

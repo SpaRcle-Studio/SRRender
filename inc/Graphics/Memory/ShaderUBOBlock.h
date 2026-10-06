@@ -41,14 +41,14 @@ namespace SR_GRAPH_NS::Memory {
         void DeInit();
 
         void SR_FASTCALL SetField(uint64_t hashId, const void* data) noexcept;
-        void SR_FASTCALL SetField(uint64_t hashId, const ShaderPropertyVariant& property) noexcept;
+        void SR_FASTCALL SetField(uint64_t hashId, const ShaderPropertyData& property) noexcept;
 
         SR_NODISCARD bool HasField(uint64_t hashId) const noexcept;
 
         SR_NODISCARD uint32_t GetBinding() const { return m_binding; }
         SR_NODISCARD bool Valid() const noexcept { return m_binding != SR_ID_INVALID; }
 
-        void SetDefault(const SR_UTILS_NS::StringAtom& name, const ShaderPropertyVariant& value);
+        void SetDefault(const SR_UTILS_NS::StringAtom& name, const ShaderPropertyData& value);
         void ResetDefaultValues();
 
     private:
@@ -76,7 +76,7 @@ namespace SR_GRAPH_NS::Memory {
             SR_UTILS_NS::StringAtom name;
             uint32_t size = 0;
             uint32_t offset = 0;
-            ShaderPropertyVariant value;
+            ShaderPropertyData value;
         };
         SR_UTILS_NS::Vector<DefaultValue> m_defaultValues;
 

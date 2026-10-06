@@ -4,6 +4,7 @@
 
 #include <Graphics/Types/Skybox.h>
 #include <Graphics/Types/Shader.h>
+#include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Memory/UBOManager.h>
 #include <Graphics/Memory/DescriptorManager.h>
 #include <Graphics/Pipeline/Pipeline.h>
@@ -145,7 +146,7 @@ namespace SR_GTYPES_NS {
         IGraphicsResource::FreeVMemory();
     }
 
-    bool Skybox::Draw(Shader* pShader, bool& dirtyShader, bool& hasErrors, int32_t& virtualUBO, int32_t& virtualDescriptor) {
+    bool Skybox::Draw(Shader* pShader, BaseMaterial* pMaterial, bool& dirtyShader, bool& hasErrors, int32_t& virtualUBO, int32_t& virtualDescriptor) {
         SR_TRACY_ZONE;
 
         if (m_idDirty && (m_hasErrors || hasErrors || !Calculate())) {
@@ -183,6 +184,9 @@ namespace SR_GTYPES_NS {
         if (result == DescriptorManager::BindResult::Duplicated || dirtyShader) SR_UNLIKELY_ATTRIBUTE {
             if (m_cubeMap != SR_ID_INVALID) {
                 pShader->SetSamplerCube(SHADER_SKYBOX_DIFFUSE, m_cubeMap);
+            }
+            if (pMaterial) {
+                pMaterial->UseSamplers(*pShader);
             }
             m_descriptorManager.Flush();
         }
@@ -330,6 +334,6 @@ namespace SR_GTYPES_NS {
     }
 
     bool Skybox::Draw() {
-        return Draw(m_shader.Get(), m_dirtyShader, m_hasErrors, m_virtualUBO, m_virtualDescriptor);
+        return Draw(m_shader.Get(), nullptr, m_dirtyShader, m_hasErrors, m_virtualUBO, m_virtualDescriptor);
     }
 }
