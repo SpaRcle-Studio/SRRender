@@ -19,6 +19,10 @@ namespace SR_GRAPH_NS {
         Soft, Hard
     )
 
+    SR_ENUM_NS_CLASS_T(CelestialBodyShading, uint8_t,
+        Emission, ReflectLight
+    )
+
     struct DirectionalLightParams {
         SR_MATH_NS::FVector3 direction;
         SR_MATH_NS::FColor lightColor;
@@ -27,6 +31,16 @@ namespace SR_GRAPH_NS {
         float_t intensity = 1.f;
         float_t ambientIntensity = 1.f;
         float_t shadowStrength = 0.9f;
+
+        /// параметры диска на небе (солнце / луна)
+        SR_MATH_NS::FColor diskColor;
+        /// освещенность за пределами атмосферы, ослабление считается в шейдере неба
+        SR_MATH_NS::FColor skyIlluminance;
+        float_t diskIntensity = 0.f;
+        float_t angularDiameter = 0.53f;
+        CelestialBodyShading shading = CelestialBodyShading::Emission;
+        float_t starsIntensity = 0.f;
+        float_t environmentWeight = 1.f;
     };
 }
 

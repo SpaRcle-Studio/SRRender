@@ -49,6 +49,13 @@ namespace SR_SRSL_NS {
         { "SUN_COLOR",                      "vec3"          },
         { "SKY_COLOR",                      "vec3"          },
         { "GROUND_COLOR",                   "vec3"          },
+        { "SECONDARY_LIGHT_DIRECTION",      "vec3"          },
+        { "PRIMARY_SKY_ILLUMINANCE",        "vec3"          },
+        { "SECONDARY_SKY_ILLUMINANCE",      "vec3"          },
+        { "PRIMARY_DISK_COLOR",             "vec3"          },
+        { "SECONDARY_DISK_COLOR",           "vec3"          },
+        { "PRIMARY_DISK_PARAMS",            "vec4"          },
+        { "SECONDARY_DISK_PARAMS",          "vec4"          },
     };
 
     const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom>& GetDefaultUniforms() {

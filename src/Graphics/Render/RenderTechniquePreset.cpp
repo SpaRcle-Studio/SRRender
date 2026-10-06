@@ -11,6 +11,7 @@
 #include <Graphics/Pass/AutoExposurePass.h>
 #include <Graphics/Pass/SSAOPass.h>
 #include <Graphics/Pass/BlurPass.h>
+#include <Graphics/Pass/VolumetricCloudsPass.h>
 #include <Graphics/Settings/RenderSettings.h>
 
 #include <Utils/ECS/LayerManager.h>
@@ -582,6 +583,93 @@ namespace SR_GRAPH_NS {
         }
         else {
             SR_ERROR("RenderTechniquePresetIntegrationAutoExposure::Integrate() : failed to find post process pass for auto exposure integration! \n\tController name: {}", pMainViewIntegration->offscreenControllerName);
+        }
+    }
+
+    void RenderTechniquePresetIntegrationVolumetricClouds::Integrate(const Technique& technique, const Params& params) const {
+        SR_TRACY_ZONE;
+
+        const Quality quality = params.activeGraphicsSettings.volumetricClouds;
+        if (quality == Quality::None || !params.activeGraphicsSettings.postProcess) {
+            return;
+        }
+
+        auto&& pMainViewIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationMainView>();
+        if (!pMainViewIntegration) {
+            SR_ERROR("RenderTechniquePresetIntegrationVolumetricClouds::Integrate() : failed to find main view integration!");
+            return;
+        }
+
+        if (pMainViewIntegration->mainRenderColorLayers < 3) {
+            SR_ERROR("RenderTechniquePresetIntegrationVolumetricClouds::Integrate() : main view has no position layer!");
+            return;
+        }
+
+        float_t preScale = 0.5f;
+        switch (quality) {
+            case Quality::Low: preScale = 0.25f; break;
+            case Quality::Medium: preScale = 0.35f; break;
+            case Quality::High: preScale = 0.5f; break;
+            default: preScale = 0.75f; break;
+        }
+
+        auto&& data = technique.GetInternalData();
+
+        FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
+        pFrameBufferController->SetName(cloudsControllerName);
+        pFrameBufferController->SetColorFormats({ ImageFormat::RGBA16_SFLOAT });
+        pFrameBufferController->SetSamples(1);
+
+        if (params.pCameraParams && params.pCameraParams->screenSize) {
+            pFrameBufferController->SetSize(params.pCameraParams->screenSize.value());
+            pFrameBufferController->SetDynamicResizing(false);
+        }
+        if (params.pCameraParams && params.pCameraParams->screenScale) {
+            pFrameBufferController->SetPreScale(params.pCameraParams->screenScale.value() * preScale);
+        }
+        else {
+            pFrameBufferController->SetPreScale(preScale);
+        }
+
+        data.frameBuffers.emplace_back(pFrameBufferController);
+
+        auto&& pMainGroup = SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass);
+
+        const int32_t index = pMainGroup->IndexOfPass(pMainViewIntegration->offscreenControllerName);
+        if (index < 0) {
+            SRHalt("RenderTechniquePresetIntegrationVolumetricClouds::Integrate() : failed to find offscreen controller pass! Controller name: {}", pMainViewIntegration->offscreenControllerName);
+            return;
+        }
+
+        VolumetricCloudsPass::Ptr pCloudsPass = new VolumetricCloudsPass();
+        pCloudsPass->SetCustomName("VolumetricCloudsPass");
+
+        SamplerData positionSampler;
+        positionSampler.fboName = pMainViewIntegration->offscreenControllerName;
+        positionSampler.index = 2;
+        positionSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+        positionSampler.id = "positionMap";
+        pCloudsPass->GetSamplersData().AddSampler(positionSampler);
+
+        FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
+        pFrameBufferPass->SetCustomName(cloudsControllerName);
+        pFrameBufferPass->SetFrameBufferName(cloudsControllerName);
+        /// пропускание = 1, если облаков нет
+        pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
+        pFrameBufferPass->AddPass(pCloudsPass.StaticCast<BasePass>());
+
+        pMainGroup->InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass), index + 1);
+
+        if (auto&& pPostProcessPass = pMainGroup->FindPassAs<PostProcessPass>(PostProcessPass::GetClassStaticName())) {
+            SamplerData cloudsSampler;
+            cloudsSampler.fboName = cloudsControllerName;
+            cloudsSampler.index = 0;
+            cloudsSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            cloudsSampler.id = shaderVariableName;
+            pPostProcessPass->GetSamplersData().AddSampler(cloudsSampler);
+        }
+        else {
+            SR_ERROR("RenderTechniquePresetIntegrationVolumetricClouds::Integrate() : failed to find post process pass!");
         }
     }
 }

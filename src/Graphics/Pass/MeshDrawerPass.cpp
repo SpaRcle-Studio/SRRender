@@ -157,6 +157,7 @@ namespace SR_GRAPH_NS {
             shader.SetFloat(SHADER_SUN_INTENSITY, dirLightParams.intensity);
             shader.SetFloat(SHADER_SHADOW_STRENGTH, dirLightParams.shadowStrength);
             shader.SetFloat(SHADER_AMBIENT_INTENSITY, dirLightParams.ambientIntensity);
+            GetRenderScene()->GetLightSystem()->UseSkyUniforms(shader);
         }
 
         for (auto&& pAnotherPass : m_useSharedFromPass) {

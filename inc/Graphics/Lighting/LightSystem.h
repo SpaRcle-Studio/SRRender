@@ -12,6 +12,10 @@
 
 #include <Enum/LightType.hpp>
 
+namespace SR_GTYPES_NS {
+    class Shader;
+}
+
 namespace SR_GRAPH_NS {
     class RenderScene;
     class ILightComponent;
@@ -29,6 +33,14 @@ namespace SR_GRAPH_NS {
         void OnLightChanged(ILightComponent* pLightComponent);
 
         SR_NODISCARD const DirectionalLightParams& GetDirectionalLightParams() const noexcept;
+        SR_NODISCARD const DirectionalLightParams& GetSecondaryDirectionalLightParams() const noexcept;
+        SR_NODISCARD bool HasSecondaryDirectionalLight() const noexcept { return m_hasSecondaryDirectionalLight; }
+
+        /// параметры неба: второй источник, диски светил, звезды
+        void UseSkyUniforms(SR_GTYPES_NS::Shader& shader) const;
+
+    private:
+        void UpdateDirectionalLights();
 
     public:
         RenderScenePtr m_renderScene;
@@ -37,6 +49,8 @@ namespace SR_GRAPH_NS {
 
     private:
         DirectionalLightParams m_directionalLightParams;
+        DirectionalLightParams m_secondaryDirectionalLightParams;
+        bool m_hasSecondaryDirectionalLight = false;
 
     };
 }

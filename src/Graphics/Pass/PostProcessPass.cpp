@@ -144,6 +144,15 @@ namespace SR_GRAPH_NS {
                 pShader->SetVec3(SHADER_DIRECTIONAL_LIGHT_DIRECTION, pLightSystem->GetDirectionalLightParams().direction);
             }
 
+            auto&& dirLightParams = pLightSystem->GetDirectionalLightParams();
+            pShader->SetVec3(SHADER_SUN_COLOR, dirLightParams.lightColor.RGB());
+            pShader->SetVec3(SHADER_SKY_COLOR, dirLightParams.skyColor.RGB());
+            pShader->SetVec3(SHADER_GROUND_COLOR, dirLightParams.groundColor.RGB());
+            pShader->SetFloat(SHADER_SUN_INTENSITY, dirLightParams.intensity);
+            pLightSystem->UseSkyUniforms(*pShader);
+
+            UseSharedUniforms(*pShader);
+
             m_material->Use(*pShader);
 
             pShader->EndSharedUBO();

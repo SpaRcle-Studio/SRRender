@@ -144,6 +144,7 @@ namespace SR_GRAPH_NS {
             pShader->SetFloat(SHADER_SUN_INTENSITY, dirLightParams.intensity);
             pShader->SetFloat(SHADER_SHADOW_STRENGTH, dirLightParams.shadowStrength);
             pShader->SetFloat(SHADER_AMBIENT_INTENSITY, dirLightParams.ambientIntensity);
+            GetRenderScene()->GetLightSystem()->UseSkyUniforms(*pShader);
 
             pShader->EndSharedUBO();
         }

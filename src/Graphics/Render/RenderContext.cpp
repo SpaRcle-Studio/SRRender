@@ -838,6 +838,7 @@ namespace SR_GRAPH_NS {
         SwitchMacro("SR_HDR", m_activeGraphicsSettings.hdr);
         SwitchMacro("SR_AUTO_EXPOSURE", m_activeGraphicsSettings.autoExposure);
         SwitchMacro("SR_SSAO", m_activeGraphicsSettings.SSAO != Quality::None);
+        SwitchMacro("SR_VOLUMETRIC_CLOUDS", m_activeGraphicsSettings.volumetricClouds != Quality::None && m_activeGraphicsSettings.postProcess);
         SwitchMacro("SR_SHADOWS_QUALITY_EXTREME", m_activeGraphicsSettings.shadowsQuality == Quality::Extreme);
 
         if (!reload) {

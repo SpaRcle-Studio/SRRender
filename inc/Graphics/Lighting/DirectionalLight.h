@@ -17,7 +17,12 @@ namespace SR_GRAPH_NS {
     public:
         void UpdateLightParamsImpl() override;
 
-        SR_NODISCARD DirectionalLightParams GetParams() const;
+        SR_NODISCARD const DirectionalLightParams& GetParams() const;
+
+        void SetSkyColors(const SR_MATH_NS::FColor& sunsetSky, const SR_MATH_NS::FColor& daySky, const SR_MATH_NS::FColor& groundSky);
+        void SetCelestialBody(CelestialBodyShading shading, float_t angularDiameter, float_t diskIntensity, const SR_MATH_NS::FColor& tint);
+        void SetIntensity(float_t intensity) { m_intensity = intensity; UpdateLightParams(); }
+        void SetTemperature(float_t temperature) { m_temperature = temperature; UpdateLightParams(); }
 
     private:
         /// @property @onChanged(UpdateLightParams)
@@ -38,6 +43,15 @@ namespace SR_GRAPH_NS {
         float_t m_shadowMax = 0.9f;
         /// @property @onChanged(UpdateLightParams) @group(Sky)
         float_t m_skyHeightOffset = 0.0f;
+
+        /// @property @onChanged(UpdateLightParams) @group(CelestialBody)
+        CelestialBodyShading m_shading = CelestialBodyShading::Emission;
+        /// @property @onChanged(UpdateLightParams) @group(CelestialBody)
+        float_t m_angularDiameter = 0.53f;
+        /// @property @onChanged(UpdateLightParams) @group(CelestialBody)
+        float_t m_diskIntensity = 1.f;
+        /// @property @onChanged(UpdateLightParams) @group(CelestialBody)
+        SR_MATH_NS::FColor m_diskTint = SR_MATH_NS::FColor(1.f);
 
     private:
         DirectionalLightParams m_params;

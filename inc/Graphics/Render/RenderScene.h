@@ -37,6 +37,7 @@ namespace SR_GRAPH_NS {
     class IRenderTechnique;
     class Pipeline;
     class DebugRenderer;
+    class VolumetricClouds;
 
     class RenderScene : public SR_HTYPES_NS::SharedPtr<RenderScene>, public SR_UTILS_NS::ISceneModule {
         using Super = SR_HTYPES_NS::SharedPtr<RenderScene>;
@@ -108,6 +109,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsOverlayEnabled() const;
         SR_NODISCARD RenderContext* GetContext() const;
         SR_NODISCARD LightSystem* GetLightSystem() const { return m_lightSystem; }
+        SR_NODISCARD VolumetricClouds* GetVolumetricClouds() const { return m_volumetricClouds; }
+        void SetVolumetricClouds(VolumetricClouds* pClouds) { m_volumetricClouds = pClouds; }
         SR_NODISCARD SR_ANIMATIONS_NS::Skeleton* GetCurrentSkeleton() const { return m_currentSkeleton; }
         SR_NODISCARD const RenderScene::PipelinePtr& GetPipelineRef() const;
         SR_NODISCARD const RenderScene::PipelinePtr& GetPipeline() const;
@@ -143,6 +146,7 @@ namespace SR_GRAPH_NS {
         SR_ANIMATIONS_NS::Skeleton* m_currentSkeleton = nullptr;
 
         LightSystem* m_lightSystem = nullptr;
+        VolumetricClouds* m_volumetricClouds = nullptr;
         CameraPtr m_mainCamera;
 
         std::vector<CameraPtr> m_editorCameras;

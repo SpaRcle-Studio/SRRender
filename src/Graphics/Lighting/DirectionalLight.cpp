@@ -10,8 +10,23 @@
 #include <Codegen/DirectionalLight.generated.hpp>
 
 namespace SR_GRAPH_NS {
-    DirectionalLightParams DirectionalLight::GetParams() const {
+    const DirectionalLightParams& DirectionalLight::GetParams() const {
         return m_params;
+    }
+
+    void DirectionalLight::SetSkyColors(const SR_MATH_NS::FColor& sunsetSky, const SR_MATH_NS::FColor& daySky, const SR_MATH_NS::FColor& groundSky) {
+        m_sunsetSky = sunsetSky;
+        m_daySkyColor = daySky;
+        m_groundSky = groundSky;
+        UpdateLightParams();
+    }
+
+    void DirectionalLight::SetCelestialBody(CelestialBodyShading shading, float_t angularDiameter, float_t diskIntensity, const SR_MATH_NS::FColor& tint) {
+        m_shading = shading;
+        m_angularDiameter = angularDiameter;
+        m_diskIntensity = diskIntensity;
+        m_diskTint = tint;
+        UpdateLightParams();
     }
 
     void DirectionalLight::UpdateLightParamsImpl() {
@@ -72,8 +87,15 @@ namespace SR_GRAPH_NS {
         // ------------------------------------------------------------
         // Intensity (SOFTER curve, Unity-like)
         // ------------------------------------------------------------
-        const float visibility = pow(sunHeight, 0.6f);
+        /// сумерки: свет под горизонтом плавно гаснет (0..-10 градусов), а не обрывается
+        const float_t rawHeight = SR_MATH_NS::Dot(-m_params.direction, SR_MATH_NS::FVector3::Up());
+        const float_t twilight = SR_MATH_NS::Curve::SmoothStep(-0.17f, 0.02f, rawHeight);
+
+        /// у горизонта прямой свет не обрывается в ноль, а затухает вместе с сумерками
+        const float visibility = SR_MATH_NS::Max(pow(SR_MATH_NS::Max(sunHeight, 0.f), 0.6f), 0.15f * twilight) * twilight;
         m_params.intensity = m_intensity * visibility;
+        /// вклад в окружение (небо/ambient) - для плавного смешивания солнца и луны в LightSystem
+        m_params.environmentWeight = m_intensity * twilight;
         m_params.skyColor = SR_MATH_NS::Mix(m_sunsetSky, m_daySkyColor, sunHeight);
 
         if (m_interactsWithSky) {
@@ -108,5 +130,14 @@ namespace SR_GRAPH_NS {
         }
 
         m_params.shadowStrength = SR_MATH_NS::Mix(m_shadowMin, m_shadowMax, sunHeight);
+
+        // ------------------------------------------------------------
+        // Celestial body (диск на небе)
+        // ------------------------------------------------------------
+        m_params.shading = m_shading;
+        m_params.angularDiameter = m_angularDiameter;
+        m_params.diskIntensity = m_diskIntensity;
+        m_params.diskColor = sunBaseColor * m_diskTint;
+        m_params.skyIlluminance = sunBaseColor * m_intensity;
     }
 }
