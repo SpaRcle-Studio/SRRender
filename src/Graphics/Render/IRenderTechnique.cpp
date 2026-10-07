@@ -11,7 +11,6 @@
 #include <Graphics/Pass/MeshDrawerPass.h>
 #include <Graphics/Pass/IColorBufferPass.h>
 #include <Graphics/Pipeline/Pipeline.h>
-#include <Graphics/Loaders/RenderTechniquePostProcess.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/RenderTarget.h>
 

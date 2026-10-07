@@ -56,6 +56,12 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void BaseMaterial::SetTexture(const SR_UTILS_NS::StringAtom id, SR_UTILS_NS::StringView path) noexcept {
+        if (auto&& pData = GetMaterialData()) {
+            pData->SetData(id, SR_UTILS_NS::ResourceRef<SR_GTYPES_NS::Texture>(path), ShaderVarType::Sampler2D);
+        }
+    }
+
     void BaseMaterial::Use(SR_GTYPES_NS::Shader& shader) {
         if (auto&& pData = GetMaterialData()) {
             pData->UseUniforms(shader);

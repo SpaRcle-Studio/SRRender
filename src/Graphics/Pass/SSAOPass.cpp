@@ -17,7 +17,7 @@ namespace SR_GRAPH_NS {
         SetShader("Engine/Shaders/SSAO/ssao.srsl");
 
         auto mat = GetMaterial();
-        mat->SetTexture("Noise", CoreResLoader::Load<SR_GTYPES_NS::Texture>("Engine/Textures/4x4noise.png"));
+        mat->SetTexture("Noise", "Engine/Textures/4x4noise.png");
 
         m_kernel = CreateKernel();
 

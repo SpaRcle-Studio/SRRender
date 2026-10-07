@@ -101,6 +101,11 @@ namespace SR_ANIMATIONS_NS {
         m_bonesByName.reserve(SR_HUMANOID_MAX_BONES);
 
         const SR_HTYPES_NS::Function<void(SR_ANIMATIONS_NS::Bone*)> processBone = [&](SR_ANIMATIONS_NS::Bone* pBone) {
+            if (!pBone) {
+                SRHalt0();
+                return;
+            }
+
         #ifdef SR_DEBUG
             if (m_bonesByName.count(pBone->name) == 1) {
                 SR_INFO("Skeleton::ReCalculateSkeleton() : bone with name \"" + pBone->name.ToStringRef() + "\" already exists in hash table!");

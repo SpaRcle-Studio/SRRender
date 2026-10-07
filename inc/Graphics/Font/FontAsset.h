@@ -22,6 +22,7 @@ namespace SR_GRAPH_NS {
         bool IsSingletonCanBeDestroyed() const override { return false; }
         SR_NODISCARD uint16_t GetIndexForFont(SR_UTILS_NS::StringAtom id) const;
         SR_NODISCARD SR_UTILS_NS::StringAtom GetFontIdByIndex(uint16_t index) const;
+        SR_NODISCARD bool HasFontByIndex(uint16_t index) const;
 
     private:
         mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, uint16_t> m_indexes;

@@ -46,6 +46,7 @@ namespace SR_GRAPH_NS {
         void SR_FASTCALL SetFloat(SR_UTILS_NS::StringAtom id, float_t v) noexcept;
         void SR_FASTCALL SetBool(SR_UTILS_NS::StringAtom id, bool v) noexcept;
         void SR_FASTCALL SetTexture(SR_UTILS_NS::StringAtom id, const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Texture>& pTexture) noexcept;
+        void SR_FASTCALL SetTexture(SR_UTILS_NS::StringAtom id, SR_UTILS_NS::StringView path) noexcept;
 
         SR_NODISCARD bool IsValid() const;
         SR_NODISCARD const RenderContextPtr& GetContext() const;

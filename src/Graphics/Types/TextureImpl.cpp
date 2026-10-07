@@ -125,6 +125,9 @@ namespace SR_GTYPES_NS {
         auto&& pRenderContext = m_texture.GetRenderContext();
         auto&& pFont = m_pFont.GetResource();
         if (!pFont) {
+            if (!FontIndexer::Instance().HasFontByIndex(m_fontIndex)) {
+                return; /// font is not loaded yet, will be loaded later
+            }
             SR_UTILS_NS::StringAtom fontId = FontIndexer::Instance().GetFontIdByIndex(m_fontIndex);
             pFont = CoreResLoader::Load<FontAsset>(fontId);
             m_pFont.SetResource(fontId);

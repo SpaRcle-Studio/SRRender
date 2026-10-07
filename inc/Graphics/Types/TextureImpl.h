@@ -73,8 +73,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool CanBeUsed() const override;
 
     private:
-        uint16_t m_fontIndex = 0;
-        uint16_t m_pageIndex = 0;
+        uint16_t m_fontIndex = SR_UINT16_MAX;
+        uint16_t m_pageIndex = SR_UINT16_MAX;
         GlyphRenderType m_renderType = GlyphRenderType::SDF;
         SR_UTILS_NS::ResourceRef<FontAsset> m_pFont;
 

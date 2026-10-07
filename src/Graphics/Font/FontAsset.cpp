@@ -36,6 +36,11 @@ namespace SR_GRAPH_NS {
         return m_fontIds[index];
     }
 
+    bool FontIndexer::HasFontByIndex(uint16_t index) const {
+        SR_TRACY_ZONE;
+        return index < m_fontIds.size() && !m_fontIds[index].empty();
+    }
+
     void FontAsset::ComputeGlyphBitmap(bool async, SR_GTYPES_NS::Font* pFont, FontDetails::Glyph* pGlyph, FontAsset* pAsset) {
         SR_TRACY_ZONE;
         if (async) {
