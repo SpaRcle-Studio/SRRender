@@ -29,15 +29,14 @@ namespace SR_GTYPES_NS {
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
         SR_NODISCARD bool IsCalculatable() const override;
+        SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
+        SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;
 
         bool Export(const SR_UTILS_NS::Path& path) const;
 
     private:
         void SetDirtyMesh();
         void UseSSBO() override;
-
-        SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
-        SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;
 
     private:
         SR_UTILS_NS::VertexDataBuffer::Ptr m_vertices;
