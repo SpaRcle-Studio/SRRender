@@ -51,7 +51,7 @@ namespace SR_GTYPES_NS {
         bool FreeIBO();
 
     public:
-        /// @property
+        /// @property @group(Rendering)
         FrustumCullingType m_frustumCullingType = FrustumCullingType::AABB;
 
     protected:
