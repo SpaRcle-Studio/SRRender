@@ -101,6 +101,8 @@ namespace SR_GTYPES_NS {
         info.pObject = const_cast<IRenderComponent*>(this);
         info.internal.pMaterial = const_cast<BaseMaterial*>(GetMaterial().Get());
         info.internal.VBO = GetVBO();
+        info.internal.castShadows = IsCastShadows();
+        info.internal.colorBuffer = IsUseColorBuffer();
 
         if (auto&& pSO = GetSceneObject()) {
             info.internal.layer = pSO->GetLayer();
@@ -255,6 +257,26 @@ namespace SR_GTYPES_NS {
 
     MeshRenderQueues& IRenderComponent::GetRenderQueues() noexcept {
         return GetInternalData().renderQueues;
+    }
+
+    void IRenderComponent::SetCastShadows(bool castShadows) {
+        if (m_castShadows == castShadows) {
+            return;
+        }
+        m_castShadows = castShadows;
+        if (IsRenderObjectRegistered()) {
+            ReRegisterRenderObject();
+        }
+    }
+
+    void IRenderComponent::SetUseColorBuffer(bool useColorBuffer) {
+        if (m_useColorBuffer == useColorBuffer) {
+            return;
+        }
+        m_useColorBuffer = useColorBuffer;
+        if (IsRenderObjectRegistered()) {
+            ReRegisterRenderObject();
+        }
     }
 
     IRenderComponentInternalData& IRenderComponent::GetInternalData() const {

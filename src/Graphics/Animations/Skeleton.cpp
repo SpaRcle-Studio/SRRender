@@ -283,7 +283,7 @@ namespace SR_ANIMATIONS_NS {
                 debugId,
                 fromPos,
                 toPos,
-                SR_MATH_NS::FColor(38, 37, 45, 255)
+                SR_MATH_NS::FColor(38, 37, 45, 255) / 255.f
             );
         }
     }

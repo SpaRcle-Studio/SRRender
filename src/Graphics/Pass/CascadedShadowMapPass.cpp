@@ -16,6 +16,10 @@
 #include <Codegen/CascadedShadowMapPass.generated.hpp>
 
 namespace SR_GRAPH_NS {
+    bool CascadedShadowMapPass::IsObjectAllowed(const RenderObjectRegistrationInfo& info) const {
+        return info.internal.castShadows;
+    }
+
     void CascadedShadowMapPass::PostUpdate() {
         SR_TRACY_ZONE;
 

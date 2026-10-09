@@ -102,6 +102,10 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        if (!m_meshDrawerPass->IsObjectAllowed(info)) {
+            return;
+        }
+
         auto&& queues = info.pObject->GetRenderQueues();
 
         auto removedInfo = queues.Remove(this);
@@ -256,6 +260,10 @@ namespace SR_GRAPH_NS {
 
     bool RenderQueue::IsSuitable(const RenderObjectRegistrationInfo &info) const {
         SR_TRACY_ZONE;
+
+        if (!m_meshDrawerPass->IsObjectAllowed(info)) SR_UNLIKELY_ATTRIBUTE {
+            return false;
+        }
 
         if (!m_meshDrawerPass->IsLayerAllowed(info.internal.layer)) SR_UNLIKELY_ATTRIBUTE {
             return false;

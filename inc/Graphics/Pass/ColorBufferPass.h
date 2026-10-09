@@ -32,6 +32,7 @@ namespace SR_GRAPH_NS {
         bool Render() override;
 
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& GetColorFrameBuffer() const noexcept override;
+        SR_NODISCARD bool IsObjectAllowed(const RenderObjectRegistrationInfo& info) const override;
 
         void UseConstants(SR_GTYPES_NS::Shader& shader) override;
         void UseSharedUniforms(SR_GTYPES_NS::Shader& shader) override;

@@ -24,6 +24,10 @@ namespace SR_GRAPH_NS {
         , m_time(SR_HTYPES_NS::Time::Instance())
     { }
 
+    bool MeshDrawerPass::IsObjectAllowed(const RenderObjectRegistrationInfo& info) const {
+        return true;
+    }
+
     bool MeshDrawerPass::IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const {
         if (m_allowedLayers.empty()) {
             if (m_disallowedLayers.empty()) {

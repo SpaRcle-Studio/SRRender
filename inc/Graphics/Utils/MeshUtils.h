@@ -34,6 +34,8 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom layer;
         std::optional<int32_t> VBO;
         std::optional<int64_t> priority;
+        bool castShadows : 4 = false;
+        bool colorBuffer : 4 = false;
     };
 
     struct RenderObjectRegistrationInfo {

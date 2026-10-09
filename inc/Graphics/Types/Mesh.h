@@ -53,6 +53,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual uint32_t GetIndicesCount() const { return 0; }
         SR_NODISCARD const SR_MATH_NS::Matrix4x4& GetMatrix() const;
         SR_NODISCARD int32_t GetVirtualUBO() const final { return m_virtualUBO; }
+        SR_NODISCARD bool IsSupportShadows() const final { return true; }
 
         virtual void SetFrustumCullingType(FrustumCullingType type) { }
         void SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description) override;

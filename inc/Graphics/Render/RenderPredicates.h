@@ -15,6 +15,14 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
+    struct RenderObjectRegistrationInfo;
+
+    class RenderObjectFilterPredicate {
+    public:
+        virtual ~RenderObjectFilterPredicate() = default;
+        SR_NODISCARD virtual bool IsObjectAllowed(const RenderObjectRegistrationInfo& info) const = 0;
+    };
+
     class LayerFilterPredicate {
     public:
         virtual ~LayerFilterPredicate() = default;

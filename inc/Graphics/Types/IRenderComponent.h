@@ -82,6 +82,12 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::BaseMaterial>& GetMaterial() noexcept { return m_material; }
         SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const noexcept { return FrustumCullingType::None; }
         SR_NODISCARD virtual int32_t GetVirtualUBO() const { return SR_ID_INVALID; }
+        SR_NODISCARD virtual bool IsSupportShadows() const { return false; }
+        SR_NODISCARD bool IsCastShadows() const noexcept { return m_castShadows && IsSupportShadows(); }
+        SR_NODISCARD bool IsUseColorBuffer() const noexcept { return m_useColorBuffer; }
+
+        void SetCastShadows(bool castShadows);
+        void SetUseColorBuffer(bool useColorBuffer);
 
         virtual void Draw() { }
         virtual bool Bind() { return true; }
@@ -101,6 +107,11 @@ namespace SR_GTYPES_NS {
 
         /// @property @setter(SetMaterial) @getter(GetMaterial) @inspector(MaterialPropertyDrawer)
         SR_HTYPES_NS::SharedPtr<BaseMaterial> m_material;
+        /// @property @propertyCondition(IsSupportShadows) @onChanged(ReRegisterRenderObject) @tooltip(Включает/выключает отбрасывание теней объектом)
+        /// @group(Rendering)
+        bool m_castShadows = true;
+        /// @property @onChanged(ReRegisterRenderObject) @group(Rendering)
+        bool m_useColorBuffer = true;
 
         mutable SR_UTILS_NS::RawPointerHolder<IRenderComponentInternalData> m_internalData;
         mutable RenderScene* m_renderScene = nullptr;

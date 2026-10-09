@@ -35,6 +35,10 @@ namespace SR_GRAPH_NS {
         return GetRenderStrategy()->BuildQueue<ColorBufferRenderQueue, RenderQueue>(this);
     }
 
+    bool ColorBufferPass::IsObjectAllowed(const RenderObjectRegistrationInfo& info) const {
+        return info.internal.colorBuffer;
+    }
+
     const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& ColorBufferPass::GetColorFrameBuffer() const noexcept {
         if (auto&& pParent = GetParent()) {
             return dynamic_cast<FrameBufferPass*>(pParent)->GetFrameBuffer();

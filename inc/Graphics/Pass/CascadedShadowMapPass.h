@@ -39,6 +39,7 @@ namespace SR_GRAPH_NS {
         void SetLightFrustumCount(uint32_t count) { m_lightFrustumCount = count; }
 
         SR_NODISCARD RenderQueuePtr AllocateRenderQueue(uint32_t index) override;
+        SR_NODISCARD bool IsObjectAllowed(const RenderObjectRegistrationInfo& info) const override;
 
     protected:
         SR_NODISCARD SR_GTYPES_NS::Camera* CheckCamera();

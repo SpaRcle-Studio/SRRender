@@ -56,7 +56,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    class MeshDrawerPass : public BasePass, public LayerFilterPredicate, public PriorityFilterPredicate {
+    class MeshDrawerPass : public BasePass, public LayerFilterPredicate, public PriorityFilterPredicate, public RenderObjectFilterPredicate {
         SR_CLASS()
         using Super = BasePass;
     public:
@@ -93,6 +93,7 @@ namespace SR_GRAPH_NS {
         void SetFrustumCulling(bool enabled) { m_frustumCulling = enabled; }
         void AddShaderDefine(const std::string& define) { m_shaderDefines.insert(define); }
 
+        SR_NODISCARD bool IsObjectAllowed(const RenderObjectRegistrationInfo& info) const override;
         SR_NODISCARD bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const override;
         SR_NODISCARD bool IsPriorityAllowed(int64_t priority) const override { return true; }
 
