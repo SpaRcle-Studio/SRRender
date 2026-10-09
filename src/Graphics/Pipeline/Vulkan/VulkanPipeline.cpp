@@ -2198,6 +2198,30 @@ namespace SR_GRAPH_NS {
         return SR_ID_INVALID;
     }
 
+    bool VulkanPipeline::UpdateVBO(int32_t VBO, const void* pData, uint64_t size) {
+        SR_TRACY_ZONE;
+
+        if (!m_memory || VBO == SR_ID_INVALID) {
+            return false;
+        }
+
+        ++m_state.operations;
+
+        return m_memory->UpdateBuffer(m_memory->GetVBO(static_cast<uint32_t>(VBO)), pData, size);
+    }
+
+    bool VulkanPipeline::UpdateIBO(int32_t IBO, const void* pData, uint64_t size) {
+        SR_TRACY_ZONE;
+
+        if (!m_memory || IBO == SR_ID_INVALID) {
+            return false;
+        }
+
+        ++m_state.operations;
+
+        return m_memory->UpdateBuffer(m_memory->GetIBO(static_cast<uint32_t>(IBO)), pData, size);
+    }
+
     bool VulkanPipeline::FreeDescriptorSet(int32_t* id) {
         SR_TRACY_ZONE;
 

@@ -88,6 +88,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t AllocateUBO(uint32_t uboSize) override;
         SR_NODISCARD int32_t AllocateVBO(int32_t VBO, uint64_t size, const void* pData) override;
         SR_NODISCARD int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) override;
+        bool UpdateVBO(int32_t VBO, const void* pData, uint64_t size) override;
+        bool UpdateIBO(int32_t IBO, const void* pData, uint64_t size) override;
         SR_NODISCARD int32_t AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) override;
         SR_NODISCARD int32_t AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) override;
         SR_NODISCARD int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) override;

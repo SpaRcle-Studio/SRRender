@@ -254,6 +254,9 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD virtual int32_t AllocateVBO(int32_t VBO, uint64_t size, const void* pData) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) { return SR_ID_INVALID; }
+        /// Запись данных в начало уже выделенного буфера без пересоздания. false - буфер меньше данных или не существует
+        virtual bool UpdateVBO(int32_t VBO, const void* pData, uint64_t size) { return false; }
+        virtual bool UpdateIBO(int32_t IBO, const void* pData, uint64_t size) { return false; }
         SR_NODISCARD virtual int32_t AllocateUBO(uint32_t uboSize) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) { return SR_ID_INVALID; }

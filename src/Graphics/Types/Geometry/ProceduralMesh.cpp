@@ -31,7 +31,7 @@ namespace SR_GTYPES_NS {
     void ProceduralMesh::SwapIndices(SR_HTYPES_NS::FastMemoryArray<uint32_t>& indices) {
         std::swap(m_indices, indices);
         m_countIndices = static_cast<uint32_t>(m_indices.size());
-        SetDirtyMesh();
+        SetDirtyMesh(false);
     }
 
     void ProceduralMesh::SetIndexedVertices(const SR_UTILS_NS::VertexDataBuffer& vertices) {
@@ -43,8 +43,11 @@ namespace SR_GTYPES_NS {
         m_vertices->CopyFrom(vertices);
         m_countVertices = vertices.GetVertexCount();
 
-        SetVertexLayoutDescription(vertices.GetLayout());
-        SetDirtyMesh();
+        const bool layoutChanged = !GetVertexLayoutDescription().Compare(vertices.GetLayout());
+        if (layoutChanged) {
+            SetVertexLayoutDescription(vertices.GetLayout());
+        }
+        SetDirtyMesh(layoutChanged);
     }
 
     void ProceduralMesh::SetIndices(void* pData, uint64_t count) {
@@ -58,17 +61,105 @@ namespace SR_GTYPES_NS {
             memcpy(m_indices.data(), pData, count * sizeof(uint32_t));
         }
         m_countIndices = static_cast<uint32_t>(m_indices.size());
-        SetDirtyMesh();
+        SetDirtyMesh(false);
     }
 
-    void ProceduralMesh::SetDirtyMesh() {
+    void ProceduralMesh::SetDirtyMesh(bool layoutChanged) {
         m_isCalculated = false;
         MarkMaterialDirty();
-        ReRegisterRenderObject();
+
+        /// VBO в ключе очереди рендера. Если буферы переиспользуются (и layout тот же), он не меняется -
+        /// перерегистрация не нужна, достаточно пересобрать командные буферы
+        if (layoutChanged || m_VBO == SR_ID_INVALID || m_IBO == SR_ID_INVALID) {
+            ReRegisterRenderObject();
+        }
 
         if (auto&& renderScene = TryGetRenderScene()) {
             renderScene->SetDirty();
         }
+    }
+
+    bool ProceduralMesh::Calculate() {
+        SR_TRACY_ZONE;
+
+        if (IsCalculated()) {
+            return true;
+        }
+
+        if (!m_vertices || !IsCalculatable() || m_indices.empty()) {
+            FreeVideoMemory();
+            return false;
+        }
+
+        m_isUniqueMesh = true;
+        m_countIndices = static_cast<uint32_t>(m_indices.size());
+        m_countVertices = static_cast<uint32_t>(m_vertices->GetVertexCount());
+
+        const uint64_t vertexSize = m_vertices->GetDataSize();
+        const uint64_t indexSize = m_indices.size() * sizeof(uint32_t);
+
+        auto&& pPipeline = GetPipeline();
+
+        const bool canReuse = m_VBO != SR_ID_INVALID && m_IBO != SR_ID_INVALID && vertexSize <= m_VBOCapacity && indexSize <= m_IBOCapacity;
+        if (canReuse && pPipeline->UpdateVBO(m_VBO, m_vertices->GetRawData(), vertexSize) && pPipeline->UpdateIBO(m_IBO, m_indices.data(), indexSize)) {
+            /// Mesh::Calculate - без освобождения UBO и дескрипторов, они остаются валидными
+            return Mesh::Calculate();
+        }
+
+        /// Буферы не помещают данные - выделяются заново. Если VBO изменится, объект перерегистрируется
+        const int32_t oldVBO = m_VBO;
+        FreeVideoMemory();
+
+        if (!AllocateBuffers()) {
+            return false;
+        }
+
+        if (m_VBO != oldVBO && IsRenderObjectRegistered()) {
+            ReRegisterRenderObject();
+        }
+
+        return Mesh::Calculate();
+    }
+
+    bool ProceduralMesh::AllocateBuffers() {
+        SR_TRACY_ZONE;
+
+        auto&& pPipeline = GetPipeline();
+
+        /// Запас ёмкости: меш процедурный и часто перестраивается с близким размером
+        const uint64_t vertexSize = m_vertices->GetDataSize();
+        const uint64_t indexCount = m_indices.size();
+        const uint64_t stride = std::max<uint64_t>(m_vertices->GetLayout().GetStride(), 1);
+        const uint64_t vertexCapacity = (vertexSize + vertexSize / 2 + stride - 1) / stride * stride;
+        const uint64_t indexCapacity = indexCount + indexCount / 2;
+
+        /// Данные пишутся при выделении, хвост буфера остаётся неинициализированным - он не рисуется
+        static SR_THREAD_LOCAL SR_HTYPES_NS::FastMemoryArray<uint8_t> staging;
+        staging.resize(std::max(vertexCapacity, indexCapacity * sizeof(uint32_t)));
+
+        std::memcpy(staging.data(), m_vertices->GetRawData(), vertexSize);
+        if (m_VBO = pPipeline->AllocateVBO(SR_ID_INVALID, vertexCapacity, staging.data()); m_VBO == SR_ID_INVALID) {
+            SR_ERROR("ProceduralMesh::AllocateBuffers() : failed to allocate VBO!");
+            m_hasErrors = true;
+            return false;
+        }
+        m_VBOCapacity = vertexCapacity;
+
+        std::memcpy(staging.data(), m_indices.data(), indexCount * sizeof(uint32_t));
+        if (m_IBO = pPipeline->AllocateIBO(staging.data(), sizeof(uint32_t), indexCapacity, m_VBO); m_IBO == SR_ID_INVALID) {
+            SR_ERROR("ProceduralMesh::AllocateBuffers() : failed to allocate IBO!");
+            m_hasErrors = true;
+            return false;
+        }
+        m_IBOCapacity = indexCapacity * sizeof(uint32_t);
+
+        return true;
+    }
+
+    void ProceduralMesh::FreeVideoMemory() {
+        Super::FreeVideoMemory();
+        m_VBOCapacity = 0;
+        m_IBOCapacity = 0;
     }
 
     void ProceduralMesh::UseMaterial(SR_GTYPES_NS::Shader& shader) {

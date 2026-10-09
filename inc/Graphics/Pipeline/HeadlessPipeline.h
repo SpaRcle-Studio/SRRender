@@ -18,6 +18,8 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD int32_t AllocateVBO(int32_t VBO, uint64_t size, const void* pData) override;
         SR_NODISCARD int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) override;
+        bool UpdateVBO(int32_t VBO, const void* pData, uint64_t size) override { return VBO != SR_ID_INVALID; }
+        bool UpdateIBO(int32_t IBO, const void* pData, uint64_t size) override { return IBO != SR_ID_INVALID; }
         SR_NODISCARD int32_t AllocateUBO(uint32_t uboSize) override;
         SR_NODISCARD int32_t AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) override;
         SR_NODISCARD int32_t AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) override;

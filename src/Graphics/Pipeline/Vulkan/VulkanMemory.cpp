@@ -255,6 +255,21 @@ namespace SR_GRAPH_NS::VulkanTools {
         return m_vboPool.Add(pVBO);
     }
 
+    bool MemoryManager::UpdateBuffer(EvoVulkan::Types::VmaBuffer* pBuffer, const void* pData, uint64_t size) {
+        SR_TRACY_ZONE;
+
+        if (!pBuffer || !pData || size == 0 || pBuffer->GetSize() < size) {
+            return false;
+        }
+
+        /// Буфер мог использоваться кадрами в полёте: запись в отображённую память идёт напрямую, без очереди команд.
+        /// Ожидание кадров всё равно дешевле, чем освобождение (WaitRenderIdle) и выделение заново.
+        m_kernel->WaitAllFences();
+        pBuffer->CopyToDevice(pData, size, true);
+
+        return true;
+    }
+
     int32_t MemoryManager::AllocateIBO(uint32_t buffSize, const void *data)  {
         SR_TRACY_ZONE;
 

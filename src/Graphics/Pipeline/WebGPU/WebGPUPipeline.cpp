@@ -1414,6 +1414,39 @@ namespace SR_GRAPH_NS {
         return m_internalData->IBOs.Add(std::move(pBuffer));
     }
 
+    bool WebGPUPipeline::UpdateVBO(int32_t VBO, const void* pData, uint64_t size) {
+        if (!pData || size == 0 || VBO < 0 || !m_internalData->VBOs.IsAlive(VBO)) {
+            return false;
+        }
+
+        auto&& buffer = m_internalData->VBOs.At(VBO);
+        if (!buffer || buffer.GetSize() < size) {
+            return false;
+        }
+
+        /// WriteBuffer упорядочен с отправленными командами, ожидание GPU не нужно
+        m_internalData->queue.WriteBuffer(buffer, 0, pData, size);
+        ++m_state.operations;
+
+        return true;
+    }
+
+    bool WebGPUPipeline::UpdateIBO(int32_t IBO, const void* pData, uint64_t size) {
+        if (!pData || size == 0 || IBO < 0 || !m_internalData->IBOs.IsAlive(IBO)) {
+            return false;
+        }
+
+        auto&& buffer = m_internalData->IBOs.At(IBO);
+        if (!buffer || buffer.GetSize() < size) {
+            return false;
+        }
+
+        m_internalData->queue.WriteBuffer(buffer, 0, pData, size);
+        ++m_state.operations;
+
+        return true;
+    }
+
     SR_NODISCARD int32_t WebGPUPipeline::AllocateUBO(uint32_t uboSize) {
         if (uboSize == 0) {
             return SR_ID_INVALID;

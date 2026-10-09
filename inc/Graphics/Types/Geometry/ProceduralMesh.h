@@ -29,18 +29,27 @@ namespace SR_GTYPES_NS {
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
         SR_NODISCARD bool IsCalculatable() const override;
+        bool Calculate() override;
+        void FreeVideoMemory() override;
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
         SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;
 
         bool Export(const SR_UTILS_NS::Path& path) const;
 
     private:
-        void SetDirtyMesh();
+        /// layoutChanged - нужна перерегистрация в рендере (вершинный layout входит в ключ очереди)
+        void SetDirtyMesh(bool layoutChanged);
         void UseSSBO() override;
+        bool AllocateBuffers();
 
     private:
         SR_UTILS_NS::VertexDataBuffer::Ptr m_vertices;
         SR_HTYPES_NS::FastMemoryArray<uint32_t> m_indices;
+
+        /// Ёмкость выделенных буферов в байтах. Новые данные, которые помещаются, пишутся в те же буферы
+        /// без перевыделения, ожидания GPU и перерегистрации в рендере
+        uint64_t m_VBOCapacity = 0;
+        uint64_t m_IBOCapacity = 0;
 
     };
 }
