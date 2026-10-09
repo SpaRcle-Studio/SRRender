@@ -11,6 +11,7 @@
 #include <Utils/Common/NonCopyable.h>
 #include <Utils/Types/Function.h>
 #include <Utils/Types/ObjectPool.h>
+#include <Utils/Types/Vector.h>
 
 #include <EvoVulkan/Types/VulkanBuffer.h>
 #include <EvoVulkan/Complexes/Framebuffer.h>
@@ -81,7 +82,11 @@ namespace SR_GRAPH_NS::VulkanTools {
         SR_NODISCARD int32_t AllocateVBO(int32_t VBO, uint64_t size, const void* pData);
         SR_NODISCARD int32_t AllocateUBO(uint32_t UBOSize);
         SR_NODISCARD int32_t AllocateIBO(uint32_t buffSize, const void* data);
-        SR_NODISCARD bool UpdateBuffer(EvoVulkan::Types::VmaBuffer* pBuffer, const void* pData, uint64_t size);
+        SR_NODISCARD bool UpdateVBO(uint32_t id, const void* pData, uint64_t size);
+        SR_NODISCARD bool UpdateIBO(uint32_t id, const void* pData, uint64_t size);
+
+        /// Вызывается раз в кадр после отправки: удаляет буферы, которые GPU больше не может читать
+        void OnFrameEnd();
         SR_NODISCARD int32_t AllocateSSBO(uint32_t size, SSBOUsage usage);
 
         SR_NODISCARD bool ReAllocateFBO(const VulkanFrameBufferAllocInfo& info);
@@ -157,6 +162,20 @@ namespace SR_GRAPH_NS::VulkanTools {
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::VmaBuffer*, int32_t> m_ssboPool;
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Complexes::FrameBuffer*, int32_t> m_fboPool;
         SR_HTYPES_NS::ObjectPool<EvoVulkan::Types::Texture*, int32_t> m_texturePool;
+
+    private:
+        /// Буфер может читать кадр в полёте или закешированный командный буфер другого изображения свапчейна.
+        /// Вместо ожидания GPU (WaitAllFences) он удаляется через несколько кадров
+        void RetireBuffer(EvoVulkan::Types::VmaBuffer* pBuffer);
+        SR_NODISCARD EvoVulkan::Types::VmaBuffer* ReplaceBuffer(EvoVulkan::Types::VmaBuffer* pBuffer, const void* pData, uint64_t size);
+
+        struct RetiredBuffer {
+            EvoVulkan::Types::VmaBuffer* pBuffer = nullptr;
+            uint64_t freeFrame = 0;
+        };
+
+        SR_UTILS_NS::Vector<RetiredBuffer> m_retiredBuffers;
+        uint64_t m_frame = 0;
 
     private:
         bool m_isInit = false;

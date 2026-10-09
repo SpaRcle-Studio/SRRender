@@ -155,7 +155,7 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     bool MemoryManager::FreeVBO(uint32_t id) {
-        delete m_vboPool.RemoveByIndex(static_cast<int32_t>(id));
+        RetireBuffer(m_vboPool.RemoveByIndex(static_cast<int32_t>(id)));
         return true;
     }
 
@@ -165,7 +165,7 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     bool MemoryManager::FreeIBO(uint32_t id) {
-        delete m_iboPool.RemoveByIndex(static_cast<int32_t>(id));
+        RetireBuffer(m_iboPool.RemoveByIndex(static_cast<int32_t>(id)));
         return true;
     }
 
@@ -246,8 +246,8 @@ namespace SR_GRAPH_NS::VulkanTools {
         }
 
         if (VBO != SR_ID_INVALID) {
-            m_kernel->WaitAllFences();
-            delete m_vboPool.At(VBO);
+            /// Без ожидания GPU: старый буфер удаляется отложенно, ID остаётся тем же
+            RetireBuffer(m_vboPool.At(VBO));
             m_vboPool.At(VBO) = pVBO;
             return VBO;
         }
@@ -255,19 +255,81 @@ namespace SR_GRAPH_NS::VulkanTools {
         return m_vboPool.Add(pVBO);
     }
 
-    bool MemoryManager::UpdateBuffer(EvoVulkan::Types::VmaBuffer* pBuffer, const void* pData, uint64_t size) {
+    void MemoryManager::RetireBuffer(EvoVulkan::Types::VmaBuffer* pBuffer) {
+        if (!pBuffer) {
+            return;
+        }
+
+        /// Кадры в полёте + закешированные командные буферы всех изображений свапчейна (пересобираются после SetDirty)
+        const uint64_t delay = static_cast<uint64_t>(m_kernel->GetSwapchainImagesCount()) + m_kernel->GetMaxFramesInFlight() + 1;
+        m_retiredBuffers.emplace_back(RetiredBuffer { .pBuffer = pBuffer, .freeFrame = m_frame + delay });
+    }
+
+    void MemoryManager::OnFrameEnd() {
+        ++m_frame;
+
+        if (m_retiredBuffers.empty()) {
+            return;
+        }
+
+        SR_TRACY_ZONE;
+
+        for (uint64_t i = 0; i < m_retiredBuffers.size();) {
+            if (m_retiredBuffers[i].freeFrame > m_frame) {
+                ++i;
+                continue;
+            }
+            delete m_retiredBuffers[i].pBuffer;
+            m_retiredBuffers[i] = m_retiredBuffers.back();
+            m_retiredBuffers.pop_back();
+        }
+    }
+
+    EvoVulkan::Types::VmaBuffer* MemoryManager::ReplaceBuffer(EvoVulkan::Types::VmaBuffer* pBuffer, const void* pData, uint64_t size) {
         SR_TRACY_ZONE;
 
         if (!pBuffer || !pData || size == 0 || pBuffer->GetSize() < size) {
-            return false;
+            return nullptr;
         }
 
-        /// Буфер мог использоваться кадрами в полёте: запись в отображённую память идёт напрямую, без очереди команд.
-        /// Ожидание кадров всё равно дешевле, чем освобождение (WaitRenderIdle) и выделение заново.
-        m_kernel->WaitAllFences();
-        pBuffer->CopyToDevice(pData, size, true);
+        /// Писать в старый буфер нельзя - его может читать GPU. Новый буфер той же ёмкости, старый удаляется отложенно.
+        /// ID в пуле не меняется, поэтому меш не перерегистрируется
+        auto&& pNewBuffer = EvoVulkan::Types::VmaBuffer::Create(
+            m_kernel->GetAllocator(),
+            pBuffer->GetUsage(),
+            pBuffer->GetMemoryUsage(),
+            pBuffer->GetSize(),
+            nullptr
+        );
 
-        return true;
+        if (!pNewBuffer) {
+            return nullptr;
+        }
+
+        pNewBuffer->CopyToDevice(pData, size, true);
+        pNewBuffer->SetDebugInfo(pBuffer->GetDebugInfo());
+
+        RetireBuffer(pBuffer);
+
+        return pNewBuffer;
+    }
+
+    bool MemoryManager::UpdateVBO(uint32_t id, const void* pData, uint64_t size) {
+        auto&& pBuffer = m_vboPool.At(static_cast<int32_t>(id));
+        if (auto&& pNewBuffer = ReplaceBuffer(pBuffer, pData, size)) {
+            pBuffer = pNewBuffer;
+            return true;
+        }
+        return false;
+    }
+
+    bool MemoryManager::UpdateIBO(uint32_t id, const void* pData, uint64_t size) {
+        auto&& pBuffer = m_iboPool.At(static_cast<int32_t>(id));
+        if (auto&& pNewBuffer = ReplaceBuffer(pBuffer, pData, size)) {
+            pBuffer = pNewBuffer;
+            return true;
+        }
+        return false;
     }
 
     int32_t MemoryManager::AllocateIBO(uint32_t buffSize, const void *data)  {
@@ -397,6 +459,15 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     void MemoryManager::Free() {
+        if (!m_retiredBuffers.empty() && m_kernel) {
+            m_kernel->WaitDeviceIdle();
+        }
+
+        for (auto&& retired : m_retiredBuffers) {
+            delete retired.pBuffer;
+        }
+        m_retiredBuffers.clear();
+
         if (m_stagingBuffer) {
             delete m_stagingBuffer;
             m_stagingBuffer = nullptr;

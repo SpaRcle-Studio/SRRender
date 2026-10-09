@@ -1948,6 +1948,10 @@ namespace SR_GRAPH_NS {
     void VulkanPipeline::DrawFrame() {
         Super::DrawFrame();
 
+        if (m_memory) {
+            m_memory->OnFrameEnd();
+        }
+
         switch (m_kernel->NextFrame()) {
             case EvoVulkan::Core::RenderResult::Fatal:
                 SR_UTILS_NS::EventManager::Instance().Broadcast(SR_UTILS_NS::EventManager::Event::FatalError);
@@ -2207,7 +2211,7 @@ namespace SR_GRAPH_NS {
 
         ++m_state.operations;
 
-        return m_memory->UpdateBuffer(m_memory->GetVBO(static_cast<uint32_t>(VBO)), pData, size);
+        return m_memory->UpdateVBO(static_cast<uint32_t>(VBO), pData, size);
     }
 
     bool VulkanPipeline::UpdateIBO(int32_t IBO, const void* pData, uint64_t size) {
@@ -2219,7 +2223,7 @@ namespace SR_GRAPH_NS {
 
         ++m_state.operations;
 
-        return m_memory->UpdateBuffer(m_memory->GetIBO(static_cast<uint32_t>(IBO)), pData, size);
+        return m_memory->UpdateIBO(static_cast<uint32_t>(IBO), pData, size);
     }
 
     bool VulkanPipeline::FreeDescriptorSet(int32_t* id) {
@@ -2252,7 +2256,7 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
         ++m_state.deletions;
 
-        WaitRenderIdle();
+        /// Без ожидания GPU: буфер удаляется отложенно (MemoryManager::OnFrameEnd)
 
         const bool result = m_memory->FreeVBO(*id);
 
@@ -2272,7 +2276,7 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
         ++m_state.deletions;
 
-        WaitRenderIdle();
+        /// Без ожидания GPU: буфер удаляется отложенно (MemoryManager::OnFrameEnd)
 
         const bool result = m_memory->FreeIBO(*id);
 
