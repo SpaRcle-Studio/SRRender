@@ -10,7 +10,8 @@ namespace SR_GRAPH_NS {
         if (defaultData) {
             return *defaultData;
         }
-        static const auto def = GetVariantFromShaderVarType(type);
+        static ShaderPropertyData def;
+        def = GetVariantFromShaderVarType(type);
         return def;
     }
 

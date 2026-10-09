@@ -90,6 +90,7 @@ namespace SR_GRAPH_NS {
             SR_UTILS_NS::Serialization::Load(deserializer, path, SR_UTILS_NS::SerializationId::Create("value"));
             SR_GTYPES_NS::Texture::Ptr pTexture = path.empty() ? nullptr : CoreResLoader::Load<SR_GTYPES_NS::Texture>(path);
             data = SR_UTILS_NS::ResourceRef<SR_GTYPES_NS::Texture>(pTexture);
+            SRAssert(data->type == ShaderPropertyData::Type::Sampler);
             return true;
         }
 
@@ -154,6 +155,10 @@ namespace SR_GRAPH_NS {
 
     void MaterialShaderData::OnPostLoad() {
         SR_TRACY_ZONE;
+
+        for (MaterialShaderProperty& sampler : samplers) {
+            SRAssert(sampler.data->type == ShaderPropertyData::Type::Sampler);
+        }
 
         if (!pOwnedMaterialData) {
             SRHalt("MaterialShaderData::OnPostLoad() : pOwnedMaterialData is null!");
@@ -280,6 +285,7 @@ namespace SR_GRAPH_NS {
 
         if (IsSamplerType(type)) {
             for (MaterialShaderProperty& sampler : samplers) {
+                SR_MAYBE_UNUSED SR_UTILS_NS::StringView idView = id.ToStringView();
                 if (sampler.id == id) {
                     if (sampler.type != type) {
                         SR_ERROR("MaterialShaderData::SetData() : invalid property!\n\tProperty: {}\n\tLoaded type: {}\n\tExpected type: {}", id, type, sampler.type);
@@ -376,6 +382,7 @@ namespace SR_GRAPH_NS {
                     sampler.type = property.type;
                     sampler.pushConstant = property.pushConstant;
                     sampler.data = property.GetData();
+                    SRAssert(sampler.data->type == ShaderPropertyData::Type::Sampler);
                     sampler.displayName = SR_UTILS_NS::Reflection::MakeDisplayName(property.id);
                     OnSamplerChanged(nullptr, sampler.data ? sampler.data->GetSampler() : nullptr);
                 }
