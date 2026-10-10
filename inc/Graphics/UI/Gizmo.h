@@ -9,6 +9,7 @@
 
 #include <Utils/ECS/GameObject.h>
 #include <Utils/ECS/Component.h>
+#include <Utils/Input/InputSystem.h>
 
 namespace SR_GTYPES_NS {
     class Camera;
@@ -146,6 +147,7 @@ namespace SR_GRAPH_UI_NS {
         float_t m_moveFactor = 0.1f;
 
         SR_MATH_NS::FPoint m_lastMousePos = SR_MATH_NS::InfinityFV2;
+        SR_UTILS_NS::InputAccumulator m_inputAccumulator;
 
         GizmoMode m_mode = GizmoMode::Local;
         GizmoOperation m_operation = GizmoOperation::TranslateAll;

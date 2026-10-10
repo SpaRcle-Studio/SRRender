@@ -212,6 +212,11 @@ namespace SR_GRAPH_UI_NS {
         }
 
         auto&& mousePos = pCamera->GetMousePos();
+        if (mousePos.x < 0.f || mousePos.y < 0.f || mousePos.x > 1.f || mousePos.y > 1.f) {
+            m_inputAccumulator.Accumulate();
+            return;
+        }
+
         if (!m_lastMousePos.IsFinite()) {
             m_lastMousePos = mousePos;
         }
@@ -267,49 +272,63 @@ namespace SR_GRAPH_UI_NS {
                         m_colorRequest = nullptr;
                     }
                 }
+                else {
+                    m_inputAccumulator.Accumulate();
+                    return;
+                }
             }
             else if (pColorBufferPass) {
                 m_colorRequest = pColorBufferPass->CreateColorRequest(mousePos);
             }
         }
 
-        if (m_hoveredOperation != GizmoOperation::None && SR_UTILS_NS::Input::Instance().GetMouseDown(SR_UTILS_NS::MouseCode::MouseLeft)) {
-            m_activeOperation = m_hoveredOperation;
+        if (!m_inputAccumulator.IsEmpty()) {
+            m_inputAccumulator.Apply(1);
+        }
 
-            auto&& translationNormal = SR_MATH_NS::CalcTranslationPlanNormal(
-                m_modelMatrix,
-                pCamera->GetCameraEye(),
-                pCamera->GetCameraDir(),
-                GetAxis()
-            );
-            m_translationPlan = SR_MATH_NS::BuildPlan(m_modelMatrix.v.position, translationNormal);
+        if (SR_UTILS_NS::Input::Instance().GetMouseDown(SR_UTILS_NS::MouseCode::MouseLeft)) {
+            if (m_hoveredOperation != GizmoOperation::None) {
+                m_activeOperation = m_hoveredOperation;
 
-            if (SR_MATH_NS::IsMaskIncludedSubMask(m_activeOperation, GizmoOperation::Rotate)) {
-                auto&& rotationNormal = IsLocal() ? SR_MATH_NS::CalcRotationPlanNormal(
+                auto&& translationNormal = SR_MATH_NS::CalcTranslationPlanNormal(
                     m_modelMatrix,
+                    pCamera->GetCameraEye(),
                     pCamera->GetCameraDir(),
                     GetAxis()
-                ) : SR_MATH_NS::CalcRotationPlanNormal(pCamera->GetCameraDir(), GetAxis());
+                );
+                m_translationPlan = SR_MATH_NS::BuildPlan(m_modelMatrix.v.position, translationNormal);
 
-                m_rotationPlan = SR_MATH_NS::BuildPlan(m_modelMatrix.v.position, rotationNormal);
+                if (SR_MATH_NS::IsMaskIncludedSubMask(m_activeOperation, GizmoOperation::Rotate)) {
+                    auto&& rotationNormal = IsLocal() ? SR_MATH_NS::CalcRotationPlanNormal(
+                        m_modelMatrix,
+                        pCamera->GetCameraDir(),
+                        GetAxis()
+                    ) : SR_MATH_NS::CalcRotationPlanNormal(pCamera->GetCameraDir(), GetAxis());
+
+                    m_rotationPlan = SR_MATH_NS::BuildPlan(m_modelMatrix.v.position, rotationNormal);
+                }
+
+                auto&& screenRay = pCamera->GetScreenRay(mousePos, IsGizmo2DSpace());
+
+                const float_t screenFactor = pCamera->CalculateScreenFactor(m_modelMatrix, m_moveFactor, IsGizmo2DSpace());
+
+                m_translationPlanOrigin = screenRay.IntersectPlane(m_translationPlan);
+                m_relativeOrigin = (m_translationPlanOrigin - m_modelMatrix.v.position.XYZ()) * (1.f / screenFactor);
+
+                m_rotationVectorSource = screenRay.RotationVector(m_rotationPlan, m_modelMatrix.v.position.XYZ());
+                m_rotationAngleOrigin = screenRay.ComputeAngleOnPlan(m_rotationPlan, m_modelMatrix.v.position.XYZ(), m_rotationVectorSource);
+
+                BeginGizmo();
             }
-
-            auto&& screenRay = pCamera->GetScreenRay(mousePos, IsGizmo2DSpace());
-
-            const float_t screenFactor = pCamera->CalculateScreenFactor(m_modelMatrix, m_moveFactor, IsGizmo2DSpace());
-
-            m_translationPlanOrigin = screenRay.IntersectPlane(m_translationPlan);
-            m_relativeOrigin = (m_translationPlanOrigin - m_modelMatrix.v.position.XYZ()) * (1.f / screenFactor);
-
-            m_rotationVectorSource = screenRay.RotationVector(m_rotationPlan, m_modelMatrix.v.position.XYZ());
-            m_rotationAngleOrigin = screenRay.ComputeAngleOnPlan(m_rotationPlan, m_modelMatrix.v.position.XYZ(), m_rotationVectorSource);
-
-            BeginGizmo();
         }
 
         ProcessGizmo(mousePos);
 
         m_lastMousePos = mousePos;
+
+        if (!m_inputAccumulator.IsEmpty()) {
+            m_inputAccumulator.Reset();
+        }
 
         Super::Update(dt);
     }
