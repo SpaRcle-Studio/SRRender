@@ -38,6 +38,9 @@ namespace SR_GTYPES_NS {
         ReRegisterRenderObject();
         MarkMaterialDirty();
         m_isCalculated = false;
+        if (auto&& pAABB = GetRawMesh()) {
+            SetAABB(GetRawMesh()->GetAABB(GetMeshId()));
+        }
     }
 
     bool Mesh3D::OnResourceReloaded(SR_UTILS_NS::StringAtom resourceId) {

@@ -78,6 +78,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual SR_UTILS_NS::VertexLayoutDescriptionsRef GetShaderVertexLayoutDescriptions() const noexcept;
         SR_NODISCARD virtual const SR_UTILS_NS::UI::MaskInfo& GetMaskInfo() const;
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
+        SR_NODISCARD virtual const SR_MATH_NS::AABB& GetAABBOffsets() const;
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::BaseMaterial>& GetMaterial() const noexcept { return m_material; }
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::BaseMaterial>& GetMaterial() noexcept { return m_material; }
         SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const noexcept { return FrustumCullingType::None; }
@@ -88,6 +89,8 @@ namespace SR_GTYPES_NS {
 
         void SetCastShadows(bool castShadows);
         void SetUseColorBuffer(bool useColorBuffer);
+        void SetAABB(const SR_MATH_NS::AABB& aabb);
+        void SetAABBDirty();
 
         virtual void Draw() { }
         virtual bool Bind() { return true; }
@@ -103,7 +106,7 @@ namespace SR_GTYPES_NS {
     private:
         bool m_isWaitReRegister    : 2 = false;
         bool m_isDestroyingState   : 2 = false;
-        mutable bool m_isAABBDirty : 4 = true;
+        mutable bool m_isAABBDirty : 2 = true;
 
         /// @property @setter(SetMaterial) @getter(GetMaterial) @inspector(MaterialPropertyDrawer)
         SR_HTYPES_NS::SharedPtr<BaseMaterial> m_material;
@@ -112,6 +115,8 @@ namespace SR_GTYPES_NS {
         bool m_castShadows = true;
         /// @property @onChanged(ReRegisterRenderObject) @group(Rendering)
         bool m_useColorBuffer = true;
+
+        SR_MATH_NS::AABB m_aabb = SR_MATH_NS::AABB::UnitCube();
 
         mutable SR_UTILS_NS::RawPointerHolder<IRenderComponentInternalData> m_internalData;
         mutable RenderScene* m_renderScene = nullptr;

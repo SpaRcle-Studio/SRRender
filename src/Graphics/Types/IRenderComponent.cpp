@@ -172,11 +172,16 @@ namespace SR_GTYPES_NS {
         }
     }
 
+    const SR_MATH_NS::AABB& IRenderComponent::GetAABBOffsets() const {
+        static SR_MATH_NS::AABB aabb;
+        return aabb;
+    }
+
     const SR_MATH_NS::AABB& IRenderComponent::GetAABB() const {
         auto&& internalData = GetInternalData();
-        if (m_isAABBDirty) {
+        if (m_isAABBDirty) SR_UNLIKELY_ATTRIBUTE {
             if (auto&& pTransform = GetTransform()) {
-                internalData.aabb = pTransform->GetAABB();
+                internalData.aabb = pTransform->GetMatrix().TransformAABB(m_aabb + GetAABBOffsets());
                 m_isAABBDirty = false;
             }
         }
@@ -279,6 +284,14 @@ namespace SR_GTYPES_NS {
         }
     }
 
+    void IRenderComponent::SetAABB(const SR_MATH_NS::AABB& aabb) {
+        if (m_aabb == aabb) {
+            return;
+        }
+        m_aabb = aabb;
+        m_isAABBDirty = true;
+    }
+
     IRenderComponentInternalData& IRenderComponent::GetInternalData() const {
         if (!m_internalData) {
             m_internalData = new IRenderComponentInternalData();
@@ -324,6 +337,10 @@ namespace SR_GTYPES_NS {
             }
         }
         return nullptr;
+    }
+
+    void IRenderComponent::SetAABBDirty() {
+        m_isAABBDirty = true;
     }
 
     /// ================================================================================================================
