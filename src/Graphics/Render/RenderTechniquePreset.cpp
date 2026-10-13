@@ -13,6 +13,7 @@
 #include <Graphics/Pass/BlurPass.h>
 #include <Graphics/Pass/BloomPass.h>
 #include <Graphics/Pass/SSRPass.h>
+#include <Graphics/Pass/SceneDistancePass.h>
 #include <Graphics/Pass/VolumetricCloudsPass.h>
 #include <Graphics/Pass/VolumetricFogPass.h>
 #include <Graphics/Settings/RenderSettings.h>
@@ -46,6 +47,69 @@ namespace SR_GRAPH_NS {
         if (withNormal) {
             add(3, "normalMap");
         }
+    }
+
+    static const SR_UTILS_NS::StringAtom SCENE_DISTANCE_CONTROLLER_NAME = "SceneDistance";
+
+    /// Общий для проходов пониженного разрешения буфер дистанции до сцены (половинное разрешение,
+    /// см. Common/scene-distance.srsl). Создается один раз сразу после offscreen.
+    /// Возвращает индекс, после которого вставлять проход-потребитель.
+    static int32_t EnsureSceneDistancePass(GroupPass& mainGroup, RenderTechniqueData& data,
+        const RenderTechniqueLoadParams& params, SR_UTILS_NS::StringAtom offscreenName
+    ) {
+        const int32_t existingIndex = mainGroup.IndexOfPass(SCENE_DISTANCE_CONTROLLER_NAME);
+        if (existingIndex >= 0) {
+            return existingIndex;
+        }
+
+        const int32_t offscreenIndex = mainGroup.IndexOfPass(offscreenName);
+        if (offscreenIndex < 0) {
+            return SR_ID_INVALID;
+        }
+
+        constexpr float_t preScale = 0.5f;
+
+        FrameBufferController::Ptr pController = new FrameBufferController();
+        pController->SetName(SCENE_DISTANCE_CONTROLLER_NAME);
+        pController->SetColorFormats({ ImageFormat::R32_SFLOAT });
+        pController->SetDepthEnabled(false);
+        pController->SetSamples(1);
+
+        if (params.pCameraParams && params.pCameraParams->screenSize) {
+            pController->SetSize(params.pCameraParams->screenSize.value());
+            pController->SetDynamicResizing(false);
+        }
+        if (params.pCameraParams && params.pCameraParams->screenScale) {
+            pController->SetPreScale(params.pCameraParams->screenScale.value() * preScale);
+        }
+        else {
+            pController->SetPreScale(SR_MATH_NS::FVector2(preScale));
+        }
+
+        data.frameBuffers.emplace_back(pController);
+
+        SceneDistancePass::Ptr pPass = new SceneDistancePass();
+        pPass->SetCustomName("SceneDistancePass");
+        AddGBufferSamplers(pPass->GetSamplersData(), offscreenName, false);
+
+        FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
+        pFrameBufferPass->SetCustomName(SCENE_DISTANCE_CONTROLLER_NAME);
+        pFrameBufferPass->SetFrameBufferName(SCENE_DISTANCE_CONTROLLER_NAME);
+        pFrameBufferPass->GetFrameBufferPassData().SetClearDepth(SR_UTILS_NS::Optional<float_t>());
+        pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(1e6f, 0.f, 0.f, 1.f));
+        pFrameBufferPass->AddPass(pPass.StaticCast<BasePass>());
+
+        mainGroup.InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass), static_cast<uint32_t>(offscreenIndex + 1));
+        return offscreenIndex + 1;
+    }
+
+    static void AddSceneDistanceSampler(SamplersPassData& samplers) {
+        SamplerData sampler;
+        sampler.fboName = SCENE_DISTANCE_CONTROLLER_NAME;
+        sampler.index = 0;
+        sampler.usageType = SamplerDataUsageType::FrameBufferColor;
+        sampler.id = "sceneDistanceMap";
+        samplers.AddSampler(sampler);
     }
 
     const RenderTechniqueData& FileRenderTechniquePresetResource::GetData(const Params& params) const noexcept {
@@ -665,7 +729,7 @@ namespace SR_GRAPH_NS {
 
         auto&& pMainGroup = SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass);
 
-        const int32_t index = pMainGroup->IndexOfPass(pMainViewIntegration->offscreenControllerName);
+        const int32_t index = EnsureSceneDistancePass(*pMainGroup, data, params, pMainViewIntegration->offscreenControllerName);
         if (index < 0) {
             SRHalt("RenderTechniquePresetIntegrationVolumetricClouds::Integrate() : failed to find offscreen controller pass! Controller name: {}", pMainViewIntegration->offscreenControllerName);
             return;
@@ -674,7 +738,7 @@ namespace SR_GRAPH_NS {
         VolumetricCloudsPass::Ptr pCloudsPass = new VolumetricCloudsPass();
         pCloudsPass->SetCustomName("VolumetricCloudsPass");
 
-        AddGBufferSamplers(pCloudsPass->GetSamplersData(), pMainViewIntegration->offscreenControllerName, false);
+        AddSceneDistanceSampler(pCloudsPass->GetSamplersData());
 
         FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
         pFrameBufferPass->SetCustomName(cloudsControllerName);
@@ -754,7 +818,7 @@ namespace SR_GRAPH_NS {
 
         auto&& pMainGroup = SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass);
 
-        const int32_t index = pMainGroup->IndexOfPass(pMainViewIntegration->offscreenControllerName);
+        const int32_t index = EnsureSceneDistancePass(*pMainGroup, data, params, pMainViewIntegration->offscreenControllerName);
         if (index < 0) {
             SRHalt("RenderTechniquePresetIntegrationVolumetricFog::Integrate() : failed to find offscreen controller pass! Controller name: {}", pMainViewIntegration->offscreenControllerName);
             return;
@@ -763,7 +827,7 @@ namespace SR_GRAPH_NS {
         VolumetricFogPass::Ptr pFogPass = new VolumetricFogPass();
         pFogPass->SetCustomName("VolumetricFogPass");
 
-        AddGBufferSamplers(pFogPass->GetSamplersData(), pMainViewIntegration->offscreenControllerName, false);
+        AddSceneDistanceSampler(pFogPass->GetSamplersData());
 
         /// объемные лучи используют каскадные тени
         auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>();
@@ -959,7 +1023,7 @@ namespace SR_GRAPH_NS {
 
         const SSRPreset preset = params.pRenderSettings->GetSSRPreset(quality);
         const SR_UTILS_NS::StringAtom offscreenName = pMainViewIntegration->offscreenControllerName;
-        int32_t insertIndex = offscreenIndex + 1;
+        int32_t insertIndex = EnsureSceneDistancePass(*pMainGroup, data, params, offscreenName) + 1;
 
         auto&& addSampler = [](SSRPass& pass, SR_UTILS_NS::StringAtom fboName, uint64_t index, SR_UTILS_NS::StringAtom id) {
             SamplerData sampler;
@@ -1017,6 +1081,7 @@ namespace SR_GRAPH_NS {
         SSRPass::Ptr pTracePass = new SSRPass();
         pTracePass->stage = SSRPassStage::Trace;
         addSampler(*pTracePass, offscreenName, 0, "sceneColor");
+        AddSceneDistanceSampler(pTracePass->GetSamplersData());
         addStage(traceControllerName, pTracePass);
 
         SR_UTILS_NS::StringAtom resultName = traceControllerName;
