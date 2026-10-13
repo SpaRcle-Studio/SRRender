@@ -170,6 +170,29 @@ namespace SR_GRAPH_NS {
 
     };
 
+    class RenderTechniquePresetIntegrationSSR : public RenderTechniquePresetIntegrationBase {
+        SR_CLASS()
+    public:
+        void Integrate(const Technique& technique, const Params& params) const override;
+
+    public:
+        /// @property
+        SR_UTILS_NS::StringAtom traceControllerName = "SSRTrace";
+        /// @property
+        SR_UTILS_NS::StringAtom resolveControllerName = "SSRResolve";
+        /// @property
+        SR_UTILS_NS::StringAtom shaderVariableName = "ssrMap";
+        /// @property
+        float_t thickness = 0.3f;
+        /// @property
+        float_t maxRoughness = 0.6f;
+        /// @property
+        float_t edgeFade = 0.1f;
+        /// @property
+        float_t blurRadius = 6.f;
+
+    };
+
     class RenderTechniquePresetIntegrationMainView : public RenderTechniquePresetIntegrationBase {
         SR_CLASS()
     public:

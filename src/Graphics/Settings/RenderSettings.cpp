@@ -75,6 +75,43 @@ namespace SR_GRAPH_NS {
         return preset;
     }
 
+    SSRPreset RenderSettings::GetSSRPreset(Quality quality) const {
+        if (!SSRQualityPresets.empty()) {
+            return FindSuitableQuality(quality, SSRQualityPresets);
+        }
+
+        SSRPreset preset;
+        switch (quality) {
+            case Quality::Low:
+                preset.preScale = 0.35f;
+                preset.maxSteps = 24;
+                preset.refineSteps = 3;
+                preset.maxDistance = 50.f;
+                preset.resolve = false;
+                break;
+            case Quality::Medium:
+                preset.maxSteps = 32;
+                preset.refineSteps = 4;
+                preset.maxDistance = 75.f;
+                break;
+            case Quality::High:
+                break;
+            case Quality::Ultra:
+                preset.preScale = 0.75f;
+                preset.maxSteps = 64;
+                preset.refineSteps = 6;
+                preset.maxDistance = 150.f;
+                break;
+            default:
+                preset.preScale = 1.f;
+                preset.maxSteps = 96;
+                preset.refineSteps = 8;
+                preset.maxDistance = 250.f;
+                break;
+        }
+        return preset;
+    }
+
     const ActiveGraphicsSettings& RenderSettings::GetDefaultGraphicsSettings() const {
         for (auto&& settings : defaultPlatformGraphicsSettings) {
             if (settings.platform.has_value() && settings.platform.value() != SR_PLATFORM_NS::GetType()) {

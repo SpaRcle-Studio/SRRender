@@ -81,6 +81,14 @@ namespace SR_GRAPH_NS {
         void UseSamplers(SR_GTYPES_NS::Shader* pShader);
 
         SR_NODISCARD bool HasSamplers() const noexcept { return !m_samplers.empty(); }
+        SR_NODISCARD bool HasSampler(SR_UTILS_NS::StringAtom id) const noexcept {
+            for (auto&& sampler : m_samplers) {
+                if (sampler.id == id) {
+                    return true;
+                }
+            }
+            return false;
+        }
         SR_NODISCARD bool IsSamplersDirty() const noexcept { return m_dirtySamplers; }
 
         void MarkSamplersDirty() { m_dirtySamplers = true; }

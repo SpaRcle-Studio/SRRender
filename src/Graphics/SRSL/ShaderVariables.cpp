@@ -36,6 +36,7 @@ namespace SR_SRSL_NS {
         { "RENDER_PASS_TYPE",               "int"           },
 
         { "RESOLUTION",                     "vec2"          },
+        { "TARGET_RESOLUTION",              "vec2"          },
         { "ASPECT",                         "vec2"          },
 
         { "CASCADE_LIGHT_SPACE_MATRICES",   "mat4[4]"       },

@@ -5,6 +5,7 @@
 #include <Graphics/Pass/PostProcessPass.h>
 #include <Graphics/Pass/FrameBufferPass.h>
 #include <Graphics/Types/Texture.h>
+#include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Render/RenderScene.h>
@@ -128,6 +129,15 @@ namespace SR_GRAPH_NS {
             auto&& pLightSystem = GetRenderScene()->GetLightSystem();
 
             pShader->SetVec2(SHADER_RESOLUTION, resolution);
+
+            /// размер буфера, в который рисует проход (у проходов пониженного разрешения меньше RESOLUTION)
+            SR_MATH_NS::FVector2 targetResolution = resolution;
+            if (auto&& pFrameBufferPass = GetFrameBufferPass()) {
+                if (auto&& pFrameBuffer = pFrameBufferPass->GetFrameBuffer()) {
+                    targetResolution = pFrameBuffer->GetSize().Cast<float_t>();
+                }
+            }
+            pShader->SetVec2(SHADER_TARGET_RESOLUTION, targetResolution);
 
             pShader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
 

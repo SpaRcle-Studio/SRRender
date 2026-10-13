@@ -841,6 +841,7 @@ namespace SR_GRAPH_NS {
         SwitchMacro("SR_VOLUMETRIC_CLOUDS", m_activeGraphicsSettings.volumetricClouds != Quality::None && m_activeGraphicsSettings.postProcess);
         SwitchMacro("SR_VOLUMETRIC_FOG", m_activeGraphicsSettings.volumetricFog != Quality::None && m_activeGraphicsSettings.postProcess);
         SwitchMacro("SR_BLOOM", m_activeGraphicsSettings.bloom != Quality::None && m_activeGraphicsSettings.postProcess && m_activeGraphicsSettings.hdr);
+        SwitchMacro("SR_SSR", m_activeGraphicsSettings.SSR != Quality::None && m_activeGraphicsSettings.postProcess);
         SwitchMacro("SR_SHADOWS_QUALITY_EXTREME", m_activeGraphicsSettings.shadowsQuality == Quality::Extreme);
 
         if (!reload) {

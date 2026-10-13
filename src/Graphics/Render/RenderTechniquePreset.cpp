@@ -12,6 +12,7 @@
 #include <Graphics/Pass/SSAOPass.h>
 #include <Graphics/Pass/BlurPass.h>
 #include <Graphics/Pass/BloomPass.h>
+#include <Graphics/Pass/SSRPass.h>
 #include <Graphics/Pass/VolumetricCloudsPass.h>
 #include <Graphics/Pass/VolumetricFogPass.h>
 #include <Graphics/Settings/RenderSettings.h>
@@ -24,6 +25,27 @@ namespace SR_GRAPH_NS {
     FileRenderTechniquePresetResource::Ptr FileRenderTechniquePresetResource::Load(const SR_UTILS_NS::Path& rawPath) {
         SR_TRACY_ZONE;
         return SR_UTILS_NS::Asset::Load<FileRenderTechniquePresetResource>(rawPath);
+    }
+
+    /// G-buffer слои Offscreen: 1 - покрытие/metallic/roughness, 2 - позиция, 3 - нормаль (см. Common/gbuffer.srsl)
+    static void AddGBufferSamplers(SamplersPassData& samplers, SR_UTILS_NS::StringAtom offscreenName, bool withNormal) {
+        auto&& add = [&](uint64_t index, SR_UTILS_NS::StringAtom id) {
+            if (samplers.HasSampler(id)) {
+                return;
+            }
+            SamplerData sampler;
+            sampler.fboName = offscreenName;
+            sampler.index = index;
+            sampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            sampler.id = id;
+            samplers.AddSampler(sampler);
+        };
+
+        add(1, "coverageMap");
+        add(2, "positionMap");
+        if (withNormal) {
+            add(3, "normalMap");
+        }
     }
 
     const RenderTechniqueData& FileRenderTechniquePresetResource::GetData(const Params& params) const noexcept {
@@ -301,15 +323,15 @@ namespace SR_GRAPH_NS {
                 colorFormats.emplace_back(ImageFormat::RGBA8_UNORM);
             }
 
-            if (mainRenderColorLayers > 1) { /// depth layer
-                colorFormats.emplace_back(ImageFormat::R32_SFLOAT);
+            if (mainRenderColorLayers > 1) { /// coverage layer (r - покрытие, g - metallic, b - roughness), см. Common/gbuffer.srsl
+                colorFormats.emplace_back(ImageFormat::RGBA8_UNORM);
             }
 
             if (mainRenderColorLayers > 2) { /// position layer
                 colorFormats.emplace_back(ImageFormat::RGBA16_SFLOAT);
             }
 
-            if (mainRenderColorLayers > 3) { /// normal layer
+            if (mainRenderColorLayers > 3) { /// normal layer (rgb - нормаль с normal map * покрытие)
                 colorFormats.emplace_back(ImageFormat::RGBA8_UNORM);
             }
 
@@ -492,7 +514,7 @@ namespace SR_GRAPH_NS {
             ssaoSampler.fboName = pMainViewIntegration->offscreenControllerName;
             ssaoSampler.index = 1;
             ssaoSampler.usageType = SamplerDataUsageType::FrameBufferColor;
-            ssaoSampler.id = "Depth";
+            ssaoSampler.id = "Coverage";
             pSSAO->GetSamplersData().AddSampler(ssaoSampler);
 
             ssaoSampler.fboName = pMainViewIntegration->offscreenControllerName;
@@ -590,12 +612,7 @@ namespace SR_GRAPH_NS {
 
     static void AddPostProcessPositionSampler(PostProcessPass& postProcessPass, SR_UTILS_NS::StringAtom offscreenName) {
         /// позиции полного разрешения - для апсемпла с учетом глубины (без лесенки на границах объектов)
-        SamplerData positionSampler;
-        positionSampler.fboName = offscreenName;
-        positionSampler.index = 2;
-        positionSampler.usageType = SamplerDataUsageType::FrameBufferColor;
-        positionSampler.id = "positionMap";
-        postProcessPass.GetSamplersData().AddSampler(positionSampler);
+        AddGBufferSamplers(postProcessPass.GetSamplersData(), offscreenName, false);
     }
 
     void RenderTechniquePresetIntegrationVolumetricClouds::Integrate(const Technique& technique, const Params& params) const {
@@ -629,7 +646,8 @@ namespace SR_GRAPH_NS {
 
         FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
         pFrameBufferController->SetName(cloudsControllerName);
-        pFrameBufferController->SetColorFormats({ ImageFormat::RGBA16_SFLOAT });
+        /// 0 - облака, 1 - дистанция, для которой посчитан пиксель (для апсемпла с учетом глубины)
+        pFrameBufferController->SetColorFormats({ ImageFormat::RGBA16_SFLOAT, ImageFormat::R32_SFLOAT });
         pFrameBufferController->SetSamples(1);
 
         if (params.pCameraParams && params.pCameraParams->screenSize) {
@@ -656,18 +674,14 @@ namespace SR_GRAPH_NS {
         VolumetricCloudsPass::Ptr pCloudsPass = new VolumetricCloudsPass();
         pCloudsPass->SetCustomName("VolumetricCloudsPass");
 
-        SamplerData positionSampler;
-        positionSampler.fboName = pMainViewIntegration->offscreenControllerName;
-        positionSampler.index = 2;
-        positionSampler.usageType = SamplerDataUsageType::FrameBufferColor;
-        positionSampler.id = "positionMap";
-        pCloudsPass->GetSamplersData().AddSampler(positionSampler);
+        AddGBufferSamplers(pCloudsPass->GetSamplersData(), pMainViewIntegration->offscreenControllerName, false);
 
         FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
         pFrameBufferPass->SetCustomName(cloudsControllerName);
         pFrameBufferPass->SetFrameBufferName(cloudsControllerName);
         /// пропускание = 1, если облаков нет
         pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
+        pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(1e6f, 0.f, 0.f, 1.f));
         pFrameBufferPass->AddPass(pCloudsPass.StaticCast<BasePass>());
 
         pMainGroup->InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass), index + 1);
@@ -678,6 +692,10 @@ namespace SR_GRAPH_NS {
             cloudsSampler.index = 0;
             cloudsSampler.usageType = SamplerDataUsageType::FrameBufferColor;
             cloudsSampler.id = shaderVariableName;
+            pPostProcessPass->GetSamplersData().AddSampler(cloudsSampler);
+
+            cloudsSampler.index = 1;
+            cloudsSampler.id = "cloudsDepthMap";
             pPostProcessPass->GetSamplersData().AddSampler(cloudsSampler);
             AddPostProcessPositionSampler(*pPostProcessPass, pMainViewIntegration->offscreenControllerName);
         }
@@ -717,7 +735,8 @@ namespace SR_GRAPH_NS {
 
         FrameBufferController::Ptr pFrameBufferController = new FrameBufferController();
         pFrameBufferController->SetName(fogControllerName);
-        pFrameBufferController->SetColorFormats({ ImageFormat::RGBA16_SFLOAT });
+        /// 0 - туман, 1 - дистанция, для которой посчитан пиксель (для апсемпла с учетом глубины)
+        pFrameBufferController->SetColorFormats({ ImageFormat::RGBA16_SFLOAT, ImageFormat::R32_SFLOAT });
         pFrameBufferController->SetSamples(1);
 
         if (params.pCameraParams && params.pCameraParams->screenSize) {
@@ -744,12 +763,7 @@ namespace SR_GRAPH_NS {
         VolumetricFogPass::Ptr pFogPass = new VolumetricFogPass();
         pFogPass->SetCustomName("VolumetricFogPass");
 
-        SamplerData positionSampler;
-        positionSampler.fboName = pMainViewIntegration->offscreenControllerName;
-        positionSampler.index = 2;
-        positionSampler.usageType = SamplerDataUsageType::FrameBufferColor;
-        positionSampler.id = "positionMap";
-        pFogPass->GetSamplersData().AddSampler(positionSampler);
+        AddGBufferSamplers(pFogPass->GetSamplersData(), pMainViewIntegration->offscreenControllerName, false);
 
         /// объемные лучи используют каскадные тени
         auto&& pShadowIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationShadows>();
@@ -767,6 +781,7 @@ namespace SR_GRAPH_NS {
         pFrameBufferPass->SetFrameBufferName(fogControllerName);
         /// пропускание = 1, если тумана нет
         pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
+        pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(1e6f, 0.f, 0.f, 1.f));
         pFrameBufferPass->AddPass(pFogPass.StaticCast<BasePass>());
 
         pMainGroup->InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass), index + 1);
@@ -779,12 +794,11 @@ namespace SR_GRAPH_NS {
             fogSampler.id = shaderVariableName;
             pPostProcessPass->GetSamplersData().AddSampler(fogSampler);
 
-            /// positionMap уже добавлен интеграцией облаков, если она активна
-            const bool hasClouds = technique.FindIntegration<RenderTechniquePresetIntegrationVolumetricClouds>()
-                && params.activeGraphicsSettings.volumetricClouds != Quality::None;
-            if (!hasClouds) {
-                AddPostProcessPositionSampler(*pPostProcessPass, pMainViewIntegration->offscreenControllerName);
-            }
+            fogSampler.index = 1;
+            fogSampler.id = "fogDepthMap";
+            pPostProcessPass->GetSamplersData().AddSampler(fogSampler);
+
+            AddPostProcessPositionSampler(*pPostProcessPass, pMainViewIntegration->offscreenControllerName);
         }
         else {
             SR_ERROR("RenderTechniquePresetIntegrationVolumetricFog::Integrate() : failed to find post process pass!");
@@ -912,6 +926,125 @@ namespace SR_GRAPH_NS {
         }
         else {
             SR_ERROR("RenderTechniquePresetIntegrationBloom::Integrate() : failed to find post process pass!");
+        }
+    }
+
+    void RenderTechniquePresetIntegrationSSR::Integrate(const Technique& technique, const Params& params) const {
+        SR_TRACY_ZONE;
+
+        const Quality quality = params.activeGraphicsSettings.SSR;
+        if (quality == Quality::None || !params.activeGraphicsSettings.postProcess) {
+            return;
+        }
+
+        auto&& pMainViewIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationMainView>();
+        if (!pMainViewIntegration) {
+            SR_ERROR("RenderTechniquePresetIntegrationSSR::Integrate() : failed to find main view integration!");
+            return;
+        }
+
+        if (pMainViewIntegration->mainRenderColorLayers < 4) {
+            SR_ERROR("RenderTechniquePresetIntegrationSSR::Integrate() : main view has no normal layer!");
+            return;
+        }
+
+        auto&& data = technique.GetInternalData();
+        auto&& pMainGroup = SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass);
+
+        const int32_t offscreenIndex = pMainGroup->IndexOfPass(pMainViewIntegration->offscreenControllerName);
+        if (offscreenIndex < 0) {
+            SRHalt("RenderTechniquePresetIntegrationSSR::Integrate() : failed to find offscreen controller pass! Controller name: {}", pMainViewIntegration->offscreenControllerName);
+            return;
+        }
+
+        const SSRPreset preset = params.pRenderSettings->GetSSRPreset(quality);
+        const SR_UTILS_NS::StringAtom offscreenName = pMainViewIntegration->offscreenControllerName;
+        int32_t insertIndex = offscreenIndex + 1;
+
+        auto&& addSampler = [](SSRPass& pass, SR_UTILS_NS::StringAtom fboName, uint64_t index, SR_UTILS_NS::StringAtom id) {
+            SamplerData sampler;
+            sampler.fboName = fboName;
+            sampler.index = index;
+            sampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            sampler.id = id;
+            pass.GetSamplersData().AddSampler(sampler);
+        };
+
+        auto&& addStage = [&](SR_UTILS_NS::StringAtom name, const SSRPass::Ptr& pPass) {
+            FrameBufferController::Ptr pController = new FrameBufferController();
+            pController->SetName(name);
+            /// 0 - отражения, 1 - дистанция, для которой посчитан пиксель (для апсемпла с учетом глубины)
+            pController->SetColorFormats({ ImageFormat::RGBA16_SFLOAT, ImageFormat::R32_SFLOAT });
+            pController->SetDepthEnabled(false);
+            pController->SetSamples(1);
+
+            if (params.pCameraParams && params.pCameraParams->screenSize) {
+                pController->SetSize(params.pCameraParams->screenSize.value());
+                pController->SetDynamicResizing(false);
+            }
+            if (params.pCameraParams && params.pCameraParams->screenScale) {
+                pController->SetPreScale(params.pCameraParams->screenScale.value() * preset.preScale);
+            }
+            else {
+                pController->SetPreScale(SR_MATH_NS::FVector2(preset.preScale));
+            }
+
+            data.frameBuffers.emplace_back(pController);
+
+            pPass->maxSteps = preset.maxSteps;
+            pPass->refineSteps = preset.refineSteps;
+            pPass->maxDistance = preset.maxDistance;
+            pPass->thickness = thickness;
+            pPass->maxRoughness = maxRoughness;
+            pPass->edgeFade = edgeFade;
+            pPass->blurRadius = blurRadius;
+            pPass->SetCustomName(SR_UTILS_NS::StringAtom(name.ToStringRef() + "Pass"));
+
+            AddGBufferSamplers(pPass->GetSamplersData(), offscreenName, true);
+
+            FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
+            pFrameBufferPass->SetCustomName(name);
+            pFrameBufferPass->SetFrameBufferName(name);
+            pFrameBufferPass->GetFrameBufferPassData().SetClearDepth(SR_UTILS_NS::Optional<float_t>());
+            pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 0.f));
+            pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(1e6f, 0.f, 0.f, 1.f));
+            pFrameBufferPass->AddPass(pPass.StaticCast<BasePass>());
+
+            pMainGroup->InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass), static_cast<uint32_t>(insertIndex));
+            ++insertIndex;
+        };
+
+        SSRPass::Ptr pTracePass = new SSRPass();
+        pTracePass->stage = SSRPassStage::Trace;
+        addSampler(*pTracePass, offscreenName, 0, "sceneColor");
+        addStage(traceControllerName, pTracePass);
+
+        SR_UTILS_NS::StringAtom resultName = traceControllerName;
+        if (preset.resolve) {
+            SSRPass::Ptr pResolvePass = new SSRPass();
+            pResolvePass->stage = SSRPassStage::Resolve;
+            addSampler(*pResolvePass, traceControllerName, 0, "ssrTrace");
+            addSampler(*pResolvePass, traceControllerName, 1, "ssrTraceDepth");
+            addStage(resolveControllerName, pResolvePass);
+            resultName = resolveControllerName;
+        }
+
+        if (auto&& pPostProcessPass = pMainGroup->FindPassAs<PostProcessPass>(PostProcessPass::GetClassStaticName())) {
+            SamplerData ssrSampler;
+            ssrSampler.fboName = resultName;
+            ssrSampler.index = 0;
+            ssrSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            ssrSampler.id = shaderVariableName;
+            pPostProcessPass->GetSamplersData().AddSampler(ssrSampler);
+
+            ssrSampler.index = 1;
+            ssrSampler.id = "ssrDepthMap";
+            pPostProcessPass->GetSamplersData().AddSampler(ssrSampler);
+
+            AddGBufferSamplers(pPostProcessPass->GetSamplersData(), offscreenName, true);
+        }
+        else {
+            SR_ERROR("RenderTechniquePresetIntegrationSSR::Integrate() : failed to find post process pass!");
         }
     }
 }
