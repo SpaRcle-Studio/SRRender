@@ -108,6 +108,12 @@ namespace SR_GRAPH_UI_NS {
         GetGameObject()->GetOrCreateChild("Selection")->SetLayer("GizmoSelection");
         SR_MAYBE_UNUSED auto&& debugObject = GetGameObject()->GetOrCreateChild("Debug");
 
+        if (IsBoundsMode()) {
+            LoadBoundsMeshes();
+            m_isGizmoDirty = false;
+            return;
+        }
+
         static const SR_UTILS_NS::StringAtom gizmoFile = "Engine/Models/gizmo-translation.fbx";
 
         LoadMesh(GizmoOperation::TranslateCenter, gizmoFile, "CenterTranslation", GizmoMeshLoadMode::Visual);
@@ -162,6 +168,13 @@ namespace SR_GRAPH_UI_NS {
 
         m_meshes.clear();
 
+        for (auto&& pEdge : m_boundsEdges) {
+            if (pEdge) {
+                pEdge->Detach();
+            }
+        }
+        m_boundsEdges.clear();
+
         m_destroyCache.clear();
 
         if (auto&& pGameObject = GetGameObject()) {
@@ -192,6 +205,16 @@ namespace SR_GRAPH_UI_NS {
         }
 
         PrepareGizmo();
+
+        if (IsBoundsMode()) {
+            SR_MATH_NS::AABB bounds;
+            SR_MATH_NS::Matrix4x4 matrix;
+            if (!GetBounds(bounds, matrix)) {
+                ReleaseGizmo();
+                return;
+            }
+        }
+
         LoadGizmo();
 
         auto&& pCamera = GetCamera();
@@ -287,7 +310,16 @@ namespace SR_GRAPH_UI_NS {
         }
 
         if (SR_UTILS_NS::Input::Instance().GetMouseDown(SR_UTILS_NS::MouseCode::MouseLeft)) {
-            if (m_hoveredOperation != GizmoOperation::None) {
+            if (m_hoveredOperation != GizmoOperation::None && IsBoundsMode()) {
+                m_activeOperation = m_hoveredOperation;
+                if (BeginBoundsDrag(mousePos)) {
+                    BeginGizmo();
+                }
+                else {
+                    m_activeOperation = GizmoOperation::None;
+                }
+            }
+            else if (m_hoveredOperation != GizmoOperation::None) {
                 m_activeOperation = m_hoveredOperation;
 
                 auto&& translationNormal = SR_MATH_NS::CalcTranslationPlanNormal(
@@ -335,6 +367,11 @@ namespace SR_GRAPH_UI_NS {
 
     void Gizmo::ProcessGizmo(const SR_MATH_NS::FPoint& mousePos) {
         if (m_activeOperation == GizmoOperation::None) {
+            return;
+        }
+
+        if (IsBoundsMode()) {
+            ProcessBounds(mousePos);
             return;
         }
 
@@ -417,6 +454,14 @@ namespace SR_GRAPH_UI_NS {
     }
 
     SR_MATH_NS::FColor Gizmo::GetColorByOperation(GizmoOperation operation) const {
+        if (operation & GizmoOperation::Bounds) {
+            switch (GetBoundsAxisIndex(operation)) {
+                case 0: return SR_MATH_NS::FVector4(1.f, 0.f, 0.f, 0.75f);
+                case 1: return SR_MATH_NS::FVector4(0.f, 1.f, 0.f, 0.75f);
+                default: return SR_MATH_NS::FVector4(0.f, 0.f, 1.f, 0.75f);
+            }
+        }
+
         if (operation & GizmoOperation::Center) {
             return SR_MATH_NS::FVector4(1.f, 1.f, 1.f, 0.75f);
         }
@@ -455,6 +500,11 @@ namespace SR_GRAPH_UI_NS {
 
     void Gizmo::UpdateGizmoTransform() {
         SR_TRACY_ZONE;
+
+        if (IsBoundsMode()) {
+            UpdateBoundsTransform();
+            return;
+        }
 
         m_modelMatrix = GetGizmoMatrix();
         auto&& pCamera = GetCamera();
@@ -571,5 +621,222 @@ namespace SR_GRAPH_UI_NS {
             return pRenderScene->GetMainCamera().Get();
         }
         return nullptr;
+    }
+
+    /// ================================================================================================================
+
+    static constexpr std::array<GizmoOperation, 6> BOUNDS_HANDLES = {
+        GizmoOperation::BoundsX, static_cast<GizmoOperation>(GizmoOperation::BoundsX | GizmoOperation::Alternative),
+        GizmoOperation::BoundsY, static_cast<GizmoOperation>(GizmoOperation::BoundsY | GizmoOperation::Alternative),
+        GizmoOperation::BoundsZ, static_cast<GizmoOperation>(GizmoOperation::BoundsZ | GizmoOperation::Alternative),
+    };
+
+    static constexpr uint8_t BOUNDS_EDGES_COUNT = 12;
+    /// размеры в clip-space
+    static constexpr float_t BOUNDS_HANDLE_SIZE = 0.012f;
+    static constexpr float_t BOUNDS_EDGE_THICKNESS = 0.0015f;
+
+    uint8_t Gizmo::GetBoundsAxisIndex(GizmoOperation operation) {
+        if (operation & GizmoOperation::Y) {
+            return 1;
+        }
+        if (operation & GizmoOperation::Z) {
+            return 2;
+        }
+        return 0;
+    }
+
+    SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> Gizmo::CreateBoundsMesh(const GameObjectPtr& pGameObject, const SR_MATH_NS::FColor& color) {
+        static const SR_UTILS_NS::Path cubePath = "Engine/Models/cube.obj";
+
+        auto&& pMesh = SR_GTYPES_NS::Mesh::Load(cubePath, 0);
+        if (!pMesh) {
+            SR_ERROR("Gizmo::CreateBoundsMesh() : failed to load mesh!\n\tPath: {}", cubePath.ToStringRef());
+            return nullptr;
+        }
+
+        pMesh->SetFrustumCullingType(FrustumCullingType::None);
+
+        const BaseMaterial::Ptr pMaterial = SRNew<SR_GRAPH_NS::UniqueMaterial>();
+        pMaterial->SetShader("Engine/Shaders/Gizmo/gizmo.srsl");
+        pMaterial->SetColor("color", color);
+        pMesh->SetMaterial(pMaterial);
+
+        pGameObject->AddComponent(pMesh.StaticCast<SR_UTILS_NS::Component>());
+
+        return pMesh;
+    }
+
+    void Gizmo::LoadBoundsMeshes() {
+        SR_TRACY_ZONE;
+
+        auto&& pRoot = GetGameObject();
+        auto&& pSelectionRoot = pRoot->GetOrCreateChild("Selection");
+
+        for (uint8_t i = 0; i < BOUNDS_HANDLES.size(); ++i) {
+            const GizmoOperation operation = BOUNDS_HANDLES[i];
+
+            SR_UTILS_NS::FormatTo(m_boundsNameBuffer, "BoundsHandle{}", i);
+            const SR_UTILS_NS::StringAtom name = m_boundsNameBuffer;
+
+            auto&& pVisualObject = pRoot->GetOrCreateChild(name);
+            pVisualObject->SetLayer("Gizmo");
+
+            auto&& pSelectionObject = pSelectionRoot->GetOrCreateChild(name);
+            pSelectionObject->SetLayer("GizmoSelection");
+
+            auto&& info = m_meshes[operation];
+            info.pVisual = CreateBoundsMesh(pVisualObject, GetColorByOperation(operation));
+            info.pSelection = CreateBoundsMesh(pSelectionObject, GetColorByOperation(operation));
+        }
+
+        static const SR_MATH_NS::FColor edgeColor = SR_MATH_NS::FColor(1.f, 1.f, 1.f, 0.75f);
+
+        for (uint8_t i = 0; i < BOUNDS_EDGES_COUNT; ++i) {
+            SR_UTILS_NS::FormatTo(m_boundsNameBuffer, "BoundsEdge{}", i);
+            auto&& pEdgeObject = pRoot->GetOrCreateChild(SR_UTILS_NS::StringAtom(m_boundsNameBuffer));
+            pEdgeObject->SetLayer("Gizmo");
+            m_boundsEdges.emplace_back(CreateBoundsMesh(pEdgeObject, edgeColor));
+        }
+
+        UpdateBoundsTransform();
+    }
+
+    void Gizmo::UpdateBoundsTransform() {
+        SR_TRACY_ZONE;
+
+        SR_MATH_NS::AABB bounds;
+        SR_MATH_NS::Matrix4x4 matrix;
+        if (!GetBounds(bounds, matrix)) {
+            return;
+        }
+
+        auto&& pCamera = GetCamera();
+        if (!pCamera) {
+            return;
+        }
+
+        /// корень gizmo без масштаба, масштаб объекта переносим на позиции и размеры дочерних мешей
+        const SR_MATH_NS::FVector3 scale = matrix.GetScale();
+
+        GetTransform()->SetTranslation(matrix.GetTranslate());
+        GetTransform()->SetRotation(matrix.GetQuat());
+        GetTransform()->SetScale(SR_MATH_NS::FVector3::One());
+
+        const SR_MATH_NS::FVector3 center = bounds.GetCenter();
+
+        for (auto&& [operation, info] : m_meshes) {
+            if (!(operation & GizmoOperation::Bounds)) {
+                continue;
+            }
+
+            const uint8_t axis = GetBoundsAxisIndex(operation);
+
+            SR_MATH_NS::FVector3 point = center;
+            point[axis] = (operation & GizmoOperation::Alternative) ? bounds.min[axis] : bounds.max[axis];
+
+            const auto worldMatrix = SR_MATH_NS::Matrix4x4::FromTranslate(matrix.TransformPoint(point).XYZ());
+            const float_t size = pCamera->CalculateScreenFactor(worldMatrix, BOUNDS_HANDLE_SIZE, false);
+
+            for (auto&& pMesh : std::array{ info.pVisual.Get(), info.pSelection.Get() }) {
+                if (pMesh) {
+                    pMesh->GetTransform()->SetTranslation(point * scale);
+                    pMesh->GetTransform()->SetScale(SR_MATH_NS::FVector3(size));
+                }
+            }
+        }
+
+        if (m_boundsEdges.size() != BOUNDS_EDGES_COUNT) {
+            return;
+        }
+
+        const auto centerMatrix = SR_MATH_NS::Matrix4x4::FromTranslate(matrix.TransformPoint(center).XYZ());
+        const float_t thickness = pCamera->CalculateScreenFactor(centerMatrix, BOUNDS_EDGE_THICKNESS, false);
+
+        const SR_MATH_NS::FVector3 halfSize = bounds.GetExtends() * scale;
+
+        uint8_t edgeIndex = 0;
+        for (uint8_t axis = 0; axis < 3; ++axis) {
+            const uint8_t axisB = (axis + 1) % 3;
+            const uint8_t axisC = (axis + 2) % 3;
+
+            for (uint8_t corner = 0; corner < 4; ++corner) {
+                SR_MATH_NS::FVector3 point = center;
+                point[axisB] = (corner & 1) ? bounds.max[axisB] : bounds.min[axisB];
+                point[axisC] = (corner & 2) ? bounds.max[axisC] : bounds.min[axisC];
+
+                SR_MATH_NS::FVector3 edgeScale = SR_MATH_NS::FVector3(thickness);
+                edgeScale[axis] = SR_MAX(halfSize[axis], thickness);
+
+                if (auto&& pEdge = m_boundsEdges[edgeIndex]) {
+                    pEdge->GetTransform()->SetTranslation(point * scale);
+                    pEdge->GetTransform()->SetScale(edgeScale);
+                }
+
+                ++edgeIndex;
+            }
+        }
+    }
+
+    bool Gizmo::BeginBoundsDrag(const SR_MATH_NS::FPoint& mousePos) {
+        auto&& pCamera = GetCamera();
+        if (!pCamera) {
+            return false;
+        }
+
+        SR_MATH_NS::Matrix4x4 matrix;
+        if (!GetBounds(m_boundsDragStart, matrix)) {
+            return false;
+        }
+
+        const uint8_t axis = GetBoundsAxisIndex(m_activeOperation);
+
+        SR_MATH_NS::FVector3 point = m_boundsDragStart.GetCenter();
+        point[axis] = (m_activeOperation & GizmoOperation::Alternative) ? m_boundsDragStart.min[axis] : m_boundsDragStart.max[axis];
+
+        const SR_MATH_NS::FVector3 worldPoint = matrix.TransformPoint(point).XYZ();
+        const SR_MATH_NS::FVector3 axisDir = matrix.TransformVector(SR_MATH_NS::FVector3::AxisByIndex(axis)).XYZ();
+
+        m_boundsAxisLength = axisDir.Length();
+        if (m_boundsAxisLength <= SR_FLT_EPSILON) {
+            return false;
+        }
+
+        m_boundsAxisDir = axisDir / m_boundsAxisLength;
+
+        /// плоскость, содержащая ось и максимально повернутая к камере
+        const SR_MATH_NS::FVector3 toCamera = worldPoint - pCamera->GetCameraEye();
+        const SR_MATH_NS::FVector3 normal = m_boundsAxisDir.Cross(toCamera).Cross(m_boundsAxisDir);
+        if (normal.Length() <= SR_FLT_EPSILON) {
+            return false;
+        }
+
+        m_boundsDragPlane = SR_MATH_NS::BuildPlan(worldPoint, normal.Normalize());
+        m_boundsDragOrigin = pCamera->GetScreenRay(mousePos, false).IntersectPlane(m_boundsDragPlane);
+
+        return true;
+    }
+
+    void Gizmo::ProcessBounds(const SR_MATH_NS::FPoint& mousePos) {
+        auto&& pCamera = GetCamera();
+        if (!pCamera) {
+            return;
+        }
+
+        const SR_MATH_NS::FVector3 hit = pCamera->GetScreenRay(mousePos, false).IntersectPlane(m_boundsDragPlane);
+        const float_t distance = (hit - m_boundsDragOrigin).Dot(m_boundsAxisDir) / m_boundsAxisLength;
+
+        const uint8_t axis = GetBoundsAxisIndex(m_activeOperation);
+
+        SR_MATH_NS::AABB bounds = m_boundsDragStart;
+        if (m_activeOperation & GizmoOperation::Alternative) {
+            bounds.min[axis] = SR_MIN(m_boundsDragStart.min[axis] + distance, m_boundsDragStart.max[axis]);
+        }
+        else {
+            bounds.max[axis] = SR_MAX(m_boundsDragStart.max[axis] + distance, m_boundsDragStart.min[axis]);
+        }
+
+        OnBoundsChanged(bounds);
+        UpdateBoundsTransform();
     }
 }

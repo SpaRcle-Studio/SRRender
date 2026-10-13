@@ -9,6 +9,7 @@
 
 #include <Utils/ECS/GameObject.h>
 #include <Utils/ECS/Component.h>
+#include <Utils/Math/AABB.h>
 #include <Utils/Input/InputSystem.h>
 
 namespace SR_GTYPES_NS {
@@ -94,6 +95,10 @@ namespace SR_GRAPH_UI_NS {
             return SR_MATH_NS::IsMaskIncludedSubMask(m_operation, GizmoOperation::Space2D);
         }
 
+        SR_NODISCARD bool IsBoundsMode() const {
+            return SR_MATH_NS::IsMaskIncludedSubMask(m_operation, GizmoOperation::Bounds);
+        }
+
         void SetMode(GizmoMode mode) { m_mode = mode; }
         void SetOperation(GizmoOperation operation);
 
@@ -116,6 +121,10 @@ namespace SR_GRAPH_UI_NS {
         virtual void BeginGizmo() { }
         virtual void EndGizmo() { }
 
+        /// bounds - в локальном пространстве matrix
+        SR_NODISCARD virtual bool GetBounds(SR_MATH_NS::AABB& bounds, SR_MATH_NS::Matrix4x4& matrix) const { return false; }
+        virtual void OnBoundsChanged(const SR_MATH_NS::AABB& bounds) { }
+
         SR_NODISCARD virtual bool IsGizmoAvailable() const { return true; }
         SR_NODISCARD virtual bool IsHandledAnotherObject() const { return false; }
         SR_NODISCARD virtual SR_MATH_NS::Matrix4x4 GetGizmoMatrix() const;
@@ -129,6 +138,15 @@ namespace SR_GRAPH_UI_NS {
         SR_NODISCARD SR_FORCE_INLINE bool ExecuteInEditMode() const override { return true; }
 
         SR_NODISCARD SR_MATH_NS::FColor GetColorByOperation(GizmoOperation operation) const;
+
+    private:
+        void LoadBoundsMeshes();
+        void UpdateBoundsTransform();
+        bool BeginBoundsDrag(const SR_MATH_NS::FPoint& mousePos);
+        void ProcessBounds(const SR_MATH_NS::FPoint& mousePos);
+
+        SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh> CreateBoundsMesh(const GameObjectPtr& pGameObject, const SR_MATH_NS::FColor& color);
+        SR_NODISCARD static uint8_t GetBoundsAxisIndex(GizmoOperation operation);
 
     private:
         struct MeshInfo {
@@ -165,6 +183,14 @@ namespace SR_GRAPH_UI_NS {
         SR_MATH_NS::Matrix4x4 m_modelMatrix;
 
         SR_MATH_NS::Unit m_rotationAngleOrigin = 0.f;
+
+        SR_UTILS_NS::Vector<SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Mesh>> m_boundsEdges;
+        SR_MATH_NS::AABB m_boundsDragStart;
+        SR_MATH_NS::FVector4 m_boundsDragPlane;
+        SR_MATH_NS::FVector3 m_boundsDragOrigin;
+        SR_MATH_NS::FVector3 m_boundsAxisDir;
+        float_t m_boundsAxisLength = 1.f;
+        SR_UTILS_NS::String m_boundsNameBuffer;
 
     };
 }

@@ -77,8 +77,4 @@ namespace SR_GTYPES_NS {
     const SR_UTILS_NS::VertexDataBuffer& SkinnedMesh::GetVertices() const {
         return GetRawMesh()->GetVertexBuffer(GetMeshId(), GetVertexLayoutDescription());
     }
-
-    const SR_MATH_NS::AABB& SkinnedMesh::GetAABBOffsets() const {
-        return m_aabbOffsets;
-    }
 }

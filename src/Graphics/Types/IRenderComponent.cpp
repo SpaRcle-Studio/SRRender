@@ -172,16 +172,12 @@ namespace SR_GTYPES_NS {
         }
     }
 
-    const SR_MATH_NS::AABB& IRenderComponent::GetAABBOffsets() const {
-        static SR_MATH_NS::AABB aabb;
-        return aabb;
-    }
-
     const SR_MATH_NS::AABB& IRenderComponent::GetAABB() const {
         auto&& internalData = GetInternalData();
         if (m_isAABBDirty) SR_UNLIKELY_ATTRIBUTE {
             if (auto&& pTransform = GetTransform()) {
-                internalData.aabb = pTransform->GetMatrix().TransformAABB(m_aabb + GetAABBOffsets());
+                auto&& pCustomBounds = GetCustomBounds();
+                internalData.aabb = pTransform->GetMatrix().TransformAABB(pCustomBounds ? *pCustomBounds : m_aabb);
                 m_isAABBDirty = false;
             }
         }

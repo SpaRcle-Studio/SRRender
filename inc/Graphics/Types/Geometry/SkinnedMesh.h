@@ -37,7 +37,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD const SR_HTYPES_NS::FastMemoryArray<uint32_t>& GetIndices() const override;
         SR_NODISCARD const SR_UTILS_NS::VertexDataBuffer& GetVertices() const override;
-        SR_NODISCARD const SR_MATH_NS::AABB& GetAABBOffsets() const override;
+        SR_NODISCARD const SR_MATH_NS::AABB* GetCustomBounds() const override { return &m_bounds; }
 
     private:
         /// @property
@@ -52,8 +52,8 @@ namespace SR_GTYPES_NS {
         /// @virtualProperty(meshId) @getter(GetMeshId) @setter(SetMeshId)
         SR_VIRTUAL_PROPERTY
 
-        /// @property @group(Rendering)
-        SR_MATH_NS::AABB m_aabbOffsets;
+        /// @property @group(Rendering) @onChanged(SetAABBDirty)
+        SR_MATH_NS::AABB m_bounds = SR_MATH_NS::AABB::UnitCube();
 
     };
 

@@ -78,7 +78,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD virtual SR_UTILS_NS::VertexLayoutDescriptionsRef GetShaderVertexLayoutDescriptions() const noexcept;
         SR_NODISCARD virtual const SR_UTILS_NS::UI::MaskInfo& GetMaskInfo() const;
         SR_NODISCARD const SR_MATH_NS::AABB& GetAABB() const;
-        SR_NODISCARD virtual const SR_MATH_NS::AABB& GetAABBOffsets() const;
+        SR_NODISCARD virtual const SR_MATH_NS::AABB* GetCustomBounds() const { return nullptr; }
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::BaseMaterial>& GetMaterial() const noexcept { return m_material; }
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::BaseMaterial>& GetMaterial() noexcept { return m_material; }
         SR_NODISCARD virtual FrustumCullingType GetFrustumCullingType() const noexcept { return FrustumCullingType::None; }
