@@ -44,6 +44,37 @@ namespace SR_GRAPH_NS {
        return FindSuitableQuality(quality, SSAOQualityPresets);
     }
 
+    BloomPreset RenderSettings::GetBloomPreset(Quality quality) const {
+        if (!bloomQualityPresets.empty()) {
+            return FindSuitableQuality(quality, bloomQualityPresets);
+        }
+
+        BloomPreset preset;
+        switch (quality) {
+            case Quality::Low:
+                preset.preScale = 0.25f;
+                preset.mipCount = 4;
+                preset.highQualityFilter = false;
+                break;
+            case Quality::Medium:
+                preset.mipCount = 5;
+                preset.highQualityFilter = false;
+                break;
+            case Quality::High:
+                preset.mipCount = 6;
+                break;
+            case Quality::Ultra:
+                preset.mipCount = 7;
+                preset.highPrecision = true;
+                break;
+            default:
+                preset.mipCount = 8;
+                preset.highPrecision = true;
+                break;
+        }
+        return preset;
+    }
+
     const ActiveGraphicsSettings& RenderSettings::GetDefaultGraphicsSettings() const {
         for (auto&& settings : defaultPlatformGraphicsSettings) {
             if (settings.platform.has_value() && settings.platform.value() != SR_PLATFORM_NS::GetType()) {

@@ -149,6 +149,27 @@ namespace SR_GRAPH_NS {
 
     };
 
+    class RenderTechniquePresetIntegrationBloom : public RenderTechniquePresetIntegrationBase {
+        SR_CLASS()
+    public:
+        void Integrate(const Technique& technique, const Params& params) const override;
+
+    public:
+        /// @property
+        SR_UTILS_NS::StringAtom bloomControllerName = "Bloom";
+        /// @property
+        SR_UTILS_NS::StringAtom shaderVariableName = "bloomMap";
+        /// @property
+        float_t threshold = 1.f;
+        /// @property
+        float_t knee = 0.5f;
+        /// @property
+        float_t clampMax = 64.f;
+        /// @property
+        float_t scatter = 0.7f;
+
+    };
+
     class RenderTechniquePresetIntegrationMainView : public RenderTechniquePresetIntegrationBase {
         SR_CLASS()
     public:

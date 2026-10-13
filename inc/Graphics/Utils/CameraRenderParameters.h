@@ -37,6 +37,8 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Optional<SR_MATH_NS::FVector2> screenScale;
         /// @property
         SR_UTILS_NS::Optional<Quality> SSAO;
+        /// @property
+        SR_UTILS_NS::Optional<Quality> bloom;
 
     };
 }

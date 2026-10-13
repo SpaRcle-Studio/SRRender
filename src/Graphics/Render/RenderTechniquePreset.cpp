@@ -11,6 +11,7 @@
 #include <Graphics/Pass/AutoExposurePass.h>
 #include <Graphics/Pass/SSAOPass.h>
 #include <Graphics/Pass/BlurPass.h>
+#include <Graphics/Pass/BloomPass.h>
 #include <Graphics/Pass/VolumetricCloudsPass.h>
 #include <Graphics/Pass/VolumetricFogPass.h>
 #include <Graphics/Settings/RenderSettings.h>
@@ -787,6 +788,130 @@ namespace SR_GRAPH_NS {
         }
         else {
             SR_ERROR("RenderTechniquePresetIntegrationVolumetricFog::Integrate() : failed to find post process pass!");
+        }
+    }
+
+    void RenderTechniquePresetIntegrationBloom::Integrate(const Technique& technique, const Params& params) const {
+        SR_TRACY_ZONE;
+
+        const Quality quality = params.activeGraphicsSettings.bloom;
+        if (quality == Quality::None || !params.activeGraphicsSettings.postProcess || !params.activeGraphicsSettings.hdr) {
+            return;
+        }
+
+        auto&& pMainViewIntegration = technique.FindIntegration<RenderTechniquePresetIntegrationMainView>();
+        if (!pMainViewIntegration) {
+            SR_ERROR("RenderTechniquePresetIntegrationBloom::Integrate() : failed to find main view integration!");
+            return;
+        }
+
+        auto&& data = technique.GetInternalData();
+        auto&& pMainGroup = SR_UTILS_NS::DynamicPointerCast<GroupPass>(data.pass);
+
+        const int32_t offscreenIndex = pMainGroup->IndexOfPass(pMainViewIntegration->offscreenControllerName);
+        if (offscreenIndex < 0) {
+            SRHalt("RenderTechniquePresetIntegrationBloom::Integrate() : failed to find offscreen controller pass! Controller name: {}", pMainViewIntegration->offscreenControllerName);
+            return;
+        }
+
+        const BloomPreset preset = params.pRenderSettings->GetBloomPreset(quality);
+        const uint8_t mipCount = SR_MATH_NS::Clamp<uint8_t>(preset.mipCount, 2, 10);
+        const ImageFormat format = preset.highPrecision ? ImageFormat::RGBA16_SFLOAT : ImageFormat::B10G11R11_UFLOAT_PACK32;
+
+        /// порог считается по экспонированной яркости, поэтому цепочка идет после расчета экспозиции
+        const int32_t autoExposureIndex = pMainGroup->IndexOfPass(AutoExposurePass::GetClassStaticName());
+        const bool useAutoExposure = autoExposureIndex >= 0;
+        int32_t insertIndex = SR_MATH_NS::Max(offscreenIndex, autoExposureIndex) + 1;
+
+        auto&& addLevel = [&](SR_UTILS_NS::StringAtom name, float_t scale, const BloomPass::Ptr& pPass) {
+            FrameBufferController::Ptr pController = new FrameBufferController();
+            pController->SetName(name);
+            pController->SetColorFormats({ format });
+            pController->SetDepthEnabled(false);
+            pController->SetSamples(1);
+
+            if (params.pCameraParams && params.pCameraParams->screenSize) {
+                pController->SetSize(params.pCameraParams->screenSize.value());
+                pController->SetDynamicResizing(false);
+            }
+            if (params.pCameraParams && params.pCameraParams->screenScale) {
+                pController->SetPreScale(params.pCameraParams->screenScale.value() * scale);
+            }
+            else {
+                pController->SetPreScale(SR_MATH_NS::FVector2(scale));
+            }
+
+            data.frameBuffers.emplace_back(pController);
+
+            pPass->highQuality = preset.highQualityFilter;
+            pPass->threshold = threshold;
+            pPass->knee = knee;
+            pPass->clampMax = clampMax;
+            pPass->scatter = scatter;
+            pPass->SetCustomName(SR_UTILS_NS::StringAtom(name.ToStringRef() + "Pass"));
+
+            FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
+            pFrameBufferPass->SetCustomName(name);
+            pFrameBufferPass->SetFrameBufferName(name);
+            pFrameBufferPass->GetFrameBufferPassData().SetClearDepth(SR_UTILS_NS::Optional<float_t>());
+            pFrameBufferPass->GetFrameBufferPassData().GetClearColors().emplace_back(SR_MATH_NS::FColor(0.f, 0.f, 0.f, 1.f));
+            pFrameBufferPass->AddPass(pPass.StaticCast<BasePass>());
+
+            pMainGroup->InsertPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pFrameBufferPass), static_cast<uint32_t>(insertIndex));
+            ++insertIndex;
+        };
+
+        auto&& addSampler = [](BloomPass& pass, SR_UTILS_NS::StringAtom fboName, SR_UTILS_NS::StringAtom id) {
+            SamplerData sampler;
+            sampler.fboName = fboName;
+            sampler.index = 0;
+            sampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            sampler.id = id;
+            pass.GetSamplersData().AddSampler(sampler);
+        };
+
+        auto&& mipName = [this](uint32_t i) { return SR_UTILS_NS::StringAtom(SR_FORMAT("{}Mip{}", bloomControllerName.ToStringRef(), i)); };
+        auto&& upName = [this](uint32_t i) { return SR_UTILS_NS::StringAtom(SR_FORMAT("{}Up{}", bloomControllerName.ToStringRef(), i)); };
+        auto&& levelScale = [&preset](uint32_t i) { return preset.preScale / static_cast<float_t>(1u << i); };
+
+        /// вниз: mip0 = prefilter(offscreen), mipN = downsample(mipN-1)
+        for (uint32_t i = 0; i < mipCount; ++i) {
+            BloomPass::Ptr pPass = new BloomPass();
+            if (i == 0) {
+                pPass->stage = BloomPassStage::Prefilter;
+                addSampler(*pPass, pMainViewIntegration->offscreenControllerName, "bloomSource");
+                if (useAutoExposure) {
+                    pPass->AddSSBOUsageFromPass(AutoExposurePass::GetClassStaticName());
+                }
+            }
+            else {
+                pPass->stage = BloomPassStage::Downsample;
+                addSampler(*pPass, mipName(i - 1), "bloomSource");
+            }
+            addLevel(mipName(i), levelScale(i), pPass);
+        }
+
+        /// вверх: upN = mix(mipN, upsample(upN+1), scatter), для предпоследнего уровня источник - самый нижний mip
+        for (int32_t i = static_cast<int32_t>(mipCount) - 2; i >= 0; --i) {
+            const auto level = static_cast<uint32_t>(i);
+
+            BloomPass::Ptr pPass = new BloomPass();
+            pPass->stage = BloomPassStage::Upsample;
+            addSampler(*pPass, level + 2 == mipCount ? mipName(level + 1) : upName(level + 1), "bloomLow");
+            addSampler(*pPass, mipName(level), "bloomHigh");
+            addLevel(upName(level), levelScale(level), pPass);
+        }
+
+        if (auto&& pPostProcessPass = pMainGroup->FindPassAs<PostProcessPass>(PostProcessPass::GetClassStaticName())) {
+            SamplerData bloomSampler;
+            bloomSampler.fboName = upName(0);
+            bloomSampler.index = 0;
+            bloomSampler.usageType = SamplerDataUsageType::FrameBufferColor;
+            bloomSampler.id = shaderVariableName;
+            pPostProcessPass->GetSamplersData().AddSampler(bloomSampler);
+        }
+        else {
+            SR_ERROR("RenderTechniquePresetIntegrationBloom::Integrate() : failed to find post process pass!");
         }
     }
 }

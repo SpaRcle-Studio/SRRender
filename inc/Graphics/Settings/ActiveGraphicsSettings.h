@@ -29,7 +29,8 @@ namespace SR_GRAPH_NS {
                    && colorBufferQuality == lrs.colorBufferQuality
                    && SSAO == lrs.SSAO
                    && volumetricClouds == lrs.volumetricClouds
-                   && volumetricFog == lrs.volumetricFog;
+                   && volumetricFog == lrs.volumetricFog
+                   && bloom == lrs.bloom;
         }
 
         bool operator!=(const ActiveGraphicsSettings& lrs) const {
@@ -54,6 +55,9 @@ namespace SR_GRAPH_NS {
             }
             if (parameters.SSAO.has_value()) {
                 SSAO = parameters.SSAO.value();
+            }
+            if (parameters.bloom.has_value()) {
+                bloom = parameters.bloom.value();
             }
         }
 
@@ -83,6 +87,8 @@ namespace SR_GRAPH_NS {
         Quality volumetricClouds = Quality::High;
         /// @property
         Quality volumetricFog = Quality::High;
+        /// @property
+        Quality bloom = Quality::High;
     };
 }
 

@@ -70,6 +70,20 @@ namespace SR_GRAPH_NS {
 
     };
 
+    struct BloomPreset : public SR_UTILS_NS::Serializable {
+        SR_STRUCT()
+
+        /// @property
+        float_t preScale = 0.5f;
+        /// @property
+        uint8_t mipCount = 6;
+        /// @property
+        bool highQualityFilter = true;
+        /// @property
+        bool highPrecision = false;
+
+    };
+
     struct RenderSettingsPreset : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
@@ -124,6 +138,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const ShadowQualityPreset& GetShadowQualityPreset(Quality quality) const;
         SR_NODISCARD float_t GetColorBufferResolutionCoefficient(Quality quality) const;
         SR_NODISCARD const SSAOPreset& GetSSAOResolutionPreset(Quality quality) const;
+        SR_NODISCARD BloomPreset GetBloomPreset(Quality quality) const;
         SR_NODISCARD const ActiveGraphicsSettings& GetDefaultGraphicsSettings() const;
 
     public:
@@ -157,6 +172,8 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Map<Quality, float_t> colorBufferQualityPresets;
         /// @property
         SR_UTILS_NS::Map<Quality, SSAOPreset> SSAOQualityPresets;
+        /// @property
+        SR_UTILS_NS::Map<Quality, BloomPreset> bloomQualityPresets;
 
         /// @property
         SR_UTILS_NS::Vector<DefaultPlatformGraphicsSettings> defaultPlatformGraphicsSettings;

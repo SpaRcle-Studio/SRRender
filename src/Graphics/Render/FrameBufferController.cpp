@@ -26,8 +26,8 @@ namespace SR_GRAPH_NS {
         if (m_dynamicResizing && m_framebuffer) {
             m_size = size.CastToInt();
             m_framebuffer->SetSize(SR_MATH_NS::IVector2(
-                    static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(size.x) * m_preScale.x),
-                    static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(size.y) * m_preScale.y)
+                    SR_MATH_NS::Max(static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(size.x) * m_preScale.x), 1),
+                    SR_MATH_NS::Max(static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(size.y) * m_preScale.y), 1)
             ));
         }
     }
@@ -60,8 +60,8 @@ namespace SR_GRAPH_NS {
 
         /// pre scale size
         SR_MATH_NS::IVector2 size = {
-                static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(m_size.x) * m_preScale.x),
-                static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(m_size.y) * m_preScale.y),
+                SR_MATH_NS::Max(static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(m_size.x) * m_preScale.x), 1),
+                SR_MATH_NS::Max(static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(m_size.y) * m_preScale.y), 1),
         };
 
         if (m_framebuffer) {
