@@ -12,6 +12,7 @@
 #include <Graphics/Animations/AnimationStateMachine.h>
 #include <Graphics/IK/IKSystem.h>
 
+#include <Utils/Animations/PosePostProcessor.h>
 #include <Utils/ECS/EntityRef.h>
 #include <Utils/ECS/Component.h>
 #include <Utils/ECS/ComponentManager.h>
@@ -78,6 +79,8 @@ namespace SR_ANIMATIONS_NS {
         bool m_fpsCompensation = false;
         /// @property @group(Advanced)
         SR_UTILS_NS::Vector<SR_UTILS_NS::EntityRef<IKSystem>> m_IKSystems;
+        /// @property @group(Advanced) @tooltip(Вызываются после анимации и IK. Например Bone Dynamics)
+        SR_UTILS_NS::Vector<SR_UTILS_NS::EntityRef<PosePostProcessor>> m_posePostProcessors;
 
         /// @property
         SR_UTILS_NS::ResourceRef<AnimationClip> m_clip;

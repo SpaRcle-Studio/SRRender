@@ -95,6 +95,13 @@ namespace SR_ANIMATIONS_NS {
                 }
             }
         }
+
+        for (auto&& pProcessorRef : m_posePostProcessors) {
+            if (auto&& pProcessor = pProcessorRef.Get(); pProcessor && pProcessor->IsActive()) {
+                pProcessor->SetControlledByAnimator(true);
+                pProcessor->UpdatePose(dt);
+            }
+        }
     }
 
     void Animator::OnAttached() {
