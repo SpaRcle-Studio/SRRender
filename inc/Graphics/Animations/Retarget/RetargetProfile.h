@@ -5,7 +5,7 @@
 #ifndef SR_ENGINE_GRAPHICS_ANIMATION_RETARGET_PROFILE_H
 #define SR_ENGINE_GRAPHICS_ANIMATION_RETARGET_PROFILE_H
 
-#include <Graphics/Animations/SkeletonRig.h>
+#include <Utils/Animations/SkeletonRig.h>
 #include <Graphics/Animations/AnimationChannel.h>
 #include <Graphics/Animations/Skeleton.h>
 

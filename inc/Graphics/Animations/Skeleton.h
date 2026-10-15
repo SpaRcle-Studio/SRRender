@@ -7,7 +7,7 @@
 
 #include <Graphics/Memory/SSBO.h>
 #include <Graphics/Animations/Bone.h>
-#include <Graphics/Animations/SkeletonRig.h>
+#include <Utils/Animations/SkeletonRig.h>
 
 #include <Utils/ECS/Component.h>
 #include <Utils/ECS/EntityRef.h>
@@ -84,6 +84,8 @@ namespace SR_ANIMATIONS_NS {
     private:
         /// @method @editorButton
         void SwitchDebug();
+        /// @method @editorButton
+        void CreateBonesHierarchy();
 
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<Bone>& GetRootBone() noexcept;
 

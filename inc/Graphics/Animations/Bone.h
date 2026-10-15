@@ -27,6 +27,7 @@ namespace SR_ANIMATIONS_NS {
 
         void SetGameObject(const GameObjectPtr& pGameObject) noexcept;
         SR_NODISCARD const GameObjectPtr& GetGameObject() const noexcept;
+        void ClearErrors() { m_hasError = false; }
 
     private:
         void InitTree(Bone* pParent);

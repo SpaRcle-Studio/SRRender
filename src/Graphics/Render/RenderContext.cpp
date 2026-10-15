@@ -222,7 +222,9 @@ namespace SR_GRAPH_NS {
         imageMetaInfo.loadMode = SR_UTILS_NS::ResourceLoadMode::Sync;
 
         /// так как вписать в код данные текстуры невозможно, то она хранится в виде base64, текстура размером 1x1 белого цвета формата png
-        const SR_UTILS_NS::StringView image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABmJLR0QA/wD/AP+gvaeTAAAADUlEQVQI12N48eIFOwAINALALwGcPAAAAABJRU5ErkJggg==";
+        /// RGBA = (255, 255, 255, 255): подставляется вместо не загруженных текстур, поэтому должна быть нейтральной
+        /// (раньше была (232, 232, 232, 7) - объекты с HAS_ALPHA становились почти прозрачными до загрузки текстуры)
+        const SR_UTILS_NS::StringView image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGP4DwQACfsD/fteaysAAAAASUVORK5CYII=";
         SR_UTILS_NS::String decodedImage;
         SR_UTILS_NS::StringUtils::Instance().Base64Decode(image, decodedImage);
 

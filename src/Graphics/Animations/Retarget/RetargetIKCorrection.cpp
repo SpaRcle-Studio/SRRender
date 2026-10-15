@@ -4,7 +4,7 @@
 
 #include <Graphics/Animations/Retarget/RetargetIKCorrection.h>
 
-#include <Graphics/Animations/HumanoidBoneType.h>
+#include <Utils/Animations/HumanoidBoneType.h>
 
 #include <Utils/Common/EnumReflector.h>
 #include <Utils/Types/RawMesh.h>

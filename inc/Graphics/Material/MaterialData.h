@@ -137,23 +137,27 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsRoughnessEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_ROUGHNESS) == 1; }
         SR_NODISCARD bool IsDetailWeightEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_DETAIL_WEIGHT) == 1; }
         SR_NODISCARD bool IsSSSEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_SSS) == 1; }
+        SR_NODISCARD bool IsMetalicEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_METALIC) == 1; }
         SR_NODISCARD bool IsAlphaMaskEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_ALPHA_MASK) == 1; }
         SR_NODISCARD bool IsSkeletalAnimationEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_SKELETON) == 1; }
         SR_NODISCARD bool IsAlphaEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_ALPHA) == 1; }
         SR_NODISCARD bool IsBlendingDisabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_DISABLE_BLENDING) == 1; }
         SR_NODISCARD bool IsEmissionEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_EMISSION) == 1; }
         SR_NODISCARD bool IsORMEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_ORM) == 1; }
+        SR_NODISCARD bool IsCullingDisabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_DISABLE_CULLING) == 1; }
 
         void SetNormalMappingEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_NORMAL, enabled); }
         void SetRoughnessEnabled(bool disabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ROUGHNESS, disabled); }
         void SetDetailWeightEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_DETAIL_WEIGHT, enabled); }
         void SetSSSEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_SSS, enabled); }
+        void SetMetalicEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_METALIC, enabled); }
         void SetAlphaMaskEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ALPHA_MASK, enabled); }
         void SetSkeletalAnimationEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_SKELETON, enabled); }
         void SetAlphaEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ALPHA, enabled); }
         void SetBlendingDisabled(bool disabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_DISABLE_BLENDING, disabled); }
         void SetEmissionEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_EMISSION, enabled); }
         void SetORMEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ORM, enabled); }
+        void SetDisableCulling(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_DISABLE_CULLING, enabled); }
 
     private:
         /// @property @onChanged(OnShaderDefinesChanged)
@@ -166,7 +170,11 @@ namespace SR_GRAPH_NS {
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(hasAlphaMask) @getter(IsAlphaMaskEnabled) @setter(SetAlphaMaskEnabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(disableCulling) @getter(IsCullingDisabled) @setter(SetDisableCulling) @dontSave @group(Params)
+        SR_VIRTUAL_PROPERTY
         /// @virtualProperty(hasNormals) @getter(IsNormalMappingEnabled) @setter(SetNormalMappingEnabled) @dontSave @group(Params)
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(hasMetalic) @getter(IsMetalicEnabled) @setter(SetMetalicEnabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(hasDetailWeight) @getter(IsDetailWeightEnabled) @setter(SetDetailWeightEnabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY

@@ -351,6 +351,20 @@ namespace SR_ANIMATIONS_NS {
         m_debugEnabled = !m_debugEnabled;
     }
 
+    void Skeleton::CreateBonesHierarchy() {
+        bool rootInited = false;
+        ForEachBone([this, &rootInited](Bone& bone) {
+            if (!bone.pParent) {
+                bone.SetGameObject(GetGameObject());
+                rootInited = true;
+            }
+            else {
+                bone.SetGameObject(bone.pParent->GetGameObject()->CreateChild(bone.name));
+            }
+            bone.ClearErrors();
+        });
+    }
+
     SR_HTYPES_NS::SharedPtr<Bone>& Skeleton::GetRootBone() noexcept {
         if (auto&& pParent = m_parent.Get()) {
             return pParent->GetRootBone();

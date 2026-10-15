@@ -115,13 +115,14 @@ namespace SR_GRAPH_NS::GUI {
     class ViewportsTableManager : public SR_UTILS_NS::Singleton<ViewportsTableManager> {
         SR_REGISTER_SINGLETON(ViewportsTableManager)
     public:
-        SR_NODISCARD ViewportsTable& GetViewportsTable() { return m_viewports; }
+        void ForEach(const SR_HTYPES_NS::Function<void(void*, Widget*)>& callback);
         SR_NODISCARD Widget* GetWidgetByViewport(void* viewport) const;
 
         void RegisterWidget(Widget* widget, void* viewport);
 
     private:
         ViewportsTable m_viewports;
+
     };
 }
 

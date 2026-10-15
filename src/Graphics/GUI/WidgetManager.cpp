@@ -119,17 +119,17 @@ namespace SR_GRAPH_NS::GUI {
     }
 
     void WidgetManager::HideAll() {
-        for (auto&& widget : ViewportsTableManager::Instance().GetViewportsTable()) {
-            auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(widget.first);
+        ViewportsTableManager::Instance().ForEach([](auto&& pHandle, auto&&) {
+            auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(pHandle);
             SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Hide);
-        }
+        });
     }
 
     void WidgetManager::ShowAll() {
-        for (auto&& widget : ViewportsTableManager::Instance().GetViewportsTable()) {
-            auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(widget.first);
+        ViewportsTableManager::Instance().ForEach([](auto&& pHandle, auto&&) {
+            auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(pHandle);
             SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Show);
-        }
+        });
     }
 
     void WidgetManager::SetRenderContext(WidgetManager::ContextPtr pContext) {
@@ -176,6 +176,13 @@ namespace SR_GRAPH_NS::GUI {
         }
 
         return m_viewports.at(viewport);
+    }
+
+    void ViewportsTableManager::ForEach(const SR_HTYPES_NS::Function<void(void*, Widget*)>& callback) {
+        for (auto&& [pHandle, pWidget] : m_viewports) {
+            /// TODO: тут может крашнуть, нужно валидация вьюпортов на существование
+            callback(pHandle, pWidget);
+        }
     }
 
     void ViewportsTableManager::RegisterWidget(Widget* widget, void* viewport) {
