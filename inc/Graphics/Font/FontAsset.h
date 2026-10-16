@@ -35,7 +35,7 @@ namespace SR_GRAPH_NS {
     class FontAsset : public SR_UTILS_NS::Asset {
         SR_CLASS()
     public:
-        bool BuildText(const std::string& text, float_t fontSize, std::vector<PositionedGlyph>& glyphs);
+        bool BuildText(const std::string& text, float_t fontSize, SR_UTILS_NS::Vector<PositionedGlyph>& glyphs);
 
         /// Разрешение генерации atlas (pixels per em baseline); масштаб экранного размера: fontSize / GetSamplingPointSize().
         SR_NODISCARD float_t GetSamplingPointSize() const noexcept { return m_samplingPointSize; }

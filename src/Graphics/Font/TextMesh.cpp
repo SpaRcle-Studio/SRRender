@@ -75,17 +75,23 @@ namespace SR_GTYPES_NS {
             });
         }
 
-        static SR_THREAD_LOCAL std::vector<PositionedGlyph> glyphs;
-        pFontAsset->BuildText(m_text, m_fontSize, glyphs);
+        struct TempCache {
+            SR_UTILS_NS::Vector<PositionedGlyph> glyphs;
+            SR_UTILS_NS::Vector<TextMeshDetails::GlyphPlacement> placements;
+            SR_UTILS_NS::VertexDataBuffer buffer;
+        };
+
+        static SR_THREAD_LOCAL TempCache cache;
+
+        pFontAsset->BuildText(m_text, m_fontSize, cache.glyphs);
         m_instancesCount = 0;
 
-        if (glyphs.empty()) {
+        if (cache.glyphs.empty()) {
             return true;
         }
 
-        static SR_THREAD_LOCAL SR_UTILS_NS::VertexDataBuffer buffer;
-        buffer.SetLayout(GetShaderVertexLayoutDescriptions().GetLayout(0));
-        buffer.Allocate(glyphs.size());
+        cache.buffer.SetLayout(GetShaderVertexLayoutDescriptions().GetLayout(0));
+        cache.buffer.Allocate(cache.glyphs.size());
 
         SetVertexLayoutDescription(GetShaderVertexLayoutDescriptions().GetLayout(0));
 
@@ -103,17 +109,16 @@ namespace SR_GTYPES_NS {
         context.verticalAlignment = m_verticalAlignment;
         context.layoutSize = layoutSize;
 
-        static SR_THREAD_LOCAL std::vector<TextMeshDetails::GlyphPlacement> placements;
-        if (!TextMeshDetails::CalculateGlyphPlacements(*pFontAsset, glyphs, context, placements)) {
+        if (!TextMeshDetails::CalculateGlyphPlacements(*pFontAsset, cache.glyphs, context, cache.placements)) {
             m_isCalculated = true;
             return true;
         }
 
-        for (auto&& placement : placements) {
-            glyphs[placement.glyphIndex].AddInstance(m_instancesCount++, placement.pos, placement.size, buffer);
+        for (auto&& placement : cache.placements) {
+            cache.glyphs[placement.glyphIndex].AddInstance(m_instancesCount++, placement.pos, placement.size, cache.buffer);
         }
 
-        m_VBO = GetPipeline()->AllocateVBO(m_VBO, m_instancesCount * buffer.GetLayout().GetStride(), buffer.GetRawData());
+        m_VBO = GetPipeline()->AllocateVBO(m_VBO, m_instancesCount * cache.buffer.GetLayout().GetStride(), cache.buffer.GetRawData());
 
         if (m_VBO == SR_ID_INVALID) {
             SR_ERROR("TextMesh::Calculate() : failed to allocate VBO for text mesh!");

@@ -66,7 +66,7 @@ namespace SR_GRAPH_NS {
         pAsset->OnGlyphBitmapGenerated(pGlyph->codepoint);
     }
 
-    bool FontAsset::BuildText(const std::string& text, float_t fontSize, std::vector<PositionedGlyph>& glyphs) {
+    bool FontAsset::BuildText(const std::string& text, float_t fontSize, SR_UTILS_NS::Vector<PositionedGlyph>& glyphs) {
         SR_TRACY_ZONE;
 
         glyphs.clear();
