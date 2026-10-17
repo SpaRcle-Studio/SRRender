@@ -107,8 +107,9 @@ else()
     target_link_libraries(Graphics PUBLIC Utils)
 
     SR_COPY_SHARED_MODULE_TO_EXECUTABLE_FOLDER(Graphics)
-    SR_COPY_STATIC_LIBRARY_TO_LIBRARY_FOLDER(Graphics)
 endif()
+
+SR_COPY_STATIC_LIBRARY_TO_LIBRARY_FOLDER(Graphics)
 
 if (NOT SR_EMSCRIPTEN)
     target_link_libraries(Graphics PUBLIC freetype)
@@ -227,9 +228,9 @@ endif()
 
 if (SR_RENDER_USE_VULKAN)
     if (EVO_VULKAN_STATIC_LIBRARY)
-        target_link_libraries(Graphics PUBLIC EvoVulkan)
+        target_link_libraries(Graphics PRIVATE EvoVulkan)
     else()
-        target_link_libraries(Graphics PUBLIC EvoVulkan::lib)
+        target_link_libraries(Graphics PRIVATE EvoVulkan::lib)
     endif()
 endif()
 
