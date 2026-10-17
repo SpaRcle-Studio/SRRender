@@ -58,10 +58,11 @@ namespace SR_GRAPH_NS {
     public:
         bool Initialize(
             const std::string& name, const SR_MATH_NS::IVector2& position, const SR_MATH_NS::UVector2& size,
-            bool fullScreen, bool resizable
+            bool fullScreen, bool resizabel
         ) override;
 
         SR_NODISCARD WindowType GetType() const override { return WindowType::Wayland; }
+        SR_NODISCARD WindowState GetState() const override;
         SR_NODISCARD void* GetHandle() const override { return m_surface; }
 
         uint32_t GetSurfaceWidth() const override { return static_cast<uint32_t>(m_surfaceBuffer.width); }
@@ -70,7 +71,20 @@ namespace SR_GRAPH_NS {
         uint32_t GetHeight() const override { return static_cast<uint32_t>(m_internalHeight); }
         float GetScale() const { return m_fractionalScale ? m_fractionalScaleValue : static_cast<float>(m_scale); }
 
+
+        // void Resize(uint32_t width, uint32_t height) { }
+        // void Move(int32_t x, int32_t y) { }
+        // void Centralize() { }
+        // void Collapse() { }
+        // void Expand() { }
+        void Maximize() override;
+        void Restore() override;
         void PollEvents() override;
+        // void SwapBuffers() const { };
+        // void SetIcon(const std::string& path) { }
+        // void SetHeaderEnabled(bool enable) { }
+        bool IsFullScreen() override {return m_isFullScreen;}
+        void SetFullScreen(bool value) override;
         void Close() override;
 
     public:
@@ -80,7 +94,9 @@ namespace SR_GRAPH_NS {
 
         void SetPendingSize(const SR_MATH_NS::IVector2& size) { m_pendingSize = size; }
         void SetMaximized(bool isMaximized) { m_isMaximized = isMaximized; }
+        void SetFullscreenState(bool value) { m_isFullScreen = value; }
 
+        
         void SetCompositor(struct wl_compositor* pCompositor) { m_compositor = pCompositor; }
         void SetSubCompositor(struct wl_subcompositor* pSubCompositor) { m_subCompositor = pSubCompositor; }
         void SetDecorationManager(zxdg_decoration_manager_v1* pDecorationManager) {
@@ -165,6 +181,7 @@ namespace SR_GRAPH_NS {
         int m_compositeHeight = 0;
         bool m_useClientDecorations = false;
         bool m_isMaximized = false;
+        bool m_isFullScreen = false;
 
         std::atomic<bool> m_waitingForConfigure = false;
         std::atomic<bool> m_configured = false;

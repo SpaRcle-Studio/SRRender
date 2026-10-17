@@ -101,14 +101,6 @@ namespace SR_GRAPH_NS {
         });
     }
 
-    bool Window::IsFullScreen() const {
-        return false;
-    }
-
-    void Window::SetFullScreen(bool value) {
-
-    }
-
     void Window::SetFocusCallback(const Window::FocusCallback &callback) {
         m_windowImpl->SetFocusCallback([callback](auto&& pWin, auto&& focus) {
             callback(focus);
@@ -146,18 +138,49 @@ namespace SR_GRAPH_NS {
 
         return SR_MATH_NS::FRect(GetPosition().CastToFloat(), GetSize().CastToFloat());
     }
+    
+    bool Window::IsFullScreen() const {
+        if (!m_windowImpl) {
+            SR_ERROR("Window::IsFullScreen() : window implementation is nullptr.");
+            return false;
+        }
+        return m_windowImpl->IsFullScreen();
+        
+    }
 
+    void Window::SetFullScreen(bool value) {
+        if (!m_windowImpl) {
+            SR_ERROR("Window::SetFullScreen() : window implementation is nullptr.");
+            return;
+        }
+        m_windowImpl->SetFullScreen(value);
+    }
+
+    void Window::Maximize() {
+        if (!m_windowImpl) {
+            SR_ERROR("Window::Maximize() : window implementation is nullptr.");
+            return;
+        }
+        m_windowImpl->Maximize();
+    }
+
+    void Window::Restore() {
+        if (!m_windowImpl) {
+            SR_ERROR("Window::Restore() : window implementation is nullptr.");
+            return;
+        }
+        m_windowImpl->Restore();
+    }
+    
     bool Window::IsMaximized() const {
         if (!m_windowImpl) {
             SR_ERROR("Window::IsMaximized() : window implementation is nullptr.");
             return false;
         }
-
+        
         if (m_windowImpl->GetState() == WindowState::Maximized) {
             return true;
         }
-
-        SR_NOOP;
 
         return false;
     }
