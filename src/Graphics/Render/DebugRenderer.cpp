@@ -265,4 +265,9 @@ namespace SR_GRAPH_NS {
     void DebugRenderer::ResetChangedFlags() noexcept {
         m_renderSceneChanged = false;
     }
+
+    bool DebugRenderer::IsMeshValid(uint32_t index) const noexcept {
+        const BakedMesh& mesh = GetMeshUnchecked(index);
+        return mesh.Valid() && mesh->GetRawMesh() && mesh->GetRawMesh()->CanBeUsed();
+    }
 }

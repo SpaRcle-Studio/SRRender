@@ -250,7 +250,7 @@ namespace SR_GRAPH_NS {
         }
 
         TextureLoadInfo infoCopy = info;
-        if (!compressedTextureExists) {
+        if (!compressedTextureExists || canCompress) { /// текстура еще не сжата, отключаем компрессию чтобы формат не сломался
             infoCopy.compression = TextureCompression::None;
         }
 
@@ -394,9 +394,10 @@ namespace SR_GRAPH_NS {
             return;
         }
 
-        SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pCopyData = pData, compression](auto&& state) {
+        auto&& id = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pCopyData = pData, compression](auto&& state) {
             CompressTexture(pCopyData, compression, state);
         }, SR_UTILS_NS::TaskPriority::Discardable);
+        SR_UTILS_NS::TaskManager::Instance().SetDescription(id, pData->GetPath());
     }
 
     void TextureLoader::CompressTexture(const TextureData::Ptr& pData, TextureCompression compression, std::atomic<SR_UTILS_NS::TaskState>& state) {

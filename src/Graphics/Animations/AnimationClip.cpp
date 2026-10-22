@@ -57,10 +57,10 @@ namespace SR_ANIMATIONS_NS {
         }
 
         auto&& pRig = m_rig.GetResource();
-        if (auto&& pSkeleton = pRig ? pRig->GetSkeleton().GetRawMesh() : m_skeleton.GetRawMesh()) {
+        if (auto&& pSkeleton = GetSkeleton()) {
             auto&& meshId = pRig ? pRig->GetSkeleton().GetMeshId() : m_skeleton.GetMeshId();
             for (auto&& channel : m_channels) {
-                const auto boneIndex= pSkeleton->GetBoneInfo(meshId, channel.GetChannelName()).boneId;
+                const auto boneIndex = pSkeleton->GetBoneInfo(meshId, channel.GetChannelName()).boneId;
                 if (boneIndex.has_value()) {
                     channel.SetBoneIndex(boneIndex.value());
                 }
@@ -79,6 +79,8 @@ namespace SR_ANIMATIONS_NS {
     }
 
     bool AnimationClip::Unload() {
+        m_skeletonReloadSubscription.Reset();
+        m_clipReloadSubscription.Reset();
         m_rigReloadSubscriptions.clear();
         m_channels.clear();
         m_retargetCache.clear();
@@ -89,19 +91,15 @@ namespace SR_ANIMATIONS_NS {
         return Super::Unload();
     }
 
-    void AnimationClip::OnAssetLoaded() {
+    void AnimationClip::DoLoadClip() {
         SR_TRACY_ZONE;
 
-        if (m_clipPath.empty()) {
+        auto&& pRawMesh = m_rawMesh.GetResource();
+        if (!pRawMesh->CanBeUsed()) {
             return;
         }
 
-        SR_HTYPES_NS::RawMeshParams params;
-        params.animation = true;
-
-        auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(m_clipPath, &params);
-        if (!pRawMesh) {
-            SR_ERROR("AnimationClip::Load() : failed to load raw mesh from path: {}", m_clipPath);
+        if (auto&& pSkeleton = GetSkeleton(); !pSkeleton || !pSkeleton->CanBeUsed()) {
             return;
         }
 
@@ -116,12 +114,9 @@ namespace SR_ANIMATIONS_NS {
                 }
             }
         #endif
-            pRawMesh->CheckResourceUsage();
             SR_ERROR("AnimationClip::Load() : wrong animation name \"{}\"!\n\tTotal animations: {}", m_clipName, animations);
             return;
         }
-
-        pRawMesh->CheckResourceUsage();
 
         for (auto&& channel : m_channels) {
             m_maxKeyFrame = SR_MAX(m_maxKeyFrame, channel.GetKeys().size());
@@ -129,11 +124,28 @@ namespace SR_ANIMATIONS_NS {
                 m_duration = SR_MAX(m_duration, key.time);
             }
         }
+    }
+
+    void AnimationClip::OnAssetLoaded() {
+        SR_TRACY_ZONE;
+
+        if (m_clipPath.empty()) {
+            return;
+        }
+
+        SR_HTYPES_NS::RawMeshParams params;
+        params.animation = true;
+
+        m_rawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(m_clipPath, &params);
+        if (!m_rawMesh) {
+            SR_ERROR("AnimationClip::Load() : failed to load raw mesh from path: {}", m_clipPath);
+            return;
+        }
 
         m_rigReloadSubscriptions.clear();
         if (m_rig.IsValid()) {
             auto&& pRig = m_rig.GetResource();
-            m_rigReloadSubscriptions.emplace_back(pRig->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+            m_rigReloadSubscriptions.emplace_back(pRig->Subscribe(RELOAD_DONE_EVENT, [this](auto&&) {
                 m_retargetCache.clear();
             }));
         }
@@ -141,11 +153,24 @@ namespace SR_ANIMATIONS_NS {
         for (auto&& profile : m_retargetProfiles) {
             if (profile.targetRig.IsValid()) {
                 auto&& pTargetRig = profile.targetRig.GetResource();
-                m_rigReloadSubscriptions.emplace_back(pTargetRig->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                m_rigReloadSubscriptions.emplace_back(pTargetRig->Subscribe(RELOAD_DONE_EVENT, [this](auto&&) {
                     m_retargetCache.clear();
                 }));
             }
         }
+
+        auto&& pRawMesh = m_rawMesh.GetResource();
+        auto&& pSkeleton = GetSkeleton();
+
+        m_clipReloadSubscription = pRawMesh->Subscribe(RELOAD_DONE_EVENT, [this](auto&&) {
+            DoLoadClip();
+        });
+
+        m_skeletonReloadSubscription = pSkeleton ? pSkeleton->Subscribe(RELOAD_DONE_EVENT, [this](auto&&) {
+            DoLoadClip();
+        }) : SR_UTILS_NS::Subscription();
+
+        DoLoadClip();
 
         Super::OnAssetLoaded();
     }
@@ -247,5 +272,11 @@ namespace SR_ANIMATIONS_NS {
 
         m_retargetCache.emplace(targetRigName, m_channels);
         return m_retargetCache[targetRigName];
+    }
+
+    SR_HTYPES_NS::RawMesh* AnimationClip::GetSkeleton() const {
+        auto&& pRig = m_rig.GetResource();
+        auto&& pSkeleton = pRig ? pRig->GetSkeleton().GetRawMesh() : m_skeleton.GetRawMesh();
+        return const_cast<SR_HTYPES_NS::RawMesh*>(pSkeleton.Get());
     }
 }

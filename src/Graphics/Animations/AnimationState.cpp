@@ -69,6 +69,7 @@ namespace SR_ANIMATIONS_NS {
 
     bool AnimationState::Compile(UpdateContext& context) {
         if (!m_compiled && m_machine) {
+            SR_TRACY_ZONE;
             m_compiled = true;
             for (auto&& pTransition : m_transitions) {
                 auto&& pDestinationState = m_machine->GetStateOrNull(pTransition->GetTargetIndex());
@@ -90,9 +91,7 @@ namespace SR_ANIMATIONS_NS {
     void AnimationClipState::Update(UpdateContext& context) {
         SR_TRACY_ZONE;
 
-        Compile(context);
-
-        if (!m_clip) {
+        if (!Compile(context)) {
             Super::Update(context);
             return;
         }
@@ -108,6 +107,11 @@ namespace SR_ANIMATIONS_NS {
         const auto channelsCount = static_cast<uint32_t>(channels.size());
 
         ChannelAnimationUpdateContext channelAnimationContext = context;
+
+        if (m_channelContexts.size() != channelsCount) {
+            SRHalt("AnimationClipState::Update() : channels contexts count is different!");
+            return;
+        }
 
         for (uint32_t i = 0; i < channelsCount; ++i) {
             ChannelUpdateContext& channelContext = m_channelContexts[i];
@@ -186,7 +190,11 @@ namespace SR_ANIMATIONS_NS {
             return true;
         }
 
-        Super::Compile(context);
+        SR_TRACY_ZONE;
+
+        if (!Super::Compile(context)) {
+            return false;
+        }
 
         if (!m_clip) {
             SR_ERROR("AnimationClipState::Compile() : clip is nullptr! Clip name: {}", m_animation);
@@ -196,6 +204,10 @@ namespace SR_ANIMATIONS_NS {
         m_channelContexts.clear();
 
         const auto& channels = m_clip->GetChannels(context.pRig);
+        if (channels.empty()) {
+            m_compiled = false;
+            return false;
+        }
 
         /// Important: retargeting may bake channels (different key counts than the source clip),
         /// so we must compute these values from the channels actually used at runtime.

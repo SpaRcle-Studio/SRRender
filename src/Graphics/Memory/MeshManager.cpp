@@ -65,10 +65,7 @@ namespace SR_GRAPH_NS {
     void BakedMesh::Destroy() {
         SR_TRACY_ZONE;
 
-        if (m_pRawMesh) {
-            m_pRawMesh->RemoveUsePoint();
-            m_pRawMesh = nullptr;
-        }
+        m_pRawMesh.ResetResource();
 
         if (m_VBO != SR_ID_INVALID) {
             if (MeshManager::Instance().Free(true, m_VBO) == MeshManager::FreeResult::Freed) {
@@ -111,11 +108,6 @@ namespace SR_GRAPH_NS {
             return nullptr;
         }
 
-        if (index >= pRawMesh->GetMeshesCount()) {
-            SR_ERROR("MeshManager::BakeMesh() : invalid index \"{}\"!", index);
-            return nullptr;
-        }
-
         RegistrationInfo registrationInfoVBO;
         registrationInfoVBO.resourceId = pRawMesh->GetResourceId();
         registrationInfoVBO.meshIndex = index;
@@ -126,6 +118,16 @@ namespace SR_GRAPH_NS {
         registrationInfoIBO.isVBO = false;
 
         BakedMesh::Ptr&& pBakedMesh = BakedMesh::MakeShared();
+        pBakedMesh->m_pRawMesh = SR_UTILS_NS::ResourceRef<SR_HTYPES_NS::RawMesh>(pRawMesh);
+        pBakedMesh->m_index = index;
+        pBakedMesh->m_pipeline = pPipeline;
+
+        pRawMesh->ForceLoad();
+
+        if (index >= pRawMesh->GetMeshesCount()) {
+            SR_ERROR("MeshManager::BakeMesh() : invalid index \"{}\"!", index);
+            return nullptr;
+        }
 
         if (auto&& VBO = CopyIfExists(registrationInfoVBO, layout); VBO != SR_ID_INVALID) {
             pBakedMesh->m_VBO = VBO;
@@ -170,11 +172,6 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        pRawMesh->AddUsePoint();
-
-        pBakedMesh->m_pRawMesh = pRawMesh;
-        pBakedMesh->m_index = index;
-        pBakedMesh->m_pipeline = pPipeline;
         pBakedMesh->m_countIndices = pRawMesh->GetIndicesCount(index);
         pBakedMesh->m_countVertices = pRawMesh->GetVerticesCount(index);
 

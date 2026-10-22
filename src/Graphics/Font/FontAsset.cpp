@@ -46,12 +46,13 @@ namespace SR_GRAPH_NS {
         if (async) {
             pFont->AddUsePoint();
             pAsset->AddUsePoint();
-            SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pFont, pGlyph, pAsset](auto&&) {
+            auto&& id = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pFont, pGlyph, pAsset](auto&&) {
                 ComputeGlyphBitmap(false, pFont, pGlyph, pAsset);
                 SR_DEBUG_LOG("FontAsset::ComputeGlyphBitmap() : asynchronously generated bitmap for codepoint {}!", pGlyph->codepoint.codepoint);
                 pFont->RemoveUsePoint();
                 pAsset->RemoveUsePoint();
             }, SR_UTILS_NS::TaskPriority::Normal);
+            SR_UTILS_NS::TaskManager::Instance().SetDescription(id, pFont->GetResourceId());
             return;
         }
 

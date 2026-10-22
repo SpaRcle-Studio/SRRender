@@ -153,6 +153,9 @@ namespace SR_GRAPH_NS {
                 }
 
                 const BakedMesh& mesh = pDebugRenderer->GetMeshUnchecked(meshId);
+                if (mesh.GetVBO() == SR_ID_INVALID) {
+                    continue;
+                }
 
                 pPipeline->BindVBO(mesh.GetVBO(), 0, VertexInputRate::Vertex);
                 pPipeline->BindIBO(mesh.GetIBO());
@@ -388,7 +391,7 @@ namespace SR_GRAPH_NS {
         for (auto& drawQueue : shaderInfo.drawQueues) {
             for (auto& drawInfo : drawQueue) {
                 /** Если меш не был отрисован, то бинд не пройдет */
-                if (m_uboManager->BindNoDublicateUBO(shaderInfo.UBOs[index].virtualUBO) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
+                if (shaderInfo.UBOs.size() > index && m_uboManager->BindNoDublicateUBO(shaderInfo.UBOs[index].virtualUBO) == Memory::UBOManager::BindResult::Success) SR_UNLIKELY_ATTRIBUTE {
                     if (type == DebugRenderer::DrawType::Line) {
                         shaderInfo.pShader->SetVec3(SHADER_LINE_START_POINT, drawInfo.start);
                         shaderInfo.pShader->SetVec3(SHADER_LINE_END_POINT, drawInfo.end);

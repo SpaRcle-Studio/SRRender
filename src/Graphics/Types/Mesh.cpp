@@ -32,6 +32,7 @@ namespace SR_GTYPES_NS {
     }
 
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, uint32_t id) {
+        SR_TRACY_ZONE;
         if (auto&& pRawMesh =  CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
             return TryLoad(pRawMesh.Get(), id);
         }
@@ -50,6 +51,7 @@ namespace SR_GTYPES_NS {
     }
 
     Mesh::Ptr Mesh::TryLoad(SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t id) {
+        SR_TRACY_ZONE;
         /// Проверяем существование меша
         if (pRawMesh) {
             if (id >= pRawMesh->GetMeshesCount()) {
@@ -175,7 +177,11 @@ namespace SR_GTYPES_NS {
     }
 
     Mesh::Ptr Mesh::Load(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringAtom name) {
+        SR_TRACY_ZONE;
         if (auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path)) {
+            if (!pRawMesh->CanBeUsed()) {
+                pRawMesh->ForceLoad();
+            }
             return Load(path, pRawMesh->GetMeshId(name));
         }
         return nullptr;

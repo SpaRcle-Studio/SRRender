@@ -75,6 +75,11 @@ namespace SR_GTYPES_NS {
     }
 
     const SR_UTILS_NS::VertexDataBuffer& SkinnedMesh::GetVertices() const {
-        return GetRawMesh()->GetVertexBuffer(GetMeshId(), GetVertexLayoutDescription());
+        auto&& pRawMesh = GetRawMesh();
+        if (!pRawMesh || !pRawMesh->CanBeUsed()) {
+            static SR_UTILS_NS::VertexDataBuffer empty;
+            return empty;
+        }
+        return pRawMesh->GetVertexBuffer(GetMeshId(), GetVertexLayoutDescription());
     }
 }

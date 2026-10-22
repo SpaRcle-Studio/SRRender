@@ -61,11 +61,13 @@ namespace SR_ANIMATIONS_NS {
 
         SR_NODISCARD float_t GetDuration() const noexcept { return m_duration; }
         SR_NODISCARD uint32_t GetMaxKeyFrame() const noexcept { return m_maxKeyFrame; }
+        SR_NODISCARD SR_HTYPES_NS::RawMesh* GetSkeleton() const;
 
     protected:
         bool Unload() override;
         void OnAssetLoaded() override;
         void PostProcess();
+        void DoLoadClip();
 
     private:
         SR_NODISCARD bool LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_UTILS_NS::StringAtom name);
@@ -92,10 +94,14 @@ namespace SR_ANIMATIONS_NS {
 
         Channels m_channels;
         mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Channels> m_retargetCache;
+        bool m_isClipLoaded = false;
 
         float_t m_duration = 0.f;
         uint32_t m_maxKeyFrame = 0;
+        SR_UTILS_NS::ResourceRef<SR_HTYPES_NS::RawMesh> m_rawMesh;
         SR_UTILS_NS::Vector<SR_UTILS_NS::Subscription> m_rigReloadSubscriptions;
+        SR_UTILS_NS::Subscription m_clipReloadSubscription;
+        SR_UTILS_NS::Subscription m_skeletonReloadSubscription;
 
     };
 }

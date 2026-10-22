@@ -66,14 +66,15 @@ namespace SR_ANIMATIONS_NS {
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<RenderContext>& GetRenderContext() const noexcept;
         SR_NODISCARD const SR_HTYPES_NS::SharedPtr<Pipeline>& GetPipeline() const noexcept;
 
-        void SetRig(const SR_UTILS_NS::ResourceRef<SkeletonRig>& rig) { m_rig = rig; OnRawMeshChanged(); }
-        void SetRawMesh(const SR_HTYPES_NS::RawMeshHolder& rawMesh) { m_skeleton = rawMesh; OnRawMeshChanged(); }
+        void SetRig(const SR_UTILS_NS::ResourceRef<SkeletonRig>& rig);
+        void SetRawMesh(const SR_HTYPES_NS::RawMeshHolder& rawMesh);
         const SR_HTYPES_NS::RawMeshHolder& GetSkeletonRawMesh() const;
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
         SR_NODISCARD const SkeletonRig* GetRig() const noexcept;
 
     private:
+        void ReInitMeshSubscription();
         void CalculateTransforms();
         void UpdateBonesSSBO();
         void UpdateDebug();
@@ -110,14 +111,15 @@ namespace SR_ANIMATIONS_NS {
         mutable std::array<std::unique_ptr<SSBOInstance>, SR_MAX_FRAMES_IN_FLIGHT> m_bonesSSBO;
         mutable SR_HTYPES_NS::SharedPtr<Pipeline> m_pipeline;
         mutable SR_HTYPES_NS::SharedPtr<RenderContext> m_renderContext;
+        SR_UTILS_NS::Subscription m_onRawMeshReloaded;
 
     private:
         /// @property
         SR_UTILS_NS::EntityRef<Skeleton> m_parent;
-        /// @property @onChanged(OnRawMeshChanged)
+        /// @property @setter(SetRig)
         SR_UTILS_NS::ResourceRef<SkeletonRig> m_rig;
         /// @property @condition(!This.m_rig.IsValid())
-        /// @onChanged(OnRawMeshChanged)
+        /// @setter(SetRawMesh)
         SR_HTYPES_NS::RawMeshHolder m_skeleton;
 
         /// @property @dontSave @readOnly @debugOnly

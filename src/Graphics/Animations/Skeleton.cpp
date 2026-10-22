@@ -88,6 +88,11 @@ namespace SR_ANIMATIONS_NS {
     bool Skeleton::ReCalculateSkeleton() {
         m_bonesByName.clear();
 
+        SR_HTYPES_NS::RawMesh::Ptr pRawMesh = GetSkeletonRawMesh().GetRawMesh();
+        if (!pRawMesh || !pRawMesh->CanBeUsed()) {
+            return false;
+        }
+
         if (!GetRootBone() && !TryInitializeBonesFromMesh()) {
             SR_WARN("Skeleton::ReCalculateSkeleton() : root bone is nullptr!");
             return false;
@@ -158,6 +163,7 @@ namespace SR_ANIMATIONS_NS {
 
     void Skeleton::OnAttached() {
         ReCalculateSkeleton();
+        ReInitMeshSubscription();
 
         if (auto&& pScene = TryGetScene()) {
             auto&& pRenderScene = dynamic_cast<SR_GRAPH_NS::RenderScene*>(pScene->GetModule("Render"));
@@ -245,6 +251,11 @@ namespace SR_ANIMATIONS_NS {
 
     void Skeleton::UpdateBonesSSBO() {
         SR_TRACY_ZONE;
+        auto&& skeleton = GetSkeletonRawMesh();
+        if (!skeleton.GetRawMesh() || !skeleton.GetRawMesh()->CanBeUsed()) {
+            return;
+        }
+
         if (const auto ssbo = GetBonesSSBO(); ssbo != SR_ID_INVALID)  {
             if (auto&& matrices = GetMatrices(); !matrices.empty()) {
                 GetPipeline()->UpdateSSBO(ssbo, (void*)matrices.data(), matrices.size() * sizeof(SR_MATH_NS::Matrix4x4));
@@ -298,13 +309,12 @@ namespace SR_ANIMATIONS_NS {
     }
 
     const SR_UTILS_NS::Vector<SR_MATH_NS::Matrix4x4>& Skeleton::GetMatrices() noexcept {
-        if (!m_dirtyMatrices) {
+        if (!m_dirtyMatrices && !m_matrices.empty()) {
             return m_matrices;
         }
 
         SR_TRACY_ZONE;
 
-        //bool hasDirty = m_isNeedRecalcTransforms;
         bool wasCalledRecalc = false;
 
         if (m_isNeedRecalcTransforms) {
@@ -344,6 +354,9 @@ namespace SR_ANIMATIONS_NS {
         m_isBonesSSBODirty = true;
         if (m_offsetsSSBO) {
             m_offsetsSSBO->GetRenderContext()->SetDirty();
+        }
+        if (IsAttached()) {
+            ReCalculateSkeleton();
         }
     }
 
@@ -470,6 +483,18 @@ namespace SR_ANIMATIONS_NS {
         return m_rig.GetResource()->GetSkeleton();
     }
 
+    void Skeleton::SetRig(const SR_UTILS_NS::ResourceRef<SkeletonRig>& rig) {
+        m_rig = rig;
+        OnRawMeshChanged();
+        ReInitMeshSubscription();
+    }
+
+    void Skeleton::SetRawMesh(const SR_HTYPES_NS::RawMeshHolder& rawMesh) {
+        m_skeleton = rawMesh;
+        OnRawMeshChanged();
+        ReInitMeshSubscription();
+    }
+
     void Skeleton::ForEachTransform(const SR_HTYPES_NS::Function<void(SR_UTILS_NS::Transform&)>& callback) {
         SR_TRACY_ZONE;
         if (m_isNeedRecalcTransforms) {
@@ -497,6 +522,15 @@ namespace SR_ANIMATIONS_NS {
             };
 
             processBone(GetRootBone().Get());
+        }
+    }
+
+    void Skeleton::ReInitMeshSubscription() {
+        m_onRawMeshReloaded.Reset();
+        if (auto&& pSkeleton = GetSkeletonRawMesh().GetRawMesh()) {
+            m_onRawMeshReloaded = pSkeleton->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](const SR_UTILS_NS::SubscriptionMessage& msg) {
+                OnRawMeshChanged();
+            });
         }
     }
 }

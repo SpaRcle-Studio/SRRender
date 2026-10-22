@@ -212,6 +212,7 @@ namespace SR_GRAPH_NS {
             m_glslLangInitTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([this](auto&&) {
                 InitGLSLCompiler();
             }, SR_UTILS_NS::TaskPriority::High);
+            SR_UTILS_NS::TaskManager::Instance().SetDescription(m_glslLangInitTaskId, "Init GLSL compiler");
         }
     #endif
 

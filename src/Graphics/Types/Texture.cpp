@@ -148,6 +148,7 @@ namespace SR_GTYPES_NS {
                     pStrong->OnAsyncLoaded(TextureLoader::Load(path, loadInfo));
                 }
             }, SR_UTILS_NS::TaskPriority::Critical);
+            SR_UTILS_NS::TaskManager::Instance().SetDescription(*m_syncLoadTaskId, GetResourceId());
         }
         else {
             m_textureData = TextureLoader::Load(GetResourcePath(), loadInfo);
@@ -332,6 +333,10 @@ namespace SR_GTYPES_NS {
     }
 
     void* Texture::GetDescriptor() {
+        if (!CanBeUsed()) {
+            return nullptr;
+        }
+
         auto&& textureId = GetId();
 
         if (textureId == SR_ID_INVALID) {

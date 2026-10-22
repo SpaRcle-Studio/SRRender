@@ -38,8 +38,8 @@ namespace SR_GTYPES_NS {
         ReRegisterRenderObject();
         MarkMaterialDirty();
         m_isCalculated = false;
-        if (auto&& pAABB = GetRawMesh()) {
-            SetAABB(GetRawMesh()->GetAABB(GetMeshId()));
+        if (auto&& pAABB = GetRawMesh(); pAABB && pAABB->CanBeUsed()) {
+            SetAABB(pAABB->GetAABB(GetMeshId()));
         }
     }
 
@@ -55,7 +55,7 @@ namespace SR_GTYPES_NS {
     const SR_UTILS_NS::VertexDataBuffer& Mesh3D::GetVertices() const {
         SR_TRACY_ZONE;
         auto&& pRawMesh = GetRawMesh();
-        if (!pRawMesh) {
+        if (!pRawMesh || !pRawMesh->CanBeUsed()) {
             static SR_UTILS_NS::VertexDataBuffer empty;
             return empty;
         }

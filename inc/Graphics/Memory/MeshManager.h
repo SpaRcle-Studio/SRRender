@@ -99,7 +99,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint32_t GetUsages() const noexcept { return m_usages; }
         SR_NODISCARD uint64_t GetMeshIndex() const noexcept { return m_index; }
         SR_NODISCARD Pipeline* GetPipeline() const noexcept { return m_pipeline; }
-        SR_NODISCARD SR_HTYPES_NS::RawMesh* GetRawMesh() const noexcept { return m_pRawMesh; }
+        SR_NODISCARD SR_HTYPES_NS::RawMesh* GetRawMesh() const noexcept { return m_pRawMesh.GetResource().Get(); }
 
         void AddUsePoint() {
             m_usages++;
@@ -118,7 +118,7 @@ namespace SR_GRAPH_NS {
 
     private:
         uint32_t m_usages = 0;
-        SR_HTYPES_NS::RawMesh* m_pRawMesh = nullptr;
+        SR_UTILS_NS::ResourceRef<SR_HTYPES_NS::RawMesh> m_pRawMesh;
         uint64_t m_index = 0;
         int32_t m_VBO = SR_ID_INVALID;
         int32_t m_IBO = SR_ID_INVALID;
