@@ -49,7 +49,9 @@ namespace SR_SRSL_NS {
     SRSLShader::SRSLShader(SR_UTILS_NS::Path path)
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
         , m_path(std::move(path))
-    { }
+    {
+        //SRAssert(!m_path.ToStringView().starts_with("Resources"));
+    }
 
     SRSLShader::~SRSLShader() {
         m_useStack.reset();
@@ -656,7 +658,8 @@ namespace SR_SRSL_NS {
                 }
             }
 
-            m_createInfo.stages[stage].path = "{}/{}/shader.{}"_format(m_path, m_params.GetHash(), SR_SRSL_STAGE_EXTENSIONS.at(stage));
+            m_createInfo.stages[stage].path = "{}/{}/shader.{}"_format(m_path.RemoveSubPath(CoreResLoader::GetResPath()), m_params.GetHash(), SR_SRSL_STAGE_EXTENSIONS.at(stage));
+            //SRAssert(!m_createInfo.stages[stage].path.ToStringView().starts_with("Resources"));
 
             /// блоки юниформ
 
