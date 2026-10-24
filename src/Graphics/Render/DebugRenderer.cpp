@@ -24,21 +24,16 @@ namespace SR_GRAPH_NS {
         SR_INFO("DebugRenderer::Init() : initializing debug renderer...");
 
         if (SR_UTILS_NS::Features::Instance().Enabled("DebugRendererMeshes", true)) {
-            static const auto layout = SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
-                SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
-            );
+            m_meshes.emplace_back().rawMesh = "Engine/Models/cubeWireframe.obj";
+            m_meshes.emplace_back().rawMesh = "Engine/Models/planeWireframe.obj";
+            m_meshes.emplace_back().rawMesh = "Engine/Models/sphere_circle.obj";
+            m_meshes.emplace_back().rawMesh = "Engine/Models/capsule_circle.obj";
 
-            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/cubeWireframe.obj", 0, layout));
-            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/planeWireframe.obj", 0, layout));
-            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/sphere_circle.obj", 0, layout));
-            m_meshes.emplace_back(BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), "Engine/Models/capsule_circle.obj", 0, layout));
-
-            for (uint64_t i = 0; i < m_meshes.size(); ++i) {
-                if (!m_meshes[i]) {
-                    SR_ERROR("DebugRenderer::Init() : failed to load debug mesh on index {}!", i);
-                }
-                else {
-                    m_meshes[i]->AddUsePoint();
+            for (auto&& mesh : m_meshes) {
+                mesh.rawMesh.ForceLoad();
+                mesh.AddUsePoint();
+                if (!mesh.rawMesh.IsValid()) {
+                    SR_ERROR("DebugRenderer::Init() : failed to load debug mesh \"{}\"!", mesh.rawMesh.GetId());
                 }
             }
         }
@@ -72,13 +67,6 @@ namespace SR_GRAPH_NS {
             SR_UTILS_NS::DebugDraw::Instance().RemoveCallbacks(this);
         }
 
-        for (auto&& pBaseMesh : m_meshes) {
-            if (!pBaseMesh) {
-                continue;
-            }
-            pBaseMesh->RemoveUsePoint();
-        }
-
         m_meshes.clear();
     }
 
@@ -95,6 +83,17 @@ namespace SR_GRAPH_NS {
 
         SR_LOCK_GUARD;
 
+        for (auto&& meshInfo : m_meshes) {
+            if (!meshInfo.pBaked) {
+                if (auto&& pRaw = meshInfo.rawMesh.GetResource(); pRaw && pRaw->CanBeUsed()) {
+                    static const auto layout = SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
+                        SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
+                    );
+                    meshInfo.pBaked = BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), pRaw.Get(), 0, layout);
+                }
+            }
+        }
+
         auto&& timePoint = SR_HTYPES_NS::Time::Instance().Count();
 
         m_timedObjects.RemoveIf([timePoint](uint64_t /* index */, const DebugTimedObject& timed) {
@@ -104,8 +103,8 @@ namespace SR_GRAPH_NS {
             m_renderSceneChanged = true;
             GetRenderScene()->GetPipeline()->SetDirty(true);
 
-            if (timed.drawInfo.type >= DrawType::Mesh && m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]) {
-                m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]->RemoveUsePoint();
+            if (timed.drawInfo.type >= DrawType::Mesh) {
+                m_meshes[static_cast<uint64_t>(timed.drawInfo.type)].RemoveUsePoint();
             }
         });
     }
@@ -165,18 +164,14 @@ namespace SR_GRAPH_NS {
 
         if (m_timedObjects.IsAlive(id)) {
             if (m_timedObjects.AtUnchecked(id).drawInfo.type != timed.drawInfo.type) {
-                if (m_meshes[meshId]) {
-                    m_meshes[meshId]->AddUsePoint();
-                }
+                m_meshes[meshId].AddUsePoint();
                 Remove(id, false);
             }
             m_timedObjects.At(id) = timed;
             return id;
         }
 
-        if (m_meshes[meshId]) {
-            m_meshes[meshId]->AddUsePoint();
-        }
+        m_meshes[meshId].AddUsePoint();
 
         return m_timedObjects.Add(std::move(timed));
     }
@@ -191,30 +186,29 @@ namespace SR_GRAPH_NS {
         }
 
         int64_t freeIndex = SR_ID_INVALID;
-        for (int64_t i = static_cast<int64_t>(DrawType::CustomMesh); i < m_meshes.size(); ++i) {
-            if (!m_meshes[i]) {
+        for (auto i = static_cast<int64_t>(DrawType::CustomMesh); i < m_meshes.size(); ++i) {
+            if (m_meshes[i].rawMesh.GetId().empty()) {
                 freeIndex = i;
                 continue;
             }
-            if (m_meshes[i]->GetRawMesh() == pRawMesh && m_meshes[i]->GetMeshIndex() == meshIndex) {
+            if (m_meshes[i].rawMesh.GetResource() == pRawMesh && m_meshes[i].meshIndex == meshIndex) {
                 return AddMesh(id, i, pos, rot, scale, color, seconds);
             }
         }
 
-        auto&& pMesh = BakedMesh::Bake(GetRenderScene()->GetPipeline().Get(), pRawMesh, meshIndex,
-            SR_UTILS_NS::VertexLayoutDescription().AddAttribute(
-                SR_UTILS_NS::VertexAttribute::Position, SR_UTILS_NS::VertexAttributeFormat::Float32, 3
-            )
-        );
-
         if (freeIndex == SR_ID_INVALID) {
-            pMesh->AddUsePoint();
-            m_meshes.emplace_back(pMesh);
+            auto&& info = m_meshes.emplace_back();
+            info.meshIndex = meshIndex;
+            info.rawMesh = pRawMesh;
+            info.AddUsePoint();
             return AddMesh(id, m_meshes.size() - 1, pos, rot, scale, color, seconds);
         }
 
-        pMesh->AddUsePoint();
-        m_meshes[freeIndex] = pMesh;
+        MeshInfo info;
+        info.meshIndex = meshIndex;
+        info.rawMesh = pRawMesh;
+        info.AddUsePoint();
+        m_meshes[freeIndex] = info;
         return AddMesh(id, freeIndex, pos, rot, scale, color, seconds);
     }
 
@@ -236,7 +230,7 @@ namespace SR_GRAPH_NS {
 
         DebugTimedObject& timed = m_timedObjects.At(id);
         if (timed.drawInfo.type >= DrawType::Mesh) {
-            m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]->RemoveUsePoint();
+            m_meshes[static_cast<uint64_t>(timed.drawInfo.type)].RemoveUsePoint();
         }
 
         if (fromPool) {
@@ -256,7 +250,7 @@ namespace SR_GRAPH_NS {
 
         m_timedObjects.ForEach([this](uint64_t /* index */, const DebugTimedObject& timed) {
             if (timed.drawInfo.type >= DrawType::Mesh) {
-                m_meshes[static_cast<uint64_t>(timed.drawInfo.type)]->RemoveUsePoint();
+                m_meshes[static_cast<uint64_t>(timed.drawInfo.type)].RemoveUsePoint();
             }
         });
         m_timedObjects.Clear();
@@ -267,7 +261,14 @@ namespace SR_GRAPH_NS {
     }
 
     bool DebugRenderer::IsMeshValid(uint32_t index) const noexcept {
+        if (!m_meshes[index].pBaked) {
+            return false;
+        }
         const BakedMesh& mesh = GetMeshUnchecked(index);
         return mesh.Valid() && mesh->GetRawMesh() && mesh->GetRawMesh()->CanBeUsed();
+    }
+
+    const BakedMesh& DebugRenderer::GetMeshUnchecked(uint32_t index) const noexcept {
+        return m_meshes[index].pBaked.GetUncheckedRef();
     }
 }

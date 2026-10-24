@@ -445,7 +445,7 @@ namespace SR_ANIMATIONS_NS {
         #ifdef SR_UTILS_ASSIMP
             const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
 
-            if (!pScene->mRootNode) {
+            if (!pScene || !pScene->mRootNode) {
                 return false;
             }
 

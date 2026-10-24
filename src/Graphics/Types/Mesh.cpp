@@ -101,7 +101,11 @@ namespace SR_GTYPES_NS {
         std::vector<Mesh::Ptr> meshes;
 
         uint32_t id = 0;
-        auto&& pRawMesh = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path);
+        SR_UTILS_NS::ResourceRef<SR_HTYPES_NS::RawMesh> pRawMeshInstance = CoreResLoader::Load<SR_HTYPES_NS::RawMesh>(path);
+        auto&& pRawMesh = pRawMeshInstance.GetResource();
+        if (pRawMesh) {
+            pRawMesh->ForceLoad();
+        }
         while (pRawMesh) {
             if (auto&& pMesh = TryLoad(pRawMesh.Get(), id)) {
                 meshes.emplace_back(pMesh);

@@ -96,28 +96,14 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t GetIBO() const noexcept { return m_IBO; }
         SR_NODISCARD uint32_t GetCountIndices() const noexcept { return m_countIndices; }
         SR_NODISCARD uint32_t GetCountVertices() const noexcept { return m_countVertices; }
-        SR_NODISCARD uint32_t GetUsages() const noexcept { return m_usages; }
         SR_NODISCARD uint64_t GetMeshIndex() const noexcept { return m_index; }
         SR_NODISCARD Pipeline* GetPipeline() const noexcept { return m_pipeline; }
         SR_NODISCARD SR_HTYPES_NS::RawMesh* GetRawMesh() const noexcept { return m_pRawMesh.GetResource().Get(); }
-
-        void AddUsePoint() {
-            m_usages++;
-        }
-
-        void RemoveUsePoint() {
-            if (m_usages > 0) {
-                m_usages--;
-                return;
-            }
-            SRHalt("BakedMesh::RemoveUsePoint() : usages is less than 0!");
-        }
 
         static Ptr Bake(Pipeline* pPipeline, std::string_view path, uint32_t index, const SR_UTILS_NS::VertexLayoutDescription& layout);
         static Ptr Bake(Pipeline* pPipeline, SR_HTYPES_NS::RawMesh* pRawMesh, uint32_t index, const SR_UTILS_NS::VertexLayoutDescription& layout);
 
     private:
-        uint32_t m_usages = 0;
         SR_UTILS_NS::ResourceRef<SR_HTYPES_NS::RawMesh> m_pRawMesh;
         uint64_t m_index = 0;
         int32_t m_VBO = SR_ID_INVALID;

@@ -58,7 +58,6 @@ namespace SR_GRAPH_NS {
     }
 
     BakedMesh::~BakedMesh() {
-        SRAssert2(m_usages == 0, "Not all uses were removed!");
         Destroy();
     }
 
@@ -121,8 +120,6 @@ namespace SR_GRAPH_NS {
         pBakedMesh->m_pRawMesh = SR_UTILS_NS::ResourceRef<SR_HTYPES_NS::RawMesh>(pRawMesh);
         pBakedMesh->m_index = index;
         pBakedMesh->m_pipeline = pPipeline;
-
-        pRawMesh->ForceLoad();
 
         if (index >= pRawMesh->GetMeshesCount()) {
             SR_ERROR("MeshManager::BakeMesh() : invalid index \"{}\"!", index);

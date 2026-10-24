@@ -74,8 +74,6 @@ namespace SR_GTYPES_NS {
         using Super = Component;
     public:
         void Update(float_t dt) override;
-        void OnDisable() override { }
-        void OnDetached() override { }
 
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
         SR_NODISCARD RenderScene* GetRenderScene() const;
