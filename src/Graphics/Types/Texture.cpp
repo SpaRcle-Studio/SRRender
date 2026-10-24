@@ -59,6 +59,7 @@ namespace SR_GTYPES_NS {
 
         m_impl = TextureImpl::TryCreate(*this);
         if (m_impl) {
+            m_isFromMemory = !m_impl->IsHaveFile();
             RegisterGraphicsResource();
             GetRenderContext()->SetDirty();
             return !hasErrors;

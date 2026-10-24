@@ -104,6 +104,10 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
+    bool TextureImplRenderTarget::IsHaveFile() const {
+        return false;
+    }
+
     bool TextureImplRenderTarget::CanBeUsed() const {
         if (GetTextureIdRef() == SR_ID_INVALID) {
             return false;
@@ -162,5 +166,9 @@ namespace SR_GTYPES_NS {
             return false;
         }
         return true;
+    }
+
+    bool TextureImplFontAtlas::IsHaveFile() const {
+        return false;
     }
 }

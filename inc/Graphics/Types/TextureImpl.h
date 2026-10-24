@@ -31,6 +31,7 @@ namespace SR_GTYPES_NS {
         virtual void PrepareFrame() = 0;
         SR_NODISCARD virtual bool IsReference() const = 0;
         SR_NODISCARD virtual bool CanBeUsed() const = 0;
+        SR_NODISCARD virtual bool IsHaveFile() const = 0;
 
     protected:
         SR_NODISCARD int32_t& GetTextureIdRef() const;
@@ -54,6 +55,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsReference() const override;
         SR_NODISCARD bool CanBeUsed() const override;
+        SR_NODISCARD bool IsHaveFile() const override;
 
     private:
         SR_UTILS_NS::StringAtom m_name;
@@ -71,6 +73,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsReference() const override;
         SR_NODISCARD bool CanBeUsed() const override;
+        SR_NODISCARD bool IsHaveFile() const override;
 
     private:
         uint16_t m_fontIndex = SR_UINT16_MAX;
