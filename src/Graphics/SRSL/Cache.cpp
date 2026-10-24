@@ -395,6 +395,7 @@ namespace SR_GRAPH_NS {
             auto& inc = includes.emplace_back();
             inc.name = SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal);
             SR_UTILS_NS::Path includePath = inc.name;
+            SRAssert(!includePath.ToStringView().starts_with(CoreResLoader::GetResPath()));
             auto&& absPath = CoreResLoader::GetResPath().Concat(includePath.RemoveSubPath(CoreResLoader::GetResPath()));
             currentHash = SR_UTILS_NS::CombineTwoHashes(currentHash, absPath.GetFileHash());
         }

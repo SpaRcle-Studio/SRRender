@@ -35,6 +35,9 @@ namespace SR_SRSL_NS {
         }
 
         includes = std::move(m_includes);
+        for (auto&& include : includes) {
+            SRAssert(!include.name.ToStringView().starts_with(CoreResLoader::GetResPath()));
+        }
 
         {
             SR_TRACY_ZONE_N("Remove macro end lexems");
@@ -108,7 +111,7 @@ namespace SR_SRSL_NS {
                     m_state = PPState::Idle;
                     m_lexems.erase(m_lexems.begin() + m_currentLexem);
 
-                    auto&& includePath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(m_include);
+                    auto&& includePath = CoreResLoader::GetResPath().Concat(m_include);
                     if (!includePath.IsFile()) {
                         m_result.AddError(SR_UTILS_NS::LexerDetails::LexerMessage(SRSLReturnCode::IncludeNotExists, GetCurrentLexem())).SetDescription(m_include);
                         return;
@@ -116,6 +119,7 @@ namespace SR_SRSL_NS {
 
                     SR_UTILS_NS::LexerDetails::LexerInclude& include = m_includes.emplace_back();
                     include.name = SR_EXCHANGE(m_include, {});
+                    SRAssert(!include.name.ToStringView().starts_with(CoreResLoader::GetResPath()));
 
                     auto&& lexems = SR_UTILS_NS::Lexer::Instance().Parse(m_pAllocator, 256, includePath, include.buffer, m_include.size());
                     if (lexems.empty()) {

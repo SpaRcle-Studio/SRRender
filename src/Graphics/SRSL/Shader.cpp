@@ -73,7 +73,7 @@ namespace SR_SRSL_NS {
 
         SRSLPreProcessor::Includes includes;
         auto& mainFile = includes.emplace_back();
-        mainFile.name = path.ToStringRef();
+        mainFile.name = path.RemoveSubPath(CoreResLoader::GetResPath()).ToStringView();
 
         auto&& lexems = SR_UTILS_NS::Lexer::Instance().Parse(pAllocator, 512, path, mainFile.buffer, 0);
         if (lexems.empty()) {

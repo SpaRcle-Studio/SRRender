@@ -87,10 +87,15 @@ namespace SR_ANIMATIONS_NS {
         /// @property @group(Offsets)
         SR_MATH_NS::FVector3 m_IKRightFootOffset = SR_MATH_NS::FVector3::Zero();
 
+        /// @property @group(Weights)
+        float_t m_twoBoneWeight = 1.f;
+        /// @property @group(Weights)
+        float_t m_leftArmWeight = 1.f;
+        /// @property @group(Weights)
+        float_t m_rightArmWeight = 1.f;
+
         /// @property
         float m_smoothing = 10.f;
-        /// @property
-        float m_twoBoneWeight = 1.f;
         /// @property
         uint8_t m_twoBoneIterations = 32;
         /// @property

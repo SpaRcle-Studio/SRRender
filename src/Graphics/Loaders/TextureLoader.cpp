@@ -41,7 +41,7 @@ namespace SR_GRAPH_NS {
 
     uint32_t TextureData::GetNumberOfBytes() const {
         if (!m_data) {
-            SRHalt("TextureData::GetNumberOfBytes() : m_data is not null!");
+            SRHalt("TextureData::GetNumberOfBytes() : m_data is null!");
             return 0;
         }
 
@@ -176,6 +176,10 @@ namespace SR_GRAPH_NS {
         uint32_t width = 0, height = 0;
         uint8_t channels = 0;
         uint8_t* pImgDataOriginal = LoadRaw(buffer, width, height, channels, fullPath, info.loadMode);
+        if (!pImgDataOriginal) {
+            SR_ERROR("TextureLoader::Load() : failed to load raw texture data!\n\tPath: {}", path);
+            return nullptr;
+        }
 
         uint8_t* pImgData = pImgDataOriginal;
 

@@ -147,7 +147,7 @@ namespace SR_GTYPES_NS {
                 if (auto&& pStrong = pWeak.Lock()) {
                     pStrong->OnAsyncLoaded(TextureLoader::Load(path, loadInfo));
                 }
-            }, SR_UTILS_NS::TaskPriority::Critical);
+            }, SR_UTILS_NS::TaskPriority::Normal);
             SR_UTILS_NS::TaskManager::Instance().SetDescription(*m_syncLoadTaskId, GetResourceId());
         }
         else {
@@ -179,7 +179,7 @@ namespace SR_GTYPES_NS {
         }
 
         if (!m_textureData) {
-            SRHalt("Texture::Calculate() : data is invalid!");
+            SR_ERROR("Texture::Calculate() : data is invalid!");
             return false;
         }
 
@@ -425,7 +425,9 @@ namespace SR_GTYPES_NS {
         Broadcast(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT);
 
         m_isDirty = true;
-        m_hasErrors = false;
+        if (m_textureData) {
+            m_hasErrors = false;
+        }
     }
 
     float_t Texture::GetPPU() const noexcept {

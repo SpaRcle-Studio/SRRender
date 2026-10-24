@@ -583,11 +583,9 @@ namespace SR_GRAPH_NS::Types {
     void Shader::StartWatch() {
         SR_TRACY_ZONE;
 
-        auto&& resourcesManager = SR_UTILS_NS::ResourceManager::Instance();
-
         for (auto&& include : m_includes) {
-            auto&& pWatch = SR_UTILS_NS::FileWatcher::MakeShared(resourcesManager.GetResPath().Concat(include.name));
-
+            SR_UTILS_NS::StringView name = include.name;
+            auto&& pWatch = SR_UTILS_NS::FileWatcher::MakeShared(CoreResLoader::GetResPath().Concat(name));
             pWatch->SetCallBack([this](auto&& pWatcher) {
                 SignalWatch();
             });

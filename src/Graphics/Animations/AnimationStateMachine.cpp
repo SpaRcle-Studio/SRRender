@@ -122,6 +122,8 @@ namespace SR_ANIMATIONS_NS {
 
         pTransition->ResetCondition();
         pTransition->SetTargetIndex(1);
+        pTransition->SetSourceState(m_states[0].Get());
+        pTransition->SetDestinationState(m_states[1].Get());
 
         return m_states[1].StaticCast<AnimationClipState>()->SetClip(pClip);
     }

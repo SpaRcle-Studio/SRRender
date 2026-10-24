@@ -78,11 +78,19 @@ namespace SR_ANIMATIONS_NS {
         const SR_MATH_NS::FVector3 midPos  = mid.GetGlobalTranslation();
         const SR_MATH_NS::FVector3 tipPos  = tip.GetGlobalTranslation();
 
-        if (!state.initialized) {
-            state.upperLen = SR_MATH_NS::FVector3::Distance(rootPos, midPos);
-            state.lowerLen = SR_MATH_NS::FVector3::Distance(midPos, tipPos);
-            state.totalLen = state.upperLen + state.lowerLen;
+        const float currentUpperLen = SR_MATH_NS::FVector3::Distance(rootPos, midPos);
+        const float currentLowerLen = SR_MATH_NS::FVector3::Distance(midPos, tipPos);
 
+        if (currentUpperLen <= 0.0001f || currentLowerLen <= 0.0001f) {
+            return;
+        }
+
+        /// Bone lengths must match the current retargeted skeleton.
+        state.upperLen = currentUpperLen;
+        state.lowerLen = currentLowerLen;
+        state.totalLen = state.upperLen + state.lowerLen;
+
+        if (!state.initialized) {
             state.lastTipWorld = tip.GetGlobalRotation().NormalizeSafe();
             state.hasLastTipWorld = true;
 
@@ -131,8 +139,12 @@ namespace SR_ANIMATIONS_NS {
 
                 const SR_MATH_NS::FVector3 newMidPos = rootPos + rootRot * state.rootToMidLocal * state.upperLen;
                 const SR_MATH_NS::FVector3 midToTargetDir = (targetWorldPos - newMidPos).Normalized();
-                const SR_MATH_NS::FVector3 midForward = rootRot * state.midToTipLocal;
-                const SR_MATH_NS::Quaternion midRot = (SR_MATH_NS::Quaternion::FromToRotation(midForward, midToTargetDir) * rootRot).NormalizeSafe();
+                const SR_MATH_NS::FVector3 midForward =
+                        state.midInitialWorld * state.midToTipLocal;
+
+                const SR_MATH_NS::Quaternion midRot =
+                        (SR_MATH_NS::Quaternion::FromToRotation(midForward, midToTargetDir)
+                         * state.midInitialWorld).NormalizeSafe();
 
                 root.SetGlobalRotation(rootRot);
                 mid.SetGlobalRotation(midRot);
@@ -144,8 +156,12 @@ namespace SR_ANIMATIONS_NS {
 
                 const SR_MATH_NS::FVector3 newMidPos = rootPos + rootRot * state.rootToMidLocal * state.upperLen;
                 const SR_MATH_NS::FVector3 midToTargetDir = (targetWorldPos - newMidPos).Normalized();
-                const SR_MATH_NS::FVector3 midForward = rootRot * state.midToTipLocal;
-                const SR_MATH_NS::Quaternion midRot = (SR_MATH_NS::Quaternion::FromToRotation(midForward, midToTargetDir) * rootRot).NormalizeSafe();
+                const SR_MATH_NS::FVector3 midForward =
+                        state.midInitialWorld * state.midToTipLocal;
+
+                const SR_MATH_NS::Quaternion midRot =
+                        (SR_MATH_NS::Quaternion::FromToRotation(midForward, midToTargetDir)
+                         * state.midInitialWorld).NormalizeSafe();
 
                 root.SetGlobalRotation(rootRot);
                 mid.SetGlobalRotation(midRot);
@@ -172,8 +188,12 @@ namespace SR_ANIMATIONS_NS {
                 /// recompute mid position after root rotation for consistency
                 const SR_MATH_NS::FVector3 midPosSolved = rootPos + rootRot * state.rootToMidLocal * state.upperLen;
                 const SR_MATH_NS::FVector3 midToTargetDir = (targetWorldPos - midPosSolved).Normalized();
-                const SR_MATH_NS::FVector3 midForward = rootRot * state.midToTipLocal;
-                const SR_MATH_NS::Quaternion midRot = (SR_MATH_NS::Quaternion::FromToRotation(midForward, midToTargetDir) * rootRot).NormalizeSafe();
+                const SR_MATH_NS::FVector3 midForward =
+                        state.midInitialWorld * state.midToTipLocal;
+
+                const SR_MATH_NS::Quaternion midRot =
+                        (SR_MATH_NS::Quaternion::FromToRotation(midForward, midToTargetDir)
+                         * state.midInitialWorld).NormalizeSafe();
 
                 root.SetGlobalRotation(rootRot);
                 mid.SetGlobalRotation(midRot);
@@ -392,13 +412,40 @@ namespace SR_ANIMATIONS_NS {
                 tipOffset = m_IKRightFootOffset / m_scaleFactor;
             }
 
-            const SR_MATH_NS::FVector3 srcTipWorldPos = pSrcTipT->GetGlobalTranslation() + tipOffset;
             const SR_MATH_NS::Quaternion srcTipWorldRot = pSrcTipT->GetGlobalRotation().NormalizeSafe();
-
             const SR_MATH_NS::FVector3 tgtRootWorldPos = pTgtRootT->GetGlobalTranslation();
+            SR_MATH_NS::FVector3 srcTipWorldPos;
+            SR_MATH_NS::FVector3 desiredTipWorldPos;
 
-            const SR_MATH_NS::FVector3 desiredTipWorldPos = srcTipWorldPos;
-            const SR_MATH_NS::Quaternion desiredTipWorldRot = srcTipWorldRot;
+            if (stateKey.ToStringView().contains("Leg")) {
+                /// Ноги обычно имеют +- схожие позиции, и расхождение длин не так заметно, как у рук.
+                srcTipWorldPos = pSrcTipT->GetGlobalTranslation() + tipOffset;
+                desiredTipWorldPos = srcTipWorldPos;
+            }
+            else {
+                srcTipWorldPos = pSrcTipT->GetGlobalTranslation();
+
+                /// Scale the source chain displacement to match the target skeleton.
+                const float srcUpperLen = SR_MATH_NS::FVector3::Distance(srcRootWorldPos, srcMidWorldPos);
+                const float srcLowerLen = SR_MATH_NS::FVector3::Distance(srcMidWorldPos, pSrcTipT->GetGlobalTranslation());
+                const float tgtUpperLen = SR_MATH_NS::FVector3::Distance(tgtRootWorldPos, pTgtMidT->GetGlobalTranslation());
+                const float tgtLowerLen = SR_MATH_NS::FVector3::Distance(pTgtMidT->GetGlobalTranslation(), pTgtTipT->GetGlobalTranslation());
+
+                const float srcChainLen = srcUpperLen + srcLowerLen;
+                const float tgtChainLen = tgtUpperLen + tgtLowerLen;
+
+                float chainScale = 1.f;
+                if (srcChainLen > 0.0001f) {
+                    chainScale = tgtChainLen / srcChainLen;
+                }
+
+                desiredTipWorldPos =
+                    tgtRootWorldPos
+                    + (srcTipWorldPos - srcRootWorldPos) * chainScale
+                    + tipOffset;
+            }
+
+            const SR_MATH_NS::Quaternion& desiredTipWorldRot = srcTipWorldRot;
 
             /// Pole vector: use SOURCE bend direction (deviation of mid from root->tip axis), mapped into target root space.
             const SR_MATH_NS::FVector3 srcRootToTip = srcTipWorldPos - srcRootWorldPos;
@@ -506,7 +553,6 @@ namespace SR_ANIMATIONS_NS {
         }
 
         TwoBoneIKParams ikParams;
-        ikParams.weight = m_twoBoneWeight;
         /// For retarget post-pass we want the limb to match the source immediately.
         /// Smoothing here makes it look like IK "doesn't follow the target".
         ikParams.smoothing = m_smoothing;
@@ -517,8 +563,13 @@ namespace SR_ANIMATIONS_NS {
             float dt = 1.f / static_cast<float>(m_twoBoneIterations);
             /// Arms: UpperArm -> LowerArm -> Hand
             ikParams.tipRotationFromTarget = m_handTipRotationFromTarget;
+
+            ikParams.weight = m_twoBoneWeight * m_leftArmWeight;
             solveHumanoidChain("IK_LeftArm",  SR_ANIMATIONS_NS::HumanoidBoneType::LeftUpperArm,  SR_ANIMATIONS_NS::HumanoidBoneType::LeftLowerArm,  SR_ANIMATIONS_NS::HumanoidBoneType::LeftHand, dt, ikParams);
+            ikParams.weight = m_twoBoneWeight * m_rightArmWeight;
             solveHumanoidChain("IK_RightArm", SR_ANIMATIONS_NS::HumanoidBoneType::RightUpperArm, SR_ANIMATIONS_NS::HumanoidBoneType::RightLowerArm, SR_ANIMATIONS_NS::HumanoidBoneType::RightHand, dt, ikParams);
+
+            ikParams.weight = m_twoBoneWeight;
 
             /// Legs: UpperLeg -> LowerLeg -> Foot
             ikParams.tipRotationFromTarget = m_footTipRotationFromTarget;
