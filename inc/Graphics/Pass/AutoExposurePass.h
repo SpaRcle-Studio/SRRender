@@ -43,6 +43,8 @@ namespace SR_GRAPH_NS {
         void SetKeyValue(float keyValue) { m_keyValue = keyValue; }
         SR_NODISCARD float GetKeyValue() const { return m_keyValue; }
 
+        SR_NODISCARD SR_UTILS_NS::Pair<float_t, float_t> GetExposure() const;
+
     public:
         void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
         void UseSSBOFromAnotherPass(SR_GTYPES_NS::Shader& shader) override;
@@ -95,6 +97,9 @@ namespace SR_GRAPH_NS {
 
         uint64_t m_bufferSize = 0;
         std::string m_emptyData;
+
+        float_t m_prevExposure = 0.f;
+        float_t m_currentExposure = 0.f;
 
         static constexpr uint32_t REDUCTION_LINEAR_GROUP_SIZE = 256u;
         static constexpr uint32_t REDUCTION_FIRST_GROUP_X = 16u;

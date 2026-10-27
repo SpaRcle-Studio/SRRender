@@ -67,7 +67,7 @@ namespace SR_GRAPH_NS {
 
         for (uint32_t i = 0; i < maxFrames; ++i) {
             // Buffer creation: exposure SSBO (2 floats: current, previous for temporal).
-            m_exposureSSBO[i] = GetPipeline()->AllocateSSBO(Details::EXPOSURE_SSBO_SIZE, SSBOUsage::CPUToGPU);
+            m_exposureSSBO[i] = GetPipeline()->AllocateSSBO(Details::EXPOSURE_SSBO_SIZE, SSBOUsage::AutoPreferDevice);
             if (m_exposureSSBO[i] == SR_ID_INVALID) {
                 SR_ERROR("AutoExposurePass::Init() : failed to allocate exposure SSBO");
                 return false;
@@ -179,6 +179,10 @@ namespace SR_GRAPH_NS {
     void AutoExposurePass::SetRenderTechnique(IRenderTechnique* pRenderTechnique) {
         BasePass::SetRenderTechnique(pRenderTechnique);
         m_samplers.SetRenderTechnique(pRenderTechnique);
+    }
+
+    SR_UTILS_NS::Pair<float_t, float_t> AutoExposurePass::GetExposure() const {
+        return { m_prevExposure, m_currentExposure };
     }
 
     void AutoExposurePass::UseSamplers(SR_GTYPES_NS::Shader& shader) {
@@ -449,6 +453,16 @@ namespace SR_GRAPH_NS {
         GetPipeline()->Dispatch(1u, 1u, 1u);
 
         m_pAdaptationShader->UnUse();
+
+        {
+            SR_TRACY_ZONE_N("Debug map values");
+            void* pMapped = nullptr;
+            if (GetPipeline()->MapSSBO(m_exposureSSBO[frame], &pMapped)) {
+                m_prevExposure = *reinterpret_cast<float_t *>(pMapped);
+                m_currentExposure = *reinterpret_cast<float_t *>((char *) pMapped + sizeof(float));
+                GetPipeline()->UnMapSSBO(m_exposureSSBO[frame]);
+            }
+        }
 
         return true;
     }
