@@ -37,7 +37,10 @@ namespace SR_ANIMATIONS_NS {
 
         void Start() override;
 
+        /// @method
         void SetGraph(const SR_UTILS_NS::Path& path);
+        /// @method
+        void SetClip(const SR_UTILS_NS::Path& path);
 
         /// @method
         void SetBool(SR_UTILS_NS::StringAtom name, bool value);

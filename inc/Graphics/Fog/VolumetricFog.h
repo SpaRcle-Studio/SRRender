@@ -41,7 +41,7 @@ namespace SR_GRAPH_NS {
 
     private:
         /// @property @group(Density)
-        float_t m_density = 0.02f;
+        float_t m_density = 0.005f;
         /// @property @group(Density)
         float_t m_baseHeight = 0.f;
         /// @property @group(Density)

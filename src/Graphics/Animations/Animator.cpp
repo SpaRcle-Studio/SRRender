@@ -158,6 +158,11 @@ namespace SR_ANIMATIONS_NS {
         return m_graph ? m_graph->GetString(name) : std::nullopt;
     }
 
+    void Animator::SetClip(const SR_UTILS_NS::Path& path) {
+        SR_TRACY_ZONE;
+        m_clip = CoreResLoader::Load<AnimationClip>(path);
+    }
+
     void Animator::SetGraph(const SR_UTILS_NS::Path& path) {
         SR_TRACY_ZONE;
 
