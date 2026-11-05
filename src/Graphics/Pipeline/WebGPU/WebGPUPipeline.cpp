@@ -154,9 +154,13 @@ namespace SR_GRAPH_NS {
 
         wgpu::Texture     surfaceTexture;
         wgpu::TextureView surfaceTextureView;
+        wgpu::Texture     surfaceDepthTexture;
+        wgpu::TextureView surfaceDepthTextureView;
         wgpu::TextureFormat surfaceFormat = wgpu::TextureFormat::Undefined;
         uint32_t surfaceWidth  = 0;
         uint32_t surfaceHeight = 0;
+        uint32_t surfaceDepthWidth  = 0;
+        uint32_t surfaceDepthHeight = 0;
 
         // ---- Per-render-pass state ----
         // Kept alive for the duration of BeginRender..EndRender
@@ -609,6 +613,30 @@ namespace SR_GRAPH_NS {
         m_internalData->surfaceTexture     = surfaceTexture.texture;
         m_internalData->surfaceTextureView = m_internalData->surfaceTexture.CreateView();
 
+        if (!m_internalData->surfaceDepthTexture ||
+            m_internalData->surfaceDepthWidth != m_internalData->surfaceWidth ||
+            m_internalData->surfaceDepthHeight != m_internalData->surfaceHeight)
+        {
+            m_internalData->surfaceDepthTextureView = nullptr;
+            if (m_internalData->surfaceDepthTexture) {
+                m_internalData->surfaceDepthTexture.Destroy();
+                m_internalData->surfaceDepthTexture = nullptr;
+            }
+
+            wgpu::TextureDescriptor depthDesc{};
+            depthDesc.size          = { m_internalData->surfaceWidth, m_internalData->surfaceHeight, 1 };
+            depthDesc.format        = wgpu::TextureFormat::Depth32Float;
+            depthDesc.usage         = wgpu::TextureUsage::RenderAttachment;
+            depthDesc.mipLevelCount = 1;
+            depthDesc.sampleCount   = 1;
+            depthDesc.dimension     = wgpu::TextureDimension::e2D;
+
+            m_internalData->surfaceDepthTexture = m_internalData->device.CreateTexture(&depthDesc);
+            m_internalData->surfaceDepthTextureView = m_internalData->surfaceDepthTexture.CreateView();
+            m_internalData->surfaceDepthWidth = m_internalData->surfaceWidth;
+            m_internalData->surfaceDepthHeight = m_internalData->surfaceHeight;
+        }
+
         m_internalData->activeEncoder = m_internalData->device.CreateCommandEncoder();
         m_internalData->activeEncoder.SetLabel("Surface command encoder");
         m_internalData->surfaceWasRendered = false;
@@ -845,6 +873,15 @@ namespace SR_GRAPH_NS {
             wgpu::RenderPassDescriptor passDesc{};
             passDesc.colorAttachmentCount = 1;
             passDesc.colorAttachments     = &color;
+
+            wgpu::RenderPassDepthStencilAttachment depth{};
+            depth.view            = m_internalData->surfaceDepthTextureView;
+            depth.depthLoadOp     = m_internalData->hasClearDepth ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
+            depth.depthStoreOp    = wgpu::StoreOp::Store;
+            depth.depthClearValue = m_internalData->hasClearDepth ? m_internalData->clearDepth : 1.0f;
+            depth.stencilLoadOp   = wgpu::LoadOp::Undefined;
+            depth.stencilStoreOp  = wgpu::StoreOp::Undefined;
+            passDesc.depthStencilAttachment = &depth;
 
             m_internalData->activeRenderPass = m_internalData->activeEncoder.BeginRenderPass(&passDesc);
             m_internalData->surfaceWasRendered = true;
@@ -1890,7 +1927,11 @@ namespace SR_GRAPH_NS {
             rpDesc.primitive.topology         = PrimitiveTopologyToWGPU(createInfo.primitiveTopology);
             rpDesc.primitive.stripIndexFormat  = wgpu::IndexFormat::Undefined;
             rpDesc.primitive.cullMode          = CullModeToWGPU(createInfo.cullMode);
+#if defined(SR_EMSCRIPTEN)
+            rpDesc.primitive.frontFace         = wgpu::FrontFace::CW;
+#else
             rpDesc.primitive.frontFace         = wgpu::FrontFace::CCW;
+#endif
 
             rpDesc.fragment = &fragmentState;
 
@@ -1933,6 +1974,29 @@ namespace SR_GRAPH_NS {
         wgpu::TextureFormat format = ImageFormatToWGPU(createInfo.format);
         bool isDepth = IsDepthFormat(format);
 
+        uint32_t channelCount = 0;
+        switch (createInfo.format) {
+            case SR_GRAPH_NS::ImageFormat::R8_UNORM: channelCount = 1; break;
+            case SR_GRAPH_NS::ImageFormat::RG8_UNORM: channelCount = 2; break;
+            case SR_GRAPH_NS::ImageFormat::RGBA8_UNORM:
+            case SR_GRAPH_NS::ImageFormat::BGRA8_UNORM:
+            case SR_GRAPH_NS::ImageFormat::RGBA8_SRGB: channelCount = 4; break;
+            default: break;
+        }
+        const bool isByteColorFormat = channelCount > 0;
+        const uint64_t baseLevelSize = static_cast<uint64_t>(createInfo.width) * createInfo.height * channelCount;
+        const bool canGenerateMipmaps = !isDepth && isByteColorFormat && createInfo.pData
+            && channelCount > 0 && createInfo.imageSize >= baseLevelSize;
+        uint32_t maxMipLevelCount = 1;
+        for (uint32_t maxDimension = std::max(createInfo.width, createInfo.height); maxDimension > 1; maxDimension /= 2) {
+            ++maxMipLevelCount;
+        }
+
+        const uint32_t requestedMipLevelCount = createInfo.mipLevels == 0
+            ? maxMipLevelCount
+            : std::min<uint32_t>(createInfo.mipLevels, maxMipLevelCount);
+        const uint32_t mipLevelCount = canGenerateMipmaps ? requestedMipLevelCount : 1;
+
         wgpu::TextureUsage usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst;
         if (isDepth) {
             usage = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding;
@@ -1942,7 +2006,7 @@ namespace SR_GRAPH_NS {
         texDesc.size            = { createInfo.width, createInfo.height, 1 };
         texDesc.format          = format;
         texDesc.usage           = usage;
-        texDesc.mipLevelCount   = std::max<uint32_t>(1, createInfo.mipLevels);
+        texDesc.mipLevelCount   = mipLevelCount;
         texDesc.sampleCount     = 1;
         texDesc.dimension       = wgpu::TextureDimension::e2D;
 
@@ -1960,23 +2024,75 @@ namespace SR_GRAPH_NS {
             dst.origin   = { 0, 0, 0 };
             dst.aspect   = wgpu::TextureAspect::All;
 
-            uint32_t channelCount = GetChannelCount(createInfo.format);
-            if (channelCount == 0) { channelCount = 4; }
+            const uint32_t uploadChannelCount = channelCount > 0 ? channelCount : 4;
 
             wgpu::TexelCopyBufferLayout layout{};
             layout.offset       = 0;
-            layout.bytesPerRow  = createInfo.width * channelCount;
+            layout.bytesPerRow  = createInfo.width * uploadChannelCount;
             layout.rowsPerImage = createInfo.height;
 
             wgpu::Extent3D extent{ createInfo.width, createInfo.height, 1 };
             m_internalData->queue.WriteTexture(&dst, createInfo.pData, createInfo.imageSize, &layout, &extent);
+
+            if (canGenerateMipmaps && mipLevelCount > 1) {
+                SR_UTILS_NS::Vector<uint8_t> previousMip;
+                SR_UTILS_NS::Vector<uint8_t> currentMip;
+                previousMip.resize(static_cast<size_t>(baseLevelSize));
+                std::memcpy(previousMip.data(), createInfo.pData, static_cast<size_t>(baseLevelSize));
+
+                uint32_t previousWidth = createInfo.width;
+                uint32_t previousHeight = createInfo.height;
+
+                for (uint32_t mipLevel = 1; mipLevel < mipLevelCount; ++mipLevel) {
+                    const uint32_t mipWidth = std::max(1u, previousWidth / 2);
+                    const uint32_t mipHeight = std::max(1u, previousHeight / 2);
+                    currentMip.resize(static_cast<size_t>(mipWidth) * mipHeight * channelCount);
+
+                    for (uint32_t y = 0; y < mipHeight; ++y) {
+                        for (uint32_t x = 0; x < mipWidth; ++x) {
+                            for (uint32_t channel = 0; channel < channelCount; ++channel) {
+                                uint32_t sum = 0;
+                                uint32_t samples = 0;
+                                for (uint32_t offsetY = 0; offsetY < 2; ++offsetY) {
+                                    const uint32_t sourceY = std::min(y * 2 + offsetY, previousHeight - 1);
+                                    for (uint32_t offsetX = 0; offsetX < 2; ++offsetX) {
+                                        const uint32_t sourceX = std::min(x * 2 + offsetX, previousWidth - 1);
+                                        const size_t sourceIndex = (static_cast<size_t>(sourceY) * previousWidth + sourceX) * channelCount + channel;
+                                        sum += previousMip[sourceIndex];
+                                        ++samples;
+                                    }
+                                }
+
+                                const size_t targetIndex = (static_cast<size_t>(y) * mipWidth + x) * channelCount + channel;
+                                currentMip[targetIndex] = static_cast<uint8_t>(sum / samples);
+                            }
+                        }
+                    }
+
+                    wgpu::TexelCopyTextureInfo mipDst{};
+                    mipDst.texture = texture;
+                    mipDst.mipLevel = mipLevel;
+                    mipDst.aspect = wgpu::TextureAspect::All;
+
+                    wgpu::TexelCopyBufferLayout mipLayout{};
+                    mipLayout.bytesPerRow = mipWidth * channelCount;
+                    mipLayout.rowsPerImage = mipHeight;
+
+                    const wgpu::Extent3D mipExtent{ mipWidth, mipHeight, 1 };
+                    m_internalData->queue.WriteTexture(&mipDst, currentMip.data(), currentMip.size(), &mipLayout, &mipExtent);
+
+                    std::swap(previousMip, currentMip);
+                    previousWidth = mipWidth;
+                    previousHeight = mipHeight;
+                }
+            }
         }
 
         // Create view
         wgpu::TextureViewDescriptor viewDesc{};
         viewDesc.format          = format;
         viewDesc.dimension       = wgpu::TextureViewDimension::e2D;
-        viewDesc.mipLevelCount   = texDesc.mipLevelCount;
+        viewDesc.mipLevelCount   = mipLevelCount;
         viewDesc.arrayLayerCount = 1;
         viewDesc.aspect          = isDepth ? wgpu::TextureAspect::DepthOnly : wgpu::TextureAspect::All;
 

@@ -169,7 +169,11 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         m_isInverseDirty = true;
+	#ifdef SR_EMSCRIPTEN
+        m_viewMat = m_rotation.RotateY(SR_DEG(SR_PI)).Inverse().ToMat4x4();
+	#else
         m_viewMat = m_rotation.RotateX(SR_DEG(SR_PI)).Inverse().ToMat4x4();
+	#endif
 
         m_viewTranslateMat = m_viewMat.Translate(m_position.Inverse());
         m_viewDirection = m_rotation * SR_MATH_NS::FVector3(0, 0, 1);
@@ -188,6 +192,11 @@ namespace SR_GTYPES_NS {
 
         m_projection = SR_MATH_NS::Matrix4x4::Perspective(SR_RAD(m_FOV), m_aspect, m_near, m_far);
         m_projectionNoFOV = SR_MATH_NS::Matrix4x4::Perspective(SR_RAD(45.f), m_aspect, m_near, m_far);
+
+	#ifdef SR_EMSCRIPTEN
+        m_projection[0][0] = -m_projection[0][0];
+        m_projectionNoFOV[0][0] = -m_projectionNoFOV[0][0];
+	#endif
 
         //////////////////////////////////////////////////////////////////////////////////////////////
 
