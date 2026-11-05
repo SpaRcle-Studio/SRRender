@@ -62,8 +62,12 @@ namespace SR_GRAPH_NS {
             return EvoVulkan::Core::RenderResult::Success;
         }
 
+        if (!m_hasAcquiredImage) {
+            return EvoVulkan::Core::RenderResult::Success;
+        }
+
         m_submitInfo.Clear();
-        m_submitInfo.SetWaitDstStageMask(GetSubmitPipelineStages());
+        m_submitInfo.SetWaitDstStageMask(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
         FrameSync& frame = m_frames[m_frameIndex];
 
@@ -71,13 +75,19 @@ namespace SR_GRAPH_NS {
 
         auto&& pVulkanPipeline = SR_UTILS_NS::DynamicPointerCast<VulkanPipeline>(m_pipeline);
 
+        bool hasDrawCommandBuffer = false;
         for (uint32_t cmdBufferId : m_pipeline->GetCmdBuffersQueue()) {
             if (cmdBufferId == SR_ID_INVALID) {
                 m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_imageIndex]);
+                hasDrawCommandBuffer = true;
             }
             else {
                 SRHalt("VulkanKernel::Render() : TODO: support custom command buffers!");
             }
+        }
+
+        if (!hasDrawCommandBuffer) {
+            m_submitInfo.commandBuffers.emplace_back(m_drawCmdBuffs[m_imageIndex]);
         }
 
         m_submitInfo.signalSemaphores.emplace_back(m_renderFinished[m_imageIndex]);
@@ -108,7 +118,11 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        EvoVulkan::Core::FrameResult presentResult = m_isSwapchainSuboptimal ? EvoVulkan::Core::FrameResult::Suboptimal : QueuePresent();
+        const bool isSwapchainSuboptimal = m_isSwapchainSuboptimal;
+        EvoVulkan::Core::FrameResult presentResult = QueuePresent();
+        if (isSwapchainSuboptimal && presentResult == EvoVulkan::Core::FrameResult::Success) {
+            presentResult = EvoVulkan::Core::FrameResult::Suboptimal;
+        }
         m_frameIndex = (m_frameIndex + 1) % GetMaxFramesInFlight();
 
         if (presentResult == EvoVulkan::Core::FrameResult::DeviceLost) {
@@ -154,7 +168,8 @@ namespace SR_GRAPH_NS {
     EvoVulkan::Core::FrameResult VulkanKernel::PrepareFrame() {
         SR_TRACY_ZONE;
 
-        auto&& prepareResult = Super::PrepareFrame();
+        m_hasAcquiredImage = false;
+        auto prepareResult = Super::PrepareFrame();
         switch (prepareResult) {
             case EvoVulkan::Core::FrameResult::Suboptimal:
                 //SRAssert2(!m_isSwapchainSuboptimal, "SRVulkan::Render() : suboptimal swapchain already set!");
@@ -169,8 +184,14 @@ namespace SR_GRAPH_NS {
                 }
 
                 VK_LOG("SRVulkan::Render() : window are successfully resized!");
-
-                return EvoVulkan::Core::FrameResult::Success;
+                prepareResult = Super::PrepareFrame();
+                if (prepareResult == EvoVulkan::Core::FrameResult::Suboptimal) {
+                    m_isSwapchainSuboptimal = true;
+                }
+                else if (prepareResult != EvoVulkan::Core::FrameResult::Success) {
+                    return prepareResult;
+                }
+                break;
             }
             case EvoVulkan::Core::FrameResult::Success:
                 break;
@@ -182,6 +203,8 @@ namespace SR_GRAPH_NS {
                 return EvoVulkan::Core::FrameResult::Error;
         }
 
+        m_hasAcquiredImage = prepareResult == EvoVulkan::Core::FrameResult::Success ||
+            prepareResult == EvoVulkan::Core::FrameResult::Suboptimal;
         return prepareResult;
     }
 

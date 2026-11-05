@@ -59,6 +59,7 @@ namespace SR_GRAPH_NS {
 
     private:
         bool m_isSwapchainSuboptimal = false;
+        bool m_hasAcquiredImage = false;
         PipelinePtr m_pipeline;
 
     };

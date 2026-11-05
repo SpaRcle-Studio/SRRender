@@ -1902,6 +1902,30 @@ namespace SR_GRAPH_NS {
         }
 
         vkBeginCommandBuffer(m_internalData->currentCmd, &m_internalData->cmdBufInfo);
+        if (!m_isComputeState && m_kernel->GetSwapchain() && frameIndex < m_kernel->GetSwapchain()->GetSwapchainImages().size()) {
+            VkImageMemoryBarrier presentBarrier{};
+            presentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            presentBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            presentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            presentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            presentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            presentBarrier.image = m_kernel->GetSwapchain()->GetSwapchainImages()[frameIndex];
+            presentBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            presentBarrier.subresourceRange.baseMipLevel = 0;
+            presentBarrier.subresourceRange.levelCount = 1;
+            presentBarrier.subresourceRange.baseArrayLayer = 0;
+            presentBarrier.subresourceRange.layerCount = 1;
+
+            vkCmdPipelineBarrier(
+                m_internalData->currentCmd,
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &presentBarrier
+            );
+        }
         return Super::BeginCmdBuffer();
     }
 
