@@ -58,6 +58,7 @@ namespace SR_SRSL_NS {
 
             // ---- samplers — not a direct type in WGSL, but we return empty so callers skip ----
             if (type == "sampler2D")       return std::string();
+            if (type == "sampler2DArrayDepth") return std::string();
             if (type == "sampler3D")       return std::string();
             if (type == "samplerCube")     return std::string();
             if (type == "sampler2DShadow") return std::string();
@@ -442,10 +443,42 @@ namespace SR_SRSL_NS {
                 // (GenerateTab(0) returns empty string, so this should be clean already)
                 const std::string samplerName = texName + "_sampler";
 
+                const std::string textureType = InferExprType(pExpr->args[0]);
+                if (textureType == "texture_depth_2d_array") {
+                    const std::string coords = GenerateExpression(pExpr->args[1], 0);
+                    const std::string level = rawToken == "textureLod" && pExpr->args.size() >= 3
+                        ? "i32(" + GenerateExpression(pExpr->args[2], 0) + ")"
+                        : "0";
+                    code += "vec4<f32>(textureLoad(" + texName
+                        + ", vec2<i32>(min(vec2<f32>((" + coords + ").x, 1.0 - (" + coords + ").y) * vec2<f32>(textureDimensions(" + texName + ")), vec2<f32>(textureDimensions(" + texName + ")) - vec2<f32>(1.0)))"
+                        + ", i32((" + coords + ").z), " + level + "))";
+                    return code;
+                }
+
+                const bool forceExplicitLod = rawToken == "texture" && m_forceExplicitTextureLod;
+                const std::string sampleFunction = forceExplicitLod ? "textureSampleLevel" : funcName;
+
+                if (textureType.find("texture_2d_array") != std::string::npos) {
+                    const std::string coords = GenerateExpression(pExpr->args[1], 0);
+                    code += sampleFunction + "(" + texName + ", " + samplerName
+                        + ", (" + coords + ").xy, i32((" + coords + ").z)";
+                    if (rawToken == "textureLod" && pExpr->args.size() >= 3) {
+                        code += ", " + GenerateExpression(pExpr->args[2], 0);
+                    }
+                    else if (forceExplicitLod) {
+                        code += ", 0.0";
+                    }
+                    code += ")";
+                    return code;
+                }
+
                 // textureSample(tex, tex_sampler, uv [, lod])
-                code += funcName + "(" + texName + ", " + samplerName;
+                code += sampleFunction + "(" + texName + ", " + samplerName;
                 for (uint32_t i = 1; i < pExpr->args.size(); ++i) {
                     code += ", " + GenerateExpression(pExpr->args[i], 0);
+                }
+                if (forceExplicitLod) {
+                    code += ", 0.0";
                 }
                 code += ")";
             }
@@ -664,11 +697,11 @@ namespace SR_SRSL_NS {
         return code;
     }
 
-    std::string WGSLCodeGenerator::GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep) const {
-        return GenerateLexicalTree(pLexicalTree, deep, std::string(), std::string());
+    std::string WGSLCodeGenerator::GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep, const std::string& returnCode) const {
+        return GenerateLexicalTree(pLexicalTree, deep, std::string(), std::string(), returnCode);
     }
 
-    std::string WGSLCodeGenerator::GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep, const std::string& preCode, const std::string& postCode) const {
+    std::string WGSLCodeGenerator::GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep, const std::string& preCode, const std::string& postCode, const std::string& returnCode) const {
         std::string code;
 
         if (deep >= 0) {
@@ -689,22 +722,34 @@ namespace SR_SRSL_NS {
                 code += GenerateFunctionBody(pFunction, deep + 1) + "\n";
             }
             else if (auto&& pTree = dynamic_cast<SRSLLexicalTree*>(pUnit)) {
-                code += GenerateLexicalTree(pTree, deep + 1);
+                code += GenerateLexicalTree(pTree, deep + 1, returnCode);
             }
             else if (auto&& pExpression = dynamic_cast<SRSLExpr*>(pUnit)) {
                 code += GenerateExpression(pExpression, deep + 1) + ";";
             }
             else if (auto&& pIfStatement = dynamic_cast<SRSLIfStatement*>(pUnit)) {
-                code += GenerateIfStatement(pIfStatement, deep + 1);
+                code += GenerateIfStatement(pIfStatement, deep + 1, returnCode);
             }
             else if (auto&& pReturn = dynamic_cast<SRSLReturn*>(pUnit)) {
-                code += std::string(GenerateTab(deep + 1)) + "return " + GenerateExpression(pReturn->pExpr, 0) + ";\n";
+                if (!pReturn->pExpr && !returnCode.empty()) {
+                    code += returnCode;
+                    if (returnCode.back() != '\n') {
+                        code += '\n';
+                    }
+                }
+                else {
+                    code += std::string(GenerateTab(deep + 1)) + "return";
+                    if (pReturn->pExpr) {
+                        code += " " + GenerateExpression(pReturn->pExpr, 0);
+                    }
+                    code += ";\n";
+                }
             }
             else if (auto&& pForStatement = dynamic_cast<SRSLForStatement*>(pUnit)) {
-                code += GenerateForStatement(pForStatement, deep + 1);
+                code += GenerateForStatement(pForStatement, deep + 1, returnCode);
             }
             else if (auto&& pWhileStatement = dynamic_cast<SRSLWhileStatement*>(pUnit)) {
-                code += GenerateWhileStatement(pWhileStatement, deep + 1);
+                code += GenerateWhileStatement(pWhileStatement, deep + 1, returnCode);
             }
 
             if (i + 1 < pLexicalTree->lexicalTree.size()) {
@@ -727,7 +772,7 @@ namespace SR_SRSL_NS {
         return code;
     }
 
-    std::string WGSLCodeGenerator::GenerateIfStatement(const SRSLIfStatement* pIfStatement, int32_t deep) const {
+    std::string WGSLCodeGenerator::GenerateIfStatement(const SRSLIfStatement* pIfStatement, int32_t deep, const std::string& returnCode) const {
         std::string code;
 
         code += std::string(GenerateTab(deep));
@@ -750,13 +795,16 @@ namespace SR_SRSL_NS {
         }
 
         if (pIfStatement->pLexicalTree) {
-            code += " " + GenerateLexicalTree(pIfStatement->pLexicalTree, deep);
+            const bool previousForceExplicitLod = m_forceExplicitTextureLod;
+            m_forceExplicitTextureLod = true;
+            code += " " + GenerateLexicalTree(pIfStatement->pLexicalTree, deep, returnCode);
+            m_forceExplicitTextureLod = previousForceExplicitLod;
         }
 
         return code;
     }
 
-    std::string WGSLCodeGenerator::GenerateForStatement(const SRSLForStatement* pForStatement, int32_t deep) const {
+    std::string WGSLCodeGenerator::GenerateForStatement(const SRSLForStatement* pForStatement, int32_t deep, const std::string& returnCode) const {
         std::string code;
 
         code += std::string(GenerateTab(deep)) + "for (";
@@ -774,13 +822,16 @@ namespace SR_SRSL_NS {
         }
 
         if (pForStatement->pLexicalTree) {
-            code += GenerateLexicalTree(pForStatement->pLexicalTree, deep);
+            const bool previousForceExplicitLod = m_forceExplicitTextureLod;
+            m_forceExplicitTextureLod = true;
+            code += GenerateLexicalTree(pForStatement->pLexicalTree, deep, returnCode);
+            m_forceExplicitTextureLod = previousForceExplicitLod;
         }
 
         return code;
     }
 
-    std::string WGSLCodeGenerator::GenerateWhileStatement(const SRSLWhileStatement* pWhileStatement, int32_t deep) const {
+    std::string WGSLCodeGenerator::GenerateWhileStatement(const SRSLWhileStatement* pWhileStatement, int32_t deep, const std::string& returnCode) const {
         std::string code;
 
         code += std::string(GenerateTab(deep)) + "loop {\n";
@@ -790,6 +841,8 @@ namespace SR_SRSL_NS {
         }
 
         if (pWhileStatement->pLexicalTree) {
+            const bool previousForceExplicitLod = m_forceExplicitTextureLod;
+            m_forceExplicitTextureLod = true;
             // Emit body without braces since we already have the outer loop block
             for (auto&& pUnit : pWhileStatement->pLexicalTree->lexicalTree) {
                 if (auto&& pVariable = dynamic_cast<SRSLVariable*>(pUnit)) {
@@ -799,18 +852,31 @@ namespace SR_SRSL_NS {
                     code += GenerateExpression(pExpression, deep + 1) + ";\n";
                 }
                 else if (auto&& pReturn = dynamic_cast<SRSLReturn*>(pUnit)) {
-                    code += std::string(GenerateTab(deep + 1)) + "return " + GenerateExpression(pReturn->pExpr, 0) + ";\n";
+                    if (!pReturn->pExpr && !returnCode.empty()) {
+                        code += returnCode;
+                        if (returnCode.back() != '\n') {
+                            code += '\n';
+                        }
+                    }
+                    else {
+                        code += std::string(GenerateTab(deep + 1)) + "return";
+                        if (pReturn->pExpr) {
+                            code += " " + GenerateExpression(pReturn->pExpr, 0);
+                        }
+                        code += ";\n";
+                    }
                 }
                 else if (auto&& pIfStatement = dynamic_cast<SRSLIfStatement*>(pUnit)) {
-                    code += GenerateIfStatement(pIfStatement, deep + 1) + "\n";
+                    code += GenerateIfStatement(pIfStatement, deep + 1, returnCode) + "\n";
                 }
                 else if (auto&& pForStatement = dynamic_cast<SRSLForStatement*>(pUnit)) {
-                    code += GenerateForStatement(pForStatement, deep + 1) + "\n";
+                    code += GenerateForStatement(pForStatement, deep + 1, returnCode) + "\n";
                 }
                 else if (auto&& pSubTree = dynamic_cast<SRSLLexicalTree*>(pUnit)) {
-                    code += GenerateLexicalTree(pSubTree, deep + 1);
+                    code += GenerateLexicalTree(pSubTree, deep + 1, returnCode);
                 }
             }
+            m_forceExplicitTextureLod = previousForceExplicitLod;
         }
 
         code += std::string(GenerateTab(deep)) + "}\n";
@@ -901,7 +967,77 @@ namespace SR_SRSL_NS {
         }
 
         if (pFunction->pLexicalTree) {
-            code += " " + GenerateLexicalTree(pFunction->pLexicalTree, deep);
+            std::string preCode;
+            if (m_pCurrentShader && !IsShaderEntryPoint(pFunction->GetName())) {
+                if (auto&& pUseStackFunction = m_pCurrentShader->GetUseStack()->FindFunction(pFunction->GetName())) {
+                    auto isDeclared = [&](auto&& self, const SRSLLexicalTree* pTree, SR_UTILS_NS::StringView name) -> bool {
+                        if (!pTree) {
+                            return false;
+                        }
+                        for (auto&& pUnit : pTree->lexicalTree) {
+                            if (auto&& pVariable = dynamic_cast<SRSLVariable*>(pUnit)) {
+                                if (pVariable->pName && pVariable->pName->GetAsName() == name) {
+                                    return true;
+                                }
+                            }
+                            else if (auto&& pNestedTree = dynamic_cast<SRSLLexicalTree*>(pUnit)) {
+                                if (self(self, pNestedTree, name)) {
+                                    return true;
+                                }
+                            }
+                            else if (auto&& pIfStatement = dynamic_cast<SRSLIfStatement*>(pUnit)) {
+                                if (self(self, pIfStatement->pLexicalTree, name)) {
+                                    return true;
+                                }
+                            }
+                            else if (auto&& pForStatement = dynamic_cast<SRSLForStatement*>(pUnit)) {
+                                if ((pForStatement->pVar && pForStatement->pVar->pName && pForStatement->pVar->pName->GetAsName() == name)
+                                    || self(self, pForStatement->pLexicalTree, name)) {
+                                    return true;
+                                }
+                            }
+                            else if (auto&& pWhileStatement = dynamic_cast<SRSLWhileStatement*>(pUnit)) {
+                                if (self(self, pWhileStatement->pLexicalTree, name)) {
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    };
+
+                    for (auto&& [blockName, uniformBlock] : m_pCurrentShader->GetUniformBlocks()) {
+                        for (auto&& field : uniformBlock.fields) {
+                            bool isUsed = false;
+                            for (auto&& variable : pUseStackFunction->variables) {
+                                isUsed = isUsed || variable == field.name;
+                            }
+                            if (!isUsed) {
+                                continue;
+                            }
+
+                            bool isShadowed = false;
+                            for (auto&& arg : pFunction->args) {
+                                isShadowed = isShadowed || (arg->pName && arg->pName->GetAsName() == field.name);
+                            }
+                            if (isShadowed || isDeclared(isDeclared, pFunction->pLexicalTree, field.name)) {
+                                continue;
+                            }
+
+                            const std::string baseType = WGSLDetail::GenerateType(
+                                SRSLTypeInfo::Instance().GetTypeName(m_pCurrentShader->GetAllocator(), field.type));
+                            const auto dimensions = SRSLTypeInfo::Instance().GetDimension(
+                                m_pCurrentShader->GetAllocator(), field.type, m_pCurrentShader->GetAnalyzedTree());
+                            const std::string typeName = WGSLDetail::ToWGSLArrayType(baseType, dimensions);
+                            if (!typeName.empty()) {
+                                preCode += SR_FORMAT("{}let {} : {} = {}.{};\n", GenerateTab(deep + 1),
+                                    field.name.ToStringView(), typeName, blockName.ToStringView(),
+                                    WGSLDetail::SafeIdentifier(std::string(field.name.ToStringView())));
+                            }
+                        }
+                    }
+                }
+            }
+            code += " " + GenerateLexicalTree(pFunction->pLexicalTree, deep, preCode, std::string());
         }
 
         return code;
@@ -988,6 +1124,9 @@ namespace SR_SRSL_NS {
                 case SamplerDimension::Texture2DArray:
                     wgslTextureType = "texture_2d_array<f32>";
                     break;
+                case SamplerDimension::Texture2DArrayDepth:
+                    wgslTextureType = "texture_depth_2d_array";
+                    break;
                 case SamplerDimension::Texture2DShadow:
                     wgslTextureType = "texture_depth_2d";
                     break;
@@ -1007,9 +1146,11 @@ namespace SR_SRSL_NS {
         if (!pShader->GetPushConstants().fields.empty()) {
             code += "struct PushConstants_t {\n";
             for (auto&& field : pShader->GetPushConstants().fields) {
-                auto&& typeName = WGSLDetail::GenerateType(
-                    SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), field.type)
-                );
+                const std::string baseType = WGSLDetail::GenerateType(
+                    SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), field.type));
+                const auto dimensions = SRSLTypeInfo::Instance().GetDimension(
+                    pShader->GetAllocator(), field.type, pShader->GetAnalyzedTree());
+                const std::string typeName = WGSLDetail::ToWGSLArrayType(baseType, dimensions);
                 if (typeName.empty()) { continue; }
                 code += SR_FORMAT("\t{} : {},\n", WGSLDetail::SafeIdentifier(std::string(field.name.ToStringView())), typeName);
             }
@@ -1039,9 +1180,11 @@ namespace SR_SRSL_NS {
             if (!pFunction->IsVariableUsed(field.name)) {
                 continue;
             }
-            auto&& typeName = WGSLDetail::GenerateType(
-                SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), field.type)
-            );
+            const std::string baseType = WGSLDetail::GenerateType(
+                SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), field.type));
+            const auto dimensions = SRSLTypeInfo::Instance().GetDimension(
+                pShader->GetAllocator(), field.type, pShader->GetAnalyzedTree());
+            const std::string typeName = WGSLDetail::ToWGSLArrayType(baseType, dimensions);
             if (typeName.empty()) { continue; }
             const std::string safeFieldName = WGSLDetail::SafeIdentifier(std::string(field.name.ToStringView()));
             code += SR_FORMAT("{}let {} : {} = _pushConstants.{};\n",
@@ -1067,9 +1210,11 @@ namespace SR_SRSL_NS {
                 if (!pFunction->IsVariableUsed(field.name)) {
                     continue;
                 }
-                auto&& typeName = WGSLDetail::GenerateType(
-                    SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), field.type)
-                );
+                const std::string baseType = WGSLDetail::GenerateType(
+                    SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), field.type));
+                const auto dimensions = SRSLTypeInfo::Instance().GetDimension(
+                    pShader->GetAllocator(), field.type, pShader->GetAnalyzedTree());
+                const std::string typeName = WGSLDetail::ToWGSLArrayType(baseType, dimensions);
                 if (typeName.empty()) { continue; }
                 const std::string safeField = WGSLDetail::SafeIdentifier(std::string(field.name.ToStringView()));
                 code += SR_FORMAT("{}let {} : {} = {}.{};\n",
@@ -1183,6 +1328,8 @@ namespace SR_SRSL_NS {
             result += preCode;
         }
 
+        const std::string stageReturnCode = returnType.empty() ? std::string() : std::string(postCode);
+
         // Emit function body from AST
         if (pFunction->pLexicalTree) {
             for (auto&& pUnit : pFunction->pLexicalTree->lexicalTree) {
@@ -1193,22 +1340,34 @@ namespace SR_SRSL_NS {
                     result += GenerateFunctionBody(pNestedFn, deep + 1) + "\n";
                 }
                 else if (auto&& pTree = dynamic_cast<SRSLLexicalTree*>(pUnit)) {
-                    result += GenerateLexicalTree(pTree, deep + 1);
+                    result += GenerateLexicalTree(pTree, deep + 1, stageReturnCode);
                 }
                 else if (auto&& pExpression = dynamic_cast<SRSLExpr*>(pUnit)) {
                     result += GenerateExpression(pExpression, deep + 1) + ";\n";
                 }
                 else if (auto&& pIfStatement = dynamic_cast<SRSLIfStatement*>(pUnit)) {
-                    result += GenerateIfStatement(pIfStatement, deep + 1) + "\n";
+                    result += GenerateIfStatement(pIfStatement, deep + 1, stageReturnCode) + "\n";
                 }
                 else if (auto&& pReturn = dynamic_cast<SRSLReturn*>(pUnit)) {
-                    result += std::string(GenerateTab(deep + 1)) + "return " + GenerateExpression(pReturn->pExpr, 0) + ";\n";
+                    if (!pReturn->pExpr && !stageReturnCode.empty()) {
+                        result += stageReturnCode;
+                        if (stageReturnCode.back() != '\n') {
+                            result += '\n';
+                        }
+                    }
+                    else {
+                        result += std::string(GenerateTab(deep + 1)) + "return";
+                        if (pReturn->pExpr) {
+                            result += " " + GenerateExpression(pReturn->pExpr, 0);
+                        }
+                        result += ";\n";
+                    }
                 }
                 else if (auto&& pForStatement = dynamic_cast<SRSLForStatement*>(pUnit)) {
-                    result += GenerateForStatement(pForStatement, deep + 1) + "\n";
+                    result += GenerateForStatement(pForStatement, deep + 1, stageReturnCode) + "\n";
                 }
                 else if (auto&& pWhileStatement = dynamic_cast<SRSLWhileStatement*>(pUnit)) {
-                    result += GenerateWhileStatement(pWhileStatement, deep + 1);
+                    result += GenerateWhileStatement(pWhileStatement, deep + 1, stageReturnCode);
                 }
             }
         }
@@ -1342,6 +1501,10 @@ namespace SR_SRSL_NS {
         }
 
         if (isOutPositionUsed) {
+            if (pShader->GetType() == ShaderType::PostProcessing) {
+                postCode += std::string(GenerateTab(1));
+                postCode += "OUT_POSITION.y = -OUT_POSITION.y;\n";
+            }
             postCode += std::string(GenerateTab(1));
             postCode += "vsOut.position = OUT_POSITION;\n";
         }
@@ -1470,8 +1633,14 @@ namespace SR_SRSL_NS {
             ++outLocation;
         }
 
-        preCode += std::string(GenerateTab(1));
-        preCode += "var fsOut : FragmentOutput;\n";
+        bool hasFragmentOutput = false;
+        for (auto&& macro : SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO) {
+            hasFragmentOutput = hasFragmentOutput || pShader->IsMacroDefined(macro);
+        }
+        if (hasFragmentOutput) {
+            preCode += std::string(GenerateTab(1));
+            preCode += "var fsOut : FragmentOutput;\n";
+        }
 
         if (isColorUsed) {
             postCode += std::string(GenerateTab(1));
@@ -1497,27 +1666,27 @@ namespace SR_SRSL_NS {
             }
         }
 
-        outLocation = 0;
-        for (auto&& layer : SR_SRSL_DEFAULT_OUT_LAYERS) {
-            const bool isNeedMain = layer == SR_SRSL_MAIN_OUT_LAYER && isColorUsed;
-            if (isNeedMain || pUseStackFunction->IsVariableUsed(layer)) {
-                if (pShader->IsMacroDefined(SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[outLocation])) {
-                    postCode += std::string(GenerateTab(1));
-                    postCode += SR_FORMAT("fsOut.{} = {};\n", layer.c_str(), layer.c_str());
+        if (hasFragmentOutput) {
+            outLocation = 0;
+            for (auto&& layer : SR_SRSL_DEFAULT_OUT_LAYERS) {
+                const bool isNeedMain = layer == SR_SRSL_MAIN_OUT_LAYER && isColorUsed;
+                if (isNeedMain || pUseStackFunction->IsVariableUsed(layer)) {
+                    if (pShader->IsMacroDefined(SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO[outLocation])) {
+                        postCode += std::string(GenerateTab(1));
+                        postCode += SR_FORMAT("fsOut.{} = {};\n", layer.c_str(), layer.c_str());
+                    }
                 }
+                ++outLocation;
             }
-            ++outLocation;
+
+            postCode += std::string(GenerateTab(1));
+            postCode += "return fsOut;\n";
         }
 
-        postCode += std::string(GenerateTab(1));
-        postCode += "return fsOut;\n";
-
         code += "@fragment\n";
-        // The fragment entry point always returns FragmentOutput (even if it has zero fields,
-        // WGSL allows returning an empty struct). The SRSL function is declared void, but
-        // the generated wrapper must declare -> FragmentOutput to match the "return fsOut;" we inject.
         static const std::string fragmentOutputId = "FragmentOutput";
-        code += GenerateFunction(pStageFunction, 0, fragArgs, preCode, postCode, fragmentOutputId);
+        code += GenerateFunction(pStageFunction, 0, fragArgs, preCode, postCode,
+            hasFragmentOutput ? std::string_view(fragmentOutputId) : std::string_view());
 
         return code;
     }
@@ -1618,6 +1787,7 @@ namespace SR_SRSL_NS {
         m_variableTypes.clear();
         m_functionReturnTypes.clear();
         m_usedHelpers.clear();
+        m_forceExplicitTextureLod = false;
         m_pCurrentShader = pShader;
 
         ISRSLCodeGenerator::SRSLCodeGenRes codeGenRes;
@@ -1735,7 +1905,12 @@ namespace SR_SRSL_NS {
         auto&& fragmentEntryPoint = SR_SRSL_ENTRY_POINTS.at(ShaderStage::Fragment);
         auto&& pFragmentStageFunction = pShader->GetAnalyzedTree()->pLexicalTree->FindFunction(fragmentEntryPoint);
 
-        if (pFragmentStageFunction) {
+        bool hasFragmentOutput = false;
+        for (auto&& macro : SR_SRSL_DEFAULT_OUT_LAYERS_USE_MACRO) {
+            hasFragmentOutput = hasFragmentOutput || pShader->IsMacroDefined(macro);
+        }
+
+        if (pFragmentStageFunction && hasFragmentOutput) {
             code += "struct FragmentOutput {\n";
             uint64_t outLocation = 0;
             for (auto&& layer : SR_SRSL_DEFAULT_OUT_LAYERS) {
@@ -1819,9 +1994,41 @@ namespace SR_SRSL_NS {
         for (auto&& [name, pVariable] : pShader->GetConstants()) {
             if (pVariable->pType && pVariable->pExpr) {
                 m_tmpBuffer.clear();
-                std::string typeName = WGSLDetail::GenerateType(SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), std::string(pVariable->pType->ToString(0, m_tmpBuffer))));
+                const std::string rawType = std::string(pVariable->pType->ToString(0, m_tmpBuffer));
+                const std::string baseType = WGSLDetail::GenerateType(SRSLTypeInfo::Instance().GetTypeName(pShader->GetAllocator(), rawType));
+                const auto dimensions = SRSLTypeInfo::Instance().GetDimension(pVariable->pName, pShader->GetAnalyzedTree());
+                const std::string typeName = WGSLDetail::ToWGSLArrayType(baseType, dimensions);
                 if (!typeName.empty()) {
-                    code += SR_FORMAT("const {} : {} = {};\n", name.ToStringView(), typeName, GenerateExpression(pVariable->pExpr, 0));
+                    std::string initializer;
+                    if (dimensions.empty()) {
+                        initializer = GenerateExpression(pVariable->pExpr, 0);
+                    }
+                    else {
+                        auto generateArrayInitializer = [&](auto&& self, const SRSLExpr* pExpr, size_t depth) -> std::string {
+                            std::string arrayType = baseType;
+                            for (size_t i = dimensions.size(); i > depth; --i) {
+                                arrayType = "array<" + arrayType + ", " + std::to_string(dimensions[i - 1]) + ">";
+                            }
+
+                            std::string result = arrayType + "(";
+                            for (uint32_t i = 0; i < pExpr->args.size(); ++i) {
+                                if (i > 0) {
+                                    result += ", ";
+                                }
+                                if (depth + 1 < dimensions.size()) {
+                                    result += self(self, pExpr->args[i], depth + 1);
+                                }
+                                else {
+                                    result += GenerateExpression(pExpr->args[i], 0);
+                                }
+                            }
+                            result += ")";
+                            return result;
+                        };
+
+                        initializer = generateArrayInitializer(generateArrayInitializer, pVariable->pExpr, 0);
+                    }
+                    code += SR_FORMAT("const {} : {} = {};\n", name.ToStringView(), typeName, initializer);
                 }
             }
         }
@@ -1883,6 +2090,15 @@ namespace SR_SRSL_NS {
 
         for (auto&& [name, pVariable] : pShader->GetConstants()) {
             RegisterVariableType(std::string(name.ToStringView()), GetSharedVariableType(pShader, pVariable));
+        }
+
+        for (auto&& [name, sampler] : pShader->GetSamplers()) {
+            if (sampler.type.ToStringView() == "sampler2DArray") {
+                RegisterVariableType(std::string(name.ToStringView()), "texture_2d_array<f32>");
+            }
+            else if (sampler.type.ToStringView() == "sampler2DArrayDepth") {
+                RegisterVariableType(std::string(name.ToStringView()), "texture_depth_2d_array");
+            }
         }
 
         pShader->GetCreateInfo().vertexLayoutDescriptions.ForEachAttribute(

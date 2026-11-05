@@ -918,7 +918,7 @@ namespace SR_SRSL_NS {
 
                 samplersCode += SR_FORMAT("layout {} uniform {} {}; // (sampler) {}\n",
                         layout.c_str(),
-                        sampler.type.c_str(),
+                        sampler.type.ToStringView() == "sampler2DArrayDepth" ? "sampler2DArray" : sampler.type.c_str(),
                         name.c_str(),
                         sampler.isPublic ? "public" : "private"
                 );

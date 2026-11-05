@@ -42,6 +42,9 @@ namespace SR_GRAPH_NS {
         wgpu::ComputePipeline   computePipeline;
         wgpu::BindGroupLayout   bindGroupLayout;   // group 0: UBOs / SSBOs
         wgpu::BindGroupLayout   bindGroupLayout1;  // group 1: textures + samplers (may be null if unused)
+        wgpu::BindGroupLayout   bindGroupLayout2;  // group 2: emulated push constants
+        wgpu::Buffer            pushConstantBuffer;
+        wgpu::BindGroup         pushConstantBindGroup;
         wgpu::PipelineLayout    pipelineLayout;
         SR_UTILS_NS::Vector<WebGPUBufferSlot>  bufferSlots;
         SR_UTILS_NS::Vector<WebGPUSamplerSlot> samplerSlots;
@@ -52,6 +55,9 @@ namespace SR_GRAPH_NS {
             computePipeline = nullptr;
             bindGroupLayout  = nullptr;
             bindGroupLayout1 = nullptr;
+            bindGroupLayout2 = nullptr;
+            pushConstantBuffer = nullptr;
+            pushConstantBindGroup = nullptr;
             pipelineLayout  = nullptr;
             bufferSlots.clear();
             samplerSlots.clear();
@@ -77,9 +83,11 @@ namespace SR_GRAPH_NS {
         struct Attachment {
             wgpu::Texture     texture;
             wgpu::TextureView view;
+            SR_UTILS_NS::Vector<wgpu::TextureView> layerViews;
             wgpu::TextureFormat format = wgpu::TextureFormat::Undefined;
 
             void Destroy() {
+                layerViews.clear();
                 view = nullptr;
                 if (texture) {
                     texture.Destroy();
@@ -456,6 +464,7 @@ namespace SR_GRAPH_NS {
             case SR_GRAPH_NS::SamplerDimension::Texture3D:      return wgpu::TextureViewDimension::e3D;
             case SR_GRAPH_NS::SamplerDimension::TextureCube:    return wgpu::TextureViewDimension::Cube;
             case SR_GRAPH_NS::SamplerDimension::Texture2DArray: return wgpu::TextureViewDimension::e2DArray;
+            case SR_GRAPH_NS::SamplerDimension::Texture2DArrayDepth: return wgpu::TextureViewDimension::e2DArray;
             default:                                            return wgpu::TextureViewDimension::e2D;
         }
     }
@@ -802,6 +811,7 @@ namespace SR_GRAPH_NS {
         }
 
         auto&& pFBO = m_state.pFrameBuffer;
+        bool keepClearFlags = false;
 
         if (pFBO) {
             // Render into the FBO's color + depth attachments
@@ -812,6 +822,7 @@ namespace SR_GRAPH_NS {
             }
 
             auto&& fbo = m_internalData->frameBuffers.At(fboId);
+            keepClearFlags = m_state.frameBufferLayer + 1 < fbo.depthAttachment.layerViews.size();
             if (fbo.colorAttachments.empty() || !fbo.colorAttachments[0].view) {
                 SR_ERROR("WebGPUPipeline::BeginRender() : FBO {} has no valid color attachment!", fboId);
                 return false;
@@ -841,7 +852,14 @@ namespace SR_GRAPH_NS {
                 const bool hasStencil = fbo.depthAttachment.format == wgpu::TextureFormat::Depth24PlusStencil8
                                      || fbo.depthAttachment.format == wgpu::TextureFormat::Depth32FloatStencil8;
 
-                depthAtt.view              = fbo.depthAttachment.view;
+                if (fbo.depthAttachment.layerViews.empty()) {
+                    depthAtt.view = fbo.depthAttachment.view;
+                }
+                else {
+                    const uint32_t layer = SR_MIN(m_state.frameBufferLayer,
+                        static_cast<uint32_t>(fbo.depthAttachment.layerViews.size() - 1));
+                    depthAtt.view = fbo.depthAttachment.layerViews[layer];
+                }
                 depthAtt.depthLoadOp       = m_internalData->hasClearDepth ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
                 depthAtt.depthStoreOp      = wgpu::StoreOp::Store;
                 depthAtt.depthClearValue   = m_internalData->hasClearDepth ? m_internalData->clearDepth : 1.0f;
@@ -887,9 +905,10 @@ namespace SR_GRAPH_NS {
             m_internalData->surfaceWasRendered = true;
         }
 
-        // Reset clear flags after use
-        m_internalData->hasClearColor = false;
-        m_internalData->hasClearDepth = false;
+        if (!keepClearFlags) {
+            m_internalData->hasClearColor = false;
+            m_internalData->hasClearDepth = false;
+        }
 
         return true;
     }
@@ -1247,6 +1266,56 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    void WebGPUPipeline::FlushPushConstantBindGroup() {
+        if (!m_internalData->activeRenderPass) {
+            return;
+        }
+
+        const int32_t shaderId = m_state.shaderId;
+        if (shaderId >= 0 && m_internalData->shaderPrograms.IsAlive(shaderId)) {
+            auto&& program = m_internalData->shaderPrograms.At(shaderId);
+            if (program.pushConstantBindGroup) {
+                m_internalData->activeRenderPass.SetBindGroup(2, program.pushConstantBindGroup, 0, nullptr);
+            }
+        }
+    }
+
+    void WebGPUPipeline::PushConstants(void* pData, uint64_t size) {
+        Super::PushConstants(pData, size);
+
+        const int32_t shaderId = m_state.shaderId;
+        if (!pData || shaderId < 0 || !m_internalData->shaderPrograms.IsAlive(shaderId)) {
+            return;
+        }
+
+        auto&& program = m_internalData->shaderPrograms.At(shaderId);
+        if (program.bindGroupLayout2 && program.pushConstantBuffer) {
+            const uint64_t bufferSize = program.pushConstantBuffer.GetSize();
+
+            /// Queue::WriteBuffer updates are visible before the encoded command buffer executes.
+            /// Keep a separate buffer snapshot for draws that were already recorded.
+            wgpu::BufferDescriptor bufferDesc{};
+            bufferDesc.size = bufferSize;
+            bufferDesc.usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst;
+            program.pushConstantBuffer = m_internalData->device.CreateBuffer(&bufferDesc);
+
+            m_internalData->queue.WriteBuffer(program.pushConstantBuffer, 0, pData,
+                SR_MIN(size, bufferSize));
+
+            wgpu::BindGroupEntry entry{};
+            entry.binding = 0;
+            entry.buffer = program.pushConstantBuffer;
+            entry.offset = 0;
+            entry.size = bufferSize;
+
+            wgpu::BindGroupDescriptor bindGroupDesc{};
+            bindGroupDesc.layout = program.bindGroupLayout2;
+            bindGroupDesc.entryCount = 1;
+            bindGroupDesc.entries = &entry;
+            program.pushConstantBindGroup = m_internalData->device.CreateBindGroup(&bindGroupDesc);
+        }
+    }
+
     void WebGPUPipeline::Draw(uint32_t count) {
         Super::Draw(count);
 
@@ -1256,6 +1325,7 @@ namespace SR_GRAPH_NS {
 
         FlushDescriptorBindGroup();
         FlushTextureBindGroup();
+        FlushPushConstantBindGroup();
 
         m_internalData->activeRenderPass.Draw(count, m_drawInstancesCount, 0, m_drawInstancesStart);
     }
@@ -1269,6 +1339,7 @@ namespace SR_GRAPH_NS {
 
         FlushDescriptorBindGroup();
         FlushTextureBindGroup();
+        FlushPushConstantBindGroup();
 
         m_internalData->activeRenderPass.DrawIndexed(count, m_drawInstancesCount, 0, 0, m_drawInstancesStart);
     }
@@ -1743,10 +1814,11 @@ namespace SR_GRAPH_NS {
 
         for (uint32_t slot = 0; slot < static_cast<uint32_t>(samplerInfos.size()); ++slot) {
             auto&& info = samplerInfos[slot];
-            const bool isShadow = info.dimension == SamplerDimension::Texture2DShadow;
+            const bool isDepth = info.dimension == SamplerDimension::Texture2DShadow
+                              || info.dimension == SamplerDimension::Texture2DArrayDepth;
 
             wgpu::TextureSampleType sampleType = wgpu::TextureSampleType::Float;
-            if (isShadow) {
+            if (isDepth) {
                 sampleType = wgpu::TextureSampleType::Depth;
             }
             else if (info.isAttachment) {
@@ -1763,7 +1835,7 @@ namespace SR_GRAPH_NS {
             wgpu::BindGroupLayoutEntry samplerEntry{};
             samplerEntry.binding      = slot * 2 + 1;
             samplerEntry.visibility   = info.visibility;
-            samplerEntry.sampler.type = info.isAttachment
+            samplerEntry.sampler.type = info.isAttachment || info.dimension == SamplerDimension::Texture2DArrayDepth
                 ? wgpu::SamplerBindingType::NonFiltering
                 : wgpu::SamplerBindingType::Filtering;
             bglEntries1.push_back(samplerEntry);
@@ -1778,21 +1850,63 @@ namespace SR_GRAPH_NS {
 
         wgpu::BindGroupLayout bindGroupLayout = m_internalData->device.CreateBindGroupLayout(&bglDesc0);
 
-        // Create BindGroupLayout for group 1 (only when samplers are present)
+        uint64_t pushConstantSize = 0;
+        for (auto&& stageEntry : createInfo.stages) {
+            for (auto&& pushConstant : stageEntry.second.pushConstants) {
+                pushConstantSize = SR_MAX(pushConstantSize, pushConstant.offset + pushConstant.size);
+            }
+        }
+        const bool hasPushConstants = pushConstantSize > 0;
+
+        // Create BindGroupLayout for group 1. An empty layout is required when group 2 is used
+        // without samplers because WebGPU bind group indices must be contiguous.
         wgpu::BindGroupLayout bindGroupLayout1;
-        if (!bglEntries1.empty()) {
+        if (!bglEntries1.empty() || hasPushConstants) {
             wgpu::BindGroupLayoutDescriptor bglDesc1{};
             bglDesc1.entryCount = static_cast<size_t>(bglEntries1.size());
             bglDesc1.entries    = bglEntries1.data();
             bindGroupLayout1 = m_internalData->device.CreateBindGroupLayout(&bglDesc1);
         }
 
+        wgpu::BindGroupLayout bindGroupLayout2;
+        wgpu::Buffer pushConstantBuffer;
+        wgpu::BindGroup pushConstantBindGroup;
+        if (hasPushConstants) {
+            wgpu::BindGroupLayoutEntry pushConstantEntry{};
+            pushConstantEntry.binding = 0;
+            pushConstantEntry.visibility = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
+            pushConstantEntry.buffer.type = wgpu::BufferBindingType::Uniform;
+
+            wgpu::BindGroupLayoutDescriptor bglDesc2{};
+            bglDesc2.entryCount = 1;
+            bglDesc2.entries = &pushConstantEntry;
+            bindGroupLayout2 = m_internalData->device.CreateBindGroupLayout(&bglDesc2);
+
+            const uint64_t bufferSize = SR_MAX(uint64_t(16), (pushConstantSize + 15) & ~uint64_t(15));
+            wgpu::BufferDescriptor bufferDesc{};
+            bufferDesc.size = bufferSize;
+            bufferDesc.usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst;
+            pushConstantBuffer = m_internalData->device.CreateBuffer(&bufferDesc);
+
+            wgpu::BindGroupEntry pushConstantBindGroupEntry{};
+            pushConstantBindGroupEntry.binding = 0;
+            pushConstantBindGroupEntry.buffer = pushConstantBuffer;
+            pushConstantBindGroupEntry.offset = 0;
+            pushConstantBindGroupEntry.size = bufferSize;
+
+            wgpu::BindGroupDescriptor pushConstantBindGroupDesc{};
+            pushConstantBindGroupDesc.layout = bindGroupLayout2;
+            pushConstantBindGroupDesc.entryCount = 1;
+            pushConstantBindGroupDesc.entries = &pushConstantBindGroupEntry;
+            pushConstantBindGroup = m_internalData->device.CreateBindGroup(&pushConstantBindGroupDesc);
+        }
+
         // Build the pipeline layout covering all used bind group indices.
         // If group 1 is used, we must include both group 0 and group 1 layouts.
-        wgpu::BindGroupLayout bglArray[2] = { bindGroupLayout, bindGroupLayout1 };
+        wgpu::BindGroupLayout bglArray[3] = { bindGroupLayout, bindGroupLayout1, bindGroupLayout2 };
 
         wgpu::PipelineLayoutDescriptor plDesc{};
-        plDesc.bindGroupLayoutCount = bglEntries1.empty() ? 1u : 2u;
+        plDesc.bindGroupLayoutCount = hasPushConstants ? 3u : (bglEntries1.empty() ? 1u : 2u);
         plDesc.bindGroupLayouts     = bglArray;
         plDesc.label = shaderName.c_str();
 
@@ -1805,6 +1919,9 @@ namespace SR_GRAPH_NS {
         WebGPUShaderProgram program;
         program.bindGroupLayout  = bindGroupLayout;
         program.bindGroupLayout1 = bindGroupLayout1;
+        program.bindGroupLayout2 = bindGroupLayout2;
+        program.pushConstantBuffer = pushConstantBuffer;
+        program.pushConstantBindGroup = pushConstantBindGroup;
         program.pipelineLayout  = pipelineLayout;
         program.bufferSlots     = std::move(bufferSlots);
         program.samplerSlots    = std::move(samplerSlots);
@@ -1874,7 +1991,9 @@ namespace SR_GRAPH_NS {
                 }
             }
 
-            bool depthEnabled = createInfo.depthTest || createInfo.depthWrite;
+            const bool hasDepthAttachment = fbo > 0 && m_internalData->frameBuffers.IsAlive(fbo)
+                ? static_cast<bool>(m_internalData->frameBuffers.At(fbo).depthAttachment.view)
+                : static_cast<bool>(m_internalData->surfaceDepthTextureView);
 
             // Build per-target blend state (shared value, same for all targets)
             wgpu::BlendState blendState{};
@@ -1892,7 +2011,9 @@ namespace SR_GRAPH_NS {
             for (auto fmt : colorFormats) {
                 wgpu::ColorTargetState ct{};
                 ct.format = fmt;
-                ct.writeMask = wgpu::ColorWriteMask::All;
+                ct.writeMask = wgslSource.find("struct FragmentOutput") != std::string::npos
+                    ? wgpu::ColorWriteMask::All
+                    : wgpu::ColorWriteMask::None;
                 /// Блендинг включаем только для тех вложений, формат которых его поддерживает.
                 /// Вспомогательные вложения (глубина в R32Float, id объекта и т.п.) блендинг не поддерживают.
                 if (createInfo.blendEnabled && IsBlendableFormat(fmt)) {
@@ -1908,10 +2029,12 @@ namespace SR_GRAPH_NS {
             fragmentState.targets     = colorTargets.data();
 
             wgpu::DepthStencilState depthStencilState{};
-            if (depthEnabled) {
+            if (hasDepthAttachment) {
                 depthStencilState.format              = depthFormat;
                 depthStencilState.depthWriteEnabled   = createInfo.depthWrite;
-                depthStencilState.depthCompare        = DepthCompareToWGPU(createInfo.depthCompare);
+                depthStencilState.depthCompare        = createInfo.depthTest
+                    ? DepthCompareToWGPU(createInfo.depthCompare)
+                    : wgpu::CompareFunction::Always;
             }
 
             wgpu::RenderPipelineDescriptor rpDesc{};
@@ -1935,7 +2058,7 @@ namespace SR_GRAPH_NS {
 
             rpDesc.fragment = &fragmentState;
 
-            if (depthEnabled) {
+            if (hasDepthAttachment) {
                 rpDesc.depthStencil = &depthStencilState;
             }
 
@@ -2196,8 +2319,10 @@ namespace SR_GRAPH_NS {
 
             fbo.depthAttachment.format = depthFmt;
 
+            const uint32_t depthLayers = SR_MAX(1u, ((createInfo.layersCount > 1) ? createInfo.layersCount : createInfo.arrayLayersCount));
+
             wgpu::TextureDescriptor depthDesc{};
-            depthDesc.size          = { w, h, 1 };
+            depthDesc.size          = { w, h, depthLayers };
             depthDesc.format        = depthFmt;
             depthDesc.usage         = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding;
             depthDesc.mipLevelCount = 1;
@@ -2206,14 +2331,46 @@ namespace SR_GRAPH_NS {
 
             fbo.depthAttachment.texture = m_internalData->device.CreateTexture(&depthDesc);
             if (fbo.depthAttachment.texture) {
-                wgpu::TextureViewDescriptor dvDesc{};
-                dvDesc.format          = depthFmt;
-                dvDesc.dimension       = wgpu::TextureViewDimension::e2D;
-                dvDesc.mipLevelCount   = 1;
-                dvDesc.arrayLayerCount = 1;
-                dvDesc.aspect          = wgpu::TextureAspect::DepthOnly;
+                wgpu::TextureViewDescriptor arrayViewDesc{};
+                arrayViewDesc.format          = depthFmt;
+                arrayViewDesc.dimension       = wgpu::TextureViewDimension::e2DArray;
+                arrayViewDesc.mipLevelCount   = 1;
+                arrayViewDesc.arrayLayerCount = depthLayers;
+                arrayViewDesc.aspect          = wgpu::TextureAspect::DepthOnly;
+                auto&& sampledView = fbo.depthAttachment.texture.CreateView(&arrayViewDesc);
 
-                fbo.depthAttachment.view = fbo.depthAttachment.texture.CreateView(&dvDesc);
+                for (uint32_t layer = 0; layer < depthLayers; ++layer) {
+                    wgpu::TextureViewDescriptor layerViewDesc{};
+                    layerViewDesc.format          = depthFmt;
+                    layerViewDesc.dimension       = wgpu::TextureViewDimension::e2D;
+                    layerViewDesc.baseArrayLayer  = layer;
+                    layerViewDesc.mipLevelCount   = 1;
+                    layerViewDesc.arrayLayerCount = 1;
+                    layerViewDesc.aspect          = wgpu::TextureAspect::DepthOnly;
+                    fbo.depthAttachment.layerViews.push_back(fbo.depthAttachment.texture.CreateView(&layerViewDesc));
+                }
+                fbo.depthAttachment.view = fbo.depthAttachment.layerViews.front();
+
+                WebGPUTexture sampledDepth;
+                sampledDepth.view = sampledView;
+                const int32_t sampledDepthId = m_internalData->textures.Add(std::move(sampledDepth));
+                const auto frameCount = createInfo.pFBO ? createInfo.pFBO->size() : 1;
+                createInfo.pDepth->texture.resize(frameCount, SR_ID_INVALID);
+                for (int32_t& textureId : createInfo.pDepth->texture) {
+                    textureId = sampledDepthId;
+                }
+
+                createInfo.pDepth->subLayers.resize(depthLayers);
+                for (uint32_t layer = 0; layer < depthLayers; ++layer) {
+                    WebGPUTexture sampledLayer;
+                    sampledLayer.view = fbo.depthAttachment.layerViews[layer];
+                    const int32_t sampledLayerId = m_internalData->textures.Add(std::move(sampledLayer));
+                    auto&& layerIds = createInfo.pDepth->subLayers[layer];
+                    layerIds.resize(frameCount, SR_ID_INVALID);
+                    for (int32_t& textureId : layerIds) {
+                        textureId = sampledLayerId;
+                    }
+                }
             }
         }
 

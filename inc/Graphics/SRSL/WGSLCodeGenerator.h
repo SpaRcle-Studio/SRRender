@@ -62,16 +62,16 @@ namespace SR_SRSL_NS {
         /// Non-entry-point function (regular function body without stage decorator).
         SR_NODISCARD std::string GenerateFunctionBody(const SRSLFunction* pFunction, int32_t deep) const;
 
-        SR_NODISCARD std::string GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep) const;
-        SR_NODISCARD std::string GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep, const std::string& preCode, const std::string& postCode) const;
+        SR_NODISCARD std::string GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep, const std::string& returnCode = std::string()) const;
+        SR_NODISCARD std::string GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep, const std::string& preCode, const std::string& postCode, const std::string& returnCode = std::string()) const;
 
         SR_NODISCARD std::string GenerateExpression(const SRSLExpr* pExpr, int32_t deep) const;
         SR_NODISCARD std::string GenerateVariable(const SRSLVariable* pVariable, int32_t deep) const;
         SR_NODISCARD std::string GenerateStructure(const SRSLStructureStatement* pStructure, int32_t deep) const;
 
-        SR_NODISCARD std::string GenerateIfStatement(const SRSLIfStatement* pIfStatement, int32_t deep) const;
-        SR_NODISCARD std::string GenerateForStatement(const SRSLForStatement* pForStatement, int32_t deep) const;
-        SR_NODISCARD std::string GenerateWhileStatement(const SRSLWhileStatement* pWhileStatement, int32_t deep) const;
+        SR_NODISCARD std::string GenerateIfStatement(const SRSLIfStatement* pIfStatement, int32_t deep, const std::string& returnCode = std::string()) const;
+        SR_NODISCARD std::string GenerateForStatement(const SRSLForStatement* pForStatement, int32_t deep, const std::string& returnCode = std::string()) const;
+        SR_NODISCARD std::string GenerateWhileStatement(const SRSLWhileStatement* pWhileStatement, int32_t deep, const std::string& returnCode = std::string()) const;
 
         SR_NODISCARD std::string GenerateUniforms(const SRSLShader* pShader) const;
 
@@ -92,6 +92,7 @@ namespace SR_SRSL_NS {
         /// Set for the duration of a GenerateStages() call so that GenerateExpression()
         /// can look up sampler names when rewriting texture() calls.
         const SRSLShader* m_pCurrentShader = nullptr;
+        mutable bool m_forceExplicitTextureLod = false;
 
         /// Populated during GenerateUniforms(): maps SSBO field name → "blockVarName.fieldName"
         /// so that GenerateExpression() can rewrite bare field references.

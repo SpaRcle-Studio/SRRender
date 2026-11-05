@@ -184,13 +184,15 @@ namespace SR_GRAPH_NS {
         Texture3D,
         TextureCube,
         Texture2DArray,
-        Texture2DShadow
+        Texture2DShadow,
+        Texture2DArrayDepth
     )
 
     SR_MAYBE_UNUSED static SamplerDimension SamplerDimensionFromTypeName(std::string_view type) {
         if (type == "sampler3D")       { return SamplerDimension::Texture3D;      }
         if (type == "samplerCube")     { return SamplerDimension::TextureCube;    }
         if (type == "sampler2DArray")  { return SamplerDimension::Texture2DArray; }
+        if (type == "sampler2DArrayDepth") { return SamplerDimension::Texture2DArrayDepth; }
         if (type == "sampler2DShadow") { return SamplerDimension::Texture2DShadow;}
         return SamplerDimension::Texture2D;
     }

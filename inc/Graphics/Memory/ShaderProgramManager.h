@@ -72,7 +72,7 @@ namespace SR_GRAPH_NS::Memory {
                 return &m_data[m_dataUsed - 1].second;
             }
 
-            SRHalt("Exceeded maximum shader program info count!");
+            SRHalt("Exceeded maximum ({}) shader program info count!", MAX_DATA_COUNT);
             return nullptr;
         }
 

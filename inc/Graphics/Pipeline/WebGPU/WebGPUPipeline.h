@@ -65,6 +65,7 @@ namespace SR_GRAPH_NS {
 
         void UpdateUBO(uint32_t UBO, void* pData, uint64_t size, bool sizesMustBeEqual) override;
         void UpdateSSBO(uint32_t SSBO, void* pData, uint64_t size) override;
+        void PushConstants(void* pData, uint64_t size) override;
 
         bool MapSSBO(uint32_t SSBO, void** ppData) override;
         void UnMapSSBO(uint32_t SSBO) override;
@@ -111,6 +112,9 @@ namespace SR_GRAPH_NS {
 
         /// Пересобирает (если нужно) и привязывает BindGroup набора дескрипторов к @group(0).
         void FlushDescriptorBindGroup();
+
+        /// Привязывает эмулированную группу push constants к @group(2).
+        void FlushPushConstantBindGroup();
 
         /// Создает (или достает из кеша) BindGroup для @group(1) и привязывает его к активному проходу.
         /// В WebGPU все группы, объявленные в layout'е пайплайна, обязаны быть привязаны перед отрисовкой.

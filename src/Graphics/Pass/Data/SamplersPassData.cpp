@@ -184,6 +184,9 @@ namespace SR_GRAPH_NS {
         for (auto&& sampler : m_samplers) {
             std::vector<uint32_t> textureIds;
             textureIds.resize(m_pTechnique->GetPipeline()->GetSwapchainImagesCount());
+            for (uint32_t& textureId : textureIds) {
+                textureId = SR_ID_INVALID;
+            }
 
             if (sampler.IsFrameBufferUsage() && !sampler.fboName.Empty()) {
                 auto&& pFrameBufferController = m_pTechnique->GetFrameBufferController(sampler.fboName);
@@ -217,6 +220,9 @@ namespace SR_GRAPH_NS {
                         m_dirtySamplers = true;
                     }
                 }
+                else {
+                    m_dirtySamplers = true;
+                }
             }
 
             if (!sampler.IsFrameBufferDepthUsage()) {
@@ -227,6 +233,16 @@ namespace SR_GRAPH_NS {
                 }
             }
 
+            bool textureIdsChanged = sampler.textureId.size() != textureIds.size();
+            if (!textureIdsChanged) {
+                for (size_t i = 0; i < textureIds.size(); ++i) {
+                    if (sampler.textureId[i] != textureIds[i]) {
+                        textureIdsChanged = true;
+                        break;
+                    }
+                }
+            }
+            m_dirtySamplers = m_dirtySamplers || textureIdsChanged;
             sampler.textureId = textureIds;
         }
         return true;
