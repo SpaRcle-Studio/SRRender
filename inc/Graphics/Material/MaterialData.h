@@ -144,6 +144,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD bool IsBlendingDisabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_DISABLE_BLENDING) == 1; }
         SR_NODISCARD bool IsEmissionEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_EMISSION) == 1; }
         SR_NODISCARD bool IsORMEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_ORM) == 1; }
+        SR_NODISCARD bool IsHeightEnabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_HAS_HEIGHT) == 1; }
         SR_NODISCARD bool IsCullingDisabled() const { return m_shaderDefines.count(SHADER_MACRO_SR_DEFINE_DISABLE_CULLING) == 1; }
 
         void SetNormalMappingEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_NORMAL, enabled); }
@@ -157,6 +158,7 @@ namespace SR_GRAPH_NS {
         void SetBlendingDisabled(bool disabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_DISABLE_BLENDING, disabled); }
         void SetEmissionEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_EMISSION, enabled); }
         void SetORMEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_ORM, enabled); }
+        void SetHeightEnabled(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_HAS_HEIGHT, enabled); }
         void SetDisableCulling(bool enabled) { SwitchShaderDefine(SHADER_MACRO_SR_DEFINE_DISABLE_CULLING, enabled); }
 
     private:
@@ -189,6 +191,8 @@ namespace SR_GRAPH_NS {
         /// @virtualProperty(disableBlending) @getter(IsBlendingDisabled) @setter(SetBlendingDisabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY
         /// @virtualProperty(hasORM) @getter(IsORMEnabled) @setter(SetORMEnabled) @dontSave @group(Params)
+        SR_VIRTUAL_PROPERTY
+        /// @virtualProperty(hasHeight) @getter(IsHeightEnabled) @setter(SetHeightEnabled) @dontSave @group(Params)
         SR_VIRTUAL_PROPERTY
 
 
