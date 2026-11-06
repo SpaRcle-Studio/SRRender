@@ -12,7 +12,7 @@
 
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/Resources/FileWatcher.h>
-#include <Utils/Common/Hashes.h>
+#include <Utils/Common/CLIManager.h>
 #include <Utils/Memory/Allocator.h>
 #include <Utils/Memory/MemoryLiterals.h>
 #include <Utils/Memory/AllocatorManager.h>
@@ -676,7 +676,9 @@ namespace SR_GRAPH_NS::Types {
 
         for (auto&& [hashName, samplerInfo] : m_samplers) {
             if (samplerInfo.samplerId == SR_ID_INVALID) {
-                SR_ERROR("Shader::AttachDescriptorSets() : invalid \"{}\" sampler!", hashName);
+                if (!SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode()) {
+                    SR_ERROR("Shader::AttachDescriptorSets() : invalid \"{}\" sampler!", hashName);
+                }
                 samplerInfo.samplerId = GetRenderContext()->GetDefaultTexture()->GetId();
             }
 
