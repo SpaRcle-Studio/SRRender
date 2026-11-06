@@ -21,6 +21,7 @@ namespace SR_SRSL_NS {
     struct SRSLSampler {
         SR_UTILS_NS::StringAtom type;
         bool isPublic = false;
+        bool isUnfilterable = false;
         uint64_t binding = 0;
         int32_t attachment = -1;
         SR_UTILS_NS::Set<ShaderStage> stages;

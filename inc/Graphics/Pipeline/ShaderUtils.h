@@ -141,6 +141,7 @@ namespace SR_GRAPH_NS {
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_SPRITE_FILL_CLOCKWISE = "SPRITE_FILL_CLOCKWISE";
 
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_MACRO_SR_DEFINE_COLOR_PASS = "SR_DEFINE_COLOR_PASS";
+    SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_MACRO_SR_WEBGPU = "SR_WEBGPU";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_MACRO_SR_DEFINE_CASCADED_SHADOW_MAP_PASS = "SR_DEFINE_CASCADED_SHADOW_MAP_PASS";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_MACRO_SR_DEFINE_USE_CASCADED_SHADOW_MAP = "SR_DEFINE_USE_CASCADED_SHADOW_MAP";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_MACRO_SR_DEFINE_HAS_NORMAL = "HAS_NORMAL";
@@ -173,7 +174,7 @@ namespace SR_GRAPH_NS {
         MissSecondary
     )
 
-    SR_ENUM_NS_CLASS(LayoutBinding, Unknown = 0, Uniform, Sampler2D, Attachhment, SSBO)
+    SR_ENUM_NS_CLASS(LayoutBinding, Unknown = 0, Uniform, Sampler2D, Attachhment, SSBO, UnfilterableSampler2D)
 
     /// Размерность сэмплера. Vulkan не нуждается в этой информации (тип дескриптора одинаковый для
     /// всех сэмплеров), но WebGPU объявляет размерность вьюшки прямо в layout'е,

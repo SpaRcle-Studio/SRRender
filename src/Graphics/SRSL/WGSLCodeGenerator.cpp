@@ -433,10 +433,15 @@ namespace SR_SRSL_NS {
             const std::string& rawToken = pExpr->token;
             const std::string funcName = WGSLDetail::ReplaceToken(rawToken);
 
+            if (rawToken == "mod" && pExpr->args.size() == 2) {
+                const std::string left = GenerateExpression(pExpr->args[0], 0);
+                const std::string right = GenerateExpression(pExpr->args[1], 0);
+                code += "((" + left + ") - (" + right + ") * floor((" + left + ") / (" + right + ")))";
+            }
             // ---- texture() / textureLod() → inject sampler argument ----
             // WGSL requires an explicit sampler: textureSample(tex, tex_sampler, uv)
             // SRSL/GLSL calls: texture(tex, uv)  or  textureLod(tex, uv, lod)
-            if ((rawToken == "texture" || rawToken == "textureLod") && pExpr->args.size() >= 2) {
+            else if ((rawToken == "texture" || rawToken == "textureLod") && pExpr->args.size() >= 2) {
                 // Extract the texture variable name from the first argument
                 std::string texName = GenerateExpression(pExpr->args[0], 0);
                 // Strip any trailing whitespace / tab indentation from the recursive call
@@ -452,6 +457,19 @@ namespace SR_SRSL_NS {
                     code += "vec4<f32>(textureLoad(" + texName
                         + ", vec2<i32>(min(vec2<f32>((" + coords + ").x, 1.0 - (" + coords + ").y) * vec2<f32>(textureDimensions(" + texName + ")), vec2<f32>(textureDimensions(" + texName + ")) - vec2<f32>(1.0)))"
                         + ", i32((" + coords + ").z), " + level + "))";
+                    return code;
+                }
+
+                if (rawToken == "textureLod"
+                    && (m_samplerParameterNames.count(texName) > 0 || m_attachmentSamplerNames.count(texName) > 0))
+                {
+                    const std::string coords = GenerateExpression(pExpr->args[1], 0);
+                    const std::string level = pExpr->args.size() >= 3
+                        ? "i32(" + GenerateExpression(pExpr->args[2], 0) + ")"
+                        : "0";
+                    code += "textureLoad(" + texName
+                        + ", clamp(vec2<i32>((" + coords + ") * vec2<f32>(textureDimensions(" + texName + ", " + level + "))), vec2<i32>(0), vec2<i32>(textureDimensions(" + texName + ", " + level + ")) - vec2<i32>(1))"
+                        + ", " + level + ")";
                     return code;
                 }
 
@@ -545,8 +563,21 @@ namespace SR_SRSL_NS {
             }
             else {
                 code += funcName + "(";
+                const SRSLFunction* pCalledFunction = m_pCurrentShader && m_pCurrentShader->GetAnalyzedTree()
+                    ? m_pCurrentShader->GetAnalyzedTree()->pLexicalTree->FindFunction(rawToken)
+                    : nullptr;
                 for (uint32_t i = 0; i < pExpr->args.size(); ++i) {
-                    code += GenerateExpression(pExpr->args[i], 0);
+                    const std::string argument = GenerateExpression(pExpr->args[i], 0);
+                    code += argument;
+                    if (pCalledFunction && i < pCalledFunction->args.size() && pCalledFunction->args[i]->pType) {
+                        m_tmpBuffer.clear();
+                        const SR_UTILS_NS::StringView type = pCalledFunction->args[i]->pType->ToString(0, m_tmpBuffer);
+                        if (type == "sampler2D" || type == "sampler2DArray" || type == "sampler2DArrayDepth"
+                            || type == "sampler3D" || type == "samplerCube" || type == "sampler2DShadow")
+                        {
+                            code += ", " + argument + "_sampler";
+                        }
+                    }
                     if (i + 1 < pExpr->args.size()) {
                         code += ", ";
                     }
@@ -655,10 +686,16 @@ namespace SR_SRSL_NS {
             }
         }
         else if (pExpr->args.size() == 2 && pExpr->token == ":") {
-            // ':' node appears as the right child of a '?' node (ternary operator).
-            // If it somehow reaches here standalone (shouldn't happen in well-formed AST),
-            // emit just the true branch (args[0]) as a safe fallback.
-            code += GenerateExpression(pExpr->args[0], 0);
+            const SRSLExpr* questionExpr = pExpr->args[0];
+            if (questionExpr && questionExpr->token == "?" && questionExpr->args.size() == 2) {
+                const std::string cond = GenerateExpression(questionExpr->args[0], 0);
+                const std::string trueVal = GenerateExpression(questionExpr->args[1], 0);
+                const std::string falseVal = GenerateExpression(pExpr->args[1], 0);
+                code += "select(" + falseVal + ", " + trueVal + ", " + cond + ")";
+            }
+            else {
+                code += GenerateExpression(pExpr->args[0], 0);
+            }
         }
         else if (pExpr->args.size() == 2) {
             code += "(" + GenerateExpression(pExpr->args[0], 0) + " " + WGSLDetail::ReplaceToken(pExpr->token) + " " + GenerateExpression(pExpr->args[1], 0) + ")";
@@ -924,6 +961,7 @@ namespace SR_SRSL_NS {
 
     std::string WGSLCodeGenerator::GenerateFunctionBody(const SRSLFunction* pFunction, int32_t deep) const {
         std::string code;
+        std::string parameterAliases;
         code += std::string(GenerateTab(deep));
         code += "fn ";  // WGSL requires "fn" keyword for every function definition
 
@@ -947,10 +985,32 @@ namespace SR_SRSL_NS {
             }
             if (pArg->pType) {
                 m_tmpBuffer.clear();
-                argType = WGSLDetail::GenerateType(pArg->pType->ToString(0, m_tmpBuffer));
+                const SR_UTILS_NS::StringView rawType = pArg->pType->ToString(0, m_tmpBuffer);
+                argType = WGSLDetail::GenerateType(rawType);
+                if (rawType == "sampler2D") argType = "texture_2d<f32>";
+                else if (rawType == "sampler2DArray") argType = "texture_2d_array<f32>";
+                else if (rawType == "sampler2DArrayDepth") argType = "texture_depth_2d_array";
+                else if (rawType == "sampler3D") argType = "texture_3d<f32>";
+                else if (rawType == "samplerCube") argType = "texture_cube<f32>";
+                else if (rawType == "sampler2DShadow") argType = "texture_depth_2d";
+                if (rawType == "sampler2D" || rawType == "sampler2DArray" || rawType == "sampler2DArrayDepth"
+                    || rawType == "sampler3D" || rawType == "samplerCube" || rawType == "sampler2DShadow")
+                {
+                    m_samplerParameterNames.insert(argName);
+                }
             }
             RegisterVariableType(argName, argType);
-            code += argName + " : " + argType;
+            const bool isTexture = argType.find("texture_") == 0;
+            if (isTexture) {
+                code += argName + " : " + argType;
+                code += ", " + argName + "_sampler : sampler";
+            }
+            else {
+                const std::string immutableArgName = "_sr_arg_" + argName;
+                code += immutableArgName + " : " + argType;
+                parameterAliases += std::string(GenerateTab(deep + 1)) + "var " + argName + " : " + argType
+                    + " = " + immutableArgName + ";\n";
+            }
             if (i + 1 < pFunction->args.size()) {
                 code += ", ";
             }
@@ -967,7 +1027,7 @@ namespace SR_SRSL_NS {
         }
 
         if (pFunction->pLexicalTree) {
-            std::string preCode;
+            std::string preCode = parameterAliases;
             if (m_pCurrentShader && !IsShaderEntryPoint(pFunction->GetName())) {
                 if (auto&& pUseStackFunction = m_pCurrentShader->GetUseStack()->FindFunction(pFunction->GetName())) {
                     auto isDeclared = [&](auto&& self, const SRSLLexicalTree* pTree, SR_UTILS_NS::StringView name) -> bool {
@@ -1786,9 +1846,16 @@ namespace SR_SRSL_NS {
         m_ssboFieldToQualified.clear();
         m_variableTypes.clear();
         m_functionReturnTypes.clear();
+        m_samplerParameterNames.clear();
+        m_attachmentSamplerNames.clear();
         m_usedHelpers.clear();
         m_forceExplicitTextureLod = false;
         m_pCurrentShader = pShader;
+        for (auto&& [name, sampler] : pShader->GetSamplers()) {
+            if (sampler.attachment >= 0) {
+                m_attachmentSamplerNames.insert(std::string(name.ToStringView()));
+            }
+        }
 
         ISRSLCodeGenerator::SRSLCodeGenRes codeGenRes;
 

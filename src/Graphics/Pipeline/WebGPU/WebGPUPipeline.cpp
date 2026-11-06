@@ -1779,7 +1779,9 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Vector<SamplerLayoutInfo> samplerInfos;
 
         for (auto&& uniform : createInfo.uniforms) {
-            if (uniform.type != LayoutBinding::Sampler2D && uniform.type != LayoutBinding::Attachhment) {
+            if (uniform.type != LayoutBinding::Sampler2D && uniform.type != LayoutBinding::Attachhment
+                && uniform.type != LayoutBinding::UnfilterableSampler2D)
+            {
                 continue;
             }
 
@@ -1792,12 +1794,15 @@ namespace SR_GRAPH_NS {
 
             if (pIt != samplerInfos.end()) {
                 pIt->visibility |= visibility;
+                pIt->isAttachment |= uniform.type == LayoutBinding::Attachhment
+                    || uniform.type == LayoutBinding::UnfilterableSampler2D;
                 continue;
             }
 
             SamplerLayoutInfo info;
             info.binding = binding;
-            info.isAttachment = uniform.type == LayoutBinding::Attachhment;
+            info.isAttachment = uniform.type == LayoutBinding::Attachhment
+                || uniform.type == LayoutBinding::UnfilterableSampler2D;
             info.dimension = uniform.samplerDimension;
             info.visibility = visibility;
 

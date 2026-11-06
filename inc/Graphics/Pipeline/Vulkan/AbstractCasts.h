@@ -69,6 +69,7 @@ namespace SR_GRAPH_NS::VulkanTools {
 
             switch (uniform.type) {
                 case LayoutBinding::Sampler2D: type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; break;
+                case LayoutBinding::UnfilterableSampler2D: type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; break;
                 case LayoutBinding::Uniform: type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; break;
                 case LayoutBinding::Attachhment: type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT; break;
                 case LayoutBinding::SSBO: type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; break;

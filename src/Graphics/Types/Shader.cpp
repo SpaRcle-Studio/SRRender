@@ -344,6 +344,10 @@ namespace SR_GRAPH_NS::Types {
 
         m_isDirty = true;
 
+    #if defined(SR_EMSCRIPTEN) || defined(SR_RENDER_USE_WEBGPU)
+        m_params.AddDefine(SHADER_MACRO_SR_WEBGPU);
+    #endif
+
         SR_UTILS_NS::Path path = GetResourcePath();
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {

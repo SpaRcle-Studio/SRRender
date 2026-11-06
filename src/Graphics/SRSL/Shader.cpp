@@ -542,6 +542,7 @@ namespace SR_SRSL_NS {
 
                 sampler.type = pVariable->GetType();
                 sampler.isPublic = bool(pVariable->pDecorators->Find("public"));
+                sampler.isUnfilterable = bool(pVariable->pDecorators->Find("unfilterable"));
                 sampler.stages = std::move(stages);
 
                 if (pVariable->pExpr) {
@@ -706,6 +707,9 @@ namespace SR_SRSL_NS {
 
                 if (sampler.attachment >= 0) {
                     uniform.type = LayoutBinding::Attachhment;
+                }
+                else if (sampler.isUnfilterable) {
+                    uniform.type = LayoutBinding::UnfilterableSampler2D;
                 }
                 else {
                     uniform.type = LayoutBinding::Sampler2D;

@@ -103,6 +103,8 @@ namespace SR_SRSL_NS {
 
         /// Возвращаемые типы пользовательских функций (имя -> WGSL тип).
         mutable std::unordered_map<std::string, std::string> m_functionReturnTypes;
+        mutable SR_UTILS_NS::Set<SR_UTILS_NS::String> m_samplerParameterNames;
+        mutable SR_UTILS_NS::Set<SR_UTILS_NS::String> m_attachmentSamplerNames;
 
         /// Имена вспомогательных функций, которые понадобились при генерации кода.
         mutable std::unordered_set<std::string> m_usedHelpers;
