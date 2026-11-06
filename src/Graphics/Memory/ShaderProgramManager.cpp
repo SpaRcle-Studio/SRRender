@@ -229,15 +229,13 @@ namespace SR_GRAPH_NS::Memory {
             m_pipeline->UseShader(static_cast<ShaderProgram>(shaderProgramInfo.id));
         }
         else {
-            if (m_pipeline->GetFrameBufferSampleCount() != shaderProgramInfo.samples) {
+            const uint8_t sampleCount = m_pipeline->GetFrameBufferSampleCount();
+            if (sampleCount > 0 && sampleCount != shaderProgramInfo.samples) {
                 m_pipeline->FreeShader(&shaderProgramInfo.id);
 
                 if ((shaderProgramInfo = AllocateShaderProgram(createInfo)).Valid()) {
-                    if (BindShaderProgram(shaderProgramInfo, createInfo) == ShaderBindResult::Success) {
-                        return ShaderBindResult::ReAllocated;
-                    }
-                    SR_ERROR("ShaderProgramManager::BindShaderProgram() : unexcepted result!");
-                    return ShaderBindResult::Failed;
+                    m_pipeline->UseShader(static_cast<ShaderProgram>(shaderProgramInfo.id));
+                    return ShaderBindResult::ReAllocated;
                 }
 
                 SR_ERROR("ShaderProgramManager::BindShaderProgram() : failed to allocate shader program!");

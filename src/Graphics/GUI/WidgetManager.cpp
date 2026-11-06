@@ -6,6 +6,7 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/GUI/WidgetManager.h>
 #include <Graphics/GUI/Widget.h>
+#include <Graphics/Window/Window.h>
 
 #include <ImmediateGUI/GUI/ImmediateGUI.h>
 
@@ -119,16 +120,26 @@ namespace SR_GRAPH_NS::GUI {
     }
 
     void WidgetManager::HideAll() {
-        ViewportsTableManager::Instance().ForEach([](auto&& pHandle, auto&&) {
+        void* pMainWindowHandle = m_renderContext && m_renderContext->GetWindow()
+            ? m_renderContext->GetWindow()->GetHandle()
+            : nullptr;
+        ViewportsTableManager::Instance().ForEach([pMainWindowHandle](auto&& pHandle, auto&&) {
             auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(pHandle);
-            SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Hide);
+            if (pPlatformHandle != pMainWindowHandle) {
+                SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Hide);
+            }
         });
     }
 
     void WidgetManager::ShowAll() {
-        ViewportsTableManager::Instance().ForEach([](auto&& pHandle, auto&&) {
+        void* pMainWindowHandle = m_renderContext && m_renderContext->GetWindow()
+            ? m_renderContext->GetWindow()->GetHandle()
+            : nullptr;
+        ViewportsTableManager::Instance().ForEach([pMainWindowHandle](auto&& pHandle, auto&&) {
             auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(pHandle);
-            SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Show);
+            if (pPlatformHandle != pMainWindowHandle) {
+                SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Show);
+            }
         });
     }
 
