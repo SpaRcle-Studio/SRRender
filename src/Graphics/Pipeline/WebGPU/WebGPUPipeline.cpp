@@ -83,15 +83,22 @@ namespace SR_GRAPH_NS {
         struct Attachment {
             wgpu::Texture     texture;
             wgpu::TextureView view;
+            wgpu::Texture     resolveTexture;
+            wgpu::TextureView resolveView;
             SR_UTILS_NS::Vector<wgpu::TextureView> layerViews;
             wgpu::TextureFormat format = wgpu::TextureFormat::Undefined;
 
             void Destroy() {
                 layerViews.clear();
                 view = nullptr;
+                resolveView = nullptr;
                 if (texture) {
                     texture.Destroy();
                     texture = nullptr;
+                }
+                if (resolveTexture) {
+                    resolveTexture.Destroy();
+                    resolveTexture = nullptr;
                 }
             }
         };
@@ -100,6 +107,7 @@ namespace SR_GRAPH_NS {
         Attachment                      depthAttachment;
         uint32_t                        width  = 0;
         uint32_t                        height = 0;
+        uint8_t                         sampleCount = 1;
 
         void Destroy() {
             for (auto& att : colorAttachments) { att.Destroy(); }
@@ -164,11 +172,14 @@ namespace SR_GRAPH_NS {
         wgpu::TextureView surfaceTextureView;
         wgpu::Texture     surfaceDepthTexture;
         wgpu::TextureView surfaceDepthTextureView;
+        wgpu::Texture     surfaceMultisampleTexture;
+        wgpu::TextureView surfaceMultisampleTextureView;
         wgpu::TextureFormat surfaceFormat = wgpu::TextureFormat::Undefined;
         uint32_t surfaceWidth  = 0;
         uint32_t surfaceHeight = 0;
         uint32_t surfaceDepthWidth  = 0;
         uint32_t surfaceDepthHeight = 0;
+        uint8_t surfaceSampleCount = 1;
 
         // ---- Per-render-pass state ----
         // Kept alive for the duration of BeginRender..EndRender
@@ -622,14 +633,21 @@ namespace SR_GRAPH_NS {
         m_internalData->surfaceTexture     = surfaceTexture.texture;
         m_internalData->surfaceTextureView = m_internalData->surfaceTexture.CreateView();
 
+        const uint8_t surfaceSampleCount = IsMultiSamplingSupported() ? GetSamplesCount() : 1;
         if (!m_internalData->surfaceDepthTexture ||
             m_internalData->surfaceDepthWidth != m_internalData->surfaceWidth ||
-            m_internalData->surfaceDepthHeight != m_internalData->surfaceHeight)
+            m_internalData->surfaceDepthHeight != m_internalData->surfaceHeight ||
+            m_internalData->surfaceSampleCount != surfaceSampleCount)
         {
             m_internalData->surfaceDepthTextureView = nullptr;
+            m_internalData->surfaceMultisampleTextureView = nullptr;
             if (m_internalData->surfaceDepthTexture) {
                 m_internalData->surfaceDepthTexture.Destroy();
                 m_internalData->surfaceDepthTexture = nullptr;
+            }
+            if (m_internalData->surfaceMultisampleTexture) {
+                m_internalData->surfaceMultisampleTexture.Destroy();
+                m_internalData->surfaceMultisampleTexture = nullptr;
             }
 
             wgpu::TextureDescriptor depthDesc{};
@@ -637,13 +655,26 @@ namespace SR_GRAPH_NS {
             depthDesc.format        = wgpu::TextureFormat::Depth32Float;
             depthDesc.usage         = wgpu::TextureUsage::RenderAttachment;
             depthDesc.mipLevelCount = 1;
-            depthDesc.sampleCount   = 1;
+            depthDesc.sampleCount   = surfaceSampleCount;
             depthDesc.dimension     = wgpu::TextureDimension::e2D;
 
             m_internalData->surfaceDepthTexture = m_internalData->device.CreateTexture(&depthDesc);
             m_internalData->surfaceDepthTextureView = m_internalData->surfaceDepthTexture.CreateView();
             m_internalData->surfaceDepthWidth = m_internalData->surfaceWidth;
             m_internalData->surfaceDepthHeight = m_internalData->surfaceHeight;
+            m_internalData->surfaceSampleCount = surfaceSampleCount;
+
+            if (surfaceSampleCount > 1) {
+                wgpu::TextureDescriptor multisampleDesc{};
+                multisampleDesc.size = { m_internalData->surfaceWidth, m_internalData->surfaceHeight, 1 };
+                multisampleDesc.format = m_internalData->surfaceFormat;
+                multisampleDesc.usage = wgpu::TextureUsage::RenderAttachment;
+                multisampleDesc.mipLevelCount = 1;
+                multisampleDesc.sampleCount = surfaceSampleCount;
+                multisampleDesc.dimension = wgpu::TextureDimension::e2D;
+                m_internalData->surfaceMultisampleTexture = m_internalData->device.CreateTexture(&multisampleDesc);
+                m_internalData->surfaceMultisampleTextureView = m_internalData->surfaceMultisampleTexture.CreateView();
+            }
         }
 
         m_internalData->activeEncoder = m_internalData->device.CreateCommandEncoder();
@@ -661,6 +692,11 @@ namespace SR_GRAPH_NS {
     // ----------------------------------------------------------------------------------------------------------------
 
     bool WebGPUPipeline::PreInit(const PipelinePreInitInfo& info) {
+        m_requestedSampleCount = info.samplesCount;
+        if (!Super::PreInit(info)) {
+            return false;
+        }
+
         SR_INFO("WebGPUPipeline::PreInit() : requesting WebGPU adapter and device...");
 
         EM_ASM({
@@ -766,6 +802,11 @@ namespace SR_GRAPH_NS {
 
                 m_internalData->surface.Configure(&config);
 
+                m_sampleProbePending = 6;
+                for (uint16_t sampleCount = 2; sampleCount <= 64; sampleCount *= 2) {
+                    ProbeSupportedSampleCount(static_cast<uint8_t>(sampleCount));
+                }
+
                 SR_INFO("WebGPUPipeline::PreInit() : WebGPU surface configured successfully.");
             });
         });
@@ -834,6 +875,7 @@ namespace SR_GRAPH_NS {
             for (auto&& att : fbo.colorAttachments) {
                 wgpu::RenderPassColorAttachment colorAtt{};
                 colorAtt.view     = att.view;
+                colorAtt.resolveTarget = att.resolveView;
                 colorAtt.loadOp   = m_internalData->hasClearColor ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
                 colorAtt.storeOp  = wgpu::StoreOp::Store;
                 colorAtt.clearValue = m_internalData->hasClearColor
@@ -880,7 +922,12 @@ namespace SR_GRAPH_NS {
             }
 
             wgpu::RenderPassColorAttachment color{};
-            color.view       = m_internalData->surfaceTextureView;
+            color.view       = m_internalData->surfaceSampleCount > 1
+                ? m_internalData->surfaceMultisampleTextureView
+                : m_internalData->surfaceTextureView;
+            color.resolveTarget = m_internalData->surfaceSampleCount > 1
+                ? m_internalData->surfaceTextureView
+                : nullptr;
             // Always clear on first swapchain render pass of the frame to avoid undefined content.
             color.loadOp     = wgpu::LoadOp::Clear;
             color.storeOp    = wgpu::StoreOp::Store;
@@ -980,6 +1027,59 @@ namespace SR_GRAPH_NS {
         const uint32_t h = (height > 0) ? static_cast<uint32_t>(height) : (pFBO ? pFBO->GetHeight() : m_internalData->surfaceHeight);
 
         m_internalData->activeRenderPass.SetScissorRect(0, 0, w, h);
+    }
+
+    void WebGPUPipeline::SetSampleCount(uint8_t count) {
+        m_requestedSampleCount = count;
+        const uint8_t supportedCount = ResolveSupportedSampleCount(count);
+        if (m_sampleProbePending == 0 && supportedCount != count) {
+            SR_LOG("WebGPUPipeline::SetSampleCount() : sample count {} is not supported, using {}.", count, supportedCount);
+        }
+        Super::SetSampleCount(supportedCount);
+    }
+
+    uint8_t WebGPUPipeline::ResolveSupportedSampleCount(uint8_t requested) const noexcept {
+        for (uint8_t sampleCount = m_supportedSampleCount; sampleCount > 1; sampleCount /= 2) {
+            if (sampleCount <= requested && (m_supportedSampleCounts & sampleCount) != 0) {
+                return sampleCount;
+            }
+        }
+        return 1;
+    }
+
+    void WebGPUPipeline::ProbeSupportedSampleCount(uint8_t sampleCount) {
+        wgpu::TextureDescriptor colorDesc{};
+        colorDesc.size = { 1, 1, 1 };
+        colorDesc.format = m_internalData->surfaceFormat;
+        colorDesc.usage = wgpu::TextureUsage::RenderAttachment;
+        colorDesc.mipLevelCount = 1;
+        colorDesc.sampleCount = sampleCount;
+        colorDesc.dimension = wgpu::TextureDimension::e2D;
+
+        wgpu::TextureDescriptor depthDesc = colorDesc;
+        depthDesc.format = wgpu::TextureFormat::Depth32Float;
+
+        m_internalData->device.PushErrorScope(wgpu::ErrorFilter::Validation);
+        auto colorTexture = m_internalData->device.CreateTexture(&colorDesc);
+        auto depthTexture = m_internalData->device.CreateTexture(&depthDesc);
+        m_internalData->device.PopErrorScope(wgpu::CallbackMode::AllowProcessEvents,
+            [this, sampleCount, colorTexture, depthTexture](wgpu::PopErrorScopeStatus, wgpu::ErrorType type, wgpu::StringView) mutable {
+                if (type == wgpu::ErrorType::NoError && colorTexture && depthTexture) {
+                    m_supportedSampleCounts |= sampleCount;
+                    m_supportedSampleCount = SR_MAX(m_supportedSampleCount, sampleCount);
+                }
+                if (colorTexture) {
+                    colorTexture.Destroy();
+                }
+                if (depthTexture) {
+                    depthTexture.Destroy();
+                }
+
+                if (--m_sampleProbePending == 0) {
+                    SetSampleCount(m_requestedSampleCount);
+                    SR_INFO("WebGPUPipeline::ProbeSupportedSampleCount() : maximum supported sample count is {}.", m_supportedSampleCount);
+                }
+            });
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1452,6 +1552,14 @@ namespace SR_GRAPH_NS {
 
         /// Идентификатор swapchain'а
         return reinterpret_cast<void*>(1);
+    }
+
+    uint8_t WebGPUPipeline::GetFrameBufferSampleCount() const {
+        const int32_t id = m_state.pFrameBuffer ? m_state.pFrameBuffer->GetId() : m_state.frameBufferId;
+        if (id > 0 && m_internalData && m_internalData->frameBuffers.IsAlive(id)) {
+            return m_internalData->frameBuffers.At(id).sampleCount;
+        }
+        return IsMultiSamplingSupported() ? GetSamplesCount() : 1;
     }
 
     WGPUTextureFormat WebGPUPipeline::GetSurfaceFormat() const {
@@ -2067,7 +2175,9 @@ namespace SR_GRAPH_NS {
                 rpDesc.depthStencil = &depthStencilState;
             }
 
-            rpDesc.multisample.count = 1;
+            rpDesc.multisample.count = (fbo > 0 && m_internalData->frameBuffers.IsAlive(fbo))
+                ? m_internalData->frameBuffers.At(fbo).sampleCount
+                : (IsMultiSamplingSupported() ? GetSamplesCount() : 1);
             rpDesc.multisample.mask  = 0xFFFFFFFF;
 
             program.renderPipeline = m_internalData->device.CreateRenderPipeline(&rpDesc);
@@ -2266,6 +2376,13 @@ namespace SR_GRAPH_NS {
         WebGPUFrameBuffer fbo;
         fbo.width  = w;
         fbo.height = h;
+        fbo.sampleCount = ResolveSupportedSampleCount(createInfo.sampleCount);
+        const uint32_t depthLayers = createInfo.pDepth
+            ? SR_MAX(1u, ((createInfo.layersCount > 1) ? createInfo.layersCount : createInfo.arrayLayersCount))
+            : 1;
+        if (createInfo.pDepth && (createInfo.features.depthShaderRead || depthLayers > 1)) {
+            fbo.sampleCount = 1;
+        }
 
         // Color attachments
         if (createInfo.colors) {
@@ -2279,7 +2396,7 @@ namespace SR_GRAPH_NS {
                 texDesc.format        = att.format;
                 texDesc.usage         = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding;
                 texDesc.mipLevelCount = 1;
-                texDesc.sampleCount   = std::max<uint8_t>(1, createInfo.sampleCount);
+                texDesc.sampleCount   = fbo.sampleCount;
                 texDesc.dimension     = wgpu::TextureDimension::e2D;
 
                 wgpu::SamplerDescriptor samplerDesc{};
@@ -2296,7 +2413,15 @@ namespace SR_GRAPH_NS {
                 att.texture = m_internalData->device.CreateTexture(&texDesc);
                 if (att.texture) {
                     att.view = att.texture.CreateView();
-                    webTexture.view = att.texture.CreateView();
+                    if (fbo.sampleCount > 1) {
+                        texDesc.sampleCount = 1;
+                        att.resolveTexture = m_internalData->device.CreateTexture(&texDesc);
+                        att.resolveView = att.resolveTexture.CreateView();
+                        webTexture.view = att.resolveTexture.CreateView();
+                    }
+                    else {
+                        webTexture.view = att.texture.CreateView();
+                    }
                 }
 
                 for (auto&& oldTexture : colorLayer.texture) {
@@ -2319,31 +2444,39 @@ namespace SR_GRAPH_NS {
 
         // Depth attachment
         if (createInfo.pDepth) {
+            for (int32_t textureId : createInfo.pDepth->texture) {
+                if (textureId >= 0 && m_internalData->textures.IsAlive(textureId)) {
+                    m_internalData->textures.At(textureId).Destroy();
+                    m_internalData->textures.RemoveByIndex(textureId);
+                }
+            }
+            createInfo.pDepth->texture.clear();
+            for (auto&& subLayer : createInfo.pDepth->subLayers) {
+                for (int32_t textureId : subLayer) {
+                    if (textureId >= 0 && m_internalData->textures.IsAlive(textureId)) {
+                        m_internalData->textures.At(textureId).Destroy();
+                        m_internalData->textures.RemoveByIndex(textureId);
+                    }
+                }
+            }
+            createInfo.pDepth->subLayers.clear();
+            InvalidateTextureBindGroups();
+
             // Always use isDepthHint=true so Auto/Unknown/None resolves to Depth32Float
             wgpu::TextureFormat depthFmt = ImageFormatToWGPU(createInfo.pDepth->format, true);
 
             fbo.depthAttachment.format = depthFmt;
-
-            const uint32_t depthLayers = SR_MAX(1u, ((createInfo.layersCount > 1) ? createInfo.layersCount : createInfo.arrayLayersCount));
 
             wgpu::TextureDescriptor depthDesc{};
             depthDesc.size          = { w, h, depthLayers };
             depthDesc.format        = depthFmt;
             depthDesc.usage         = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding;
             depthDesc.mipLevelCount = 1;
-            depthDesc.sampleCount   = std::max<uint8_t>(1, createInfo.sampleCount);
+            depthDesc.sampleCount   = fbo.sampleCount;
             depthDesc.dimension     = wgpu::TextureDimension::e2D;
 
             fbo.depthAttachment.texture = m_internalData->device.CreateTexture(&depthDesc);
             if (fbo.depthAttachment.texture) {
-                wgpu::TextureViewDescriptor arrayViewDesc{};
-                arrayViewDesc.format          = depthFmt;
-                arrayViewDesc.dimension       = wgpu::TextureViewDimension::e2DArray;
-                arrayViewDesc.mipLevelCount   = 1;
-                arrayViewDesc.arrayLayerCount = depthLayers;
-                arrayViewDesc.aspect          = wgpu::TextureAspect::DepthOnly;
-                auto&& sampledView = fbo.depthAttachment.texture.CreateView(&arrayViewDesc);
-
                 for (uint32_t layer = 0; layer < depthLayers; ++layer) {
                     wgpu::TextureViewDescriptor layerViewDesc{};
                     layerViewDesc.format          = depthFmt;
@@ -2356,24 +2489,26 @@ namespace SR_GRAPH_NS {
                 }
                 fbo.depthAttachment.view = fbo.depthAttachment.layerViews.front();
 
-                WebGPUTexture sampledDepth;
-                sampledDepth.view = sampledView;
-                const int32_t sampledDepthId = m_internalData->textures.Add(std::move(sampledDepth));
-                const auto frameCount = createInfo.pFBO ? createInfo.pFBO->size() : 1;
-                createInfo.pDepth->texture.resize(frameCount, SR_ID_INVALID);
-                for (int32_t& textureId : createInfo.pDepth->texture) {
-                    textureId = sampledDepthId;
-                }
+                if (fbo.sampleCount == 1) {
+                    wgpu::TextureViewDescriptor arrayViewDesc{};
+                    arrayViewDesc.format          = depthFmt;
+                    arrayViewDesc.dimension       = wgpu::TextureViewDimension::e2DArray;
+                    arrayViewDesc.mipLevelCount   = 1;
+                    arrayViewDesc.arrayLayerCount = depthLayers;
+                    arrayViewDesc.aspect          = wgpu::TextureAspect::DepthOnly;
 
-                createInfo.pDepth->subLayers.resize(depthLayers);
-                for (uint32_t layer = 0; layer < depthLayers; ++layer) {
-                    WebGPUTexture sampledLayer;
-                    sampledLayer.view = fbo.depthAttachment.layerViews[layer];
-                    const int32_t sampledLayerId = m_internalData->textures.Add(std::move(sampledLayer));
-                    auto&& layerIds = createInfo.pDepth->subLayers[layer];
-                    layerIds.resize(frameCount, SR_ID_INVALID);
-                    for (int32_t& textureId : layerIds) {
-                        textureId = sampledLayerId;
+                    WebGPUTexture sampledDepth;
+                    sampledDepth.view = fbo.depthAttachment.texture.CreateView(&arrayViewDesc);
+                    const int32_t sampledDepthId = m_internalData->textures.Add(std::move(sampledDepth));
+                    const auto frameCount = createInfo.pFBO ? createInfo.pFBO->size() : 1;
+                    createInfo.pDepth->texture.resize(frameCount, sampledDepthId);
+
+                    createInfo.pDepth->subLayers.resize(depthLayers);
+                    for (uint32_t layer = 0; layer < depthLayers; ++layer) {
+                        WebGPUTexture sampledLayer;
+                        sampledLayer.view = fbo.depthAttachment.layerViews[layer];
+                        const int32_t sampledLayerId = m_internalData->textures.Add(std::move(sampledLayer));
+                        createInfo.pDepth->subLayers[layer].resize(frameCount, sampledLayerId);
                     }
                 }
             }
@@ -2391,12 +2526,17 @@ namespace SR_GRAPH_NS {
             texDesc.format        = att.format;
             texDesc.usage         = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding;
             texDesc.mipLevelCount = 1;
-            texDesc.sampleCount   = 1;
+            texDesc.sampleCount   = fbo.sampleCount;
             texDesc.dimension     = wgpu::TextureDimension::e2D;
 
             att.texture = m_internalData->device.CreateTexture(&texDesc);
             if (att.texture) {
                 att.view = att.texture.CreateView();
+                if (fbo.sampleCount > 1) {
+                    texDesc.sampleCount = 1;
+                    att.resolveTexture = m_internalData->device.CreateTexture(&texDesc);
+                    att.resolveView = att.resolveTexture.CreateView();
+                }
             }
             fbo.colorAttachments.push_back(std::move(att));
         }
@@ -2409,7 +2549,7 @@ namespace SR_GRAPH_NS {
             depthDesc.format        = wgpu::TextureFormat::Depth32Float;
             depthDesc.usage         = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding;
             depthDesc.mipLevelCount = 1;
-            depthDesc.sampleCount   = 1;
+            depthDesc.sampleCount   = fbo.sampleCount;
             depthDesc.dimension     = wgpu::TextureDimension::e2D;
 
             fbo.depthAttachment.texture = m_internalData->device.CreateTexture(&depthDesc);
@@ -2427,7 +2567,24 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
         ++m_state.allocations;
 
-        const int32_t fboId = m_internalData->frameBuffers.Add(std::move(fbo));
+        int32_t fboId = SR_ID_INVALID;
+        if (createInfo.pFBO) {
+            for (const int32_t oldFboId : *createInfo.pFBO) {
+                if (oldFboId > 0 && m_internalData->frameBuffers.IsAlive(oldFboId)) {
+                    fboId = oldFboId;
+                    break;
+                }
+            }
+        }
+
+        if (fboId != SR_ID_INVALID) {
+            auto&& oldFbo = m_internalData->frameBuffers.At(fboId);
+            oldFbo.Destroy();
+            oldFbo = std::move(fbo);
+        }
+        else {
+            fboId = m_internalData->frameBuffers.Add(std::move(fbo));
+        }
 
         // Write the allocated id back into every slot of pFBO so that Framebuffer::GetId() works.
         if (createInfo.pFBO) {
@@ -2668,6 +2825,26 @@ namespace SR_GRAPH_NS {
 
         /// Обязательно: по этому списку ищут бинарным поиском (см. ShaderProgramManager::CollectUnused)
         std::sort(handles.begin(), handles.end());
+    }
+
+    UsedVideoMemoryInfo WebGPUPipeline::GetUsedVideoMemoryInfo() const {
+        UsedVideoMemoryInfo info{};
+        if (!m_internalData) {
+            return info;
+        }
+
+        info.videoMemoryUsed = m_state.allocatedMemory;
+        info.descriptorSetsCount = m_internalData->bindGroups.GetAliveCount();
+        info.shaderProgramsCount = m_internalData->shaderPrograms.GetAliveCount();
+        info.UBOsCount = m_internalData->UBOs.GetAliveCount();
+        info.VBOsCount = m_internalData->VBOs.GetAliveCount();
+        info.IBOsCount = m_internalData->IBOs.GetAliveCount();
+        info.SSBOsCount = m_internalData->SSBOs.GetAliveCount();
+        info.FBOsCount = m_internalData->frameBuffers.GetAliveCount() > 0
+            ? m_internalData->frameBuffers.GetAliveCount() - 1
+            : 0;
+        info.texturesCount = m_internalData->textures.GetAliveCount();
+        return info;
     }
 
     // ----------------------------------------------------------------------------------------------------------------

@@ -60,6 +60,7 @@ namespace SR_GRAPH_NS {
 
         void GetFBOHandles(SR_UTILS_NS::Vector<void*>& handles) const override;
         void GetShaderHandles(SR_UTILS_NS::Vector<void*>& handles) const override;
+        SR_NODISCARD UsedVideoMemoryInfo GetUsedVideoMemoryInfo() const override;
 
         bool IsSamplerValid(int32_t id) const override { return id >= 0; }
 
@@ -79,6 +80,7 @@ namespace SR_GRAPH_NS {
         void ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth) override;
         void SetViewport(int32_t width, int32_t height) override;
         void SetScissor(int32_t width, int32_t height) override;
+        void SetSampleCount(uint8_t count) override;
 
         void UseShader(uint32_t shaderProgram) override;
         void BindVBO(uint32_t VBO, uint32_t slot, VertexInputRate inputRate) override;
@@ -92,6 +94,7 @@ namespace SR_GRAPH_NS {
 
         SR_NODISCARD void* GetCurrentShaderHandle() const override;
         SR_NODISCARD void* GetCurrentFBOHandle() const override;
+        SR_NODISCARD uint8_t GetFrameBufferSampleCount() const override;
 
         SR_NODISCARD uint16_t GetSwapchainImagesCount() const override { return 1; }
         SR_NODISCARD uint8_t GetCurrentImageIndex() const override { return 0; }
@@ -127,8 +130,14 @@ namespace SR_GRAPH_NS {
         /// То же самое для BindGroup'ов буферов (UBO/SSBO).
         void InvalidateBufferBindGroups();
 
+        void ProbeSupportedSampleCount(uint8_t sampleCount);
+        SR_NODISCARD uint8_t ResolveSupportedSampleCount(uint8_t requested) const noexcept;
+
     private:
         WebGPUPipelineInternalData* m_internalData = nullptr;
+        uint64_t m_supportedSampleCounts = 1;
+        uint8_t m_sampleProbePending = 0;
+        uint8_t m_requestedSampleCount = 1;
 
     };
 }
