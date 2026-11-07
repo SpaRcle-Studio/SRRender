@@ -138,6 +138,15 @@ namespace SR_GTYPES_NS {
         }
     }
 
+    void TextMesh::SetText(const SR_UTILS_NS::StringView text) {
+        if (m_text == text) {
+            return;
+        }
+
+        m_text = text;
+        OnTextDirty();
+    }
+
     std::optional<int32_t> TextMesh::GetVBO() const {
         const_cast<TextMesh*>(this)->Calculate();
         return m_VBO != SR_ID_INVALID ? std::optional<int32_t>(m_VBO) : std::nullopt;

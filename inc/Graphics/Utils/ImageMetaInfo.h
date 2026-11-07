@@ -24,6 +24,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD const SR_MATH_NS::FRect& GetBorder() const noexcept { return m_border; }
         SR_NODISCARD AddressMode GetAddressMode() const noexcept { return addressMode; }
         SR_NODISCARD SR_UTILS_NS::ResourceLoadMode GetLoadMode() const noexcept { return loadMode; }
+        SR_NODISCARD bool GetDisableAlphaChannel() const noexcept { return disableAlphaChannel; }
 
         bool operator==(const ImageMetaInfo& lrs) const {
             return format == lrs.format
@@ -35,7 +36,8 @@ namespace SR_GRAPH_NS {
                    && mipLevels == lrs.mipLevels
                    && m_border == lrs.m_border
                    && SR_EQUALS_T(m_pixelsPerUnit, lrs.m_pixelsPerUnit, SR_SCALAR_EPSILON)
-                   && cpuUsage == lrs.cpuUsage;
+                   && cpuUsage == lrs.cpuUsage
+                   && disableAlphaChannel == lrs.disableAlphaChannel;
         }
 
         bool operator!=(const ImageMetaInfo& lrs) const {
@@ -61,6 +63,8 @@ namespace SR_GRAPH_NS {
         uint32_t mipLevels = 0;
         /// @property
         bool cpuUsage = false;
+        /// @property
+        bool disableAlphaChannel = false;
         /// @property
         SR_MATH_NS::FRect m_border;
 

@@ -8,6 +8,7 @@
 #include <Graphics/Memory/CameraManager.h>
 #include <Graphics/Types/Camera.h>
 #include <Graphics/Font/Text.h>
+#include <Graphics/Font/TextMesh.h>
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Material/UniqueMaterial.h>
@@ -556,10 +557,15 @@ namespace SR_GRAPH_NS {
     void RenderScene::SetObjectMaterial(SR_GTYPES_NS::IRenderComponent* pObject) {
         auto&& pTransform = pObject->GetTransform();
         if (pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
-            if (auto&& pText2D = dynamic_cast<SR_GTYPES_NS::Text*>(pObject)) {
+            if (pObject->GetMeta()->IsSameOrInherited(SR_GTYPES_NS::Text::GetClassStaticName())) {
                 UniqueMaterial::Ptr pMaterial = SRNew<UniqueMaterial>();
                 pMaterial->SetShader("Engine/Shaders/UI/text.srsl");
-                pText2D->SetMaterial(pMaterial.StaticCast<BaseMaterial>());
+                pObject->SetMaterial(pMaterial.StaticCast<BaseMaterial>());
+            }
+            else if (pObject->GetMeta()->IsSameOrInherited(SR_GTYPES_NS::TextMesh::GetClassStaticName())) {
+                if (auto&& pDefault = GetContext()->GetDefaultTextMeshMaterial()) {
+                    pObject->SetMaterial(pDefault);
+                }
             }
             else if (auto&& pDefaultMat = GetContext()->GetDefaultUIMaterial()) {
                 pObject->SetMaterial(pDefaultMat);

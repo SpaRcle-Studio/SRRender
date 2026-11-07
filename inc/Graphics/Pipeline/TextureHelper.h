@@ -122,6 +122,7 @@ namespace SR_GRAPH_NS {
         uint8_t channels = 0;
         TextureLoadMode loadMode = TextureLoadMode::STBImage;
         bool caching = false;
+        bool disableAlphaChannel = false;
     };
 
     uint32_t Find4(uint32_t i);

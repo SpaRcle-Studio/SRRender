@@ -42,6 +42,7 @@ namespace SR_GTYPES_NS {
         void UseMaterial(Shader& shader) override;
         void UseModelMatrix(Shader& shader) override;
         void FreeVideoMemory() override;
+        void SetText(const SR_UTILS_NS::StringView text);
 
         SR_NODISCARD std::optional<int32_t> GetVBO() const override;
         bool Bind() override;
@@ -60,7 +61,7 @@ namespace SR_GTYPES_NS {
         /// @property @onChanged(OnTextDirty)
         /// @customArgs(pick: enabled, filter name: Font, relative: resources)
         /// @customArg(filter value: font)
-        SR_UTILS_NS::ResourceRef<FontAsset> m_font;
+        SR_UTILS_NS::ResourceRef<FontAsset> m_font = "Engine/Fonts/Default.font";
         /// @property @onChanged(OnTextDirty)
         /// @customArg(text-box: enabled)
         SR_UTILS_NS::String m_text;

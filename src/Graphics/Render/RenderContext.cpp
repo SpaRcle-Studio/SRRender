@@ -272,6 +272,7 @@ namespace SR_GRAPH_NS {
 
         m_defaultMaterial.Reset();
         m_defaultUIMaterial.Reset();
+        m_defaultTextMeshMaterial.Reset();
 
         if (m_renderSettings) {
             m_onSettingsReloaded.Reset();
@@ -399,7 +400,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool RenderContext::IsEmpty() const {
-        if (m_defaultTexture || m_noneTexture || m_defaultMaterial || m_defaultUIMaterial || m_renderSettings) {
+        if (m_defaultTexture || m_noneTexture || m_defaultMaterial || m_defaultTextMeshMaterial || m_defaultUIMaterial || m_renderSettings) {
             return false;
         }
 
@@ -430,6 +431,10 @@ namespace SR_GRAPH_NS {
 
     RenderContext::MaterialPtr RenderContext::GetDefaultUIMaterial() const {
         return m_defaultUIMaterial;
+    }
+
+    RenderContext::MaterialPtr RenderContext::GetDefaultTextMeshMaterial() const {
+        return m_defaultTextMeshMaterial;
     }
 
     void RenderContext::SetDirty() {
@@ -617,15 +622,17 @@ namespace SR_GRAPH_NS {
             SR_ERROR("RenderContext::LoadDefaultResources() : failed to load default material!");
         }
 
-        /// ----------------------------------------------------------------------------
-
         if (!((m_defaultUIMaterial = FileMaterial::Load("Engine/Materials/UI/ui.mat")))) {
             SR_ERROR("RenderContext::LoadDefaultResources() : failed to load default UI material!");
         }
 
+        if (!((m_defaultTextMeshMaterial = FileMaterial::Load("Engine/Materials/UI/text-mesh.mat")))) {
+            SR_ERROR("RenderContext::LoadDefaultResources() : failed to load default text mesh material!");
+        }
+
         /// ----------------------------------------------------------------------------
 
-        if (!m_defaultMaterial || !m_defaultUIMaterial) {
+        if (!m_defaultMaterial || !m_defaultUIMaterial || !m_defaultTextMeshMaterial) {
             static const SR_UTILS_NS::Path templateMaterialPath = "Engine/Materials/template.mat";
 
             SR_INFO("RenderContext::LoadDefaultResources() : failed to load default materials! Creating template material at: " + templateMaterialPath.ToString());

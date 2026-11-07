@@ -867,6 +867,8 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
+        SRAssert(createInfo.compression >= TextureCompression::None && createInfo.compression < TextureCompression::TextureCompressionMAX);
+
         if (createInfo.async) {
             m_asyncTextureCreateInfos.emplace_back(createInfo);
             SRAssert(m_noneTextureId != SR_ID_INVALID);

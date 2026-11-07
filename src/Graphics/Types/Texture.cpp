@@ -86,6 +86,7 @@ namespace SR_GTYPES_NS {
 
         const bool compressionEnabled = GetRenderContext()->IsTextureCompressionEnabled();
         const TextureCompression compression = compressionEnabled ? metaInfo.compression : TextureCompression::None;
+        SRAssert(compression >= TextureCompression::None && compression < TextureCompression::TextureCompressionMAX);
 
         m_format = metaInfo.format;
 
@@ -140,6 +141,7 @@ namespace SR_GTYPES_NS {
         loadInfo.caching = SR_UTILS_NS::Features::Instance().Enabled("TextureCaching", true) && GetRenderContext()->IsTextureCachingEnabled();
         loadInfo.mips = metaInfo.mipLevels;
         loadInfo.channels = TextureLoader::GetAlignedChannels(m_format);
+        loadInfo.disableAlphaChannel = metaInfo.disableAlphaChannel;
 
         if (metaInfo.loadMode == SR_UTILS_NS::ResourceLoadMode::Async && asyncLoadSupport) {
             m_syncLoadTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([loadInfo, pWeak = GetWeakThis<Texture>(), path = GetResourcePath()](auto&&) {

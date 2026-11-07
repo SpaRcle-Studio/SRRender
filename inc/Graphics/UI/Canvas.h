@@ -83,18 +83,18 @@ namespace SR_GRAPH_UI_NS {
 
     private:
         /// @property
-        CanvasScaleMode m_scaleMode = CanvasScaleMode::ConstantPixelSize;
+        CanvasScaleMode m_scaleMode = CanvasScaleMode::ScaleWithScreenSize;
 
         /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPixelSize) @drag(0.1f)
         float_t m_scaleFactor = 1.f;
 
         /// @property @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
-        SR_MATH_NS::UVector2 m_referenceResolution = SR_MATH_NS::UVector2(800, 600);
+        SR_MATH_NS::UVector2 m_referenceResolution = SR_MATH_NS::UVector2(1600, 900);
         /// @property @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
         CanvasScreenMatchMode m_screenMatchMode = CanvasScreenMatchMode::MatchWidthOrHeight;
         /// @property @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize && This.m_screenMatchMode == CanvasScreenMatchMode::MatchWidthOrHeight)
         /// @range(0.f, 1.f) @drag(0.1f)
-        float_t m_match = 0.f;
+        float_t m_match = 1.f;
 
         /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
         SR_MATH_NS::PhysicalUnit m_physicalUnit = SR_MATH_NS::PhysicalUnit::Points;

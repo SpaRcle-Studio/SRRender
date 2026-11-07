@@ -137,6 +137,7 @@ namespace SR_GRAPH_NS {
                 fileHash = fullPath.GetFileHash();
                 fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.channels));
                 fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.mips));
+                fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.disableAlphaChannel));
             }
 
             if (cacheHashPath.IsFile() && SR_UTILS_NS::FileSystem::ReadHashFromFile(cacheHashPath) == fileHash) {
@@ -214,6 +215,12 @@ namespace SR_GRAPH_NS {
             TextureLoader::Free(pImgDataOriginal, info.loadMode);
         }
 
+        if (info.disableAlphaChannel) {
+            for (int i = 0; i < pixelCount; ++i) {
+                dst[i * info.channels + 3] = 255;
+            }
+        }
+
         const uint32_t autoMips = std::floor(std::log2(std::max(width, height))) + 1;
         if (info.mips > autoMips) {
             SR_WARN("TextureLoader::Load() : requested mip levels count is greater than possible! Requested: {}, possible: {}. Path: {}", info.mips, autoMips, path);
@@ -245,6 +252,7 @@ namespace SR_GRAPH_NS {
             marshal.Write<uint32_t>(height);
             marshal.Write<uint32_t>(info.mips);
             marshal.Write<uint8_t>(info.channels);
+            marshal.Write<bool>(info.disableAlphaChannel);
             marshal.Write(static_cast<uint8_t>(TextureCompression::None));
             marshal.WriteBlock(pImgData, width * height * info.channels * sizeof(uint8_t));
 
@@ -367,7 +375,9 @@ namespace SR_GRAPH_NS {
         TextureLoadInfo info;
         info.mips = marshal.Read<uint32_t>();
         info.channels = marshal.Read<uint8_t>();
+        info.disableAlphaChannel = marshal.Read<bool>();
         info.compression = static_cast<TextureCompression>(marshal.Read<uint8_t>());
+        SRAssert(info.compression >= TextureCompression::None && info.compression < TextureCompression::TextureCompressionMAX);
 
         auto&& size = marshal.Read<uint64_t>();
         if (size == 0) {
@@ -414,6 +424,7 @@ namespace SR_GRAPH_NS {
 
         TextureLoadInfo info = pData->GetInfo();
         info.compression = compression;
+        SRAssert(compression >= TextureCompression::None && compression < TextureCompression::TextureCompressionMAX);
 
     #ifdef SR_USE_CMP_CORE
         compressedSize = GetCompressedImageSize(pData->GetWidth(), pData->GetHeight(), info);
@@ -451,6 +462,7 @@ namespace SR_GRAPH_NS {
         marshal.Write<uint32_t>(pData->GetHeight());
         marshal.Write<uint32_t>(info.mips);
         marshal.Write<uint8_t>(info.channels);
+        marshal.Write<bool>(info.disableAlphaChannel);
         marshal.Write(static_cast<uint8_t>(info.compression));
         marshal.WriteBlock(pCompressedData, compressedSize);
 

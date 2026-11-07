@@ -101,6 +101,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD PipelineType GetPipelineType() const;
         SR_NODISCARD MaterialPtr GetDefaultMaterial() const;
         SR_NODISCARD MaterialPtr GetDefaultUIMaterial() const;
+        SR_NODISCARD MaterialPtr GetDefaultTextMeshMaterial() const;
         SR_NODISCARD TexturePtr GetDefaultTexture() const;
         SR_NODISCARD TexturePtr GetNoneTexture() const;
         SR_NODISCARD ShaderPtr GetCurrentShader() const noexcept;
@@ -163,6 +164,7 @@ namespace SR_GRAPH_NS {
         RenderSettings::Ptr m_renderSettings;
         SR_UTILS_NS::Subscription m_onSettingsReloaded;
 
+        MaterialPtr m_defaultTextMeshMaterial;
         MaterialPtr m_defaultUIMaterial;
         MaterialPtr m_defaultMaterial;
         TexturePtr m_defaultTexture;

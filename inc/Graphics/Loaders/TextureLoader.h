@@ -52,7 +52,7 @@ namespace SR_GRAPH_NS {
     };
 
     class TextureLoader {
-        static constexpr uint64_t VERSION = 1003;
+        static constexpr uint64_t VERSION = 1005;
     public:
         TextureLoader() = delete;
         TextureLoader(const TextureLoader&) = delete;
