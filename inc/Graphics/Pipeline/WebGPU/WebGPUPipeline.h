@@ -107,6 +107,12 @@ namespace SR_GRAPH_NS {
         /// Returns the WGPUTextureView for the texture with the given pool id,
         /// or nullptr if the id is invalid / not alive.
         SR_NODISCARD WGPUTextureView GetTextureView(uint32_t textureId) const;
+        SR_NODISCARD SR_MATH_NS::FColor GetPixelColor(uint32_t textureId, uint32_t x, uint32_t y) override;
+        SR_NODISCARD uint64_t RequestPixelRange(uint64_t workId, uint32_t textureId, uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
+        SR_NODISCARD bool IsPixelRangeReady(uint64_t workId) const override;
+        bool GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height) override;
+        void ReleasePixelRangeRequest(uint64_t workId) override;
+
 
     private:
         /// Запоминает текстуру в привязанном наборе дескрипторов. Как и в Vulkan, текстуры

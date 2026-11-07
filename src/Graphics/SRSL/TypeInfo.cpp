@@ -11,7 +11,7 @@
 #include <Utils/Lexer/Lexer.h>
 
 namespace SR_SRSL_NS {
-    std::vector<uint64_t> SRSLTypeInfo::GetDimension(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code, const SRSLAnalyzedTree* pAnalyzedTree) {
+    SR_UTILS_NS::Vector<uint64_t> SRSLTypeInfo::GetDimension(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code, const SRSLAnalyzedTree* pAnalyzedTree) {
         auto&& pTree = Analyze(pAllocator, code);
         if (!pTree) {
             return { };
@@ -20,8 +20,8 @@ namespace SR_SRSL_NS {
         return GetDimension(pTree->pLexicalTree->AsExpression(), pAnalyzedTree);
     }
 
-    std::vector<uint64_t> SRSLTypeInfo::GetDimension(const SRSLExpr* pExpr, const SRSLAnalyzedTree* pAnalyzedTree) {
-        std::vector<uint64_t> dimension;
+    SR_UTILS_NS::Vector<uint64_t> SRSLTypeInfo::GetDimension(const SRSLExpr* pExpr, const SRSLAnalyzedTree* pAnalyzedTree) {
+        SR_UTILS_NS::Vector<uint64_t> dimension;
 
         if (pExpr->isArray) {
             if (pExpr->args.size() == 2) {

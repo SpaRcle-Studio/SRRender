@@ -66,6 +66,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD std::string GenerateLexicalTree(const SRSLLexicalTree* pLexicalTree, int32_t deep, const std::string& preCode, const std::string& postCode, const std::string& returnCode = std::string()) const;
 
         SR_NODISCARD std::string GenerateExpression(const SRSLExpr* pExpr, int32_t deep) const;
+        SR_NODISCARD std::string GenerateStatementExpression(const SRSLExpr* pExpr, int32_t deep) const;
         SR_NODISCARD std::string GenerateVariable(const SRSLVariable* pVariable, int32_t deep) const;
         SR_NODISCARD std::string GenerateStructure(const SRSLStructureStatement* pStructure, int32_t deep) const;
 

@@ -161,6 +161,17 @@ namespace SR_GRAPH_NS {
     // ----------------------------------------------------------------------------------------------------------------
 
     struct WebGPUPipelineInternalData {
+        struct PixelReadback {
+            uint64_t id = SR_ID_INVALID;
+            wgpu::Buffer buffer;
+            uint32_t width = 0;
+            uint32_t height = 0;
+            uint32_t bytesPerRow = 0;
+            bool mapPending = false;
+            bool ready = false;
+            bool failed = false;
+        };
+
         wgpu::Device  device;
         wgpu::Queue   queue;
         wgpu::Instance instance;
@@ -209,6 +220,8 @@ namespace SR_GRAPH_NS {
         SR_HTYPES_NS::ObjectPool<WebGPUTexture>        textures;
         SR_HTYPES_NS::ObjectPool<WebGPUFrameBuffer>    frameBuffers;
         SR_HTYPES_NS::ObjectPool<WebGPUBindGroup>      bindGroups;
+        SR_UTILS_NS::Vector<PixelReadback>              pixelReadbacks;
+        uint64_t                                       nextPixelReadbackId = 1;
     };
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -555,6 +568,39 @@ namespace SR_GRAPH_NS {
 
         if (m_internalData->surfaceCommandBuffer) {
             m_internalData->queue.Submit(1, &m_internalData->surfaceCommandBuffer);
+        }
+
+        for (auto& request : m_internalData->pixelReadbacks) {
+            if (request.mapPending || request.ready || request.failed) {
+                continue;
+            }
+
+            const uint64_t requestId = request.id;
+            auto* pipelineData = m_internalData;
+            request.mapPending = true;
+            request.buffer.MapAsync(
+                wgpu::MapMode::Read,
+                0,
+                request.height * request.bytesPerRow,
+                wgpu::CallbackMode::AllowProcessEvents,
+                [pipelineData, requestId](wgpu::MapAsyncStatus status, wgpu::StringView message) {
+                    for (auto& readback : pipelineData->pixelReadbacks) {
+                        if (readback.id == requestId) {
+                            readback.mapPending = false;
+                            readback.ready = true;
+                            readback.failed = status != wgpu::MapAsyncStatus::Success;
+                            if (readback.failed) {
+                                SR_ERROR("WebGPUPipeline::RequestPixelRange() : MapAsync failed for request {}: {}",
+                                    requestId,
+                                    message.length != WGPU_STRLEN
+                                        ? std::string_view(message.data, message.length)
+                                        : std::string_view(message.data ? message.data : "(unknown error)"));
+                            }
+                            break;
+                        }
+                    }
+                }
+            );
         }
 
         // Emscripten/WebGPU: wgpuSurfacePresent is unsupported.
@@ -1580,6 +1626,100 @@ namespace SR_GRAPH_NS {
         return m_internalData->textures.At(id).view.Get();
     }
 
+    SR_MATH_NS::FColor WebGPUPipeline::GetPixelColor(uint32_t, uint32_t, uint32_t) {
+        return SR_MATH_NS::FColor(0.f);
+    }
+
+    uint64_t WebGPUPipeline::RequestPixelRange(uint64_t workId, uint32_t textureId, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+        if (!m_internalData || !m_internalData->activeEncoder || width == 0 || height == 0) {
+            return SR_ID_INVALID;
+        }
+
+        const auto id = static_cast<int32_t>(textureId);
+        if (id < 0 || !m_internalData->textures.IsAlive(id)) {
+            return SR_ID_INVALID;
+        }
+
+        auto& source = m_internalData->textures.At(id).texture;
+        if (!source) {
+            return SR_ID_INVALID;
+        }
+
+        if (workId != SR_ID_INVALID) {
+            ReleasePixelRangeRequest(workId);
+        }
+
+        const uint32_t bytesPerRow = ((width * 4 + 255) / 256) * 256;
+        wgpu::BufferDescriptor bufferDesc{};
+        bufferDesc.size = bytesPerRow * height;
+        bufferDesc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
+        auto buffer = m_internalData->device.CreateBuffer(&bufferDesc);
+        if (!buffer) {
+            return SR_ID_INVALID;
+        }
+
+        wgpu::TexelCopyTextureInfo src{};
+        src.texture = source;
+        src.origin = { x, y, 0 };
+        src.aspect = wgpu::TextureAspect::All;
+        wgpu::TexelCopyBufferInfo dst{};
+        dst.buffer = buffer;
+        dst.layout.bytesPerRow = bytesPerRow;
+        dst.layout.rowsPerImage = height;
+        wgpu::Extent3D extent{ width, height, 1 };
+        m_internalData->activeEncoder.CopyTextureToBuffer(&src, &dst, &extent);
+
+        WebGPUPipelineInternalData::PixelReadback request;
+        request.id = workId == SR_ID_INVALID ? m_internalData->nextPixelReadbackId++ : workId;
+        request.buffer = buffer;
+        request.width = width;
+        request.height = height;
+        request.bytesPerRow = bytesPerRow;
+        m_internalData->pixelReadbacks.emplace_back(std::move(request));
+        return m_internalData->pixelReadbacks.back().id;
+    }
+
+    bool WebGPUPipeline::IsPixelRangeReady(uint64_t workId) const {
+        if (!m_internalData) return false;
+        for (const auto& request : m_internalData->pixelReadbacks) {
+            if (request.id == workId) return request.ready;
+        }
+        return false;
+    }
+
+    bool WebGPUPipeline::GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height) {
+        if (!m_internalData || !pixels) return false;
+        for (auto& request : m_internalData->pixelReadbacks) {
+            if (request.id != workId || !request.ready || request.failed
+                || request.width != width || request.height != height)
+            {
+                continue;
+            }
+            const auto* data = static_cast<const uint8_t*>(request.buffer.GetConstMappedRange(0, request.height * request.bytesPerRow));
+            if (!data) return false;
+            for (uint32_t row = 0; row < height; ++row) {
+                const auto* rowData = data + row * request.bytesPerRow;
+                for (uint32_t column = 0; column < width; ++column) {
+                    const auto* pixel = rowData + column * 4;
+                    pixels[row * width + column] = SR_MATH_NS::FColor(pixel[0], pixel[1], pixel[2], pixel[3]);
+                }
+            }
+            request.buffer.Unmap();
+            return true;
+        }
+        return false;
+    }
+
+    void WebGPUPipeline::ReleasePixelRangeRequest(uint64_t workId) {
+        if (!m_internalData) return;
+        for (uint32_t i = 0; i < m_internalData->pixelReadbacks.size(); ++i) {
+            if (m_internalData->pixelReadbacks[i].id == workId) {
+                m_internalData->pixelReadbacks.erase(m_internalData->pixelReadbacks.begin() + i);
+                return;
+            }
+        }
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Buffer allocations
     // ----------------------------------------------------------------------------------------------------------------
@@ -2394,7 +2534,7 @@ namespace SR_GRAPH_NS {
                 wgpu::TextureDescriptor texDesc{};
                 texDesc.size          = { w, h, 1 };
                 texDesc.format        = att.format;
-                texDesc.usage         = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding;
+                texDesc.usage         = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopySrc;
                 texDesc.mipLevelCount = 1;
                 texDesc.sampleCount   = fbo.sampleCount;
                 texDesc.dimension     = wgpu::TextureDimension::e2D;
@@ -2422,6 +2562,7 @@ namespace SR_GRAPH_NS {
                     else {
                         webTexture.view = att.texture.CreateView();
                     }
+                    webTexture.texture = att.resolveTexture ? att.resolveTexture : att.texture;
                 }
 
                 for (auto&& oldTexture : colorLayer.texture) {
@@ -2524,7 +2665,7 @@ namespace SR_GRAPH_NS {
             wgpu::TextureDescriptor texDesc{};
             texDesc.size          = { w, h, 1 };
             texDesc.format        = att.format;
-            texDesc.usage         = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding;
+            texDesc.usage         = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopySrc;
             texDesc.mipLevelCount = 1;
             texDesc.sampleCount   = fbo.sampleCount;
             texDesc.dimension     = wgpu::TextureDimension::e2D;

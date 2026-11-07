@@ -107,9 +107,9 @@ namespace SR_SRSL_NS {
         }
 
         /// WGSL reserved keywords that must be renamed
-        bool IsWGSLReservedKeyword(const std::string& token) {
+        bool IsWGSLReservedKeyword(SR_UTILS_NS::StringView token) {
             // https://www.w3.org/TR/WGSL/#reserved-words
-            static const std::unordered_set<std::string> reserved = {
+            static const SR_HTYPES_NS::FlatHashSet<SR_UTILS_NS::StringView> reserved = {
                 "target", "result", "output", "input", "type", "module",
                 "abstract", "active", "alignas", "alignof", "as", "asm",
                 "asm_fragment", "async", "attribute", "auto", "await", "become",
@@ -141,7 +141,7 @@ namespace SR_SRSL_NS {
             return reserved.count(token) > 0;
         }
 
-        std::string SafeIdentifier(const std::string& token) {
+        SR_UTILS_NS::String SafeIdentifier(SR_UTILS_NS::StringView token) {
             if (IsWGSLReservedKeyword(token)) {
                 return "_" + token;
             }
@@ -157,7 +157,7 @@ namespace SR_SRSL_NS {
 
         /// Convert C-style array dimension string to WGSL array<type, N> syntax.
         /// Input: typeName e.g. "f32", dimensions e.g. {256} or {0} for runtime-sized
-        std::string ToWGSLArrayType(const std::string& baseType, const std::vector<uint64_t>& dims) {
+        std::string ToWGSLArrayType(const std::string& baseType, const SR_UTILS_NS::Vector<uint64_t>& dims) {
             if (dims.empty()) {
                 return baseType;
             }
@@ -628,7 +628,7 @@ namespace SR_SRSL_NS {
             // Member access: a.b
             code += GenerateExpression(pExpr->args[0], 0) + "." + GenerateExpression(pExpr->args[1], 0);
         }
-        else if (pExpr->args.size() == 2 && (pExpr->token == "=" || WGSLDetail::IsCompoundAssignment(pExpr->token))) {
+        else if (pExpr->args.size() >= 2 && (pExpr->token == "=" || WGSLDetail::IsCompoundAssignment(pExpr->token))) {
             // Assignment / compound-assignment: emit without wrapping parens (WGSL disallows assignment in expression).
             // WGSL does NOT support compound-assignment operators on swizzles (e.g. offset.xyz /= offset.w is illegal).
             // To be safe, always expand every compound-assignment a OP= b → a = a OP b.
@@ -704,31 +704,75 @@ namespace SR_SRSL_NS {
         return code;
     }
 
+    std::string WGSLCodeGenerator::GenerateStatementExpression(const SRSLExpr* pExpr, int32_t deep) const {
+        std::string code = GenerateExpression(pExpr, deep);
+        const size_t begin = code.find_first_not_of(" \t");
+        if (begin != std::string::npos && code[begin] == '(' && code.back() == ')'
+            && code.find(" = ", begin + 1) != std::string::npos)
+        {
+            code.erase(code.size() - 1, 1);
+            code.erase(begin, 1);
+        }
+        return code;
+    }
+
     std::string WGSLCodeGenerator::GenerateVariable(const SRSLVariable* pVariable, int32_t deep) const {
         std::string code = std::string(GenerateTab(deep));
-
-        // WGSL variable declaration: var name : type = expr;
-        code += "var ";
+        std::string variableName;
+        std::string variableType;
 
         if (pVariable->pName) {
             m_tmpBuffer.clear();
-            code += WGSLDetail::SafeIdentifier(std::string(pVariable->pName->ToString(0, m_tmpBuffer)));
+            const SR_UTILS_NS::StringView rawName = pVariable->pName->ToString(0, m_tmpBuffer);
+            variableName = WGSLDetail::SafeIdentifier(
+                pVariable->pName->isArray && !pVariable->pName->args.empty()
+                    ? pVariable->pName->args[0]->ToString(0, m_tmpBuffer)
+                    : rawName);
+
+            // The parser may keep the declarator dimension in the first name
+            // token (for example, "uv[4]"). WGSL puts the dimension into the
+            // type, so it must not remain part of the identifier.
+            if (const auto arrayStart = variableName.find('['); arrayStart != std::string::npos) {
+                variableName.resize(arrayStart);
+            }
         }
 
         if (pVariable->pType) {
             m_tmpBuffer.clear();
-            std::string typeName = WGSLDetail::GenerateType(pVariable->pType->ToString(0, m_tmpBuffer));
-            if (!typeName.empty()) {
-                code += " : " + typeName;
-                if (pVariable->pName) {
-                    m_tmpBuffer.clear();
-                    RegisterVariableType(std::string(pVariable->pName->ToString(0, m_tmpBuffer)), typeName);
-                }
+            const SR_UTILS_NS::StringView rawType = pVariable->pType->ToString(0, m_tmpBuffer);
+            const std::string baseType = WGSLDetail::GenerateType(
+                SRSLTypeInfo::Instance().GetTypeName(m_pCurrentShader ? m_pCurrentShader->GetAllocator() : nullptr, rawType));
+            const auto dimensions = pVariable->pName && pVariable->pName->isArray
+                ? SRSLTypeInfo::Instance().GetDimension(pVariable->pName, m_pCurrentShader ? m_pCurrentShader->GetAnalyzedTree() : nullptr)
+                : SR_UTILS_NS::Vector<uint64_t>();
+            variableType = WGSLDetail::ToWGSLArrayType(baseType, dimensions);
+        }
+
+        // WGSL variable declaration: var name : type = expr;
+        code += "var ";
+
+        code += variableName;
+        if (!variableType.empty()) {
+            code += " : " + variableType;
+            if (!variableName.empty()) {
+                RegisterVariableType(variableName, variableType);
             }
         }
 
         if (pVariable->pExpr) {
-            code += " = " + GenerateExpression(pVariable->pExpr, 0);
+            if (!variableType.empty() && pVariable->pName && pVariable->pName->isArray && pVariable->pExpr->isList) {
+                code += " = " + variableType + "(";
+                for (uint32_t i = 0; i < pVariable->pExpr->args.size(); ++i) {
+                    if (i > 0) {
+                        code += ", ";
+                    }
+                    code += GenerateExpression(pVariable->pExpr->args[i], 0);
+                }
+                code += ")";
+            }
+            else {
+                code += " = " + GenerateExpression(pVariable->pExpr, 0);
+            }
         }
 
         return code;
@@ -762,7 +806,7 @@ namespace SR_SRSL_NS {
                 code += GenerateLexicalTree(pTree, deep + 1, returnCode);
             }
             else if (auto&& pExpression = dynamic_cast<SRSLExpr*>(pUnit)) {
-                code += GenerateExpression(pExpression, deep + 1) + ";";
+                code += GenerateStatementExpression(pExpression, deep + 1) + ";";
             }
             else if (auto&& pIfStatement = dynamic_cast<SRSLIfStatement*>(pUnit)) {
                 code += GenerateIfStatement(pIfStatement, deep + 1, returnCode);
@@ -886,7 +930,7 @@ namespace SR_SRSL_NS {
                     code += GenerateVariable(pVariable, deep + 1) + ";\n";
                 }
                 else if (auto&& pExpression = dynamic_cast<SRSLExpr*>(pUnit)) {
-                    code += GenerateExpression(pExpression, deep + 1) + ";\n";
+                    code += GenerateStatementExpression(pExpression, deep + 1) + ";\n";
                 }
                 else if (auto&& pReturn = dynamic_cast<SRSLReturn*>(pUnit)) {
                     if (!pReturn->pExpr && !returnCode.empty()) {
@@ -1403,7 +1447,7 @@ namespace SR_SRSL_NS {
                     result += GenerateLexicalTree(pTree, deep + 1, stageReturnCode);
                 }
                 else if (auto&& pExpression = dynamic_cast<SRSLExpr*>(pUnit)) {
-                    result += GenerateExpression(pExpression, deep + 1) + ";\n";
+                    result += GenerateStatementExpression(pExpression, deep + 1) + ";\n";
                 }
                 else if (auto&& pIfStatement = dynamic_cast<SRSLIfStatement*>(pUnit)) {
                     result += GenerateIfStatement(pIfStatement, deep + 1, stageReturnCode) + "\n";

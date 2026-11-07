@@ -13,8 +13,8 @@ namespace SR_SRSL_NS {
     class SRSLTypeInfo : public SR_UTILS_NS::Singleton<SRSLTypeInfo> {
         SR_REGISTER_SINGLETON(SRSLTypeInfo)
     public:
-        SR_NODISCARD std::vector<uint64_t> GetDimension(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code, const SRSLAnalyzedTree* pAnalyzedTree);
-        SR_NODISCARD std::vector<uint64_t> GetDimension(const SRSLExpr* pExpr, const SRSLAnalyzedTree* pAnalyzedTree);
+        SR_NODISCARD SR_UTILS_NS::Vector<uint64_t> GetDimension(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code, const SRSLAnalyzedTree* pAnalyzedTree);
+        SR_NODISCARD SR_UTILS_NS::Vector<uint64_t> GetDimension(const SRSLExpr* pExpr, const SRSLAnalyzedTree* pAnalyzedTree);
 
         SR_NODISCARD ShaderVarType StringToType(SR_UTILS_NS::StringView str);
         SR_NODISCARD std::string GetTypeName(SR_UTILS_NS::IAllocator* pAllocator, SR_UTILS_NS::StringView code);
