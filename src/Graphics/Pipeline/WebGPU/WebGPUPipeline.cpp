@@ -1631,7 +1631,7 @@ namespace SR_GRAPH_NS {
     }
 
     uint64_t WebGPUPipeline::RequestPixelRange(uint64_t workId, uint32_t textureId, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
-        if (!m_internalData || !m_internalData->activeEncoder || width == 0 || height == 0) {
+        if (!m_internalData || width == 0 || height == 0) {
             return SR_ID_INVALID;
         }
 
@@ -1658,6 +1658,15 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
+        auto encoder = m_internalData->activeEncoder;
+        const bool submitImmediately = !encoder;
+        if (submitImmediately) {
+            encoder = m_internalData->device.CreateCommandEncoder();
+            if (!encoder) {
+                return SR_ID_INVALID;
+            }
+        }
+
         wgpu::TexelCopyTextureInfo src{};
         src.texture = source;
         src.origin = { x, y, 0 };
@@ -1667,7 +1676,15 @@ namespace SR_GRAPH_NS {
         dst.layout.bytesPerRow = bytesPerRow;
         dst.layout.rowsPerImage = height;
         wgpu::Extent3D extent{ width, height, 1 };
-        m_internalData->activeEncoder.CopyTextureToBuffer(&src, &dst, &extent);
+        encoder.CopyTextureToBuffer(&src, &dst, &extent);
+
+        if (submitImmediately) {
+            auto commandBuffer = encoder.Finish();
+            if (!commandBuffer) {
+                return SR_ID_INVALID;
+            }
+            m_internalData->queue.Submit(1, &commandBuffer);
+        }
 
         WebGPUPipelineInternalData::PixelReadback request;
         request.id = workId == SR_ID_INVALID ? m_internalData->nextPixelReadbackId++ : workId;
@@ -1681,6 +1698,13 @@ namespace SR_GRAPH_NS {
 
     bool WebGPUPipeline::IsPixelRangeReady(uint64_t workId) const {
         if (!m_internalData) return false;
+
+        // MapAsync callbacks are dispatched by Dawn only while its event queue
+        // is being pumped.  A readback can be submitted after OnFrameBuildBegin
+        // (for example, from the scene viewer mouse handler), so waiting for the
+        // next frame's event pump may leave the request pending indefinitely.
+        const_cast<WebGPUPipelineInternalData*>(m_internalData)->instance.ProcessEvents();
+
         for (const auto& request : m_internalData->pixelReadbacks) {
             if (request.id == workId) return request.ready;
         }
@@ -2197,20 +2221,26 @@ namespace SR_GRAPH_NS {
         else {
             // Vertex buffer layout
             SR_UTILS_NS::Vector<wgpu::VertexAttribute> vertexAttributes;
-            uint64_t stride = 0;
+            const bool hasVertexLayout = createInfo.vertexLayoutDescriptions.GetLayoutsCount() > 0;
+            const auto* pVertexLayout = hasVertexLayout
+                ? &createInfo.vertexLayoutDescriptions.GetLayout(0)
+                : nullptr;
 
             createInfo.vertexLayoutDescriptions.ForEachAttribute([&](const SR_UTILS_NS::VertexAttributeDescription& attr, uint32_t location) {
                 wgpu::VertexAttribute vkAttr{};
                 vkAttr.format         = VertexAttributeFormatToWGPU(attr.format, attr.count);
-                vkAttr.offset         = stride;
+                vkAttr.offset         = attr.offset;
                 vkAttr.shaderLocation = location;
                 vertexAttributes.push_back(vkAttr);
-                stride += SR_UTILS_NS::VertexAttributeDescription::GetAttributeSizeInBytes(attr.format, attr.count);
             });
 
+            const bool isInstanced = pVertexLayout && pVertexLayout->instanced;
+
             wgpu::VertexBufferLayout vertexBufferLayout{};
-            vertexBufferLayout.arrayStride    = stride;
-            vertexBufferLayout.stepMode       = wgpu::VertexStepMode::Vertex;
+            vertexBufferLayout.arrayStride    = pVertexLayout ? pVertexLayout->GetStride() : 0;
+            vertexBufferLayout.stepMode       = isInstanced
+                ? wgpu::VertexStepMode::Instance
+                : wgpu::VertexStepMode::Vertex;
             vertexBufferLayout.attributeCount = static_cast<size_t>(vertexAttributes.size());
             vertexBufferLayout.attributes     = vertexAttributes.data();
 

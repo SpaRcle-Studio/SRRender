@@ -309,7 +309,7 @@ set(BASE_SRCS
         )
 
 if (EMSCRIPTEN)
-    # nothing
+    list(APPEND BASE_SRCS "libs/freetype/src/base/ftsystem.c")
 elseif (UNIX)
     if (ANDROID_NDK)
         list(APPEND BASE_SRCS "libs/freetype/src/base/ftsystem.c")

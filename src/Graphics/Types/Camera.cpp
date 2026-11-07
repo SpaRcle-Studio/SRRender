@@ -405,7 +405,12 @@ namespace SR_GTYPES_NS {
         SR_MATH_NS::Ray ray;
 
         const float_t x = 2.0f * screenPos.x - 1.0f;
+        
+    #ifdef SR_EMSCRIPTEN
+        const float_t y = 1.0f - 2.0f * screenPos.y;
+    #else
         const float_t y = 2.0f * screenPos.y - 1.0f;
+    #endif
 
         const float_t zNear = 0.f;
         const float_t zFar = 1.f - SR_FLT_EPSILON;

@@ -42,6 +42,8 @@ namespace SR_GRAPH_NS {
         /// @property
         bool instancing = true;
         /// @property
+        bool sphericalCascadeSelection = true;
+        /// @property
         uint32_t shadowMapResolution = 4096;
         /// @property
         uint8_t cascadesCount = 4;

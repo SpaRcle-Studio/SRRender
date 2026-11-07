@@ -62,10 +62,8 @@ if (ANDROID_NDK)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unused-function -Wunused-function -Wno-comment -Wunused-variable")
 endif()
 
-if (NOT SR_EMSCRIPTEN)
-    include(cmake/freetype.cmake)
-    add_definitions(-DSR_USE_FREETYPE)
-endif()
+include(cmake/freetype.cmake)
+add_definitions(-DSR_USE_FREETYPE)
 
 if (SR_RENDER_GLFW)
     add_compile_definitions(SR_RENDER_GLFW)
@@ -111,9 +109,7 @@ endif()
 
 SR_COPY_STATIC_LIBRARY_TO_LIBRARY_FOLDER(Graphics)
 
-if (NOT SR_EMSCRIPTEN)
-    target_link_libraries(Graphics PUBLIC freetype)
-endif()
+target_link_libraries(Graphics PUBLIC freetype)
 
 if (SR_RENDER_USE_LIBSPNG)
     message("libspng will be used")
