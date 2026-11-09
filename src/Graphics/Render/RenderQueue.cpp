@@ -358,10 +358,11 @@ namespace SR_GRAPH_NS {
             const bool hasMask = mask.hasMask && mask.scissor;
             if (hasMask) {
                 SR_MATH_NS::FVector2 multiplier = viewportSize.CastToFloat() / mask.referenceSize.CastToFloat();
-                const auto rect = SR_MATH_NS::FRect(
-                    static_cast<float_t>(mask.rect.x) * multiplier.x, static_cast<float_t>(mask.rect.y) * multiplier.y,
-                    static_cast<float_t>(mask.rect.w) * multiplier.x, static_cast<float_t>(mask.rect.h) * multiplier.y
-                ).CastToInt();
+                const int32_t minX = static_cast<int32_t>(std::floor(static_cast<float_t>(mask.rect.Left()) * multiplier.x));
+                const int32_t minY = static_cast<int32_t>(std::floor(static_cast<float_t>(mask.rect.Bottom()) * multiplier.y));
+                const int32_t maxX = static_cast<int32_t>(std::ceil(static_cast<float_t>(mask.rect.Right()) * multiplier.x));
+                const int32_t maxY = static_cast<int32_t>(std::ceil(static_cast<float_t>(mask.rect.Top()) * multiplier.y));
+                const SR_MATH_NS::IRect rect(minX, minY, maxX - minX, maxY - minY);
                 m_pipeline->PushScissor(rect);
             }
 

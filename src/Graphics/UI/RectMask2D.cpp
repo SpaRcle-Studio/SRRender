@@ -38,7 +38,13 @@ namespace SR_GRAPH_NS::UI {
             SR_UTILS_NS::UI::MaskInfo maskInfo;
             maskInfo.hasMask = enable && IsActive();
             maskInfo.scissor = true;
-            maskInfo.rect = pTransform->GetScaledLayoutRect().CastToInt();
+
+            const SR_MATH_NS::FRect transformedRect = pTransform->GetTransformedLayoutRect();
+            const int32_t minX = static_cast<int32_t>(std::floor(transformedRect.Left()));
+            const int32_t minY = static_cast<int32_t>(std::floor(transformedRect.Bottom()));
+            const int32_t maxX = static_cast<int32_t>(std::ceil(transformedRect.Right()));
+            const int32_t maxY = static_cast<int32_t>(std::ceil(transformedRect.Top()));
+            maskInfo.rect = SR_MATH_NS::IRect(minX, minY, maxX - minX, maxY - minY);
 
             if (auto&& pCanvas = FindCanvas(GetSceneObject().Get())) {
                 maskInfo.referenceSize = pCanvas->GetSize().CastToInt();
@@ -59,6 +65,7 @@ namespace SR_GRAPH_NS::UI {
                 m_renderScene->SetDirty();
             }
 
+            m_maskInfo = maskInfo;
             pTransform->SetMaskInfo(maskInfo);
         }
     }

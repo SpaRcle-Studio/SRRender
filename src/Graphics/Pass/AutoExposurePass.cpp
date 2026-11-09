@@ -128,46 +128,6 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         Super::Update();
-
-        if (!m_pReductionShader || !m_pReductionLinearShader || !m_pAdaptationShader) {
-            return;
-        }
-
-        if (m_pReductionShader) {
-            GetPipeline()->SetCurrentShader(m_pReductionShader.Get());
-            if (m_uboManager->BindUBO(m_reductionUBOFirst.uboId) == Memory::UBOManager::BindResult::Failed) {
-                SR_ERROR("AutoExposurePass::Update() : failed to bind UBO!");
-            }
-            else {
-                m_pReductionShader->SetVec2(Details::ResolutionAtom, m_resolution);
-                SR_UNUSED_VARIABLE(m_pReductionShader->Flush());
-            }
-        }
-
-        if (m_pReductionLinearShader) {
-            GetPipeline()->SetCurrentShader(m_pReductionLinearShader.Get());
-            for (auto&& info : m_reductionUBOLinear) {
-                if (m_uboManager->BindUBO(info.uboId) == Memory::UBOManager::BindResult::Failed) {
-                    SR_ERROR("AutoExposurePass::Update() : failed to bind UBO!");
-                }
-                m_pReductionLinearShader->SetInt(Details::ElementCountAtom, static_cast<int32_t>(info.elementCount));
-                SR_UNUSED_VARIABLE(m_pReductionLinearShader->Flush());
-            }
-        }
-
-        if (m_pAdaptationShader) {
-            GetPipeline()->SetCurrentShader(m_pAdaptationShader.Get());
-            if (m_uboManager->BindUBO(m_adaptationUBO.uboId) == Memory::UBOManager::BindResult::Failed) {
-                SR_ERROR("AutoExposurePass::Update() : failed to bind UBO!");
-            }
-            else {
-                m_pAdaptationShader->SetFloat(Details::KeyValueAtom, m_keyValue);
-                m_pAdaptationShader->SetFloat(Details::SpeedAtom, m_speed);
-                m_pAdaptationShader->SetFloat(Details::DtAtom, SR_HTYPES_NS::Time::Instance().DeltaTime());
-                m_pAdaptationShader->SetFloat(Details::TotalPixelCountAtom, static_cast<float>(m_totalPixelCount));
-                SR_UNUSED_VARIABLE(m_pAdaptationShader->Flush());
-            }
-        }
     }
 
     void AutoExposurePass::OnResize(const SR_MATH_NS::UVector2& size) {
@@ -334,6 +294,8 @@ namespace SR_GRAPH_NS {
         }
 
         m_uboManager->BindUBO(m_reductionUBOFirst.uboId);
+        m_pReductionShader->SetVec2(Details::ResolutionAtom, m_resolution);
+        SR_UNUSED_VARIABLE(m_pReductionShader->Flush());
 
         const auto frame = m_multiFrameSSBOResources ? GetPipeline()->GetCurrentImageIndex() : 0;
         const auto result = m_descriptorManager->Bind(m_reductionUBOFirst.descriptorSetId);
@@ -387,6 +349,8 @@ namespace SR_GRAPH_NS {
             info.elementCount = elementCount;
 
             m_uboManager->BindUBO(info.uboId);
+            m_pReductionLinearShader->SetInt(Details::ElementCountAtom, static_cast<int32_t>(info.elementCount));
+            SR_UNUSED_VARIABLE(m_pReductionLinearShader->Flush());
 
             const auto result = m_descriptorManager->Bind(info.descriptorSetId);
             if (result == DescriptorManager::BindResult::Duplicated || m_dirtyShader) SR_UNLIKELY_ATTRIBUTE {
@@ -440,6 +404,11 @@ namespace SR_GRAPH_NS {
         }
 
         m_uboManager->BindUBO(m_adaptationUBO.uboId);
+        m_pAdaptationShader->SetFloat(Details::KeyValueAtom, m_keyValue);
+        m_pAdaptationShader->SetFloat(Details::SpeedAtom, m_speed);
+        m_pAdaptationShader->SetFloat(Details::DtAtom, SR_HTYPES_NS::Time::Instance().DeltaTime());
+        m_pAdaptationShader->SetFloat(Details::TotalPixelCountAtom, static_cast<float>(m_totalPixelCount));
+        SR_UNUSED_VARIABLE(m_pAdaptationShader->Flush());
 
         const auto frame = m_multiFrameSSBOResources ? GetPipeline()->GetCurrentImageIndex() : 0;
         const auto result = m_descriptorManager->Bind(m_adaptationUBO.descriptorSetId);
@@ -470,7 +439,25 @@ namespace SR_GRAPH_NS {
     void AutoExposurePass::UseSSBOFromAnotherPass(SR_GTYPES_NS::Shader& shader) {
         SR_TRACY_ZONE;
         Super::UseSSBOFromAnotherPass(shader);
+
+        if (m_exposureSSBO.empty()) {
+            m_exposureSSBO.resize(1, SR_ID_INVALID);
+        }
+
+        if (m_exposureSSBO[0] == SR_ID_INVALID) {
+            m_exposureSSBO[0] = GetPipeline()->AllocateSSBO(Details::EXPOSURE_SSBO_SIZE, SSBOUsage::AutoPreferDevice);
+            if (m_exposureSSBO[0] == SR_ID_INVALID) {
+                SR_ERROR("AutoExposurePass::UseSSBOFromAnotherPass() : failed to allocate exposure SSBO!");
+                return;
+            }
+
+            float initExposure[2] = { Details::INITIAL_EXPOSURE, Details::INITIAL_EXPOSURE };
+            GetPipeline()->UpdateSSBO(m_exposureSSBO[0], initExposure, Details::EXPOSURE_SSBO_SIZE);
+        }
+
         const auto frame = m_multiFrameSSBOResources ? GetPipeline()->GetCurrentImageIndex() : 0;
-        shader.BindSSBO(Details::Exposure, m_exposureSSBO[frame]);
+        if (frame < m_exposureSSBO.size() && m_exposureSSBO[frame] != SR_ID_INVALID) {
+            shader.BindSSBO(Details::Exposure, m_exposureSSBO[frame]);
+        }
     }
 }

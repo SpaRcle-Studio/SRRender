@@ -195,6 +195,8 @@ namespace SR_GRAPH_NS {
         // ---- Per-render-pass state ----
         // Kept alive for the duration of BeginRender..EndRender
         wgpu::RenderPassEncoder activeRenderPass;
+        // Kept alive for the duration of BeginCompute..EndCompute
+        wgpu::ComputePassEncoder activeComputePass;
         // Clear values set by ClearBuffers before BeginRender
         wgpu::Color        clearColor  = { 0.0, 0.0, 0.0, 1.0 };
         float              clearDepth  = 1.0f;
@@ -203,6 +205,9 @@ namespace SR_GRAPH_NS {
         // Tracks whether BeginRender was called for the swapchain (no FBO) this frame.
         // Used in DrawFrame to decide loadOp for the ImGui pass.
         bool               surfaceWasRendered = false;
+        SR_MATH_NS::IRect  scissor;
+        SR_MATH_NS::IRect  activeScissor;
+        bool               activeScissorValid = false;
 
         // Descriptor set (group 0) selected by BindDescriptorSet. Bound at draw time, because the
         // engine keeps updating its bindings after BindDescriptorSet was called.
@@ -998,6 +1003,8 @@ namespace SR_GRAPH_NS {
             m_internalData->surfaceWasRendered = true;
         }
 
+        m_internalData->activeScissorValid = false;
+
         if (!keepClearFlags) {
             m_internalData->hasClearColor = false;
             m_internalData->hasClearDepth = false;
@@ -1016,6 +1023,45 @@ namespace SR_GRAPH_NS {
         m_internalData->activeBindGroupId = SR_ID_INVALID;
 
         Super::EndRender();
+    }
+
+    bool WebGPUPipeline::BeginCompute() {
+        if (!Super::BeginCompute()) {
+            return false;
+        }
+
+        if (!m_internalData->activeEncoder) {
+            SR_ERROR("WebGPUPipeline::BeginCompute() : no active command encoder! Call OnFrameBuildBegin first.");
+            Super::EndCompute();
+            return false;
+        }
+
+        wgpu::ComputePassDescriptor passDesc{};
+        m_internalData->activeComputePass = m_internalData->activeEncoder.BeginComputePass(&passDesc);
+        if (!m_internalData->activeComputePass) {
+            SR_ERROR("WebGPUPipeline::BeginCompute() : failed to begin compute pass!");
+            Super::EndCompute();
+            return false;
+        }
+
+        m_internalData->activeBindGroupId = SR_ID_INVALID;
+        return true;
+    }
+
+    void WebGPUPipeline::EndCompute() {
+        if (m_internalData->activeComputePass) {
+            m_internalData->activeComputePass.End();
+            m_internalData->activeComputePass = nullptr;
+        }
+
+        m_internalData->activeBindGroupId = SR_ID_INVALID;
+        Super::EndCompute();
+    }
+
+    void WebGPUPipeline::WaitComputeIdle() {
+        // WebGPU commands are ordered within a command encoder. The queue submission
+        // provides the required synchronization; there is no blocking compute wait.
+        Super::WaitComputeIdle();
     }
 
     void WebGPUPipeline::ClearBuffers() {
@@ -1064,15 +1110,11 @@ namespace SR_GRAPH_NS {
     void WebGPUPipeline::SetScissor(int32_t width, int32_t height) {
         Super::SetScissor(width, height);
 
-        if (!m_internalData->activeRenderPass) {
-            return;
-        }
-
         auto&& pFBO = m_state.pFrameBuffer;
         const uint32_t w = (width  > 0) ? static_cast<uint32_t>(width)  : (pFBO ? pFBO->GetWidth()  : m_internalData->surfaceWidth);
         const uint32_t h = (height > 0) ? static_cast<uint32_t>(height) : (pFBO ? pFBO->GetHeight() : m_internalData->surfaceHeight);
-
-        m_internalData->activeRenderPass.SetScissorRect(0, 0, w, h);
+        m_internalData->scissor = SR_MATH_NS::IRect(0, 0, static_cast<int32_t>(w), static_cast<int32_t>(h));
+        m_internalData->activeScissorValid = false;
     }
 
     void WebGPUPipeline::SetSampleCount(uint8_t count) {
@@ -1134,6 +1176,17 @@ namespace SR_GRAPH_NS {
 
     void WebGPUPipeline::UseShader(uint32_t shaderProgram) {
         Super::UseShader(shaderProgram);
+
+        if (m_internalData->activeComputePass) {
+            const int32_t id = static_cast<int32_t>(shaderProgram);
+            if (id >= 0 && m_internalData->shaderPrograms.IsAlive(id)) {
+                auto&& prog = m_internalData->shaderPrograms.At(id);
+                if (prog.computePipeline) {
+                    m_internalData->activeComputePass.SetPipeline(prog.computePipeline);
+                }
+            }
+            return;
+        }
 
         if (!m_internalData->activeRenderPass) {
             return;
@@ -1220,7 +1273,7 @@ namespace SR_GRAPH_NS {
     }
 
     void WebGPUPipeline::FlushTextureBindGroup() {
-        if (!m_internalData->activeRenderPass) {
+        if (!m_internalData->activeRenderPass && !m_internalData->activeComputePass) {
             return;
         }
 
@@ -1297,7 +1350,12 @@ namespace SR_GRAPH_NS {
         }
 
         if (bindGroup.textureBindGroup) SR_LIKELY_ATTRIBUTE {
-            m_internalData->activeRenderPass.SetBindGroup(1, bindGroup.textureBindGroup, 0, nullptr);
+            if (m_internalData->activeComputePass) {
+                m_internalData->activeComputePass.SetBindGroup(1, bindGroup.textureBindGroup, 0, nullptr);
+            }
+            else {
+                m_internalData->activeRenderPass.SetBindGroup(1, bindGroup.textureBindGroup, 0, nullptr);
+            }
         }
     }
 
@@ -1343,7 +1401,7 @@ namespace SR_GRAPH_NS {
     }
 
     void WebGPUPipeline::FlushDescriptorBindGroup() {
-        if (!m_internalData->activeRenderPass) {
+        if (!m_internalData->activeRenderPass && !m_internalData->activeComputePass) {
             return;
         }
 
@@ -1408,12 +1466,17 @@ namespace SR_GRAPH_NS {
         }
 
         if (bindGroup.bufferBindGroup) SR_LIKELY_ATTRIBUTE {
-            m_internalData->activeRenderPass.SetBindGroup(0, bindGroup.bufferBindGroup, 0, nullptr);
+            if (m_internalData->activeComputePass) {
+                m_internalData->activeComputePass.SetBindGroup(0, bindGroup.bufferBindGroup, 0, nullptr);
+            }
+            else {
+                m_internalData->activeRenderPass.SetBindGroup(0, bindGroup.bufferBindGroup, 0, nullptr);
+            }
         }
     }
 
     void WebGPUPipeline::FlushPushConstantBindGroup() {
-        if (!m_internalData->activeRenderPass) {
+        if (!m_internalData->activeRenderPass && !m_internalData->activeComputePass) {
             return;
         }
 
@@ -1421,7 +1484,12 @@ namespace SR_GRAPH_NS {
         if (shaderId >= 0 && m_internalData->shaderPrograms.IsAlive(shaderId)) {
             auto&& program = m_internalData->shaderPrograms.At(shaderId);
             if (program.pushConstantBindGroup) {
-                m_internalData->activeRenderPass.SetBindGroup(2, program.pushConstantBindGroup, 0, nullptr);
+                if (m_internalData->activeComputePass) {
+                    m_internalData->activeComputePass.SetBindGroup(2, program.pushConstantBindGroup, 0, nullptr);
+                }
+                else {
+                    m_internalData->activeRenderPass.SetBindGroup(2, program.pushConstantBindGroup, 0, nullptr);
+                }
             }
         }
     }
@@ -1462,10 +1530,48 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    bool WebGPUPipeline::FlushScissor() {
+        if (!m_internalData->activeRenderPass) {
+            return false;
+        }
+
+        auto&& pFBO = m_state.pFrameBuffer;
+        const int32_t targetWidth = static_cast<int32_t>(pFBO ? pFBO->GetWidth() : m_internalData->surfaceWidth);
+        const int32_t targetHeight = static_cast<int32_t>(pFBO ? pFBO->GetHeight() : m_internalData->surfaceHeight);
+
+        SR_MATH_NS::IRect scissor = m_scissorsStack.empty() ? m_internalData->scissor : m_scissorsStack.back();
+        if (scissor.w <= 0 || scissor.h <= 0) {
+            if (!m_scissorsStack.empty()) {
+                return false;
+            }
+            scissor = SR_MATH_NS::IRect(0, 0, targetWidth, targetHeight);
+        }
+
+        const int32_t minX = std::max(scissor.Left(), 0);
+        const int32_t minY = std::max(scissor.Bottom(), 0);
+        const int32_t maxX = std::min(scissor.Right(), targetWidth);
+        const int32_t maxY = std::min(scissor.Top(), targetHeight);
+        if (minX >= maxX || minY >= maxY) {
+            return false;
+        }
+
+        scissor = SR_MATH_NS::IRect(minX, minY, maxX - minX, maxY - minY);
+        if (!m_internalData->activeScissorValid || m_internalData->activeScissor != scissor) {
+            m_internalData->activeRenderPass.SetScissorRect(
+                static_cast<uint32_t>(scissor.x), static_cast<uint32_t>(scissor.y),
+                static_cast<uint32_t>(scissor.w), static_cast<uint32_t>(scissor.h)
+            );
+            m_internalData->activeScissor = scissor;
+            m_internalData->activeScissorValid = true;
+        }
+
+        return true;
+    }
+
     void WebGPUPipeline::Draw(uint32_t count) {
         Super::Draw(count);
 
-        if (!m_internalData->activeRenderPass || count == 0) {
+        if (!m_internalData->activeRenderPass || count == 0 || !FlushScissor()) {
             return;
         }
 
@@ -1479,7 +1585,7 @@ namespace SR_GRAPH_NS {
     void WebGPUPipeline::DrawIndices(uint32_t count) {
         Super::DrawIndices(count);
 
-        if (!m_internalData->activeRenderPass || count == 0) {
+        if (!m_internalData->activeRenderPass || count == 0 || !FlushScissor()) {
             return;
         }
 
@@ -1488,6 +1594,31 @@ namespace SR_GRAPH_NS {
         FlushPushConstantBindGroup();
 
         m_internalData->activeRenderPass.DrawIndexed(count, m_drawInstancesCount, 0, 0, m_drawInstancesStart);
+    }
+
+    void WebGPUPipeline::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
+        Super::Dispatch(groupCountX, groupCountY, groupCountZ);
+
+        if (!m_internalData->activeComputePass || groupCountX == 0 || groupCountY == 0 || groupCountZ == 0) {
+            return;
+        }
+
+        const int32_t shaderId = m_state.shaderId;
+        if (shaderId < 0 || !m_internalData->shaderPrograms.IsAlive(shaderId)) {
+            PipelineError("WebGPUPipeline::Dispatch() : current compute shader is invalid!");
+            return;
+        }
+
+        auto&& program = m_internalData->shaderPrograms.At(shaderId);
+        if (!program.isCompute || !program.computePipeline) {
+            PipelineError("WebGPUPipeline::Dispatch() : current shader is not a compute shader!");
+            return;
+        }
+
+        FlushDescriptorBindGroup();
+        FlushTextureBindGroup();
+        FlushPushConstantBindGroup();
+        m_internalData->activeComputePass.DispatchWorkgroups(groupCountX, groupCountY, groupCountZ);
     }
 
     void WebGPUPipeline::UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) {

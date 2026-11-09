@@ -75,6 +75,9 @@ namespace SR_GRAPH_NS {
         void BindFrameBuffer(FramebufferPtr pFBO) override;
         bool BeginRender() override;
         void EndRender() override;
+        bool BeginCompute() override;
+        void EndCompute() override;
+        void WaitComputeIdle() override;
         void ClearBuffers() override;
         void ClearBuffers(float_t r, float_t g, float_t b, float_t a, float_t depth, uint8_t colorCount) override;
         void ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth) override;
@@ -90,6 +93,7 @@ namespace SR_GRAPH_NS {
         bool BindDescriptorSet(uint32_t descriptorSet) override;
         void Draw(uint32_t count) override;
         void DrawIndices(uint32_t count) override;
+        void Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
         void UpdateDescriptorSets(uint32_t descriptorSet, const SRDescriptorUpdateInfos& updateInfo) override;
 
         SR_NODISCARD void* GetCurrentShaderHandle() const override;
@@ -128,6 +132,7 @@ namespace SR_GRAPH_NS {
         /// Создает (или достает из кеша) BindGroup для @group(1) и привязывает его к активному проходу.
         /// В WebGPU все группы, объявленные в layout'е пайплайна, обязаны быть привязаны перед отрисовкой.
         void FlushTextureBindGroup();
+        bool FlushScissor();
 
         /// Сбрасывает кеш BindGroup'ов текстур. Обязательно вызывать при удалении текстур,
         /// иначе в кеше останутся группы со ссылками на уничтоженные ресурсы.
