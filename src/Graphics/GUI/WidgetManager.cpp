@@ -124,7 +124,7 @@ namespace SR_GRAPH_NS::GUI {
             ? m_renderContext->GetWindow()->GetHandle()
             : nullptr;
         ViewportsTableManager::Instance().ForEach([pMainWindowHandle](auto&& pHandle, auto&&) {
-            auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(pHandle);
+            auto&& pPlatformHandle = SR_IMMEDIATE_GUI_NS::GetViewportPlatformHandle(pHandle);
             if (pPlatformHandle != pMainWindowHandle) {
                 SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Hide);
             }
@@ -136,7 +136,7 @@ namespace SR_GRAPH_NS::GUI {
             ? m_renderContext->GetWindow()->GetHandle()
             : nullptr;
         ViewportsTableManager::Instance().ForEach([pMainWindowHandle](auto&& pHandle, auto&&) {
-            auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(pHandle);
+            auto&& pPlatformHandle = SR_IMMEDIATE_GUI_NS::GetViewportPlatformHandle(pHandle);
             if (pPlatformHandle != pMainWindowHandle) {
                 SR_PLATFORM_NS::ShowWindow(pPlatformHandle, SR_PLATFORM_NS::ShowWindowActionType::Show);
             }

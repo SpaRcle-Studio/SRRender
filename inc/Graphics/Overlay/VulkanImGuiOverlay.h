@@ -69,8 +69,8 @@ namespace SR_GRAPH_NS {
 
         VkSemaphore m_semaphore = VK_NULL_HANDLE;
 
-        SR_GRAPH_GUI_NS::Immediate::PlatformBackend m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::None;
-        SR_GRAPH_GUI_NS::Immediate::VulkanRendererHandle m_vkRenderer = nullptr;
+        SR_IMMEDIATE_GUI_NS::PlatformBackend m_platformBackend = SR_IMMEDIATE_GUI_NS::PlatformBackend::None;
+        SR_IMMEDIATE_GUI_NS::VulkanRendererHandle m_vkRenderer = nullptr;
 
         EvoVulkan::Types::Device* m_device = nullptr;
         EvoVulkan::Types::Swapchain* m_swapChain = nullptr;

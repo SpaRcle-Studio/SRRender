@@ -301,7 +301,7 @@ namespace SR_GRAPH_NS {
     LRESULT Win32Window::WndProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
         SR_TRACY_ZONE;
 
-        if (SR_GRAPH_GUI_NS::Immediate::WindowsWndProcHandler(hWnd, message, wParam, lParam)) {
+        if (SR_IMMEDIATE_GUI_NS::WindowsWndProcHandler(hWnd, message, wParam, lParam)) {
             return true;
         }
 
@@ -426,10 +426,10 @@ namespace SR_GRAPH_NS {
 
         MSG msg = {};
 
-        if (SR_GRAPH_GUI_NS::Immediate::GetCurrentContext()) {
-            SR_GRAPH_GUI_NS::Immediate::GetViewports(m_viewports);
+        if (SR_IMMEDIATE_GUI_NS::GetCurrentContext()) {
+            SR_IMMEDIATE_GUI_NS::GetViewports(m_viewports);
             for (auto&& pViewport : m_viewports) {
-                auto&& pPlatformHandle = SR_GRAPH_GUI_NS::Immediate::GetViewportPlatformHandle(pViewport);
+                auto&& pPlatformHandle = SR_IMMEDIATE_GUI_NS::GetViewportPlatformHandle(pViewport);
                 while (::PeekMessage(&msg, (HWND)pPlatformHandle, 0, 0, PM_NOREMOVE)) {
                     SR_TRACY_ZONE_N("Win32Window::PollEvents() : viewport message loop");
                     if (!::GetMessage(&msg, (HWND)pPlatformHandle, 0, 0))

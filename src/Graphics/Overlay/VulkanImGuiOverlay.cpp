@@ -57,27 +57,27 @@ namespace SR_GRAPH_NS {
         auto&& pWindow = m_pipeline->GetWindow();
 
     #if defined(SR_WIN32)
-        m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::Win32;
+        m_platformBackend = SR_IMMEDIATE_GUI_NS::PlatformBackend::Win32;
     #elif defined(SR_LINUX) && defined(SR_RENDER_GLFW)
-        m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::GLFW;
+        m_platformBackend = SR_IMMEDIATE_GUI_NS::PlatformBackend::GLFW;
     #elif defined(SR_LINUX) && defined(SR_COMMON_USE_NATIVE_WAYLAND)
-        m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::WaylandCustom;
+        m_platformBackend = SR_IMMEDIATE_GUI_NS::PlatformBackend::WaylandCustom;
     #elif defined(SR_ANDROID)
-        m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::Android;
+        m_platformBackend = SR_IMMEDIATE_GUI_NS::PlatformBackend::Android;
     #else
-        m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::None;
+        m_platformBackend = SR_IMMEDIATE_GUI_NS::PlatformBackend::None;
     #endif
 
-        SR_GRAPH_GUI_NS::Immediate::PlatformInitInfo platformInit = { };
+        SR_IMMEDIATE_GUI_NS::PlatformInitInfo platformInit = { };
         platformInit.backend = m_platformBackend;
         platformInit.window = pWindow ? pWindow->GetHandle() : nullptr;
 
-        if (!SR_GRAPH_GUI_NS::Immediate::PlatformInit(platformInit)) {
+        if (!SR_IMMEDIATE_GUI_NS::PlatformInit(platformInit)) {
             SR_ERROR("VulkanImGuiOverlay::Init() : failed to initialize platform backend!");
             return false;
         }
 
-        std::vector<SR_GRAPH_GUI_NS::Immediate::VulkanFrameInfo> frames;
+        std::vector<SR_IMMEDIATE_GUI_NS::VulkanFrameInfo> frames;
         frames.resize(GetCountImages());
         for (uint32_t i = 0; i < frames.size(); ++i) {
             frames[i].image = m_swapChain->GetBuffers()[i].m_image;
@@ -86,7 +86,7 @@ namespace SR_GRAPH_NS {
             frames[i].height = m_swapChain->GetSurfaceHeight();
         }
 
-        SR_GRAPH_GUI_NS::Immediate::VulkanRendererCreateInfo vkInfo = { };
+        SR_IMMEDIATE_GUI_NS::VulkanRendererCreateInfo vkInfo = { };
         vkInfo.instance = pKernel->GetInstance();
         vkInfo.physicalDevice = *pKernel->GetDevice();
         vkInfo.device = *pKernel->GetDevice();
@@ -104,13 +104,13 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_vkRenderer = SR_GRAPH_GUI_NS::Immediate::VulkanCreateRenderer(vkInfo, frames.data(), static_cast<uint32_t>(frames.size()));
+        m_vkRenderer = SR_IMMEDIATE_GUI_NS::VulkanCreateRenderer(vkInfo, frames.data(), static_cast<uint32_t>(frames.size()));
         if (!m_vkRenderer) {
             SR_ERROR("VulkanImGuiOverlay::Init() : failed to create vulkan imgui renderer!");
             return false;
         }
 
-        m_semaphore = SR_GRAPH_GUI_NS::Immediate::VulkanGetRenderSemaphore(m_vkRenderer);
+        m_semaphore = SR_IMMEDIATE_GUI_NS::VulkanGetRenderSemaphore(m_vkRenderer);
 
         if (!ReCreate()) {
             SR_ERROR("VulkanImGuiOverlay::Init() : failed to re-create!");
@@ -126,19 +126,19 @@ namespace SR_GRAPH_NS {
             // Release cached ImGui texture descriptor sets (allocated by imgui vulkan backend).
             for (auto&& [id, binding] : m_imguiTextureBindings) {
                 if (binding.descriptorSet != VK_NULL_HANDLE) {
-                    SR_GRAPH_GUI_NS::Immediate::VulkanRemoveTexture(m_vkRenderer, binding.descriptorSet);
+                    SR_IMMEDIATE_GUI_NS::VulkanRemoveTexture(m_vkRenderer, binding.descriptorSet);
                 }
             }
             m_imguiTextureBindings.clear();
         }
 
         if (m_vkRenderer) {
-            SR_GRAPH_GUI_NS::Immediate::VulkanDestroyRenderer(m_vkRenderer);
+            SR_IMMEDIATE_GUI_NS::VulkanDestroyRenderer(m_vkRenderer);
             m_vkRenderer = nullptr;
         }
 
         if (m_initialized) {
-            SR_GRAPH_GUI_NS::Immediate::PlatformShutdown(m_platformBackend);
+            SR_IMMEDIATE_GUI_NS::PlatformShutdown(m_platformBackend);
         }
 
         m_semaphore = VK_NULL_HANDLE;
@@ -161,9 +161,9 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        SR_GRAPH_GUI_NS::Immediate::VulkanNewFrame(m_vkRenderer);
+        SR_IMMEDIATE_GUI_NS::VulkanNewFrame(m_vkRenderer);
 
-        SR_GRAPH_GUI_NS::Immediate::PlatformNewFrameInfo frameInfo = { };
+        SR_IMMEDIATE_GUI_NS::PlatformNewFrameInfo frameInfo = { };
 
     #if defined(SR_LINUX) && defined(SR_COMMON_USE_NATIVE_WAYLAND)
         if (auto&& pNativeWindow = m_pipeline->GetWindow()->GetImplementation<WaylandWindow>()) {
@@ -174,8 +174,8 @@ namespace SR_GRAPH_NS {
         frameInfo.deltaTime = SR_HTYPES_NS::Time::Instance().DeltaTime();
     #endif
 
-        SR_GRAPH_GUI_NS::Immediate::PlatformNewFrame(m_platformBackend, frameInfo);
-        SR_GRAPH_GUI_NS::Immediate::NewFrame();
+        SR_IMMEDIATE_GUI_NS::PlatformNewFrame(m_platformBackend, frameInfo);
+        SR_IMMEDIATE_GUI_NS::NewFrame();
 
         return true;
     }
@@ -188,20 +188,20 @@ namespace SR_GRAPH_NS {
             m_undockingActive = IsUndockingActive();
             m_surfaceDirty = true;
 
-            SR_GRAPH_GUI_NS::Immediate::Render();
+            SR_IMMEDIATE_GUI_NS::Render();
 
             if (IsViewportsEnabled()) {
-                SR_GRAPH_GUI_NS::Immediate::UpdatePlatformWindows();
+                SR_IMMEDIATE_GUI_NS::UpdatePlatformWindows();
             }
 
             return;
         }
 
-        SR_GRAPH_GUI_NS::Immediate::Render();
+        SR_IMMEDIATE_GUI_NS::Render();
 
         if (IsViewportsEnabled()) {
-            SR_GRAPH_GUI_NS::Immediate::UpdatePlatformWindows();
-            SR_GRAPH_GUI_NS::Immediate::RenderPlatformWindowsDefault();
+            SR_IMMEDIATE_GUI_NS::UpdatePlatformWindows();
+            SR_IMMEDIATE_GUI_NS::RenderPlatformWindowsDefault();
         }
     }
 
@@ -213,7 +213,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        std::vector<SR_GRAPH_GUI_NS::Immediate::VulkanFrameInfo> frames;
+        std::vector<SR_IMMEDIATE_GUI_NS::VulkanFrameInfo> frames;
         frames.resize(GetCountImages());
         for (uint32_t i = 0; i < frames.size(); ++i) {
             frames[i].image = m_swapChain->GetBuffers()[i].m_image;
@@ -222,12 +222,12 @@ namespace SR_GRAPH_NS {
             frames[i].height = m_swapChain->GetSurfaceHeight();
         }
 
-        if (!SR_GRAPH_GUI_NS::Immediate::VulkanRecreateRenderer(m_vkRenderer, frames.data(), static_cast<uint32_t>(frames.size()))) {
+        if (!SR_IMMEDIATE_GUI_NS::VulkanRecreateRenderer(m_vkRenderer, frames.data(), static_cast<uint32_t>(frames.size()))) {
             SR_ERROR("VulkanImGuiOverlay::ReCreate() : failed to recreate vulkan renderer!");
             return false;
         }
 
-        m_semaphore = SR_GRAPH_GUI_NS::Immediate::VulkanGetRenderSemaphore(m_vkRenderer);
+        m_semaphore = SR_IMMEDIATE_GUI_NS::VulkanGetRenderSemaphore(m_vkRenderer);
         m_surfaceDirty = false;
 
         return true;
@@ -240,7 +240,7 @@ namespace SR_GRAPH_NS {
             return m_submitInfo;
         }
 
-        VkCommandBuffer cmd = SR_GRAPH_GUI_NS::Immediate::VulkanRecordFrame(m_vkRenderer, frame, m_tracyEnabled);
+        VkCommandBuffer cmd = SR_IMMEDIATE_GUI_NS::VulkanRecordFrame(m_vkRenderer, frame, m_tracyEnabled);
         if (cmd == VK_NULL_HANDLE) {
             return m_submitInfo;
         }
@@ -281,13 +281,13 @@ namespace SR_GRAPH_NS {
         }
 
         if (binding.descriptorSet != VK_NULL_HANDLE) {
-            SR_GRAPH_GUI_NS::Immediate::VulkanRemoveTexture(m_vkRenderer, binding.descriptorSet);
+            SR_IMMEDIATE_GUI_NS::VulkanRemoveTexture(m_vkRenderer, binding.descriptorSet);
             binding = ImGuiTextureBinding{};
         }
 
         binding.view = view;
         binding.layout = layout;
-        binding.descriptorSet = SR_GRAPH_GUI_NS::Immediate::VulkanAddTexture(m_vkRenderer, view, layout);
+        binding.descriptorSet = SR_IMMEDIATE_GUI_NS::VulkanAddTexture(m_vkRenderer, view, layout);
 
         if (binding.descriptorSet == VK_NULL_HANDLE) {
             binding = ImGuiTextureBinding{};
@@ -304,7 +304,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (m_vkRenderer && it->second.descriptorSet != VK_NULL_HANDLE) {
-            SR_GRAPH_GUI_NS::Immediate::VulkanRemoveTexture(m_vkRenderer, it->second.descriptorSet);
+            SR_IMMEDIATE_GUI_NS::VulkanRemoveTexture(m_vkRenderer, it->second.descriptorSet);
         }
 
         m_imguiTextureBindings.erase(it);
@@ -328,7 +328,7 @@ namespace SR_GRAPH_NS {
 
     void VulkanImGuiOverlay::ReloadFonts() {
         Super::ReloadFonts();
-        SR_GRAPH_GUI_NS::Immediate::VulkanReloadFonts(m_vkRenderer);
+        SR_IMMEDIATE_GUI_NS::VulkanReloadFonts(m_vkRenderer);
     }
 }
 

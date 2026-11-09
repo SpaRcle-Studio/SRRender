@@ -57,7 +57,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::VFS::Instance().ResolvePath(m_iniPathEditor, SR_UTILS_NS::FileMode::Read);
         SR_UTILS_NS::VFS::Instance().ResolvePath(m_iniPathWidgets, SR_UTILS_NS::FileMode::Read);
 
-        SR_GRAPH_GUI_NS::Immediate::ImmediateGUICreateContext createContext;
+        SR_IMMEDIATE_GUI_NS::ImmediateGUICreateContext createContext;
         createContext.iniPath = m_iniPathEditor;
         createContext.viewportsEnabled = SR_UTILS_NS::Features::Instance().Enabled("Undocking", false);
         if (createContext.viewportsEnabled && !IsDynamicRenderingEnabled()) {
@@ -66,7 +66,7 @@ namespace SR_GRAPH_NS {
         }
         m_viewportsEnabled = createContext.viewportsEnabled;
 
-        m_context = SR_GRAPH_GUI_NS::Immediate::CreateContext(createContext);
+        m_context = SR_IMMEDIATE_GUI_NS::CreateContext(createContext);
 
         ReloadFonts();
 
@@ -81,7 +81,7 @@ namespace SR_GRAPH_NS {
     void ImGuiOverlay::Destroy() {
         if (m_context) {
             SR_GRAPH("ImGuiOverlay::Destroy() : destroying ImGui context...");
-            SR_GRAPH_GUI_NS::Immediate::DestroyContext(m_context);
+            SR_IMMEDIATE_GUI_NS::DestroyContext(m_context);
             m_context = nullptr;
         }
     }
@@ -91,7 +91,7 @@ namespace SR_GRAPH_NS {
 
         SR_INFO("ImGuiOverlay::ReloadFonts() : reloading fonts...");
 
-        SR_GRAPH_GUI_NS::Immediate::ClearFonts();
+        SR_IMMEDIATE_GUI_NS::ClearFonts();
 
         static const uint32_t mainFontRanges[] = {
             0x0020, 0x00FF, /// Basic Latin + Latin Supplement
@@ -104,7 +104,7 @@ namespace SR_GRAPH_NS {
 
         SR_UTILS_NS::String fontData;
 
-        auto loadFontOwnedByAtlas = [&](const SR_UTILS_NS::Path& fontPath, float size, const SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig& cfg, const uint32_t* glyphRanges) -> void* {
+        auto loadFontOwnedByAtlas = [&](const SR_UTILS_NS::Path& fontPath, float size, const SR_IMMEDIATE_GUI_NS::ImmediateGUIFontConfig& cfg, const uint32_t* glyphRanges) -> void* {
             if (!fontPath.IsFile()) {
                 SR_ERROR("ImGuiOverlay::ReloadFonts() : file not found!\n\tPath: " + fontPath.ToString());
                 return nullptr;
@@ -122,9 +122,9 @@ namespace SR_GRAPH_NS {
             }
             memcpy(owned, fontData.data(), fontData.size());
 
-            SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config = cfg;
+            SR_IMMEDIATE_GUI_NS::ImmediateGUIFontConfig config = cfg;
             config.fontDataOwnedByAtlas = true; // ImGui will free via allocator we set in CreateContext()
-            return SR_GRAPH_GUI_NS::Immediate::AddFontFromMemoryTTF(owned, static_cast<int>(fontData.size()), size, config, glyphRanges);
+            return SR_IMMEDIATE_GUI_NS::AddFontFromMemoryTTF(owned, static_cast<int>(fontData.size()), size, config, glyphRanges);
         };
 
         /// Main font
@@ -133,7 +133,7 @@ namespace SR_GRAPH_NS {
             auto&& fontPath = CoreResLoader::GetResPath().Concat("Engine/Fonts/tahoma.ttf");
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load editor font...\n\tPath: {}", fontPath);
 
-            SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
+            SR_IMMEDIATE_GUI_NS::ImmediateGUIFontConfig config;
             m_smallFont = loadFontOwnedByAtlas(fontPath, 12.f * 0.75f, config, mainFontRanges);
             m_mainFont  = loadFontOwnedByAtlas(fontPath, 12.f, config, mainFontRanges);
         }
@@ -143,7 +143,7 @@ namespace SR_GRAPH_NS {
             SR_TRACY_ZONE_N("Load warning font");
             auto&& fontPath = CoreResLoader::GetResPath().Concat("Engine/Fonts/seguisym.ttf");
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load warning font...\n\tPath: {}", fontPath);
-            SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
+            SR_IMMEDIATE_GUI_NS::ImmediateGUIFontConfig config;
             config.mergeMode = true;
             loadFontOwnedByAtlas(fontPath, 12.0, config, ranges);
         }
@@ -154,14 +154,14 @@ namespace SR_GRAPH_NS {
             auto&& iconsFont = CoreResLoader::GetResPath().Concat("Engine/Fonts/fa-solid-900.ttf");
 
             SR_GRAPH("ImGuiOverlay::ReloadFonts() : load icon font...\n\tPath: {}", iconsFont);
-            SR_GRAPH_GUI_NS::Immediate::ImmediateGUIFontConfig config;
+            SR_IMMEDIATE_GUI_NS::ImmediateGUIFontConfig config;
             config.mergeMode = false;
             config.glyphMinAdvanceX = 13.0f;
             m_iconFont = loadFontOwnedByAtlas(iconsFont, 40.f, config, icon_ranges);
         }
 
         SR_GRAPH("ImGuiOverlay::ReloadFonts() : build fonts...");
-        if (!SR_GRAPH_GUI_NS::Immediate::BuildFonts(m_mainFont)) {
+        if (!SR_IMMEDIATE_GUI_NS::BuildFonts(m_mainFont)) {
             SR_ERROR("ImGuiOverlay::ReloadFonts() : failed to build fonts!");
             return;
         }
@@ -176,7 +176,7 @@ namespace SR_GRAPH_NS {
 
     bool ImGuiOverlay::IsUndockingActive() const {
         if (m_context && IsViewportsEnabled()) {
-            return SR_GRAPH_GUI_NS::Immediate::GetViewportCount(m_context) > 1;
+            return SR_IMMEDIATE_GUI_NS::GetViewportCount(m_context) > 1;
         }
 
         return false;

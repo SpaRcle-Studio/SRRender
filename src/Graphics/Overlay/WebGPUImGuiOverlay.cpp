@@ -17,18 +17,18 @@ namespace SR_GRAPH_NS {
         }
 
     #if defined(SR_EMSCRIPTEN)
-        m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::Emscripten;
+        m_platformBackend = SR_IMMEDIATE_GUI_NS::PlatformBackend::Emscripten;
     #else
-        m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::None;
+        m_platformBackend = SR_IMMEDIATE_GUI_NS::PlatformBackend::None;
     #endif
 
         auto&& pWindow = m_pipeline->GetWindow();
 
-        SR_GRAPH_GUI_NS::Immediate::PlatformInitInfo platformInit = { };
+        SR_IMMEDIATE_GUI_NS::PlatformInitInfo platformInit = { };
         platformInit.backend = m_platformBackend;
         platformInit.window = pWindow ? pWindow->GetHandle() : nullptr;
 
-        if (!SR_GRAPH_GUI_NS::Immediate::PlatformInit(platformInit)) {
+        if (!SR_IMMEDIATE_GUI_NS::PlatformInit(platformInit)) {
             SR_ERROR("WebGPUImGuiOverlay::Init() : failed to initialize platform backend!");
             return false;
         }
@@ -39,13 +39,13 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        SR_GRAPH_GUI_NS::Immediate::WebGPURendererCreateInfo wgpuInfo;
+        SR_IMMEDIATE_GUI_NS::WebGPURendererCreateInfo wgpuInfo;
         wgpuInfo.device = pWebGPUPipeline->GetWGPUDevice();
         wgpuInfo.numFramesInFlight = pWebGPUPipeline->GetFramesInFlightCount();
         wgpuInfo.renderTargetFormat = pWebGPUPipeline->GetSurfaceFormat();
         wgpuInfo.depthStencilFormat = WGPUTextureFormat_Undefined;
 
-        m_wgpuRenderer = SR_GRAPH_GUI_NS::Immediate::WebGPUCreateRenderer(wgpuInfo);
+        m_wgpuRenderer = SR_IMMEDIATE_GUI_NS::WebGPUCreateRenderer(wgpuInfo);
         if (!m_wgpuRenderer) {
             SR_ERROR("WebGPUImGuiOverlay::Init() : failed to create WebGPU imgui renderer!");
             return false;
@@ -66,12 +66,12 @@ namespace SR_GRAPH_NS {
 #endif
 
         if (m_wgpuRenderer) {
-            SR_GRAPH_GUI_NS::Immediate::WebGPUDestroyRenderer(m_wgpuRenderer);
+            SR_IMMEDIATE_GUI_NS::WebGPUDestroyRenderer(m_wgpuRenderer);
             m_wgpuRenderer = nullptr;
         }
 
         if (m_initialized) {
-            SR_GRAPH_GUI_NS::Immediate::PlatformShutdown(m_platformBackend);
+            SR_IMMEDIATE_GUI_NS::PlatformShutdown(m_platformBackend);
         }
 
         m_initialized = false;
@@ -86,10 +86,10 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        SR_GRAPH_GUI_NS::Immediate::WebGPUNewFrame(m_wgpuRenderer);
+        SR_IMMEDIATE_GUI_NS::WebGPUNewFrame(m_wgpuRenderer);
 
-        SR_GRAPH_GUI_NS::Immediate::PlatformNewFrame(m_platformBackend);
-        SR_GRAPH_GUI_NS::Immediate::NewFrame();
+        SR_IMMEDIATE_GUI_NS::PlatformNewFrame(m_platformBackend);
+        SR_IMMEDIATE_GUI_NS::NewFrame();
 
         return true;
     }
@@ -97,11 +97,11 @@ namespace SR_GRAPH_NS {
     void WebGPUImGuiOverlay::EndDraw() {
         SR_TRACY_ZONE;
 
-        SR_GRAPH_GUI_NS::Immediate::Render();
+        SR_IMMEDIATE_GUI_NS::Render();
 
         if (IsViewportsEnabled()) {
-            SR_GRAPH_GUI_NS::Immediate::UpdatePlatformWindows();
-            SR_GRAPH_GUI_NS::Immediate::RenderPlatformWindowsDefault();
+            SR_IMMEDIATE_GUI_NS::UpdatePlatformWindows();
+            SR_IMMEDIATE_GUI_NS::RenderPlatformWindowsDefault();
         }
     }
 
@@ -112,12 +112,12 @@ namespace SR_GRAPH_NS {
 
     void WebGPUImGuiOverlay::ReloadFonts() {
         Super::ReloadFonts();
-        SR_GRAPH_GUI_NS::Immediate::WebGPUReloadFonts(m_wgpuRenderer);
+        SR_IMMEDIATE_GUI_NS::WebGPUReloadFonts(m_wgpuRenderer);
     }
 
     void WebGPUImGuiOverlay::Render(WGPURenderPassEncoder pass) {
         SR_TRACY_ZONE;
-        SR_GRAPH_GUI_NS::Immediate::WebGPURenderDrawData(m_wgpuRenderer, pass);
+        SR_IMMEDIATE_GUI_NS::WebGPURenderDrawData(m_wgpuRenderer, pass);
     }
 
     void* WebGPUImGuiOverlay::GetTextureDescriptorSet(uint32_t textureId) {

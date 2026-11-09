@@ -52,14 +52,14 @@ namespace SR_GRAPH_NS {
                     float x = event.motion.x;
                     float y = event.motion.y;
 
-                    auto&& pMouseDown = SR_GRAPH_GUI_NS::Immediate::GetMouseDown();
+                    auto&& pMouseDown = SR_IMMEDIATE_GUI_NS::GetMouseDown();
 
                     switch (action) {
                         case AMOTION_EVENT_ACTION_DOWN:
                         case AMOTION_EVENT_ACTION_POINTER_DOWN:
                             if (pointerIndex < 5) {
                                 pMouseDown[pointerIndex] = true;
-                                SR_GRAPH_GUI_NS::Immediate::SetMousePos(SR_MATH_NS::FVector2(x, y));
+                                SR_IMMEDIATE_GUI_NS::SetMousePos(SR_MATH_NS::FVector2(x, y));
                             }
                             break;
 
@@ -71,7 +71,7 @@ namespace SR_GRAPH_NS {
                             break;
 
                         case AMOTION_EVENT_ACTION_MOVE:
-                            SR_GRAPH_GUI_NS::Immediate::SetMousePos(SR_MATH_NS::FVector2(x, y));
+                            SR_IMMEDIATE_GUI_NS::SetMousePos(SR_MATH_NS::FVector2(x, y));
                             break;
 
                         case AMOTION_EVENT_ACTION_CANCEL:

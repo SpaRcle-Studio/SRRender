@@ -48,8 +48,8 @@ namespace SR_GRAPH_NS {
 #endif
 
     private:
-        SR_GRAPH_GUI_NS::Immediate::PlatformBackend m_platformBackend = SR_GRAPH_GUI_NS::Immediate::PlatformBackend::None;
-        SR_GRAPH_GUI_NS::Immediate::WebGPURendererHandle m_wgpuRenderer = nullptr;
+        SR_IMMEDIATE_GUI_NS::PlatformBackend m_platformBackend = SR_IMMEDIATE_GUI_NS::PlatformBackend::None;
+        SR_IMMEDIATE_GUI_NS::WebGPURendererHandle m_wgpuRenderer = nullptr;
 
 #if defined(SR_RENDER_USE_WEBGPU)
         /// Cache: textureId -> WGPUTextureView (raw handle) last bound to ImGui.

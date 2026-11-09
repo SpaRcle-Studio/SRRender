@@ -47,19 +47,19 @@ namespace SR_GRAPH_GUI_NS {
     void NodeWidget::Draw() {
         DrawTopPanel();
 
-        SR_GRAPH_GUI_NS::Immediate::Separator();
+        SR_IMMEDIATE_GUI_NS::Separator();
 
-        auto&& availableSize = SR_GRAPH_GUI_NS::Immediate::GetContentRegionAvail();
+        auto&& availableSize = SR_IMMEDIATE_GUI_NS::GetContentRegionAvail();
 
-        SR_GRAPH_GUI_NS::Immediate::BeginChild("InspectPanel", SR_MATH_NS::FVector2(m_leftPaneWidth, availableSize.y));
+        SR_IMMEDIATE_GUI_NS::BeginChild("InspectPanel", SR_MATH_NS::FVector2(m_leftPaneWidth, availableSize.y));
         DrawInspectPanel();
-        SR_GRAPH_GUI_NS::Immediate::EndChild();
+        SR_IMMEDIATE_GUI_NS::EndChild();
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        SR_GRAPH_GUI_NS::Immediate::BeginChild("NodeEditor", SR_MATH_NS::FVector2(availableSize.x - m_leftPaneWidth - 10, availableSize.y));
+        SR_IMMEDIATE_GUI_NS::BeginChild("NodeEditor", SR_MATH_NS::FVector2(availableSize.x - m_leftPaneWidth - 10, availableSize.y));
         DrawNodeEditor();
-        SR_GRAPH_GUI_NS::Immediate::EndChild();
+        SR_IMMEDIATE_GUI_NS::EndChild();
     }
 
     void NodeWidget::OnClose() {
@@ -69,62 +69,62 @@ namespace SR_GRAPH_GUI_NS {
     }
 
     void NodeWidget::DrawTopPanel() {
-        SR_GRAPH_GUI_NS::Immediate::PushStyleVar(SR_GRAPH_GUI_NS::Immediate::StyleVar::ChildRounding, 0);
-        SR_GRAPH_GUI_NS::Immediate::PushStyleVar(SR_GRAPH_GUI_NS::Immediate::StyleVar::WindowRounding, 0);
-        SR_GRAPH_GUI_NS::Immediate::PushStyleVar(SR_GRAPH_GUI_NS::Immediate::StyleVar::FrameRounding, 0);
+        SR_IMMEDIATE_GUI_NS::PushStyleVar(SR_IMMEDIATE_GUI_NS::StyleVar::ChildRounding, 0);
+        SR_IMMEDIATE_GUI_NS::PushStyleVar(SR_IMMEDIATE_GUI_NS::StyleVar::WindowRounding, 0);
+        SR_IMMEDIATE_GUI_NS::PushStyleVar(SR_IMMEDIATE_GUI_NS::StyleVar::FrameRounding, 0);
 
-        if (SR_GRAPH_GUI_NS::Immediate::Button("Open")) {
+        if (SR_IMMEDIATE_GUI_NS::Button("Open")) {
             TopPanelOpen();
         }
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        if (SR_GRAPH_GUI_NS::Immediate::Button("Save")) {
+        if (SR_IMMEDIATE_GUI_NS::Button("Save")) {
             TopPanelSave();
         }
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        if (SR_GRAPH_GUI_NS::Immediate::Button("Save at")) {
+        if (SR_IMMEDIATE_GUI_NS::Button("Save at")) {
             TopPanelSaveAt();
         }
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        SR_GRAPH_GUI_NS::Immediate::Text(" | ");
+        SR_IMMEDIATE_GUI_NS::Text(" | ");
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        if (SR_GRAPH_GUI_NS::Immediate::Button("Zoom")) {
+        if (SR_IMMEDIATE_GUI_NS::Button("Zoom")) {
             Zoom();
         }
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        SR_GRAPH_GUI_NS::Immediate::Text(" | ");
+        SR_IMMEDIATE_GUI_NS::Text(" | ");
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        if (SR_GRAPH_GUI_NS::Immediate::Button("Execute")) {
+        if (SR_IMMEDIATE_GUI_NS::Button("Execute")) {
             Execute();
         }
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        SR_GRAPH_GUI_NS::Immediate::Text(" | ");
+        SR_IMMEDIATE_GUI_NS::Text(" | ");
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        if (SR_GRAPH_GUI_NS::Immediate::Button("Close")) {
+        if (SR_IMMEDIATE_GUI_NS::Button("Close")) {
             TopPanelClose();
         }
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
+        SR_IMMEDIATE_GUI_NS::SameLine();
 
-        SR_GRAPH_GUI_NS::Immediate::Text(" | %s", m_currentFile.empty() ? " [Non saved]" : m_currentFile.CStr());
+        SR_IMMEDIATE_GUI_NS::Text(" | %s", m_currentFile.empty() ? " [Non saved]" : m_currentFile.CStr());
 
-        SR_GRAPH_GUI_NS::Immediate::SameLine();
-        SR_GRAPH_GUI_NS::Immediate::PopStyleVar(3);
+        SR_IMMEDIATE_GUI_NS::SameLine();
+        SR_IMMEDIATE_GUI_NS::PopStyleVar(3);
     }
 
     void NodeWidget::DrawPopupMenu() {
@@ -239,7 +239,7 @@ namespace SR_GRAPH_GUI_NS {
                 continue;
             }
 
-            if (SR_GRAPH_GUI_NS::Immediate::MenuItem(menuName.c_str())) {
+            if (SR_IMMEDIATE_GUI_NS::MenuItem(menuName.c_str())) {
                 OnNodeTypeSelected(nodeTypeName, popupPos);
             }
         }
@@ -256,9 +256,9 @@ namespace SR_GRAPH_GUI_NS {
                 levelName = levelName.substr(0, nextSlash);
             }
 
-            if (SR_GRAPH_GUI_NS::Immediate::BeginMenu(levelName.c_str())) {
+            if (SR_IMMEDIATE_GUI_NS::BeginMenu(levelName.c_str())) {
                 DrawNodeMenuRecursive(categories, nextLevel, popupPos);
-                SR_GRAPH_GUI_NS::Immediate::EndMenu();
+                SR_IMMEDIATE_GUI_NS::EndMenu();
             }
         }
     }

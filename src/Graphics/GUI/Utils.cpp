@@ -12,13 +12,13 @@ namespace SR_GRAPH_GUI_NS {
         , m_disabled(disabled)
     {
         if (m_disabled) {
-            SR_GRAPH_GUI_NS::Immediate::BeginDisabled(true);
+            SR_IMMEDIATE_GUI_NS::BeginDisabled(true);
         }
     }
 
     ImGuiDisabledLockGuard::~ImGuiDisabledLockGuard() {
         if (m_disabled) {
-            SR_GRAPH_GUI_NS::Immediate::EndDisabled();
+            SR_IMMEDIATE_GUI_NS::EndDisabled();
         }
     }
 }
