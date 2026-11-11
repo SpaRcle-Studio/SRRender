@@ -102,10 +102,10 @@ else()
         target_compile_options(Graphics PRIVATE -fPIC)
     endif()
 
-    target_link_libraries(Graphics PUBLIC Utils)
-
     SR_COPY_SHARED_MODULE_TO_EXECUTABLE_FOLDER(Graphics)
 endif()
+
+target_link_libraries(Graphics PUBLIC Utils)
 
 SR_COPY_STATIC_LIBRARY_TO_LIBRARY_FOLDER(Graphics)
 
