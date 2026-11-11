@@ -22,7 +22,6 @@ namespace SR_GTYPES_NS {
     #endif
         using MSDFFreeTypeHandle = void*;
         using MSDFontHandle = void*;
-        using StringType = std::u32string;
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<Font>;
 
@@ -60,6 +59,7 @@ namespace SR_GTYPES_NS {
     private:
         FontLibrary m_library = nullptr;
         FontFace m_face = nullptr;
+        SR_UTILS_NS::String m_fontData;
 
         bool m_hasColor = false;
         bool m_isColorEmoji = false;

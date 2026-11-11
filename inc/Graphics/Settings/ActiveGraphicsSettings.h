@@ -16,8 +16,6 @@ namespace SR_GRAPH_NS {
 
         ActiveGraphicsSettings() = default;
 
-        SR_INLINE_STATIC SR_UTILS_NS::Path SETTINGS_PATH = "User/GraphicsSettings.sra";
-
         bool operator==(const ActiveGraphicsSettings& lrs) const {
             return instancing == lrs.instancing
                    && shadowsInstancing == lrs.shadowsInstancing

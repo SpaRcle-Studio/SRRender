@@ -28,10 +28,15 @@ namespace SR_GTYPES_NS {
 
         if (m_library) {
         #ifdef SR_USE_FREETYPE
+            if (m_face) {
+                FT_Done_Face(m_face);
+                m_face = nullptr;
+            }
             FT_Done_FreeType(m_library);
         #endif
             m_library = nullptr;
         }
+        m_fontData.clear();
 
         return Super::Unload();
     }
@@ -40,12 +45,22 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         SR_UTILS_NS::Path path = CoreResLoader::GetResPath().Concat(GetResourcePath());
-        SR_UTILS_NS::VFS::Instance().ResolvePath(path, SR_UTILS_NS::FileMode::Read);
 
     #ifdef SR_USE_FREETYPE
-        FT_Init_FreeType(&m_library);
+        auto file = SR_UTILS_NS::VFS::Instance().OpenFile(path, SR_UTILS_NS::FileMode::Read);
+        if (!file || !file.Read(m_fontData) || m_fontData.empty()) {
+            SR_ERROR("Font::Load() : failed to read font!\n\tPath: {}", path);
+            return false;
+        }
+        if (FT_Init_FreeType(&m_library)) {
+            return false;
+        }
 
-        if (FT_New_Face(m_library, path.c_str(), 0, &m_face)) {
+        if (FT_New_Memory_Face(m_library, reinterpret_cast<const FT_Byte*>(m_fontData.data()),
+            static_cast<FT_Long>(m_fontData.size()), 0, &m_face)) {
+            FT_Done_FreeType(m_library);
+            m_library = nullptr;
+            m_fontData.clear();
             SR_ERROR("Font::Load() : failed to load free-type font!\n\tPath: {}", path);
             return false;
         }

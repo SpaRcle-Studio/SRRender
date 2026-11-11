@@ -817,7 +817,12 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderContext::ReloadGraphicsSettings() {
-        if (auto&& path = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat(ActiveGraphicsSettings::SETTINGS_PATH); path.IsFile()) {
+        auto&& path = SR_PLATFORM_NS::GetApplicationUserDataDirectory()
+            .Concat("User")
+            .Concat(SR_PLATFORM_NS::GetApplicationInfo().project)
+            .Concat("GraphicsSettings.sra");
+
+        if (path.IsFile()) {
             SR_LOG("RenderContext::ReloadGraphicsSettings() : loading active graphics settings from path: {}", path);
             SR_UTILS_NS::SRADeserializer deserializer;
             ActiveGraphicsSettings settings;

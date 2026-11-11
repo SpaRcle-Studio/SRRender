@@ -31,8 +31,17 @@ namespace SR_GRAPH_NS {
         static std::string_view editorConfigPath = "Editor/Configs/ImGuiEditor.config";
         static std::string_view widgetsConfigPath = "Editor/Configs/EditorWidgets.xml";
 
-        m_iniPathEditor = resourcesManager.GetCachePath().Concat(editorConfigPath);
-        m_iniPathWidgets = resourcesManager.GetCachePath().Concat(widgetsConfigPath);
+        m_iniPathEditor = SR_PLATFORM_NS::GetApplicationUserDataDirectory()
+                .Concat("User")
+                .Concat(SR_PLATFORM_NS::GetApplicationInfo().project)
+                .Concat("Editor")
+                .Concat("ImGuiEditor.config");
+
+        m_iniPathWidgets = SR_PLATFORM_NS::GetApplicationUserDataDirectory()
+                .Concat("User")
+                .Concat(SR_PLATFORM_NS::GetApplicationInfo().project)
+                .Concat("Editor")
+                .Concat("EditorWidgets.xml");
 
         if (!m_iniPathEditor.IsFile()) {
             SR_UTILS_NS::Path engineEditorConfigPath = resourcesManager.GetCachePath().Concat(editorConfigPath);
