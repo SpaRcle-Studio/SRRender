@@ -68,10 +68,10 @@ namespace SR_ANIMATIONS_NS {
         /// @property @hidden
         SR_UTILS_NS::Vector<AnimationState::Ptr> m_states;
 
-        SR_HTYPES_NS::SortedVector<AnimationState*> m_activeStates;
+        SR_UTILS_NS::SortedVector<AnimationState*> m_activeStates;
         /// Стейты, которые уже обновились в текущем кадре. Переход может завершиться в том же кадре,
         /// в котором начался, и тогда стейт не должен проиграться дважды.
-        SR_HTYPES_NS::SortedVector<AnimationState*> m_updatedStates;
+        SR_UTILS_NS::SortedVector<AnimationState*> m_updatedStates;
 
     };
 }

@@ -142,11 +142,11 @@ namespace SR_GRAPH_NS {
 
     private:
         struct VertexBufferInfo {
-            SR_HTYPES_NS::SortedVector<MeshVideoMemoryInfo> buffers;
+            SR_UTILS_NS::SortedVector<MeshVideoMemoryInfo> buffers;
             SR_UTILS_NS::VertexLayoutDescription layout;
         };
         std::vector<VertexBufferInfo> m_vertexBuffers;
-        SR_HTYPES_NS::SortedVector<MeshVideoMemoryInfo> m_indexBuffers;
+        SR_UTILS_NS::SortedVector<MeshVideoMemoryInfo> m_indexBuffers;
 
         struct Registration {
             SR_UTILS_NS::VertexLayoutDescription vertexLayout;

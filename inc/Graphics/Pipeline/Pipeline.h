@@ -384,7 +384,7 @@ namespace SR_GRAPH_NS {
                 return std::tie(pFrameBuffer, layer) < std::tie(other.pFrameBuffer, other.layer);
             }
         };
-        SR_HTYPES_NS::SortedVector<FBOBindingValidation> m_bindedFrameBuffers;
+        SR_UTILS_NS::SortedVector<FBOBindingValidation> m_bindedFrameBuffers;
 
         PipelineState m_state;
         PipelineState m_previousState;

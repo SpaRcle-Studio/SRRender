@@ -32,9 +32,9 @@ namespace SR_SRSL_NS {
 
         SR_UTILS_NS::Map<SR_UTILS_NS::String, SRSLUseStack::Ptr> functions;
 
-        SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> variables;
-        SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> forceUsedVariables;
-        SR_HTYPES_NS::SortedVector<SR_UTILS_NS::StringView> forceUsedFunctions;
+        SR_UTILS_NS::SortedVector<SR_UTILS_NS::StringView> variables;
+        SR_UTILS_NS::SortedVector<SR_UTILS_NS::StringView> forceUsedVariables;
+        SR_UTILS_NS::SortedVector<SR_UTILS_NS::StringView> forceUsedFunctions;
 
         SRSLUseStack* pRoot = nullptr;
     };

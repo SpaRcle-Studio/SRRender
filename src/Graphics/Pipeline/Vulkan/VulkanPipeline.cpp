@@ -135,13 +135,17 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
     #ifdef SR_USE_IMGUI
-        if (SR_UTILS_NS::Features::Instance().Enabled("ImGUI", false)) {
+        if (SR_UTILS_NS::StoreUtils::Temp::GetBool("ImGuiOverlayEnabled")) {
             auto&& pImGuiOverlay = m_overlays[OverlayType::ImGui];
             pImGuiOverlay = new VulkanImGuiOverlay(GetThis());
             if (!pImGuiOverlay->Init()) {
                 PipelineError("VulkanPipeline::InitOverlay() : failed to initialize ImGui overlay!");
                 return false;
             }
+            SR_LOG("VulkanPipeline::InitOverlay() : imgui overlay initialized!");
+        }
+        else {
+            SR_LOG("VulkanPipeline::InitOverlay() : imgui overlay is disabled!");
         }
     #endif
 

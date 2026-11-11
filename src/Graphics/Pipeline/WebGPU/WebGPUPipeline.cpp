@@ -12,6 +12,7 @@
 #include <Utils/Types/ObjectPool.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/Vertices.h>
+#include <Utils/Common/StoreUtils.h>
 #include <Utils/Resources/ResourceManager.h>
 
 #include <emscripten/html5.h>
@@ -1668,20 +1669,17 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
     #ifdef SR_USE_IMGUI
-        const bool defaultEnabled =
-        #if defined(SR_EMSCRIPTEN)
-            true;
-        #else
-            false;
-        #endif
-
-        if (SR_UTILS_NS::Features::Instance().Enabled("ImGUI", defaultEnabled)) {
+        if (SR_UTILS_NS::StoreUtils::Temp::GetBool("ImGuiOverlayEnabled")) {
             auto&& pImGuiOverlay = m_overlays[OverlayType::ImGui];
             pImGuiOverlay = new WebGPUImGuiOverlay(GetThis());
             if (!pImGuiOverlay->Init()) {
                 PipelineError("WebGPUPipeline::InitOverlay() : failed to initialize ImGui overlay!");
                 return false;
             }
+            SR_LOG("WebGPUPipeline::InitOverlay() : imgui overlay initialized!");
+        }
+        else {
+            SR_LOG("WebGPUPipeline::InitOverlay() : imgui overlay is disabled!");
         }
     #endif
 

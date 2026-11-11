@@ -69,7 +69,7 @@ namespace SR_GRAPH_NS {
             SR_NODISCARD bool operator()(const MeshInfo& left, const MeshInfo& right) const noexcept;
         };
 
-        using Queue = SR_HTYPES_NS::SortedVector<MeshInfo, RenderQueueLessPredicate>;
+        using Queue = SR_UTILS_NS::SortedVector<MeshInfo, RenderQueueLessPredicate>;
 
     public:
         RenderQueue(RenderStrategy* pStrategy, MeshDrawerPass* pDrawer);
@@ -127,7 +127,7 @@ namespace SR_GRAPH_NS {
 
         std::vector<std::pair<Layer, Queue>> m_queues;
 
-        SR_HTYPES_NS::SortedVector<SR_GTYPES_NS::Shader*> m_shaders;
+        SR_UTILS_NS::SortedVector<SR_GTYPES_NS::Shader*> m_shaders;
         SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_renderObjects;
         SR_HTYPES_NS::FastMemoryArray<MeshShaderPair> m_tempRenderObjects;
 

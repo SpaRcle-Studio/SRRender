@@ -45,7 +45,7 @@ namespace SR_SRSL_NS {
         SR_NODISCARD std::string GetHashStr() const;
         SR_NODISCARD const std::string& GetBuffer() const { return m_buffer; }
         SR_NODISCARD bool empty() const { return m_params.empty(); }
-        SR_NODISCARD const SR_HTYPES_NS::SortedVector<Entry>& GetParams() const { return m_params; }
+        SR_NODISCARD const SR_UTILS_NS::SortedVector<Entry>& GetParams() const { return m_params; }
         SR_NODISCARD const SR_UTILS_NS::VertexLayoutDescriptions& GetVertexLayoutDescriptions() const { return m_vertexLayoutDescriptions; }
         SR_NODISCARD SR_UTILS_NS::VertexLayoutDescriptions& GetVertexLayoutDescriptions() { return m_vertexLayoutDescriptions; }
         void ForEach(const SR_HTYPES_NS::Function<void(SR_UTILS_NS::StringView, SR_UTILS_NS::StringView)>& callback) const;
@@ -74,7 +74,7 @@ namespace SR_SRSL_NS {
         }
 
     private:
-        SR_HTYPES_NS::SortedVector<Entry> m_params;
+        SR_UTILS_NS::SortedVector<Entry> m_params;
         std::string m_buffer;
 
         SR_UTILS_NS::SRHashType m_hash = 0;
