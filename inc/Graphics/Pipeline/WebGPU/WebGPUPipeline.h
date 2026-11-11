@@ -11,6 +11,8 @@
     #include <webgpu/webgpu.h>
 #endif
 
+namespace wgpu { class Buffer; }
+
 namespace SR_GRAPH_NS {
     struct WebGPUPipelineInternalData;
 
@@ -140,6 +142,8 @@ namespace SR_GRAPH_NS {
 
         /// То же самое для BindGroup'ов буферов (UBO/SSBO).
         void InvalidateBufferBindGroups();
+        void StartReadbackMappings();
+        void WriteBufferOrdered(const wgpu::Buffer& buffer, uint64_t offset, const void* data, uint64_t size);
 
         void ProbeSupportedSampleCount(uint8_t sampleCount);
         SR_NODISCARD uint8_t ResolveSupportedSampleCount(uint8_t requested) const noexcept;

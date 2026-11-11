@@ -40,7 +40,10 @@ namespace SR_SRSL_NS {
 
         code += "/// [WARNING: THIS FILE WAS CREATED BY SRSL CODE GENERATION]\n\n";
         if (pShader->IsGLayerUsed()) {
-            code += "/// WARNING: GLayer (viewport layer) is not supported in WGSL. Remove GLayer usage or use a different shader target.\n\n";
+            SR_ERROR("WGSL cannot generate GLayer. Use the per-layer render path for this shader.");
+            result = SR_UTILS_NS::LexerDetails::LexerResult(SR_UTILS_NS::LexerDetails::LexerReturnCode::InvalidExpression);
+            stages.clear();
+            return codeGenRes;
         }
         CodeGenDetail::Append(code, "/// Shader type: ", SR_UTILS_NS::EnumReflector::ToStringAtom(pShader->GetType()).ToStringRef(), "\n\n");
 

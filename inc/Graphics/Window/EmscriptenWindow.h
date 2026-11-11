@@ -22,6 +22,7 @@ namespace SR_GRAPH_NS {
                         bool fullScreen, bool resizable) override;
 
         void PollEvents() override;
+        bool IsFullScreen() override;
 
     public:
         SR_NODISCARD WindowType GetType() const override { return WindowType::Emscripten; };

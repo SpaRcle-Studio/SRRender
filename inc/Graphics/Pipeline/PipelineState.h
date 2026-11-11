@@ -57,6 +57,10 @@ namespace SR_GRAPH_NS {
         uint32_t width = 0;
         uint32_t height = 0;
         bool cpuUsage = false;
+        ImageFormat format = ImageFormat::RGBA8_UNORM;
+        uint8_t mipLevels = 0;
+        TextureFilter filter = TextureFilter::LINEAR_MIPMAP_LINEAR;
+        std::array<uint64_t, 6> faceSizes = {};
     };
 
     struct SRDescriptorUpdateInfo {

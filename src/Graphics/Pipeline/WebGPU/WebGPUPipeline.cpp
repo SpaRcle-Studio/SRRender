@@ -10,6 +10,7 @@
 #include <Graphics/Types/Shader.h>
 
 #include <Utils/Types/ObjectPool.h>
+#include <Utils/Types/WeakPtr.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/Vertices.h>
 #include <Utils/Common/StoreUtils.h>
@@ -21,6 +22,20 @@
 #include <webgpu/webgpu_cpp.h>
 
 namespace SR_GRAPH_NS {
+    static void WriteAlignedBuffer(const wgpu::Queue& queue, const wgpu::Buffer& buffer,
+        uint64_t offset, const void* data, uint64_t size) {
+        if (!data || size == 0 || offset % 4 != 0 || offset > buffer.GetSize() || size > buffer.GetSize() - offset) { return; }
+        const uint64_t aligned = (size + 3) & ~uint64_t(3);
+        if (aligned > buffer.GetSize() - offset) { return; }
+        if (aligned == size) { queue.WriteBuffer(buffer, offset, data, size); }
+        else {
+            SR_UTILS_NS::Vector<uint8_t> padded;
+            padded.resize(aligned);
+            std::memset(padded.data(), 0, aligned);
+            std::memcpy(padded.data(), data, size);
+            queue.WriteBuffer(buffer, offset, padded.data(), aligned);
+        }
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Internal resource structs
@@ -163,6 +178,10 @@ namespace SR_GRAPH_NS {
     // ----------------------------------------------------------------------------------------------------------------
 
     struct WebGPUPipelineInternalData {
+        bool failed = false;
+        bool destroyed = false;
+        bool surfaceNeedsConfigure = false;
+        wgpu::Limits limits;
         struct PixelReadback {
             uint64_t id = SR_ID_INVALID;
             wgpu::Buffer buffer;
@@ -172,7 +191,17 @@ namespace SR_GRAPH_NS {
             bool mapPending = false;
             bool ready = false;
             bool failed = false;
+            void* mapped = nullptr;
+            int32_t ssboId = SR_ID_INVALID;
+            bool copyPending = false;
+            wgpu::TextureFormat format = wgpu::TextureFormat::Undefined;
         };
+        struct HostBuffer {
+            int32_t id = SR_ID_INVALID;
+            SR_UTILS_NS::Vector<uint8_t> data;
+            bool mapped = false;
+        };
+        SR_UTILS_NS::Vector<HostBuffer> hostBuffers;
 
         wgpu::Device  device;
         wgpu::Queue   queue;
@@ -182,6 +211,8 @@ namespace SR_GRAPH_NS {
         wgpu::CommandEncoder activeEncoder;
 
         wgpu::Texture     surfaceTexture;
+        wgpu::Texture     surfaceColorTexture;
+        uint8_t surfaceAcquireFailures = 0;
         wgpu::TextureView surfaceTextureView;
         wgpu::Texture     surfaceDepthTexture;
         wgpu::TextureView surfaceDepthTextureView;
@@ -204,6 +235,7 @@ namespace SR_GRAPH_NS {
         float              clearDepth  = 1.0f;
         bool               hasClearColor = false;
         bool               hasClearDepth = false;
+        SR_UTILS_NS::Vector<wgpu::Color> clearColors;
         // Tracks whether BeginRender was called for the swapchain (no FBO) this frame.
         // Used in DrawFrame to decide loadOp for the ImGui pass.
         bool               surfaceWasRendered = false;
@@ -214,6 +246,10 @@ namespace SR_GRAPH_NS {
         // Descriptor set (group 0) selected by BindDescriptorSet. Bound at draw time, because the
         // engine keeps updating its bindings after BindDescriptorSet was called.
         int32_t activeBindGroupId = SR_ID_INVALID;
+        std::array<int32_t, SR_MAX_VERTEX_INPUT_BINDINGS> activeVBOs;
+        SR_HTYPES_NS::FlatHashMap<int32_t, uint32_t> indexSizes;
+        uint32_t viewportWidth = 0;
+        uint32_t viewportHeight = 0;
 
         // Attachment layout entries are declared as non-filtering, so they can't be bound
         // with the linear sampler that comes with the attachment texture.
@@ -253,10 +289,10 @@ namespace SR_GRAPH_NS {
             case SR_GRAPH_NS::ImageFormat::RGBA8_UNORM:           return wgpu::TextureFormat::RGBA8Unorm;
             case SR_GRAPH_NS::ImageFormat::BGRA8_UNORM:           return wgpu::TextureFormat::BGRA8Unorm;
             case SR_GRAPH_NS::ImageFormat::RGBA8_SRGB:            return wgpu::TextureFormat::RGBA8UnormSrgb;
-            case SR_GRAPH_NS::ImageFormat::RGBA16_UNORM:          return wgpu::TextureFormat::RGBA16Uint;
+            case SR_GRAPH_NS::ImageFormat::RGBA16_UNORM:          return wgpu::TextureFormat::RGBA16Float;
             case SR_GRAPH_NS::ImageFormat::RGBA16_SFLOAT:         return wgpu::TextureFormat::RGBA16Float;
             case SR_GRAPH_NS::ImageFormat::R8_UNORM:              return wgpu::TextureFormat::R8Unorm;
-            case SR_GRAPH_NS::ImageFormat::R16_UNORM:             return wgpu::TextureFormat::R16Uint;
+            case SR_GRAPH_NS::ImageFormat::R16_UNORM:             return wgpu::TextureFormat::R16Float;
             case SR_GRAPH_NS::ImageFormat::R16_SFLOAT:            return wgpu::TextureFormat::R16Float;
             case SR_GRAPH_NS::ImageFormat::R32_SFLOAT:            return wgpu::TextureFormat::R32Float;
             case SR_GRAPH_NS::ImageFormat::R8_UINT:               return wgpu::TextureFormat::R8Uint;
@@ -269,13 +305,95 @@ namespace SR_GRAPH_NS {
             // RG11B10Ufloat is NOT a renderable color format in WebGPU — downgrade to RGBA16Float
             case SR_GRAPH_NS::ImageFormat::B10G11R11_UFLOAT_PACK32: return wgpu::TextureFormat::RGBA16Float;
             case SR_GRAPH_NS::ImageFormat::RG8_UNORM:             return wgpu::TextureFormat::RG8Unorm;
-            case SR_GRAPH_NS::ImageFormat::RGB8_UNORM:
-            case SR_GRAPH_NS::ImageFormat::RGB8_SRGB:
-            case SR_GRAPH_NS::ImageFormat::RGB16_UNORM:           return wgpu::TextureFormat::RGBA8Unorm; // no RGB in WebGPU
+            case SR_GRAPH_NS::ImageFormat::RGB8_UNORM:           return wgpu::TextureFormat::RGBA8Unorm;
+            case SR_GRAPH_NS::ImageFormat::RGB8_SRGB:            return wgpu::TextureFormat::RGBA8UnormSrgb;
+            case SR_GRAPH_NS::ImageFormat::RGB16_UNORM:          return wgpu::TextureFormat::RGBA16Float;
             default:
-                SR_WARN("ImageFormatToWGPU: unsupported format {}, falling back to RGBA8Unorm", static_cast<int>(format));
-                return wgpu::TextureFormat::RGBA8Unorm;
+                SR_ERROR("Unsupported WebGPU image format {}", static_cast<int32_t>(format));
+                return wgpu::TextureFormat::Undefined;
         }
+    }
+
+    static uint32_t TexelBytes(wgpu::TextureFormat format) {
+        switch (format) {
+            case wgpu::TextureFormat::R8Unorm: case wgpu::TextureFormat::R8Uint: return 1;
+            case wgpu::TextureFormat::RG8Unorm: case wgpu::TextureFormat::R16Uint:
+            case wgpu::TextureFormat::R16Float: case wgpu::TextureFormat::Depth16Unorm: return 2;
+            case wgpu::TextureFormat::RGBA16Float: return 8;
+            case wgpu::TextureFormat::RGBA8Unorm: case wgpu::TextureFormat::RGBA8UnormSrgb:
+            case wgpu::TextureFormat::BGRA8Unorm: case wgpu::TextureFormat::BGRA8UnormSrgb:
+            case wgpu::TextureFormat::R32Float: case wgpu::TextureFormat::R32Uint:
+            case wgpu::TextureFormat::Depth32Float: return 4;
+            default: return 0;
+        }
+    }
+
+    static uint16_t FloatToHalf(float_t value) {
+        uint32_t bits;
+        std::memcpy(&bits, &value, sizeof(bits));
+        const uint32_t sign = (bits >> 16) & 0x8000;
+        const int32_t exponent = static_cast<int32_t>((bits >> 23) & 255) - 127 + 15;
+        const uint32_t mantissa = bits & 0x7fffff;
+        if (exponent >= 31) { return static_cast<uint16_t>(sign | 0x7c00 | (((bits & 0x7f800000) == 0x7f800000 && mantissa) ? 0x200 : 0)); }
+        if (exponent <= 0) {
+            if (exponent < -10) { return static_cast<uint16_t>(sign); }
+            return static_cast<uint16_t>(sign | (((mantissa | 0x800000) + (1u << (12 - exponent))) >> (14 - exponent)));
+        }
+        return static_cast<uint16_t>(sign | ((static_cast<uint32_t>(exponent) << 10) + ((mantissa + 0x1000) >> 13)));
+    }
+
+    static float_t HalfToFloat(uint16_t value) {
+        const uint32_t exponent = (value >> 10) & 31;
+        const uint32_t mantissa = value & 1023;
+        float_t result = exponent == 0 ? std::ldexp(static_cast<float_t>(mantissa), -24)
+            : exponent == 31 ? (mantissa ? std::numeric_limits<float_t>::quiet_NaN() : std::numeric_limits<float_t>::infinity())
+            : std::ldexp(1.f + static_cast<float_t>(mantissa) / 1024.f, static_cast<int32_t>(exponent) - 15);
+        return value & 0x8000 ? -result : result;
+    }
+
+    static bool ConvertTextureUpload(const SRTextureCreateInfo& info, wgpu::TextureFormat format,
+        SR_UTILS_NS::Vector<uint8_t>& converted, const uint8_t*& data, uint64_t& dataSize) {
+        data = info.pData;
+        dataSize = info.imageSize;
+        if (!data) { return true; }
+        const uint64_t pixels = static_cast<uint64_t>(info.width) * info.height;
+        uint32_t sourceBytes = TexelBytes(format);
+        const bool rgb8 = info.format == ImageFormat::RGB8_UNORM || info.format == ImageFormat::RGB8_SRGB;
+        const bool normalized16 = info.format == ImageFormat::R16_UNORM || info.format == ImageFormat::RGB16_UNORM || info.format == ImageFormat::RGBA16_UNORM;
+        const bool packed = info.format == ImageFormat::B10G11R11_UFLOAT_PACK32;
+        if (rgb8) { sourceBytes = 3; }
+        if (info.format == ImageFormat::RGB16_UNORM) { sourceBytes = 6; }
+        if (packed) { sourceBytes = 4; }
+        if (!sourceBytes || dataSize < pixels * sourceBytes) { return false; }
+        if (!rgb8 && !normalized16 && !packed) { return true; }
+        const uint32_t targetBytes = TexelBytes(format);
+        converted.resize(pixels * targetBytes);
+        for (uint64_t pixel = 0; pixel < pixels; ++pixel) {
+            const auto* src = data + pixel * sourceBytes;
+            auto* dst = converted.data() + pixel * targetBytes;
+            if (rgb8) {
+                std::memcpy(dst, src, 3); dst[3] = 255;
+                continue;
+            }
+            uint32_t packedValue = 0;
+            if (packed) { std::memcpy(&packedValue, src, 4); }
+            for (uint32_t channel = 0; channel < targetBytes / 2; ++channel) {
+                float_t value = 1.f;
+                if (normalized16 && channel < sourceBytes / 2) {
+                    uint16_t integer; std::memcpy(&integer, src + channel * 2, 2);
+                    value = static_cast<float_t>(integer) / 65535.f;
+                }
+                if (packed && channel < 3) {
+                    const uint32_t mantissaBits = channel == 2 ? 5 : 6;
+                    const uint32_t component = (packedValue >> (channel == 0 ? 0 : channel == 1 ? 11 : 22)) & ((1u << (mantissaBits + 5)) - 1);
+                    value = HalfToFloat(static_cast<uint16_t>(component << (10 - mantissaBits)));
+                }
+                const uint16_t half = FloatToHalf(value);
+                std::memcpy(dst + channel * 2, &half, 2);
+            }
+        }
+        data = converted.data(); dataSize = converted.size();
+        return true;
     }
 
     /// Не для всех форматов WebGPU разрешает блендинг: 32-битные float и целочисленные
@@ -518,6 +636,7 @@ namespace SR_GRAPH_NS {
     {
         m_supportedSampleCount = 1;
         m_internalData = new WebGPUPipelineInternalData();
+        m_internalData->activeVBOs.fill(SR_ID_INVALID);
         m_internalData->frameBuffers.Add(WebGPUFrameBuffer()); /// Add a dummy framebuffer at index 0 to avoid confusion with valid framebuffers.
     }
 
@@ -565,32 +684,89 @@ namespace SR_GRAPH_NS {
                     auto pass = m_internalData->activeEncoder.BeginRenderPass(&passDesc);
                     pImGuiOverlay->Render(pass.Get());
                     pass.End();
+                    m_internalData->surfaceWasRendered = true;
                 }
             }
         }
     #endif
 
+        for (auto& request : m_internalData->pixelReadbacks) {
+            if (request.copyPending && m_internalData->SSBOs.IsAlive(request.ssboId)) {
+                m_internalData->activeEncoder.CopyBufferToBuffer(m_internalData->SSBOs.At(request.ssboId), 0,
+                    request.buffer, 0, request.bytesPerRow);
+                request.copyPending = false;
+            }
+        }
+        if (!m_internalData->surfaceWasRendered) {
+            wgpu::RenderPassColorAttachment color{};
+            color.view = m_internalData->surfaceTextureView;
+            color.loadOp = wgpu::LoadOp::Clear; color.storeOp = wgpu::StoreOp::Store;
+            color.clearValue = {0.1, 0.1, 0.12, 1.0};
+            wgpu::RenderPassDescriptor descriptor{};
+            descriptor.colorAttachmentCount = 1; descriptor.colorAttachments = &color;
+            auto pass = m_internalData->activeEncoder.BeginRenderPass(&descriptor);
+            pass.End();
+        }
+        wgpu::SurfaceTexture presentation;
+        m_internalData->surface.GetCurrentTexture(&presentation);
+        const bool present = presentation.status == wgpu::SurfaceGetCurrentTextureStatus::SuccessOptimal
+            || presentation.status == wgpu::SurfaceGetCurrentTextureStatus::SuccessSuboptimal;
+        if (present) {
+            m_internalData->surfaceAcquireFailures = 0;
+            m_internalData->surfaceNeedsConfigure |= presentation.status == wgpu::SurfaceGetCurrentTextureStatus::SuccessSuboptimal;
+            wgpu::TexelCopyTextureInfo src{}; src.texture = m_internalData->surfaceTexture;
+            wgpu::TexelCopyTextureInfo dst{}; dst.texture = presentation.texture;
+            const wgpu::Extent3D extent{m_internalData->surfaceWidth, m_internalData->surfaceHeight, 1};
+            m_internalData->activeEncoder.CopyTextureToTexture(&src, &dst, &extent);
+        }
+        else if (presentation.status != wgpu::SurfaceGetCurrentTextureStatus::Timeout) {
+            m_internalData->surfaceNeedsConfigure = true;
+            if (++m_internalData->surfaceAcquireFailures >= 3) {
+                m_internalData->failed = true;
+                EM_ASM({
+                    globalThis.srEngineFatalError = 'The browser graphics surface could not be restored. Reload the page.';
+                    globalThis.dispatchEvent(new CustomEvent('srengine-error', {detail: globalThis.srEngineFatalError}));
+                });
+            }
+        }
         m_internalData->surfaceCommandBuffer = m_internalData->activeEncoder.Finish();
         m_internalData->surfaceCommandBuffer.SetLabel("Surface command buffer");
 
         if (m_internalData->surfaceCommandBuffer) {
             m_internalData->queue.Submit(1, &m_internalData->surfaceCommandBuffer);
+            if (present) EM_ASM({
+                Module['srSubmittedFrames'] = (Module['srSubmittedFrames'] || 0) + 1;
+                if (Module['srSubmittedFrames'] === 1) globalThis.dispatchEvent(new CustomEvent('srengine-running'));
+            });
         }
 
+        StartReadbackMappings();
+
+        // Presentation is driven by the browser main loop.
+        m_internalData->surfaceCommandBuffer = nullptr;
+        m_internalData->activeEncoder = nullptr;
+        m_internalData->surfaceTextureView = nullptr;
+        m_internalData->surfaceTexture = nullptr;
+    }
+
+    void WebGPUPipeline::StartReadbackMappings() {
         for (auto& request : m_internalData->pixelReadbacks) {
-            if (request.mapPending || request.ready || request.failed) {
+            if (request.copyPending || request.mapPending || request.ready || request.failed) {
                 continue;
             }
 
             const uint64_t requestId = request.id;
-            auto* pipelineData = m_internalData;
+            const auto weak = GetWeakThis<WebGPUPipeline>();
             request.mapPending = true;
             request.buffer.MapAsync(
                 wgpu::MapMode::Read,
                 0,
                 request.height * request.bytesPerRow,
                 wgpu::CallbackMode::AllowProcessEvents,
-                [pipelineData, requestId](wgpu::MapAsyncStatus status, wgpu::StringView message) {
+                [weak, requestId](wgpu::MapAsyncStatus status, wgpu::StringView message) {
+                    const auto self = weak.Lock();
+                    if (!self || self->m_internalData->destroyed) { return; }
+                    auto* const pipelineData = self->m_internalData;
                     for (auto& readback : pipelineData->pixelReadbacks) {
                         if (readback.id == requestId) {
                             readback.mapPending = false;
@@ -600,8 +776,8 @@ namespace SR_GRAPH_NS {
                                 SR_ERROR("WebGPUPipeline::RequestPixelRange() : MapAsync failed for request {}: {}",
                                     requestId,
                                     message.length != WGPU_STRLEN
-                                        ? std::string_view(message.data, message.length)
-                                        : std::string_view(message.data ? message.data : "(unknown error)"));
+                                        ? SR_UTILS_NS::StringView(message.data, message.length)
+                                        : SR_UTILS_NS::StringView(message.data ? message.data : "(unknown error)"));
                             }
                             break;
                         }
@@ -610,12 +786,6 @@ namespace SR_GRAPH_NS {
             );
         }
 
-        // Emscripten/WebGPU: wgpuSurfacePresent is unsupported.
-        // Presentation is driven by the browser main loop (requestAnimationFrame).
-        m_internalData->surfaceCommandBuffer = nullptr;
-        m_internalData->activeEncoder        = nullptr;
-        m_internalData->surfaceTextureView   = nullptr;
-        m_internalData->surfaceTexture       = nullptr;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -629,25 +799,26 @@ namespace SR_GRAPH_NS {
 
         m_internalData->instance.ProcessEvents();
 
-        if (!m_internalData->device || !m_internalData->queue || !m_internalData->surface) {
+        if (m_internalData->failed || m_internalData->destroyed || !m_internalData->device || !m_internalData->queue || !m_internalData->surface) {
             return;
         }
 
         // Resize-aware surface configuration.
-        double cssW = 0.0, cssH = 0.0;
-        if (emscripten_get_element_css_size(EMSCRIPTEN_CANVAS_ID, &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
-            constexpr uint32_t kMaxSurfaceDim = 8192;
-            const uint32_t pxW = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssW)));
-            const uint32_t pxH = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssH)));
+        int32_t cssW = 1, cssH = 1;
+        if (emscripten_get_canvas_element_size(EMSCRIPTEN_CANVAS_ID, &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
+            const uint32_t kMaxSurfaceDim = m_internalData->limits.maxTextureDimension2D;
+            const uint32_t pxW = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1, cssW)));
+            const uint32_t pxH = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1, cssH)));
 
-            if (pxW != m_internalData->surfaceWidth || pxH != m_internalData->surfaceHeight) {
+            if (m_internalData->surfaceNeedsConfigure || pxW != m_internalData->surfaceWidth || pxH != m_internalData->surfaceHeight) {
+                m_internalData->surfaceNeedsConfigure = false;
                 m_internalData->surfaceWidth  = pxW;
                 m_internalData->surfaceHeight = pxH;
 
                 wgpu::SurfaceConfiguration config{};
                 config.device      = m_internalData->device;
                 config.format      = m_internalData->surfaceFormat != wgpu::TextureFormat::Undefined ? m_internalData->surfaceFormat : wgpu::TextureFormat::BGRA8Unorm;
-                config.usage       = wgpu::TextureUsage::RenderAttachment;
+                config.usage       = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::CopyDst;
                 config.width       = pxW;
                 config.height      = pxH;
                 config.presentMode = wgpu::PresentMode::Fifo;
@@ -658,32 +829,16 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        wgpu::SurfaceTexture surfaceTexture{};
-        m_internalData->surface.GetCurrentTexture(&surfaceTexture);
-        if (surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::SuccessOptimal &&
-            surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::SuccessSuboptimal)
-        {
-            switch (surfaceTexture.status) {
-                case wgpu::SurfaceGetCurrentTextureStatus::Error:
-                    SR_ERROR("WebGPUPipeline::OnFrameBuildBegin() : failed to acquire surface texture: error!");
-                    break;
-                case wgpu::SurfaceGetCurrentTextureStatus::Timeout:
-                    SR_ERROR("WebGPUPipeline::OnFrameBuildBegin() : failed to acquire surface texture: timeout!");
-                    break;
-                case wgpu::SurfaceGetCurrentTextureStatus::Lost:
-                    SR_ERROR("WebGPUPipeline::OnFrameBuildBegin() : failed to acquire surface texture: surface lost!");
-                    break;
-                case wgpu::SurfaceGetCurrentTextureStatus::SuccessSuboptimal:
-                    SR_WARN("WebGPUPipeline::OnFrameBuildBegin() : acquired suboptimal surface texture!");
-                    break;
-                default:
-                    SR_ERROR("WebGPUPipeline::OnFrameBuildBegin() : failed to acquire surface texture: unknown error!");
-                    break;
-            }
-            return;
+        if (!m_internalData->surfaceColorTexture
+            || m_internalData->surfaceColorTexture.GetWidth() != m_internalData->surfaceWidth
+            || m_internalData->surfaceColorTexture.GetHeight() != m_internalData->surfaceHeight) {
+            wgpu::TextureDescriptor descriptor{};
+            descriptor.size = {m_internalData->surfaceWidth, m_internalData->surfaceHeight, 1};
+            descriptor.format = m_internalData->surfaceFormat;
+            descriptor.usage = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::CopySrc;
+            m_internalData->surfaceColorTexture = m_internalData->device.CreateTexture(&descriptor);
         }
-
-        m_internalData->surfaceTexture     = surfaceTexture.texture;
+        m_internalData->surfaceTexture = m_internalData->surfaceColorTexture;
         m_internalData->surfaceTextureView = m_internalData->surfaceTexture.CreateView();
 
         const uint8_t surfaceSampleCount = IsMultiSamplingSupported() ? GetSamplesCount() : 1;
@@ -752,13 +907,11 @@ namespace SR_GRAPH_NS {
 
         SR_INFO("WebGPUPipeline::PreInit() : requesting WebGPU adapter and device...");
 
-        EM_ASM({
-            navigator.gpu.requestAdapter().then(a => {
-                console.log("WebGPUPipeline::PreInit() : JS adapter works:", a);
-            }).catch(e => {
-                console.log("WebGPUPipeline::PreInit() : JS adapter failed:", e);
-            });
-        });
+        if (!EM_ASM_INT({ return !!(globalThis.navigator && navigator.gpu); })) {
+            SR_ERROR("WebGPU is unavailable. Use a browser with WebGPU support in a secure context.");
+            m_internalData->failed = true;
+            return false;
+        }
 
         wgpu::RequestAdapterOptions options{};
         options.powerPreference = wgpu::PowerPreference::Undefined;
@@ -783,22 +936,68 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_internalData->instance.RequestAdapter(&options, wgpu::CallbackMode::AllowProcessEvents, [this](wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
+        const auto weak = GetWeakThis<WebGPUPipeline>();
+        m_internalData->instance.RequestAdapter(&options, wgpu::CallbackMode::AllowProcessEvents, [weak](wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
+            const auto self = weak.Lock();
+            if (!self || self->m_internalData->destroyed) { return; }
+            auto* const pData = self->m_internalData;
             if (status != wgpu::RequestAdapterStatus::Success) {
-                const std::string_view msgView =
+                const SR_UTILS_NS::StringView msgView =
                     (message.length != WGPU_STRLEN)
-                        ? std::string_view(message.data, message.length)
-                        : std::string_view(message.data ? message.data : "(unknown error)");
+                        ? SR_UTILS_NS::StringView(message.data, message.length)
+                        : SR_UTILS_NS::StringView(message.data ? message.data : "(unknown error)");
                 SR_ERROR("WebGPUPipeline::PreInit() : failed to request adapter: {}", msgView);
+                pData->failed = true;
                 return;
             }
 
             SR_INFO("WebGPUPipeline::PreInit() : WebGPU adapter successfully obtained.");
+            wgpu::SurfaceCapabilities capabilities;
+            if (!pData->surface.GetCapabilities(adapter, &capabilities) || capabilities.formatCount == 0) {
+                pData->failed = true;
+                SR_ERROR("WebGPU surface has no supported formats.");
+                return;
+            }
+            pData->surfaceFormat = capabilities.formats[0];
+            for (size_t i = 0; i < capabilities.formatCount; ++i) {
+                if (capabilities.formats[i] == wgpu::TextureFormat::BGRA8Unorm) {
+                    pData->surfaceFormat = capabilities.formats[i];
+                    break;
+                }
+            }
 
             // ---- DeviceDescriptor with uncaptured-error callback ----
             // SetUncapturedErrorCallback lives on DeviceDescriptor (not on wgpu::Device).
             // It must be configured before RequestDevice is called.
             wgpu::DeviceDescriptor deviceDesc{};
+            wgpu::Limits requiredLimits;
+            if (!adapter.GetLimits(&requiredLimits)) {
+                pData->failed = true;
+                SR_ERROR("Failed to obtain WebGPU adapter limits.");
+                return;
+            }
+            deviceDesc.requiredLimits = &requiredLimits;
+            std::array<wgpu::FeatureName, 2> optionalFeatures = {
+                wgpu::FeatureName::Depth32FloatStencil8, wgpu::FeatureName::Float32Filterable};
+            SR_UTILS_NS::Vector<wgpu::FeatureName> features;
+            for (const auto feature : optionalFeatures) {
+                if (adapter.HasFeature(feature)) { features.emplace_back(feature); }
+            }
+            deviceDesc.requiredFeatureCount = features.size();
+            deviceDesc.requiredFeatures = features.data();
+            deviceDesc.SetDeviceLostCallback(wgpu::CallbackMode::AllowProcessEvents,
+                [weak](const wgpu::Device&, wgpu::DeviceLostReason reason, wgpu::StringView message) {
+                    const auto self = weak.Lock();
+                    if (!self || self->m_internalData->destroyed || reason == wgpu::DeviceLostReason::Destroyed) { return; }
+                    self->m_internalData->failed = true;
+                    SR_ERROR("WebGPU device lost: {}", message.length == WGPU_STRLEN
+                        ? SR_UTILS_NS::StringView(message.data ? message.data : "")
+                        : SR_UTILS_NS::StringView(message.data, message.length));
+                    EM_ASM({
+                        globalThis.srEngineFatalError = 'The graphics device was lost. Reload the page to restart.';
+                        globalThis.dispatchEvent(new CustomEvent('srengine-error', {detail: globalThis.srEngineFatalError}));
+                    });
+                });
             deviceDesc.SetUncapturedErrorCallback(
                 [](const wgpu::Device& /*device*/, wgpu::ErrorType type, wgpu::StringView message) {
                     const char* typeStr = "Unknown";
@@ -812,17 +1011,21 @@ namespace SR_GRAPH_NS {
                     }
                     SR_ERROR("UncapturedErrorCallback() : WebGPU [{}] error: {}", typeStr,
                         message.length != WGPU_STRLEN
-                            ? std::string_view(message.data, message.length)
-                            : std::string_view(message.data ? message.data : "(null)"));
+                            ? SR_UTILS_NS::StringView(message.data, message.length)
+                            : SR_UTILS_NS::StringView(message.data ? message.data : "(null)"));
                 }
             );
 
-            adapter.RequestDevice(&deviceDesc, wgpu::CallbackMode::AllowProcessEvents, [this](wgpu::RequestDeviceStatus status, wgpu::Device dev, wgpu::StringView message) {
+            adapter.RequestDevice(&deviceDesc, wgpu::CallbackMode::AllowProcessEvents, [weak](wgpu::RequestDeviceStatus status, wgpu::Device dev, wgpu::StringView message) {
+                const auto self = weak.Lock();
+                if (!self || self->m_internalData->destroyed) { return; }
+                auto* const m_internalData = self->m_internalData;
                 if (status != wgpu::RequestDeviceStatus::Success) {
                     SR_ERROR("WebGPUPipeline::PreInit() : failed to request device: {}",
                         message.length != WGPU_STRLEN
-                            ? std::string_view(message.data, message.length)
-                            : std::string_view(message.data ? message.data : "(unknown error)"));
+                            ? SR_UTILS_NS::StringView(message.data, message.length)
+                            : SR_UTILS_NS::StringView(message.data ? message.data : "(unknown error)"));
+                    m_internalData->failed = true;
                     return;
                 }
 
@@ -830,18 +1033,24 @@ namespace SR_GRAPH_NS {
 
                 m_internalData->device = dev;
                 m_internalData->queue  = m_internalData->device.GetQueue();
+                if (!dev.GetLimits(&m_internalData->limits)) {
+                    m_internalData->failed = true;
+                    SR_ERROR("Failed to obtain WebGPU device limits.");
+                    return;
+                }
+                EM_ASM({ Module['srMaxTextureDimension'] = $0; }, m_internalData->limits.maxTextureDimension2D);
 
                 SR_INFO("WebGPUPipeline::PreInit() : WebGPU device and queue successfully created.");
 
                 wgpu::SurfaceConfiguration config{};
                 config.device      = m_internalData->device;
-                config.format      = wgpu::TextureFormat::BGRA8Unorm;
-                config.usage       = wgpu::TextureUsage::RenderAttachment;
-                double cssW = 0.0, cssH = 0.0;
-                if (emscripten_get_element_css_size(EMSCRIPTEN_CANVAS_ID, &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
-                    constexpr uint32_t kMaxSurfaceDim = 8192;
-                    config.width  = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssW)));
-                    config.height = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1.0, cssH)));
+                config.format      = m_internalData->surfaceFormat;
+                config.usage       = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::CopyDst;
+                int32_t cssW = 1, cssH = 1;
+                if (emscripten_get_canvas_element_size(EMSCRIPTEN_CANVAS_ID, &cssW, &cssH) == EMSCRIPTEN_RESULT_SUCCESS) {
+                    const uint32_t kMaxSurfaceDim = m_internalData->limits.maxTextureDimension2D;
+                    config.width  = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1, cssW)));
+                    config.height = std::min<uint32_t>(kMaxSurfaceDim, static_cast<uint32_t>(std::max(1, cssH)));
                 }
                 else {
                     config.width  = 800;
@@ -855,9 +1064,9 @@ namespace SR_GRAPH_NS {
 
                 m_internalData->surface.Configure(&config);
 
-                m_sampleProbePending = 6;
+                self->m_sampleProbePending = 6;
                 for (uint16_t sampleCount = 2; sampleCount <= 64; sampleCount *= 2) {
-                    ProbeSupportedSampleCount(static_cast<uint8_t>(sampleCount));
+                    self->ProbeSupportedSampleCount(static_cast<uint8_t>(sampleCount));
                 }
 
                 SR_INFO("WebGPUPipeline::PreInit() : WebGPU surface configured successfully.");
@@ -870,12 +1079,18 @@ namespace SR_GRAPH_NS {
     }
 
     bool WebGPUPipeline::IsAsyncEarlyInit() const {
-        m_internalData->instance.ProcessEvents();
-        return !m_internalData->device && !m_internalData->queue;
+        if (m_internalData->instance) { m_internalData->instance.ProcessEvents(); }
+        if (m_internalData->failed) {
+            EM_ASM({
+                globalThis.srEngineFatalError = globalThis.srEngineFatalError || 'WebGPU initialization failed. See the console for details.';
+                globalThis.dispatchEvent(new CustomEvent('srengine-error', {detail: globalThis.srEngineFatalError}));
+            });
+        }
+        return !m_internalData->failed && (!m_internalData->device || !m_internalData->queue);
     }
 
     bool WebGPUPipeline::Init() {
-        return true;
+        return !m_internalData->failed && m_internalData->device && m_internalData->queue;
     }
 
     bool WebGPUPipeline::PostInit() {
@@ -926,13 +1141,16 @@ namespace SR_GRAPH_NS {
             colorAttachments.reserve(fbo.colorAttachments.size());
 
             for (auto&& att : fbo.colorAttachments) {
+                const auto attachmentIndex = colorAttachments.size();
                 wgpu::RenderPassColorAttachment colorAtt{};
                 colorAtt.view     = att.view;
                 colorAtt.resolveTarget = att.resolveView;
-                colorAtt.loadOp   = m_internalData->hasClearColor ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
+                const bool clear = m_internalData->hasClearColor
+                    && (m_internalData->clearColors.empty() || attachmentIndex < m_internalData->clearColors.size());
+                colorAtt.loadOp   = clear ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
                 colorAtt.storeOp  = wgpu::StoreOp::Store;
-                colorAtt.clearValue = m_internalData->hasClearColor
-                    ? m_internalData->clearColor
+                colorAtt.clearValue = clear
+                    ? (m_internalData->clearColors.empty() ? m_internalData->clearColor : m_internalData->clearColors[attachmentIndex])
                     : wgpu::Color{ 0.0, 0.0, 0.0, 1.0 };
 
                 colorAttachments.push_back(colorAtt);
@@ -959,8 +1177,8 @@ namespace SR_GRAPH_NS {
                 depthAtt.depthStoreOp      = wgpu::StoreOp::Store;
                 depthAtt.depthClearValue   = m_internalData->hasClearDepth ? m_internalData->clearDepth : 1.0f;
                 // Stencil ops must be Undefined for depth-only formats (no stencil component).
-                depthAtt.stencilLoadOp     = hasStencil ? wgpu::LoadOp::Clear   : wgpu::LoadOp::Undefined;
-                depthAtt.stencilStoreOp    = hasStencil ? wgpu::StoreOp::Discard : wgpu::StoreOp::Undefined;
+                depthAtt.stencilLoadOp     = hasStencil ? (m_internalData->hasClearDepth ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load) : wgpu::LoadOp::Undefined;
+                depthAtt.stencilStoreOp    = hasStencil ? wgpu::StoreOp::Store : wgpu::StoreOp::Undefined;
                 depthAtt.stencilClearValue = 0;
                 passDesc.depthStencilAttachment = &depthAtt;
             }
@@ -982,7 +1200,8 @@ namespace SR_GRAPH_NS {
                 ? m_internalData->surfaceTextureView
                 : nullptr;
             // Always clear on first swapchain render pass of the frame to avoid undefined content.
-            color.loadOp     = wgpu::LoadOp::Clear;
+            color.loadOp     = !m_internalData->surfaceWasRendered || m_internalData->hasClearColor
+                ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
             color.storeOp    = wgpu::StoreOp::Store;
             color.clearValue = m_internalData->hasClearColor
                 ? m_internalData->clearColor
@@ -1006,6 +1225,7 @@ namespace SR_GRAPH_NS {
         }
 
         m_internalData->activeScissorValid = false;
+        m_internalData->activeVBOs.fill(SR_ID_INVALID);
 
         if (!keepClearFlags) {
             m_internalData->hasClearColor = false;
@@ -1063,11 +1283,17 @@ namespace SR_GRAPH_NS {
     void WebGPUPipeline::WaitComputeIdle() {
         // WebGPU commands are ordered within a command encoder. The queue submission
         // provides the required synchronization; there is no blocking compute wait.
+        if (m_internalData->activeEncoder && !m_internalData->activeComputePass && !m_internalData->activeRenderPass) {
+            const auto commands = m_internalData->activeEncoder.Finish();
+            m_internalData->queue.Submit(1, &commands);
+            m_internalData->activeEncoder = m_internalData->device.CreateCommandEncoder();
+        }
         Super::WaitComputeIdle();
     }
 
     void WebGPUPipeline::ClearBuffers() {
         Super::ClearBuffers();
+        m_internalData->clearColors.clear();
         m_internalData->clearColor    = { 0.0, 0.0, 0.0, 1.0 };
         m_internalData->clearDepth    = 1.0f;
         m_internalData->hasClearColor = true;
@@ -1076,14 +1302,24 @@ namespace SR_GRAPH_NS {
 
     void WebGPUPipeline::ClearBuffers(float_t r, float_t g, float_t b, float_t a, float_t depth, uint8_t colorCount) {
         Super::ClearBuffers(r, g, b, a, depth, colorCount);
+        m_internalData->clearColors.clear();
+        for (uint8_t i = 0; i < colorCount; ++i) {
+            m_internalData->clearColors.emplace_back(wgpu::Color{r, g, b, a});
+        }
         m_internalData->clearColor    = { r, g, b, a };
         m_internalData->clearDepth    = depth;
-        m_internalData->hasClearColor = true;
+        m_internalData->hasClearColor = colorCount > 0;
         m_internalData->hasClearDepth = true;
     }
 
     void WebGPUPipeline::ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth) {
         Super::ClearBuffers(clearColors, depth);
+        m_internalData->clearColors.clear();
+        m_internalData->hasClearColor = !clearColors.empty();
+        m_internalData->hasClearDepth = depth.has_value();
+        for (const auto& color : clearColors) {
+            m_internalData->clearColors.emplace_back(wgpu::Color{color.r, color.g, color.b, color.a});
+        }
         if (!clearColors.empty()) {
             const auto& c = clearColors[0];
             m_internalData->clearColor    = { c.r, c.g, c.b, c.a };
@@ -1105,6 +1341,8 @@ namespace SR_GRAPH_NS {
         auto&& pFBO = m_state.pFrameBuffer;
         const uint32_t w = (width  > 0) ? static_cast<uint32_t>(width)  : (pFBO ? pFBO->GetWidth()  : m_internalData->surfaceWidth);
         const uint32_t h = (height > 0) ? static_cast<uint32_t>(height) : (pFBO ? pFBO->GetHeight() : m_internalData->surfaceHeight);
+        m_internalData->viewportWidth = w;
+        m_internalData->viewportHeight = h;
 
         m_internalData->activeRenderPass.SetViewport(0.f, 0.f, static_cast<float>(w), static_cast<float>(h), 0.f, 1.f);
     }
@@ -1153,10 +1391,12 @@ namespace SR_GRAPH_NS {
         auto colorTexture = m_internalData->device.CreateTexture(&colorDesc);
         auto depthTexture = m_internalData->device.CreateTexture(&depthDesc);
         m_internalData->device.PopErrorScope(wgpu::CallbackMode::AllowProcessEvents,
-            [this, sampleCount, colorTexture, depthTexture](wgpu::PopErrorScopeStatus, wgpu::ErrorType type, wgpu::StringView) mutable {
+            [weak = GetWeakThis<WebGPUPipeline>(), sampleCount, colorTexture, depthTexture](wgpu::PopErrorScopeStatus, wgpu::ErrorType type, wgpu::StringView) mutable {
+                const auto self = weak.Lock();
+                if (!self || self->m_internalData->destroyed) { return; }
                 if (type == wgpu::ErrorType::NoError && colorTexture && depthTexture) {
-                    m_supportedSampleCounts |= sampleCount;
-                    m_supportedSampleCount = SR_MAX(m_supportedSampleCount, sampleCount);
+                    self->m_supportedSampleCounts |= sampleCount;
+                    self->m_supportedSampleCount = SR_MAX(self->m_supportedSampleCount, sampleCount);
                 }
                 if (colorTexture) {
                     colorTexture.Destroy();
@@ -1165,9 +1405,9 @@ namespace SR_GRAPH_NS {
                     depthTexture.Destroy();
                 }
 
-                if (--m_sampleProbePending == 0) {
-                    SetSampleCount(m_requestedSampleCount);
-                    SR_INFO("WebGPUPipeline::ProbeSupportedSampleCount() : maximum supported sample count is {}.", m_supportedSampleCount);
+                if (--self->m_sampleProbePending == 0) {
+                    self->SetSampleCount(self->m_requestedSampleCount);
+                    SR_INFO("WebGPUPipeline::ProbeSupportedSampleCount() : maximum supported sample count is {}.", self->m_supportedSampleCount);
                 }
             });
     }
@@ -1211,6 +1451,7 @@ namespace SR_GRAPH_NS {
         }
 
         const int32_t id = static_cast<int32_t>(VBO);
+        if (slot < m_internalData->activeVBOs.size()) { m_internalData->activeVBOs[slot] = id; }
         if (id >= 0 && m_internalData->VBOs.IsAlive(id)) {
             auto&& buf = m_internalData->VBOs.At(id);
             if (buf) {
@@ -1230,7 +1471,10 @@ namespace SR_GRAPH_NS {
         if (id >= 0 && m_internalData->IBOs.IsAlive(id)) {
             auto&& buf = m_internalData->IBOs.At(id);
             if (buf) {
-                m_internalData->activeRenderPass.SetIndexBuffer(buf, wgpu::IndexFormat::Uint32, 0, WGPU_WHOLE_SIZE);
+                const auto found = m_internalData->indexSizes.find(id);
+                const auto format = found != m_internalData->indexSizes.end() && found->second == 2
+                    ? wgpu::IndexFormat::Uint16 : wgpu::IndexFormat::Uint32;
+                m_internalData->activeRenderPass.SetIndexBuffer(buf, format, 0, WGPU_WHOLE_SIZE);
             }
         }
     }
@@ -1662,7 +1906,36 @@ namespace SR_GRAPH_NS {
     }
 
     bool WebGPUPipeline::Destroy() {
+        if (m_internalData->destroyed) { return true; }
+        m_internalData->destroyed = true;
         DestroyOverlay();
+        if (m_internalData->activeRenderPass) { m_internalData->activeRenderPass.End(); m_internalData->activeRenderPass = nullptr; }
+        if (m_internalData->activeComputePass) { m_internalData->activeComputePass.End(); m_internalData->activeComputePass = nullptr; }
+        m_internalData->activeEncoder = nullptr;
+        m_internalData->surfaceCommandBuffer = nullptr;
+        m_internalData->pixelReadbacks.clear();
+        m_internalData->hostBuffers.clear();
+        m_internalData->bindGroups.Clear();
+        m_internalData->shaderPrograms.Clear();
+        m_internalData->textures.Clear();
+        m_internalData->frameBuffers.Clear();
+        m_internalData->VBOs.Clear();
+        m_internalData->IBOs.Clear();
+        m_internalData->UBOs.Clear();
+        m_internalData->SSBOs.Clear();
+        m_internalData->surfaceTextureView = nullptr;
+        m_internalData->surfaceTexture = nullptr;
+        m_internalData->surfaceColorTexture = nullptr;
+        m_internalData->surfaceDepthTextureView = nullptr;
+        m_internalData->surfaceDepthTexture = nullptr;
+        m_internalData->surfaceMultisampleTextureView = nullptr;
+        m_internalData->surfaceMultisampleTexture = nullptr;
+        m_internalData->nonFilteringSampler = nullptr;
+        if (m_internalData->surface) { m_internalData->surface.Unconfigure(); }
+        m_internalData->surface = nullptr;
+        m_internalData->queue = nullptr;
+        if (m_internalData->device) { m_internalData->device.Destroy(); }
+        m_internalData->device = nullptr;
         return Super::Destroy();
     }
 
@@ -1756,8 +2029,23 @@ namespace SR_GRAPH_NS {
         return m_internalData->textures.At(id).view.Get();
     }
 
-    SR_MATH_NS::FColor WebGPUPipeline::GetPixelColor(uint32_t, uint32_t, uint32_t) {
-        return SR_MATH_NS::FColor(0.f);
+    SR_MATH_NS::FColor WebGPUPipeline::GetPixelColor(uint32_t texture, uint32_t x, uint32_t y) {
+        SR_MATH_NS::FColor color(0.f);
+        const uint64_t request = RequestPixelRange(SR_ID_INVALID, texture, x, y, 1, 1);
+        if (request == SR_ID_INVALID) { return color; }
+        if (m_internalData->activeEncoder) {
+            const auto commands = m_internalData->activeEncoder.Finish();
+            m_internalData->queue.Submit(1, &commands);
+            m_internalData->activeEncoder = m_internalData->device.CreateCommandEncoder();
+            StartReadbackMappings();
+        }
+        const double_t deadline = emscripten_get_now() + 30000.0;
+        while (!IsPixelRangeReady(request) && !m_internalData->failed && emscripten_get_now() < deadline) {
+            emscripten_sleep(1);
+        }
+        GetPixelRangeResult(request, &color, 1, 1);
+        ReleasePixelRangeRequest(request);
+        return color;
     }
 
     uint64_t WebGPUPipeline::RequestPixelRange(uint64_t workId, uint32_t textureId, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
@@ -1774,14 +2062,24 @@ namespace SR_GRAPH_NS {
         if (!source) {
             return SR_ID_INVALID;
         }
+        const auto format = source.GetFormat();
+        const uint32_t texelBytes = TexelBytes(format);
+        if (!texelBytes || IsDepthFormat(format) || source.GetSampleCount() != 1
+            || (source.GetUsage() & wgpu::TextureUsage::CopySrc) == wgpu::TextureUsage::None
+            || x >= source.GetWidth() || y >= source.GetHeight()
+            || width > source.GetWidth() - x || height > source.GetHeight() - y
+            || m_internalData->activeRenderPass || m_internalData->activeComputePass) {
+            SR_ERROR("Pixel readback requires a readable color texture and must be requested outside a pass.");
+            return SR_ID_INVALID;
+        }
 
         if (workId != SR_ID_INVALID) {
             ReleasePixelRangeRequest(workId);
         }
 
-        const uint32_t bytesPerRow = ((width * 4 + 255) / 256) * 256;
+        const uint32_t bytesPerRow = ((width * texelBytes + 255) / 256) * 256;
         wgpu::BufferDescriptor bufferDesc{};
-        bufferDesc.size = bytesPerRow * height;
+        bufferDesc.size = static_cast<uint64_t>(bytesPerRow) * height;
         bufferDesc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
         auto buffer = m_internalData->device.CreateBuffer(&bufferDesc);
         if (!buffer) {
@@ -1817,12 +2115,14 @@ namespace SR_GRAPH_NS {
         }
 
         WebGPUPipelineInternalData::PixelReadback request;
-        request.id = workId == SR_ID_INVALID ? m_internalData->nextPixelReadbackId++ : workId;
+        request.id = m_internalData->nextPixelReadbackId++;
         request.buffer = buffer;
         request.width = width;
         request.height = height;
         request.bytesPerRow = bytesPerRow;
+        request.format = format;
         m_internalData->pixelReadbacks.emplace_back(std::move(request));
+        if (submitImmediately) { StartReadbackMappings(); }
         return m_internalData->pixelReadbacks.back().id;
     }
 
@@ -1854,11 +2154,32 @@ namespace SR_GRAPH_NS {
             for (uint32_t row = 0; row < height; ++row) {
                 const auto* rowData = data + row * request.bytesPerRow;
                 for (uint32_t column = 0; column < width; ++column) {
-                    const auto* pixel = rowData + column * 4;
-                    pixels[row * width + column] = SR_MATH_NS::FColor(pixel[0], pixel[1], pixel[2], pixel[3]);
+                    const uint32_t stride = TexelBytes(request.format);
+                    const auto* pixel = rowData + column * stride;
+                    float_t channels[4] = {0.f, 0.f, 0.f, 1.f};
+                    if (request.format == wgpu::TextureFormat::R32Float) { std::memcpy(channels, pixel, 4); }
+                    else if (request.format == wgpu::TextureFormat::R16Float || request.format == wgpu::TextureFormat::RGBA16Float) {
+                        for (uint32_t c = 0; c < stride / 2; ++c) {
+                            uint16_t half; std::memcpy(&half, pixel + c * 2, 2); channels[c] = HalfToFloat(half);
+                        }
+                    }
+                    else if (request.format == wgpu::TextureFormat::R32Uint || request.format == wgpu::TextureFormat::R16Uint || request.format == wgpu::TextureFormat::R8Uint) {
+                        uint32_t integer = 0; std::memcpy(&integer, pixel, stride); channels[0] = static_cast<float_t>(integer);
+                    }
+                    else {
+                        // Byte readback returns 0..255, as in Vulkan and the color-buffer picking contract.
+                        channels[3] = 255.f;
+                        for (uint32_t c = 0; c < stride; ++c) { channels[c] = static_cast<float_t>(pixel[c]); }
+                        if (request.format == wgpu::TextureFormat::BGRA8Unorm || request.format == wgpu::TextureFormat::BGRA8UnormSrgb) {
+                            std::swap(channels[0], channels[2]);
+                        }
+                    }
+                    pixels[row * width + column] = SR_MATH_NS::FColor(channels[0], channels[1], channels[2], channels[3]);
                 }
             }
             request.buffer.Unmap();
+            request.ready = false;
+            request.failed = true;
             return true;
         }
         return false;
@@ -1884,7 +2205,7 @@ namespace SR_GRAPH_NS {
         }
 
         wgpu::BufferDescriptor desc{};
-        desc.size  = size;
+        desc.size  = (size + 3) & ~uint64_t(3);
         desc.usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst;
 
         wgpu::Buffer pBuffer = m_internalData->device.CreateBuffer(&desc);
@@ -1892,7 +2213,7 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        m_internalData->queue.WriteBuffer(pBuffer, 0, pData, desc.size);
+        WriteAlignedBuffer(m_internalData->queue, pBuffer, 0, pData, size);
 
         ++m_state.operations;
         ++m_state.allocations;
@@ -1907,7 +2228,8 @@ namespace SR_GRAPH_NS {
         }
 
         wgpu::BufferDescriptor desc{};
-        desc.size  = indexSize * count;
+        const uint64_t dataSize = static_cast<uint64_t>(indexSize) * count;
+        desc.size  = (dataSize + 3) & ~uint64_t(3);
         desc.usage = wgpu::BufferUsage::Index | wgpu::BufferUsage::CopyDst;
 
         wgpu::Buffer pBuffer = m_internalData->device.CreateBuffer(&desc);
@@ -1915,13 +2237,68 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        m_internalData->queue.WriteBuffer(pBuffer, 0, pIndices, desc.size);
+        WriteAlignedBuffer(m_internalData->queue, pBuffer, 0, pIndices, dataSize);
 
         ++m_state.operations;
         ++m_state.allocations;
         m_state.allocatedMemory += desc.size;
 
-        return m_internalData->IBOs.Add(std::move(pBuffer));
+        const int32_t id = m_internalData->IBOs.Add(std::move(pBuffer));
+        m_internalData->indexSizes[id] = indexSize;
+        return id;
+    }
+
+    void WebGPUPipeline::WriteBufferOrdered(const wgpu::Buffer& buffer, uint64_t offset, const void* data, uint64_t size) {
+        if (!buffer || !data || size == 0 || offset % 4 || offset > buffer.GetSize() || size > buffer.GetSize() - offset) { return; }
+        if (!m_internalData->activeEncoder) {
+            WriteAlignedBuffer(m_internalData->queue, buffer, offset, data, size);
+            return;
+        }
+        const uint64_t aligned = (size + 3) & ~uint64_t(3);
+        if (aligned > buffer.GetSize() - offset) { return; }
+        wgpu::BufferDescriptor descriptor{};
+        descriptor.size = aligned;
+        descriptor.usage = wgpu::BufferUsage::CopySrc;
+        descriptor.mappedAtCreation = true;
+        auto upload = m_internalData->device.CreateBuffer(&descriptor);
+        if (!upload) { return; }
+        void* mapped = upload.GetMappedRange(0, aligned);
+        if (!mapped) { return; }
+        std::memset(mapped, 0, aligned);
+        std::memcpy(mapped, data, size);
+        upload.Unmap();
+
+        const bool render = static_cast<bool>(m_internalData->activeRenderPass);
+        const bool compute = static_cast<bool>(m_internalData->activeComputePass);
+        const auto vertexBuffers = m_internalData->activeVBOs;
+        const int32_t index = m_state.IBOId;
+        const int32_t shader = m_state.shaderId;
+        const int32_t descriptors = m_internalData->activeBindGroupId;
+        const uint32_t viewportWidth = m_internalData->viewportWidth;
+        const uint32_t viewportHeight = m_internalData->viewportHeight;
+        if (render) { EndRender(); }
+        if (compute) { EndCompute(); }
+        m_internalData->activeEncoder.CopyBufferToBuffer(upload, 0, buffer, offset, aligned);
+        if (render) {
+            const bool clearColor = m_internalData->hasClearColor;
+            const bool clearDepth = m_internalData->hasClearDepth;
+            m_internalData->hasClearColor = false;
+            m_internalData->hasClearDepth = false;
+            const bool resumed = BeginRender();
+            m_internalData->hasClearColor = clearColor;
+            m_internalData->hasClearDepth = clearDepth;
+            if (!resumed) { return; }
+            SetViewport(viewportWidth ? static_cast<int32_t>(viewportWidth) : -1, viewportHeight ? static_cast<int32_t>(viewportHeight) : -1);
+            for (uint32_t slot = 0; slot < vertexBuffers.size(); ++slot) {
+                if (vertexBuffers[slot] >= 0) { BindVBO(vertexBuffers[slot], slot, VertexInputRate::Vertex); }
+            }
+            if (index >= 0) { BindIBO(index); }
+        }
+        if (compute && !BeginCompute()) { return; }
+        if (render || compute) {
+            if (shader >= 0) { UseShader(shader); }
+            if (descriptors >= 0) { BindDescriptorSet(descriptors); }
+        }
     }
 
     bool WebGPUPipeline::UpdateVBO(int32_t VBO, const void* pData, uint64_t size) {
@@ -1935,7 +2312,7 @@ namespace SR_GRAPH_NS {
         }
 
         /// WriteBuffer упорядочен с отправленными командами, ожидание GPU не нужно
-        m_internalData->queue.WriteBuffer(buffer, 0, pData, size);
+        WriteBufferOrdered(buffer, 0, pData, size);
         ++m_state.operations;
 
         return true;
@@ -1951,14 +2328,14 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        m_internalData->queue.WriteBuffer(buffer, 0, pData, size);
+        WriteBufferOrdered(buffer, 0, pData, size);
         ++m_state.operations;
 
         return true;
     }
 
     SR_NODISCARD int32_t WebGPUPipeline::AllocateUBO(uint32_t uboSize) {
-        if (uboSize == 0) {
+        if (uboSize == 0 || uboSize > m_internalData->limits.maxUniformBufferBindingSize) {
             return SR_ID_INVALID;
         }
 
@@ -1979,7 +2356,7 @@ namespace SR_GRAPH_NS {
     }
 
     SR_NODISCARD int32_t WebGPUPipeline::AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) {
-        if (ssboSize == 0) {
+        if (ssboSize == 0 || ssboSize > m_internalData->limits.maxStorageBufferBindingSize) {
             return SR_ID_INVALID;
         }
 
@@ -2017,6 +2394,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        desc.usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
+        desc.mappedAtCreation = false;
         wgpu::Buffer pBuffer = m_internalData->device.CreateBuffer(&desc);
         if (!pBuffer) {
             return SR_ID_INVALID;
@@ -2026,7 +2405,15 @@ namespace SR_GRAPH_NS {
         ++m_state.allocations;
         m_state.allocatedMemory += desc.size;
 
-        return m_internalData->SSBOs.Add(std::move(pBuffer));
+        const int32_t id = m_internalData->SSBOs.Add(std::move(pBuffer));
+        if (usage == SSBOUsage::CPUToGPU || usage == SSBOUsage::CPUCopy || usage == SSBOUsage::CPUOnly
+            || usage == SSBOUsage::AutoPreferHost) {
+            auto& host = m_internalData->hostBuffers.emplace_back();
+            host.id = id;
+            host.data.resize(desc.size);
+            std::memset(host.data.data(), 0, desc.size);
+        }
+        return id;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -2145,10 +2532,11 @@ namespace SR_GRAPH_NS {
             const auto binding = static_cast<uint32_t>(uniform.binding);
             const bool isUniform = uniform.type == LayoutBinding::Uniform;
 
-            // WebGPU: read-write storage NOT allowed in Vertex stage
-            const wgpu::ShaderStage visibility = isUniform
-                ? (wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute)
-                : (wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute);
+            const wgpu::ShaderStage visibility = ShaderStageToWGPU(uniform.stage);
+            if (!isUniform && !uniform.storageReadOnly && uniform.stage == ShaderStage::Vertex) {
+                SR_ERROR("Writable storage binding {} cannot be used in the vertex stage. Mark the SRSL block readonly.", binding);
+                return SR_ID_INVALID;
+            }
 
             if (auto&& pEntry = findEntry(bglEntries0, binding)) {
                 pEntry->visibility |= visibility;
@@ -2158,7 +2546,8 @@ namespace SR_GRAPH_NS {
             wgpu::BindGroupLayoutEntry entry{};
             entry.binding               = binding;
             entry.visibility            = visibility;
-            entry.buffer.type           = isUniform ? wgpu::BufferBindingType::Uniform : wgpu::BufferBindingType::Storage;
+            entry.buffer.type           = isUniform ? wgpu::BufferBindingType::Uniform
+                : (uniform.storageReadOnly ? wgpu::BufferBindingType::ReadOnlyStorage : wgpu::BufferBindingType::Storage);
             /// minBindingSize намеренно оставлен нулевым (= проверка минимального размера отключена).
             /// uniform.size приходит из SRSLUniformBlock::Align(), который просто складывает размеры
             /// полей (vec3 = 12 байт), а реальный буфер выделяется по Memory::ShaderUBOBlock, который
@@ -2513,6 +2902,15 @@ namespace SR_GRAPH_NS {
 
         wgpu::TextureFormat format = ImageFormatToWGPU(createInfo.format);
         bool isDepth = IsDepthFormat(format);
+        if (format == wgpu::TextureFormat::Undefined || createInfo.width > m_internalData->limits.maxTextureDimension2D
+            || createInfo.height > m_internalData->limits.maxTextureDimension2D) { return SR_ID_INVALID; }
+        SR_UTILS_NS::Vector<uint8_t> converted;
+        const uint8_t* uploadData = nullptr;
+        uint64_t uploadSize = 0;
+        if (!isDepth && !ConvertTextureUpload(createInfo, format, converted, uploadData, uploadSize)) {
+            SR_ERROR("Texture upload data does not match its dimensions/format.");
+            return SR_ID_INVALID;
+        }
 
         uint32_t channelCount = 0;
         switch (createInfo.format) {
@@ -2521,12 +2919,21 @@ namespace SR_GRAPH_NS {
             case SR_GRAPH_NS::ImageFormat::RGBA8_UNORM:
             case SR_GRAPH_NS::ImageFormat::BGRA8_UNORM:
             case SR_GRAPH_NS::ImageFormat::RGBA8_SRGB: channelCount = 4; break;
+            case SR_GRAPH_NS::ImageFormat::RGB8_UNORM:
+            case SR_GRAPH_NS::ImageFormat::RGB8_SRGB: channelCount = 4; break;
+            case SR_GRAPH_NS::ImageFormat::R16_UNORM:
+            case SR_GRAPH_NS::ImageFormat::R16_SFLOAT:
+            case SR_GRAPH_NS::ImageFormat::R32_SFLOAT: channelCount = 1; break;
+            case SR_GRAPH_NS::ImageFormat::RGBA16_UNORM:
+            case SR_GRAPH_NS::ImageFormat::RGBA16_SFLOAT:
+            case SR_GRAPH_NS::ImageFormat::RGB16_UNORM:
+            case SR_GRAPH_NS::ImageFormat::B10G11R11_UFLOAT_PACK32: channelCount = 4; break;
             default: break;
         }
-        const bool isByteColorFormat = channelCount > 0;
-        const uint64_t baseLevelSize = static_cast<uint64_t>(createInfo.width) * createInfo.height * channelCount;
-        const bool canGenerateMipmaps = !isDepth && isByteColorFormat && createInfo.pData
-            && channelCount > 0 && createInfo.imageSize >= baseLevelSize;
+        const uint32_t channelBytes = channelCount ? TexelBytes(format) / channelCount : 0;
+        const uint64_t baseLevelSize = static_cast<uint64_t>(createInfo.width) * createInfo.height * TexelBytes(format);
+        const bool canGenerateMipmaps = !isDepth && uploadData
+            && channelCount > 0 && uploadSize >= baseLevelSize;
         uint32_t maxMipLevelCount = 1;
         for (uint32_t maxDimension = std::max(createInfo.width, createInfo.height); maxDimension > 1; maxDimension /= 2) {
             ++maxMipLevelCount;
@@ -2537,7 +2944,7 @@ namespace SR_GRAPH_NS {
             : std::min<uint32_t>(createInfo.mipLevels, maxMipLevelCount);
         const uint32_t mipLevelCount = canGenerateMipmaps ? requestedMipLevelCount : 1;
 
-        wgpu::TextureUsage usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst;
+        wgpu::TextureUsage usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst | wgpu::TextureUsage::CopySrc;
         if (isDepth) {
             usage = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding;
         }
@@ -2557,14 +2964,14 @@ namespace SR_GRAPH_NS {
         }
 
         // Upload data if provided
-        if (createInfo.pData && createInfo.imageSize > 0 && !isDepth) {
+        if (uploadData && uploadSize > 0 && !isDepth) {
             wgpu::TexelCopyTextureInfo dst{};
             dst.texture  = texture;
             dst.mipLevel = 0;
             dst.origin   = { 0, 0, 0 };
             dst.aspect   = wgpu::TextureAspect::All;
 
-            const uint32_t uploadChannelCount = channelCount > 0 ? channelCount : 4;
+            const uint32_t uploadChannelCount = TexelBytes(format);
 
             wgpu::TexelCopyBufferLayout layout{};
             layout.offset       = 0;
@@ -2572,13 +2979,13 @@ namespace SR_GRAPH_NS {
             layout.rowsPerImage = createInfo.height;
 
             wgpu::Extent3D extent{ createInfo.width, createInfo.height, 1 };
-            m_internalData->queue.WriteTexture(&dst, createInfo.pData, createInfo.imageSize, &layout, &extent);
+            m_internalData->queue.WriteTexture(&dst, uploadData, uploadSize, &layout, &extent);
 
             if (canGenerateMipmaps && mipLevelCount > 1) {
                 SR_UTILS_NS::Vector<uint8_t> previousMip;
                 SR_UTILS_NS::Vector<uint8_t> currentMip;
                 previousMip.resize(static_cast<size_t>(baseLevelSize));
-                std::memcpy(previousMip.data(), createInfo.pData, static_cast<size_t>(baseLevelSize));
+                std::memcpy(previousMip.data(), uploadData, static_cast<size_t>(baseLevelSize));
 
                 uint32_t previousWidth = createInfo.width;
                 uint32_t previousHeight = createInfo.height;
@@ -2586,25 +2993,46 @@ namespace SR_GRAPH_NS {
                 for (uint32_t mipLevel = 1; mipLevel < mipLevelCount; ++mipLevel) {
                     const uint32_t mipWidth = std::max(1u, previousWidth / 2);
                     const uint32_t mipHeight = std::max(1u, previousHeight / 2);
-                    currentMip.resize(static_cast<size_t>(mipWidth) * mipHeight * channelCount);
+                    currentMip.resize(static_cast<size_t>(mipWidth) * mipHeight * channelCount * channelBytes);
 
                     for (uint32_t y = 0; y < mipHeight; ++y) {
                         for (uint32_t x = 0; x < mipWidth; ++x) {
                             for (uint32_t channel = 0; channel < channelCount; ++channel) {
-                                uint32_t sum = 0;
+                                double_t sum = 0;
                                 uint32_t samples = 0;
-                                for (uint32_t offsetY = 0; offsetY < 2; ++offsetY) {
-                                    const uint32_t sourceY = std::min(y * 2 + offsetY, previousHeight - 1);
-                                    for (uint32_t offsetX = 0; offsetX < 2; ++offsetX) {
-                                        const uint32_t sourceX = std::min(x * 2 + offsetX, previousWidth - 1);
+                                for (uint32_t sourceY = y * previousHeight / mipHeight; sourceY < (y + 1) * previousHeight / mipHeight; ++sourceY) {
+                                    for (uint32_t sourceX = x * previousWidth / mipWidth; sourceX < (x + 1) * previousWidth / mipWidth; ++sourceX) {
                                         const size_t sourceIndex = (static_cast<size_t>(sourceY) * previousWidth + sourceX) * channelCount + channel;
-                                        sum += previousMip[sourceIndex];
+                                        double_t sample = 0;
+                                        if (channelBytes == 1) { sample = previousMip[sourceIndex] / 255.0; }
+                                        else if (channelBytes == 2) {
+                                            uint16_t half; std::memcpy(&half, previousMip.data() + sourceIndex * 2, 2); sample = HalfToFloat(half);
+                                        }
+                                        else {
+                                            float_t value; std::memcpy(&value, previousMip.data() + sourceIndex * 4, 4); sample = value;
+                                        }
+                                        const bool srgb = format == wgpu::TextureFormat::RGBA8UnormSrgb && channel < 3;
+                                        sum += srgb ? (sample <= 0.04045 ? sample / 12.92 : std::pow((sample + 0.055) / 1.055, 2.4)) : sample;
                                         ++samples;
                                     }
                                 }
 
                                 const size_t targetIndex = (static_cast<size_t>(y) * mipWidth + x) * channelCount + channel;
-                                currentMip[targetIndex] = static_cast<uint8_t>(sum / samples);
+                                double_t average = sum / samples;
+                                if (format == wgpu::TextureFormat::RGBA8UnormSrgb && channel < 3) {
+                                    average = average <= 0.0031308 ? average * 12.92 : 1.055 * std::pow(average, 1.0 / 2.4) - 0.055;
+                                }
+                                if (channelBytes == 1) {
+                                    currentMip[targetIndex] = static_cast<uint8_t>(std::clamp(average * 255.0 + 0.5, 0.0, 255.0));
+                                }
+                                else if (channelBytes == 2) {
+                                    const uint16_t half = FloatToHalf(static_cast<float_t>(average));
+                                    std::memcpy(currentMip.data() + targetIndex * 2, &half, 2);
+                                }
+                                else {
+                                    const float_t value = static_cast<float_t>(average);
+                                    std::memcpy(currentMip.data() + targetIndex * 4, &value, 4);
+                                }
                             }
                         }
                     }
@@ -2615,7 +3043,7 @@ namespace SR_GRAPH_NS {
                     mipDst.aspect = wgpu::TextureAspect::All;
 
                     wgpu::TexelCopyBufferLayout mipLayout{};
-                    mipLayout.bytesPerRow = mipWidth * channelCount;
+                    mipLayout.bytesPerRow = mipWidth * channelCount * channelBytes;
                     mipLayout.rowsPerImage = mipHeight;
 
                     const wgpu::Extent3D mipExtent{ mipWidth, mipHeight, 1 };
@@ -2624,6 +3052,7 @@ namespace SR_GRAPH_NS {
                     std::swap(previousMip, currentMip);
                     previousWidth = mipWidth;
                     previousHeight = mipHeight;
+                    emscripten_sleep(0);
                 }
             }
         }
@@ -2674,6 +3103,11 @@ namespace SR_GRAPH_NS {
 
         const uint32_t w = static_cast<uint32_t>(std::max(1, createInfo.size.x));
         const uint32_t h = static_cast<uint32_t>(std::max(1, createInfo.size.y));
+        if (w > m_internalData->limits.maxTextureDimension2D || h > m_internalData->limits.maxTextureDimension2D
+            || (createInfo.colors && createInfo.colors->size() > m_internalData->limits.maxColorAttachments)) {
+            SR_ERROR("Framebuffer exceeds WebGPU device limits.");
+            return SR_ID_INVALID;
+        }
 
         WebGPUFrameBuffer fbo;
         fbo.width  = w;
@@ -2692,6 +3126,7 @@ namespace SR_GRAPH_NS {
                 WebGPUFrameBuffer::Attachment att;
                 // For color layers, resolve Auto/Unknown/None to RGBA8_UNORM (not depth)
                 att.format = ImageFormatToWGPU(colorLayer.format, false);
+                if (att.format == wgpu::TextureFormat::Undefined || IsDepthFormat(att.format)) { return SR_ID_INVALID; }
 
                 wgpu::TextureDescriptor texDesc{};
                 texDesc.size          = { w, h, 1 };
@@ -2914,11 +3349,20 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
+        const auto format = ImageFormatToWGPU(createInfo.format);
+        if (format == wgpu::TextureFormat::Undefined || IsDepthFormat(format) || createInfo.width != createInfo.height
+            || createInfo.width > m_internalData->limits.maxTextureDimension2D) {
+            SR_ERROR("Cubemap requires a supported color format and square faces within device limits.");
+            return SR_ID_INVALID;
+        }
+        uint32_t maxMips = 1;
+        for (uint32_t dimension = createInfo.width; dimension > 1; dimension /= 2) { ++maxMips; }
+        const uint32_t mips = createInfo.mipLevels ? std::min<uint32_t>(maxMips, createInfo.mipLevels) : maxMips;
         wgpu::TextureDescriptor texDesc{};
         texDesc.size            = { createInfo.width, createInfo.height, 6 };
-        texDesc.format          = wgpu::TextureFormat::RGBA8Unorm;
-        texDesc.usage           = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst;
-        texDesc.mipLevelCount   = 1;
+        texDesc.format          = format;
+        texDesc.usage           = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst | wgpu::TextureUsage::CopySrc;
+        texDesc.mipLevelCount   = mips;
         texDesc.sampleCount     = 1;
         texDesc.dimension       = wgpu::TextureDimension::e2D;
 
@@ -2928,30 +3372,41 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        const uint64_t faceSize = static_cast<uint64_t>(createInfo.width) * createInfo.height * 4; // RGBA8
         for (uint32_t face = 0; face < 6; ++face) {
             if (!createInfo.data[face]) { continue; }
-
-            wgpu::TexelCopyTextureInfo dst{};
-            dst.texture  = texture;
-            dst.mipLevel = 0;
-            dst.origin   = { 0, 0, face };
-            dst.aspect   = wgpu::TextureAspect::All;
-
-            wgpu::TexelCopyBufferLayout layout{};
-            layout.offset       = 0;
-            layout.bytesPerRow  = createInfo.width * 4;
-            layout.rowsPerImage = createInfo.height;
-
-            wgpu::Extent3D extent{ createInfo.width, createInfo.height, 1 };
-            m_internalData->queue.WriteTexture(&dst, createInfo.data[face], faceSize, &layout, &extent);
+            uint32_t sourceBytes = TexelBytes(format);
+            if (createInfo.format == ImageFormat::RGB8_UNORM || createInfo.format == ImageFormat::RGB8_SRGB) { sourceBytes = 3; }
+            if (createInfo.format == ImageFormat::RGB16_UNORM) { sourceBytes = 6; }
+            if (createInfo.format == ImageFormat::B10G11R11_UFLOAT_PACK32) { sourceBytes = 4; }
+            SRTextureCreateInfo faceInfo;
+            faceInfo.width = createInfo.width; faceInfo.height = createInfo.height;
+            faceInfo.format = createInfo.format; faceInfo.mipLevels = mips;
+            faceInfo.pData = createInfo.data[face];
+            faceInfo.filter = createInfo.filter;
+            faceInfo.imageSize = createInfo.faceSizes[face] ? createInfo.faceSizes[face]
+                : static_cast<uint64_t>(createInfo.width) * createInfo.height * sourceBytes;
+            const int32_t faceId = AllocateTexture(faceInfo);
+            if (faceId == SR_ID_INVALID) { return SR_ID_INVALID; }
+            const auto source = m_internalData->textures.At(faceId).texture;
+            auto encoder = m_internalData->device.CreateCommandEncoder();
+            for (uint32_t mip = 0; mip < std::min(mips, source.GetMipLevelCount()); ++mip) {
+                wgpu::TexelCopyTextureInfo src{}; src.texture = source; src.mipLevel = mip;
+                wgpu::TexelCopyTextureInfo dst{}; dst.texture = texture; dst.mipLevel = mip; dst.origin = {0, 0, face};
+                const wgpu::Extent3D extent{std::max(1u, createInfo.width >> mip), std::max(1u, createInfo.height >> mip), 1};
+                encoder.CopyTextureToTexture(&src, &dst, &extent);
+            }
+            const auto commands = encoder.Finish();
+            m_internalData->queue.Submit(1, &commands);
+            // Submitted copies retain their resources; release the temporary pool slot.
+            m_internalData->textures.RemoveByIndex(faceId);
+            InvalidateTextureBindGroups();
         }
 
         // Cube view
         wgpu::TextureViewDescriptor viewDesc{};
-        viewDesc.format          = wgpu::TextureFormat::RGBA8Unorm;
+        viewDesc.format          = format;
         viewDesc.dimension       = wgpu::TextureViewDimension::Cube;
-        viewDesc.mipLevelCount   = 1;
+        viewDesc.mipLevelCount   = mips;
         viewDesc.arrayLayerCount = 6;
         viewDesc.aspect          = wgpu::TextureAspect::All;
 
@@ -2961,9 +3416,9 @@ namespace SR_GRAPH_NS {
         samplerDesc.addressModeU  = wgpu::AddressMode::ClampToEdge;
         samplerDesc.addressModeV  = wgpu::AddressMode::ClampToEdge;
         samplerDesc.addressModeW  = wgpu::AddressMode::ClampToEdge;
-        samplerDesc.magFilter     = wgpu::FilterMode::Linear;
-        samplerDesc.minFilter     = wgpu::FilterMode::Linear;
-        samplerDesc.mipmapFilter  = wgpu::MipmapFilterMode::Linear;
+        samplerDesc.magFilter     = TextureFilterToWGPU(createInfo.filter);
+        samplerDesc.minFilter     = TextureFilterToWGPU(createInfo.filter);
+        samplerDesc.mipmapFilter  = TextureFilterToMipWGPU(createInfo.filter);
         samplerDesc.maxAnisotropy = 1;
 
         wgpu::Sampler sampler = m_internalData->device.CreateSampler(&samplerDesc);
@@ -3019,8 +3474,16 @@ namespace SR_GRAPH_NS {
         }
         if (m_internalData->UBOs.IsAlive(static_cast<int32_t>(UBO))) {
             auto&& buf = m_internalData->UBOs.At(static_cast<int32_t>(UBO));
-            const uint64_t aligned = (size + 15) & ~uint64_t(15);
-            m_internalData->queue.WriteBuffer(buf, 0, pData, std::min(aligned, buf.GetSize()));
+            if (size > buf.GetSize() || (sizesMustBeEqual && ((size + 15) & ~uint64_t(15)) != buf.GetSize())) {
+                SR_ERROR("WebGPU uniform update size {} does not match capacity {}", size, buf.GetSize());
+                return;
+            }
+            wgpu::BufferDescriptor desc{};
+            desc.size = buf.GetSize();
+            desc.usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst;
+            buf = m_internalData->device.CreateBuffer(&desc);
+            WriteAlignedBuffer(m_internalData->queue, buf, 0, pData, size);
+            InvalidateBufferBindGroups();
         }
     }
 
@@ -3030,59 +3493,111 @@ namespace SR_GRAPH_NS {
         }
         if (m_internalData->SSBOs.IsAlive(static_cast<int32_t>(SSBO))) {
             auto&& buf = m_internalData->SSBOs.At(static_cast<int32_t>(SSBO));
-            m_internalData->queue.WriteBuffer(buf, 0, pData, std::min(size, buf.GetSize()));
+            if (size > buf.GetSize()) { return; }
+            WriteBufferOrdered(buf, 0, pData, size);
+            for (auto& host : m_internalData->hostBuffers) {
+                if (host.id == static_cast<int32_t>(SSBO)) { std::memcpy(host.data.data(), pData, size); }
+            }
         }
     }
 
-    static SR_HTYPES_NS::FastMemoryArray<uint8_t> g_tempSSBOBuffer;
-
     bool WebGPUPipeline::MapSSBO(uint32_t SSBO, void** ppData) {
-        if (!m_internalData->queue || !ppData) {
-            return false;
+        if (!ppData) { return false; }
+        *ppData = nullptr;
+        const int32_t id = static_cast<int32_t>(SSBO);
+        if (m_internalData->destroyed || !m_internalData->SSBOs.IsAlive(id)) { return false; }
+        for (auto& host : m_internalData->hostBuffers) {
+            if (host.id == id) {
+                host.mapped = true;
+                *ppData = host.data.data();
+                return true;
+            }
         }
-        if (m_internalData->SSBOs.IsAlive(static_cast<int32_t>(SSBO))) {
-            /*auto&& buf = m_internalData->SSBOs.At(static_cast<int32_t>(SSBO));
-            const uint64_t size = buf.GetSize();
-            g_tempSSBOBuffer.resize(size);
-            *ppData = g_tempSSBOBuffer.data();
-
-            auto&& device = m_internalData->device;
-
-            wgpu::BufferDescriptor desc{};
-            desc.size  = size;
-            desc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
-            const auto  readBuffer = device.CreateBuffer(&desc);
-
-            const auto encoder = device.CreateCommandEncoder();
-
-            encoder.CopyBufferToBuffer(
-                buf,   // источник
-                0,
-                readBuffer,  // приемник
-                0,
-                size
-            );
-
-            const auto commandBuffer = encoder.Finish();
-            m_internalData->queue.Submit(1, &commandBuffer);
-
-            //await readBuffer.mapAsync(GPUMapMode.READ);
-
-            const data = readBuffer.getMappedRange();
-            const values = new Float32Array(data.slice(0));
-
-            readBuffer.unmap();
-
-
-            return true;*/
+        m_internalData->instance.ProcessEvents();
+        for (auto& request : m_internalData->pixelReadbacks) {
+            if (request.ssboId != id) { continue; }
+            if (request.failed) { UnMapSSBO(SSBO); return false; }
+            if (!request.ready || request.failed) { return false; }
+            if (!request.mapped) { request.mapped = const_cast<void*>(request.buffer.GetConstMappedRange(0, request.bytesPerRow)); }
+            *ppData = request.mapped;
+            return *ppData != nullptr;
+        }
+        auto& source = m_internalData->SSBOs.At(id);
+        wgpu::BufferDescriptor desc{};
+        desc.size = source.GetSize();
+        desc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
+        WebGPUPipelineInternalData::PixelReadback request;
+        request.id = m_internalData->nextPixelReadbackId++;
+        request.ssboId = id;
+        request.height = 1;
+        request.bytesPerRow = static_cast<uint32_t>(desc.size);
+        request.buffer = m_internalData->device.CreateBuffer(&desc);
+        request.copyPending = true;
+        m_internalData->pixelReadbacks.emplace_back(std::move(request));
+        if (!m_internalData->activeRenderPass && !m_internalData->activeComputePass) {
+            auto encoder = m_internalData->activeEncoder;
+            const bool frameEncoder = static_cast<bool>(encoder);
+            if (!encoder) { encoder = m_internalData->device.CreateCommandEncoder(); }
+            auto& pending = m_internalData->pixelReadbacks.back();
+            const uint64_t requestId = pending.id;
+            encoder.CopyBufferToBuffer(source, 0, pending.buffer, 0, desc.size);
+            pending.copyPending = false;
+            const auto commands = encoder.Finish();
+            m_internalData->queue.Submit(1, &commands);
+            if (frameEncoder) { m_internalData->activeEncoder = m_internalData->device.CreateCommandEncoder(); }
+            StartReadbackMappings();
+            const double_t deadline = emscripten_get_now() + 30000.0;
+            while (!m_internalData->failed && emscripten_get_now() < deadline) {
+                m_internalData->instance.ProcessEvents();
+                for (auto& result : m_internalData->pixelReadbacks) {
+                    if (result.id != requestId) { continue; }
+                    if (result.failed) { return false; }
+                    if (result.ready) {
+                        if (!result.mapped) { result.mapped = const_cast<void*>(result.buffer.GetConstMappedRange(0, desc.size)); }
+                        *ppData = result.mapped;
+                        return *ppData != nullptr;
+                    }
+                }
+                // Asyncify suspends the WASM stack and returns control to the browser.
+                emscripten_sleep(1);
+            }
+            UnMapSSBO(SSBO);
+            SR_ERROR("Timed out reading WebGPU storage buffer {}", SSBO);
         }
         return false;
     }
 
     void WebGPUPipeline::UnMapSSBO(uint32_t SSBO) {
+        for (auto& host : m_internalData->hostBuffers) {
+            if (host.id == static_cast<int32_t>(SSBO)) { host.mapped = false; return; }
+        }
+        for (size_t i = 0; i < m_internalData->pixelReadbacks.size(); ++i) {
+            auto& request = m_internalData->pixelReadbacks[i];
+            if (request.ssboId == static_cast<int32_t>(SSBO)) {
+                if (request.ready && !request.failed) { request.buffer.Unmap(); }
+                m_internalData->pixelReadbacks.erase(m_internalData->pixelReadbacks.begin() + i);
+                return;
+            }
+        }
     }
 
     void WebGPUPipeline::FlushSSBO(uint32_t SSBO, uint64_t offset, uint64_t size) {
+        for (auto& host : m_internalData->hostBuffers) {
+            if (host.id != static_cast<int32_t>(SSBO) || !host.mapped || offset > host.data.size()) { continue; }
+            if (size == SR_UINT64_MAX || size == SR_UINT32_MAX) { size = host.data.size() - offset; }
+            if (size > host.data.size() - offset) { return; }
+            WriteBufferOrdered(m_internalData->SSBOs.At(host.id), offset, host.data.data() + offset, size);
+            return;
+        }
+        for (auto& request : m_internalData->pixelReadbacks) {
+            if (request.ssboId != static_cast<int32_t>(SSBO) || !request.ready || request.failed || offset > request.bytesPerRow) { continue; }
+            if (size == SR_UINT64_MAX || size == SR_UINT32_MAX) { size = request.bytesPerRow - offset; }
+            if (size > request.bytesPerRow - offset) { return; }
+            const auto* data = static_cast<const uint8_t*>(request.mapped);
+            if (!data) { return; }
+            WriteBufferOrdered(m_internalData->SSBOs.At(SSBO), offset, data + offset, size);
+            return;
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -3136,7 +3651,37 @@ namespace SR_GRAPH_NS {
             return info;
         }
 
-        info.videoMemoryUsed = m_state.allocatedMemory;
+        auto addBuffers = [&info](auto& pool) {
+            for (uint32_t i = 0; i < pool.GetCapacity(); ++i) {
+                if (pool.IsAlive(i) && pool.At(i)) { info.videoMemoryUsed += pool.At(i).GetSize(); }
+            }
+        };
+        addBuffers(m_internalData->VBOs); addBuffers(m_internalData->IBOs);
+        addBuffers(m_internalData->UBOs); addBuffers(m_internalData->SSBOs);
+        SR_UTILS_NS::Vector<WGPUTexture> seen;
+        auto addTexture = [&info, &seen](const wgpu::Texture& texture) {
+            if (!texture || std::find(seen.begin(), seen.end(), texture.Get()) != seen.end()) { return; }
+            seen.emplace_back(texture.Get());
+            uint32_t width = texture.GetWidth(), height = texture.GetHeight();
+            uint32_t bytes = TexelBytes(texture.GetFormat());
+            if (!bytes) { bytes = texture.GetFormat() == wgpu::TextureFormat::Depth32FloatStencil8 ? 8 : 4; }
+            for (uint32_t mip = 0; mip < texture.GetMipLevelCount(); ++mip) {
+                info.videoMemoryUsed += static_cast<uint64_t>(width) * height * bytes * texture.GetDepthOrArrayLayers() * texture.GetSampleCount();
+                width = std::max(1u, width / 2); height = std::max(1u, height / 2);
+            }
+        };
+        for (uint32_t i = 0; i < m_internalData->textures.GetCapacity(); ++i) {
+            if (m_internalData->textures.IsAlive(i)) { addTexture(m_internalData->textures.At(i).texture); }
+        }
+        for (uint32_t i = 0; i < m_internalData->frameBuffers.GetCapacity(); ++i) {
+            if (!m_internalData->frameBuffers.IsAlive(i)) { continue; }
+            const auto& fbo = m_internalData->frameBuffers.At(i);
+            for (const auto& attachment : fbo.colorAttachments) { addTexture(attachment.texture); addTexture(attachment.resolveTexture); }
+            addTexture(fbo.depthAttachment.texture);
+        }
+        addTexture(m_internalData->surfaceColorTexture);
+        addTexture(m_internalData->surfaceDepthTexture); addTexture(m_internalData->surfaceMultisampleTexture);
+        for (const auto& request : m_internalData->pixelReadbacks) { if (request.buffer) info.videoMemoryUsed += request.buffer.GetSize(); }
         info.descriptorSetsCount = m_internalData->bindGroups.GetAliveCount();
         info.shaderProgramsCount = m_internalData->shaderPrograms.GetAliveCount();
         info.UBOsCount = m_internalData->UBOs.GetAliveCount();
@@ -3174,6 +3719,7 @@ namespace SR_GRAPH_NS {
     }
 
     bool WebGPUPipeline::FreeIBO(int32_t* id) {
+        m_internalData->indexSizes.erase(*id);
         if (*id >= 0 && m_internalData->IBOs.IsAlive(*id)) {
             m_internalData->IBOs.At(*id).Destroy();
             m_internalData->IBOs.RemoveByIndex(*id);
@@ -3206,6 +3752,13 @@ namespace SR_GRAPH_NS {
     }
 
     bool WebGPUPipeline::FreeSSBO(int32_t* id) {
+        UnMapSSBO(*id);
+        for (size_t i = 0; i < m_internalData->hostBuffers.size(); ++i) {
+            if (m_internalData->hostBuffers[i].id == *id) {
+                m_internalData->hostBuffers.erase(m_internalData->hostBuffers.begin() + i);
+                break;
+            }
+        }
         if (*id >= 0 && m_internalData->SSBOs.IsAlive(*id)) {
             m_internalData->SSBOs.At(*id).Destroy();
             m_internalData->SSBOs.RemoveByIndex(*id);

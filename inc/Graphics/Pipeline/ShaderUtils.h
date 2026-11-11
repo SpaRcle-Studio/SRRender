@@ -229,6 +229,7 @@ namespace SR_GRAPH_NS {
     struct SR_GRAPHICS_DLL_API Uniform {
         LayoutBinding type = LayoutBinding::Unknown;
         ShaderStage stage = ShaderStage::Unknown;
+        bool storageReadOnly = false;
         /// Заполняется только для сэмплеров и аттачментов
         SamplerDimension samplerDimension = SamplerDimension::Unknown;
         uint64_t binding = 0;

@@ -688,6 +688,7 @@ namespace SR_SRSL_NS {
                 uniform.size = block.size;
                 uniform.stage = stage;
                 uniform.type = LayoutBinding::SSBO;
+                uniform.storageReadOnly = block.isReadOnly.has_value() && block.isReadOnly.value();
 
                 m_createInfo.uniforms.emplace_back(uniform);
             }

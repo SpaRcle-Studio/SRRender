@@ -509,6 +509,6 @@ namespace SR_GRAPH_NS {
 
     uint64_t ShaderCache::GetVersion() {
         /// Обязательно менять при изменении формата кеша (например, при добавлении полей в Uniform)
-        return 0xBAD8FFFF;
+        return 0xBAD90000;
     }
 }
