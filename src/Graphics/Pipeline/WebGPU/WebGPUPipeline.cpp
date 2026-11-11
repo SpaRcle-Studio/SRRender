@@ -14,6 +14,7 @@
 #include <Utils/Common/Vertices.h>
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Resources/ResourceManager.h>
+#include <Utils/FileSystem/FileSystem.h>
 
 #include <emscripten/html5.h>
 
@@ -2047,7 +2048,7 @@ namespace SR_GRAPH_NS {
         // The WGSLCodeGenerator emits the same combined source under every stage key
         // (Vertex, Fragment, Compute), so we read the first available stage file.
         // The cache path is: <ResourceManager::GetCachePath>/Shaders/<stage.path>
-        std::string wgslSource;
+        SR_UTILS_NS::String wgslSource;
         const auto cacheShadersRoot = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Shaders");
 
         auto readStageFile = [&](ShaderStage stage) -> bool {
@@ -2057,13 +2058,11 @@ namespace SR_GRAPH_NS {
             }
             // The path stored in stages is relative to the cache/Shaders root
             const auto fullPath = cacheShadersRoot.Concat(it->second.path);
-            std::ifstream f(fullPath.ToStringRef(), std::ios::in);
-            if (!f.is_open()) {
+            if (!SR_UTILS_NS::FileSystem::ReadFile(fullPath, wgslSource) || wgslSource.empty()) {
                 return false;
             }
             shaderName = SR_UTILS_NS::StringView(it->second.path.c_str(), it->second.path.size());
-            wgslSource = std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-            return !wgslSource.empty();
+            return true;
         };
 
         // Read from first available stage (all stages hold the same combined WGSL source)
@@ -2090,17 +2089,21 @@ namespace SR_GRAPH_NS {
 
         m_internalData->device.PopErrorScope(wgpu::CallbackMode::AllowProcessEvents, [wgslSource](wgpu::PopErrorScopeStatus /*status*/, wgpu::ErrorType type, wgpu::StringView message) {
             if (type != wgpu::ErrorType::NoError) {
-                const std::string_view msgView =
+                const SR_UTILS_NS::StringView msgView =
                     (message.length != WGPU_STRLEN)
-                        ? std::string_view(message.data, message.length)
-                        : std::string_view(message.data ? message.data : "(no message)");
+                        ? SR_UTILS_NS::StringView(message.data, message.length)
+                        : SR_UTILS_NS::StringView(message.data ? message.data : "(no message)");
                 SR_ERROR("WebGPUPipeline : WGSL shader compilation failed: {}", msgView);
-                std::istringstream stream(wgslSource);
-                std::string line;
                 uint32_t lineNum = 1;
                 SR_UTILS_NS::String text;
-                while (std::getline(stream, line)) {
-                    text += "  {:>4} | {}\n"_format(lineNum++, line);
+                SR_UTILS_NS::StringView remaining(wgslSource);
+                while (!remaining.empty()) {
+                    const auto newline = remaining.find('\n');
+                    text += "  {:>4} | {}\n"_format(lineNum++, remaining.substr(0, newline));
+                    if (newline == SR_UTILS_NS::StringView::npos) {
+                        break;
+                    }
+                    remaining.remove_prefix(newline + 1);
                 }
                 SR_ERROR("WebGPUPipeline : dumping WGSL source:\n{}", text);
             }
@@ -2423,7 +2426,7 @@ namespace SR_GRAPH_NS {
             for (auto fmt : colorFormats) {
                 wgpu::ColorTargetState ct{};
                 ct.format = fmt;
-                ct.writeMask = wgslSource.find("struct FragmentOutput") != std::string::npos
+                ct.writeMask = wgslSource.find("struct FragmentOutput") != SR_UTILS_NS::String::npos
                     ? wgpu::ColorWriteMask::All
                     : wgpu::ColorWriteMask::None;
                 /// Блендинг включаем только для тех вложений, формат которых его поддерживает.
