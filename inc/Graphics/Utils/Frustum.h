@@ -15,7 +15,7 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
-    struct FrustumPlane {
+    struct SR_COMMON_DLL_API FrustumPlane {
         SR_MATH_NS::FVector3 normal;
         SR_MATH_NS::FVector3 normalAbs;
         float_t d = 0.f;
@@ -48,7 +48,7 @@ namespace SR_GRAPH_NS {
         FRUSTUM_SIDE_NEAR
     };
 
-    struct Frustum {
+    struct SR_COMMON_DLL_API Frustum {
         std::array<FrustumPlane, 6> planes;
 
         using FrustumCorners = std::array<SR_MATH_NS::FVector3, 8>;
@@ -66,14 +66,14 @@ namespace SR_GRAPH_NS {
     };
 
     // Нормализация уравнения плоскости
-    FrustumPlane NormalizeFrustumPlane(float_t a, float_t b, float_t c, float_t d);
+    SR_COMMON_DLL_API FrustumPlane NormalizeFrustumPlane(float_t a, float_t b, float_t c, float_t d);
 
-    Frustum ExtractFrustum(const SR_GTYPES_NS::Camera& camera);
+    SR_COMMON_DLL_API Frustum ExtractFrustum(const SR_GTYPES_NS::Camera& camera);
 
     // Извлекаем 6 плоскостей из ViewProjection матрицы
-    Frustum ExtractFrustum(const SR_MATH_NS::Matrix4x4& m);
+    SR_COMMON_DLL_API Frustum ExtractFrustum(const SR_MATH_NS::Matrix4x4& m);
 
-    SR_MATH_NS::FVector3 IntersectFrustumPlanes(const FrustumPlane& p1, const FrustumPlane& p2, const FrustumPlane& p3);
+    SR_COMMON_DLL_API SR_MATH_NS::FVector3 IntersectFrustumPlanes(const FrustumPlane& p1, const FrustumPlane& p2, const FrustumPlane& p3);
 }
 
 #endif //SR_ENGINE_RENDER_FRUSTUM_H
