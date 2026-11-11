@@ -12,6 +12,7 @@ namespace SR_SRSL_NS {
     }
 
     SR_UTILS_NS::StringView ISRSLCodeGenerator::GenerateTab(int32_t deep) const {
+        SR_TRACY_ZONE;
         if (deep <= 0) {
             return SR_UTILS_NS::StringView();
         }
