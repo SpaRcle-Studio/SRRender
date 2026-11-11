@@ -11,7 +11,7 @@
 
 namespace SR_GTYPES_NS {
     /// @abstract
-    class IndexedMesh : public Mesh {
+    class SR_GRAPHICS_DLL_API IndexedMesh : public Mesh {
         using Super = Mesh;
         SR_CLASS()
     public:

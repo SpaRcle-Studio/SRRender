@@ -13,7 +13,7 @@
 #include <Utils/Types/SortedVector.h>
 
 namespace SR_SRSL_NS {
-    struct ShaderParams : public SR_UTILS_NS::IResourceVariant {
+    struct SR_GRAPHICS_DLL_API ShaderParams : public SR_UTILS_NS::IResourceVariant {
     private:
         struct Entry {
             SR_UTILS_NS::StringAtom key;

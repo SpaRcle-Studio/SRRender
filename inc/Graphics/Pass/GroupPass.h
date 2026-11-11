@@ -8,7 +8,7 @@
 #include <Graphics/Pass/BasePass.h>
 
 namespace SR_GRAPH_NS {
-    class GroupPass : public BasePass {
+    class SR_GRAPHICS_DLL_API GroupPass : public BasePass {
         using Super = BasePass;
         SR_CLASS()
     public:

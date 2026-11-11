@@ -19,7 +19,7 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class IRenderTechnique;
 
-    class FrameBufferPassData final : public SR_UTILS_NS::Serializable {
+    class SR_GRAPHICS_DLL_API FrameBufferPassData final : public SR_UTILS_NS::Serializable {
         SR_CLASS()
         using Super = SR_UTILS_NS::Serializable;
     public:

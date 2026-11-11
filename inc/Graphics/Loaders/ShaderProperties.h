@@ -48,7 +48,7 @@ namespace SR_GRAPH_NS {
     /// Реализация аттачментов (выходов кадровых буферов) сделана на уровне проходов рендера.
     /// См. ISamplersPass. На уровне шейдера не должны поддерживаться аттачменты, т.к. это не безопасно.
 
-    struct ShaderPropertyData {
+    struct SR_GRAPHICS_DLL_API ShaderPropertyData {
         enum class Type : uint8_t {
             Unknown,
             Sampler,
@@ -278,7 +278,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    SR_MAYBE_UNUSED ShaderPropertyData GetVariantFromShaderVarType(ShaderVarType type);
+    SR_MAYBE_UNUSED SR_GRAPHICS_DLL_API ShaderPropertyData GetVariantFromShaderVarType(ShaderVarType type);
 
     SR_MAYBE_UNUSED static ShaderVarType GetShaderVarTypeFromString(std::string str) {
         if (!str.empty()) {

@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_GRAPHICS_VOLUMETRIC_FOG_H
 #define SR_ENGINE_GRAPHICS_VOLUMETRIC_FOG_H
 
+#include <Graphics/stdInclude.h>
+
 #include <Utils/ECS/Component.h>
 #include <Utils/Math/Vector2.h>
 #include <Utils/Math/Vector4.h>
@@ -19,7 +21,7 @@ namespace SR_GRAPH_NS {
     /// Глобальный высотный туман с объемными лучами от солнца/луны.
     /// Рендерится только при наличии активного компонента на сцене.
     /// @displayName(Volumetric Fog) @category(Render)
-    class VolumetricFog : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API VolumetricFog : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;

@@ -27,7 +27,7 @@ namespace SR_GTYPES_NS {
     };
 
     /// @hidden @abstract @category(Render)
-    class IRenderComponent : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API IRenderComponent : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:
@@ -125,7 +125,7 @@ namespace SR_GTYPES_NS {
     };
 
     /// @hidden @abstract @category(Render)
-    class UIRenderComponent : public IRenderComponent {
+    class SR_GRAPHICS_DLL_API UIRenderComponent : public IRenderComponent {
         SR_CLASS()
         using Super = IRenderComponent;
     public:

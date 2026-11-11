@@ -11,7 +11,7 @@
 
 namespace SR_GTYPES_NS {
     /// @category(Render)
-    class Mesh3D final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
+    class SR_GRAPHICS_DLL_API Mesh3D final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
         using Super = IndexedMesh;
         SR_CLASS()
     public:

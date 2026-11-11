@@ -14,7 +14,7 @@ namespace SR_GRAPH_NS {
     class RenderScene;
 
     /// @noCopyable @noMovable
-    class IRenderer : public SR_UTILS_NS::SRClass, public SR_HTYPES_NS::SharedPtr<IRenderer> {
+    class SR_GRAPHICS_DLL_API IRenderer : public SR_UTILS_NS::SRClass, public SR_HTYPES_NS::SharedPtr<IRenderer> {
         SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<IRenderer>;

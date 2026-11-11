@@ -23,7 +23,7 @@ namespace SR_GRAPH_NS {
     class RenderContext;
     class BasicWindowImpl;
 
-    class Window : public SR_HTYPES_NS::SharedPtr<Window> {
+    class SR_GRAPHICS_DLL_API Window : public SR_HTYPES_NS::SharedPtr<Window> {
     public:
         using Super = SR_HTYPES_NS::SharedPtr<Window>;
         using Ptr = SR_HTYPES_NS::SharedPtr<Window>;

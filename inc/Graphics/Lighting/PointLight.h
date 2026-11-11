@@ -8,7 +8,7 @@
 #include <Graphics/Lighting/ILightComponent.h>
 
 namespace SR_GRAPH_NS {
-    class PointLight : public ILightComponent {
+    class SR_GRAPHICS_DLL_API PointLight : public ILightComponent {
         SR_CLASS()
     public:
         SR_NODISCARD LightType GetLightType() const override { return LightType::Point; };

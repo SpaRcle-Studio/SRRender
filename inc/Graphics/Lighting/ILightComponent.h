@@ -13,7 +13,7 @@ namespace SR_GRAPH_NS {
     class RenderScene;
 
     /// @hidden @abstract @category(Render.Light)
-    class ILightComponent : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API ILightComponent : public SR_UTILS_NS::Component {
         using Super = SR_UTILS_NS::Component;
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::RenderScene>;
         SR_CLASS()

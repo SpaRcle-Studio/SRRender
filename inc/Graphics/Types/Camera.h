@@ -30,7 +30,7 @@ namespace SR_GTYPES_NS {
     );
 
     /// @category(Render)
-    class Camera : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API Camera : public SR_UTILS_NS::Component {
         SR_CLASS()
         struct RenderTechniqueInfo {
             SR_UTILS_NS::Path path;

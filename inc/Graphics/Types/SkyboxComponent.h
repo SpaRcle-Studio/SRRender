@@ -19,7 +19,7 @@ namespace SR_GTYPES_NS {
     class Skybox;
 
     /// @displayName(Skybox) @category(Render)
-    class SkyboxComponent : public SR_GTYPES_NS::IRenderComponent {
+    class SR_GRAPHICS_DLL_API SkyboxComponent : public SR_GTYPES_NS::IRenderComponent {
         SR_CLASS()
         using Super = SR_GTYPES_NS::IRenderComponent;
     public:

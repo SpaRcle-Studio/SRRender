@@ -66,7 +66,7 @@ namespace SR_ANIMATIONS_NS {
         Equals, Less, More, NotEquals
     );
 
-    struct AnimationLink : public SR_UTILS_NS::Serializable {
+    struct SR_GRAPHICS_DLL_API AnimationLink : public SR_UTILS_NS::Serializable {
         SR_CLASS()
     public:
         AnimationLink() = default;

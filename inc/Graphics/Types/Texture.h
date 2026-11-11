@@ -22,7 +22,7 @@ namespace SR_GTYPES_NS {
     class TextureImpl;
     
     /// @extension(png, jpg, jpeg, tga, bmp)
-    class Texture : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
+    class SR_GRAPHICS_DLL_API Texture : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         SR_CLASS()
         friend class TextureImpl;
         friend class ::SR_GRAPH_NS::TextureLoader;

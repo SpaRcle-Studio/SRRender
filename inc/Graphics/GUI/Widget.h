@@ -38,7 +38,7 @@ namespace SR_GRAPH_GUI_NS {
     typedef uint32_t WidgetFlagBits;
 
     /// @abstract @noCopyable @noMovable
-    class Widget : public SR_UTILS_NS::Serializable, public SR_UTILS_NS::InputHandler, public SR_HTYPES_NS::SharedPtr<Widget> {
+    class SR_GRAPHICS_DLL_API Widget : public SR_UTILS_NS::Serializable, public SR_UTILS_NS::InputHandler, public SR_HTYPES_NS::SharedPtr<Widget> {
         friend class WidgetManager;
         SR_CLASS()
     public:

@@ -11,7 +11,7 @@
 #include <Utils/FileSystem/Path.h>
 
 namespace SR_GRAPH_NS {
-    struct ActiveGraphicsSettings : public SR_UTILS_NS::Serializable {
+    struct SR_GRAPHICS_DLL_API ActiveGraphicsSettings : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
         ActiveGraphicsSettings() = default;

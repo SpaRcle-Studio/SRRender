@@ -18,7 +18,7 @@ namespace SR_GTYPES_NS {
 namespace SR_GRAPH_NS {
     class Pipeline;
 
-    class DescriptorManager : public SR_UTILS_NS::Singleton<DescriptorManager> {
+    class SR_GRAPHICS_DLL_API DescriptorManager : public SR_UTILS_NS::Singleton<DescriptorManager> {
         using Super = SR_UTILS_NS::Singleton<DescriptorManager>;
         SR_REGISTER_SINGLETON(DescriptorManager)
         using DescriptorSet = int32_t;

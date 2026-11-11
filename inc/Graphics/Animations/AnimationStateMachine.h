@@ -11,7 +11,7 @@ namespace SR_ANIMATIONS_NS {
     class AnimationClip;
     class AnimationGraph;
 
-    class AnimationStateMachine : public IAnimationDataSet {
+    class SR_GRAPHICS_DLL_API AnimationStateMachine : public IAnimationDataSet {
         SR_CLASS()
         using Super = IAnimationDataSet;
     public:

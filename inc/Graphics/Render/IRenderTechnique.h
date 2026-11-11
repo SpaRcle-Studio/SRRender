@@ -44,7 +44,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    class IRenderTechnique : public Memory::IGraphicsResource, public SR_HTYPES_NS::SharedPtr<IRenderTechnique> {
+    class SR_GRAPHICS_DLL_API IRenderTechnique : public Memory::IGraphicsResource, public SR_HTYPES_NS::SharedPtr<IRenderTechnique> {
     public:
         using CameraPtr = Types::Camera*;
         using Super = SR_HTYPES_NS::SharedPtr<IRenderTechnique>;

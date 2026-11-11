@@ -40,7 +40,7 @@ namespace SR_GRAPH_NS {
     class VolumetricClouds;
     class VolumetricFog;
 
-    class RenderScene : public SR_HTYPES_NS::SharedPtr<RenderScene>, public SR_UTILS_NS::ISceneModule {
+    class SR_GRAPHICS_DLL_API RenderScene : public SR_HTYPES_NS::SharedPtr<RenderScene>, public SR_UTILS_NS::ISceneModule {
         using Super = SR_HTYPES_NS::SharedPtr<RenderScene>;
     public:
         using WidgetManagerPtr = GUI::WidgetManager*;

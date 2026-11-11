@@ -15,7 +15,7 @@
 namespace SR_SRSL_NS {
     class SRSLUniformBlock;
 
-    class WGSLCodeGenerator : public ISRSLCodeGenerator, public SR_UTILS_NS::Singleton<WGSLCodeGenerator> {
+    class SR_GRAPHICS_DLL_API WGSLCodeGenerator : public ISRSLCodeGenerator, public SR_UTILS_NS::Singleton<WGSLCodeGenerator> {
         SR_REGISTER_SINGLETON(WGSLCodeGenerator)
     private:
         WGSLCodeGenerator() = default;

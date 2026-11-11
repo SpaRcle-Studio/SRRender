@@ -25,7 +25,7 @@ namespace SR_GRAPH_NS{
         bool emitted = false;
     };
 
-    class ParticleEmissionModule : public SR_UTILS_NS::Serializable {
+    class SR_GRAPHICS_DLL_API ParticleEmissionModule : public SR_UTILS_NS::Serializable {
     SR_CLASS()
     public:
 

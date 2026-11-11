@@ -23,7 +23,7 @@ namespace SR_GTYPES_NS {
     class Camera;
     class Framebuffer;
 
-    struct RenderTargetLayer : public SR_UTILS_NS::Serializable {
+    struct SR_GRAPHICS_DLL_API RenderTargetLayer : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
         /// @property
@@ -47,7 +47,7 @@ namespace SR_GTYPES_NS {
     );
 
     /// @category(Render)
-    class RenderTarget : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API RenderTarget : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = Component;
     public:

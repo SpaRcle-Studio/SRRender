@@ -13,7 +13,7 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
-    class FrameBufferPass : public GroupPass {
+    class SR_GRAPHICS_DLL_API FrameBufferPass : public GroupPass {
         using Super = GroupPass;
         SR_CLASS()
     public:

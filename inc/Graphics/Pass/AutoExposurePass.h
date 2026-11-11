@@ -15,7 +15,7 @@ namespace SR_GTYPES_NS {
 }
 
 namespace SR_GRAPH_NS {
-    class AutoExposurePass : public BasePass {
+    class SR_GRAPHICS_DLL_API AutoExposurePass : public BasePass {
         SR_CLASS()
         using Super = BasePass;
         using ShaderPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>;

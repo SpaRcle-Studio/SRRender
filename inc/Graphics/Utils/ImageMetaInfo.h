@@ -12,7 +12,7 @@
 #include <Utils/Resources/ResourceLoadMode.h>
 
 namespace SR_GRAPH_NS {
-    struct ImageMetaInfo : public SR_UTILS_NS::Serializable {
+    struct SR_GRAPHICS_DLL_API ImageMetaInfo : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
     public:
         SR_NODISCARD ImageFormat GetFormat() const noexcept { return format; }

@@ -5,6 +5,8 @@
 #ifndef SR_ENGINE_GRAPHICS_VOLUMETRIC_CLOUDS_H
 #define SR_ENGINE_GRAPHICS_VOLUMETRIC_CLOUDS_H
 
+#include <Graphics/stdInclude.h>
+
 #include <Utils/ECS/Component.h>
 #include <Utils/Math/Vector2.h>
 #include <Utils/Math/Vector3.h>
@@ -18,7 +20,7 @@ namespace SR_GRAPH_NS {
 
     /// Объемные облака. Рендерятся только при наличии активного компонента на сцене.
     /// @displayName(Volumetric Clouds) @category(Render)
-    class VolumetricClouds : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API VolumetricClouds : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;

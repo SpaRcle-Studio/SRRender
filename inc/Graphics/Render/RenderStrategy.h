@@ -37,7 +37,7 @@ namespace SR_GRAPH_NS {
     class MeshDrawerPass;
     class RenderContext;
 
-    class RenderStrategy : public SR_UTILS_NS::NonCopyable {
+    class SR_GRAPHICS_DLL_API RenderStrategy : public SR_UTILS_NS::NonCopyable {
         using Super = SR_UTILS_NS::NonCopyable;
         using ShaderPtr = SR_GTYPES_NS::Shader*;
         using RenderObjectPtr = SR_GTYPES_NS::IRenderComponent*;

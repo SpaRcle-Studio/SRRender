@@ -21,7 +21,7 @@
 
 namespace SR_GRAPH_NS {
     /// @category(Render.Particles)
-    class ParticleEmitter : public SR_GTYPES_NS::IRenderComponent, public SR_HTYPES_NS::IRawMeshHolder {
+    class SR_GRAPHICS_DLL_API ParticleEmitter : public SR_GTYPES_NS::IRenderComponent, public SR_HTYPES_NS::IRawMeshHolder {
         SR_CLASS()
         using Super = SR_GTYPES_NS::IRenderComponent;
     public:

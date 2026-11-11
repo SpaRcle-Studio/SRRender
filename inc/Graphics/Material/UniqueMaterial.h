@@ -8,7 +8,7 @@
 #include <Graphics/Material/BaseMaterial.h>
 
 namespace SR_GRAPH_NS {
-    class UniqueMaterial : public BaseMaterial {
+    class SR_GRAPHICS_DLL_API UniqueMaterial : public BaseMaterial {
         SR_CLASS()
         using Super = BaseMaterial;
     public:

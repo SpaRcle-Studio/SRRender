@@ -32,7 +32,7 @@ namespace SR_GRAPH_NS {
     };
 
     /// @extension(font)
-    class FontAsset : public SR_UTILS_NS::Asset {
+    class SR_GRAPHICS_DLL_API FontAsset : public SR_UTILS_NS::Asset {
         SR_CLASS()
     public:
         bool BuildText(const std::string& text, float_t fontSize, SR_UTILS_NS::Vector<PositionedGlyph>& glyphs);

@@ -13,7 +13,7 @@ namespace SR_ANIMATIONS_NS {
     struct RetargetAnimationContext;
 
     /// @abstract
-    class RetargetAlgorithmBase : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<RetargetAlgorithmBase> {
+    class SR_GRAPHICS_DLL_API RetargetAlgorithmBase : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<RetargetAlgorithmBase> {
         SR_STRUCT()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<RetargetAlgorithmBase>;

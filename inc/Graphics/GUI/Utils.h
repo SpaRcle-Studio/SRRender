@@ -8,7 +8,7 @@
 #include <Graphics/stdInclude.h>
 
 namespace SR_GRAPH_GUI_NS {
-    class ImGuiDisabledLockGuard : public SR_UTILS_NS::NonCopyable {
+    class SR_GRAPHICS_DLL_API ImGuiDisabledLockGuard : public SR_UTILS_NS::NonCopyable {
     public:
         explicit ImGuiDisabledLockGuard(bool disabled);
         ~ImGuiDisabledLockGuard() override;

@@ -14,7 +14,7 @@ namespace SR_ANIMATIONS_NS {
     class Skeleton;
     class BoneComponent;
 
-    class Bone final : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<Bone> {
+    class SR_GRAPHICS_DLL_API Bone final : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<Bone> {
         SR_CLASS()
         using GameObjectPtr = SR_HTYPES_NS::SharedPtr<SR_UTILS_NS::GameObject>;
     public:

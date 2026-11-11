@@ -26,7 +26,7 @@ namespace SR_GRAPH_NS {
     )
 
     /// @displayName(IK System) @category(Animations)
-    class IKSystem : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API IKSystem : public SR_UTILS_NS::Component {
         using Super = Component;
         SR_CLASS()
     public:

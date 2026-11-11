@@ -26,7 +26,7 @@ namespace SR_GRAPH_NS::GUI {
 
     typedef SR_HTYPES_NS::FlatHashMap<void*, Widget*> ViewportsTable;
 
-    class WidgetManager : public SR_UTILS_NS::NonCopyable, public SR_UTILS_NS::InputHandler {
+    class SR_GRAPHICS_DLL_API WidgetManager : public SR_UTILS_NS::NonCopyable, public SR_UTILS_NS::InputHandler {
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using ContextPtr = RenderContext*;
         using ScenePtr = SR_HTYPES_NS::SharedPtr<SR_WORLD_NS::Scene>;

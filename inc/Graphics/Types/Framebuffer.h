@@ -25,7 +25,7 @@ namespace SR_GTYPES_NS {
     /**
      * \Usage Bing -> BeginRenderBuffer -> BeginRender -> EndRender -> EndRenderBuffer
      * */
-    class Framebuffer : public Memory::IGraphicsResource, public SR_HTYPES_NS::SharedPtr<Framebuffer> {
+    class SR_GRAPHICS_DLL_API Framebuffer : public Memory::IGraphicsResource, public SR_HTYPES_NS::SharedPtr<Framebuffer> {
     public:
         using ClearColors = SR_UTILS_NS::Vector<SR_MATH_NS::FColor>;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<Pipeline>;

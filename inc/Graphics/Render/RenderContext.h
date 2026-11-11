@@ -38,7 +38,7 @@ namespace SR_GRAPH_NS {
      * Здесь хранятся все контекстные ресурсы.
      * Исключение - меши, потому что они могут быть в нескольких экземплярах.
      */
-    class RenderContext : public SR_HTYPES_NS::SharedPtr<RenderContext> {
+    class SR_GRAPHICS_DLL_API RenderContext : public SR_HTYPES_NS::SharedPtr<RenderContext> {
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using PipelinePtr = SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::Pipeline>;
         using Super = SR_HTYPES_NS::SharedPtr<RenderContext>;

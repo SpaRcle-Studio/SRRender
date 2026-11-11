@@ -29,7 +29,7 @@ namespace SR_GRAPH_NS {
 
 namespace SR_GTYPES_NS {
     /// @extension(srsl)
-    class Shader : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
+    class SR_GRAPHICS_DLL_API Shader : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         SR_CLASS()
         using ShaderProgram = int32_t;
         friend class SR_GRAPH_NS::ShaderCache;

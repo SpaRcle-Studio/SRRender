@@ -20,7 +20,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    class ColorBufferPass : public IColorBufferPass, public MeshDrawerPass {
+    class SR_GRAPHICS_DLL_API ColorBufferPass : public IColorBufferPass, public MeshDrawerPass {
         SR_CLASS()
         using ShaderPtr = SR_GTYPES_NS::Shader*;
         using Super = MeshDrawerPass;

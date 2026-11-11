@@ -12,7 +12,7 @@
 namespace SR_GTYPES_NS {
     class Font;
 
-    class Text : public UIRenderComponent {
+    class SR_GRAPHICS_DLL_API Text : public UIRenderComponent {
         SR_CLASS()
         using Super = UIRenderComponent;
     public:

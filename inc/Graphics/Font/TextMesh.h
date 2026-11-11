@@ -31,7 +31,7 @@ namespace SR_GTYPES_NS {
         GeometryCenter
     );
 
-    class TextMesh : public UIRenderComponent, public UI::IFindCanvasOwner {
+    class SR_GRAPHICS_DLL_API TextMesh : public UIRenderComponent, public UI::IFindCanvasOwner {
         SR_CLASS()
         using Super = UIRenderComponent;
     public:

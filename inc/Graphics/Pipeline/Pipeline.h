@@ -60,7 +60,7 @@ namespace SR_GRAPH_NS {
         Instance
     );
 
-    class Pipeline : public SR_HTYPES_NS::SharedPtr<Pipeline> {
+    class SR_GRAPHICS_DLL_API Pipeline : public SR_HTYPES_NS::SharedPtr<Pipeline> {
     public:
         using Super = SR_HTYPES_NS::SharedPtr<Pipeline>;
         using ClearColors = SR_UTILS_NS::Vector<SR_MATH_NS::FColor>;

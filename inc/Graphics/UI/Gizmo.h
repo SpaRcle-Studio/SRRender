@@ -66,7 +66,7 @@ namespace SR_GRAPH_UI_NS {
     );
 
     /// @category(Render)
-    class Gizmo : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API Gizmo : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
         enum class GizmoMeshLoadMode {

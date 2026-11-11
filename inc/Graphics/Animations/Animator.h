@@ -22,7 +22,7 @@ namespace SR_ANIMATIONS_NS {
     class AnimationChannel;
 
     /// @category(Animations)
-    class Animator : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API Animator : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:

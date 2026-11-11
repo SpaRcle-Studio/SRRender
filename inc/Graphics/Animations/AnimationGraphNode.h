@@ -18,7 +18,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationGraphNode : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<AnimationGraphNode> {
+    class SR_GRAPHICS_DLL_API AnimationGraphNode : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<AnimationGraphNode> {
         SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<AnimationGraphNode>;

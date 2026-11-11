@@ -19,7 +19,7 @@ namespace SR_GRAPH_NS {
         FrameBufferColor
     );
 
-    struct SamplerData : public SR_UTILS_NS::Serializable {
+    struct SR_GRAPHICS_DLL_API SamplerData : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
         SamplerData() = default;
@@ -72,7 +72,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Path texturePath;
     };
 
-    class SamplersPassData final : public SR_UTILS_NS::Serializable {
+    class SR_GRAPHICS_DLL_API SamplersPassData final : public SR_UTILS_NS::Serializable {
         SR_CLASS()
     public:
         ~SamplersPassData() override;

@@ -8,7 +8,7 @@
 #include <Graphics/GUI/Widget.h>
 
 namespace SR_GRAPH_GUI_NS {
-    class WidgetContainerElement : public SR_UTILS_NS::InputHandler, public SR_HTYPES_NS::SharedPtr<WidgetContainerElement> {
+    class SR_GRAPHICS_DLL_API WidgetContainerElement : public SR_UTILS_NS::InputHandler, public SR_HTYPES_NS::SharedPtr<WidgetContainerElement> {
         using Callback = SR_HTYPES_NS::Function<void(bool isActive)>;
         using CustomDrawCallback = SR_HTYPES_NS::Function<void(WidgetContainerElement*)>;
         using IsActiveFn = SR_HTYPES_NS::Function<bool()>;
@@ -37,7 +37,7 @@ namespace SR_GRAPH_GUI_NS {
 
     };
 
-    class WidgetContainer : public Widget {
+    class SR_GRAPHICS_DLL_API WidgetContainer : public Widget {
         using Super = Widget;
         SR_CLASS()
     public:

@@ -36,7 +36,7 @@ namespace SR_GRAPH_UI_NS {
     )
 
     /// @category(UI)
-    class Canvas : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API Canvas : public SR_UTILS_NS::Component {
         SR_CLASS()
         using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
         using Super = SR_UTILS_NS::Component;
@@ -73,7 +73,7 @@ namespace SR_GRAPH_UI_NS {
     };
 
     /// @category(UI)
-    class CanvasScaler : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API CanvasScaler : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:
@@ -108,7 +108,7 @@ namespace SR_GRAPH_UI_NS {
 
     };
 
-    class IFindCanvasOwner {
+    class SR_GRAPHICS_DLL_API IFindCanvasOwner {
     public:
         SR_NODISCARD SR_GRAPH_NS::UI::Canvas* FindCanvas(const SR_UTILS_NS::SceneObject* pSO);
 

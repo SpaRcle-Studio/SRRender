@@ -12,7 +12,7 @@
 namespace SR_SRSL_NS {
     class SRSLUniformBlock;
 
-    class GLSLCodeGenerator : public ISRSLCodeGenerator, public SR_UTILS_NS::Singleton<GLSLCodeGenerator> {
+    class SR_GRAPHICS_DLL_API GLSLCodeGenerator : public ISRSLCodeGenerator, public SR_UTILS_NS::Singleton<GLSLCodeGenerator> {
         SR_REGISTER_SINGLETON(GLSLCodeGenerator)
     private:
         GLSLCodeGenerator() = default;

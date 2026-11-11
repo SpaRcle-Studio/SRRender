@@ -13,7 +13,7 @@
 
 namespace SR_GRAPH_GUI_NS {
     /// @abstract
-    class NodeWidget : public SR_GRAPH_GUI_NS::Widget {
+    class SR_GRAPHICS_DLL_API NodeWidget : public SR_GRAPH_GUI_NS::Widget {
         SR_CLASS()
         using Super = SR_GRAPH_GUI_NS::Widget;
     public:

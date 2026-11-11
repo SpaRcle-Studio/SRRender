@@ -26,7 +26,7 @@ namespace SR_GRAPH_NS {
     class RenderScene;
     class FileMaterial;
 
-    class DebugRenderer : public IRenderer {
+    class SR_GRAPHICS_DLL_API DebugRenderer : public IRenderer {
         using Super = IRenderer;
         SR_CLASS()
     public:
@@ -102,7 +102,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Vector<MeshInfo> m_meshes;
     };
 
-    class DebugOverlayRenderer : public DebugRenderer {
+    class SR_GRAPHICS_DLL_API DebugOverlayRenderer : public DebugRenderer {
         using Super = DebugRenderer;
         SR_CLASS()
     public:

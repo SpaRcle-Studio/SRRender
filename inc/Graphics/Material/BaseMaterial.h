@@ -26,7 +26,7 @@ namespace SR_GRAPH_NS {
     class RenderContext;
 
     /// @abstract @noCopyable @noMovable
-    class BaseMaterial : public SR_UTILS_NS::Serializable, public SR_UTILS_NS::NonCopyable, public SR_HTYPES_NS::SharedPtr<BaseMaterial> {
+    class SR_GRAPHICS_DLL_API BaseMaterial : public SR_UTILS_NS::Serializable, public SR_UTILS_NS::NonCopyable, public SR_HTYPES_NS::SharedPtr<BaseMaterial> {
         SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<BaseMaterial>;

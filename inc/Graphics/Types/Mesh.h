@@ -28,7 +28,7 @@ namespace SR_GTYPES_NS {
     class Shader;
 
     /// @abstract
-    class Mesh : public SR_GTYPES_NS::IRenderComponent {
+    class SR_GRAPHICS_DLL_API Mesh : public SR_GTYPES_NS::IRenderComponent {
         SR_CLASS()
         using Super = SR_GTYPES_NS::IRenderComponent;
     public:

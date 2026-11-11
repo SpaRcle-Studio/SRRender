@@ -23,7 +23,7 @@ namespace SR_GRAPH_NS {
 
 namespace SR_ANIMATIONS_NS {
     /// @category(Animations)
-    class Skeleton : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API Skeleton : public SR_UTILS_NS::Component {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:

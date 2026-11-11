@@ -8,7 +8,7 @@
 #include <Graphics/Lighting/ILightComponent.h>
 
 namespace SR_GRAPH_NS {
-    class DirectionalLight : public ILightComponent {
+    class SR_GRAPHICS_DLL_API DirectionalLight : public ILightComponent {
         using Super = ILightComponent;
         SR_CLASS()
     public:

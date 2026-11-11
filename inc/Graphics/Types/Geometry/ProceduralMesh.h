@@ -10,7 +10,7 @@
 #include <Utils/Types/FastMemoryArray.h>
 
 namespace SR_GTYPES_NS {
-    class ProceduralMesh final : public IndexedMesh {
+    class SR_GRAPHICS_DLL_API ProceduralMesh final : public IndexedMesh {
         using Super = IndexedMesh;
         SR_CLASS()
     public:

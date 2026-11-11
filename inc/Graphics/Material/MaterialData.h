@@ -17,7 +17,7 @@ namespace SR_GRAPH_NS {
         None, Error, Update, ReDraw
     };
 
-    struct MaterialShaderProperty : public SR_UTILS_NS::Serializable {
+    struct SR_GRAPHICS_DLL_API MaterialShaderProperty : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
     private:
         using Super = SR_UTILS_NS::Serializable;
@@ -43,7 +43,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    struct MaterialShaderData : public SR_UTILS_NS::Serializable {
+    struct SR_GRAPHICS_DLL_API MaterialShaderData : public SR_UTILS_NS::Serializable {
         using Super = SR_UTILS_NS::Serializable;
 
         SR_STRUCT()
@@ -96,7 +96,7 @@ namespace SR_GRAPH_NS {
     };
 
     /// @inspector(MaterialDataPropertyDrawer) @noCopyable @noMovable
-    class MaterialData final : public SR_UTILS_NS::Serializable
+    class SR_GRAPHICS_DLL_API MaterialData final : public SR_UTILS_NS::Serializable
         , public SR_UTILS_NS::NonCopyable
         , public SR_HTYPES_NS::SharedPtr<MaterialData>
         , public SR_UTILS_NS::SubscriptionHolder

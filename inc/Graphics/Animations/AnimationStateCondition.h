@@ -131,7 +131,7 @@ namespace SR_ANIMATIONS_NS {
         Отсчитывается с момента фактического начала перехода. Если duration = 0, то переход
         происходит мгновенно, без блендинга.
     */
-    class AnimationTransitionExitTime : public SR_UTILS_NS::Serializable {
+    class SR_GRAPHICS_DLL_API AnimationTransitionExitTime : public SR_UTILS_NS::Serializable {
         SR_CLASS()
     public:
         /// Достигнуто ли время выхода, то есть можно ли начинать переход.

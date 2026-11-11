@@ -32,7 +32,7 @@ namespace SR_GRAPH_NS {
     class FrameBufferPass;
 
     /// @abstract @noCopyable @noMovable
-    class BasePass : public SR_HTYPES_NS::SharedPtr<BasePass>, public SR_UTILS_NS::Serializable {
+    class SR_GRAPHICS_DLL_API BasePass : public SR_HTYPES_NS::SharedPtr<BasePass>, public SR_UTILS_NS::Serializable {
         SR_CLASS()
         using Super = SR_HTYPES_NS::SharedPtr<BasePass>;
     public:

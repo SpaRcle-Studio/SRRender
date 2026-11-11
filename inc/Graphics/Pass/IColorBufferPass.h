@@ -20,7 +20,7 @@ namespace SR_GRAPH_NS {
     class Pipeline;
     class IColorBufferPass;
 
-    class ColorBufferPassRequest final : public SR_HTYPES_NS::SharedPtr<ColorBufferPassRequest> {
+    class SR_GRAPHICS_DLL_API ColorBufferPassRequest final : public SR_HTYPES_NS::SharedPtr<ColorBufferPassRequest> {
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<ColorBufferPassRequest>;
         using WeakPtr = SR_HTYPES_NS::WeakPtr<ColorBufferPassRequest>;
@@ -47,7 +47,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    class IColorBufferPass {
+    class SR_GRAPHICS_DLL_API IColorBufferPass {
     public:
         virtual ~IColorBufferPass();
 

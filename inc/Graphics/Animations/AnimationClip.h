@@ -42,7 +42,7 @@ namespace SR_ANIMATIONS_NS {
     };
 
     /// @extension(animation)
-    class AnimationClip : public SR_UTILS_NS::Asset {
+    class SR_GRAPHICS_DLL_API AnimationClip : public SR_UTILS_NS::Asset {
         SR_CLASS()
         using Super = SR_UTILS_NS::Asset;
     public:

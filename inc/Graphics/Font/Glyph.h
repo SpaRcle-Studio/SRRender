@@ -33,7 +33,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD static bool NextGlyphKey(const std::string& text, uint64_t& i, GlyphKey& key);
     };
 
-    struct GlyphRange : public SR_UTILS_NS::Serializable {
+    struct SR_GRAPHICS_DLL_API GlyphRange : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
         using Super = SR_UTILS_NS::Serializable;

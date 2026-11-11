@@ -37,7 +37,7 @@ namespace SR_ANIMATIONS_NS {
         bool initialized = false;
     };
 
-    class RetargetReferencePoseDeltaAlgorithm final : public RetargetAlgorithmBase {
+    class SR_GRAPHICS_DLL_API RetargetReferencePoseDeltaAlgorithm final : public RetargetAlgorithmBase {
         SR_CLASS()
         using Super = RetargetAlgorithmBase;
     public:

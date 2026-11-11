@@ -33,7 +33,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    class FileMaterial final : public BaseMaterial {
+    class SR_GRAPHICS_DLL_API FileMaterial final : public BaseMaterial {
         using Super = BaseMaterial;
         SR_CLASS()
     public:

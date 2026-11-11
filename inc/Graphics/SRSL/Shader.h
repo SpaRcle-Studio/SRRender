@@ -59,7 +59,7 @@ namespace SR_SRSL_NS {
 
     /** Это не шейдер в привычном понимании, это набор всех данных для генерирования любого
      * шейдерного кода и для последующей его экспортации. */
-    class SRSLShader : public SR_HTYPES_NS::SharedPtr<SRSLShader> {
+    class SR_GRAPHICS_DLL_API SRSLShader : public SR_HTYPES_NS::SharedPtr<SRSLShader> {
         using Super = SR_HTYPES_NS::SharedPtr<SRSLShader>;
         using UniformBlocks = SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SRSLUniformBlock>;
         friend ShaderCache;
