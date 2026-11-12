@@ -470,11 +470,12 @@ namespace SR_GRAPH_NS {
             xdg_surface_ack_configure(xdg_surface, serial);
             auto&& pWindow = static_cast<WaylandWindow*>(data);
 
-            if (pWindow->IsUseClientDecorations()) {
+            if (pWindow->GetClientSurface()) {
                 wl_surface_commit(pWindow->GetClientSurface());
             }
             wl_surface_commit(pWindow->GetSurface());
             wl_display_flush(pWindow->GetDisplay());
+            pWindow->SetWaitingForConfigure(false);
         }
 
         void xdg_toplevelconfigure_bounds(void*, xdg_toplevel*, int32_t, int32_t) {
@@ -485,8 +486,6 @@ namespace SR_GRAPH_NS {
             SR_TRACY_ZONE;
 
             auto&& pWindow = static_cast<WaylandWindow*>(data);
-
-            pWindow->SetWaitingForConfigure(false);
 
             int activated = 0;
             int maximized = 0;
@@ -994,6 +993,18 @@ namespace SR_GRAPH_NS {
             zxdg_toplevel_decoration_v1_add_listener(m_decoration, &Details::decoration_listener, this);
         }
 
+        m_waitingForConfigure = true;
+        wl_surface_commit(m_surface);
+        SR_LOG("WaylandWindow::Initialize() : waiting for Wayland configuration...");
+        while (m_waitingForConfigure) {
+            if (wl_display_roundtrip(m_display) < 0) {
+                SR_ERROR("WaylandWindow::Initialize() : failed to receive Wayland configuration, display error: {}",
+                    wl_display_get_error(m_display));
+                return false;
+            }
+        }
+        SR_LOG("WaylandWindow::Initialize() : initial Wayland configuration acknowledged.");
+
         // surface buffers
         uint32_t color =
             m_useClientDecorations ? Details::ToColor(127, 127, 127, 255) : Details::ToColor(50, 50, 50, 255);
@@ -1035,13 +1046,6 @@ namespace SR_GRAPH_NS {
 
         m_isValid = true;
         m_isFocused = true;
-
-        m_waitingForConfigure = true;
-        SR_LOG("WaylandWindow::Initialize() : waiting for Wayland configuration...");
-        while (m_waitingForConfigure) {
-            wl_display_roundtrip(m_display);
-        }
-        SR_LOG("WaylandWindow::Initialize() : Wayland configuration received, window is now valid.");
 
         // If Wayland is used, it is better to override the keyboard state right away to avoid quering XWayland each
         // frame for keyboard events.
@@ -1216,32 +1220,51 @@ namespace SR_GRAPH_NS {
             m_xkbContext = nullptr;
         }
 
-        // shutdown
-        if (m_useClientDecorations) {
-            munmap(m_clientSurfaceBuffer.pixels, m_clientSurfaceBuffer.poolCapacity);
-            wl_shm_pool_destroy(m_clientSurfaceBuffer.pool);
-            wl_buffer_destroy(m_clientSurfaceBuffer.buffer);
-        }
-
-        munmap(m_surfaceBuffer.pixels, m_surfaceBuffer.poolCapacity);
-        wl_shm_pool_destroy(m_surfaceBuffer.pool);
-        wl_buffer_destroy(m_surfaceBuffer.buffer);
-
-        if (m_xdgWMBase) {
-            xdg_toplevel_destroy(m_xdgToplevel);
-            xdg_surface_destroy(m_xdgSurface);
+        for (auto* pBuffer : { &m_clientSurfaceBuffer, &m_surfaceBuffer }) {
+            if (pBuffer->buffer) {
+                wl_buffer_destroy(pBuffer->buffer);
+                pBuffer->buffer = nullptr;
+            }
+            if (pBuffer->pool) {
+                wl_shm_pool_destroy(pBuffer->pool);
+                pBuffer->pool = nullptr;
+            }
+            if (pBuffer->pixels && pBuffer->pixels != MAP_FAILED && pBuffer->poolCapacity > 0) {
+                munmap(pBuffer->pixels, pBuffer->poolCapacity);
+            }
+            pBuffer->pixels = nullptr;
         }
 
         if (m_decoration) {
             zxdg_toplevel_decoration_v1_destroy(m_decoration);
+            m_decoration = nullptr;
+        }
+
+        if (m_xdgToplevel) {
+            xdg_toplevel_destroy(m_xdgToplevel);
+            m_xdgToplevel = nullptr;
+        }
+        if (m_xdgSurface) {
+            xdg_surface_destroy(m_xdgSurface);
+            m_xdgSurface = nullptr;
         }
 
         if (m_clientSubSurface) {
-            wl_surface_destroy(m_clientSurface);
             wl_subsurface_destroy(m_clientSubSurface);
+            m_clientSubSurface = nullptr;
         }
-        wl_surface_destroy(m_surface);
-        wl_display_disconnect(m_display);
+        if (m_clientSurface) {
+            wl_surface_destroy(m_clientSurface);
+            m_clientSurface = nullptr;
+        }
+        if (m_surface) {
+            wl_surface_destroy(m_surface);
+            m_surface = nullptr;
+        }
+        if (m_display) {
+            wl_display_disconnect(m_display);
+            m_display = nullptr;
+        }
 
         SR_LOG("WaylandWindow::Close() : window closed.");
     }
