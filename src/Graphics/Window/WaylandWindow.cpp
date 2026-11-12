@@ -367,6 +367,8 @@ namespace SR_GRAPH_NS {
             auto&& pWindow = static_cast<WaylandWindow*>(pData);
 
             pWindow->SetPointerEnterSerial(serial);
+            pWindow->SetPointerSurface(surface);
+            pWindow->SetPointerPosition(wl_fixed_to_double(x), wl_fixed_to_double(y));
 
             /// If cursor is locked, keep it hidden on re-enter
             if (pWindow->IsCursorLocked()) {
@@ -390,8 +392,7 @@ namespace SR_GRAPH_NS {
         }
 
         void pointer_leave(void* data, wl_pointer* pointer, uint32_t serial, wl_surface* surface) {
-            // mouseHoverSurface = NULL;
-            // mouseHoverSerial = -1;
+            static_cast<WaylandWindow*>(data)->SetPointerSurface(nullptr);
         }
 
         void pointer_motion(void* pData, wl_pointer* pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy) {
@@ -399,6 +400,7 @@ namespace SR_GRAPH_NS {
 
             const float_t x = wl_fixed_to_double(sx);
             const float_t y = wl_fixed_to_double(sy);
+            static_cast<WaylandWindow*>(pData)->SetPointerPosition(x, y);
 
             auto&& mouseState = SR_PLATFORM_NS::GetOverriddenMouseState();
             if (!mouseState) {
@@ -412,6 +414,11 @@ namespace SR_GRAPH_NS {
             void* data, wl_pointer* pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state
         ) {
             SR_TRACY_ZONE;
+
+            if (button == BTN_LEFT && state == WL_POINTER_BUTTON_STATE_PRESSED &&
+                static_cast<WaylandWindow*>(data)->HandleDecorationButton(serial)) {
+                return;
+            }
 
             auto&& mouseState = SR_PLATFORM_NS::GetOverriddenMouseState();
             if (!mouseState) {
@@ -815,7 +822,7 @@ namespace SR_GRAPH_NS {
         wl_buffer_destroy(oldBuffer);
         wl_surface_attach(pSurface, pBuffer->buffer, 0, 0);
 
-        if (m_resizeCallback) {
+        if (m_resizeCallback && pSurface == (m_useClientDecorations ? m_clientSurface : m_surface)) {
             m_resizeCallback(this, pBuffer->width, pBuffer->height);
         }
 
@@ -966,7 +973,8 @@ namespace SR_GRAPH_NS {
         m_surfaceBuffer.fd = -1;
         m_clientSurfaceBuffer.fd = -1;
 
-        InternalSetWindowSize(320, 240);
+        m_isResizable = resizable;
+        InternalSetWindowSize(static_cast<int32_t>(size.x), static_cast<int32_t>(size.y));
 
         m_surface = wl_compositor_create_surface(m_compositor);
         m_xdgSurface = xdg_wm_base_get_xdg_surface(m_xdgWMBase, m_surface);
@@ -1069,6 +1077,45 @@ namespace SR_GRAPH_NS {
         return dummy;
     }
 
+    bool WaylandWindow::HandleDecorationButton(uint32_t serial) {
+        if (!m_useClientDecorations || m_pointerSurface != m_surface || !m_seat || !m_xdgToplevel || m_cursorLocked) {
+            return false;
+        }
+
+        uint32_t edge = XDG_TOPLEVEL_RESIZE_EDGE_NONE;
+        if (m_clientRectResizeTopLeft.IsInside(m_pointerPosition)) {
+            edge = XDG_TOPLEVEL_RESIZE_EDGE_TOP_LEFT;
+        } else if (m_clientRectResizeTopRight.IsInside(m_pointerPosition)) {
+            edge = XDG_TOPLEVEL_RESIZE_EDGE_TOP_RIGHT;
+        } else if (m_clientRectResizeBottomLeft.IsInside(m_pointerPosition)) {
+            edge = XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_LEFT;
+        } else if (m_clientRectResizeBottomRight.IsInside(m_pointerPosition)) {
+            edge = XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT;
+        } else if (m_clientRectResizeLeftBar.IsInside(m_pointerPosition)) {
+            edge = XDG_TOPLEVEL_RESIZE_EDGE_LEFT;
+        } else if (m_clientRectResizeRightBar.IsInside(m_pointerPosition)) {
+            edge = XDG_TOPLEVEL_RESIZE_EDGE_RIGHT;
+        } else if (m_clientRectResizeTopBar.IsInside(m_pointerPosition)) {
+            edge = XDG_TOPLEVEL_RESIZE_EDGE_TOP;
+        } else if (m_clientRectResizeBottomBar.IsInside(m_pointerPosition)) {
+            edge = XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM;
+        }
+
+        if (edge != XDG_TOPLEVEL_RESIZE_EDGE_NONE) {
+            if (!m_isResizable) {
+                return false;
+            }
+            xdg_toplevel_resize(m_xdgToplevel, m_seat, serial, edge);
+        } else if (m_clientRectDragTopBar.IsInside(m_pointerPosition)) {
+            xdg_toplevel_move(m_xdgToplevel, m_seat, serial);
+        } else {
+            return false;
+        }
+
+        wl_display_flush(m_display);
+        return true;
+    }
+
     void WaylandWindow::LockPointer() {
         SR_TRACY_ZONE;
 
@@ -1161,7 +1208,12 @@ namespace SR_GRAPH_NS {
                 surfaceSize.y
             );
 
-            InternalSetWindowSize(surfaceSize.x, surfaceSize.y);
+            const int32_t clientWidth = m_useClientDecorations ? surfaceSize.x - DECORATIONS_BAR_SIZE * 2 : surfaceSize.x;
+            const int32_t clientHeight = m_useClientDecorations ? surfaceSize.y - DECORATIONS_TOPBAR_SIZE - DECORATIONS_BAR_SIZE : surfaceSize.y;
+            if (clientWidth <= 0 || clientHeight <= 0) {
+                return;
+            }
+            InternalSetWindowSize(clientWidth, clientHeight);
 
             if (m_useClientDecorations) {
                 ResizeSurfaceBuffer(&m_clientSurfaceBuffer, m_clientSurface);
@@ -1171,10 +1223,9 @@ namespace SR_GRAPH_NS {
 
             ResizeSurfaceBuffer(&m_surfaceBuffer, m_surface);
 
-            // wl_surface_damage(GetSurface(), 0, 0, GetSurfaceBuffer().width, GetSurfaceBuffer().height);
-            // wl_surface_commit(GetSurface());
-
-            // wl_display_flush(GetDisplay());
+            wl_surface_damage(m_surface, 0, 0, m_surfaceBuffer.width, m_surfaceBuffer.height);
+            wl_surface_commit(m_surface);
+            wl_display_flush(m_display);
         }
     }
 

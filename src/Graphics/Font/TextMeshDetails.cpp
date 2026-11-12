@@ -148,18 +148,21 @@ namespace SR_GTYPES_NS::TextMeshDetails {
                 for (auto&& line : lines) {
                     float_t lineDx = 0.f;
                     switch (context.horizontalAlignment) {
-                    case TextAlignmentHorizontal::Left:
-                    case TextAlignmentHorizontal::Justified:
-                    case TextAlignmentHorizontal::Flush:
-                        break;
-                    case TextAlignmentHorizontal::Center:
-                        lineDx = (context.layoutSize.x - line.penWidth) * 0.5f;
-                        break;
-                    case TextAlignmentHorizontal::Right:
-                        lineDx = context.layoutSize.x - line.penWidth;
-                        break;
-                    case TextAlignmentHorizontal::GeometryCenter:
-                        break;
+                        case TextAlignmentHorizontal::Left:
+                        case TextAlignmentHorizontal::Justified:
+                        case TextAlignmentHorizontal::Flush:
+                            break;
+                        case TextAlignmentHorizontal::Center:
+                            lineDx = (context.layoutSize.x - line.penWidth) * 0.5f;
+                            break;
+                        case TextAlignmentHorizontal::Right:
+                            lineDx = context.layoutSize.x - line.penWidth;
+                            break;
+                        case TextAlignmentHorizontal::GeometryCenter:
+                            break;
+                        default:
+                            SRHalt("CalculateGlyphPlacements() : unhandled aligment!");
+                            break;
                     }
 
                     for (size_t i = line.placementBegin; i < line.placementEnd; ++i) {
@@ -178,27 +181,30 @@ namespace SR_GTYPES_NS::TextMeshDetails {
         if (context.layoutSize.y > 0.f) {
             float_t dy = 0.f;
             switch (context.verticalAlignment) {
-            case TextAlignmentVertical::Top:
-                dy = context.layoutSize.y - ascender - firstBaselineY;
-                break;
-            case TextAlignmentVertical::Capline:
-                dy = context.layoutSize.y - capline - firstBaselineY;
-                break;
-            case TextAlignmentVertical::Midline:
-                dy = context.layoutSize.y - midline - firstBaselineY;
-                break;
-            case TextAlignmentVertical::Baseline:
-                dy = context.layoutSize.y - ascender - firstBaselineY;
-                break;
-            case TextAlignmentVertical::Bottom:
-                dy = -descender - lastBaselineY;
-                break;
-            case TextAlignmentVertical::Middle:
-                if (bounds.IsValid()) {
-                    const float_t blockHeight = bounds.maxY - bounds.minY;
-                    dy = (context.layoutSize.y - blockHeight) * 0.5f - bounds.minY;
-                }
-                break;
+                case TextAlignmentVertical::Top:
+                    dy = context.layoutSize.y - ascender - firstBaselineY;
+                    break;
+                case TextAlignmentVertical::Capline:
+                    dy = context.layoutSize.y - capline - firstBaselineY;
+                    break;
+                case TextAlignmentVertical::Midline:
+                    dy = context.layoutSize.y - midline - firstBaselineY;
+                    break;
+                case TextAlignmentVertical::Baseline:
+                    dy = context.layoutSize.y - ascender - firstBaselineY;
+                    break;
+                case TextAlignmentVertical::Bottom:
+                    dy = -descender - lastBaselineY;
+                    break;
+                case TextAlignmentVertical::Middle:
+                    if (bounds.IsValid()) {
+                        const float_t blockHeight = bounds.maxY - bounds.minY;
+                        dy = (context.layoutSize.y - blockHeight) * 0.5f - bounds.minY;
+                    }
+                    break;
+                default:
+                    SRHalt("CalculateGlyphPlacements() : unhandled aligment!");
+                    break;
             }
 
             for (auto&& placement : placements) {

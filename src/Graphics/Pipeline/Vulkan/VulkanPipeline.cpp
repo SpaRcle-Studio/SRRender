@@ -45,6 +45,7 @@
 
 #include <Utils/Events/EventManager.h>
 #include <Utils/Common/Features.h>
+#include <Utils/Common/CLIManager.h>
 #include <Utils/Common/StoreUtils.h>
 #include <Utils/Common/Vertices.h>
 #include <Utils/FileSystem/FileSystem.h>
@@ -239,7 +240,8 @@ namespace SR_GRAPH_NS {
         }
 
         m_enableValidationDebug = SR_UTILS_NS::Features::Instance().Enabled("VulkanValidation", false);
-        m_enableGPUAssist = SR_UTILS_NS::Features::Instance().Enabled("VulkanGPUAssist", false);
+        m_enableGPUAssist = SR_UTILS_NS::Features::Instance().Enabled("VulkanGPUAssist", false) &&
+            !SR_UTILS_NS::CLIManager::Instance().IsFlagPresent(SR_UTILS_NS::CLIFlags::NoGpuAssist);
 
     #ifdef SR_ANDROID
         m_enableGPUAssist = false;
@@ -403,7 +405,7 @@ namespace SR_GRAPH_NS {
                 surfaceInfo.pNext = nullptr;
                 surfaceInfo.flags = 0;
                 surfaceInfo.display = pImpl->GetDisplay();
-                surfaceInfo.surface = pImpl->GetSurface();
+                surfaceInfo.surface = pImpl->IsUseClientDecorations() ? pImpl->GetClientSurface() : pImpl->GetSurface();
 
                 VkSurfaceKHR surface = VK_NULL_HANDLE;
                 VkResult result = vkCreateWaylandSurfaceKHR(instance, &surfaceInfo, nullptr, &surface);

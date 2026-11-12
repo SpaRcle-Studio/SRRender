@@ -64,8 +64,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD WindowType GetType() const override { return WindowType::Wayland; }
         SR_NODISCARD void* GetHandle() const override { return m_surface; }
 
-        uint32_t GetSurfaceWidth() const override { return static_cast<uint32_t>(m_surfaceBuffer.width); }
-        uint32_t GetSurfaceHeight() const override { return static_cast<uint32_t>(m_surfaceBuffer.height); }
+        uint32_t GetSurfaceWidth() const override { return static_cast<uint32_t>(m_internalWidth); }
+        uint32_t GetSurfaceHeight() const override { return static_cast<uint32_t>(m_internalHeight); }
         uint32_t GetWidth() const override { return static_cast<uint32_t>(m_internalWidth); }
         uint32_t GetHeight() const override { return static_cast<uint32_t>(m_internalHeight); }
         float GetScale() const { return m_fractionalScale ? m_fractionalScaleValue : static_cast<float>(m_scale); }
@@ -108,6 +108,9 @@ namespace SR_GRAPH_NS {
             m_relativePointerManager = pManager;
         }
         void SetPointerEnterSerial(uint32_t serial) { m_pointerEnterSerial = serial; }
+        void SetPointerSurface(wl_surface* pSurface) { m_pointerSurface = pSurface; }
+        void SetPointerPosition(float_t x, float_t y) { m_pointerPosition = {x, y}; }
+        bool HandleDecorationButton(uint32_t serial);
 
         SR_NODISCARD wl_cursor_theme* GetCursorTheme() const { return m_cursorTheme; }
         SR_NODISCARD wl_surface* GetCursorSurface() const { return m_cursorSurface; }
@@ -193,6 +196,8 @@ namespace SR_GRAPH_NS {
 
         wl_keyboard* m_keyboard = nullptr;
         wl_pointer* m_pointer = nullptr;
+        wl_surface* m_pointerSurface = nullptr;
+        SR_MATH_NS::FVector2 m_pointerPosition = {};
         wl_surface* m_surface = nullptr;
         wl_surface* m_clientSurface = nullptr;
         wl_subsurface* m_clientSubSurface = nullptr;
