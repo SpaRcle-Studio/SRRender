@@ -270,7 +270,7 @@ namespace SR_GRAPH_NS {
         m_internalData->renderPassBI = EvoVulkan::Tools::Insert::RenderPassBeginInfo(0, 0, VK_NULL_HANDLE, VK_NULL_HANDLE, nullptr, 0);
 
         m_kernel->SetMultisampling(m_requiredSampleCount);
-        m_kernel->SetSwapchainImagesCount(SR_UTILS_NS::StoreUtils::User::GetInt("SwapchainImages", 3));
+        m_kernel->SetSwapchainImagesCount(m_renderContext->GetActiveGraphicsSettings().swapchainImages);
 
         std::vector<const char*> validationLayers = { };
         std::vector<const char*> instanceExtensions = { };
@@ -448,7 +448,7 @@ namespace SR_GRAPH_NS {
         m_kernel->SetAutoSwapChainResize(m_window && m_window->GetImplementation() && m_window->GetImplementation()->GetType() == WindowType::Wayland);
 
         if (auto&& pSwapchain = m_kernel->GetSwapchain()) {
-            pSwapchain->SetVSync(SR_UTILS_NS::StoreUtils::User::GetBool("VSync", false));
+            pSwapchain->SetVSync(m_preInitInfo.vsync);
         }
 
         SR_INFO("VulkanPipeline::Init() : creating vulkan memory manager...");

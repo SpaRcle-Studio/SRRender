@@ -33,6 +33,7 @@
 #include <Utils/Common/StringUtils.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/CLIManager.h>
+#include <Utils/Common/EnumReflector.h>
 #include <Utils/Events/Broadcaster.h>
 #include <Utils/Serialization/SRASerialization.h>
 
@@ -185,8 +186,6 @@ namespace SR_GRAPH_NS {
 
         SR_INFO("RenderContext::Init() : initializing render context...");
 
-        ReloadGraphicsSettings();
-
         m_activePreset = SR_UTILS_NS::StoreUtils::User::GetString("RenderPreset", "Default");
         m_isOptimizedUpdateEnabled = SR_UTILS_NS::Features::Instance().Enabled("OptimizedRenderUpdate", true);
         m_isFrustumCullingEnabled = SR_UTILS_NS::Features::Instance().Enabled("FrustumCulling");
@@ -195,6 +194,19 @@ namespace SR_GRAPH_NS {
             SR_ERROR("RenderContext::Init() : failed to initialize pipeline!");
             return false;
         }
+
+        SR_INFO("Active graphics pipeline:\n"
+            "  Backend:                 {}\n"
+            "  Render preset:           {}\n"
+            "  VSync:                   {}\n"
+            "  MSAA samples:            {}\n"
+            "  Supported MSAA samples:  {}\n"
+            "  Swapchain images:        {}\n"
+            "  Optimized render update: {}\n"
+            "  Frustum culling:         {}",
+            SR_UTILS_NS::EnumReflector::ToStringAtom(m_pipeline->GetType()), m_activePreset,
+            m_pipeline->IsVSyncEnabled(), m_pipeline->GetSamplesCount(), m_pipeline->GetSupportedSamples(), m_pipeline->GetSwapchainImagesCount(),
+            m_isOptimizedUpdateEnabled, m_isFrustumCullingEnabled);
 
         SR_INFO("RenderContext::Init() : initializing overlay...");
 
@@ -784,6 +796,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
         m_renderSettings->AddUsePoint();
+        ReloadGraphicsSettings(false);
         m_onSettingsReloaded = m_renderSettings->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
             ReloadShaders();
         });
@@ -793,9 +806,9 @@ namespace SR_GRAPH_NS {
         PipelinePreInitInfo pipelinePreInitInfo;
         pipelinePreInitInfo.appName = m_renderSettings->appName;
         pipelinePreInitInfo.engineName = m_renderSettings->engineName;
-        pipelinePreInitInfo.samplesCount = SR_UTILS_NS::StoreUtils::User::GetInt("MultiSampling", 64);
+        pipelinePreInitInfo.samplesCount = m_activeGraphicsSettings.MSAA;
         pipelinePreInitInfo.multisampling = SR_UTILS_NS::Features::Instance().Enabled("Multisampling", true);
-        pipelinePreInitInfo.vsync = false;
+        pipelinePreInitInfo.vsync = m_activeGraphicsSettings.vsync;
 
         if (pipelinePreInitInfo.samplesCount < 1) {
             SR_WARN("Engine::PreInit() : invalid multisampling count: {}. Set to 1.", pipelinePreInitInfo.samplesCount);
@@ -816,7 +829,7 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    void RenderContext::ReloadGraphicsSettings() {
+    void RenderContext::ReloadGraphicsSettings(bool reload) {
         auto&& path = SR_PLATFORM_NS::GetApplicationUserDataDirectory()
             .Concat("User")
             .Concat(SR_PLATFORM_NS::GetApplicationInfo().project)
@@ -830,12 +843,12 @@ namespace SR_GRAPH_NS {
                 SR_ERROR("RenderContext::ReloadGraphicsSettings() : failed to load active graphics settings from path: {}", path);
             }
             else {
-                SetGraphicsSettings(settings, false);
+                SetGraphicsSettings(settings, reload);
             }
         }
         else {
             SR_LOG("RenderContext::ReloadGraphicsSettings() : active graphics settings file not found at path: {}", path);
-            SetGraphicsSettings(GetSettings().GetDefaultGraphicsSettings(), false);
+            SetGraphicsSettings(GetSettings().GetDefaultGraphicsSettings(), reload);
         }
     }
 
@@ -847,6 +860,46 @@ namespace SR_GRAPH_NS {
 
         const bool needReloadShaders = m_activeGraphicsSettings != settings;
         m_activeGraphicsSettings = settings;
+        uint8_t samples = 1;
+        while (samples < 64 && samples * 2 <= m_activeGraphicsSettings.MSAA) {
+            samples *= 2;
+        }
+        m_activeGraphicsSettings.MSAA = samples;
+        m_activeGraphicsSettings.swapchainImages = SR_CLAMP(m_activeGraphicsSettings.swapchainImages, uint16_t(1), uint16_t(16));
+
+        SR_INFO("RenderContext::SetGraphicsSettings() : graphics presentation settings:\n"
+            "  VSync:            {}\n"
+            "  MSAA samples:     {}\n"
+            "  Swapchain images: {}",
+            m_activeGraphicsSettings.vsync, m_activeGraphicsSettings.MSAA, m_activeGraphicsSettings.swapchainImages);
+
+        SR_INFO("RenderContext::SetGraphicsSettings() : active graphics settings:\n"
+            "  Instancing:          {}\n"
+            "  Shadow instancing:   {}\n"
+            "  Post processing:     {}\n"
+            "  HDR:                 {}\n"
+            "  Auto exposure:       {}\n"
+            "  sRGB:                {}\n"
+            "  Texture compression: {}\n"
+            "  Texture caching:     {}",
+            settings.instancing, settings.shadowsInstancing, settings.postProcess, settings.hdr,
+            settings.autoExposure, settings.sRGB, settings.textureCompression, settings.textureCaching);
+
+        SR_INFO("RenderContext::SetGraphicsSettings() : graphics quality settings:\n"
+            "  Shadows:           {}\n"
+            "  Color buffer:      {}\n"
+            "  SSAO:              {}\n"
+            "  Volumetric clouds: {}\n"
+            "  Volumetric fog:    {}\n"
+            "  Bloom:             {}\n"
+            "  SSR:               {}",
+            SR_UTILS_NS::EnumReflector::ToStringAtom(settings.shadowsQuality),
+            SR_UTILS_NS::EnumReflector::ToStringAtom(settings.colorBufferQuality),
+            SR_UTILS_NS::EnumReflector::ToStringAtom(settings.SSAO),
+            SR_UTILS_NS::EnumReflector::ToStringAtom(settings.volumetricClouds),
+            SR_UTILS_NS::EnumReflector::ToStringAtom(settings.volumetricFog),
+            SR_UTILS_NS::EnumReflector::ToStringAtom(settings.bloom),
+            SR_UTILS_NS::EnumReflector::ToStringAtom(settings.SSR));
 
         SwitchMacro("SR_SRGB", m_activeGraphicsSettings.sRGB);
         SwitchMacro("SR_HDR", m_activeGraphicsSettings.hdr);
@@ -861,6 +914,13 @@ namespace SR_GRAPH_NS {
 
         if (!reload) {
             return;
+        }
+
+        if (m_pipeline) {
+            if (m_pipeline->IsVSyncEnabled() != m_activeGraphicsSettings.vsync) {
+                m_pipeline->SetVSyncEnabled(m_activeGraphicsSettings.vsync);
+            }
+            m_pipeline->SetSampleCount(m_activeGraphicsSettings.MSAA);
         }
 
         if (needReloadShaders) {

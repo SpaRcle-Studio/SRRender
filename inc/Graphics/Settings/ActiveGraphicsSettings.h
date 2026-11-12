@@ -17,7 +17,8 @@ namespace SR_GRAPH_NS {
         ActiveGraphicsSettings() = default;
 
         bool operator==(const ActiveGraphicsSettings& lrs) const {
-            return instancing == lrs.instancing
+            return vsync == lrs.vsync && MSAA == lrs.MSAA && swapchainImages == lrs.swapchainImages
+                   && instancing == lrs.instancing
                    && shadowsInstancing == lrs.shadowsInstancing
                    && postProcess == lrs.postProcess
                    && hdr == lrs.hdr
@@ -63,6 +64,12 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        /// @property
+        bool vsync = true;
+        /// @property
+        uint8_t MSAA = 64;
+        /// @property
+        uint16_t swapchainImages = 3;
         /// @property
         bool instancing = true;
         /// @property

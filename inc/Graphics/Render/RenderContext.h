@@ -75,7 +75,7 @@ namespace SR_GRAPH_NS {
         bool Init();
         void Close();
 
-        void ReloadGraphicsSettings();
+        void ReloadGraphicsSettings(bool reload = true);
 
         void SetDirty();
 

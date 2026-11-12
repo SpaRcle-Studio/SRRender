@@ -32,6 +32,13 @@ namespace SR_GRAPH_NS {
     }
 
     bool AndroidWindow::IsSurfaceAvailable() const {
+        SR_TRACY_PLOT("Android native window", static_cast<int64_t>(m_nativeWindow != nullptr));
+        SR_TRACY_PLOT("Android resumed", static_cast<int64_t>(m_resumed));
+        SR_TRACY_PLOT("Android surface ready", static_cast<int64_t>(m_surfaceReady));
+        SR_TRACY_PLOT("Android surface pending", static_cast<int64_t>(m_surfacePending));
+        SR_TRACY_PLOT("Android window valid", static_cast<int64_t>(m_isValid.load()));
+        SR_TRACY_PLOT("Android window width", static_cast<int64_t>(m_nativeWindow ? ANativeWindow_getWidth(m_nativeWindow) : 0));
+        SR_TRACY_PLOT("Android window height", static_cast<int64_t>(m_nativeWindow ? ANativeWindow_getHeight(m_nativeWindow) : 0));
         return m_nativeWindow && m_resumed && m_surfaceReady && !m_surfacePending && m_isValid &&
             ANativeWindow_getWidth(m_nativeWindow) > 0 && ANativeWindow_getHeight(m_nativeWindow) > 0;
     }
