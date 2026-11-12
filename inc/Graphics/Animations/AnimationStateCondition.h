@@ -20,7 +20,7 @@ namespace SR_ANIMATIONS_NS {
     class AnimationStateTransition;
 
     /// @abstract
-    class AnimationStateCondition : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<AnimationStateCondition> {
+    class SR_GRAPHICS_DLL_API AnimationStateCondition : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<AnimationStateCondition> {
         SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<AnimationStateCondition>;
@@ -44,7 +44,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationStateConditionTrue : public AnimationStateCondition {
+    class SR_GRAPHICS_DLL_API AnimationStateConditionTrue : public AnimationStateCondition {
         SR_CLASS()
         using Super = AnimationStateCondition;
     public:
@@ -54,7 +54,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationStateConditionAnd : public AnimationStateCondition {
+    class SR_GRAPHICS_DLL_API AnimationStateConditionAnd : public AnimationStateCondition {
         SR_CLASS()
         using Super = AnimationStateCondition;
     public:
@@ -76,7 +76,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationStateConditionOr : public AnimationStateCondition {
+    class SR_GRAPHICS_DLL_API AnimationStateConditionOr : public AnimationStateCondition {
         SR_CLASS()
         using Super = AnimationStateCondition;
     public:
@@ -97,7 +97,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationStateConditionNot : public AnimationStateCondition {
+    class SR_GRAPHICS_DLL_API AnimationStateConditionNot : public AnimationStateCondition {
         SR_CLASS()
         using Super = AnimationStateCondition;
     public:
@@ -178,7 +178,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationStateConditionBool : public AnimationStateCondition {
+    class SR_GRAPHICS_DLL_API AnimationStateConditionBool : public AnimationStateCondition {
         SR_CLASS()
         using Super = AnimationStateCondition;
     public:
@@ -198,7 +198,7 @@ namespace SR_ANIMATIONS_NS {
 
     };
 
-    class AnimationStateConditionFloat : public AnimationStateCondition {
+    class SR_GRAPHICS_DLL_API AnimationStateConditionFloat : public AnimationStateCondition {
         SR_CLASS()
         using Super = AnimationStateCondition;
     public:

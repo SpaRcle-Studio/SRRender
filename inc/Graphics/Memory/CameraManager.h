@@ -21,7 +21,7 @@ namespace SR_GRAPH_NS::Types {
 }
 
 namespace SR_GRAPH_NS::Memory {
-    class CameraManager : public SR_UTILS_NS::Singleton<CameraManager> {
+    class SR_GRAPHICS_DLL_API CameraManager : public SR_UTILS_NS::Singleton<CameraManager> {
         SR_REGISTER_SINGLETON(CameraManager)
         friend class SR_GTYPES_NS::Camera;
         using CameraPtr = Types::Camera*;

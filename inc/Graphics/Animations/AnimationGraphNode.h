@@ -80,7 +80,7 @@ namespace SR_ANIMATIONS_NS {
     /// ----------------------------------------------------------------------------------------------------------------
 
     /// @hidden
-    class AnimationGraphNodeFinal : public AnimationGraphNode {
+    class SR_GRAPHICS_DLL_API AnimationGraphNodeFinal : public AnimationGraphNode {
         SR_CLASS()
         using Super = AnimationGraphNode;
     public:
@@ -97,7 +97,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationGraphNodeStateMachine : public AnimationGraphNode {
+    class SR_GRAPHICS_DLL_API AnimationGraphNodeStateMachine : public AnimationGraphNode {
         SR_CLASS()
         using Super = AnimationGraphNode;
     public:
@@ -128,7 +128,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationGraphNodeExternalPose : public AnimationGraphNode {
+    class SR_GRAPHICS_DLL_API AnimationGraphNodeExternalPose : public AnimationGraphNode {
         SR_CLASS()
         using Super = AnimationGraphNode;
     public:
@@ -146,7 +146,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationGraphNodeLinearBlend : public AnimationGraphNode {
+    class SR_GRAPHICS_DLL_API AnimationGraphNodeLinearBlend : public AnimationGraphNode {
         SR_CLASS()
         using Super = AnimationGraphNode;
     public:

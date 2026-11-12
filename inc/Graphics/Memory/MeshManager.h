@@ -113,7 +113,7 @@ namespace SR_GRAPH_NS {
         Pipeline* m_pipeline = nullptr;
     };
 
-    class MeshManager : public SR_UTILS_NS::Singleton<MeshManager> {
+    class SR_GRAPHICS_DLL_API MeshManager : public SR_UTILS_NS::Singleton<MeshManager> {
         SR_REGISTER_SINGLETON(MeshManager)
         using RegistrationInfo = MeshVideoMemoryInfo::RegistrationInfo;
     public:

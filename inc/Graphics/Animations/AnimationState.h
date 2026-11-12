@@ -80,7 +80,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationNoneState : public AnimationState {
+    class SR_GRAPHICS_DLL_API AnimationNoneState : public AnimationState {
         SR_CLASS()
         using Super = AnimationState;
     public:
@@ -89,7 +89,7 @@ namespace SR_ANIMATIONS_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    class AnimationClipState : public AnimationState {
+    class SR_GRAPHICS_DLL_API AnimationClipState : public AnimationState {
         SR_CLASS()
         using Super = AnimationState;
     public:
@@ -133,7 +133,7 @@ namespace SR_ANIMATIONS_NS {
     /// ----------------------------------------------------------------------------------------------------------------
 
     /// @hidden
-    class AnimationEntryPointState : public AnimationState {
+    class SR_GRAPHICS_DLL_API AnimationEntryPointState : public AnimationState {
         SR_CLASS()
         using Super = AnimationState;
     public:

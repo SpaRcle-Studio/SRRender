@@ -30,7 +30,7 @@ namespace SR_GRAPH_NS {
 
     struct RenderQueueInfo;
 
-    class RenderQueue : public SR_HTYPES_NS::SharedPtr<RenderQueue> {
+    class SR_GRAPHICS_DLL_API RenderQueue : public SR_HTYPES_NS::SharedPtr<RenderQueue> {
         using Super = SR_HTYPES_NS::SharedPtr<RenderQueue>;
         using ShaderPtr = SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Shader>;
         using VBO = uint32_t;

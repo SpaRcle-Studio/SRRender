@@ -21,7 +21,7 @@ namespace SR_GRAPH_NS {
         SR_MATH_NS::UVector2 step;
     };
 
-    class AtlasBuilder : public SR_UTILS_NS::NonCopyable {
+    class SR_GRAPHICS_DLL_API AtlasBuilder : public SR_UTILS_NS::NonCopyable {
         using Super = SR_UTILS_NS::NonCopyable;
     public:
         AtlasBuilder(AtlasBuilderData data);

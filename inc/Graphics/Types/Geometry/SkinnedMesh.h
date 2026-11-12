@@ -13,7 +13,7 @@
 
 namespace SR_GTYPES_NS {
     /// @category(Render)
-    class SkinnedMesh final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
+    class SR_GRAPHICS_DLL_API SkinnedMesh final : public IndexedMesh, public SR_HTYPES_NS::IRawMeshHolder {
         SR_CLASS()
         using Super = IndexedMesh;
         using SkeletonRef = SR_UTILS_NS::EntityRef<SR_ANIMATIONS_NS::Skeleton>;

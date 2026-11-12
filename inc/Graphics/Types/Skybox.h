@@ -22,7 +22,7 @@ namespace SR_GRAPH_NS::Memory {
 namespace SR_GTYPES_NS {
     class Shader;
 
-    class Skybox : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
+    class SR_GRAPHICS_DLL_API Skybox : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         SR_CLASS()
     public:
         using Ptr = SR_HTYPES_NS::SharedPtr<Skybox>;
