@@ -23,6 +23,11 @@ namespace SR_GRAPH_NS {
 
     public:
         bool OnResize() override;
+        SR_NODISCARD bool HasAcquiredImage() const { return m_hasAcquiredImage; }
+    #ifdef SR_ANDROID
+        bool ChangeAndroidSurface(void* window);
+        bool ReCreate(EvoVulkan::Core::FrameResult reason) override;
+    #endif
 
         void PollWindowEvents() override;
 

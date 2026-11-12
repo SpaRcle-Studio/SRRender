@@ -3,130 +3,122 @@
 //
 
 #include <Graphics/Window/AndroidWindow.h>
-
-#include <ImmediateGUI/GUI/ImmediateGUI.h>
-
-#include <Utils/Platform/Platform.h>
-#include <Utils/Platform/AndroidEvent.h>
-
-#include <android/input.h>
+#include <Utils/Platform/AndroidInput.h>
+#include <Utils/Platform/AndroidLifecycle.h>
 
 namespace SR_GRAPH_NS {
+    AndroidWindow::~AndroidWindow() {
+        SR_PLATFORM_NS::SetAndroidRendererAttached(false);
+        SR_PLATFORM_NS::ReleaseAndroidWindow(m_nativeWindow);
+    }
+
     bool AndroidWindow::Initialize(const std::string& name,
-        const SR_MATH_NS::IVector2& position,
-        const SR_MATH_NS::UVector2& size,
-        bool fullScreen, bool resizable
-    ) {
-        SR_LOG("AndroidWindow::Initialize() : Initializing Android window...\n\tName: {}\n\tSize: {}x{}\n\tFullScreen: {}\n\tResizable: {}",
-            name,
-            size.x, size.y,
-            fullScreen ? "true" : "false",
-            resizable ? "true" : "false"
-        );
-
-        m_isValid = true;
-        m_isInitialized = true;
-        m_isFocused = true;
-
+        const SR_MATH_NS::IVector2& position, const SR_MATH_NS::UVector2& size,
+        bool fullScreen, bool resizable)
+    {
+        const auto state = SR_PLATFORM_NS::AcquireAndroidWindowSnapshot();
+        m_nativeWindow = state.window;
+        m_windowRevision = state.revision;
+        m_resumed = state.resumed;
+        m_isValid = !state.destroying;
+        m_isInitialized = m_isValid.load();
+        m_isFocused = state.focused && m_resumed;
         m_surfaceSize = m_size = size;
-
-        return true;
+        return m_isValid && m_nativeWindow;
     }
 
     ANativeWindow* AndroidWindow::GetNativeWindow() const {
-        auto&& pAndroidApp = (android_app*)SR_PLATFORM_NS::GetInstance();
-        return pAndroidApp->window;
+        return m_nativeWindow;
+    }
+
+    bool AndroidWindow::IsSurfaceAvailable() const {
+        return m_nativeWindow && m_resumed && m_surfaceReady && !m_surfacePending && m_isValid &&
+            ANativeWindow_getWidth(m_nativeWindow) > 0 && ANativeWindow_getHeight(m_nativeWindow) > 0;
+    }
+
+    void AndroidWindow::SetSurfaceChangeCallback(SR_HTYPES_NS::Function<bool(ANativeWindow*)> callback) {
+        m_surfaceChange = std::move(callback);
+        SR_PLATFORM_NS::SetAndroidRendererAttached(static_cast<bool>(m_surfaceChange));
+    }
+
+    SR_MATH_NS::IVector2 AndroidWindow::ScreenToClient(const SR_MATH_NS::IVector2& position) const {
+        return position;
+    }
+
+    SR_MATH_NS::IVector2 AndroidWindow::ClientToScreen(const SR_MATH_NS::IVector2& position) const {
+        return position;
     }
 
     void AndroidWindow::PollEvents() {
-        SR_UTILS_NS::AndroidEvent event;
-
-        while (SR_UTILS_NS::AndroidEventQueue::Instance().PopEvent(event)) {
-            switch (event.type) {
-                // --- Тач (тапы, свайпы, мультитач) ---
-                case SR_UTILS_NS::AndroidEvent::Motion: {
-                    int32_t action = event.motion.action & AMOTION_EVENT_ACTION_MASK;
-                    int32_t pointerIndex = (event.motion.action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK)
-                            >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-
-                    float x = event.motion.x;
-                    float y = event.motion.y;
-
-                    auto&& pMouseDown = SR_IMMEDIATE_GUI_NS::GetMouseDown();
-
-                    switch (action) {
-                        case AMOTION_EVENT_ACTION_DOWN:
-                        case AMOTION_EVENT_ACTION_POINTER_DOWN:
-                            if (pointerIndex < 5) {
-                                pMouseDown[pointerIndex] = true;
-                                SR_IMMEDIATE_GUI_NS::SetMousePos(SR_MATH_NS::FVector2(x, y));
-                            }
-                            break;
-
-                        case AMOTION_EVENT_ACTION_UP:
-                        case AMOTION_EVENT_ACTION_POINTER_UP:
-                            if (pointerIndex < 5) {
-                                pMouseDown[pointerIndex] = false;
-                            }
-                            break;
-
-                        case AMOTION_EVENT_ACTION_MOVE:
-                            SR_IMMEDIATE_GUI_NS::SetMousePos(SR_MATH_NS::FVector2(x, y));
-                            break;
-
-                        case AMOTION_EVENT_ACTION_CANCEL:
-                            for (int i = 0; i < 5; i++) {
-                                pMouseDown[i] = false;
-                            }
-                            break;
-
-                        case AMOTION_EVENT_ACTION_SCROLL:
-                            // На Android скролл приходит отдельным событием
-                            //io.MouseWheel += event.motion.scrollDeltaY;
-                            //io.MouseWheelH += event.motion.scrollDeltaX;
-                            break;
+        const auto state = SR_PLATFORM_NS::AcquireAndroidWindowSnapshot();
+        if (state.revision != m_windowRevision) {
+            auto previous = m_nativeWindow;
+            m_nativeWindow = state.window;
+            m_windowRevision = state.revision;
+            m_surfacePending = m_nativeWindow &&
+                (ANativeWindow_getWidth(m_nativeWindow) <= 0 || ANativeWindow_getHeight(m_nativeWindow) <= 0);
+            m_surfaceReady = !m_surfaceChange || m_surfaceChange(m_surfacePending ? nullptr : m_nativeWindow);
+            SR_PLATFORM_NS::ReleaseAndroidWindow(previous);
+            if (m_surfaceReady) {
+                SR_PLATFORM_NS::AcknowledgeAndroidWindow(state.revision);
+            }
+            if (!m_surfaceReady) {
+                SR_ERROR("AndroidWindow::PollEvents() : failed to replace the native render surface.");
+                Close();
+                if (m_closeCallback) {
+                    m_closeCallback(this);
+                }
+            }
+        }
+        else {
+            SR_PLATFORM_NS::ReleaseAndroidWindow(state.window);
+        }
+        m_resumed = state.resumed;
+        const bool focused = state.focused && IsSurfaceAvailable();
+        if (m_isFocused != focused) {
+            m_isFocused = focused;
+            if (!focused) {
+                SR_PLATFORM_NS::ResetAndroidInput();
+            }
+            if (m_focusCallback) {
+                m_focusCallback(this, focused);
+            }
+        }
+        if (m_nativeWindow) {
+            const int32_t width = ANativeWindow_getWidth(m_nativeWindow);
+            const int32_t height = ANativeWindow_getHeight(m_nativeWindow);
+            if (width > 0 && height > 0) {
+                if (m_surfacePending) {
+                    m_surfacePending = false;
+                    m_surfaceReady = !m_surfaceChange || m_surfaceChange(m_nativeWindow);
+                    if (!m_surfaceReady) {
+                        Close();
+                        if (m_closeCallback) {
+                            m_closeCallback(this);
+                        }
                     }
-                    break;
                 }
-
-                    // --- Клавиатура ---
-                case SR_UTILS_NS::AndroidEvent::Key: {
-                    //int keycode = event.key.keycode;
-
-                    //if (event.key.action == AKEY_EVENT_ACTION_DOWN) {
-                    //    if (keycode < IM_ARRAYSIZE(io.KeysDown))
-                    //        io.KeysDown[keycode] = true;
-                    //    if (event.key.character != 0)
-                    //        io.AddInputCharacter((unsigned int)event.key.character);
-                    //}
-                    //else if (event.key.action == AKEY_EVENT_ACTION_UP) {
-                    //    if (keycode < IM_ARRAYSIZE(io.KeysDown))
-                    //        io.KeysDown[keycode] = false;
-                    //}
-                    break;
+                const SR_MATH_NS::UVector2 size(width, height);
+                if (size != m_surfaceSize) {
+                    m_surfaceSize = m_size = size;
+                    if (m_resizeCallback) {
+                        m_resizeCallback(this, width, height);
+                    }
                 }
-
-                    // --- Сенсоры (акселерометр, гироскоп) ---
-                case SR_UTILS_NS::AndroidEvent::Sensor: {
-                    // Пример: акселерометр влево/вправо как навигация в ImGui
-                    //io.NavInputs[ImGuiNavInput_LStickLeft]  = std::max(0.0f, -event.sensorEvent.sensor.accelX);
-                    //io.NavInputs[ImGuiNavInput_LStickRight] = std::max(0.0f,  event.sensorEvent.sensor.accelX);
-                    //io.NavInputs[ImGuiNavInput_LStickUp]    = std::max(0.0f, -event.sensorEvent.sensor.accelY);
-                    //io.NavInputs[ImGuiNavInput_LStickDown]  = std::max(0.0f,  event.sensorEvent.sensor.accelY);
-                    break;
-                }
-
-                    // --- Жизненный цикл ---
-                case SR_UTILS_NS::AndroidEvent::Lifecycle: {
-                    // Можно реагировать на паузу/возврат
-                    // io.AddFocusEvent(event.lifecycle.hasFocus);
-                    break;
-                }
-
-                default:
-                    break;
+            }
+        }
+        SR_UTILS_NS::AndroidEvent event{};
+        while (SR_UTILS_NS::AndroidEventQueue::Instance().PopEvent(event)) {
+            if (focused) {
+                SR_PLATFORM_NS::ApplyAndroidInputEvent(event);
+            }
+        }
+        if (state.destroying && m_isValid) {
+            SR_PLATFORM_NS::ResetAndroidInput();
+            Close();
+            if (m_closeCallback) {
+                m_closeCallback(this);
             }
         }
     }
-
 }

@@ -138,7 +138,7 @@ namespace SR_GTYPES_NS {
         }
     }
 
-    void TextMesh::SetText(const SR_UTILS_NS::StringView text) {
+    void TextMesh::SetText(SR_UTILS_NS::StringView text) {
         if (m_text == text) {
             return;
         }

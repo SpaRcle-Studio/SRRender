@@ -42,7 +42,9 @@ namespace SR_GTYPES_NS {
         void UseMaterial(Shader& shader) override;
         void UseModelMatrix(Shader& shader) override;
         void FreeVideoMemory() override;
-        void SetText(const SR_UTILS_NS::StringView text);
+
+        /// @method
+        void SetText(SR_UTILS_NS::StringView text);
 
         SR_NODISCARD std::optional<int32_t> GetVBO() const override;
         bool Bind() override;

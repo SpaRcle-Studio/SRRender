@@ -96,6 +96,7 @@ namespace SR_GRAPH_NS {
 
         /// Вызывается перед началом рендера, подготовка к рендеру
         virtual void PrepareFrame();
+        SR_NODISCARD virtual bool IsFrameReady() const { return true; }
 
         /// Отрисовка кадра на экран
         /// После вызова функции кадр считается законченным и PipelineState очищается

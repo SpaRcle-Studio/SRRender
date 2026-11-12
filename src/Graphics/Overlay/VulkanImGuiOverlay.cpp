@@ -26,6 +26,38 @@
 #include <Utils/Types/Time.h>
 
 namespace SR_GRAPH_NS {
+#ifdef SR_ANDROID
+    void VulkanImGuiOverlay::SuspendNativeSurface() {
+        if (!m_context) {
+            return;
+        }
+        auto previous = SR_IMMEDIATE_GUI_NS::GetCurrentContext();
+        SR_IMMEDIATE_GUI_NS::SetCurrentContext(m_context);
+        SR_IMMEDIATE_GUI_NS::VulkanSuspendRenderer(m_vkRenderer);
+        if (m_initialized && !m_platformSuspended) {
+            SR_IMMEDIATE_GUI_NS::PlatformShutdown(m_platformBackend);
+            m_platformSuspended = true;
+        }
+        m_surfaceDirty = true;
+        SR_IMMEDIATE_GUI_NS::SetCurrentContext(previous);
+    }
+
+    bool VulkanImGuiOverlay::ResumeNativeSurface(void* window) {
+        if (!m_context || !m_initialized) {
+            return true;
+        }
+        auto previous = SR_IMMEDIATE_GUI_NS::GetCurrentContext();
+        SR_IMMEDIATE_GUI_NS::SetCurrentContext(m_context);
+        SR_IMMEDIATE_GUI_NS::PlatformInitInfo info{};
+        info.backend = m_platformBackend;
+        info.window = window;
+        const bool result = SR_IMMEDIATE_GUI_NS::PlatformInit(info);
+        m_platformSuspended = !result;
+        SR_IMMEDIATE_GUI_NS::SetCurrentContext(previous);
+        return result;
+    }
+#endif
+
     bool VulkanImGuiOverlay::Init() {
         SR_TRACY_ZONE;
 
@@ -137,7 +169,7 @@ namespace SR_GRAPH_NS {
             m_vkRenderer = nullptr;
         }
 
-        if (m_initialized) {
+        if (m_initialized && !m_platformSuspended) {
             SR_IMMEDIATE_GUI_NS::PlatformShutdown(m_platformBackend);
         }
 

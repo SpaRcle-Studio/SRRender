@@ -8,11 +8,108 @@
 #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
 #include <Graphics/Overlay/VulkanImGuiOverlay.h>
 #include <Graphics/Window/Window.h>
+#include <Graphics/Window/BasicWindowImpl.h>
 #include <Graphics/Types/Framebuffer.h>
+
+#ifdef SR_ANDROID
+    #include <Graphics/Window/AndroidWindow.h>
+    #include <EvoVulkan/Types/Surface.h>
+    #include <EvoVulkan/Types/Swapchain.h>
+    #include <Utils/Platform/AndroidLifecycle.h>
+#endif
 
 #include <Utils/Common/Features.h>
 
 namespace SR_GRAPH_NS {
+#ifdef SR_ANDROID
+    bool VulkanKernel::ReCreate(EvoVulkan::Core::FrameResult reason) {
+        if (reason == EvoVulkan::Core::FrameResult::OutOfDate || reason == EvoVulkan::Core::FrameResult::Suboptimal) {
+            PollWindowEvents();
+            const auto wrapper = m_pipeline->GetWindow();
+            const auto window = wrapper ? wrapper->GetImplementation<AndroidWindow>() : nullptr;
+            if (!window || !window->IsSurfaceAvailable()) {
+                m_hasAcquiredImage = false;
+                return true;
+            }
+            if (reason == EvoVulkan::Core::FrameResult::Suboptimal &&
+                m_surface->GetHandle() == window->GetNativeWindow())
+            {
+                if (ANativeWindow_getWidth(window->GetNativeWindow()) == m_swapchain->GetSurfaceWidth() &&
+                    ANativeWindow_getHeight(window->GetNativeWindow()) == m_swapchain->GetSurfaceHeight())
+                {
+                    // Compositor rotation can keep an otherwise usable swapchain suboptimal on Android.
+                    return true;
+                }
+            }
+            return ChangeAndroidSurface(window->GetNativeWindow());
+        }
+        if (m_newWidth > 0 && m_newHeight > 0) {
+            m_width = m_newWidth;
+            m_height = m_newHeight;
+            m_newWidth = -1;
+            m_newHeight = -1;
+        }
+        return Super::ReCreate(reason);
+    }
+
+    bool VulkanKernel::ChangeAndroidSurface(void* handle) {
+        if (!m_device || !m_surface || !m_swapchain) {
+            return false;
+        }
+        if (vkDeviceWaitIdle(*m_device) != VK_SUCCESS) {
+            return false;
+        }
+        const auto overlay = SR_UTILS_NS::DynamicPointerCast<VulkanImGuiOverlay>(m_pipeline->GetOverlay(OverlayType::ImGui));
+        if (overlay) {
+            overlay->SuspendNativeSurface();
+        }
+        m_hasAcquiredImage = false;
+        m_isSwapchainSuboptimal = false;
+        m_frameIndex = 0;
+        m_imageIndex = 0;
+        for (auto framebuffer : m_frameBuffers) {
+            vkDestroyFramebuffer(*m_device, framebuffer, nullptr);
+        }
+        m_frameBuffers.clear();
+        const auto oldFormat = m_swapchain->GetColorFormat();
+        m_swapchain->ReleaseSurface();
+        if (!m_surface->Replace(VK_NULL_HANDLE, nullptr, m_device)) {
+            return false;
+        }
+        if (!handle) {
+            return true;
+        }
+        auto window = static_cast<ANativeWindow*>(handle);
+        const int32_t width = ANativeWindow_getWidth(window);
+        const int32_t height = ANativeWindow_getHeight(window);
+        if (width <= 0 || height <= 0) {
+            return false;
+        }
+        VkAndroidSurfaceCreateInfoKHR info{};
+        info.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+        info.window = window;
+        VkSurfaceKHR surface = VK_NULL_HANDLE;
+        if (vkCreateAndroidSurfaceKHR(*m_instance, &info, nullptr, &surface) != VK_SUCCESS) {
+            return false;
+        }
+        if (!m_surface->Replace(surface, window, m_device)) {
+            return false;
+        }
+        m_width = width;
+        m_height = height;
+        m_newWidth = -1;
+        m_newHeight = -1;
+        if (!m_swapchain->ResumeSurface(m_width, m_height, m_requiredSwapchainImages) || m_swapchain->GetColorFormat() != oldFormat) {
+            SR_ERROR("VulkanKernel::ChangeAndroidSurface() : unsupported surface format or failed swapchain recreation.");
+            return false;
+        }
+        if (overlay && !overlay->ResumeNativeSurface(window)) {
+            return false;
+        }
+        return ReCreate(EvoVulkan::Core::FrameResult::Dirty);
+    }
+#endif
+
     VulkanKernel::VulkanKernel(VulkanKernel::PipelinePtr pPipeline)
         : Super()
         , m_pipeline(std::move(pPipeline))
@@ -169,8 +266,24 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         m_hasAcquiredImage = false;
+    #ifdef SR_ANDROID
+        if (m_pipeline->GetWindow() && !m_pipeline->GetWindow()->GetBaseWindow()->IsSurfaceAvailable()) {
+            return EvoVulkan::Core::FrameResult::Success;
+        }
+        if (m_newWidth > 0 && m_newHeight > 0 &&
+            (static_cast<uint32_t>(m_newWidth) != m_swapchain->GetSurfaceWidth() ||
+                static_cast<uint32_t>(m_newHeight) != m_swapchain->GetSurfaceHeight()))
+        {
+            if (!ReCreate(EvoVulkan::Core::FrameResult::Dirty)) {
+                m_hasErrors = true;
+                return EvoVulkan::Core::FrameResult::Fatal;
+            }
+        }
+    #endif
         auto prepareResult = Super::PrepareFrame();
         switch (prepareResult) {
+            case EvoVulkan::Core::FrameResult::None:
+                return prepareResult;
             case EvoVulkan::Core::FrameResult::Suboptimal:
                 //SRAssert2(!m_isSwapchainSuboptimal, "SRVulkan::Render() : suboptimal swapchain already set!");
                 m_isSwapchainSuboptimal = true;
@@ -184,6 +297,9 @@ namespace SR_GRAPH_NS {
                 }
 
                 VK_LOG("SRVulkan::Render() : window are successfully resized!");
+                if (!SurfaceIsAvailable()) {
+                    return EvoVulkan::Core::FrameResult::None;
+                }
                 prepareResult = Super::PrepareFrame();
                 if (prepareResult == EvoVulkan::Core::FrameResult::Suboptimal) {
                     m_isSwapchainSuboptimal = true;

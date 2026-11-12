@@ -20,6 +20,7 @@ namespace SR_GRAPH_NS {
         explicit AndroidWindow()
             : Super()
         { }
+        ~AndroidWindow() override;
 
     public:
         bool Initialize(const std::string& name,
@@ -30,10 +31,22 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD WindowType GetType() const override { return WindowType::Android; }
 
         void PollEvents() override;
+        SR_NODISCARD bool IsSurfaceAvailable() const override;
+        void SetSurfaceChangeCallback(SR_HTYPES_NS::Function<bool(ANativeWindow*)> callback);
+        SR_NODISCARD SR_MATH_NS::IVector2 ScreenToClient(const SR_MATH_NS::IVector2& position) const override;
+        SR_NODISCARD SR_MATH_NS::IVector2 ClientToScreen(const SR_MATH_NS::IVector2& position) const override;
 
         SR_NODISCARD ANativeWindow* GetNativeWindow() const;
 
         void* GetHandle() const override { return GetNativeWindow(); }
+
+    private:
+        ANativeWindow* m_nativeWindow = nullptr;
+        uint64_t m_windowRevision = 0;
+        bool m_resumed = false;
+        bool m_surfaceReady = true;
+        bool m_surfacePending = false;
+        SR_HTYPES_NS::Function<bool(ANativeWindow*)> m_surfaceChange;
 
     };
 }

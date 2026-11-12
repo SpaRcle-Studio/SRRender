@@ -34,6 +34,10 @@ namespace SR_GRAPH_NS {
     public:
         SR_NODISCARD bool Init() override;
         SR_NODISCARD bool ReCreate() override;
+    #ifdef SR_ANDROID
+        void SuspendNativeSurface();
+        bool ResumeNativeSurface(void* window);
+    #endif
 
         SR_NODISCARD std::string GetName() const override { return "Vulkan ImGUI"; }
         SR_NODISCARD bool IsDynamicRenderingEnabled() const override { return m_dynamicRendering; }
@@ -66,6 +70,7 @@ namespace SR_GRAPH_NS {
         EvoVulkan::SubmitInfo m_submitInfo = { };
 
         bool m_dynamicRendering = false;
+        bool m_platformSuspended = false;
 
         VkSemaphore m_semaphore = VK_NULL_HANDLE;
 

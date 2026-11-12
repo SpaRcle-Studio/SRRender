@@ -79,6 +79,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD uint8_t GetCurrentImageIndex() const override;
 
         SR_NODISCARD EvoVulkan::Core::VulkanKernel* GetKernel() const noexcept { return m_kernel; }
+        SR_NODISCARD bool IsFrameReady() const override;
         SR_NODISCARD VulkanTools::MemoryManager* GetMemoryManager() const noexcept { return m_memory; }
         SR_NODISCARD bool IsShaderConstantSupport() const noexcept override { ++m_state.operations; return true; }
         SR_NODISCARD bool IsShaderViewportIndexLayerSupported() const noexcept override;

@@ -40,6 +40,7 @@
 
 #ifdef SR_ANDROID
     #include <Graphics/Window/AndroidWindow.h>
+    #include <Utils/Platform/AndroidLifecycle.h>
 #endif
 
 #include <Utils/Events/EventManager.h>
@@ -200,6 +201,13 @@ namespace SR_GRAPH_NS {
         if (m_kernel) {
             m_kernel->Destroy();
         }
+    #ifdef SR_ANDROID
+        if (m_window) {
+            if (const auto window = m_window->GetImplementation<AndroidWindow>()) {
+                window->SetSurfaceChangeCallback(nullptr);
+            }
+        }
+    #endif
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().Reset();
 
@@ -355,14 +363,17 @@ namespace SR_GRAPH_NS {
                 surfaceInfo.pNext = nullptr;
                 surfaceInfo.flags = 0;
                 surfaceInfo.window = pImpl->GetNativeWindow();
+                if (!SR_PLATFORM_NS::TryAttachAndroidRenderer(surfaceInfo.window)) {
+                    return VK_NULL_HANDLE;
+                }
 
                 VkSurfaceKHR surface = VK_NULL_HANDLE;
                 VkResult result = vkCreateAndroidSurfaceKHR(instance, &surfaceInfo, nullptr, &surface);
                 if (result != VK_SUCCESS) {
+                    SR_PLATFORM_NS::SetAndroidRendererAttached(false);
                     return VK_NULL_HANDLE;
                 }
-                else
-                    return surface;
+                return surface;
             }
             else {
                 PipelineError("VulkanPipeline::Init() : window is not support this architecture!");
@@ -446,6 +457,16 @@ namespace SR_GRAPH_NS {
         }
 
         m_supportedSampleCount = m_kernel->GetDevice()->GetMSAASamplesCount();
+
+    #ifdef SR_ANDROID
+        if (m_window) {
+            if (const auto window = m_window->GetImplementation<AndroidWindow>()) {
+                window->SetSurfaceChangeCallback([this](ANativeWindow* native) {
+                    return static_cast<SR_GRAPH_NS::VulkanKernel*>(m_kernel)->ChangeAndroidSurface(native);
+                });
+            }
+        }
+    #endif
 
         return Super::Init();
     }
@@ -2394,8 +2415,18 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    bool VulkanPipeline::IsFrameReady() const {
+        return m_kernel && static_cast<SR_GRAPH_NS::VulkanKernel*>(m_kernel)->HasAcquiredImage();
+    }
+
     void VulkanPipeline::PrepareFrame() {
         SR_TRACY_ZONE;
+
+    #ifdef SR_ANDROID
+        if (m_window && !m_window->GetBaseWindow()->IsSurfaceAvailable()) {
+            return;
+        }
+    #endif
 
         Super::PrepareFrame();
 
