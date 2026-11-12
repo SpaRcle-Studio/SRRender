@@ -70,6 +70,9 @@ namespace SR_GRAPH_GUI_NS {
             SR_IMMEDIATE_GUI_NS::SetNextWindowSize(SR_MATH_NS::FVector2(m_size.x, m_size.y));
             flags |= WindowFlags::NoResize;
         }
+        else if (!m_defaultSize.HasZero()) {
+            SR_IMMEDIATE_GUI_NS::SetNextWindowSize(m_defaultSize.CastToFloat(), SR_IMMEDIATE_GUI_NS::Condition::FirstUseEver);
+        }
 
         auto&& pPreviousViewport = SR_IMMEDIATE_GUI_NS::GetWindowViewport();
 

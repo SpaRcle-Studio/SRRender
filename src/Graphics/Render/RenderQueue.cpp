@@ -12,6 +12,7 @@
 #include <Graphics/Utils/Frustum.h>
 #include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Window/Window.h>
+#include <Graphics/Window/BasicWindowImpl.h>
 
 #include <Utils/ECS/LayerManager.h>
 #include <Utils/Common/Features.h>
@@ -288,7 +289,8 @@ namespace SR_GRAPH_NS {
             viewportSize = pCurrentFramebuffer->GetSize();
         }
         else if (auto&& pWindow = m_pipeline->GetWindow()) {
-            viewportSize = pWindow->GetSize().CastToInt();
+            const auto window = pWindow->GetBaseWindow();
+            viewportSize = SR_MATH_NS::IVector2(window->GetSurfaceWidth(), window->GetSurfaceHeight());
         }
 
         MeshInfo* pStart = queue.data();

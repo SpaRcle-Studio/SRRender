@@ -23,6 +23,8 @@ namespace SR_GRAPH_NS {
 
         void PollEvents() override;
         bool IsFullScreen() override;
+        SR_NODISCARD SR_MATH_NS::IVector2 ScreenToClient(const SR_MATH_NS::IVector2& pos) const override;
+        SR_NODISCARD SR_MATH_NS::IVector2 ClientToScreen(const SR_MATH_NS::IVector2& pos) const override;
 
     public:
         SR_NODISCARD WindowType GetType() const override { return WindowType::Emscripten; };

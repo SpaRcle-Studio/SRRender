@@ -9,6 +9,14 @@
 #include <algorithm>
 
 namespace SR_GRAPH_NS {
+    SR_MATH_NS::IVector2 EmscriptenWindow::ScreenToClient(const SR_MATH_NS::IVector2& pos) const {
+        return pos;
+    }
+
+    SR_MATH_NS::IVector2 EmscriptenWindow::ClientToScreen(const SR_MATH_NS::IVector2& pos) const {
+        return pos;
+    }
+
     bool EmscriptenWindow::IsFullScreen() {
         return EM_ASM_INT({ return document.fullscreenElement === document.querySelector('#srengine-canvas'); });
     }
