@@ -15,7 +15,6 @@
 #include <Utils/Animations/PosePostProcessor.h>
 #include <Utils/ECS/EntityRef.h>
 #include <Utils/ECS/Component.h>
-#include <Utils/ECS/ComponentManager.h>
 
 namespace SR_ANIMATIONS_NS {
     class AnimationClip;

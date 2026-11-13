@@ -2,15 +2,13 @@
 // Created by Nikita on 02.06.2021.
 //
 
-#include <Utils/Types/RawMesh.h>
-#include <Utils/ECS/ComponentManager.h>
-
 #include <Graphics/Types/Geometry/Mesh3D.h>
 #include <Graphics/Material/BaseMaterial.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Utils/MeshUtils.h>
 
 #include <Utils/FileSystem/PathDataAccessor.h>
+#include <Utils/Types/RawMesh.h>
 
 #include <Codegen/Mesh3D.generated.hpp>
 

@@ -9,7 +9,6 @@
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Render/RenderScene.h>
 
-#include <Utils/ECS/ComponentManager.h>
 #include <Utils/ECS/Transform3D.h>
 #include <Utils/Input/InputSystem.h>
 #include <Utils/DebugDraw.h>

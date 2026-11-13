@@ -4,7 +4,6 @@
 
 #include <Graphics/Animations/Animator.h>
 
-#include <Utils/ECS/ComponentManager.h>
 #include <Utils/FileSystem/PathDataAccessor.h>
 #include <Utils/Events/Broadcaster.h>
 #include <Utils/Common/SubscriptionMessage.h>

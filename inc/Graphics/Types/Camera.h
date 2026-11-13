@@ -9,8 +9,8 @@
 #include <Graphics/Utils/CameraRenderParameters.h>
 
 #include <Utils/ECS/Component.h>
-#include <Utils/ECS/ComponentManager.h>
 #include <Utils/Math/Vector3.h>
+#include <Utils/FileSystem/Path.h>
 #include <Utils/Math/Rect.h>
 #include <Utils/Math/Matrix4x4.h>
 #include <Utils/Common/SubscriptionHolder.h>

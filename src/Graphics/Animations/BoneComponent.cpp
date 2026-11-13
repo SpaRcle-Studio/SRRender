@@ -4,7 +4,6 @@
 
 #include <Graphics/Animations/BoneComponent.h>
 #include <Graphics/Animations/Skeleton.h>
-#include <Utils/ECS/ComponentManager.h>
 
 #include <Codegen/BoneComponent.generated.hpp>
 
