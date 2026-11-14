@@ -39,6 +39,10 @@ namespace SR_GRAPH_UI_NS {
         const SR_MATH_NS::FVector2 viewportSize = viewportRect.Size();
         const SR_MATH_NS::FVector2 canvasSize = GetSize().CastToFloat();
 
+        if (viewportSize.x <= 0.f || viewportSize.y <= 0.f) {
+            return SR_MATH_NS::FVector2::Zero();
+        }
+
         const float_t screenFactor = m_scaleFactor > 0.f ? m_scaleFactor : 1.f;
 
         SR_MATH_NS::FVector2 normalized = (clientPos - viewportRect.Min()) / viewportSize;
@@ -57,6 +61,24 @@ namespace SR_GRAPH_UI_NS {
         return const_cast<SR_GTYPES_NS::Camera*>(m_camera.Get());
     }
 
+    bool Canvas::ContainsScreenPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& screenPosition) const {
+        auto&& pWindow = GetWindow();
+        if (!pWindow || m_viewportRect.Size().x <= 0.f || m_viewportRect.Size().y <= 0.f) {
+            return false;
+        }
+        const auto client = pWindow->ScreenToClient(screenPosition.CastToInt()).CastToFloat();
+        if (!m_viewportRect.Contains(client) || rect.GetGlobalScale().HasZero()) {
+            return false;
+        }
+        return rect.GetLayoutRect().Contains(CanvasToLayoutPoint(rect, ScreenToCanvasSpace(screenPosition)));
+    }
+
+    SR_MATH_NS::FVector2 Canvas::CanvasToLayoutPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& canvasPosition) const {
+        const auto point = canvasPosition * m_scaleFactor + m_size.CastToFloat() / 2.f;
+        const auto local = rect.GetMatrix().Inverse().TransformPoint({ point.x, point.y, 0.f });
+        return SR_MATH_NS::FVector2(local.x, local.y);
+    }
+
     Window* Canvas::GetWindow() const noexcept {
         if (m_renderScene) {
             return m_renderScene->GetWindow().Get();
@@ -69,32 +91,43 @@ namespace SR_GRAPH_UI_NS {
             SR_MATH_NS::UVector2 windowSize;
 
             if (auto&& pCamera = m_renderScene->GetMainCamera()) {
+                m_camera = pCamera;
                 windowSize = pCamera->GetSize();
                 m_viewportRect = pCamera->GetViewportRect();
             }
             else {
+                m_camera = nullptr;
                 windowSize = m_renderScene->GetSurfaceSize();
                 m_viewportRect = SR_MATH_NS::FRect(SR_MATH_NS::FVector2(), windowSize.CastToFloat());
             }
 
             auto&& pTransform = GetTransform();
 
+            if (!m_previewViewportSize.HasZero()) {
+                windowSize = m_previewViewportSize;
+            }
             m_dirty |= windowSize != m_size;
-            if (auto&& pCanvasScaler = GetGameObject()->GetComponent<CanvasScaler>()) {
+            m_size = windowSize;
+            if (auto&& pCanvasScaler = GetGameObject()->GetComponent<CanvasScaler>(); pCanvasScaler && pCanvasScaler->IsActive()) {
+                m_hadScaler = true;
                 const float_t newScaleFactor = pCanvasScaler->CalculateScaleFactor(*this);
                 m_dirty |= !SR_MATH_NS::IsEquals(m_scaleFactor, newScaleFactor);
                 m_scaleFactor = newScaleFactor;
 
-                const float_t newPixelsPerUnit = pCanvasScaler->GetReferencePixelsPerUnit();
+                const float_t newPixelsPerUnit = pCanvasScaler->CalculateReferencePixelsPerUnit();
                 m_dirty |= !SR_MATH_NS::IsEquals(m_referencePixelsPerUnit, newPixelsPerUnit);
                 m_referencePixelsPerUnit = newPixelsPerUnit;
 
-                if (SR_MATH_NS::IsEquals(m_scaleFactor, 0.f)) {
-                    m_scaleFactor = 0.01f;
-                }
+                m_scaleFactor = SR_MAX(0.01f, m_scaleFactor);
+            }
+            else if (m_hadScaler) {
+                m_hadScaler = false;
+                m_scaleFactor = 1.f;
+                m_referencePixelsPerUnit = 100.f;
+                m_dirty = true;
             }
 
-            if (m_dirty && pTransform && pTransform->GetMeasurement() == SR_UTILS_NS::Measurement::Space2D) {
+            if (m_dirty && pTransform && pTransform->GetMeta()->IsSameOrInherited(SR_UTILS_NS::TransformRect::GetClassStaticName())) {
                 m_size = windowSize;
                 m_dirty = false;
 
@@ -143,7 +176,29 @@ namespace SR_GRAPH_UI_NS {
     }
 
     float_t CanvasScaler::CalculateScaleFactor(const Canvas& canvas) const {
+        return CalculateScaleFactorForViewport(canvas.GetSize().CastToFloat(),
+            canvas.GetWindow() ? canvas.GetWindow()->GetScreenDPI() : 0.f);
+    }
+
+    void CanvasScaler::OnPostLoad() {
+        Super::OnPostLoad();
+        SetScaleDirty();
+    }
+
+    void CanvasScaler::SetScaleDirty() {
+        m_scaleDirty = true;
+        SetLayoutDirty();
+    }
+
+    float_t CanvasScaler::CalculateScaleFactorForViewport(const SR_MATH_NS::FVector2& screenSize, float_t dpi) const {
         SR_TRACY_ZONE;
+
+        if (!m_scaleDirty && m_cachedScreenSize == screenSize && m_cachedDPI == dpi) {
+            return m_cachedScaleFactor;
+        }
+        m_cachedScreenSize = screenSize;
+        m_cachedDPI = dpi;
+        m_scaleDirty = false;
 
         float_t scale = 1.f;
         switch (m_scaleMode) {
@@ -151,7 +206,6 @@ namespace SR_GRAPH_UI_NS {
                 scale = m_scaleFactor;
                 break;
             case CanvasScaleMode::ScaleWithScreenSize: {
-                const SR_MATH_NS::FVector2 screenSize = canvas.GetSize().CastToFloat();
                 if (screenSize.HasZero() || m_referenceResolution.HasZero()) {
                     break;
                 }
@@ -183,11 +237,10 @@ namespace SR_GRAPH_UI_NS {
                 break;
             }
             case CanvasScaleMode::ConstantPhysicalSize: {
-                float_t dpi = canvas.GetWindow() ? canvas.GetWindow()->GetScreenDPI() : 0.f;
                 if (dpi <= 0.f) {
                     dpi = m_fallbackScreenDPI;
                 }
-                scale = dpi / m_defaultSpriteDPI;
+                scale = dpi / SR_MATH_NS::GetPhysicalUnitScale(m_physicalUnit);
                 break;
             }
             default:
@@ -195,6 +248,15 @@ namespace SR_GRAPH_UI_NS {
                 break;
         }
 
-        return scale;
+        m_cachedScaleFactor = SR_MAX(0.01f, scale);
+        return m_cachedScaleFactor;
+    }
+
+    float_t CanvasScaler::CalculateReferencePixelsPerUnit() const {
+        if (m_scaleMode == CanvasScaleMode::ConstantPhysicalSize) {
+            return m_referencePixelsPerUnit * SR_MATH_NS::GetPhysicalUnitScale(m_physicalUnit)
+                / SR_MAX(1.f, m_defaultSpriteDPI);
+        }
+        return m_referencePixelsPerUnit;
     }
 }

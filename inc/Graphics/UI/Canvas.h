@@ -54,8 +54,11 @@ namespace SR_GRAPH_UI_NS {
         SR_NODISCARD const SR_MATH_NS::FRect& GetViewportRect() const noexcept { return m_viewportRect; }
 
         SR_NODISCARD SR_MATH_NS::FVector2 ScreenToCanvasSpace(const SR_MATH_NS::FVector2& screenPosition) const;
+        SR_NODISCARD bool ContainsScreenPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& screenPosition) const;
+        SR_NODISCARD SR_MATH_NS::FVector2 CanvasToLayoutPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& canvasPosition) const;
         SR_NODISCARD SR_MATH_NS::FRect LayoutToCanvasRect(const SR_MATH_NS::FRect& layoutRect) const;
         SR_NODISCARD float_t GetReferencePixelsPerUnit() const noexcept { return m_referencePixelsPerUnit; }
+        void SetPreviewViewportSize(const SR_MATH_NS::UVector2& size) { m_previewViewportSize = size; m_dirty = true; }
 
         SR_NODISCARD SR_GTYPES_NS::Camera* GetCamera() const noexcept;
         SR_NODISCARD Window* GetWindow() const noexcept;
@@ -66,8 +69,11 @@ namespace SR_GRAPH_UI_NS {
         float_t m_scaleFactor = 1.f;
         float_t m_referencePixelsPerUnit = 100.f;
         bool m_dirty = true;
+        bool m_hadScaler = false;
 
         SR_MATH_NS::UVector2 m_size;
+        /// @property @readOnly @dontSave
+        SR_MATH_NS::UVector2 m_previewViewportSize;
         RenderScenePtr m_renderScene;
 
     };
@@ -77,33 +83,41 @@ namespace SR_GRAPH_UI_NS {
         SR_CLASS()
         using Super = SR_UTILS_NS::Component;
     public:
+        void OnPostLoad() override;
+        void SetScaleDirty();
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
         SR_NODISCARD float_t CalculateScaleFactor(const Canvas& canvas) const;
+        SR_NODISCARD float_t CalculateScaleFactorForViewport(const SR_MATH_NS::FVector2& screenSize, float_t dpi) const;
         SR_NODISCARD float_t GetReferencePixelsPerUnit() const noexcept { return m_referencePixelsPerUnit; }
+        SR_NODISCARD float_t CalculateReferencePixelsPerUnit() const;
 
     private:
-        /// @property
-        CanvasScaleMode m_scaleMode = CanvasScaleMode::ScaleWithScreenSize;
+        mutable bool m_scaleDirty = true;
+        mutable SR_MATH_NS::FVector2 m_cachedScreenSize;
+        mutable float_t m_cachedDPI = -1.f;
+        mutable float_t m_cachedScaleFactor = 1.f;
+        /// @property @onChanged(SetScaleDirty)
+        CanvasScaleMode m_scaleMode = CanvasScaleMode::ConstantPixelSize;
 
-        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPixelSize) @drag(0.1f)
+        /// @property @onChanged(SetScaleDirty) @condition(This.m_scaleMode == CanvasScaleMode::ConstantPixelSize) @drag(0.1f)
         float_t m_scaleFactor = 1.f;
 
-        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
-        SR_MATH_NS::UVector2 m_referenceResolution = SR_MATH_NS::UVector2(1600, 900);
-        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
+        /// @property @onChanged(SetScaleDirty) @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
+        SR_MATH_NS::UVector2 m_referenceResolution = SR_MATH_NS::UVector2(800, 600);
+        /// @property @onChanged(SetScaleDirty) @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize)
         CanvasScreenMatchMode m_screenMatchMode = CanvasScreenMatchMode::MatchWidthOrHeight;
-        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize && This.m_screenMatchMode == CanvasScreenMatchMode::MatchWidthOrHeight)
+        /// @property @onChanged(SetScaleDirty) @condition(This.m_scaleMode == CanvasScaleMode::ScaleWithScreenSize && This.m_screenMatchMode == CanvasScreenMatchMode::MatchWidthOrHeight)
         /// @range(0.f, 1.f) @drag(0.1f)
-        float_t m_match = 1.f;
+        float_t m_match = 0.f;
 
-        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
+        /// @property @onChanged(SetScaleDirty) @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
         SR_MATH_NS::PhysicalUnit m_physicalUnit = SR_MATH_NS::PhysicalUnit::Points;
-        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
+        /// @property @onChanged(SetScaleDirty) @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
         float_t m_fallbackScreenDPI = 96.f;
-        /// @property @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
+        /// @property @onChanged(SetScaleDirty) @condition(This.m_scaleMode == CanvasScaleMode::ConstantPhysicalSize)
         float_t m_defaultSpriteDPI = 96.f;
 
-        /// @property @range(0.1f, std::numeric_limits<float_t>::max())
+        /// @property @onChanged(SetScaleDirty) @range(0.1f, std::numeric_limits<float_t>::max())
         float_t m_referencePixelsPerUnit = 100.f;
 
     };
