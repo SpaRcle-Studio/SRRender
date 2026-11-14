@@ -11,6 +11,7 @@
 
 #include <Utils/Types/Time.h>
 #include <Utils/Types/SharedPtr.h>
+#include <Utils/Types/Optional.h>
 #include <Utils/Common/Enumerations.h>
 #include <Utils/Math/Vector3.h>
 #include <Utils/Serialization/Serializable.h>
@@ -148,10 +149,10 @@ namespace SR_ANIMATIONS_NS {
             m_stringTable[name] = value;
         }
 
-        SR_NODISCARD std::optional<bool> GetBool(const SR_UTILS_NS::StringAtom& name) const;
-        SR_NODISCARD std::optional<int32_t> GetInt(const SR_UTILS_NS::StringAtom& name) const;
-        SR_NODISCARD std::optional<float_t> GetFloat(const SR_UTILS_NS::StringAtom& name) const;
-        SR_NODISCARD std::optional<std::string> GetString(const SR_UTILS_NS::StringAtom& name) const;
+        SR_NODISCARD SR_UTILS_NS::Optional<bool> GetBool(const SR_UTILS_NS::StringAtom& name) const;
+        SR_NODISCARD SR_UTILS_NS::Optional<int32_t> GetInt(const SR_UTILS_NS::StringAtom& name) const;
+        SR_NODISCARD SR_UTILS_NS::Optional<float_t> GetFloat(const SR_UTILS_NS::StringAtom& name) const;
+        SR_NODISCARD SR_UTILS_NS::Optional<SR_UTILS_NS::String> GetString(const SR_UTILS_NS::StringAtom& name) const;
 
         void SetAnimationDataSetParent(IAnimationDataSet* pParent) {
             m_parent = pParent;

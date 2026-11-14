@@ -141,20 +141,20 @@ namespace SR_ANIMATIONS_NS {
         }
     }
 
-    SR_NODISCARD std::optional<bool> Animator::GetBool(const SR_UTILS_NS::StringAtom& name) const {
-        return m_graph ? m_graph->GetBool(name) : std::nullopt;
+    SR_NODISCARD SR_UTILS_NS::Optional<bool> Animator::GetBool(const SR_UTILS_NS::StringAtom& name) const {
+        return m_graph ? m_graph->GetBool(name) : SR_UTILS_NS::Optional<bool>();
     }
 
-    SR_NODISCARD std::optional<int32_t> Animator::GetInt(const SR_UTILS_NS::StringAtom& name) const {
-        return m_graph ? m_graph->GetInt(name) : std::nullopt;
+    SR_NODISCARD SR_UTILS_NS::Optional<int32_t> Animator::GetInt(const SR_UTILS_NS::StringAtom& name) const {
+        return m_graph ? m_graph->GetInt(name) : SR_UTILS_NS::Optional<int32_t>();
     }
 
-    SR_NODISCARD std::optional<float_t> Animator::GetFloat(const SR_UTILS_NS::StringAtom& name) const {
-        return m_graph ? m_graph->GetFloat(name) : std::nullopt;
+    SR_NODISCARD SR_UTILS_NS::Optional<float_t> Animator::GetFloat(const SR_UTILS_NS::StringAtom& name) const {
+        return m_graph ? m_graph->GetFloat(name) : SR_UTILS_NS::Optional<float_t>();
     }
 
-    SR_NODISCARD std::optional<std::string> Animator::GetString(const SR_UTILS_NS::StringAtom& name) const {
-        return m_graph ? m_graph->GetString(name) : std::nullopt;
+    SR_NODISCARD SR_UTILS_NS::Optional<SR_UTILS_NS::String> Animator::GetString(const SR_UTILS_NS::StringAtom& name) const {
+        return m_graph ? m_graph->GetString(name) : SR_UTILS_NS::Optional<SR_UTILS_NS::String>();
     }
 
     void Animator::SetClip(const SR_UTILS_NS::Path& path) {

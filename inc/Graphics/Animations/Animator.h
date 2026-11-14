@@ -52,10 +52,14 @@ namespace SR_ANIMATIONS_NS {
         /// @method
         void FastForwardState(SR_UTILS_NS::StringAtom name);
 
-        SR_NODISCARD std::optional<bool> GetBool(const SR_UTILS_NS::StringAtom& name) const;
-        SR_NODISCARD std::optional<int32_t> GetInt(const SR_UTILS_NS::StringAtom& name) const;
-        SR_NODISCARD std::optional<float_t> GetFloat(const SR_UTILS_NS::StringAtom& name) const;
-        SR_NODISCARD std::optional<std::string> GetString(const SR_UTILS_NS::StringAtom& name) const;
+        /// @method @evaluate
+        SR_NODISCARD SR_UTILS_NS::Optional<bool> GetBool(const SR_UTILS_NS::StringAtom& name) const;
+        /// @method @evaluate
+        SR_NODISCARD SR_UTILS_NS::Optional<int32_t> GetInt(const SR_UTILS_NS::StringAtom& name) const;
+        /// @method @evaluate
+        SR_NODISCARD SR_UTILS_NS::Optional<float_t> GetFloat(const SR_UTILS_NS::StringAtom& name) const;
+        /// @method @evaluate
+        SR_NODISCARD SR_UTILS_NS::Optional<SR_UTILS_NS::String> GetString(const SR_UTILS_NS::StringAtom& name) const;
 
         SR_NODISCARD SR_UTILS_NS::Path GetGraphPath() const noexcept;
         SR_NODISCARD AnimationGraph* GetGraph() const noexcept;
