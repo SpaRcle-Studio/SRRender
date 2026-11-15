@@ -128,7 +128,7 @@ namespace SR_ANIMATIONS_NS {
         AnimationState* pState = nullptr;
     };
 
-    /// @noCopyable @noMovable
+    /// @noCopyable @noMovable @dontScript
     class IAnimationDataSet : public SR_HTYPES_NS::SharedPtr<IAnimationDataSet>, public SR_UTILS_NS::Serializable, public SR_UTILS_NS::NonCopyable {
         SR_CLASS()
     public:

@@ -79,7 +79,7 @@ namespace SR_ANIMATIONS_NS {
 
     };
 
-    /// @extension(animator)
+    /// @dontScript @extension(animator)
     class SR_GRAPHICS_DLL_API AnimationGraphAsset : public SR_UTILS_NS::Asset {
         SR_CLASS()
         using Super = SR_UTILS_NS::Asset;

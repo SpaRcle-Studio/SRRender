@@ -87,7 +87,7 @@ namespace SR_ANIMATIONS_NS {
         SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, ExcludeBoneTransforms> m_excludedBones;
         /// @property
         SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, LockTransformAxis> m_lockedBones;
-        /// @property
+        /// @property @dontScript
         SR_UTILS_NS::Vector<RetargetProfileEmbedded> m_retargetProfiles;
         /// @property
         SR_UTILS_NS::Optional<float_t> m_startTime;

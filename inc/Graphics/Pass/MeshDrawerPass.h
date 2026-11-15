@@ -21,6 +21,7 @@ namespace SR_GRAPH_NS {
     class RenderStrategy;
     class RenderQueue;
 
+    /// @dontScript
     struct SR_GRAPHICS_DLL_API MeshDrawerSharedUniforms : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
@@ -35,6 +36,7 @@ namespace SR_GRAPH_NS {
 
     };
 
+    /// @dontScript
     struct SR_GRAPHICS_DLL_API MeshDrawerMaterialUniforms : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
@@ -46,6 +48,7 @@ namespace SR_GRAPH_NS {
 
     };
 
+    /// @dontScript
     struct SR_GRAPHICS_DLL_API MeshDrawerUniforms : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
 
@@ -56,6 +59,7 @@ namespace SR_GRAPH_NS {
 
     };
 
+    /// @dontScript
     class SR_GRAPHICS_DLL_API MeshDrawerPass : public BasePass, public LayerFilterPredicate, public PriorityFilterPredicate, public RenderObjectFilterPredicate {
         SR_CLASS()
         using Super = BasePass;

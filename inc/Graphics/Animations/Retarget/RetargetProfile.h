@@ -12,7 +12,7 @@
 namespace SR_ANIMATIONS_NS {
     struct RetargetAnimationContext;
 
-    /// @abstract
+    /// @abstract @dontScript
     class SR_GRAPHICS_DLL_API RetargetAlgorithmBase : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<RetargetAlgorithmBase> {
         SR_STRUCT()
     public:
@@ -26,7 +26,7 @@ namespace SR_ANIMATIONS_NS {
 
     };
 
-    /// @abstract
+    /// @abstract @dontScript
     class RetargetIKCorrectionBase : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<RetargetIKCorrectionBase> {
         SR_STRUCT()
     public:
@@ -55,6 +55,7 @@ namespace SR_ANIMATIONS_NS {
 
     };
 
+    /// @dontScript
     struct RetargetProfileEmbedded : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
     public:
@@ -86,7 +87,7 @@ namespace SR_ANIMATIONS_NS {
         RetargetPoseRefinementBase::Ptr poseRefinement;
     };
 
-    /// @extension(retargetProfile)
+    /// @dontScript @extension(retargetProfile)
     class RetargetProfile : public SR_UTILS_NS::Asset {
         SR_CLASS()
     public:

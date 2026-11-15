@@ -11,6 +11,7 @@ namespace SR_ANIMATIONS_NS {
     class AnimationState;
     class AnimationStateMachine;
 
+    /// @dontScript
     class SR_GRAPHICS_DLL_API AnimationStateTransition : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<AnimationStateTransition> {
         SR_CLASS()
     public:

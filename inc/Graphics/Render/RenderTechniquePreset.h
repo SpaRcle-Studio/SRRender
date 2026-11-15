@@ -11,7 +11,7 @@
 namespace SR_GRAPH_NS {
     class FileRenderTechniquePresetResource;
 
-    /// @abstract
+    /// @abstract @dontScript
     class RenderTechniqueLayerBase : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<RenderTechniqueLayerBase> {
         SR_CLASS()
     public:
@@ -31,7 +31,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    /// @abstract
+    /// @abstract @dontScript
     class RenderTechniquePresetIntegrationBase : public SR_UTILS_NS::Serializable, public SR_HTYPES_NS::SharedPtr<RenderTechniquePresetIntegrationBase> {
         SR_CLASS()
     public:

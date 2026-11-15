@@ -39,7 +39,7 @@ namespace SR_GRAPH_NS {
 
     };
 
-    /// @abstract
+    /// @abstract @dontScript
     class IFileRenderTechniqueResource : public SR_UTILS_NS::Asset {
         SR_CLASS()
     public:
