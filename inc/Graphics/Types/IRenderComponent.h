@@ -11,6 +11,7 @@
 #include <Utils/ECS/Component.h>
 #include <Utils/Math/AABB.h>
 #include <Utils/UI/MaskInfo.h>
+#include <Utils/Types/Optional.h>
 
 namespace SR_GRAPH_NS {
     class RenderScene;
@@ -50,7 +51,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD Pipeline* TryGetPipeline() const noexcept;
 
         SR_NODISCARD virtual std::optional<int32_t> GetIBO() const;
-        SR_NODISCARD virtual std::optional<int32_t> GetVBO() const;
+        SR_NODISCARD virtual SR_UTILS_NS::Optional<int32_t> GetVBO() const;
 
         /// registration API
         void ReRegisterRenderObject();
@@ -68,6 +69,7 @@ namespace SR_GTYPES_NS {
         void MarkUniformsDirty();
         void MarkMaterialDirty();
         void SetMaterial(const SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::BaseMaterial>& pMaterial);
+        /// @method
         void SetMaterial(const SR_UTILS_NS::Path& path);
         virtual void FreeVideoMemory() { }
         virtual void SetVertexLayoutDescription(const SR_UTILS_NS::VertexLayoutDescription& description);

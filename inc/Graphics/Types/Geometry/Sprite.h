@@ -9,6 +9,9 @@
 #include <Graphics/UI/Canvas.h>
 
 #include <Utils/Math/Rect.h>
+#include <Utils/UI/ILayoutElement.h>
+#include <Graphics/Types/Texture.h>
+#include <Utils/Common/Subscription.h>
 
 namespace SR_GTYPES_NS {
     SR_ENUM_NS_CLASS_T(SliceMode, uint8_t,
@@ -39,10 +42,24 @@ namespace SR_GTYPES_NS {
     SR_NODISCARD bool IsSpriteFillOriginApplicable(const Sprite& sprite, SpriteFillOrigin origin);
 
     /// @category(UI)
-    class SR_GRAPHICS_DLL_API Sprite : public SR_GTYPES_NS::UIRenderComponent, public SR_GRAPH_UI_NS::IFindCanvasOwner {
+    class SR_GRAPHICS_DLL_API Sprite : public SR_GTYPES_NS::UIRenderComponent, public SR_GRAPH_UI_NS::IFindCanvasOwner, public SR_UTILS_NS::ILayoutElement {
         SR_CLASS()
         using Super = SR_GTYPES_NS::UIRenderComponent;
     public:
+        /// @method
+        bool SetTexturePath(const SR_UTILS_NS::Path& path);
+        void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
+        SR_UTILS_NS::ILayoutElement* GetLayoutElement() noexcept override { return m_texture.GetId().empty() ? nullptr : this; }
+        void CalculateLayoutInput(bool horizontal) override;
+        void OnPostLoad() override;
+        float_t GetMinWidth() const override { return 0.f; }
+        float_t GetMinHeight() const override { return 0.f; }
+        float_t GetPreferredWidth() const override { return m_preferredSize.x; }
+        float_t GetPreferredHeight() const override { return m_preferredSize.y; }
+        float_t GetFlexibleWidth() const override { return -1.f; }
+        float_t GetFlexibleHeight() const override { return -1.f; }
+        int32_t GetLayoutPriority() const override { return 0; }
+
         void UseMaterial(SR_GTYPES_NS::Shader& shader) override;
         void UseModelMatrix(SR_GTYPES_NS::Shader& shader) override;
 
@@ -62,6 +79,11 @@ namespace SR_GTYPES_NS {
         void SetFillClockwise(bool clockwise);
 
     protected:
+        void OnTextureChanged();
+        SR_MATH_NS::FVector2 m_preferredSize;
+        SR_UTILS_NS::Subscription m_textureReloadSubscription;
+        /// @property @onChanged(OnTextureChanged)
+        SR_UTILS_NS::ResourceRef<Texture> m_texture;
         void Draw() override;
         void ApplyFillModeParams(Shader* pShader);
         void ApplySliceModeParams(Shader* pShader);

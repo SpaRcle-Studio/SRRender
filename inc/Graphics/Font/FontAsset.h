@@ -26,7 +26,7 @@ namespace SR_GRAPH_NS {
 
     private:
         mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, uint16_t> m_indexes;
-        mutable std::vector<SR_UTILS_NS::StringAtom> m_fontIds;
+        mutable SR_UTILS_NS::Vector<SR_UTILS_NS::StringAtom> m_fontIds;
         mutable uint16_t m_currentIndex = 0;
 
     };
@@ -35,7 +35,7 @@ namespace SR_GRAPH_NS {
     class SR_GRAPHICS_DLL_API FontAsset : public SR_UTILS_NS::Asset {
         SR_CLASS()
     public:
-        bool BuildText(const std::string& text, float_t fontSize, SR_UTILS_NS::Vector<PositionedGlyph>& glyphs);
+        bool BuildText(SR_UTILS_NS::StringView text, float_t fontSize, SR_UTILS_NS::Vector<PositionedGlyph>& glyphs);
 
         /// Разрешение генерации atlas (pixels per em baseline); масштаб экранного размера: fontSize / GetSamplingPointSize().
         SR_NODISCARD float_t GetSamplingPointSize() const noexcept { return m_samplingPointSize; }
@@ -89,7 +89,7 @@ namespace SR_GRAPH_NS {
         float_t m_lineGap = 0.f;
 
         std::recursive_mutex m_mutex;
-        std::vector<GlyphKey> m_dirtyGlyphs;
+        SR_UTILS_NS::Vector<GlyphKey> m_dirtyGlyphs;
         uint16_t m_fontId = 0;
         SR_HTYPES_NS::FlatHashMap<GlyphKey, FontDetails::Glyph> m_glyphs;
         SR_HTYPES_NS::SharedPtr<FontAtlas> m_atlases[SR_UTILS_NS::EnumTraits<GlyphRenderType>::NumItems];

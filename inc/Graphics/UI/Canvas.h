@@ -7,7 +7,8 @@
 
 #include <Graphics/stdInclude.h>
 
-#include <Utils/ECS/Component.h>
+#include <Utils/UI/UIComponent.h>
+#include <Utils/Input/PointerInput.h>
 #include <Utils/ECS/EntityRef.h>
 #include <Utils/Math/Rect.h>
 #include <Utils/Math/PhysicalUnit.h>
@@ -36,10 +37,8 @@ namespace SR_GRAPH_UI_NS {
     )
 
     /// @category(UI)
-    class SR_GRAPHICS_DLL_API Canvas : public SR_UTILS_NS::Component {
+    class SR_GRAPHICS_DLL_API Canvas : public SR_UTILS_NS::UIComponent {
         SR_CLASS()
-        using RenderScenePtr = SR_HTYPES_NS::SharedPtr<RenderScene>;
-        using Super = SR_UTILS_NS::Component;
 
     public:
         SR_NODISCARD bool ExecuteInEditMode() const override { return true; }
@@ -47,13 +46,16 @@ namespace SR_GRAPH_UI_NS {
         SR_NODISCARD float_t GetScaleFactor() const noexcept { return m_scaleFactor; }
 
         void OnAttached() override;
-        void Update(float_t dt) override;
+        void PrepareUIInput() override;
 
         void SetViewportRect(const SR_MATH_NS::FRect& rect) { m_viewportRect = rect; }
         void SetScaleFactor(float_t scaleFactor);
         SR_NODISCARD const SR_MATH_NS::FRect& GetViewportRect() const noexcept { return m_viewportRect; }
 
         SR_NODISCARD SR_MATH_NS::FVector2 ScreenToCanvasSpace(const SR_MATH_NS::FVector2& screenPosition) const;
+        SR_NODISCARD SR_MATH_NS::FVector2 ClientToCanvasSpace(const SR_MATH_NS::FVector2& clientPosition) const;
+        SR_NODISCARD SR_MATH_NS::FVector2 PointerToCanvasSpace(const SR_UTILS_NS::PointerEvent& event) const;
+        SR_NODISCARD bool ContainsPointer(const SR_UTILS_NS::TransformRect& rect, const SR_UTILS_NS::PointerEvent& event) const;
         SR_NODISCARD bool ContainsScreenPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& screenPosition) const;
         SR_NODISCARD SR_MATH_NS::FVector2 CanvasToLayoutPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& canvasPosition) const;
         SR_NODISCARD SR_MATH_NS::FRect LayoutToCanvasRect(const SR_MATH_NS::FRect& layoutRect) const;
@@ -74,7 +76,7 @@ namespace SR_GRAPH_UI_NS {
         SR_MATH_NS::UVector2 m_size;
         /// @property @readOnly @dontSave
         SR_MATH_NS::UVector2 m_previewViewportSize;
-        RenderScenePtr m_renderScene;
+        SR_HTYPES_NS::SharedPtr<RenderScene> m_renderScene;
 
     };
 

@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/Font/TextMeshDetails.h>
+#include <Utils/Types/Optional.h>
 
 namespace SR_GTYPES_NS::TextMeshDetails {
     void ApplyLineJustification(
@@ -19,11 +20,11 @@ namespace SR_GTYPES_NS::TextMeshDetails {
         size_t nextSpace = 0;
 
         for (size_t i = line.placementBegin; i < line.placementEnd; ++i) {
-        if (nextSpace < line.spacePlacementIndices.size() && line.spacePlacementIndices[nextSpace] == i) {
-        cumulativeExtra += extraPerSpace;
-        ++nextSpace;
-        }
-        placements[i].pos.x += cumulativeExtra;
+            if (nextSpace < line.spacePlacementIndices.size() && line.spacePlacementIndices[nextSpace] == i) {
+                cumulativeExtra += extraPerSpace;
+                ++nextSpace;
+            }
+            placements[i].pos.x += cumulativeExtra;
         }
 
         line.penWidth = layoutWidth;
@@ -44,7 +45,7 @@ namespace SR_GTYPES_NS::TextMeshDetails {
         const float_t capline = ascender * fontAsset.GetCapLineAscenderRatio();
         const float_t midline = (ascender - descender) * 0.5f;
 
-        static SR_THREAD_LOCAL std::vector<TextMeshDetails::TextLine> lines;
+        static SR_THREAD_LOCAL SR_UTILS_NS::Vector<TextMeshDetails::TextLine> lines;
 
         placements.clear();
         lines.clear();
@@ -52,41 +53,71 @@ namespace SR_GTYPES_NS::TextMeshDetails {
         TextMeshDetails::TextLine currentLine;
         currentLine.baselineY = ascender;
         float_t penX = 0.f;
-        std::optional<GlyphKey> prevCode;
+        SR_UTILS_NS::Optional<GlyphKey> prevCode;
+        float_t maxLineScale = 1.f;
+        float_t totalHeight = 0.f;
+        float_t preferredWidth = 0.f;
+        float_t minWidth = 0.f;
+        float_t wordWidth = 0.f;
 
         TextMeshDetails::Bounds bounds;
 
         auto finalizeLine = [&]() {
             currentLine.placementEnd = placements.size();
-            if (currentLine.placementEnd > currentLine.placementBegin) {
-                currentLine.penWidth = penX;
-                lines.push_back(currentLine);
-            }
+            currentLine.penWidth = penX;
+            currentLine.scale = maxLineScale;
+            lines.push_back(currentLine);
+            preferredWidth = std::max(preferredWidth, penX);
+            totalHeight += lineHeight * maxLineScale;
             currentLine = {};
-            currentLine.baselineY = lines.empty() ? ascender : lines.back().baselineY - lineHeight;
+            currentLine.baselineY = lines.back().baselineY - lineHeight * maxLineScale;
             currentLine.placementBegin = placements.size();
             penX = 0.f;
             prevCode.reset();
+            maxLineScale = 1.f;
         };
 
         for (size_t glyphIndex = 0; glyphIndex < glyphs.size(); ++glyphIndex) {
             auto&& glyph = glyphs[glyphIndex];
+            const float_t relativeScale = context.pScales ? (*context.pScales)[glyphIndex] : 1.f;
+            const float_t glyphScale = layoutScale * relativeScale;
 
             if (glyph.codepoint.codepoint == '\n') {
+                minWidth = std::max(minWidth, wordWidth);
+                wordWidth = 0.f;
                 finalizeLine();
                 continue;
+            }
+
+            if (context.wordWrap && context.layoutSize.x > 0.f && penX > 0.f && glyph.codepoint.codepoint != 32u
+                && (glyphIndex == 0 || glyphs[glyphIndex - 1].codepoint.codepoint == 32u)) {
+                float_t nextWordWidth = 0.f;
+                for (size_t i = glyphIndex; i < glyphs.size() && glyphs[i].codepoint.codepoint != 32u && glyphs[i].codepoint.codepoint != '\n'; ++i) {
+                    nextWordWidth += glyphs[i].metrics.advance * layoutScale * (context.pScales ? (*context.pScales)[i] : 1.f);
+                }
+                if (penX + nextWordWidth > context.layoutSize.x) {
+                    finalizeLine();
+                }
             }
 
             float_t kerning = 0.f;
             if (prevCode && context.kerning) {
                 kerning = fontAsset.GetKerning(prevCode.value(), glyph.codepoint);
-                kerning *= layoutScale;
+                kerning *= glyphScale;
             }
 
+            const bool newGrapheme = glyphIndex == 0 || !context.pGraphemes || (*context.pGraphemes)[glyphIndex] != (*context.pGraphemes)[glyphIndex - 1];
+            if (context.wordWrap && context.layoutSize.x > 0.f && penX > 0.f && newGrapheme
+                && penX + kerning + glyph.metrics.advance * glyphScale > context.layoutSize.x && glyph.codepoint.codepoint != 32u) {
+                finalizeLine();
+                kerning = 0.f;
+            }
+            maxLineScale = std::max(maxLineScale, relativeScale);
+
             const float_t cursorX = penX + kerning;
-            const float_t x = cursorX + glyph.metrics.bearingX * layoutScale;
-            const SR_MATH_NS::FVector2 size = glyph.metrics.size.CastToFloat() * layoutScale;
-            const float_t y = currentLine.baselineY + glyph.metrics.bearingY * layoutScale - size.y;
+            const float_t x = cursorX + glyph.metrics.bearingX * glyphScale;
+            const SR_MATH_NS::FVector2 size = glyph.metrics.size.CastToFloat() * glyphScale;
+            const float_t y = currentLine.baselineY + glyph.metrics.bearingY * glyphScale - size.y;
 
             placements.push_back({ glyphIndex, { x, y }, size });
             bounds.IncludeQuad(x, y, size);
@@ -95,13 +126,38 @@ namespace SR_GTYPES_NS::TextMeshDetails {
                 currentLine.spacePlacementIndices.push_back(placements.size() - 1);
             }
 
-            penX = cursorX + glyph.metrics.advance * layoutScale;
+            penX = cursorX + glyph.metrics.advance * glyphScale;
+            if (glyph.codepoint.codepoint == 32u) {
+                minWidth = std::max(minWidth, wordWidth);
+                wordWidth = 0.f;
+            }
+            else {
+                wordWidth += glyph.metrics.advance * glyphScale;
+            }
             prevCode = glyph.codepoint;
         }
         finalizeLine();
 
+        if (context.pPreferredSize) {
+            *context.pPreferredSize = { preferredWidth, glyphs.empty() ? 0.f : totalHeight };
+        }
+        if (context.pMinWidth) {
+            *context.pMinWidth = std::max(minWidth, wordWidth);
+        }
+
         if (placements.empty()) {
             return false;
+        }
+
+        float_t lineTop = 0.f;
+        for (auto&& line : lines) {
+            const float_t baseline = lineTop - ascender * line.scale;
+            const float_t offset = baseline - line.baselineY;
+            for (size_t i = line.placementBegin; i < line.placementEnd; ++i) {
+                placements[i].pos.y += offset;
+            }
+            line.baselineY = baseline;
+            lineTop -= lineHeight * line.scale;
         }
 
         const float_t firstBaselineY = lines.front().baselineY;
@@ -182,19 +238,19 @@ namespace SR_GTYPES_NS::TextMeshDetails {
             float_t dy = 0.f;
             switch (context.verticalAlignment) {
                 case TextAlignmentVertical::Top:
-                    dy = context.layoutSize.y - ascender - firstBaselineY;
+                    dy = context.layoutSize.y - ascender * lines.front().scale - firstBaselineY;
                     break;
                 case TextAlignmentVertical::Capline:
-                    dy = context.layoutSize.y - capline - firstBaselineY;
+                    dy = context.layoutSize.y - capline * lines.front().scale - firstBaselineY;
                     break;
                 case TextAlignmentVertical::Midline:
-                    dy = context.layoutSize.y - midline - firstBaselineY;
+                    dy = context.layoutSize.y - midline * lines.front().scale - firstBaselineY;
                     break;
                 case TextAlignmentVertical::Baseline:
-                    dy = context.layoutSize.y - ascender - firstBaselineY;
+                    dy = context.layoutSize.y - ascender * lines.front().scale - firstBaselineY;
                     break;
                 case TextAlignmentVertical::Bottom:
-                    dy = -descender - lastBaselineY;
+                    dy = -descender * lines.back().scale - lastBaselineY;
                     break;
                 case TextAlignmentVertical::Middle:
                     if (bounds.IsValid()) {

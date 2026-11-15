@@ -17,6 +17,54 @@
 #include <Codegen/Sprite.generated.hpp>
 
 namespace SR_GTYPES_NS {
+    bool Sprite::SetTexturePath(const SR_UTILS_NS::Path& path) {
+        SR_UTILS_NS::ResourceRef<Texture> texture(path);
+        if (!texture.GetResource()) {
+            SR_ERROR("Sprite::SetTexturePath() : resource not found: {}", path);
+            return false;
+        }
+        m_texture = std::move(texture);
+        OnTextureChanged();
+        return true;
+    }
+
+    void Sprite::OnTextureChanged() {
+        m_textureReloadSubscription.Reset();
+        if (auto pTexture = m_texture.GetResource()) {
+            m_textureReloadSubscription = pTexture->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
+                SetLayoutDirty();
+                MarkMaterialDirty();
+            });
+        }
+        SetLayoutDirty();
+        MarkMaterialDirty();
+    }
+
+    void Sprite::OnPostLoad() {
+        UIRenderComponent::OnPostLoad();
+        OnTextureChanged();
+    }
+
+    void Sprite::UseSamplers(Shader& shader) {
+        UIRenderComponent::UseSamplers(shader);
+        if (!m_texture.GetId().empty()) {
+            auto pTexture = m_texture.GetResource();
+            if (!pTexture) {
+                SR_ERROR("Sprite::UseSamplers() : resource not found: {}", m_texture.GetId());
+                return;
+            }
+            shader.SetSampler2D("diffuse", pTexture);
+        }
+    }
+
+    void Sprite::CalculateLayoutInput(bool horizontal) {
+        if (auto pTexture = m_texture.GetResource()) {
+            auto&& pCanvas = FindCanvas(GetSceneObject().Get());
+            const float_t scale = (pCanvas ? pCanvas->GetReferencePixelsPerUnit() : 100.f) / std::max(0.001f, pTexture->GetPPU());
+            m_preferredSize = SR_MATH_NS::FVector2(static_cast<float_t>(pTexture->GetWidth()), static_cast<float_t>(pTexture->GetHeight())) * scale;
+        }
+    }
+
     void Sprite::Draw() {
         SR_TRACY_ZONE;
 

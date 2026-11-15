@@ -166,7 +166,7 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
-    std::optional<int32_t> IndexedMesh::GetVBO() const {
+    SR_UTILS_NS::Optional<int32_t> IndexedMesh::GetVBO() const {
         if (!IsCalculated() && !const_cast<IndexedMesh*>(this)->Calculate()) SR_UNLIKELY_ATTRIBUTE {
             return SR_INVALID_VBO;
         }

@@ -12,12 +12,14 @@ namespace SR_GRAPH_NS {
         , m_useRGBA(useRGBA)
     {
         auto&& pBitmapData = (uint8_t*)SRMalloc(size.x * size.y * (useRGBA ? 4 : 1));
+        memset(pBitmapData, 0, size.x * size.y * (useRGBA ? 4 : 1));
         TextureLoadInfo loadInfo;
         loadInfo.channels = useRGBA ? 4 : 1;
         loadInfo.mips = 1;
         m_textureData = TextureData::Create(size.x, size.y, pBitmapData, [](uint8_t* pData) {
             SRFree(pData);
         }, loadInfo);
+        m_dirty = true;
     }
 
     void FontAtlasPage::CopyGlyphBitmap(const GlyphBitmap& bitmap, const SR_MATH_NS::USRect& destRect, SR_MATH_NS::USVector2 srcPixelSize) {
@@ -42,13 +44,13 @@ namespace SR_GRAPH_NS {
             for (uint32_t x = 0; x < destRect.w; ++x) {
                 const uint32_t destIndex = ((destRect.y + y) * m_pageSize.x + (destRect.x + x)) * (isRGBA ? 4 : 1);
                 if (isRGBA) {
-                    pData[destIndex + 0] = 255;
-                    pData[destIndex + 1] = 255;
-                    pData[destIndex + 2] = 255;
-                    pData[destIndex + 3] = 255;
+                    pData[destIndex + 0] = 0;
+                    pData[destIndex + 1] = 0;
+                    pData[destIndex + 2] = 0;
+                    pData[destIndex + 3] = 0;
                 }
                 else {
-                    pData[destIndex] = 255;
+                    pData[destIndex] = 0;
                 }
             }
         }

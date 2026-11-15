@@ -46,9 +46,16 @@ namespace SR_GRAPH_NS {
         if (async) {
             pFont->AddUsePoint();
             pAsset->AddUsePoint();
-            auto&& id = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pFont, pGlyph, pAsset](auto&&) {
-                ComputeGlyphBitmap(false, pFont, pGlyph, pAsset);
-                SR_DEBUG_LOG("FontAsset::ComputeGlyphBitmap() : asynchronously generated bitmap for codepoint {}!", pGlyph->codepoint.codepoint);
+            const auto key = pGlyph->codepoint;
+            const auto metrics = pGlyph->metrics;
+            const auto type = pGlyph->bitmap.type;
+            auto&& id = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pFont, key, metrics, type, pAsset](auto&&) {
+                FontDetails::Glyph glyph;
+                glyph.codepoint = key;
+                glyph.metrics = metrics;
+                glyph.bitmap.type = type;
+                ComputeGlyphBitmap(false, pFont, &glyph, pAsset);
+                SR_DEBUG_LOG("FontAsset::ComputeGlyphBitmap() : asynchronously generated bitmap for codepoint {}!", key.codepoint);
                 pFont->RemoveUsePoint();
                 pAsset->RemoveUsePoint();
             }, SR_UTILS_NS::TaskPriority::Normal);
@@ -60,15 +67,25 @@ namespace SR_GRAPH_NS {
         const uint8_t sdfInset  = static_cast<uint8_t>(ceil(pGlyph->metrics.sdfRange) + 1);
         const uint32_t bmpW = pGlyph->metrics.size.x;
         const uint32_t bmpH = pGlyph->metrics.size.y;
-        if (!pFont->GenerateMSDFOrMTSDF(pGlyph->codepoint.codepoint, pGlyph->bitmap.data, bmpW, bmpH, pGlyph->metrics.sdfRange, sdfInset, isMTSDF)) {
+        SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t> bitmap;
+        const bool generated = pFont->GenerateMSDFOrMTSDF(pGlyph->codepoint.codepoint, bitmap, bmpW, bmpH,
+            pGlyph->metrics.sdfRange, sdfInset, isMTSDF, static_cast<uint32_t>(std::max(1.f, pAsset->GetSamplingPointSize())));
+        if (!generated) {
             SR_ERROR("FontAsset::ComputeGlyphBitmap() : failed to generate MSDF (or MTSDF) for codepoint {}!", pGlyph->codepoint.codepoint);
             return;
         }
-        pAsset->OnGlyphBitmapGenerated(pGlyph->codepoint);
+        {
+            const std::lock_guard<std::recursive_mutex> glyphLock(pAsset->m_mutex);
+            if (auto&& pIt = pAsset->m_glyphs.find(pGlyph->codepoint); pIt != pAsset->m_glyphs.end()) {
+                pIt->second.bitmap.data = std::move(bitmap);
+                pAsset->OnGlyphBitmapGenerated(pGlyph->codepoint);
+            }
+        }
     }
 
-    bool FontAsset::BuildText(const std::string& text, float_t fontSize, SR_UTILS_NS::Vector<PositionedGlyph>& glyphs) {
+    bool FontAsset::BuildText(SR_UTILS_NS::StringView text, float_t fontSize, SR_UTILS_NS::Vector<PositionedGlyph>& glyphs) {
         SR_TRACY_ZONE;
+        SR_LOCK_GUARD;
 
         glyphs.clear();
 
@@ -127,6 +144,7 @@ namespace SR_GRAPH_NS {
 
             auto&& positionedGlyph = glyphs.emplace_back();
             positionedGlyph.metrics = pGlyph->metrics;
+            positionedGlyph.renderType = pGlyph->bitmap.type;
             positionedGlyph.codepoint = key;
             positionedGlyph.glyphIndex = glyphIndex++;
 
@@ -140,6 +158,7 @@ namespace SR_GRAPH_NS {
 
     FontDetails::Glyph* FontAsset::LoadGlyph(SR_GTYPES_NS::Font* pFont, const GlyphKey& key) {
         SR_TRACY_ZONE;
+        const std::lock_guard<std::recursive_mutex> faceLock(pFont->GetFaceMutex());
 
         static SR_THREAD_LOCAL SR_HTYPES_NS::FastMemoryArray<float> sdf;
 
@@ -332,6 +351,7 @@ namespace SR_GRAPH_NS {
         }
 
     #ifdef SR_USE_FREETYPE
+        const std::lock_guard<std::recursive_mutex> faceLock(pFont->GetFaceMutex());
         FT_Set_Pixel_Sizes(pFont->GetFontFace(), 0, m_samplingPointSize);
         m_ascender = static_cast<float_t>(pFont->GetFontFace()->size->metrics.ascender >> 6);
         m_descender = static_cast<float_t>(pFont->GetFontFace()->size->metrics.descender >> 6);
@@ -381,7 +401,7 @@ namespace SR_GRAPH_NS {
     float_t FontAsset::GetKerning(GlyphKey left, GlyphKey right) const {
         SR_TRACY_ZONE;
 
-        static constexpr std::string_view nonKerningChars = " \n\t";
+        static constexpr SR_UTILS_NS::StringView nonKerningChars = " \n\t";
         for (char c : nonKerningChars) {
             if (left.codepoint == static_cast<uint32_t>(c) || right.codepoint == static_cast<uint32_t>(c)) {
                 return 0.f;
@@ -410,11 +430,11 @@ namespace SR_GRAPH_NS {
     }
 
     void FontAsset::UpdateGlyphs() {
+        SR_LOCK_GUARD;
         if (m_dirtyGlyphs.empty()) {
             return;
         }
         SR_TRACY_ZONE;
-        SR_LOCK_GUARD;
         for (const GlyphKey& key : m_dirtyGlyphs) {
             if (auto pIt = m_glyphs.find(key); pIt != m_glyphs.end()) {
                 const FontDetails::Glyph& glyph = pIt->second;

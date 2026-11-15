@@ -29,8 +29,8 @@ namespace SR_GRAPH_NS {
             return codepoint == other.codepoint;
         }
 
-        SR_NODISCARD static bool DecodeUTF8(const std::string& str, uint64_t& i, uint32_t& out);
-        SR_NODISCARD static bool NextGlyphKey(const std::string& text, uint64_t& i, GlyphKey& key);
+        SR_NODISCARD static bool DecodeUTF8(SR_UTILS_NS::StringView str, uint64_t& i, uint32_t& out);
+        SR_NODISCARD static bool NextGlyphKey(SR_UTILS_NS::StringView text, uint64_t& i, GlyphKey& key);
     };
 
     struct SR_GRAPHICS_DLL_API GlyphRange : public SR_UTILS_NS::Serializable {
@@ -99,6 +99,7 @@ namespace SR_GRAPH_NS {
     }
 
     struct PositionedGlyph {
+        GlyphRenderType renderType = GlyphRenderType::MTSDF;
         GlyphKey codepoint;
         FontDetails::GlyphMetrics metrics;
         GlyphAtlas atlas;

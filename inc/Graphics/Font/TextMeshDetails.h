@@ -19,7 +19,8 @@ namespace SR_GTYPES_NS::TextMeshDetails {
         SR_UTILS_NS::SizeType placementEnd = 0;
         float_t penWidth = 0.f;
         float_t baselineY = 0.f;
-        std::vector<SR_UTILS_NS::SizeType> spacePlacementIndices;
+        float_t scale = 1.f;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::SizeType> spacePlacementIndices;
     };
 
     struct Bounds {
@@ -53,6 +54,11 @@ namespace SR_GTYPES_NS::TextMeshDetails {
         TextAlignmentHorizontal horizontalAlignment = TextAlignmentHorizontal::Left;
         TextAlignmentVertical verticalAlignment = TextAlignmentVertical::Top;
         SR_MATH_NS::FVector2 layoutSize;
+        bool wordWrap = false;
+        const SR_UTILS_NS::Vector<float_t>* pScales = nullptr;
+        const SR_UTILS_NS::Vector<uint32_t>* pGraphemes = nullptr;
+        SR_MATH_NS::FVector2* pPreferredSize = nullptr;
+        float_t* pMinWidth = nullptr;
     };
 
     bool CalculateGlyphPlacements(

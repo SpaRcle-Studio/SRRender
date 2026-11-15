@@ -19,7 +19,7 @@ namespace SR_GRAPH_UI_NS {
             m_renderScene = dynamic_cast<RenderScene*>(pScene->GetModule("Render"));
         }
 
-        Super::OnAttached();
+        SR_UTILS_NS::UIComponent::OnAttached();
     }
 
     SR_MATH_NS::FRect Canvas::LayoutToCanvasRect(const SR_MATH_NS::FRect& layoutRect) const {
@@ -34,6 +34,10 @@ namespace SR_GRAPH_UI_NS {
 
         SR_MATH_NS::FVector2 clientPos = pWindow->ScreenToClient(screenPosition.CastToInt()).CastToFloat();
 
+        return ClientToCanvasSpace(clientPos);
+    }
+
+    SR_MATH_NS::FVector2 Canvas::ClientToCanvasSpace(const SR_MATH_NS::FVector2& clientPos) const {
         const SR_MATH_NS::FRect viewportRect = GetViewportRect();
 
         const SR_MATH_NS::FVector2 viewportSize = viewportRect.Size();
@@ -73,6 +77,21 @@ namespace SR_GRAPH_UI_NS {
         return rect.GetLayoutRect().Contains(CanvasToLayoutPoint(rect, ScreenToCanvasSpace(screenPosition)));
     }
 
+    SR_MATH_NS::FVector2 Canvas::PointerToCanvasSpace(const SR_UTILS_NS::PointerEvent& event) const {
+        return event.space == SR_UTILS_NS::PointerSpace::Client ? ClientToCanvasSpace(event.position) : ScreenToCanvasSpace(event.position);
+    }
+
+    bool Canvas::ContainsPointer(const SR_UTILS_NS::TransformRect& rect, const SR_UTILS_NS::PointerEvent& event) const {
+        if (event.space == SR_UTILS_NS::PointerSpace::Screen) {
+            return ContainsScreenPoint(rect, event.position);
+        }
+        if (m_viewportRect.Width() <= 0.f || m_viewportRect.Height() <= 0.f
+            || !m_viewportRect.Contains(event.position) || rect.GetGlobalScale().HasZero()) {
+            return false;
+        }
+        return rect.GetLayoutRect().Contains(CanvasToLayoutPoint(rect, ClientToCanvasSpace(event.position)));
+    }
+
     SR_MATH_NS::FVector2 Canvas::CanvasToLayoutPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& canvasPosition) const {
         const auto point = canvasPosition * m_scaleFactor + m_size.CastToFloat() / 2.f;
         const auto local = rect.GetMatrix().Inverse().TransformPoint({ point.x, point.y, 0.f });
@@ -86,7 +105,7 @@ namespace SR_GRAPH_UI_NS {
         return nullptr;
     }
 
-    void Canvas::Update(float_t dt) {
+    void Canvas::PrepareUIInput() {
         if (m_renderScene) {
             SR_MATH_NS::UVector2 windowSize;
 
@@ -146,7 +165,7 @@ namespace SR_GRAPH_UI_NS {
             }
         }
 
-        Super::Update(dt);
+        SR_UTILS_NS::UIComponent::PrepareUIInput();
     }
 
     void Canvas::SetScaleFactor(float_t scaleFactor) {
@@ -158,20 +177,16 @@ namespace SR_GRAPH_UI_NS {
 
     SR_GRAPH_NS::UI::Canvas* IFindCanvasOwner::FindCanvas(const SR_UTILS_NS::SceneObject* pSO) {
         SR_TRACY_ZONE;
-
-        if (auto&& pCanvas = m_canvas.Get()) {
-            return pCanvas.Get();
-        }
-
-        SR_UTILS_NS::SceneObject::Ptr pParent = pSO->GetParent();
-        while (pParent) {
-            if (auto&& pCanvas = pParent->GetComponent<SR_GRAPH_NS::UI::Canvas>()) {
+        auto&& pCurrentStart = const_cast<SR_UTILS_NS::SceneObject*>(pSO);
+        SR_UTILS_NS::SceneObject* pCurrent = pCurrentStart;
+        while (pCurrent) {
+            if (auto pCanvas = pCurrent->GetComponent<SR_GRAPH_NS::UI::Canvas>()) {
                 m_canvas.SetEntityId(pCanvas->GetEntityId());
                 return pCanvas.Get();
             }
-            pParent = pParent->GetParent();
+            pCurrent = const_cast<SR_UTILS_NS::SceneObject*>(pCurrent->GetParent().Get());
         }
-
+        m_canvas.SetEntityId(SR_UTILS_NS::SR_INVALID_ENTITY_ID);
         return nullptr;
     }
 

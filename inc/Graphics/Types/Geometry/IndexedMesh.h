@@ -20,7 +20,7 @@ namespace SR_GTYPES_NS {
 
     public:
         SR_NODISCARD std::optional<int32_t> GetIBO() const override;
-        SR_NODISCARD std::optional<int32_t> GetVBO() const override;
+        SR_NODISCARD SR_UTILS_NS::Optional<int32_t> GetVBO() const override;
 
         SR_NODISCARD uint32_t GetIndicesCount() const override { return m_countIndices; }
 

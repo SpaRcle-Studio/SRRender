@@ -49,7 +49,7 @@ namespace SR_GRAPH_NS {
 
         void OnRawMeshChanged() override;
 
-        SR_NODISCARD std::optional<int32_t> GetVBO() const override;
+        SR_NODISCARD SR_UTILS_NS::Optional<int32_t> GetVBO() const override;
         SR_NODISCARD std::optional<int32_t> GetIBO() const override;
         SR_NODISCARD int32_t GetVirtualUBO() const override { return m_virtualUBO; }
 

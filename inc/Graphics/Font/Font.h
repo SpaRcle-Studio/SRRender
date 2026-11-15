@@ -45,12 +45,15 @@ namespace SR_GTYPES_NS {
 
         bool GenerateMSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding) const;
         bool GenerateMTSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding) const;
-        bool GenerateMSDFOrMTSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding, bool isMTSDF) const;
+        bool GenerateMSDFOrMTSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding, bool isMTSDF, uint32_t samplingPointSize = 0) const;
 
         SR_NODISCARD SR_UTILS_NS::Path GetAssociatedPath() const override;
 
         bool SetPixelSizes(uint32_t w, uint32_t h);
         bool SetCharSize(uint32_t w, uint32_t h, uint32_t wRes, uint32_t hRes);
+        std::recursive_mutex& GetFaceMutex() const noexcept {
+            return m_faceMutex;
+        }
 
     protected:
         bool Unload() override;
@@ -63,6 +66,7 @@ namespace SR_GTYPES_NS {
 
         bool m_hasColor = false;
         bool m_isColorEmoji = false;
+        mutable std::recursive_mutex m_faceMutex;
 
     };
 }

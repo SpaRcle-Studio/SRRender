@@ -67,8 +67,8 @@ namespace SR_GTYPES_NS {
         return std::nullopt;
     }
 
-    std::optional<int32_t> IRenderComponent::GetVBO() const {
-        return std::nullopt;
+    SR_UTILS_NS::Optional<int32_t> IRenderComponent::GetVBO() const {
+        return {};
     }
 
     void IRenderComponent::SetRegistrationInfo(const std::optional<RenderObjectRegistrationInfoInternal>& info) {
@@ -100,7 +100,9 @@ namespace SR_GTYPES_NS {
         RenderObjectRegistrationInfo info = { };
         info.pObject = const_cast<IRenderComponent*>(this);
         info.internal.pMaterial = const_cast<BaseMaterial*>(GetMaterial().Get());
-        info.internal.VBO = GetVBO();
+        if (const auto vbo = GetVBO()) {
+            info.internal.VBO = vbo.value();
+        }
         info.internal.castShadows = IsCastShadows();
         info.internal.colorBuffer = IsUseColorBuffer();
 

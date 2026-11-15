@@ -323,13 +323,13 @@ namespace SR_GRAPH_NS {
         return SR_UTILS_NS::VertexLayoutDescriptionsRef(ParticleEmitterVertexLayout);
     }
 
-    std::optional<int32_t> ParticleEmitter::GetVBO() const {
+    SR_UTILS_NS::Optional<int32_t> ParticleEmitter::GetVBO() const {
         const_cast<ParticleEmitter&>(*this).Calculate();
         /// Возвращается буфер нулевого кадра, а не текущего: RenderQueue использует это значение
         /// как ключ сортировки и удаления из очереди, поэтому оно обязано быть стабильным.
         /// Фактическая привязка буфера текущего кадра происходит в Bind().
         if (m_VBOs[0] == SR_ID_INVALID){
-            return std::nullopt;
+            return {};
         }
         return m_VBOs[0];
     }

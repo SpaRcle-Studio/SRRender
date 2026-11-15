@@ -149,7 +149,7 @@ namespace SR_GTYPES_NS {
     bool Mesh::Bind() {
         SR_TRACY_ZONE;
 
-        if (auto&& VBO = GetVBO(); VBO && VBO != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
+        if (auto&& VBO = GetVBO(); VBO && VBO.value() != SR_ID_INVALID) SR_LIKELY_ATTRIBUTE {
             GetPipeline()->BindVBO(VBO.value(), 0, VertexInputRate::Vertex);
         }
         else {

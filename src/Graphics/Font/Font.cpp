@@ -86,6 +86,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Font::SetPixelSizes(uint32_t w, uint32_t h) {
+        const std::lock_guard<std::recursive_mutex> faceLock(m_faceMutex);
     #ifdef SR_USE_FREETYPE
         if (IsColorEmoji()) {
             if (m_face->num_fixed_sizes == 0) {
@@ -120,6 +121,7 @@ namespace SR_GTYPES_NS {
     }
 
     bool Font::SetCharSize(uint32_t w, uint32_t h, uint32_t wRes, uint32_t hRes) {
+        const std::lock_guard<std::recursive_mutex> faceLock(m_faceMutex);
     #ifdef SR_USE_FREETYPE
         if (auto&& err = FT_Set_Char_Size(m_face, w, h, wRes, hRes)) {
             SR_ERROR("Font::SetCharSize() : failed to set char size!\n\tError: " + SRFreeTypeErrToString(err));
@@ -131,6 +133,7 @@ namespace SR_GTYPES_NS {
     }
 
     int32_t Font::GetKerning(uint32_t leftCharCode, uint32_t rightCharCode) const {
+        const std::lock_guard<std::recursive_mutex> faceLock(m_faceMutex);
     #ifdef SR_USE_FREETYPE
         if (!FT_HAS_KERNING(m_face)) {
             return 0;
@@ -161,6 +164,7 @@ namespace SR_GTYPES_NS {
     }
 
     FT_Glyph Font::GetGlyph(char32_t code, FT_Render_Mode renderMode, FT_Int32 charLoad, FT_Int32 glyphLoad) const {
+        const std::lock_guard<std::recursive_mutex> faceLock(m_faceMutex);
          FT_Glyph glyph = nullptr;
 
         if (FT_Load_Char(m_face, code, charLoad)) {
@@ -197,7 +201,7 @@ namespace SR_GTYPES_NS {
         return GenerateMSDFOrMTSDF(code, out, width, height, range, padding, true);
     }
 
-    bool Font::GenerateMSDFOrMTSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding, bool isMTSDF) const {
+    bool Font::GenerateMSDFOrMTSDF(const char32_t code, SR_HTYPES_NS::FastMemoryArray<uint8_t, true, uint32_t>& out, uint32_t width, uint32_t height, float_t range, uint8_t padding, bool isMTSDF, uint32_t samplingPointSize) const {
         SR_TRACY_ZONE;
 
         if (width == 0 || height == 0) {
@@ -205,11 +209,16 @@ namespace SR_GTYPES_NS {
         }
 
     #if defined(SR_RENDER_USE_MSDFGEN) && defined(SR_USE_FREETYPE)
+        std::unique_lock<std::recursive_mutex> faceLock(m_faceMutex);
         if (!m_face) {
             SR_ERROR("Font::GenerateMSDFOrMTSDF() : font face is null!");
             return false;
         }
 
+        if (samplingPointSize != 0 && FT_Set_Pixel_Sizes(m_face, 0, samplingPointSize)) {
+            SR_ERROR("Font::GenerateMSDFOrMTSDF() : failed to set sampling size!");
+            return false;
+        }
         const FT_UInt glyphIndex = FT_Get_Char_Index(m_face, code);
         if (FT_Load_Glyph(m_face, glyphIndex, FT_LOAD_NO_BITMAP)) {
             SR_ERROR("Font::GenerateMSDFOrMTSDF() : FT_Load_Glyph failed for codepoint {}!", static_cast<uint32_t>(code));
@@ -222,6 +231,7 @@ namespace SR_GTYPES_NS {
             return false;
         }
 
+        shape.normalize();
         msdfgen::edgeColoringSimple(shape, 3.0);
 
         const msdfgen::Shape::Bounds bounds = shape.getBounds();
@@ -250,6 +260,7 @@ namespace SR_GTYPES_NS {
             return static_cast<double>((v + static_cast<FT_Pos>(63)) >> 6);
         };
         const double coreBearingYPx = ceil26d6Signed(m_face->glyph->metrics.horiBearingY);
+        faceLock.unlock();
 
         /// Строка baseline в выходной текстуре (сверху вниз): pad + расстояние от верха **core** до baseline в px при sampling size.
         /// Без вертикального letterboxing: иначе чернила «плавают» внутри квада относительно bearingY в TextMesh.
@@ -278,6 +289,7 @@ namespace SR_GTYPES_NS {
             {
                 SR_TRACY_ZONE_N("msdfgen::generateMTSDF");
                 msdfgen::generateMTSDF(mtsdf, shape, proj, range);
+                msdfgen::distanceSignCorrection(mtsdf, shape, proj, 0.5);
             }
 
             out.resize(width * height * 4);
@@ -299,6 +311,7 @@ namespace SR_GTYPES_NS {
             {
                 SR_TRACY_ZONE_N("msdfgen::generateMSDF");
                 msdfgen::generateMSDF(msdf, shape, proj, range);
+                msdfgen::distanceSignCorrection(msdf, shape, proj, 0.5);
             }
 
             out.resize(width * height * 4);
