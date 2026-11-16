@@ -52,11 +52,13 @@ namespace SR_GRAPH_UI_NS {
         void SetScaleFactor(float_t scaleFactor);
         SR_NODISCARD const SR_MATH_NS::FRect& GetViewportRect() const noexcept { return m_viewportRect; }
 
+        /// @method @evaluate
         SR_NODISCARD SR_MATH_NS::FVector2 ScreenToCanvasSpace(const SR_MATH_NS::FVector2& screenPosition) const;
         SR_NODISCARD SR_MATH_NS::FVector2 ClientToCanvasSpace(const SR_MATH_NS::FVector2& clientPosition) const;
         SR_NODISCARD SR_MATH_NS::FVector2 PointerToCanvasSpace(const SR_UTILS_NS::PointerEvent& event) const;
         SR_NODISCARD bool ContainsPointer(const SR_UTILS_NS::TransformRect& rect, const SR_UTILS_NS::PointerEvent& event) const;
         SR_NODISCARD bool ContainsScreenPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& screenPosition) const;
+        /// @method @evaluate
         SR_NODISCARD SR_MATH_NS::FVector2 CanvasToLayoutPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& canvasPosition) const;
         SR_NODISCARD SR_MATH_NS::FRect LayoutToCanvasRect(const SR_MATH_NS::FRect& layoutRect) const;
         SR_NODISCARD float_t GetReferencePixelsPerUnit() const noexcept { return m_referencePixelsPerUnit; }

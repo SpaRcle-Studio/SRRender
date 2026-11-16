@@ -58,7 +58,7 @@ namespace SR_GTYPES_NS {
     }
 
     void Sprite::CalculateLayoutInput(bool horizontal) {
-        if (auto pTexture = m_texture.GetResource()) {
+        if (auto&& pTexture = m_texture.GetResource(); pTexture && pTexture->CanBeUsed()) {
             auto&& pCanvas = FindCanvas(GetSceneObject().Get());
             const float_t scale = (pCanvas ? pCanvas->GetReferencePixelsPerUnit() : 100.f) / std::max(0.001f, pTexture->GetPPU());
             m_preferredSize = SR_MATH_NS::FVector2(static_cast<float_t>(pTexture->GetWidth()), static_cast<float_t>(pTexture->GetHeight())) * scale;

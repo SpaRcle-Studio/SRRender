@@ -102,11 +102,13 @@ namespace SR_GRAPH_NS {
     }
 
     bool Window::IsFullScreen() const {
-        return false;
+        return m_windowImpl && m_windowImpl->IsFullScreen();
     }
 
     void Window::SetFullScreen(bool value) {
-
+        if (m_windowImpl) {
+            m_windowImpl->SetFullScreen(value);
+        }
     }
 
     void Window::SetFocusCallback(const Window::FocusCallback &callback) {

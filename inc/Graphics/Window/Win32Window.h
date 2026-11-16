@@ -6,6 +6,7 @@
 #define SR_ENGINE_WIN32WINDOW_H
 
 #include <Graphics/Window/BasicWindowImpl.h>
+#include <Utils/Types/Optional.h>
 
 /// TODO: move to platform class
 #include <Windows.h>
@@ -58,6 +59,8 @@ namespace SR_GRAPH_NS {
         void SetIcon(const std::string& path) override;
         void Move(int32_t x, int32_t y) override;
         void Resize(uint32_t w, uint32_t h) override;
+        bool IsFullScreen() override { return m_fullscreen.load(); }
+        void SetFullScreen(bool value) override;
 
     private:
         LRESULT CALLBACK ReadWmdProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -65,10 +68,14 @@ namespace SR_GRAPH_NS {
 
     private:
         std::atomic<WinAPI::StyleState> m_styleState;
+        std::atomic<bool> m_fullscreen = false;
+        WINDOWPLACEMENT m_windowedPlacement = { sizeof(WINDOWPLACEMENT) };
+        LONG_PTR m_windowedStyle = 0;
+        bool m_windowedHeaderEnabled = true;
 
         SR_UTILS_NS::Vector<void*> m_viewports;
         SR_MATH_NS::IVector2 m_position;
-        mutable std::optional<float_t> m_screenDPI;
+        mutable SR_UTILS_NS::Optional<float_t> m_screenDPI;
 
         HWND      m_hWnd       = nullptr;
         HDC       m_hDC        = nullptr;

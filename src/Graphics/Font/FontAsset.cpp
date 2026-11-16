@@ -218,7 +218,8 @@ namespace SR_GRAPH_NS {
         glyph.codepoint = key;
         glyph.bitmap.type = renderType;
         glyph.metrics.fontId = m_fontId;
-        glyph.metrics.sdfRange = SR_CLAMP(m_samplingPointSize * 0.1f, 4.0f, 16.0f);
+        glyph.metrics.sdfRange = m_sdfRange > 0.f ? SR_CLAMP(m_sdfRange, 1.f, 64.f)
+            : SR_CLAMP(m_samplingPointSize * 0.1f, 4.0f, 16.0f);
 
         if (rasterizeWithMsdfDims) {
             /// 26.6 → px: ceil для размеров ячейки.

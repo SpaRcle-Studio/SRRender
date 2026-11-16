@@ -86,6 +86,7 @@ namespace SR_GRAPH_NS {
         virtual void SetIcon(const std::string& path) { }
         virtual void SetHeaderEnabled(bool enable) { }
         virtual bool IsFullScreen() { return false; }
+        virtual void SetFullScreen(bool value) { }
 
         SR_NODISCARD virtual void* GetHandle() const;
 

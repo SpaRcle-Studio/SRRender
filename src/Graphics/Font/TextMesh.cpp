@@ -198,13 +198,15 @@ namespace SR_GTYPES_NS {
                 batch.buffer.SetLayout(layout);
                 batch.buffer.Allocate(cache.placements.size() * 3);
             }
+            const float_t scale = m_fontSize * style.relativeSize / std::max(1.f, m_font.GetResource()->GetSamplingPointSize());
             const auto addQuad = [&](const SR_MATH_NS::FVector2& position, const SR_MATH_NS::FVector2& size, float_t kind) {
                 const uint32_t index = batch.count++;
                 glyph.AddInstance(index, position, size, batch.buffer);
                 const SR_MATH_NS::FVector4 metadata(static_cast<float_t>(grapheme), style.bold ? 1.f : 0.f, style.italic ? 1.f : 0.f, kind);
                 batch.buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Color0, &style.color);
                 batch.buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Custom0, &metadata);
-                const SR_MATH_NS::FVector4 effectIndex(static_cast<float_t>(visibleGlyphIndex), glyph.metrics.sdfRange, 0.f, 0.f);
+                const SR_MATH_NS::FVector4 effectIndex(static_cast<float_t>(visibleGlyphIndex), glyph.metrics.sdfRange,
+                    glyph.renderType == GlyphRenderType::MTSDF ? 1.f : 0.f, scale);
                 batch.buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Custom1, &effectIndex);
             };
             const float_t kind = glyph.renderType == GlyphRenderType::ColorBitmap ? 3.f
@@ -212,7 +214,6 @@ namespace SR_GTYPES_NS {
             if (placement.size.x > 0.f && placement.size.y > 0.f) {
                 addQuad(placement.pos, placement.size, kind);
             }
-            const float_t scale = m_fontSize * style.relativeSize / std::max(1.f, m_font.GetResource()->GetSamplingPointSize());
             const float_t advance = glyph.metrics.advance * scale;
             const float_t baseline = placement.pos.y - glyph.metrics.bearingY * scale + placement.size.y;
             if (style.underline) {

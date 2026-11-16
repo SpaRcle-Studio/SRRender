@@ -71,6 +71,8 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Vector<GlyphRange> m_preloadGlyphRanges;
         /// @property @group(Generation)
         float_t m_samplingPointSize = 86;
+        /// @property @group(Generation) @resetValue(0.f)
+        float_t m_sdfRange = 0.f;
         /// @property @group(Generation)
         SR_MATH_NS::UVector2 m_atlasSize = { 1024, 1024 };
         /// @property @group(Generation)

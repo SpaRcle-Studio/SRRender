@@ -20,14 +20,53 @@ namespace SR_GRAPH_NS::WinAPI {
 }
 
 namespace SR_GRAPH_NS {
+    void Win32Window::SetFullScreen(bool value) {
+        if (m_hWnd) {
+            PostMessage(m_hWnd, WM_APP + 0x135, value ? 1 : 0, 0);
+        }
+    }
+
     LRESULT Win32Window::ReadWmdProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)  {
         SR_TRACY_ZONE;
 
         switch (msg) {
+            case WM_APP + 0x135: {
+                const bool fullscreen = wParam != 0;
+                if (fullscreen == m_fullscreen.load()) {
+                    return 0;
+                }
+                if (fullscreen) {
+                    MONITORINFO monitor = { sizeof(MONITORINFO) };
+                    if (!GetWindowPlacement(hwnd, &m_windowedPlacement)
+                        || !GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &monitor)) {
+                        SR_ERROR("Win32Window::ReadWmdProcedure() : unable to query fullscreen monitor.");
+                        return 0;
+                    }
+                    m_windowedStyle = GetWindowLongPtr(hwnd, GWL_STYLE);
+                    m_windowedHeaderEnabled = m_headerEnabled;
+                    m_headerEnabled = false;
+                    SetWindowLongPtr(hwnd, GWL_STYLE, m_windowedStyle & ~WS_OVERLAPPEDWINDOW);
+                    SetWindowPos(hwnd, HWND_TOP, monitor.rcMonitor.left, monitor.rcMonitor.top,
+                        monitor.rcMonitor.right - monitor.rcMonitor.left, monitor.rcMonitor.bottom - monitor.rcMonitor.top,
+                        SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+                }
+                else {
+                    m_headerEnabled = m_windowedHeaderEnabled;
+                    SetWindowLongPtr(hwnd, GWL_STYLE, m_windowedStyle);
+                    SetWindowPlacement(hwnd, &m_windowedPlacement);
+                    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+                }
+                m_fullscreen = fullscreen;
+                return 0;
+            }
             case WM_CREATE: {
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
             case WM_NCHITTEST: {
+                if (m_fullscreen.load()) {
+                    return HTCLIENT;
+                }
                 auto point = POINT { LOWORD(lParam), HIWORD(lParam) };
 
                 /// Convert screen coordinates into client
