@@ -5,6 +5,7 @@
 #include <Graphics/Types/IRenderComponent.h>
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/Material/FileMaterial.h>
+#include <Graphics/Types/Shader.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Memory/DescriptorManager.h>
 
@@ -346,6 +347,31 @@ namespace SR_GTYPES_NS {
     UIRenderComponent::~UIRenderComponent() {
         SRAssert(m_virtualUBO == SR_ID_INVALID);
         SRAssert(m_virtualDescriptor == SR_ID_INVALID);
+    }
+
+    void UIRenderComponent::SetSubtreeOpacity(float_t opacity) {
+        SR_TRACY_ZONE;
+        if (auto&& pObject = GetSceneObject()) {
+            ApplySubtreeOpacity(*pObject, SR_CLAMP(opacity, 0.f, 1.f));
+        }
+    }
+
+    void UIRenderComponent::ApplySubtreeOpacity(SR_UTILS_NS::SceneObject& object, float_t opacity) {
+        for (auto&& pComponent : object.GetComponents()) {
+            if (auto&& pUI = const_cast<UIRenderComponent*>(dynamic_cast<const UIRenderComponent*>(pComponent.Get())); pUI && pUI->m_opacity != opacity) {
+                pUI->m_opacity = opacity;
+                pUI->MarkUniformsDirty();
+            }
+        }
+        for (auto&& pChild : object.GetChildrenRef()) {
+            ApplySubtreeOpacity(*pChild, opacity);
+        }
+    }
+
+    void UIRenderComponent::UseModelMatrix(Shader& shader) {
+        IRenderComponent::UseModelMatrix(shader);
+        static const SR_UTILS_NS::StringAtom opacityId = "uiOpacity";
+        shader.SetFloat(opacityId, m_opacity);
     }
 
     void UIRenderComponent::OnMaskDirty() {

@@ -141,6 +141,9 @@ namespace SR_GTYPES_NS {
 
         void OnMaskDirty() override;
         void FreeVideoMemory() override;
+        void UseModelMatrix(Shader& shader) override;
+        /// @method
+        void SetSubtreeOpacity(float_t opacity);
 
     protected:
         bool m_isCalculated = false;
@@ -148,6 +151,8 @@ namespace SR_GTYPES_NS {
         int32_t m_virtualDescriptor = SR_ID_INVALID;
 
     private:
+        static void ApplySubtreeOpacity(SR_UTILS_NS::SceneObject& object, float_t opacity);
+        float_t m_opacity = 1.f;
         mutable bool m_isMaskDirty = true;
         mutable SR_UTILS_NS::UI::MaskInfo m_maskInfo;
 

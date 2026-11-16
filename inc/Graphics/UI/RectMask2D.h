@@ -8,15 +8,14 @@
 #include <Graphics/Render/RenderScene.h>
 #include <Graphics/UI/Canvas.h>
 
-#include <Utils/ECS/Component.h>
+#include <Utils/UI/UIComponent.h>
 #include <Utils/ECS/EntityRef.h>
 #include <Utils/UI/MaskInfo.h>
 
 namespace SR_GRAPH_NS::UI {
     /// @category(UI)
-    class RectMask2D final : public SR_UTILS_NS::Component, public IFindCanvasOwner {
+    class RectMask2D final : public SR_UTILS_NS::UIComponent, public IFindCanvasOwner {
         SR_CLASS()
-        using Super = SR_UTILS_NS::Component;
     public:
         RectMask2D() = default;
 
@@ -27,6 +26,7 @@ namespace SR_GRAPH_NS::UI {
         void OnDisable() override;
         void OnDetached() override;
         void OnMatrixDirty() override;
+        void AfterLayout() override;
 
     private:
         void UpdateClipping(bool enable);
