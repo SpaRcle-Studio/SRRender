@@ -108,6 +108,12 @@ namespace SR_GRAPH_NS {
         /// Конец записи в буфер команд. Разделение необходимо некоторым графическим API
         virtual void EndCmdBuffer();
 
+        /// Call EndGpuZone only when BeginGpuZone returns true; zones must be nested within one command buffer.
+        virtual bool BeginGpuZone(SR_UTILS_NS::StringAtom name) {
+            return false;
+        }
+        virtual void EndGpuZone() { }
+
         /// Начало рендера в кадровый буфер или в SwapChain
         virtual bool BeginRender();
 

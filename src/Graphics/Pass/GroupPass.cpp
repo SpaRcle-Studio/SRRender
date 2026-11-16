@@ -3,6 +3,7 @@
 //
 
 #include <Graphics/Pass/GroupPass.h>
+#include <Graphics/Pipeline/Pipeline.h>
 
 #include <Codegen/GroupPass.generated.hpp>
 
@@ -88,8 +89,12 @@ namespace SR_GRAPH_NS {
 
         for (auto&& pPass : m_passes) {
             if (pPass->HasRender()) {
+                const bool gpuZone = GetPipeline()->BeginGpuZone(pPass->GetPassName());
                 pPass->Bind();
                 hasDrawData |= pPass->Render();
+                if (gpuZone) {
+                    GetPipeline()->EndGpuZone();
+                }
             }
         }
 

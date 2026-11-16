@@ -130,6 +130,9 @@ namespace SR_GRAPH_NS {
         bool BeginCmdBuffer() override;
         void EndCmdBuffer() override;
 
+        bool BeginGpuZone(SR_UTILS_NS::StringAtom name) override;
+        void EndGpuZone() override;
+
         bool BeginRender() override;
         void EndRender() override;
 

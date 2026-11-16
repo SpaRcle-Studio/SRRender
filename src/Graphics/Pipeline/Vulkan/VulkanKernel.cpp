@@ -10,6 +10,7 @@
 #include <Graphics/Window/Window.h>
 #include <Graphics/Window/BasicWindowImpl.h>
 #include <Graphics/Types/Framebuffer.h>
+#include <Graphics/Pipeline/Vulkan/VulkanTracy.h>
 
 #ifdef SR_ANDROID
     #include <Graphics/Window/AndroidWindow.h>

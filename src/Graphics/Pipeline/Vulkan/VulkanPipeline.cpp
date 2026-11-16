@@ -70,6 +70,22 @@ namespace SR_GRAPH_NS {
     };
 
     struct VulkanPipelineInternalData {
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        tracy::VkCtx* pTracyContext = nullptr;
+        alignas(tracy::VkCtxScope) uint8_t tracyFrameStorage[sizeof(tracy::VkCtxScope)];
+        alignas(tracy::VkCtxScope) uint8_t tracyRenderStorage[sizeof(tracy::VkCtxScope)];
+        tracy::VkCtxScope* pTracyFrameZone = nullptr;
+        tracy::VkCtxScope* pTracyRenderZone = nullptr;
+        bool tracyComputeZone = false;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::Map<uint64_t, tracy::SourceLocationData>> tracyRenderSources;
+        struct TracyPassSlot {
+            alignas(tracy::VkCtxScope) uint8_t storage[sizeof(tracy::VkCtxScope)];
+            tracy::VkCtxScope* pZone = nullptr;
+        };
+        uint32_t tracyPassDepth = 0;
+        SR_UTILS_NS::Map<uint32_t, TracyPassSlot> tracyPassSlots;
+        SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, tracy::SourceLocationData> tracyPassSources;
+	#endif
         VkViewport viewport = { };
         VkRect2D scissor = { };
         VkRect2D activeScissor = { };
@@ -92,9 +108,9 @@ namespace SR_GRAPH_NS {
         VkCommandBuffer currentCmd  = VK_NULL_HANDLE;
         VkPipelineLayout currentLayout = VK_NULL_HANDLE;
 
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-        mutable std::unordered_map<uint64_t, PixelRangeRequest> pixelRequests;
-        std::vector<VkClearValue> clearValues;
+        SR_UTILS_NS::Vector<VkWriteDescriptorSet> writeDescriptorSets;
+        mutable SR_HTYPES_NS::FlatHashMap<uint64_t, PixelRangeRequest> pixelRequests;
+        SR_UTILS_NS::Vector<VkClearValue> clearValues;
     };
 
     namespace Details {
@@ -169,7 +185,11 @@ namespace SR_GRAPH_NS {
         }
     #endif
 
+        WaitDeviceIdle();
         SR_TRACY_DESTROY(SR_UTILS_NS::TracyType::Vulkan);
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        m_internalData->pTracyContext = nullptr;
+	#endif
 
         // Освобождаем все активные запросы пикселей
         if (m_kernel && m_kernel->GetDevice()) {
@@ -322,7 +342,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-    #ifdef SR_TRACY_ENABLE
+    #if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
         SR_UTILS_NS::TracyContextManager::Instance().VulkanDestroy = [](void* pContext) {
             TracyVkDestroy((tracy::VkCtx*)pContext);
         };
@@ -1839,13 +1859,20 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-    #ifdef SR_TRACY_ENABLE
+    #if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
         if (SR_UTILS_NS::Features::Instance().Enabled("VulkanTracy", false)) {
-            if (auto&& pSingleTimeCmd = m_kernel->CreateCmd()) {
-                SR_GRAPH_LOG("VulkanPipeline::PostInit() : initializing tracy...");
-                SR_TRACY_VK_CREATE(*pSingleTimeCmd, m_kernel, "EvoVulkan");
-                delete pSingleTimeCmd;
+            uint32_t queueFamilyCount = 0;
+            vkGetPhysicalDeviceQueueFamilyProperties(*m_kernel->GetDevice(), &queueFamilyCount, nullptr);
+            SR_UTILS_NS::Vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+            vkGetPhysicalDeviceQueueFamilyProperties(*m_kernel->GetDevice(), &queueFamilyCount, queueFamilies.data());
+            const uint32_t graphicsFamily = static_cast<uint32_t>(m_kernel->GetDevice()->GetQueues()->GetGraphicsIndex());
+            if (graphicsFamily >= queueFamilyCount || queueFamilies[graphicsFamily].timestampValidBits == 0) {
+                SR_WARN("VulkanPipeline::PostInit() : graphics queue does not support timestamps; Tracy GPU profiling disabled.");
+                return Super::PostInit();
             }
+            SR_GRAPH_LOG("VulkanPipeline::PostInit() : initializing Tracy Vulkan GPU profiling...");
+            SR_TRACY_VK_CREATE(m_kernel, "EvoVulkan");
+            m_internalData->pTracyContext = (tracy::VkCtx*)pTracyVkCreateContext;
         }
     #endif
 
@@ -1930,7 +1957,21 @@ namespace SR_GRAPH_NS {
             }
         }
 
-        vkBeginCommandBuffer(m_internalData->currentCmd, &m_internalData->cmdBufInfo);
+        if (vkBeginCommandBuffer(m_internalData->currentCmd, &m_internalData->cmdBufInfo) != VK_SUCCESS) {
+            PipelineError("VulkanPipeline::BeginCmdBuffer() : failed to begin command buffer!");
+            return false;
+        }
+
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (m_internalData->pTracyContext && !m_isComputeState) {
+            static constexpr tracy::SourceLocationData source = {
+                "Scene GPU", TracyFunction, TracyFile, (uint32_t)TracyLine, 0x4080c0
+            };
+            m_internalData->pTracyFrameZone = new (m_internalData->tracyFrameStorage) tracy::VkCtxScope(
+                m_internalData->pTracyContext, &source, m_internalData->currentCmd, true);
+        }
+	#endif
+
         if (!m_isComputeState && m_kernel->GetSwapchain() && frameIndex < m_kernel->GetSwapchain()->GetSwapchainImages().size()) {
             VkImageMemoryBarrier presentBarrier{};
             presentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1966,8 +2007,42 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (m_internalData->pTracyFrameZone) {
+            SRAssert(m_internalData->tracyPassDepth == 0 && !m_internalData->pTracyRenderZone);
+            m_internalData->pTracyFrameZone->~VkCtxScope();
+            m_internalData->pTracyFrameZone = nullptr;
+            m_internalData->pTracyContext->Collect(m_internalData->currentCmd);
+        }
+	#endif
+
         vkEndCommandBuffer(m_internalData->currentCmd);
         Super::EndCmdBuffer();
+    }
+
+    bool VulkanPipeline::BeginGpuZone(SR_UTILS_NS::StringAtom name) {
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (m_internalData->pTracyFrameZone) {
+            auto&& source = m_internalData->tracyPassSources[name];
+            if (!source.name) {
+                source = { name.c_str(), TracyFunction, TracyFile, (uint32_t)TracyLine, 0xc09040 };
+            }
+            auto&& slot = m_internalData->tracyPassSlots[m_internalData->tracyPassDepth++];
+            slot.pZone = new (slot.storage) tracy::VkCtxScope(
+                m_internalData->pTracyContext, &source, m_internalData->currentCmd, true);
+            return true;
+        }
+	#endif
+        return false;
+    }
+
+    void VulkanPipeline::EndGpuZone() {
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        SRAssert(m_internalData->tracyPassDepth > 0);
+        auto&& slot = m_internalData->tracyPassSlots[--m_internalData->tracyPassDepth];
+        slot.pZone->~VkCtxScope();
+        slot.pZone = nullptr;
+	#endif
     }
 
     bool VulkanPipeline::BeginRender() {
@@ -1982,7 +2057,32 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (m_internalData->pTracyFrameZone) {
+            const uint64_t key = (uint64_t(uint32_t(m_state.frameBufferId)) << 32) | m_state.frameBufferLayer;
+            const SR_UTILS_NS::StringAtom targetName = m_state.pFrameBuffer
+                ? m_state.pFrameBuffer->GetName() : SR_UTILS_NS::StringAtom("Swapchain");
+            auto&& source = m_internalData->tracyRenderSources[targetName][key];
+            if (!source.name) {
+                const SR_UTILS_NS::StringAtom name = m_state.pFrameBuffer
+                    ? SR_UTILS_NS::StringAtom(SR_FORMAT("{} [FBO {}, layer {}]", targetName, m_state.frameBufferId, m_state.frameBufferLayer))
+                    : targetName;
+                source = { name.c_str(), TracyFunction, TracyFile, (uint32_t)TracyLine, 0x60b060 };
+            }
+            m_internalData->pTracyRenderZone = new (m_internalData->tracyRenderStorage) tracy::VkCtxScope(
+                m_internalData->pTracyContext, &source, m_internalData->currentCmd, true);
+        }
+        static const SR_UTILS_NS::StringAtom beginZoneName("Render pass begin (load / clear / dependencies)");
+        const bool beginZone = BeginGpuZone(beginZoneName);
+	#endif
+
         vkCmdBeginRenderPass(m_internalData->currentCmd, &m_internalData->renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
+
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (beginZone) {
+            EndGpuZone();
+        }
+	#endif
         return true;
     }
 
@@ -1996,7 +2096,22 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        static const SR_UTILS_NS::StringAtom endZoneName("Render pass end (store / resolve / dependencies)");
+        const bool endZone = BeginGpuZone(endZoneName);
+	#endif
+
         vkCmdEndRenderPass(m_internalData->currentCmd);
+
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (endZone) {
+            EndGpuZone();
+        }
+        if (m_internalData->pTracyRenderZone) {
+            m_internalData->pTracyRenderZone->~VkCtxScope();
+            m_internalData->pTracyRenderZone = nullptr;
+        }
+	#endif
     }
 
     void VulkanPipeline::DrawFrame() {
@@ -2431,6 +2546,13 @@ namespace SR_GRAPH_NS {
     #endif
 
         Super::PrepareFrame();
+
+    #if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (m_internalData->pTracyContext) {
+            /// Tracy query IDs describe one submission; recorded timestamps cannot be replayed.
+            SetDirty(true);
+        }
+    #endif
 
         if (m_kernel && (m_kernel->IsDirty() || (m_kernel->GetSwapchain() && m_kernel->GetSwapchain()->IsDirty()))) {
             m_kernel->WaitAllFences();
@@ -3041,6 +3163,13 @@ namespace SR_GRAPH_NS {
     }
 
     void VulkanPipeline::WriteMemoryBarrier(MemoryBarrierType type) {
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        static const SR_UTILS_NS::StringAtom toComputeName("Barrier: attachment write -> compute read");
+        static const SR_UTILS_NS::StringAtom fromComputeName("Barrier: compute write -> shader read");
+        const bool barrierZone = (type == MemoryBarrierType::ReadAttachmentToCompute || type == MemoryBarrierType::ComputeToReadAttachment)
+            && BeginGpuZone(type == MemoryBarrierType::ReadAttachmentToCompute ? toComputeName : fromComputeName);
+	#endif
+
         VkMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 
@@ -3078,6 +3207,11 @@ namespace SR_GRAPH_NS {
                 return;
         }
 
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (barrierZone) {
+            EndGpuZone();
+        }
+	#endif
 
         //auto&& pTexture = m_memory->GetTexture(textureId);
         //if (!pTexture) SR_UNLIKELY_ATTRIBUTE {
@@ -3141,11 +3275,21 @@ namespace SR_GRAPH_NS {
 
         Super::Dispatch(groupCountX, groupCountY, groupCountZ);
 
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        const bool dispatchZone = BeginGpuZone(m_state.pShader->GetResourceId());
+	#endif
+
         if (m_internalData->currentDescriptorSet) {
             vkCmdBindDescriptorSets(m_internalData->currentCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_internalData->currentLayout, 0, 1, &m_internalData->currentDescriptorSet, 0, nullptr);
         }
 
         vkCmdDispatch(m_internalData->currentCmd, groupCountX, groupCountY, groupCountZ);
+
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (dispatchZone) {
+            EndGpuZone();
+        }
+	#endif
     }
 
     bool VulkanPipeline::BeginCompute() {
@@ -3167,10 +3311,20 @@ namespace SR_GRAPH_NS {
             vkBeginCommandBuffer(m_internalData->currentCmd, &m_internalData->cmdBufInfo);
         }
 
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        static const SR_UTILS_NS::StringAtom computeZoneName("Compute");
+        m_internalData->tracyComputeZone = m_isCmdState && BeginGpuZone(computeZoneName);
+	#endif
         return true;
     }
 
     void VulkanPipeline::EndCompute() {
+	#if defined(SR_TRACY_ENABLE) && defined(SR_USE_VULKAN) && defined(EVO_VULKAN_TRACY_GPU_PROFILER)
+        if (m_internalData->tracyComputeZone) {
+            EndGpuZone();
+            m_internalData->tracyComputeZone = false;
+        }
+	#endif
         if (m_isCmdState) {
             /// nothing to do, just continue using current command buffer
         }
