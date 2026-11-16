@@ -32,12 +32,12 @@ SRUseAssimpIfPossible(Graphics)
 
 
 if (SR_RENDER_USE_VULKAN)
-    message("$ENV{VULKAN_SDK}")
+    message("[SpaRcle Engine] Graphics will be using Vulkan SDK: $ENV{VULKAN_SDK}")
     find_package(Vulkan REQUIRED)
 endif()
 
 if (SR_RENDER_GLFW)
-    message("GLFW will be used as rendering backend")
+    message("[SpaRcle Engine] GLFW will be used as rendering backend")
     add_compile_definitions(SR_RENDER_GLFW)
     set(SR_RENDER_GLFW ON)
 
@@ -51,7 +51,7 @@ if (SR_RENDER_GLFW)
 endif()
 
 if (SR_RENDER_USE_VULKAN)
-    message("EvoVulkan will be used")
+    message("[SpaRcle Engine] EvoVulkan will be used")
     set(EVO_VULKAN_USE_OWN_GLFW OFF)
     set(EVO_VULKAN_TRACY_PROFILER_PATH "${SR_UTILS_SOURCE_DIR}/libs/tracy")
     add_subdirectory(libs/EvoVulkan)
@@ -112,7 +112,7 @@ SR_COPY_STATIC_LIBRARY_TO_LIBRARY_FOLDER(Graphics)
 target_link_libraries(Graphics PUBLIC freetype)
 
 if (SR_RENDER_USE_LIBSPNG)
-    message("libspng will be used")
+    message("[SpaRcle Engine] libspng will be used")
     set(SPNG_SHARED OFF)
     set(BUILD_EXAMPLES OFF)
     set(SPNG_ZLIB_CUSTOM_INCLUDE_DIRS ${SR_COMMON_ZLIB_INCLUDE_DIRS} CACHE STRING "" FORCE)
@@ -150,12 +150,12 @@ if (SR_EMSCRIPTEN)
 endif()
 
 if (SR_GRAPHICS_DLL_EXPORTS)
-    message("Graphics will be using DLL exports")
+    message("[SpaRcle Engine] Graphics will be using DLL exports")
     target_compile_definitions(Graphics PUBLIC SR_GRAPHICS_DLL_EXPORTS)
 endif()
 
 if (SR_RENDER_USE_GLSL_LANG_LIB)
-    message("Graphics will be using GLSL lang lib")
+    message("[SpaRcle Engine] Graphics will be using GLSL lang lib")
     target_compile_definitions(Graphics PUBLIC SR_RENDER_USE_GLSL_LANG_LIB)
 
     if (SR_USE_PCH)
