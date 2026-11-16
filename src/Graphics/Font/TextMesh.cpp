@@ -204,7 +204,7 @@ namespace SR_GTYPES_NS {
                 const SR_MATH_NS::FVector4 metadata(static_cast<float_t>(grapheme), style.bold ? 1.f : 0.f, style.italic ? 1.f : 0.f, kind);
                 batch.buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Color0, &style.color);
                 batch.buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Custom0, &metadata);
-                const SR_MATH_NS::FVector4 effectIndex(static_cast<float_t>(visibleGlyphIndex), 0.f, 0.f, 0.f);
+                const SR_MATH_NS::FVector4 effectIndex(static_cast<float_t>(visibleGlyphIndex), glyph.metrics.sdfRange, 0.f, 0.f);
                 batch.buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Custom1, &effectIndex);
             };
             const float_t kind = glyph.renderType == GlyphRenderType::ColorBitmap ? 3.f

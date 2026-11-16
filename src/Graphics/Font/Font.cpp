@@ -283,13 +283,20 @@ namespace SR_GTYPES_NS {
 
         msdfgen::Projection proj(msdfgen::Vector2(scale, scale), translate);
 
+        // Sign correction can introduce new interpolation artifacts; correct them afterwards.
+        msdfgen::MSDFGeneratorConfig generatorConfig;
+        generatorConfig.errorCorrection.mode = msdfgen::ErrorCorrectionConfig::DISABLED;
+        msdfgen::MSDFGeneratorConfig postErrorCorrectionConfig;
+        postErrorCorrectionConfig.errorCorrection.distanceCheckMode = msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
+
         if (isMTSDF) {
             msdfgen::Bitmap<float, 4> mtsdf(width, height);
 
             {
                 SR_TRACY_ZONE_N("msdfgen::generateMTSDF");
-                msdfgen::generateMTSDF(mtsdf, shape, proj, range);
+                msdfgen::generateMTSDF(mtsdf, shape, proj, range, generatorConfig);
                 msdfgen::distanceSignCorrection(mtsdf, shape, proj, 0.5);
+                msdfgen::msdfErrorCorrection(mtsdf, shape, proj, range, postErrorCorrectionConfig);
             }
 
             out.resize(width * height * 4);
@@ -310,8 +317,9 @@ namespace SR_GTYPES_NS {
 
             {
                 SR_TRACY_ZONE_N("msdfgen::generateMSDF");
-                msdfgen::generateMSDF(msdf, shape, proj, range);
+                msdfgen::generateMSDF(msdf, shape, proj, range, generatorConfig);
                 msdfgen::distanceSignCorrection(msdf, shape, proj, 0.5);
+                msdfgen::msdfErrorCorrection(msdf, shape, proj, range, postErrorCorrectionConfig);
             }
 
             out.resize(width * height * 4);
