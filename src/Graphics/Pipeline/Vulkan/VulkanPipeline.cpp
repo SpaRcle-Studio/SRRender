@@ -240,6 +240,7 @@ namespace SR_GRAPH_NS {
 
     #ifdef SR_RENDER_USE_GLSL_LANG_LIB
         if (!m_isGlslLangInit) {
+            SR_TRACY_ZONE_N("GLSL Init")
             m_isGlslLangInit = true;
             glslang::InitializeProcess();
             m_glslLangInitTaskId = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([this](auto&&) {
@@ -292,9 +293,13 @@ namespace SR_GRAPH_NS {
         m_kernel->SetMultisampling(m_requiredSampleCount);
         m_kernel->SetSwapchainImagesCount(m_renderContext->GetActiveGraphicsSettings().swapchainImages);
 
-        std::vector<const char*> validationLayers = { };
-        std::vector<const char*> instanceExtensions = { };
-#ifndef SR_LINUX
+        std::vector<const char*> validationLayers;
+        std::vector<const char*> instanceExtensions;
+
+        validationLayers.reserve(32);
+        instanceExtensions.reserve(32);
+
+    #ifndef SR_LINUX
         instanceExtensions = {
             VK_KHR_SURFACE_EXTENSION_NAME,
             /// VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME,
@@ -309,7 +314,7 @@ namespace SR_GRAPH_NS {
             #endif
         #endif
         };
-#elif defined(SR_RENDER_GLFW)
+    #elif defined(SR_RENDER_GLFW)
         uint32_t count = 0;
         auto&& glfwInstanceExtensions = glfwGetRequiredInstanceExtensions(&count);
 
@@ -321,10 +326,10 @@ namespace SR_GRAPH_NS {
         for (uint32_t i = 0; i < count; ++i) {
             instanceExtensions.emplace_back(glfwInstanceExtensions[i]);
         }
-#elif defined(SR_COMMON_USE_NATIVE_WAYLAND)
+    #elif defined(SR_COMMON_USE_NATIVE_WAYLAND)
         instanceExtensions.emplace_back(VK_KHR_SURFACE_EXTENSION_NAME);
         instanceExtensions.emplace_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
-#endif //SR_LINUX
+    #endif //SR_LINUX
 
         if (m_enableValidationLayers) {
             instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);

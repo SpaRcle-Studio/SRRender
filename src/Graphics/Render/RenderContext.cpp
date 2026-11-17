@@ -297,8 +297,7 @@ namespace SR_GRAPH_NS {
 
         SR_UTILS_NS::ResourceManager::Instance().PullWatchers();
         SR_UTILS_NS::ResourceManager::Instance().ReloadResources(0.f);
-
-        SR_UTILS_NS::ResourceManager::Instance().Synchronize(true);
+        SR_UTILS_NS::ResourceManager::Instance().Update(true);
 
         while (!IsEmpty()) {
             SR_TRACY_ZONE_N("Sync free resources iteration");
@@ -309,7 +308,7 @@ namespace SR_GRAPH_NS {
                 SR_NOOP;
             }
 
-            SR_UTILS_NS::ResourceManager::Instance().Synchronize(true);
+            SR_UTILS_NS::ResourceManager::Instance().Update(true);
 
             if (maxErrStep == syncStep) {
                 SR_MAYBE_UNUSED auto&& debuggerInfo = SR_UTILS_NS::GetAliveEntityDebuggerInfo();
