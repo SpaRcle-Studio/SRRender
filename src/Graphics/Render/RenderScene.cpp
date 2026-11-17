@@ -12,13 +12,12 @@
 #include <Graphics/Render/RenderTechnique.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Material/UniqueMaterial.h>
-#include <Graphics/Material/FileMaterial.h>
 #include <Graphics/Render/DebugRenderer.h>
 #include <Graphics/Lighting/LightSystem.h>
 #include <Graphics/Window/Window.h>
 #include <Graphics/Particles/ParticleEmitter.h>
 
-#include <Utils/DebugDraw.h>
+#include <Utils/Platform/Platform.h>
 #include <Utils/Common/Numeric.h>
 #include <Utils/Common/SubscriptionMessage.h>
 #include <Utils/Resources/Yaml.h>

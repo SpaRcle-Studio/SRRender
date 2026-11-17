@@ -19,6 +19,7 @@
 
 #include <Utils/Debug.h>
 #include <Utils/Common/CLIManager.h>
+#include <Utils/Platform/Platform.h>
 
 #include <Enum/WindowType.hpp>
 #include <Enum/WindowProtocolType.hpp>

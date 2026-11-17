@@ -11,8 +11,8 @@
 #include <ImmediateGUI/GUI/ImmediateGUI.h>
 
 #include <Utils/Common/Features.h>
-#include <Utils/Types/SafePtrLockGuard.h>
 #include <Utils/TypeTraits/Factory.h>
+#include <Utils/Platform/Platform.h>
 
 namespace SR_GRAPH_NS::GUI {
     WidgetManager::WidgetManager()

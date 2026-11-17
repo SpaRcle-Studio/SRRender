@@ -28,6 +28,13 @@ namespace SR_GTYPES_NS {
         return true;
     }
 
+    SR_MATH_NS::FVector2 Sprite::GetTextureSize() const {
+        if (auto&& pTexture = m_texture.GetResource()) {
+            return SR_MATH_NS::FVector2(static_cast<float_t>(pTexture->GetWidth()), static_cast<float_t>(pTexture->GetHeight()));
+        }
+        return SR_MATH_NS::FVector2();
+    }
+
     void Sprite::OnTextureChanged() {
         m_textureReloadSubscription.Reset();
         if (auto pTexture = m_texture.GetResource()) {

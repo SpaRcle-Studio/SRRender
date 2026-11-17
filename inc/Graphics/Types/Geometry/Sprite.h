@@ -48,6 +48,8 @@ namespace SR_GTYPES_NS {
     public:
         /// @method
         bool SetTexturePath(const SR_UTILS_NS::Path& path);
+        /// @method @evaluate
+        SR_MATH_NS::FVector2 GetTextureSize() const;
         void UseSamplers(SR_GTYPES_NS::Shader& shader) override;
         SR_UTILS_NS::ILayoutElement* GetLayoutElement() noexcept override { return m_texture.GetId().empty() ? nullptr : this; }
         void CalculateLayoutInput(bool horizontal) override;

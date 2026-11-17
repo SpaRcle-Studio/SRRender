@@ -8,6 +8,7 @@
 
 #include <Utils/Localization/LocalizationManager.h>
 #include <Utils/Localization/Encoding.h>
+#include <Utils/Platform/Platform.h>
 
 namespace SR_GRAPH_NS {
     TextBuilder::TextBuilder(TextBuilder::FontPtr pFont)

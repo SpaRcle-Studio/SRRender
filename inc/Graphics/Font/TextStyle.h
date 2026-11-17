@@ -29,10 +29,16 @@ namespace SR_GTYPES_NS {
         float_t relativeSize = 1.f;
         /// @property
         SR_MATH_NS::FVector4 color = SR_MATH_NS::FVector4(1.f);
+        /// Per-range shader payloads mapped to CUSTOM2/CUSTOM3. Zero inherits the preceding range's channel.
+        /// @property
+        SR_MATH_NS::FVector4 customData0 = SR_MATH_NS::FVector4(0.f);
+        /// @property
+        SR_MATH_NS::FVector4 customData1 = SR_MATH_NS::FVector4(0.f);
 
         bool operator==(const TextStyle& other) const noexcept {
             return begin == other.begin && end == other.end && bold == other.bold && italic == other.italic
-                && underline == other.underline && strike == other.strike && relativeSize == other.relativeSize && color == other.color;
+                && underline == other.underline && strike == other.strike && relativeSize == other.relativeSize && color == other.color
+                && customData0 == other.customData0 && customData1 == other.customData1;
         }
 
         bool operator!=(const TextStyle& other) const noexcept {

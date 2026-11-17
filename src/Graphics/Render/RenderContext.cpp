@@ -19,7 +19,6 @@
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Types/Texture.h>
-#include <Graphics/Types/Mesh.h>
 #include <Graphics/Types/Skybox.h>
 #include <Graphics/Types/RenderTarget.h>
 
@@ -36,6 +35,7 @@
 #include <Utils/Common/EnumReflector.h>
 #include <Utils/Events/Broadcaster.h>
 #include <Utils/Serialization/SRASerialization.h>
+#include <Utils/Platform/Platform.h>
 
 namespace SR_GRAPH_NS {
     template<typename T> bool UpdateRenderResource(T& resourceList) noexcept {

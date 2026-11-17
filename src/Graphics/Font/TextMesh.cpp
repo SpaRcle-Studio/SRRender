@@ -25,6 +25,8 @@ namespace SR_GTYPES_NS {
             .AddAttribute(SR_UTILS_NS::VertexAttribute::Color0, SR_UTILS_NS::VertexAttributeFormat::Float32, 4)
             .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom0, SR_UTILS_NS::VertexAttributeFormat::Float32, 4)
             .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom1, SR_UTILS_NS::VertexAttributeFormat::Float32, 4)
+            .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom2, SR_UTILS_NS::VertexAttributeFormat::Float32, 4)
+            .AddAttribute(SR_UTILS_NS::VertexAttribute::Custom3, SR_UTILS_NS::VertexAttributeFormat::Float32, 4)
             .SetInstanced(true);
         return description;
     }
@@ -85,6 +87,12 @@ namespace SR_GTYPES_NS {
                 result.strike |= style.strike;
                 result.relativeSize *= style.relativeSize;
                 result.color = result.color * style.color;
+                if (style.customData0 != SR_MATH_NS::FVector4(0.f)) {
+                    result.customData0 = style.customData0;
+                }
+                if (style.customData1 != SR_MATH_NS::FVector4(0.f)) {
+                    result.customData1 = style.customData1;
+                }
             }
         }
         return result;
@@ -208,6 +216,8 @@ namespace SR_GTYPES_NS {
                 const SR_MATH_NS::FVector4 effectIndex(static_cast<float_t>(visibleGlyphIndex), glyph.metrics.sdfRange,
                     glyph.renderType == GlyphRenderType::MTSDF ? 1.f : 0.f, scale);
                 batch.buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Custom1, &effectIndex);
+                batch.buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Custom2, &style.customData0);
+                batch.buffer.SetVertex(index, SR_UTILS_NS::VertexAttribute::Custom3, &style.customData1);
             };
             const float_t kind = glyph.renderType == GlyphRenderType::ColorBitmap ? 3.f
                 : glyph.renderType == GlyphRenderType::SDF ? 2.f : glyph.renderType == GlyphRenderType::Bitmap ? 4.f : 0.f;
@@ -379,6 +389,11 @@ namespace SR_GTYPES_NS {
 
     void TextMesh::ClearStyles() {
         m_styles.clear();
+        OnTextDirty();
+    }
+
+    void TextMesh::SetFontPath(SR_UTILS_NS::StringAtom path) {
+        m_font.SetResource(path);
         OnTextDirty();
     }
 

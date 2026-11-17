@@ -50,6 +50,8 @@ namespace SR_GTYPES_NS {
 
         /// @method
         void SetText(SR_UTILS_NS::StringView text);
+        /// @method
+        void SetFontPath(SR_UTILS_NS::StringAtom path);
 
         /// @method
         void SetVisibleGraphemeCount(uint32_t count);

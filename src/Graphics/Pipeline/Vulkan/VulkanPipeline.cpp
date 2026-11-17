@@ -43,7 +43,6 @@
     #include <Utils/Platform/AndroidLifecycle.h>
 #endif
 
-#include <Utils/Events/EventManager.h>
 #include <Utils/Common/Features.h>
 #include <Utils/Common/CLIManager.h>
 #include <Utils/Common/StoreUtils.h>
@@ -53,6 +52,7 @@
 #include <Utils/Memory/Allocator.h>
 #include <Utils/Memory/MemoryLiterals.h>
 #include <Utils/TaskManager/TaskManager.h>
+#include <Utils/Platform/Platform.h>
 
 namespace SR_GRAPH_NS {
     /// Структура для хранения состояния асинхронного запроса пикселей
@@ -2123,7 +2123,7 @@ namespace SR_GRAPH_NS {
 
         switch (m_kernel->NextFrame()) {
             case EvoVulkan::Core::RenderResult::Fatal:
-                SR_UTILS_NS::EventManager::Instance().Broadcast(SR_UTILS_NS::EventManager::Event::FatalError);
+                PipelineError("VulkanPipeline::DrawFrame() : an fatal error has been occurred!");
                 ++m_errorsCount;
                 break;
             case EvoVulkan::Core::RenderResult::Error:
