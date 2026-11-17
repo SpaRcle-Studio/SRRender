@@ -141,6 +141,10 @@ namespace SR_GRAPH_NS {
 
     bool RenderStrategy::BuildQueueImpl(const RenderQueuePtr& pQueue) {
         SR_TRACY_ZONE;
+
+        /// A new queue must use current registrations, before PrepareRender() processes pending changes.
+        Prepare();
+
         pQueue->Init();
         m_objectPool.ForEach([pQueue](uint32_t id, const RenderObjectPtr& pObject) {
             RenderObjectRegistrationInfo info;
