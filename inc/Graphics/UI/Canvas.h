@@ -23,6 +23,10 @@ namespace SR_GTYPES_NS {
     class Camera;
 }
 
+namespace SR_WORLD_NS {
+    class Scene;
+}
+
 namespace SR_GRAPH_UI_NS {
     SR_ENUM_NS_CLASS_T(CanvasScaleMode, uint8_t,
         ConstantPixelSize,
@@ -48,7 +52,7 @@ namespace SR_GRAPH_UI_NS {
         void OnAttached() override;
         void PrepareUIInput() override;
 
-        void SetViewportRect(const SR_MATH_NS::FRect& rect) { m_viewportRect = rect; }
+        void SetViewportRect(const SR_MATH_NS::FRect& rect);
         void SetScaleFactor(float_t scaleFactor);
         SR_NODISCARD const SR_MATH_NS::FRect& GetViewportRect() const noexcept { return m_viewportRect; }
 
@@ -57,6 +61,7 @@ namespace SR_GRAPH_UI_NS {
         SR_NODISCARD SR_MATH_NS::FVector2 ClientToCanvasSpace(const SR_MATH_NS::FVector2& clientPosition) const;
         SR_NODISCARD SR_MATH_NS::FVector2 PointerToCanvasSpace(const SR_UTILS_NS::PointerEvent& event) const;
         SR_NODISCARD bool ContainsPointer(const SR_UTILS_NS::TransformRect& rect, const SR_UTILS_NS::PointerEvent& event) const;
+        SR_NODISCARD bool ContainsPointerViewport(const SR_UTILS_NS::PointerEvent& event) const;
         SR_NODISCARD bool ContainsScreenPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& screenPosition) const;
         /// @method @evaluate
         SR_NODISCARD SR_MATH_NS::FVector2 CanvasToLayoutPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& canvasPosition) const;
@@ -68,8 +73,18 @@ namespace SR_GRAPH_UI_NS {
         SR_NODISCARD Window* GetWindow() const noexcept;
 
     private:
+        void PreparePointerQuery(const SR_UTILS_NS::PointerEvent& event) const;
+
+        mutable bool m_pointerQueryValid = false;
+        mutable bool m_pointerInViewport = false;
+        mutable uint64_t m_pointerRevision = 0;
+        mutable SR_UTILS_NS::PointerSpace m_pointerSpace = SR_UTILS_NS::PointerSpace::Screen;
+        mutable SR_MATH_NS::FVector2 m_pointerPosition;
+        mutable SR_MATH_NS::FVector2 m_pointerCanvasPosition;
         SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Camera> m_camera;
         SR_MATH_NS::FRect m_viewportRect;
+        SR_MATH_NS::IVector2 m_inputClientOrigin;
+        bool m_inputWindowAvailable = false;
         float_t m_scaleFactor = 1.f;
         float_t m_referencePixelsPerUnit = 100.f;
         bool m_dirty = true;
@@ -132,6 +147,9 @@ namespace SR_GRAPH_UI_NS {
 
     private:
         SR_UTILS_NS::EntityRef<SR_GRAPH_NS::UI::Canvas> m_canvas;
+        const SR_UTILS_NS::SceneObject* m_pCanvasSearchRoot = nullptr;
+        const SR_WORLD_NS::Scene* m_pCanvasSearchScene = nullptr;
+        uint64_t m_canvasSearchRevision = 0;
 
     };
 }

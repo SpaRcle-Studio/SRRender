@@ -8,6 +8,7 @@
 #include <Graphics/Types/Camera.h>
 
 #include <Utils/World/Scene.h>
+#include <Utils/World/SceneUpdater.h>
 #include <Utils/ECS/TransformRect.h>
 #include <Utils/ECS/GameObject.h>
 
@@ -66,30 +67,50 @@ namespace SR_GRAPH_UI_NS {
     }
 
     bool Canvas::ContainsScreenPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& screenPosition) const {
-        auto&& pWindow = GetWindow();
-        if (!pWindow || m_viewportRect.Size().x <= 0.f || m_viewportRect.Size().y <= 0.f) {
-            return false;
-        }
-        const auto client = pWindow->ScreenToClient(screenPosition.CastToInt()).CastToFloat();
-        if (!m_viewportRect.Contains(client) || rect.GetGlobalScale().HasZero()) {
-            return false;
-        }
-        return rect.GetLayoutRect().Contains(CanvasToLayoutPoint(rect, ScreenToCanvasSpace(screenPosition)));
+        SR_UTILS_NS::PointerEvent event;
+        event.position = screenPosition;
+        return ContainsPointer(rect, event);
     }
 
     SR_MATH_NS::FVector2 Canvas::PointerToCanvasSpace(const SR_UTILS_NS::PointerEvent& event) const {
-        return event.space == SR_UTILS_NS::PointerSpace::Client ? ClientToCanvasSpace(event.position) : ScreenToCanvasSpace(event.position);
+        PreparePointerQuery(event);
+        return m_pointerCanvasPosition;
+    }
+
+    void Canvas::PreparePointerQuery(const SR_UTILS_NS::PointerEvent& event) const {
+        auto&& pScene = TryGetScene();
+        const uint64_t revision = pScene ? pScene->GetSceneUpdater()->GetUIInputRevision() : 0;
+        if (pScene && m_pointerQueryValid && m_pointerRevision == revision
+            && m_pointerSpace == event.space && m_pointerPosition == event.position) {
+            return;
+        }
+        SR_TRACY_ZONE;
+        m_pointerRevision = revision;
+        m_pointerSpace = event.space;
+        m_pointerPosition = event.position;
+        m_pointerQueryValid = true;
+        auto client = event.position;
+        if (event.space == SR_UTILS_NS::PointerSpace::Screen) {
+            auto&& pWindow = GetWindow();
+            if (!pWindow) {
+                m_pointerInViewport = false;
+                m_pointerCanvasPosition = SR_MATH_NS::FVector2::Zero();
+                return;
+            }
+            client = pWindow->ScreenToClient(event.position.CastToInt()).CastToFloat();
+        }
+        m_pointerInViewport = m_viewportRect.Width() > 0.f && m_viewportRect.Height() > 0.f && m_viewportRect.Contains(client);
+        m_pointerCanvasPosition = ClientToCanvasSpace(client);
+    }
+
+    bool Canvas::ContainsPointerViewport(const SR_UTILS_NS::PointerEvent& event) const {
+        PreparePointerQuery(event);
+        return m_pointerInViewport;
     }
 
     bool Canvas::ContainsPointer(const SR_UTILS_NS::TransformRect& rect, const SR_UTILS_NS::PointerEvent& event) const {
-        if (event.space == SR_UTILS_NS::PointerSpace::Screen) {
-            return ContainsScreenPoint(rect, event.position);
-        }
-        if (m_viewportRect.Width() <= 0.f || m_viewportRect.Height() <= 0.f
-            || !m_viewportRect.Contains(event.position) || rect.GetGlobalScale().HasZero()) {
-            return false;
-        }
-        return rect.GetLayoutRect().Contains(CanvasToLayoutPoint(rect, ClientToCanvasSpace(event.position)));
+        return ContainsPointerViewport(event) && !rect.GetGlobalScale().HasZero()
+            && rect.GetLayoutRect().Contains(CanvasToLayoutPoint(rect, m_pointerCanvasPosition));
     }
 
     SR_MATH_NS::FVector2 Canvas::CanvasToLayoutPoint(const SR_UTILS_NS::TransformRect& rect, const SR_MATH_NS::FVector2& canvasPosition) const {
@@ -106,18 +127,27 @@ namespace SR_GRAPH_UI_NS {
     }
 
     void Canvas::PrepareUIInput() {
+        SR_TRACY_ZONE;
+        auto&& pWindow = GetWindow();
+        const SR_MATH_NS::IVector2 clientOrigin = pWindow
+            ? pWindow->ScreenToClient(SR_MATH_NS::IVector2()) : SR_MATH_NS::IVector2();
+        if (m_inputWindowAvailable != bool(pWindow) || m_inputClientOrigin != clientOrigin) {
+            m_inputWindowAvailable = bool(pWindow);
+            m_inputClientOrigin = clientOrigin;
+            InvalidateUIInput();
+        }
         if (m_renderScene) {
             SR_MATH_NS::UVector2 windowSize;
 
             if (auto&& pCamera = m_renderScene->GetMainCamera()) {
                 m_camera = pCamera;
                 windowSize = pCamera->GetSize();
-                m_viewportRect = pCamera->GetViewportRect();
+                SetViewportRect(pCamera->GetViewportRect());
             }
             else {
                 m_camera = nullptr;
                 windowSize = m_renderScene->GetSurfaceSize();
-                m_viewportRect = SR_MATH_NS::FRect(SR_MATH_NS::FVector2(), windowSize.CastToFloat());
+                SetViewportRect(SR_MATH_NS::FRect(SR_MATH_NS::FVector2(), windowSize.CastToFloat()));
             }
 
             auto&& pTransform = GetTransform();
@@ -146,6 +176,9 @@ namespace SR_GRAPH_UI_NS {
                 m_dirty = true;
             }
 
+            if (m_dirty) {
+                InvalidateUIInput();
+            }
             if (m_dirty && pTransform && pTransform->GetMeta()->IsSameOrInherited(SR_UTILS_NS::TransformRect::GetClassStaticName())) {
                 m_size = windowSize;
                 m_dirty = false;
@@ -168,15 +201,37 @@ namespace SR_GRAPH_UI_NS {
         SR_UTILS_NS::UIComponent::PrepareUIInput();
     }
 
+    void Canvas::SetViewportRect(const SR_MATH_NS::FRect& rect) {
+        if (m_viewportRect != rect) {
+            m_viewportRect = rect;
+            InvalidateUIInput();
+        }
+    }
+
     void Canvas::SetScaleFactor(float_t scaleFactor) {
         if (!SR_MATH_NS::IsEquals(m_scaleFactor, scaleFactor)) {
             m_scaleFactor = scaleFactor;
             m_dirty = true;
+            InvalidateUIInput();
         }
     }
 
     SR_GRAPH_NS::UI::Canvas* IFindCanvasOwner::FindCanvas(const SR_UTILS_NS::SceneObject* pSO) {
+        auto&& pScene = pSO ? pSO->GetScenePtr() : nullptr;
+        const uint64_t revision = pScene ? pScene->GetSceneUpdater()->GetUIInputTargetsRevision() : 0;
+        if (pScene && m_pCanvasSearchRoot == pSO && m_pCanvasSearchScene == pScene
+            && m_canvasSearchRevision == revision) {
+            if (m_canvas.GetEntityId() == SR_UTILS_NS::SR_INVALID_ENTITY_ID) {
+                return nullptr;
+            }
+            if (auto&& pCanvas = m_canvas.Get(); pCanvas && pCanvas->IsComponentValid()) {
+                return pCanvas.Get();
+            }
+        }
         SR_TRACY_ZONE;
+        m_pCanvasSearchRoot = pSO;
+        m_pCanvasSearchScene = pScene;
+        m_canvasSearchRevision = revision;
         auto&& pCurrentStart = const_cast<SR_UTILS_NS::SceneObject*>(pSO);
         SR_UTILS_NS::SceneObject* pCurrent = pCurrentStart;
         while (pCurrent) {
