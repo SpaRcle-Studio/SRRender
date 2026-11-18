@@ -631,7 +631,7 @@ namespace SR_GRAPH_NS {
         handles.clear();
 
         m_memory->ForEachShader([&handles](int32_t index, auto&& pShader) {
-            handles.emplace_back((void*)pShader->GetPipeline());
+            handles.emplace_back(pShader->GetHandle());
         });
 
         {

@@ -52,6 +52,10 @@ namespace SR_GTYPES_NS {
         void SetText(SR_UTILS_NS::StringView text);
         /// @method
         void SetFontPath(SR_UTILS_NS::StringAtom path);
+        /// @method
+        void SetCharacterSpacing(float_t spacing);
+        /// @method @evaluate
+        float_t GetCharacterSpacing() const noexcept { return m_characterSpacing; }
 
         /// @method
         void SetVisibleGraphemeCount(uint32_t count);
@@ -135,6 +139,8 @@ namespace SR_GTYPES_NS {
         /// @property @range(0.1f, std::numeric_limits<float_t>::max())
         /// @onChanged(OnTextDirty)
         float_t m_fontSize = 16.f;
+        /// @property @onChanged(OnTextDirty) @drag(0.1f) @tooltip(Additional spacing between graphemes in layout units. Negative values tighten text.)
+        float_t m_characterSpacing = 0.f;
         /// @property @group(Alignment) @onChanged(OnTextDirty)
         TextAlignmentHorizontal m_horizontalAlignment = TextAlignmentHorizontal::Left;
         /// @property @group(Alignment) @onChanged(OnTextDirty)

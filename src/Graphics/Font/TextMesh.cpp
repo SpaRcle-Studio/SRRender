@@ -160,6 +160,7 @@ namespace SR_GTYPES_NS {
         m_instancesCount = 0;
         TextMeshDetails::GlyphPlacementContext context;
         context.fontSize = m_fontSize;
+        context.characterSpacing = m_characterSpacing;
         context.kerning = m_kerning;
         context.wordWrap = m_wordWrap;
         context.pScales = &cache.scales;
@@ -277,6 +278,7 @@ namespace SR_GTYPES_NS {
         }
         TextMeshDetails::GlyphPlacementContext context;
         context.fontSize = m_fontSize;
+        context.characterSpacing = m_characterSpacing;
         context.kerning = m_kerning;
         context.pScales = &scales;
         context.pGraphemes = &m_glyphGraphemes;
@@ -309,6 +311,7 @@ namespace SR_GTYPES_NS {
         }
         TextMeshDetails::GlyphPlacementContext context;
         context.fontSize = m_fontSize;
+        context.characterSpacing = m_characterSpacing;
         context.kerning = m_kerning;
         context.wordWrap = m_wordWrap;
         context.pScales = &scales;
@@ -394,6 +397,14 @@ namespace SR_GTYPES_NS {
 
     void TextMesh::SetFontPath(SR_UTILS_NS::StringAtom path) {
         m_font.SetResource(path);
+        OnTextDirty();
+    }
+
+    void TextMesh::SetCharacterSpacing(float_t spacing) {
+        if (!std::isfinite(spacing) || SR_EQUALS(m_characterSpacing, spacing)) {
+            return;
+        }
+        m_characterSpacing = spacing;
         OnTextDirty();
     }
 

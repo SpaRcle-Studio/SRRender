@@ -50,6 +50,7 @@ namespace SR_GTYPES_NS::TextMeshDetails {
 
     struct GlyphPlacementContext {
         float_t fontSize = 0.f;
+        float_t characterSpacing = 0.f;
         bool kerning = false;
         TextAlignmentHorizontal horizontalAlignment = TextAlignmentHorizontal::Left;
         TextAlignmentVertical verticalAlignment = TextAlignmentVertical::Top;

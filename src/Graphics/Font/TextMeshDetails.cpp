@@ -89,13 +89,24 @@ namespace SR_GTYPES_NS::TextMeshDetails {
                 continue;
             }
 
+            const bool newGrapheme = glyphIndex == 0 || !context.pGraphemes || (*context.pGraphemes)[glyphIndex] != (*context.pGraphemes)[glyphIndex - 1];
+
             if (context.wordWrap && context.layoutSize.x > 0.f && penX > 0.f && glyph.codepoint.codepoint != 32u
                 && (glyphIndex == 0 || glyphs[glyphIndex - 1].codepoint.codepoint == 32u)) {
                 float_t nextWordWidth = 0.f;
                 for (size_t i = glyphIndex; i < glyphs.size() && glyphs[i].codepoint.codepoint != 32u && glyphs[i].codepoint.codepoint != '\n'; ++i) {
-                    nextWordWidth += glyphs[i].metrics.advance * layoutScale * (context.pScales ? (*context.pScales)[i] : 1.f);
+                    const float_t wordGlyphScale = layoutScale * (context.pScales ? (*context.pScales)[i] : 1.f);
+                    nextWordWidth += glyphs[i].metrics.advance * wordGlyphScale;
+                    if (i > glyphIndex) {
+                        if (!context.pGraphemes || (*context.pGraphemes)[i] != (*context.pGraphemes)[i - 1]) {
+                            nextWordWidth += context.characterSpacing;
+                        }
+                        if (context.kerning) {
+                            nextWordWidth += fontAsset.GetKerning(glyphs[i - 1].codepoint, glyphs[i].codepoint) * wordGlyphScale;
+                        }
+                    }
                 }
-                if (penX + nextWordWidth > context.layoutSize.x) {
+                if (penX + (newGrapheme ? context.characterSpacing : 0.f) + nextWordWidth > context.layoutSize.x) {
                     finalizeLine();
                 }
             }
@@ -106,15 +117,17 @@ namespace SR_GTYPES_NS::TextMeshDetails {
                 kerning *= glyphScale;
             }
 
-            const bool newGrapheme = glyphIndex == 0 || !context.pGraphemes || (*context.pGraphemes)[glyphIndex] != (*context.pGraphemes)[glyphIndex - 1];
+            float_t spacing = prevCode && newGrapheme ? context.characterSpacing : 0.f;
+            const float_t wordKerning = kerning;
             if (context.wordWrap && context.layoutSize.x > 0.f && penX > 0.f && newGrapheme
-                && penX + kerning + glyph.metrics.advance * glyphScale > context.layoutSize.x && glyph.codepoint.codepoint != 32u) {
+                && penX + spacing + kerning + glyph.metrics.advance * glyphScale > context.layoutSize.x && glyph.codepoint.codepoint != 32u) {
                 finalizeLine();
                 kerning = 0.f;
+                spacing = 0.f;
             }
             maxLineScale = std::max(maxLineScale, relativeScale);
 
-            const float_t cursorX = penX + kerning;
+            const float_t cursorX = penX + spacing + kerning;
             const float_t x = cursorX + glyph.metrics.bearingX * glyphScale;
             const SR_MATH_NS::FVector2 size = glyph.metrics.size.CastToFloat() * glyphScale;
             const float_t y = currentLine.baselineY + glyph.metrics.bearingY * glyphScale - size.y;
@@ -132,6 +145,9 @@ namespace SR_GTYPES_NS::TextMeshDetails {
                 wordWidth = 0.f;
             }
             else {
+                if (glyphIndex > 0 && glyphs[glyphIndex - 1].codepoint.codepoint != 32u && glyphs[glyphIndex - 1].codepoint.codepoint != '\n') {
+                    wordWidth += wordKerning + (newGrapheme ? context.characterSpacing : 0.f);
+                }
                 wordWidth += glyph.metrics.advance * glyphScale;
             }
             prevCode = glyph.codepoint;

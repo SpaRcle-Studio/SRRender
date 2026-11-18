@@ -7,6 +7,12 @@
 
 #include <Utils/Resources/ResourceManager.h>
 #include <Utils/FileSystem/VFS.h>
+#include <Utils/Types/FlatHashMap.h>
+
+#ifdef SR_RENDER_USE_HARFBUZZ
+    #include <hb.h>
+    #include <hb-ot.h>
+#endif
 
 #ifdef SR_USE_FREETYPE
     #include <freetype/include/freetype/ftglyph.h>
@@ -21,10 +27,68 @@
 #include <Codegen/Font.generated.hpp>
 
 namespace SR_GTYPES_NS {
+    struct FontKerningContext {
+    #ifdef SR_RENDER_USE_HARFBUZZ
+        hb_font_t* pFont = nullptr;
+        hb_buffer_t* pBuffer = nullptr;
+        SR_HTYPES_NS::FlatHashMap<uint64_t, int32_t> pairs;
+
+        ~FontKerningContext() {
+            hb_buffer_destroy(pBuffer);
+            hb_font_destroy(pFont);
+        }
+
+        int32_t GetPairAdjustment(uint32_t left, uint32_t right) {
+            const uint64_t key = (static_cast<uint64_t>(left) << 32u) | right;
+            if (auto&& pIt = pairs.find(key); pIt != pairs.end()) {
+                return pIt->second;
+            }
+
+            SR_TRACY_ZONE;
+
+            const uint32_t codepoints[] = { left, right };
+            hb_feature_t features[] = {
+                { HB_TAG('k', 'e', 'r', 'n'), 0, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END },
+                { HB_TAG('l', 'i', 'g', 'a'), 0, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END },
+                { HB_TAG('c', 'l', 'i', 'g'), 0, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END },
+                { HB_TAG('c', 'a', 'l', 't'), 0, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END }
+            };
+            int32_t advances[2] = {};
+            for (uint32_t pass = 0; pass < 2; ++pass) {
+                hb_buffer_reset(pBuffer);
+                hb_buffer_add_codepoints(pBuffer, codepoints, 2, 0, 2);
+                hb_buffer_set_direction(pBuffer, HB_DIRECTION_LTR);
+                hb_buffer_guess_segment_properties(pBuffer);
+                features[0].value = pass;
+                hb_shape(pFont, pBuffer, features, 4);
+
+                uint32_t count = 0;
+                auto&& pPositions = hb_buffer_get_glyph_positions(pBuffer, &count);
+                auto&& pInfos = hb_buffer_get_glyph_infos(pBuffer, nullptr);
+                hb_codepoint_t leftGlyph = 0;
+                hb_codepoint_t rightGlyph = 0;
+                hb_font_get_nominal_glyph(pFont, left, &leftGlyph);
+                hb_font_get_nominal_glyph(pFont, right, &rightGlyph);
+                if (count != 2 || pInfos[0].codepoint != leftGlyph || pInfos[1].codepoint != rightGlyph) {
+                    pairs[key] = 0;
+                    return 0;
+                }
+                advances[pass] = pPositions[0].x_advance + pPositions[1].x_advance;
+            }
+            const int32_t adjustment = advances[1] - advances[0];
+            pairs[key] = adjustment;
+            return adjustment;
+        }
+    #endif
+    };
+
     Font::Font() = default;
 
     bool Font::Unload() {
         SR_TRACY_ZONE;
+
+        delete m_pKerningContext;
+        m_pKerningContext = nullptr;
 
         if (m_library) {
         #ifdef SR_USE_FREETYPE
@@ -76,6 +140,18 @@ namespace SR_GTYPES_NS {
         FT_ULong length = 0;
         FT_Load_Sfnt_Table(m_face, tag, 0, nullptr, &length);
         m_isColorEmoji = length > 0;
+    #ifdef SR_RENDER_USE_HARFBUZZ
+        auto&& pBlob = hb_blob_create(m_fontData.data(), static_cast<uint32_t>(m_fontData.size()), HB_MEMORY_MODE_READONLY, nullptr, nullptr);
+        auto&& pFace = hb_face_create(pBlob, 0);
+        m_pKerningContext = new FontKerningContext();
+        m_pKerningContext->pFont = hb_font_create(pFace);
+        m_pKerningContext->pBuffer = hb_buffer_create();
+        hb_ot_font_set_funcs(m_pKerningContext->pFont);
+        const int32_t unitsPerEm = static_cast<int32_t>(hb_face_get_upem(pFace));
+        hb_font_set_scale(m_pKerningContext->pFont, unitsPerEm, unitsPerEm);
+        hb_face_destroy(pFace);
+        hb_blob_destroy(pBlob);
+    #endif
     #endif
 
         return Super::Load();
@@ -135,6 +211,11 @@ namespace SR_GTYPES_NS {
     int32_t Font::GetKerning(uint32_t leftCharCode, uint32_t rightCharCode) const {
         const std::lock_guard<std::recursive_mutex> faceLock(m_faceMutex);
     #ifdef SR_USE_FREETYPE
+    #ifdef SR_RENDER_USE_HARFBUZZ
+        if (m_pKerningContext && m_face && m_face->size) {
+            return static_cast<int32_t>(FT_MulFix(m_pKerningContext->GetPairAdjustment(leftCharCode, rightCharCode), m_face->size->metrics.x_scale));
+        }
+    #endif
         if (!FT_HAS_KERNING(m_face)) {
             return 0;
         }

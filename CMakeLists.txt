@@ -27,6 +27,7 @@ option(SR_RENDER_USE_LIBSPNG "" OFF)
 
 option(SR_RENDER_USE_YOGA "" OFF)
 option(SR_RENDER_USE_MSDFGEN "" ON)
+option(SR_RENDER_USE_HARFBUZZ "Enable OpenType GPOS kerning" ON)
 
 SRUseAssimpIfPossible(Graphics)
 
@@ -110,6 +111,38 @@ target_link_libraries(Graphics PUBLIC Utils)
 SR_COPY_STATIC_LIBRARY_TO_LIBRARY_FOLDER(Graphics)
 
 target_link_libraries(Graphics PUBLIC freetype)
+
+if (SR_RENDER_USE_HARFBUZZ)
+    set(HB_BUILD_SUBSET OFF)
+    set(HB_BUILD_UTILS OFF)
+    set(HB_HAVE_GRAPHITE2 OFF)
+    set(HB_HAVE_GLIB OFF)
+    set(HB_HAVE_ICU OFF)
+    set(HB_HAVE_GOBJECT OFF)
+    set(HB_HAVE_INTROSPECTION OFF)
+    set(HB_HAVE_CORETEXT OFF)
+    set(HB_HAVE_UNISCRIBE OFF)
+    set(HB_HAVE_GDI OFF)
+    set(HB_HAVE_DIRECTWRITE OFF)
+    add_subdirectory(libs/harfbuzz)
+    target_compile_definitions(harfbuzz PRIVATE
+        HB_NO_AAT
+        HB_NO_BUFFER_SERIALIZE
+        HB_NO_BUFFER_VERIFY
+        HB_NO_COLOR
+        HB_NO_DRAW
+        HB_NO_FACE_COLLECT_UNICODES
+        HB_NO_MATH
+        HB_NO_META
+        HB_NO_METRICS
+        HB_NO_NAME
+        HB_NO_OT_FONT_GLYPH_NAMES
+        HB_NO_PAINT
+        HB_NO_STYLE
+    )
+    target_link_libraries(Graphics PRIVATE harfbuzz)
+    target_compile_definitions(Graphics PRIVATE SR_RENDER_USE_HARFBUZZ)
+endif()
 
 if (SR_RENDER_USE_LIBSPNG)
     message("[SpaRcle Engine] libspng will be used")

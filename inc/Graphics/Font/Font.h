@@ -10,6 +10,8 @@
 #include <Utils/Resources/IResource.h>
 
 namespace SR_GTYPES_NS {
+    struct FontKerningContext;
+
     class SR_GRAPHICS_DLL_API Font : public SR_UTILS_NS::IResource {
         SR_CLASS()
         using Super = SR_UTILS_NS::IResource;
@@ -63,6 +65,7 @@ namespace SR_GTYPES_NS {
         FontLibrary m_library = nullptr;
         FontFace m_face = nullptr;
         SR_UTILS_NS::String m_fontData;
+        FontKerningContext* m_pKerningContext = nullptr;
 
         bool m_hasColor = false;
         bool m_isColorEmoji = false;

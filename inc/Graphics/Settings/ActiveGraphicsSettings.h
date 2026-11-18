@@ -9,6 +9,7 @@
 
 #include <Utils/Serialization/Serializable.h>
 #include <Utils/FileSystem/Path.h>
+#include <Utils/Types/Optional.h>
 
 namespace SR_GRAPH_NS {
     struct SR_GRAPHICS_DLL_API ActiveGraphicsSettings : public SR_UTILS_NS::Serializable {
@@ -18,6 +19,8 @@ namespace SR_GRAPH_NS {
 
         bool operator==(const ActiveGraphicsSettings& lrs) const {
             return vsync == lrs.vsync && MSAA == lrs.MSAA && swapchainImages == lrs.swapchainImages
+                   && framerateLimit.has_value() == lrs.framerateLimit.has_value()
+                   && (!framerateLimit.has_value() || framerateLimit.value() == lrs.framerateLimit.value())
                    && instancing == lrs.instancing
                    && shadowsInstancing == lrs.shadowsInstancing
                    && postProcess == lrs.postProcess
@@ -66,6 +69,8 @@ namespace SR_GRAPH_NS {
 
         /// @property
         bool vsync = true;
+        /// @property
+        SR_UTILS_NS::Optional<uint32_t> framerateLimit;
         /// @property
         uint8_t MSAA = 64;
         /// @property

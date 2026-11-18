@@ -414,6 +414,10 @@ namespace SR_GRAPH_NS {
             SR_ERROR("FontAsset::GetKerning() : failed to load \"{}\" font!", m_font.GetId());
             return 0.f;
         }
+        const std::lock_guard<std::recursive_mutex> faceLock(pFont->GetFaceMutex());
+        if (!pFont->SetPixelSizes(0, static_cast<uint32_t>(std::max(1.f, m_samplingPointSize)))) {
+            return 0.f;
+        }
         return pFont->GetKerning(left.codepoint, right.codepoint) / 64.0f; /// FreeType kerning is in 26.6 fixed-point format.
     }
 
