@@ -125,6 +125,7 @@ if (SR_RENDER_USE_HARFBUZZ)
     set(HB_HAVE_GDI OFF)
     set(HB_HAVE_DIRECTWRITE OFF)
     add_subdirectory(libs/harfbuzz)
+    set_target_properties(harfbuzz PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_compile_definitions(harfbuzz PRIVATE
         HB_NO_AAT
         HB_NO_BUFFER_SERIALIZE
