@@ -32,9 +32,9 @@ namespace SR_GRAPH_NS::VulkanTools {
         uint8_t sampleCount = 0;
         uint32_t layersCount = 0;
         uint32_t arrayLayersCount = 0;
-        std::vector<int32_t> oldColorAttachments;
-        std::vector<VkFormat> inputColorAttachments;
-        std::vector<int32_t>* pOutputColorAttachments = nullptr;
+        SR_UTILS_NS::Vector<int32_t> oldColorAttachments;
+        SR_UTILS_NS::Vector<VkFormat> inputColorAttachments;
+        SR_UTILS_NS::Vector<int32_t>* pOutputColorAttachments = nullptr;
         EvoVulkan::Complexes::FrameBufferFeatures features;
     };
 

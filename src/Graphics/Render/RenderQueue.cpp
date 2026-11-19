@@ -442,13 +442,14 @@ namespace SR_GRAPH_NS {
             SR_TRACY_ZONE_S("Shader error");
             SR_TRACY_ZONE_COLOR(0xFF0000);
 
-            std::string message = "Shader samplers is not valid!\n\tPath: {}"_format(pShader->GetResourcePath());
-            for (auto&& [name, sampler] : pShader->GetSamplers()) {
+            SR_UTILS_NS::String message = "Shader samplers is not valid!\n\tPath: {}"_format(pShader->GetResourcePath());
+            for (auto&& sampler : pShader->GetSamplers()) {
                 if (m_pipeline->IsSamplerValid(sampler.samplerId)) {
                     continue;
                 }
 
-                message += "\n\tSampler is not set: " + name.ToStringRef();
+                message += "\n\tSampler is not set: ";
+                message += sampler.name.ToStringView();
             }
             m_renderStrategy->AddError(message);
             pShader->UnUse();

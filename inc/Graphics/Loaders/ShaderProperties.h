@@ -14,6 +14,8 @@
 #include <Utils/Profile/TracyContext.h>
 #include <Utils/Resources/ResourceRef.h>
 
+#include "Utils/Types/SortedVector.h"
+
 namespace SR_GTYPES_NS {
     class Texture;
     class Shader;
@@ -188,13 +190,17 @@ namespace SR_GRAPH_NS {
     typedef SR_UTILS_NS::Vector<ShaderProperty> ShaderProperties;
 
     struct ShaderSampler {
+        SR_UTILS_NS::StringAtom name;
         uint32_t binding = SR_UINT32_MAX;
         uint32_t samplerId = SR_UINT32_MAX;
         bool isArray = false;
         bool isAttachment = false;
         SR_UTILS_NS::StringAtom defaultValue;
+
+        SR_NODISCARD bool operator<(const ShaderSampler& other) const { return name < other.name; }
+        SR_NODISCARD bool operator==(const ShaderSampler& other) const { return name == other.name; }
     };
-    typedef SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, ShaderSampler> ShaderSamplers;
+    typedef SR_UTILS_NS::SortedVector<ShaderSampler> ShaderSamplers;
 
     struct SSBOBinding {
         SR_UTILS_NS::StringAtom name;
@@ -293,8 +299,8 @@ template<> struct SR_UTILS_NS::SRHash<SR_GRAPH_NS::ShaderSamplers> {
     size_t operator()(SR_GRAPH_NS::ShaderSamplers const& value) const {
         std::size_t res = 0;
 
-        for (auto&& [key, val] : value) {
-            res = SR_UTILS_NS::HashCombine(key.GetHash(), res);
+        for (auto&& val : value) {
+            res = SR_UTILS_NS::HashCombine(val.name.GetHash(), res);
             res = SR_UTILS_NS::HashCombine(val.binding, res);
         }
 

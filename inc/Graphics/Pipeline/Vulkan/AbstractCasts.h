@@ -40,33 +40,37 @@ namespace SR_GRAPH_NS::VulkanTools {
         }
     }
 
-    SR_MAYBE_UNUSED static std::vector<VkPushConstantRange> AbstractPushConstantToVkPushConstants(const SRShaderCreateInfo& createInfo) {
-        std::map<ShaderStage, VkPushConstantRange> pushConstantsMap;
+    SR_MAYBE_UNUSED static void AbstractPushConstantToVkPushConstants(const SRShaderCreateInfo& createInfo, std::vector<VkPushConstantRange>& pushConstants) {
+        static std::vector<std::pair<ShaderStage, VkPushConstantRange>> pushConstantsMap;
+        pushConstantsMap.clear();
+        pushConstants.clear();
 
         for (auto&& [stage, info] : createInfo.stages) {
             for (auto&& pushConstant : info.pushConstants) {
-                auto&& pushConstantRange = pushConstantsMap[stage];
+                auto pIt = std::ranges::find_if(pushConstantsMap, [stage](auto&& pair) { return pair.first == stage; });
+                if (pIt == pushConstantsMap.end()) {
+                    pushConstantsMap.emplace_back();
+                    pIt = std::prev(pushConstantsMap.end());
+                }
+
+                auto&& pushConstantRange = pIt->second;
                 pushConstantRange.size = pushConstant.size;
                 pushConstantRange.offset = pushConstant.offset;
                 pushConstantRange.stageFlags |= AbstractShaderToVkShader(stage); /// NOLINT
             }
         }
 
-        std::vector<VkPushConstantRange> pushConstants;
-
+        pushConstants.reserve(pushConstantsMap.size());
         for (auto&& [stage, pushConstant] : pushConstantsMap) {
             pushConstants.emplace_back(pushConstant);
         }
-
-        return pushConstants;
     }
 
-    SR_MAYBE_UNUSED static std::optional<std::vector<VkDescriptorSetLayoutBinding>> UniformsToDescriptorLayoutBindings(const UBOInfo& uniforms) {
-        std::vector<VkDescriptorSetLayoutBinding> descriptorLayoutBindings;
+    SR_MAYBE_UNUSED static bool UniformsToDescriptorLayoutBindings(const UBOInfo& uniforms, std::vector<VkDescriptorSetLayoutBinding>& descriptorLayoutBindings) {
+        descriptorLayoutBindings.clear();
 
         for (auto&& uniform : uniforms) {
             VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
-
             switch (uniform.type) {
                 case LayoutBinding::Sampler2D: type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; break;
                 case LayoutBinding::UnfilterableSampler2D: type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; break;
@@ -75,19 +79,16 @@ namespace SR_GRAPH_NS::VulkanTools {
                 case LayoutBinding::SSBO: type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; break;
                 default:
                     SRHalt("VulknaTools::UniformsToDescriptorLayoutBindings() : unknown binding type!");
-                    return std::nullopt;
+                    return false;
             }
 
             VkShaderStageFlagBits stage = AbstractShaderToVkShader(uniform.stage);
 
-            for (auto&& descriptor : descriptorLayoutBindings)
-            {
-                if (descriptor.binding == uniform.binding)
-                {
-                    if (descriptor.descriptorType != type)
-                    {
+            for (auto&& descriptor : descriptorLayoutBindings) {
+                if (descriptor.binding == uniform.binding) {
+                    if (descriptor.descriptorType != type) {
                         SRHalt("VulkanTools::UniformsToDescriptorLayoutBindings() : descriptor types are different! \n\tBinding: " + SR_UTILS_NS::ToString(uniform.binding));
-                        return std::nullopt;
+                        return false;
                     }
 
                     descriptor.stageFlags |= stage; /// NOLINT
@@ -96,14 +97,14 @@ namespace SR_GRAPH_NS::VulkanTools {
             }
 
             descriptorLayoutBindings.emplace_back(EvoVulkan::Tools::Initializers::DescriptorSetLayoutBinding(
-                    type, stage, uniform.binding
+                type, stage, uniform.binding
             ));
 
         skip:
             SR_NOOP;
         }
 
-        return descriptorLayoutBindings;
+        return true;
     }
 
     SR_MAYBE_UNUSED static SR_FORCE_INLINE VkShaderStageFlagBits VkShaderShaderTypeToStage(ShaderStage type) {

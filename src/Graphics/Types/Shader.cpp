@@ -45,25 +45,25 @@ namespace SR_GRAPH_NS::Types {
             return false;
         }
 
-        for (auto&& [name, sampler] : m_samplers) {
+        for (auto&& sampler : m_samplers) {
             if (sampler.isAttachment || sampler.isArray) {
                 continue;
             }
 
             auto&& pIt = m_properties.find_if([&](const auto& property) {
-                return property.id == name && property.HasDefaultData();
+                return property.id == sampler.name && property.HasDefaultData();
             });
 
             if (pIt != m_properties.end()) {
                 if (auto&& pTexture = pIt->GetDefaultData().GetSampler()) {
-                    SetSampler2D(name, pTexture);
+                    SetSampler2D(sampler.name, pTexture);
                 }
                 else {
-                    SetSampler2D(name, GetRenderContext()->GetDefaultTexture());
+                    SetSampler2D(sampler.name, GetRenderContext()->GetDefaultTexture());
                 }
             }
             else {
-                SetSampler2D(name, GetRenderContext()->GetDefaultTexture());
+                SetSampler2D(sampler.name, GetRenderContext()->GetDefaultTexture());
             }
             SRAssert(sampler.samplerId != SR_ID_INVALID);
         }
@@ -236,23 +236,23 @@ namespace SR_GRAPH_NS::Types {
             }
         }
 
-        m_samplers.at(name).samplerId = sampler;
+        ShaderSampler compare;
+        compare.name = name;
+        if (auto&& pSampler = m_samplers.Find(compare)) {
+            pSampler->samplerId = sampler;
+        }
     }
 
     void Shader::SetSampler2D(SR_UTILS_NS::StringAtom name, int32_t sampler) noexcept {
-        if (!IsLoaded() || m_samplers.count(name) == 0) {
-            return;
+        if (IsLoaded()) SR_LIKELY_ATTRIBUTE {
+            SetSampler(name, sampler);
         }
-
-        SetSampler(name, sampler);
     }
 
     void Shader::SetSamplerCube(SR_UTILS_NS::StringAtom name, int32_t sampler) noexcept {
-        if (!IsLoaded() || m_samplers.count(name) == 0) {
-            return;
+        if (IsLoaded()) SR_LIKELY_ATTRIBUTE {
+            SetSampler(name, sampler);
         }
-
-        SetSampler(name, sampler);
     }
 
     void Shader::BindSSBO(SR_UTILS_NS::StringAtom name, uint32_t ssbo) noexcept {
@@ -265,7 +265,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Shader::SetSampler2D(SR_UTILS_NS::StringAtom name, SR_HTYPES_NS::SharedPtr<Texture> pSampler) noexcept {
-        if (!IsLoaded() || m_samplers.count(name) == 0) SR_UNLIKELY_ATTRIBUTE {
+        if (!IsLoaded()) SR_UNLIKELY_ATTRIBUTE {
             return;
         }
 
@@ -481,11 +481,20 @@ namespace SR_GRAPH_NS::Types {
 
         /// ------------------------------------------------------------------------------------------------------------
 
+        ShaderSampler compare;
         for (auto&& [name, sampler] : pShader->GetSamplers()) {
-            m_samplers[name].binding = sampler.binding;
-            m_samplers[name].isAttachment = sampler.attachment >= 0;
-            m_samplers[name].isArray = sampler.type.Contains("Array");
-            m_samplers[name].defaultValue = sampler.defaultValue;
+            compare.name = name;
+            ShaderSampler* pSampler = m_samplers.Find(compare);
+            if (!pSampler) {
+                m_samplers.insert(compare);
+                pSampler = m_samplers.Find(compare);
+                SRAssert(pSampler);
+            }
+
+            pSampler->binding = sampler.binding;
+            pSampler->isAttachment = sampler.attachment >= 0;
+            pSampler->isArray = sampler.type.Contains("Array");
+            pSampler->defaultValue = sampler.defaultValue;
 
             const ShaderVarType varType = SR_SRSL_NS::SRSLTypeInfo::Instance().StringToType(sampler.type);
 
@@ -568,7 +577,7 @@ namespace SR_GRAPH_NS::Types {
     }
 
     void Shader::FlushSamplers() {
-        for (auto&& [hashName, samplerInfo] : m_samplers) {
+        for (auto&& samplerInfo : m_samplers) {
             if (samplerInfo.isAttachment) {
                 GetPipeline()->BindAttachment(samplerInfo.binding, samplerInfo.samplerId);
             }
@@ -600,7 +609,7 @@ namespace SR_GRAPH_NS::Types {
 
     bool Shader::IsSamplersValid() const {
         SR_TRACY_ZONE;
-        for (auto&& [hashName, samplerInfo] : m_samplers) {
+        for (auto&& samplerInfo : m_samplers) {
             if (!samplerInfo.isArray && !samplerInfo.isAttachment) {
                 continue;
             }
@@ -678,10 +687,10 @@ namespace SR_GRAPH_NS::Types {
     bool Shader::AttachDescriptorSets() {
         SR_TRACY_ZONE;
 
-        for (auto&& [hashName, samplerInfo] : m_samplers) {
+        for (auto&& samplerInfo : m_samplers) {
             if (samplerInfo.samplerId == SR_ID_INVALID) {
                 if (!SR_UTILS_NS::CLIManager::Instance().IsHeadlessMode()) {
-                    SR_ERROR("Shader::AttachDescriptorSets() : invalid \"{}\" sampler!", hashName);
+                    SR_ERROR("Shader::AttachDescriptorSets() : invalid \"{}\" sampler!", samplerInfo.name);
                 }
                 samplerInfo.samplerId = GetRenderContext()->GetDefaultTexture()->GetId();
             }

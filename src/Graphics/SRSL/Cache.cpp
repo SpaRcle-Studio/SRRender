@@ -146,10 +146,10 @@ namespace SR_SRSL_NS {
         void SaveSamplers(SR_HTYPES_NS::Marshal& marshal, const ShaderSamplers& samplers) {
             SR_UTILS_NS::MarshalUtils::SaveValue<uint64_t>(marshal, samplers.size());
 
-            for (const auto& [name, sampler] : samplers) {
+            for (const auto& sampler : samplers) {
                 /// ignore sampler.samplerId
 
-                SR_UTILS_NS::MarshalUtils::SaveString(marshal, name);
+                SR_UTILS_NS::MarshalUtils::SaveString(marshal, sampler.name);
 
                 SR_UTILS_NS::MarshalUtils::SaveValue(marshal, sampler.binding);
                 SR_UTILS_NS::MarshalUtils::SaveValue<bool>(marshal, sampler.isArray);
@@ -160,19 +160,20 @@ namespace SR_SRSL_NS {
         }
 
         ShaderSamplers LoadSamplers(SR_HTYPES_NS::Marshal& marshal) {
-            ShaderSamplers samplers;
-
+            SR_TRACY_ZONE;
             const auto samplersSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+            ShaderSamplers samplers;
+            samplers.reserve(samplersSize);
             for (size_t i = 0; i < samplersSize; ++i) {
-                std::string name = SR_UTILS_NS::MarshalUtils::LoadString(marshal);
-
                 ShaderSampler sampler;
+                sampler.name = SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal);
                 sampler.binding = SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal);
                 sampler.isArray = SR_UTILS_NS::MarshalUtils::LoadValue<bool>(marshal);
                 sampler.isAttachment = SR_UTILS_NS::MarshalUtils::LoadValue<bool>(marshal);
                 sampler.defaultValue = SR_UTILS_NS::MarshalUtils::LoadString(marshal);
-
-                samplers[name] = sampler;
+                if (!samplers.insert(sampler)) {
+                    SRHalt("LoadSamplers() : failed to insert sampler!");
+                }
             }
 
             return samplers;
@@ -189,15 +190,15 @@ namespace SR_SRSL_NS {
         }
 
         SSBOBindings LoadSSBO(SR_HTYPES_NS::Marshal& marshal) {
-            SSBOBindings ssbo;
-
+            SR_TRACY_ZONE;
             const auto ssboSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+            SSBOBindings ssbo;
+            ssbo.reserve(ssboSize);
             for (size_t i = 0; i < ssboSize; ++i) {
                 SSBOBinding binding;
                 binding.name = SR_UTILS_NS::MarshalUtils::LoadString(marshal);
                 binding.binding = SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal);
                 /// ignore binding.ssbo
-
                 ssbo.push_back(binding);
             }
 
@@ -391,12 +392,14 @@ namespace SR_GRAPH_NS {
 
         SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::LexerInclude> includes;
         const auto includesSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+        includes.reserve(includesSize);
+        SR_UTILS_NS::Path includePath;
         for (uint64_t i = 0; i < includesSize; ++i) {
             auto& inc = includes.emplace_back();
             inc.name = SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal);
-            SR_UTILS_NS::Path includePath = inc.name;
-            SRAssert(!includePath.ToStringView().starts_with(CoreResLoader::GetResPath()));
-            auto&& absPath = CoreResLoader::GetResPath().Concat(includePath.RemoveSubPath(CoreResLoader::GetResPath()));
+            includePath = inc.name.ToStringView();
+            SRAssert(!includePath.ToStringView().starts_with(CoreResLoader::GetResPathRef()));
+            auto&& absPath = CoreResLoader::GetResPath().Concat(includePath.RemoveSubPath(CoreResLoader::GetResPathRef()));
             currentHash = SR_UTILS_NS::CombineTwoHashes(currentHash, absPath.GetFileHash());
         }
 
@@ -411,8 +414,9 @@ namespace SR_GRAPH_NS {
         LoadUBOBlock(marshal, pShader->m_uniformSharedBlock);
         LoadUBOBlock(marshal, pShader->m_constBlock);
 
-        pShader->m_properties.clear();
         const auto propertiesSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+        pShader->m_properties.clear();
+        pShader->m_properties.reserve(propertiesSize);
         for (uint64_t i = 0; i < propertiesSize; ++i) {
             ShaderProperty property;
             property.id = SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal);
@@ -471,6 +475,7 @@ namespace SR_GRAPH_NS {
     }
 
     void ShaderCache::LoadUBOBlock(SR_HTYPES_NS::Marshal& marshal, Memory::ShaderUBOBlock& block) {
+        SR_TRACY_ZONE;
         block.m_alignedBlock = SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal);
         block.m_align = SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal);
         block.m_binding = SR_UTILS_NS::MarshalUtils::LoadValue<uint32_t>(marshal);
@@ -489,6 +494,7 @@ namespace SR_GRAPH_NS {
         block.m_initialized = true;
 
         const auto defaultValuesSize = SR_UTILS_NS::MarshalUtils::LoadValue<uint64_t>(marshal);
+        block.m_defaultValues.reserve(defaultValuesSize);
         for (size_t i = 0; i < defaultValuesSize; ++i) {
             Memory::ShaderUBOBlock::DefaultValue defaultValue;
             defaultValue.name = SR_UTILS_NS::MarshalUtils::LoadStrAtom(marshal);

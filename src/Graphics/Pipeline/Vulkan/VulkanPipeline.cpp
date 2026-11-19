@@ -792,7 +792,10 @@ namespace SR_GRAPH_NS {
 
         auto&& pShaderProgram = m_memory->GetShaderProgram(shaderProgram);
 
-        std::vector<SourceShader> modules = { };
+        SR_UTILS_NS::Vector<SourceShader> modules;
+        std::vector<EvoVulkan::Complexes::SourceShader> vkModules;
+        modules.reserve(createInfo.stages.size());
+        vkModules.reserve(createInfo.stages.size());
 
         for (auto&& [shaderStage, stage] : createInfo.stages) {
             SourceShader module(stage.path.ToString(), shaderStage);
@@ -804,15 +807,15 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        auto&& pushConstants = VulkanTools::AbstractPushConstantToVkPushConstants(createInfo);
+        static std::vector<VkDescriptorSetLayoutBinding> descriptorLayoutBindings;
+        static std::vector<VkPushConstantRange> pushConstants;
 
-        auto&& descriptorLayoutBindings = VulkanTools::UniformsToDescriptorLayoutBindings(createInfo.uniforms);
-        if (!descriptorLayoutBindings.has_value()) {
+        if (!VulkanTools::UniformsToDescriptorLayoutBindings(createInfo.uniforms, descriptorLayoutBindings)) {
             SRHalt("VulkanPipeline::AllocateShaderProgram() : failed to create descriptor layout bindings!");
             return SR_ID_INVALID;
         }
 
-        std::vector<EvoVulkan::Complexes::SourceShader> vkModules;
+        VulkanTools::AbstractPushConstantToVkPushConstants(createInfo, pushConstants);
         for (auto&& module : modules) {
             VkShaderStageFlagBits stage = VulkanTools::VkShaderShaderTypeToStage(module.m_stage);
             vkModules.emplace_back(EvoVulkan::Complexes::SourceShader(module.m_path, stage)); /// NOLINT
@@ -830,7 +833,7 @@ namespace SR_GRAPH_NS {
             if (!pShaderProgram->Load(
                 cacheShaders.ToString(),
                 vkModules,
-                descriptorLayoutBindings.value(),
+                descriptorLayoutBindings,
                 pushConstants
             )) {
                 EVK_POP_LOG_LEVEL();
@@ -1174,13 +1177,15 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        SR_UTILS_NS::Vector<VkFormat> formats;
+        SR_UTILS_NS::Vector<int32_t> colorBuffers;
+        colorBuffers.reserve((*createInfo.colors).size());
+        formats.reserve((*createInfo.colors).size());
+
         const uint8_t maxFrames = createInfo.pFBO->size();
         for (uint8_t frame = 0; frame < maxFrames; ++frame) {
-            std::vector<int32_t> colorBuffers;
-            colorBuffers.reserve((*createInfo.colors).size());
-
-            std::vector<VkFormat> formats;
-            formats.reserve((*createInfo.colors).size());
+            formats.clear();
+            colorBuffers.clear();
 
             for (auto&& color : (*createInfo.colors)) {
                 color.texture.resize(maxFrames, SR_ID_INVALID);
@@ -1211,7 +1216,7 @@ namespace SR_GRAPH_NS {
                 .layersCount = createInfo.layersCount,
                 .arrayLayersCount = createInfo.arrayLayersCount,
                 .oldColorAttachments = colorBuffers,
-                .inputColorAttachments = formats,
+                .inputColorAttachments = std::move(formats),
                 .pOutputColorAttachments = &colorBuffers,
             };
 

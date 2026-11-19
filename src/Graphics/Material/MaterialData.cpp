@@ -351,8 +351,13 @@ namespace SR_GRAPH_NS {
         samplers.reserve(16);
         uniforms.reserve(16);
 
-        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> uniformsIds;
-        SR_UTILS_NS::Set<SR_UTILS_NS::StringAtom> samplersIds;
+        struct ThreadLocalData {
+            SR_UTILS_NS::SortedVector<SR_UTILS_NS::StringAtom> uniformsIds;
+            SR_UTILS_NS::SortedVector<SR_UTILS_NS::StringAtom> samplersIds;
+        };
+        static SR_THREAD_LOCAL ThreadLocalData gTemp;
+        gTemp.uniformsIds.clear();
+        gTemp.samplersIds.clear();
 
         uint32_t order = 0;
 
@@ -360,7 +365,7 @@ namespace SR_GRAPH_NS {
             bool found = false;
 
             if (IsSamplerType(property.type)) {
-                samplersIds.insert(property.id);
+                gTemp.samplersIds.insert(property.id);
 
                 for (MaterialShaderProperty& sampler : samplers) {
                     if (sampler.id == property.id) {
@@ -388,7 +393,7 @@ namespace SR_GRAPH_NS {
                 }
             }
             else {
-                uniformsIds.insert(property.id);
+                gTemp.uniformsIds.insert(property.id);
 
                 for (MaterialShaderProperty& uniform : uniforms) {
                     if (uniform.id == property.id) {
@@ -418,7 +423,7 @@ namespace SR_GRAPH_NS {
         }
 
         for (auto it = uniforms.begin(); it != uniforms.end();) {
-            if (uniformsIds.find(it->id) == uniformsIds.end()) {
+            if (!gTemp.uniformsIds.exists(it->id)) {
                 it = uniforms.erase(it);
             }
             else {
@@ -427,7 +432,7 @@ namespace SR_GRAPH_NS {
         }
 
         for (auto it = samplers.begin(); it != samplers.end();) {
-            if (samplersIds.find(it->id) == samplersIds.end()) {
+            if (!gTemp.samplersIds.exists(it->id)) {
                 if (it->data) {
                     if (auto&& pTexture = it->data->GetSampler()) {
                         OnSamplerChanged(pTexture, nullptr);

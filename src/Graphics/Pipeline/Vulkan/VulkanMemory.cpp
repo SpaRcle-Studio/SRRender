@@ -10,6 +10,7 @@
 
 namespace SR_GRAPH_NS::VulkanTools {
     int32_t SR_GRAPH_NS::VulkanTools::MemoryManager::AllocateFBO(const VulkanFrameBufferAllocInfo& info) {
+        SR_TRACY_ZONE;
         if (info.inputColorAttachments.size() != info.pOutputColorAttachments->size()) {
             SR_WARN("MemoryManager::AllocateFBO() : input colors not equal output colors count! Something went wrong...");
         }
@@ -23,6 +24,13 @@ namespace SR_GRAPH_NS::VulkanTools {
             vkDepthFormat = VulkanTools::AbstractTextureFormatToVkFormat(info.pDepth->format);
         }
 
+        static std::vector<VkFormat> formats;
+        formats.clear();
+        formats.reserve(info.inputColorAttachments.size());
+        for (auto&& format : info.inputColorAttachments) {
+            formats.emplace_back(format);
+        }
+
         auto&& pFBO = EvoVulkan::Complexes::FrameBuffer::Create(
             m_kernel->GetDevice(),
             m_kernel->GetAllocator(),
@@ -31,7 +39,7 @@ namespace SR_GRAPH_NS::VulkanTools {
             m_kernel->GetCmdPool(),
             m_kernel->GetFrameCmdPools(),
             info.features,
-            info.inputColorAttachments,
+            formats,
             info.width, info.height,
             info.layersCount,
             info.arrayLayersCount,
@@ -45,10 +53,6 @@ namespace SR_GRAPH_NS::VulkanTools {
             SR_ERROR("MemoryManager::AllocateFBO() : failed to create Evo Vulkan frame buffer object!");
             return SR_ID_INVALID;
         }
-
-        //for (auto&& pTexture : pFBO->AllocateColorTextureReferences()) {
-        //    info.pOutputColorAttachments->emplace_back(m_texturePool.Add(pTexture));
-        //}
 
         for (auto&& pTexture : pFBO->AllocateResolveTextureReferences()) {
             info.pOutputColorAttachments->emplace_back(m_texturePool.Add(pTexture));
@@ -67,10 +71,6 @@ namespace SR_GRAPH_NS::VulkanTools {
             info.pDepth->subLayers[i].resize(info.maxFrames, SR_ID_INVALID);
             info.pDepth->subLayers[i][info.frame] = m_texturePool.Add(depthTextures[i]);
         }
-
-        //for (auto&& pTexture : pFBO->AllocateDepthTextureReferences()) {
-        //    info.pDepth->subLayers.emplace_back(m_texturePool.Add(pTexture));
-        //}
 
         return m_fboPool.Add(pFBO);
     }
