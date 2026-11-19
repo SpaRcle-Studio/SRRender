@@ -51,15 +51,17 @@ namespace SR_GRAPH_GUI_NS {
 
         auto&& availableSize = SR_IMMEDIATE_GUI_NS::GetContentRegionAvail();
 
-        SR_IMMEDIATE_GUI_NS::BeginChild("InspectPanel", SR_MATH_NS::FVector2(m_leftPaneWidth, availableSize.y));
-        DrawInspectPanel();
-        SR_IMMEDIATE_GUI_NS::EndChild();
+        if (SR_IMMEDIATE_GUI_NS::BeginChild("InspectPanel", SR_MATH_NS::FVector2(m_leftPaneWidth, availableSize.y))) {
+            DrawInspectPanel();
+            SR_IMMEDIATE_GUI_NS::EndChild();
+        }
 
         SR_IMMEDIATE_GUI_NS::SameLine();
 
-        SR_IMMEDIATE_GUI_NS::BeginChild("NodeEditor", SR_MATH_NS::FVector2(availableSize.x - m_leftPaneWidth - 10, availableSize.y));
-        DrawNodeEditor();
-        SR_IMMEDIATE_GUI_NS::EndChild();
+        if (SR_IMMEDIATE_GUI_NS::BeginChild("NodeEditor", SR_MATH_NS::FVector2(availableSize.x - m_leftPaneWidth - 10, availableSize.y))) {
+            DrawNodeEditor();
+            SR_IMMEDIATE_GUI_NS::EndChild();
+        }
     }
 
     void NodeWidget::OnClose() {
