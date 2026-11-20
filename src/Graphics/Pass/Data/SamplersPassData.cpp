@@ -194,7 +194,7 @@ namespace SR_GRAPH_NS {
                     auto&& pFBO = pFrameBufferController->GetFramebuffer();
 
                     if (!pFBO->Update()) {
-                        SR_ERROR("ISamplersPass::PrepareSamplers() : failed to update frame buffer!\n\tName: " + sampler.fboName.ToStringRef());
+                        SR_ERROR("ISamplersPass::PrepareSamplers() : failed to update frame buffer!\n\tName: {}", sampler.fboName);
                         m_dirtySamplers = true;
                         return false;
                     }

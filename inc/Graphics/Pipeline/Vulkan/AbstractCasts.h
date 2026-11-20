@@ -20,7 +20,7 @@ namespace SR_GRAPH_NS::VulkanTools {
             case ShaderStage::Geometry: return VK_SHADER_STAGE_GEOMETRY_BIT;
             case ShaderStage::Compute: return VK_SHADER_STAGE_COMPUTE_BIT;
             default:
-                SRHalt("VulkanTools::AbstractShaderToVkShader() : unknown binding stage!\n\tStage: " + SR_UTILS_NS::EnumReflector::ToStringAtom(stage).ToStringRef());
+                SRHalt("VulkanTools::AbstractShaderToVkShader() : unknown binding stage!\n\tStage: {}", SR_UTILS_NS::EnumReflector::ToStringAtom(stage));
                 return VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
         }
     }
@@ -322,7 +322,7 @@ namespace SR_GRAPH_NS::VulkanTools {
             default:
                 break;
         }
-        SR_ERROR("VulkanTools::AbstractTextureFormatToVkFormat() : unknown format! \n\tFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
+        SR_ERROR("VulkanTools::AbstractTextureFormatToVkFormat() : unknown format! \n\tFormat: {}", SR_UTILS_NS::EnumReflector::ToStringAtom(format));
         return VkFormat::VK_FORMAT_MAX_ENUM;
     }
 

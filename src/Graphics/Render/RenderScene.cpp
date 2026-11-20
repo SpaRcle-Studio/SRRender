@@ -530,7 +530,7 @@ namespace SR_GRAPH_NS {
 
     IRenderer::Ptr RenderScene::AddRenderer(SR_UTILS_NS::StringAtom name) {
         if (GetRenderer(name)) {
-            SR_WARN("RenderScene::AddRenderer() : renderer \"{}\" already exists!", name.ToStringRef());
+            SR_WARN("RenderScene::AddRenderer() : renderer \"{}\" already exists!", name);
             return GetRenderer(name)->GetThis();
         }
 

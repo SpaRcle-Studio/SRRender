@@ -172,6 +172,16 @@ namespace SR_GTYPES_NS {
         OnTextDirty();
     }
 
+    void Text::SetText(SR_UTILS_NS::StringView text) {
+        std::u32string newText;
+        SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(newText, text);
+        if (m_text == newText) {
+            return;
+        }
+        m_text = std::move(newText);
+        OnTextDirty();
+    }
+
     void Text::SetText(const std::string& text) {
         std::u32string newText;
         SR_UTILS_NS::Localization::UtfToUtf<char32_t, char>(newText, text);

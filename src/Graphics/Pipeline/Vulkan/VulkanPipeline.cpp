@@ -766,10 +766,10 @@ namespace SR_GRAPH_NS {
 
         if (!createInfo.Validate()) {
             PipelineError("VulkanPipeline::AllocateShaderProgram() : failed to validate shader create info! Create info:"
-                 "\n\tPolygon mode: " + SR_UTILS_NS::EnumReflector::ToStringAtom(createInfo.polygonMode).ToStringRef() +
-                          "\n\tCull mode: " + SR_UTILS_NS::EnumReflector::ToStringAtom(createInfo.cullMode).ToStringRef() +
-                          "\n\tDepth compare: " + SR_UTILS_NS::EnumReflector::ToStringAtom(createInfo.depthCompare).ToStringRef() +
-                          "\n\tPrimitive topology: " + SR_UTILS_NS::EnumReflector::ToStringAtom(createInfo.primitiveTopology).ToStringRef()
+                 "\n\tPolygon mode: " + SR_UTILS_NS::String(SR_UTILS_NS::EnumReflector::ToStringAtom(createInfo.polygonMode)) +
+                          "\n\tCull mode: " + SR_UTILS_NS::String(SR_UTILS_NS::EnumReflector::ToStringAtom(createInfo.cullMode)) +
+                          "\n\tDepth compare: " + SR_UTILS_NS::String(SR_UTILS_NS::EnumReflector::ToStringAtom(createInfo.depthCompare)) +
+                          "\n\tPrimitive topology: " + SR_UTILS_NS::String(SR_UTILS_NS::EnumReflector::ToStringAtom(createInfo.primitiveTopology))
             );
             return SR_ID_INVALID;
         }

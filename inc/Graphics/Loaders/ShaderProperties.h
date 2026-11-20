@@ -235,28 +235,6 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    SR_MAYBE_UNUSED static std::string ShaderVarTypeToString(ShaderVarType type) {
-        if (type == ShaderVarType::Skeleton128) {
-            type = ShaderVarType::Mat4;
-        }
-
-        std::string str = SR_UTILS_NS::EnumReflector::ToStringAtom(type);
-
-        if (!str.empty()) {
-            str[0] = tolower(str[0]);
-        }
-
-        return str;
-    }
-
-    SR_MAYBE_UNUSED static std::string MakeShaderVariable(ShaderVarType type, const std::string& name) {
-        if (type == ShaderVarType::Skeleton128) {
-            return ShaderVarTypeToString(type) + " " + name + "[128]";
-        }
-
-        return ShaderVarTypeToString(type) + " " + name;
-    }
-
     SR_MAYBE_UNUSED static uint32_t GetShaderVarSize(ShaderVarType type) {
         switch (type) {
             case ShaderVarType::Int:

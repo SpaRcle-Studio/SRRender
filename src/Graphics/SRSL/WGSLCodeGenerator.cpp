@@ -45,7 +45,7 @@ namespace SR_SRSL_NS {
             stages.clear();
             return codeGenRes;
         }
-        CodeGenDetail::Append(code, "/// Shader type: ", SR_UTILS_NS::EnumReflector::ToStringAtom(pShader->GetType()).ToStringRef(), "\n\n");
+        CodeGenDetail::Append(code, "/// Shader type: ", SR_UTILS_NS::EnumReflector::ToStringAtom(pShader->GetType()), "\n\n");
 
         CollectDeclaredTypes(pShader);
 

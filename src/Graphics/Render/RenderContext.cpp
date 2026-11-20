@@ -723,7 +723,7 @@ namespace SR_GRAPH_NS {
             return;
         }
         m_activePreset = name;
-        SR_UTILS_NS::StoreUtils::User::SetString("RenderPreset", m_activePreset.ToString());
+        SR_UTILS_NS::StoreUtils::User::SetString("RenderPreset", m_activePreset);
         ReloadShaders();
     }
 

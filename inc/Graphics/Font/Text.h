@@ -36,6 +36,7 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD const SR_UTILS_NS::UnicodeString& GetText() const { return m_text; }
 
+        void SetText(SR_UTILS_NS::StringView text);
         void SetText(const std::string& text);
         void SetText(const std::u16string& text);
         void SetText(const std::u32string& text);

@@ -185,14 +185,14 @@ namespace SR_GRAPH_GUI_NS {
             }
 
             auto&& category = pMeta->GetCategory();
-            std::string categoryPath = "Nodes";
+            SR_UTILS_NS::String categoryPath = "Nodes";
             if (!category.empty()) {
                 categoryPath.clear();
                 for (size_t i = 0; i < category.size(); ++i) {
                     if (i > 0) {
                         categoryPath += "/";
                     }
-                    categoryPath += category[i].ToStringRef();
+                    categoryPath += category[i];
                 }
             }
 

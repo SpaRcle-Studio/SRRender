@@ -236,11 +236,11 @@ namespace SR_GRAPH_NS {
             case ImageFormat::R16_UINT:
             case ImageFormat::R32_UINT:
             case ImageFormat::R64_UINT:
-                SRHalt("GetChannelCount : unsupported color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
+                SRHalt("GetChannelCount : unsupported color format!\n\tImageFormat: {}", SR_UTILS_NS::EnumReflector::ToStringAtom(format));
                 return 0;
             case ImageFormat::Unknown:
             default:
-                SRHalt("GetChannelCount : unknown color format!\n\tImageFormat: " + SR_UTILS_NS::EnumReflector::ToStringAtom(format).ToStringRef());
+                SRHalt("GetChannelCount : unknown color format!\n\tImageFormat: {}", SR_UTILS_NS::EnumReflector::ToStringAtom(format));
                 return 0;
         }
     }

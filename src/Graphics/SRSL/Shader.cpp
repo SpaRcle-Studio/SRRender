@@ -159,7 +159,7 @@ namespace SR_SRSL_NS {
         std::string code;
 
         for (auto&& [stage, stageCode] : stages) {
-            code += "Stage[" + SR_UTILS_NS::EnumReflector::ToStringAtom(stage).ToStringRef() + "] {\n" + stageCode + "\n}";
+            code += "Stage[" + SR_UTILS_NS::String(SR_UTILS_NS::EnumReflector::ToStringAtom(stage)) + "] {\n" + stageCode + "\n}";
         }
 
         return code;
@@ -375,7 +375,7 @@ namespace SR_SRSL_NS {
                     if (std::find_if(m_shared.begin(), m_shared.end(), [vaeName](const auto& pair) -> bool {
                         return pair.first == vaeName;
                     }) != m_shared.end()) {
-                        SR_ERROR("SRSLShader::PrepareUniformBlocks() : shared variable already exists! Name: " + vaeName.ToString());
+                        SR_ERROR("SRSLShader::PrepareUniformBlocks() : shared variable already exists! Name: {}", vaeName);
                         continue;
                     }
                     m_shared.emplace_back(vaeName, pVariable);
@@ -384,7 +384,7 @@ namespace SR_SRSL_NS {
                     if (std::find_if(m_sharedWorkgroup.begin(), m_sharedWorkgroup.end(), [vaeName](const auto& pair) -> bool {
                         return pair.first == vaeName;
                     }) != m_sharedWorkgroup.end()) {
-                        SR_ERROR("SRSLShader::PrepareUniformBlocks() : shared variable workgroup already exists! Name: " + vaeName.ToString());
+                        SR_ERROR("SRSLShader::PrepareUniformBlocks() : shared variable workgroup already exists! Name: {}", vaeName);
                         continue;
                     }
                     m_sharedWorkgroup.emplace_back(vaeName, pVariable);
@@ -868,7 +868,7 @@ namespace SR_SRSL_NS {
             case ShaderLanguage::HLSL:
             case ShaderLanguage::Metal:
             default:
-                SR_ERROR("SRSLShader::ToStringAtom() : unknown shader language! Language: " + SR_UTILS_NS::EnumReflector::ToStringAtom(shaderLanguage).ToStringRef());
+                SR_ERROR("SRSLShader::ToStringAtom() : unknown shader language! Language: {}", SR_UTILS_NS::EnumReflector::ToStringAtom(shaderLanguage));
                 codeGenRes.first = SR_UTILS_NS::LexerDetails::LexerReturnCode::UnknownShaderLanguage;
                 return codeGenRes;
         }
@@ -885,7 +885,7 @@ namespace SR_SRSL_NS {
             }
         }
 
-        SR_WARN("SRSLShader::FindField() : field \"" + name.ToStringRef() + "\" not found!");
+        SR_WARN("SRSLShader::FindField() : field \"{}\" not found!", name);
 
         return nullptr;
     }

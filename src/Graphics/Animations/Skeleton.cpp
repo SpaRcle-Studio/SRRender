@@ -113,7 +113,7 @@ namespace SR_ANIMATIONS_NS {
 
         #ifdef SR_DEBUG
             if (m_bonesByName.count(pBone->name) == 1) {
-                SR_INFO("Skeleton::ReCalculateSkeleton() : bone with name \"" + pBone->name.ToStringRef() + "\" already exists in hash table!");
+                SR_INFO("Skeleton::ReCalculateSkeleton() : bone with name \"{}\" already exists in hash table!", pBone->name);
             }
         #endif
 

@@ -47,7 +47,7 @@ namespace SR_GRAPH_UI_NS {
 
         auto&& pMesh = SR_GTYPES_NS::Mesh::Load(path, name);
         if (!pMesh) {
-            SR_ERROR("Gizmo::LoadMesh() : failed to load mesh!\n\tPath: {}\n\tName: {}", path.ToStringRef(), name.ToStringRef());
+            SR_ERROR("Gizmo::LoadMesh() : failed to load mesh!\n\tPath: {}\n\tName: {}", path, name);
             return;
         }
 

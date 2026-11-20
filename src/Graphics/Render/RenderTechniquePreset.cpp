@@ -312,7 +312,7 @@ namespace SR_GRAPH_NS {
 
             if (layerInfo.clearDepth) {
                 ClearDepthAttachmentPass::Ptr pClearDepthPass = new ClearDepthAttachmentPass();
-                pClearDepthPass->SetCustomName("ClearDepth_" + layerInfo.name.ToStringRef());
+                pClearDepthPass->SetCustomName("ClearDepth_{}"_format(layerInfo.name));
                 groupPass.AddPass(SR_UTILS_NS::StaticPointerCast<BasePass>(pClearDepthPass));
             }
 
@@ -926,7 +926,7 @@ namespace SR_GRAPH_NS {
             pPass->knee = knee;
             pPass->clampMax = clampMax;
             pPass->scatter = scatter;
-            pPass->SetCustomName(SR_UTILS_NS::StringAtom(name.ToStringRef() + "Pass"));
+            pPass->SetCustomName(SR_UTILS_NS::StringAtom(SR_UTILS_NS::String(name) + "Pass"));
 
             FrameBufferPass::Ptr pFrameBufferPass = new FrameBufferPass();
             pFrameBufferPass->SetCustomName(name);
@@ -948,8 +948,8 @@ namespace SR_GRAPH_NS {
             pass.GetSamplersData().AddSampler(sampler);
         };
 
-        auto&& mipName = [this](uint32_t i) { return SR_UTILS_NS::StringAtom(SR_FORMAT("{}Mip{}", bloomControllerName.ToStringRef(), i)); };
-        auto&& upName = [this](uint32_t i) { return SR_UTILS_NS::StringAtom(SR_FORMAT("{}Up{}", bloomControllerName.ToStringRef(), i)); };
+        auto&& mipName = [this](uint32_t i) { return SR_UTILS_NS::StringAtom(SR_FORMAT("{}Mip{}", bloomControllerName, i)); };
+        auto&& upName = [this](uint32_t i) { return SR_UTILS_NS::StringAtom(SR_FORMAT("{}Up{}", bloomControllerName, i)); };
         auto&& levelScale = [&preset](uint32_t i) { return preset.preScale / static_cast<float_t>(1u << i); };
 
         /// вниз: mip0 = prefilter(offscreen), mipN = downsample(mipN-1)
@@ -1062,7 +1062,7 @@ namespace SR_GRAPH_NS {
             pPass->maxRoughness = maxRoughness;
             pPass->edgeFade = edgeFade;
             pPass->blurRadius = blurRadius;
-            pPass->SetCustomName(SR_UTILS_NS::StringAtom(name.ToStringRef() + "Pass"));
+            pPass->SetCustomName(SR_UTILS_NS::StringAtom(SR_UTILS_NS::String(name) + "Pass"));
 
             AddGBufferSamplers(pPass->GetSamplersData(), offscreenName, true);
 

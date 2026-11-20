@@ -96,6 +96,7 @@ namespace SR_GRAPH_NS {
         void SetRenderLayers(uint8_t layers);
         void SetFrustumCulling(bool enabled) { m_frustumCulling = enabled; }
         void AddShaderDefine(const std::string& define) { m_shaderDefines.insert(define); }
+        void AddShaderDefine(SR_UTILS_NS::StringAtom define) { m_shaderDefines.insert(define); }
 
         SR_NODISCARD bool IsObjectAllowed(const RenderObjectRegistrationInfo& info) const override;
         SR_NODISCARD bool IsLayerAllowed(SR_UTILS_NS::StringAtom layer) const override;
