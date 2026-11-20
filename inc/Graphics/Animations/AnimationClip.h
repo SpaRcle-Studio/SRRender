@@ -19,17 +19,6 @@ namespace SR_HTYPES_NS {
 namespace SR_ANIMATIONS_NS {
     class AnimationChannel;
 
-    struct ExcludeBoneTransforms : public SR_UTILS_NS::Serializable {
-        SR_STRUCT()
-        /// @property
-        bool translation = true;
-        /// @property
-        bool rotation = true;
-        /// @property
-        bool scale = true;
-
-    };
-
     struct LockTransformAxis : public SR_UTILS_NS::Serializable {
         SR_STRUCT()
         /// @property
@@ -92,8 +81,13 @@ namespace SR_ANIMATIONS_NS {
         /// @property
         SR_UTILS_NS::Optional<float_t> m_startTime;
 
-        Channels m_channels;
-        mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, Channels> m_retargetCache;
+        struct AnimationData {
+            Channels channels;
+            SR_UTILS_NS::RawPointerHolder<KeysPool> pKeysPool;
+        };
+
+        AnimationData m_data;
+        mutable SR_HTYPES_NS::FlatHashMap<SR_UTILS_NS::StringAtom, AnimationData> m_retargetCache;
         bool m_isClipLoaded = false;
 
         float_t m_duration = 0.f;

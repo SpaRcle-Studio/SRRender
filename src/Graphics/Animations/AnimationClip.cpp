@@ -18,15 +18,12 @@
 
 namespace SR_ANIMATIONS_NS {
     AnimationClip::AnimationClip() = default;
-
-    AnimationClip::~AnimationClip() {
-        m_channels.clear();
-    }
+    AnimationClip::~AnimationClip() = default;
 
     bool AnimationClip::LoadChannels(SR_HTYPES_NS::RawMesh* pRawMesh, SR_UTILS_NS::StringAtom name) {
+        SR_TRACY_ZONE;
     #ifdef SR_UTILS_ASSIMP
         const aiAnimation* pAnimation = nullptr;
-
         const aiScene* pScene = static_cast<const aiScene*>(pRawMesh->GetAssimpScene());
 
         for (uint32_t i = 0; i < pScene->mNumAnimations; ++i) {
@@ -41,34 +38,45 @@ namespace SR_ANIMATIONS_NS {
             return false;
         }
 
-        for (uint32_t channelIndex = 0; channelIndex < pAnimation->mNumChannels; ++channelIndex) {
-            auto&& pChannel = pAnimation->mChannels[channelIndex];
-            auto&& channelName = SR_UTILS_NS::StringAtom(std::string_view(pChannel->mNodeName.C_Str(), pChannel->mNodeName.length));
-            if (channelName.empty()) {
-                SR_LOG("AnimationClip::LoadChannels() : channel name is empty! Animation name: {}, Channel index: {}", name, channelIndex);
-                continue;
+        uint64_t totalKeys = 0;
+        uint32_t totalChannels = 0;
+        {
+            SR_TRACY_ZONE_N("Precalc keys count | Reserve channels");
+            for (uint32_t channelIndex = 0; channelIndex < pAnimation->mNumChannels; ++channelIndex) {
+                auto&& pChannel = pAnimation->mChannels[channelIndex];
+                totalKeys += pChannel->mNumPositionKeys + pChannel->mNumRotationKeys + pChannel->mNumScalingKeys;
+                totalChannels += static_cast<bool>(pChannel->mNumPositionKeys) + static_cast<bool>(pChannel->mNumRotationKeys) + static_cast<bool>(pChannel->mNumScalingKeys);
             }
-
-            const uint64_t lastSize = m_channels.size();
-            AnimationChannel::Load(pChannel, static_cast<float_t>(pAnimation->mTicksPerSecond), m_channels);
-            for (uint64_t i = lastSize; i < m_channels.size(); ++i) {
-                m_channels[i].SetName(channelName);
-            }
+            m_data.channels.reserve(totalChannels);
         }
+
+        m_data.pKeysPool = new KeysPool(totalKeys);
+
+        AnimationChannel::LoadContext context(m_excludedBones, m_data.channels, *m_data.pKeysPool);
+        context.invTicksPerSecond = static_cast<float_t>(pAnimation->mTicksPerSecond);
+        if (context.invTicksPerSecond <= 0.f) {
+            /// FBX/Mixamo (и некоторые другие источники) иногда оставляют 0.
+            /// В таком случае считаем, что 1 tick == 1/25 sec (дефолт Assimp/FBX пайплайнов).
+            context.invTicksPerSecond = 25.f;
+        }
+        context.invTicksPerSecond = 1.f / context.invTicksPerSecond;
 
         auto&& pRig = m_rig.GetResource();
-        if (auto&& pSkeleton = GetSkeleton()) {
-            auto&& meshId = pRig ? pRig->GetSkeleton().GetMeshId() : m_skeleton.GetMeshId();
-            for (auto&& channel : m_channels) {
-                const auto boneIndex = pSkeleton->GetBoneInfo(meshId, channel.GetChannelName()).boneId;
-                if (boneIndex.has_value()) {
-                    channel.SetBoneIndex(boneIndex.value());
-                }
-            }
-        }
-        else {
+        context.pSkeleton = GetSkeleton();
+        if (!context.pSkeleton) {
             SR_ERROR("AnimationClip::LoadChannels() : failed to get skeleton for animation \"{}\"", name);
         }
+        context.meshId = pRig ? pRig->GetSkeleton().GetMeshId() : m_skeleton.GetMeshId();
+
+        auto&& range = std::views::iota(0, static_cast<int>(pAnimation->mNumChannels));
+        SR_UTILS_NS::ForEach<SR_UTILS_NS::ExecutionPolicy::ParUnSeq>(range.begin(), range.end(), [&](uint64_t i) {
+            auto&& pChannel = pAnimation->mChannels[i];
+            if (pChannel->mNodeName.length == 0) {
+                SR_LOG("AnimationClip::LoadChannels() : channel name is empty! Animation name: {}, Channel index: {}", name, i);
+                return;
+            }
+            AnimationChannel::Load(pChannel, context);
+        });
 
         PostProcess();
 
@@ -82,7 +90,8 @@ namespace SR_ANIMATIONS_NS {
         m_skeletonReloadSubscription.Reset();
         m_clipReloadSubscription.Reset();
         m_rigReloadSubscriptions.clear();
-        m_channels.clear();
+        m_data.channels.clear();
+        m_data.pKeysPool.Reset();
         m_retargetCache.clear();
 
         m_maxKeyFrame = 0;
@@ -118,7 +127,7 @@ namespace SR_ANIMATIONS_NS {
             return;
         }
 
-        for (auto&& channel : m_channels) {
+        for (auto&& channel : m_data.channels) {
             m_maxKeyFrame = SR_MAX(m_maxKeyFrame, channel.GetKeys().size());
             for (auto&& key : channel.GetKeys()) {
                 m_duration = SR_MAX(m_duration, key.time);
@@ -183,47 +192,31 @@ namespace SR_ANIMATIONS_NS {
         SR_TRACY_ZONE;
 
         if (m_startTime) {
-            for (auto&& channel : m_channels) {
+            for (auto&& channel : m_data.channels) {
                 for (auto&& key : channel.GetKeys()) {
                     key.time -= m_startTime.value();
                 }
             }
             m_duration -= m_startTime.value();
-            m_channels.erase_if([&](const AnimationChannel& channel) {
+            m_data.channels.erase_if([&](const AnimationChannel& channel) {
                 return !channel.GetKeys().empty() && channel.GetKeys().back().time < 0.f;
             });
         }
 
-        for (auto&& [name, transforms] : m_excludedBones) {
-            for (auto&& channel : m_channels) {
-                if (channel.GetChannelName() != name) {
-                    continue;
-                }
-                channel.GetKeys().erase_if([&](const UnionAnimationKey& key) {
-                    return (transforms.translation && key.type == AnimationKeyType::Translation)
-                        || (transforms.rotation && key.type == AnimationKeyType::Rotation)
-                        || (transforms.scale && key.type == AnimationKeyType::Scaling);
-                });
-            }
-            m_channels.erase_if([&](const AnimationChannel& channel) {
-                return channel.GetKeys().empty() && channel.GetChannelName() == name;
-            });
-        }
-
         for (auto&& [name, lock] : m_lockedBones) {
-            for (auto&& channel : m_channels) {
+            for (auto&& channel : m_data.channels) {
                 if (channel.GetChannelName() != name) {
                     continue;
                 }
                 for (auto&& key : channel.GetKeys()) {
-                    if (lock.translation != SR_MATH_NS::Axis::None && key.type == AnimationKeyType::Translation) {
-                        key.data.translation.translation = key.data.translation.translation.ZeroAxis(lock.translation);
+                    if (lock.translation != SR_MATH_NS::Axis::None && channel.GetType() == AnimationChannelType::Translation) {
+                        key.data.translation = key.data.translation.ZeroAxis(lock.translation);
                     }
-                    if (lock.rotation != SR_MATH_NS::Axis::None && key.type == AnimationKeyType::Rotation) {
-                        key.data.rotation.rotation = key.data.rotation.rotation.EulerAngle().ZeroAxis(lock.rotation).ToQuat();
+                    if (lock.rotation != SR_MATH_NS::Axis::None && channel.GetType() == AnimationChannelType::Rotation) {
+                        key.data.rotation = key.data.rotation.EulerAngle().ZeroAxis(lock.rotation).ToQuat();
                     }
-                    if (lock.scale != SR_MATH_NS::Axis::None && key.type == AnimationKeyType::Scaling) {
-                        key.data.scaling.scaling = key.data.scaling.scaling.ZeroAxis(lock.scale);
+                    if (lock.scale != SR_MATH_NS::Axis::None && channel.GetType() == AnimationChannelType::Scaling) {
+                        key.data.scaling = key.data.scaling.ZeroAxis(lock.scale);
                     }
                 }
             }
@@ -235,21 +228,24 @@ namespace SR_ANIMATIONS_NS {
 
         auto&& pSourceRig = m_rig.GetResource();
         if (!pTargetRig || !pSourceRig) {
-            return m_channels;
+            return m_data.channels;
         }
 
         const SR_UTILS_NS::StringAtom sourceRigName = pSourceRig->GetResourceId();
         const SR_UTILS_NS::StringAtom targetRigName = pTargetRig->GetResourceId();
 
         if (sourceRigName == targetRigName) {
-            return m_channels;
+            return m_data.channels;
         }
 
         if (auto&& pIt = m_retargetCache.find(targetRigName); pIt != m_retargetCache.end()) {
-            return pIt->second;
+            if (!pIt->second.pKeysPool) {
+                return m_data.channels;
+            }
+            return pIt->second.channels;
         }
 
-        RetargetAnimationContext context(m_channels, *pSourceRig, *pTargetRig);
+        RetargetAnimationContext context(m_data.channels, *pSourceRig, *pTargetRig);
 
         for (auto&& profile : m_retargetProfiles) {
             if (profile.targetRig.GetId() != targetRigName) {
@@ -264,14 +260,16 @@ namespace SR_ANIMATIONS_NS {
 
         if (RetargetAnimationSystem::Instance().Retarget(context)) {
             SR_LOG("AnimationClip::GetChannels() : retargeted animation \"{}\" from rig \"{}\" to rig \"{}\"", GetResourceId(), sourceRigName, targetRigName);
-            m_retargetCache[targetRigName] = std::move(context.targetChannels);
-            return m_retargetCache[targetRigName];
+            AnimationData& data = m_retargetCache[targetRigName];
+            data.channels = std::move(context.targetChannels);
+            data.pKeysPool = std::move(context.pKeysPool);
+            return m_retargetCache[targetRigName].channels;
         }
 
         SR_ERROR("AnimationClip::GetChannels() : failed to retarget animation \"{}\" from rig \"{}\" to rig \"{}\"", GetResourceId(), sourceRigName, targetRigName);
 
-        m_retargetCache.emplace(targetRigName, m_channels);
-        return m_retargetCache[targetRigName];
+        m_retargetCache.emplace(targetRigName, AnimationData());
+        return m_data.channels;
     }
 
     SR_HTYPES_NS::RawMesh* AnimationClip::GetSkeleton() const {

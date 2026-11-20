@@ -119,7 +119,9 @@ namespace SR_ANIMATIONS_NS {
         SR_ANIMATIONS_NS::Skeleton::Ptr pTargetSkeleton;
 
         uint32_t maxKeyFrame = 0;
+        uint32_t targetKeyFramesPerChannel = 0;
         SR_UTILS_NS::Vector<AnimationChannel> targetChannels;
+        SR_UTILS_NS::RawPointerHolder<KeysPool> pKeysPool;
     };
 
     class RetargetAnimationSystem : public SR_UTILS_NS::Singleton<RetargetAnimationSystem> {

@@ -4,6 +4,7 @@
 
 #include <Graphics/Animations/AnimationKey.h>
 #include <Graphics/Animations/AnimationData.h>
+#include <Graphics/Animations/AnimationChannel.h>
 
 #include <Utils/ECS/Transform.h>
 
@@ -30,30 +31,30 @@ namespace SR_ANIMATIONS_NS {
         return *this;
     }
 
-    void UnionAnimationKey::Update(const float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t tolerance) const noexcept {
+    void UnionAnimationKey::Update(AnimationChannelType type, const float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t tolerance) const noexcept {
         if (tolerance == 0.0f) SR_UNLIKELY_ATTRIBUTE {
-            Update(progress, prevKey, animation);
+            Update(type, progress, prevKey, animation);
             return;
         }
 
         switch (type) {
-            case AnimationKeyType::Rotation:
-                if (prevKey.data.rotation.rotation.IsEquals(data.rotation.rotation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
+            case AnimationChannelType::Rotation:
+                if (prevKey.data.rotation.IsEquals(data.rotation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
                     return;
                 }
-                animation.rotation = prevKey.data.rotation.rotation.Nlerp(data.rotation.rotation, progress);
+                animation.rotation = prevKey.data.rotation.Nlerp(data.rotation, progress);
                 break;
-            case AnimationKeyType::Translation:
-                if (prevKey.data.translation.translation.IsEquals(data.translation.translation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
+            case AnimationChannelType::Translation:
+                if (prevKey.data.translation.IsEquals(data.translation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
                     return;
                 }
-                animation.translation = prevKey.data.translation.translation.Lerp(data.translation.translation, progress);
+                animation.translation = prevKey.data.translation.Lerp(data.translation, progress);
                 break;
-            case AnimationKeyType::Scaling:
-                if (prevKey.data.scaling.scaling.IsEquals(data.scaling.scaling, tolerance)) SR_UNLIKELY_ATTRIBUTE {
+            case AnimationChannelType::Scaling:
+                if (prevKey.data.scaling.IsEquals(data.scaling, tolerance)) SR_UNLIKELY_ATTRIBUTE {
                     return;
                 }
-                animation.scaling = prevKey.data.scaling.scaling.Lerp(data.scaling.scaling, progress);
+                animation.scaling = prevKey.data.scaling.Lerp(data.scaling, progress);
                 break;
             default:
                 SRHalt("Unknown key type!");
@@ -62,30 +63,30 @@ namespace SR_ANIMATIONS_NS {
         animation.dirty = true;
     }
 
-    void UnionAnimationKey::Set(AnimationGameObjectData& animation, float_t tolerance) const noexcept {
+    void UnionAnimationKey::Set(AnimationChannelType type, AnimationGameObjectData& animation, float_t tolerance) const noexcept {
         if (tolerance == 0.0f) SR_UNLIKELY_ATTRIBUTE {
-            Set(animation);
+            Set(type, animation);
             return;
         }
 
         switch (type) {
-            case AnimationKeyType::Rotation:
-                if (animation.rotation.has_value() && animation.rotation.value().IsEquals(data.rotation.rotation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
+            case AnimationChannelType::Rotation:
+                if (animation.rotation.has_value() && animation.rotation.value().IsEquals(data.rotation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
                     return;
                 }
-                animation.rotation = data.rotation.rotation;
+                animation.rotation = data.rotation;
                 break;
-            case AnimationKeyType::Translation:
-                if (animation.translation.has_value() && animation.translation.value().IsEquals(data.translation.translation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
+            case AnimationChannelType::Translation:
+                if (animation.translation.has_value() && animation.translation.value().IsEquals(data.translation, tolerance)) SR_UNLIKELY_ATTRIBUTE {
                     return;
                 }
-                animation.translation = data.translation.translation;
+                animation.translation = data.translation;
                 break;
-            case AnimationKeyType::Scaling:
-                if (animation.scaling.has_value() && animation.scaling.value().IsEquals(data.scaling.scaling, tolerance)) SR_UNLIKELY_ATTRIBUTE {
+            case AnimationChannelType::Scaling:
+                if (animation.scaling.has_value() && animation.scaling.value().IsEquals(data.scaling, tolerance)) SR_UNLIKELY_ATTRIBUTE {
                     return;
                 }
-                animation.scaling = data.scaling.scaling;
+                animation.scaling = data.scaling;
                 break;
             default:
                 SRHalt("Unknown key type!");
@@ -94,46 +95,31 @@ namespace SR_ANIMATIONS_NS {
         animation.dirty = true;
     }
 
-    void UnionAnimationKey::UpdateWithWeight(float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t weight) const noexcept {
+    void UnionAnimationKey::UpdateWithWeight(AnimationChannelType type, float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation, float_t weight) const noexcept {
         switch (type) {
-            case AnimationKeyType::Rotation:
+            case AnimationChannelType::Rotation:
                 if (!animation.rotation.has_value()) SR_UNLIKELY_ATTRIBUTE {
-                    animation.rotation = prevKey.data.rotation.rotation.Nlerp(data.rotation.rotation, progress);
+                    animation.rotation = prevKey.data.rotation.Nlerp(data.rotation, progress);
                     break;
                 }
-                animation.rotation = animation.rotation.value().Nlerp(prevKey.data.rotation.rotation
-                    .Slerp(data.rotation.rotation, progress), weight);
-
-                //// Вычисляем интерполированное значение один раз
-                //const auto interpolated = prevKey.data.rotation.rotation
-                //        .Slerp(data.rotation.rotation, progress);
-
-                //if (!animation.rotation.has_value()) {
-                //    animation.rotation = interpolated;
-                //    animation.rotationWeight = weight;
-                //} else {
-                //    // Используем более быстрый NLerp для блендинга
-                //    // или накапливаем взвешенные значения
-                //    animation.rotation = animation.rotation.value()
-                //            .NLerp(interpolated, weight / (animation.rotationWeight + weight));
-                //    animation.rotationWeight += weight;
-                //}
+                animation.rotation = animation.rotation.value().Nlerp(prevKey.data.rotation
+                    .Slerp(data.rotation, progress), weight);
                 break;
-            case AnimationKeyType::Translation:
+            case AnimationChannelType::Translation:
                 if (!animation.translation.has_value()) SR_UNLIKELY_ATTRIBUTE {
-                    animation.translation = prevKey.data.translation.translation.Lerp(data.translation.translation, progress);
+                    animation.translation = prevKey.data.translation.Lerp(data.translation, progress);
                     break;
                 }
-                animation.translation = animation.translation.value().Lerp(prevKey.data.translation.translation
-                    .Lerp(data.translation.translation, progress), weight);
+                animation.translation = animation.translation.value().Lerp(prevKey.data.translation
+                    .Lerp(data.translation, progress), weight);
                 break;
-            case AnimationKeyType::Scaling:
+            case AnimationChannelType::Scaling:
                 if (!animation.scaling.has_value()) SR_UNLIKELY_ATTRIBUTE {
-                    animation.scaling = prevKey.data.scaling.scaling.Lerp(data.scaling.scaling, progress);
+                    animation.scaling = prevKey.data.scaling.Lerp(data.scaling, progress);
                     break;
                 }
-                animation.scaling = animation.scaling.value().Lerp(prevKey.data.scaling.scaling
-                    .Lerp(data.scaling.scaling, progress), weight);
+                animation.scaling = animation.scaling.value().Lerp(prevKey.data.scaling
+                    .Lerp(data.scaling, progress), weight);
                 break;
             default:
                 SRHalt("Unknown key type!");
@@ -142,44 +128,44 @@ namespace SR_ANIMATIONS_NS {
         animation.dirty = true;
     }
 
-    void UnionAnimationKey::SetWithWeight(AnimationGameObjectData& animation, float_t weight) const noexcept {
+    void UnionAnimationKey::SetWithWeight(AnimationChannelType type, AnimationGameObjectData& animation, float_t weight) const noexcept {
         switch (type) {
-            case AnimationKeyType::Rotation:
+            case AnimationChannelType::Rotation:
                 if (!animation.rotation.has_value()) SR_UNLIKELY_ATTRIBUTE {
-                    animation.rotation = data.rotation.rotation;
+                    animation.rotation = data.rotation;
                     break;
                 }
-                animation.rotation = animation.rotation.value().Nlerp(data.rotation.rotation, weight);
+                animation.rotation = animation.rotation.value().Nlerp(data.rotation, weight);
                 break;
-            case AnimationKeyType::Translation:
+            case AnimationChannelType::Translation:
                 if (!animation.translation.has_value()) SR_UNLIKELY_ATTRIBUTE {
-                    animation.translation = data.translation.translation;
+                    animation.translation = data.translation;
                     break;
                 }
-                animation.translation = animation.translation.value().Lerp(data.translation.translation, weight);
+                animation.translation = animation.translation.value().Lerp(data.translation, weight);
                 break;
-            case AnimationKeyType::Scaling:
+            case AnimationChannelType::Scaling:
                 if (!animation.scaling.has_value()) SR_UNLIKELY_ATTRIBUTE {
-                    animation.scaling = data.scaling.scaling;
+                    animation.scaling = data.scaling;
                     break;
                 }
-                animation.scaling = animation.scaling.value().Lerp(data.scaling.scaling, weight);
+                animation.scaling = animation.scaling.value().Lerp(data.scaling, weight);
                 break;
             default:
                 SRHalt("Unknown key type!");
         }
     }
 
-    void UnionAnimationKey::Update(const float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation) const noexcept {
+    void UnionAnimationKey::Update(AnimationChannelType type, const float_t progress, const UnionAnimationKey& prevKey, AnimationGameObjectData& animation) const noexcept {
         switch (type) {
-            case AnimationKeyType::Rotation:
-                animation.rotation = prevKey.data.rotation.rotation.Nlerp(data.rotation.rotation, progress);
+            case AnimationChannelType::Rotation:
+                animation.rotation = prevKey.data.rotation.Nlerp(data.rotation, progress);
                 break;
-            case AnimationKeyType::Translation:
-                animation.translation = prevKey.data.translation.translation.Lerp(data.translation.translation, progress);
+            case AnimationChannelType::Translation:
+                animation.translation = prevKey.data.translation.Lerp(data.translation, progress);
                 break;
-            case AnimationKeyType::Scaling:
-                animation.scaling = prevKey.data.scaling.scaling.Lerp(data.scaling.scaling, progress);
+            case AnimationChannelType::Scaling:
+                animation.scaling = prevKey.data.scaling.Lerp(data.scaling, progress);
                 break;
             default:
                 SRHalt("Unknown key type!");
@@ -188,16 +174,16 @@ namespace SR_ANIMATIONS_NS {
         animation.dirty = true;
     }
 
-    void UnionAnimationKey::Set(AnimationGameObjectData& animation) const noexcept {
+    void UnionAnimationKey::Set(AnimationChannelType type, AnimationGameObjectData& animation) const noexcept {
         switch (type) {
-            case AnimationKeyType::Rotation:
-                animation.rotation = data.rotation.rotation;
+            case AnimationChannelType::Rotation:
+                animation.rotation = data.rotation;
                 break;
-            case AnimationKeyType::Translation:
-                animation.translation = data.translation.translation;
+            case AnimationChannelType::Translation:
+                animation.translation = data.translation;
                 break;
-            case AnimationKeyType::Scaling:
-                animation.scaling = data.scaling.scaling;
+            case AnimationChannelType::Scaling:
+                animation.scaling = data.scaling;
                 break;
             default:
                 SRHalt("Unknown key type!");
@@ -208,39 +194,11 @@ namespace SR_ANIMATIONS_NS {
 
     void UnionAnimationKey::CopyFrom(const UnionAnimationKey& other) {
         time = other.time;
-        type = other.type;
-
-        switch (type) {
-            case AnimationKeyType::Translation:
-                data.translation = other.data.translation;
-            break;
-            case AnimationKeyType::Rotation:
-                data.rotation = other.data.rotation;
-            break;
-            case AnimationKeyType::Scaling:
-                data.scaling = other.data.scaling;
-            break;
-            default:
-                SRHalt("Unknown key type!");
-        }
+        memcpy((void*)&data, (void*)&other.data, sizeof(Data));
     }
 
     void UnionAnimationKey::MoveFrom(UnionAnimationKey& other) noexcept {
         time = other.time;
-        type = other.type;
-
-        switch (type) {
-            case AnimationKeyType::Translation:
-                data.translation = SR_UTILS_NS::Exchange(other.data.translation, {});
-                break;
-            case AnimationKeyType::Rotation:
-                data.rotation = SR_UTILS_NS::Exchange(other.data.rotation, {});
-                break;
-            case AnimationKeyType::Scaling:
-                data.scaling = SR_UTILS_NS::Exchange(other.data.scaling, {});
-                break;
-            default:
-                SRHalt("Unknown key type!");
-        }
+        memmove((void*)&data, (void*)&other.data, sizeof(Data));
     }
 }

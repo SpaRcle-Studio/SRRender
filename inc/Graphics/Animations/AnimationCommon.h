@@ -22,38 +22,6 @@
 #endif
 
 namespace SR_ANIMATIONS_NS {
-    /// Это тип свойства которое изменяет AnimationKey
-    /*SR_ENUM_NS_CLASS_T(AnimationPropertyType, uint8_t,
-        Translation,
-        Rotation,
-        Scale,
-        Skew,
-
-        InstanceFromFile,
-
-        ComponentEnable,
-        ComponentProperty,
-        ComponentRemove,
-        ComponentAdd,
-
-        GameObjectAdd,
-        GameObjectRemove,
-        GameObjectMove,
-        GameObjectEnable,
-        GameObjectName,
-        GameObjectTag
-    );*/
-
-#ifdef SR_UTILS_ASSIMP
-    SR_MAYBE_UNUSED static SR_MATH_NS::FVector3 AiV3ToFV3(const aiVector3D& v, float_t multiplier) {
-        return SR_MATH_NS::FVector3(v.x, v.y, v.z) * multiplier;
-    }
-
-    SR_MAYBE_UNUSED static SR_MATH_NS::Quaternion AiQToQ(const aiQuaternion& q) {
-        return SR_MATH_NS::Quaternion(q.x, q.y, q.z, q.w);
-    }
-#endif
-
     SR_ENUM_NS_CLASS_T(QuaternionBlendMode, uint8_t,
         Nlerp,
         Slerp

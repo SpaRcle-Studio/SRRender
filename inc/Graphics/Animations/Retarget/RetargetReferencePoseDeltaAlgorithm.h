@@ -37,6 +37,7 @@ namespace SR_ANIMATIONS_NS {
         bool initialized = false;
     };
 
+
     class SR_GRAPHICS_DLL_API RetargetReferencePoseDeltaAlgorithm final : public RetargetAlgorithmBase {
         SR_CLASS()
         using Super = RetargetAlgorithmBase;
@@ -47,9 +48,9 @@ namespace SR_ANIMATIONS_NS {
 
     private:
         void PrepareState(const RetargetAnimationContext& context) const;
-        bool AnimateSourceObject(const RetargetAnimationContext& context, float_t dt) const;
+        void AnimateSourceObject(const RetargetAnimationContext& context, float_t animationTime) const;
         void ApplyAnimation(const RetargetAnimationContext& context) const;
-        void SaveFrameToAnimation(RetargetAnimationContext& context, uint32_t frame) const;
+        void SaveFrameToAnimation(RetargetAnimationContext& context, uint32_t frame, uint32_t framesCount) const;
         void ClearState() const;
 
     private:

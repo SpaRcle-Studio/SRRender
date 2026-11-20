@@ -23,18 +23,42 @@ namespace SR_ANIMATIONS_NS {
             return false;
         }
 
+        if (m_bakeFPS <= 0.f) {
+            SR_ERROR("RetargetReferencePoseDeltaAlgorithm::Retarget() : bake FPS must be positive!");
+            return false;
+        }
+
+        float_t duration = 0.f;
+        for (auto&& channel : context.sourceChannels) {
+            if (!channel.GetKeys().empty()) {
+                duration = SR_MAX(duration, channel.GetKeys().back().time);
+            }
+        }
+        const uint32_t bakedFramesCount = static_cast<uint32_t>(std::ceil(duration * m_bakeFPS)) + 1;
+
+        context.targetKeyFramesPerChannel = 0;
+        context.pTargetSkeleton->ForEachTransform([&](auto&& transform) {
+            auto&& pGameObject = transform.GetGameObject();
+            if (!pGameObject) {
+                return;
+            }
+
+            const SR_UTILS_NS::StringAtom boneName = pGameObject->GetName();
+            if (!boneName.empty()) {
+                context.targetKeyFramesPerChannel++;
+            }
+        });
+
+        context.pKeysPool = new KeysPool(context.targetKeyFramesPerChannel * bakedFramesCount * 3);
+
         PrepareState(context);
 
         if (context.pProfile && context.pProfile->IKCorrection) {
             context.pProfile->IKCorrection->ResetState();
         }
 
-        const float_t dt = 1.f / m_bakeFPS;
-        uint32_t frame = 0;
-        bool isEnded = false;
-
-        do {
-            isEnded = AnimateSourceObject(context, dt);
+        for (uint32_t frame = 0; frame < bakedFramesCount; ++frame) {
+            AnimateSourceObject(context, static_cast<float_t>(frame) / m_bakeFPS);
             ApplyAnimation(context);
 
             RetargetReferencePoseDeltaAlgorithmState::RetargetFrameContext frameContext(GetState().rotationFollowStates);
@@ -49,9 +73,8 @@ namespace SR_ANIMATIONS_NS {
                 context.pProfile->IKCorrection->Apply(context);
             }
 
-            SaveFrameToAnimation(context, frame++);
+            SaveFrameToAnimation(context, frame, bakedFramesCount);
         }
-        while (!isEnded);
 
         context.targetChannels.erase_if([](const AnimationChannel& channel) {
             return !channel.IsValid();
@@ -62,7 +85,7 @@ namespace SR_ANIMATIONS_NS {
         return true;
     }
 
-    void RetargetReferencePoseDeltaAlgorithm::SaveFrameToAnimation(RetargetAnimationContext& context, uint32_t frame) const {
+    void RetargetReferencePoseDeltaAlgorithm::SaveFrameToAnimation(RetargetAnimationContext& context, uint32_t frame, uint32_t framesCount) const {
         SR_TRACY_ZONE;
 
         auto&& targetChannels = context.targetChannels;
@@ -77,23 +100,19 @@ namespace SR_ANIMATIONS_NS {
         auto&& pTargetRawMesh = targetSkeletonHolder.GetRawMesh();
         const uint32_t targetMeshId = targetSkeletonHolder.GetMeshId();
 
-        auto getOrCreateChannel = [&](SR_UTILS_NS::StringAtom boneName, AnimationKeyType type) -> AnimationChannel* {
+        auto getOrCreateChannel = [&](SR_UTILS_NS::StringAtom boneName, AnimationChannelType type) -> AnimationChannel& {
             /// Fast-path: find existing channel with same bone name and key type.
             for (auto&& channel : targetChannels) {
-                if (channel.GetChannelName() != boneName) {
-                    continue;
-                }
-
-                auto&& keys = channel.GetKeys();
-                if (!keys.empty() && keys.front().type == type) {
-                    return &channel;
+                if (channel.GetChannelName() == boneName && channel.GetType() == type) {
+                    return channel;
                 }
             }
 
             /// Create new typed channel for this bone.
             auto&& channel = targetChannels.emplace_back();
             channel.SetName(boneName);
-            channel.ReserveKeys(context.maxKeyFrame);
+            channel.SetKeys(context.pKeysPool->AllocateUnionKeys(framesCount));
+            channel.SetType(type);
 
             if (pTargetRawMesh && targetMeshId != SR_ID_INVALID) {
                 const auto& info = pTargetRawMesh->GetBoneInfo(targetMeshId, boneName);
@@ -102,7 +121,7 @@ namespace SR_ANIMATIONS_NS {
                 }
             }
 
-            return &channel;
+            return channel;
         };
 
         pTargetSkeleton->ForEachTransform([&](auto&& transform) {
@@ -116,17 +135,17 @@ namespace SR_ANIMATIONS_NS {
                 return;
             }
 
-            if (auto&& pTChannel = getOrCreateChannel(boneName, AnimationKeyType::Translation)) {
-                pTChannel->AddKey(timePoint, TranslationKey(transform.GetTranslation()));
-            }
+            auto&& tKey = getOrCreateChannel(boneName, AnimationChannelType::Translation).GetKeys()[frame];
+            tKey.time = timePoint;
+            tKey.data.translation = transform.GetTranslation();
 
-            if (auto&& pRChannel = getOrCreateChannel(boneName, AnimationKeyType::Rotation)) {
-                pRChannel->AddKey(timePoint, RotationKey(transform.GetQuaternion().NormalizeSafe()));
-            }
+            auto&& rKey = getOrCreateChannel(boneName, AnimationChannelType::Rotation).GetKeys()[frame];
+            rKey.time = timePoint;
+            rKey.data.rotation = transform.GetQuaternion().NormalizeSafe();
 
-            if (auto&& pSChannel = getOrCreateChannel(boneName, AnimationKeyType::Scaling)) {
-                pSChannel->AddKey(timePoint, ScalingKey(transform.GetScale()));
-            }
+            auto&& sKey = getOrCreateChannel(boneName, AnimationChannelType::Scaling).GetKeys()[frame];
+            sKey.time = timePoint;
+            sKey.data.scaling = transform.GetScale();
         });
     }
 
@@ -172,17 +191,14 @@ namespace SR_ANIMATIONS_NS {
         state.poseGameObjects.resize(gameObjects.size());
     }
 
-    bool RetargetReferencePoseDeltaAlgorithm::AnimateSourceObject(const RetargetAnimationContext& context, float_t dt) const {
+    void RetargetReferencePoseDeltaAlgorithm::AnimateSourceObject(const RetargetAnimationContext& context, float_t animationTime) const {
         SR_TRACY_ZONE;
 
         auto&& channels = context.sourceChannels;
         const auto channelsCount = static_cast<uint32_t>(channels.size());
 
-        uint32_t currentKeyFrame = 0;
-
         auto&& state = GetState();
         auto&& channelsPlayState = state.channelPlayState;
-        float_t& animationTime = state.animationTime;
 
         ChannelAnimationUpdateContext channelAnimationContext;
         channelAnimationContext.weight = m_animationWeight;
@@ -192,26 +208,19 @@ namespace SR_ANIMATIONS_NS {
 
         for (uint32_t i = 0; i < channelsCount; ++i) {
             ChannelUpdateContext& channelContext = state.channelContexts[i];
-            if (!channelContext.gameObjectIndex) SR_UNLIKELY_ATTRIBUTE {
-                currentKeyFrame = SR_MAX(currentKeyFrame, channelsPlayState[i]);
+            if (!channelContext.gameObjectIndex || channels[i].GetKeys().empty()) SR_UNLIKELY_ATTRIBUTE {
                 continue;
             }
 
             auto&& data = state.poseGameObjects[channelContext.gameObjectIndex.value()];
 
-            uint32_t keyFrame = 0;
             if (m_animationWeight > 0.f && m_animationWeight < 1.f) SR_UNLIKELY_ATTRIBUTE {
-                keyFrame = channels[i].UpdateChannelWithWeight(channelsPlayState[i], animationTime, channelAnimationContext, data);
+                channelsPlayState[i] = channels[i].UpdateChannelWithWeight(channelsPlayState[i], animationTime, channelAnimationContext, data);
             }
             else {
-                keyFrame = channels[i].UpdateChannel(channelsPlayState[i], animationTime, channelAnimationContext, data);
+                channelsPlayState[i] = channels[i].UpdateChannel(channelsPlayState[i], animationTime, channelAnimationContext, data);
             }
-            currentKeyFrame = SR_MAX(currentKeyFrame, keyFrame);
         }
-
-        animationTime += dt;
-
-        return currentKeyFrame >= context.maxKeyFrame;
     }
 
     void RetargetReferencePoseDeltaAlgorithm::RetargetFrame(RetargetReferencePoseDeltaAlgorithmState::RetargetFrameContext& context, uint32_t frame) {
@@ -306,7 +315,7 @@ namespace SR_ANIMATIONS_NS {
         const auto tgtNodeDepth = buildNodeDepth(tgtScene);
 
         /// Map target node -> source node using humanoid chains, proportionally along chain depth.
-        std::unordered_map<uint16_t, uint16_t> mappedTargetToSource;
+        SR_HTYPES_NS::FlatHashMap<uint16_t, uint16_t> mappedTargetToSource;
         mappedTargetToSource.reserve(128);
 
         auto orderChainNodesByDepth = [](
