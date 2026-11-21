@@ -263,7 +263,7 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         if (auto&& pCamera = GetCamera()) {
-            m_resolution = pCamera->GetSize().Cast<float_t>();
+            m_resolution = pCamera->GetViewportSize().Cast<float_t>();
         }
         else {
             m_resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();

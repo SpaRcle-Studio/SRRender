@@ -284,6 +284,8 @@ namespace SR_GRAPH_NS {
     }
 
     void* VulkanImGuiOverlay::GetTextureDescriptorSet(uint32_t textureId) {
+        SR_TRACY_ZONE;
+
         if (textureId == SR_ID_INVALID) {
             SR_ERROR("VulkanImGuiOverlay::GetTextureDescriptorSet() : invalid id!");
             return nullptr;

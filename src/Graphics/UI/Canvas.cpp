@@ -141,7 +141,7 @@ namespace SR_GRAPH_UI_NS {
 
             if (auto&& pCamera = m_renderScene->GetMainCamera()) {
                 m_camera = pCamera;
-                windowSize = pCamera->GetSize();
+                windowSize = pCamera->GetViewportSize();
                 SetViewportRect(pCamera->GetViewportRect());
             }
             else {

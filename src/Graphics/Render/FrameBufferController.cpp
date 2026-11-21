@@ -60,8 +60,8 @@ namespace SR_GRAPH_NS {
 
         /// pre scale size
         SR_MATH_NS::IVector2 size = {
-                SR_MATH_NS::Max(static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(m_size.x) * m_preScale.x), 1),
-                SR_MATH_NS::Max(static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(m_size.y) * m_preScale.y), 1),
+            SR_MATH_NS::Max(static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(m_size.x) * m_preScale.x), 1),
+            SR_MATH_NS::Max(static_cast<int32_t>(static_cast<SR_MATH_NS::Unit>(m_size.y) * m_preScale.y), 1),
         };
 
         if (m_framebuffer) {
@@ -81,7 +81,6 @@ namespace SR_GRAPH_NS {
             m_framebuffer->SetDepthAspect(m_depthAspect);
             m_framebuffer->SetFeatures(m_features);
             m_framebuffer->SetInstanceForEachFram(m_instanceForEachFrame && forEachSwapchainImage);
-
             m_framebuffer->RegisterGraphicsResource();
         }
         else {

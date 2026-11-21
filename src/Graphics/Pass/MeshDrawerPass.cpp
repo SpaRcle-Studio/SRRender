@@ -128,7 +128,7 @@ namespace SR_GRAPH_NS {
         if (m_uniforms.shared.camera) {
             SR_MATH_NS::FVector2 resolution;
             if (auto&& pCamera = GetRenderScene()->GetMainCamera()) {
-                resolution = pCamera->GetSize().Cast<float_t>();
+                resolution = pCamera->GetViewportSize().Cast<float_t>();
             }
             else {
                 resolution = GetRenderScene()->GetSurfaceSize().Cast<float_t>();

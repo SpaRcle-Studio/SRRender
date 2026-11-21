@@ -213,6 +213,7 @@ namespace SR_GRAPH_NS {
         VulkanTools::MemoryManager* m_memory = nullptr;
 
         std::atomic<uint64_t> m_nextWorkId;
+        SR_UTILS_NS::String m_tmpFormatBuffer;
 
     };
 }

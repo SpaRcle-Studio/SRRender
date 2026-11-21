@@ -29,6 +29,9 @@ namespace SR_GRAPH_NS {
         bool depthShaderRead = false;
         /// @property
         bool colorShaderRead = true;
+
+        SR_NODISCARD bool operator==(const FrameBufferFeatures& other) const;
+        SR_NODISCARD bool operator!=(const FrameBufferFeatures& other) const;
     };
 }
 

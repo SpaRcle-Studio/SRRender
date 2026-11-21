@@ -51,6 +51,7 @@ namespace SR_GTYPES_NS {
         void OnAttached() override;
         void UpdateProjection(uint32_t w, uint32_t h);
         void Update(float_t dt) override;
+        void SetFixedSize(const SR_UTILS_NS::Optional<SR_MATH_NS::UVector2>& size);
 
     public:
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetView() const noexcept { return m_viewMat; }
@@ -60,7 +61,6 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetProjection() const noexcept { return m_projection; }
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Matrix4x4& GetProjectionNoFOV() const noexcept { return m_projectionNoFOV; }
         SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::Quaternion& GetRotation() const noexcept { return m_rotation; }
-        SR_NODISCARD SR_FORCE_INLINE SR_MATH_NS::UVector2 GetSize() const { return m_viewportSize; }
         SR_NODISCARD SR_MATH_NS::FVector3 GetViewPosition() const;
         SR_NODISCARD SR_MATH_NS::FVector3 GetCameraEye() const;
         SR_NODISCARD SR_MATH_NS::FVector3 GetCameraDir() const;
@@ -70,7 +70,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD SR_FORCE_INLINE float_t GetFOV() const { return m_FOV; }
         SR_NODISCARD SR_FORCE_INLINE float_t GetAspect() const { return m_aspect; }
         SR_NODISCARD SR_FORCE_INLINE int32_t GetPriority() const { return m_priority; }
-        SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::UVector2& GetViewportSize() const { return m_viewportSize; }
+        SR_NODISCARD SR_FORCE_INLINE const SR_MATH_NS::UVector2& GetViewportSize() const { return m_viewportSizeInternal; }
         SR_NODISCARD SR_MATH_NS::FRect GetViewportRect() const;
 
         SR_NODISCARD const SR_MATH_NS::Matrix4x4& GetInverseProjection() const;
@@ -113,7 +113,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const RenderTechniqueData& GetRenderTechniqueData() const;
 
     protected:
-        void UpdateProjection(bool nonResized);
+        void UpdateProjectionInternal(bool nonResized);
+        void OnResizedInternal();
 
         void UpdateView() noexcept;
 
@@ -151,6 +152,11 @@ namespace SR_GTYPES_NS {
         /// @property @onChanged(RemoveTechnique)
         CameraRenderParameters m_renderParameters;
 
+        /// @property @group(Screen) @onChanged(OnResizedInternal)
+        bool m_useFixedSize = false;
+        /// @property @group(Screen) @onChanged(OnResizedInternal)
+        SR_MATH_NS::UVector2 m_fixedSize;
+
     private:
         float_t m_aspect = 1.f;
         bool m_hasErrors = false;
@@ -180,6 +186,7 @@ namespace SR_GTYPES_NS {
         SR_MATH_NS::FVector3 m_viewDirection;
         SR_MATH_NS::FVector3 m_position;
         SR_MATH_NS::UVector2 m_viewportSize;
+        SR_MATH_NS::UVector2 m_viewportSizeInternal;
 
         RenderTechniqueInfo m_renderTechnique = { };
 

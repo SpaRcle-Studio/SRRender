@@ -24,6 +24,7 @@ namespace SR_GRAPH_NS {
     class RenderStrategy;
 
     struct SRFrameBufferCreateInfo {
+        SR_UTILS_NS::StringAtom name;
         SR_MATH_NS::IVector2 size;
         std::vector<int32_t>* pFBO = nullptr;
         DepthLayer* pDepth = nullptr;

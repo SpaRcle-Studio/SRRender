@@ -57,6 +57,7 @@ namespace SR_GTYPES_NS {
         void EndRender();
 
         void SetDirty();
+        void ResetDirty();
         void SetSize(const SR_MATH_NS::IVector2& size);
         void SetDepthEnabled(bool depthEnabled);
         void SetSampleCount(uint8_t samples);

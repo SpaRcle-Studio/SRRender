@@ -28,7 +28,7 @@ namespace SR_GRAPH_NS {
             m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightParams().direction;
             m_cameraPosition = pCamera->GetPosition();
             m_cameraRotation = pCamera->GetRotation();
-            m_screenSize = pCamera->GetSize();
+            m_screenSize = pCamera->GetViewportSize();
             UpdateCascades(pCamera);
         }
 
@@ -405,7 +405,7 @@ namespace SR_GRAPH_NS {
             goto dirty;
         }
 
-        if (m_screenSize != pCamera->GetSize()) SR_UNLIKELY_ATTRIBUTE {
+        if (m_screenSize != pCamera->GetViewportSize()) SR_UNLIKELY_ATTRIBUTE {
             goto dirty;
         }
 
@@ -415,7 +415,7 @@ namespace SR_GRAPH_NS {
         m_directionalLightDirection = GetRenderScene()->GetLightSystem()->GetDirectionalLightParams().direction;
         m_cameraPosition = pCamera->GetPosition();
         m_cameraRotation = pCamera->GetRotation();
-        m_screenSize = pCamera->GetSize();
+        m_screenSize = pCamera->GetViewportSize();
 
         return pCamera;
     }

@@ -10,7 +10,6 @@
 #include <Graphics/Window/Window.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
-#include <Utils/Types/SafePtrLockGuard.h>
 #include <Utils/Platform/Platform.h>
 #include <Utils/Events/Broadcaster.h>
 #include <Utils/FileSystem/PathDataAccessor.h>
@@ -180,14 +179,29 @@ namespace SR_GTYPES_NS {
         m_frustum = ExtractFrustum(m_projection * m_viewTranslateMat);
     }
 
-    void Camera::UpdateProjection(bool nonResized) {
+    void Camera::UpdateProjectionInternal(bool nonResized) {
+        SR_TRACY_ZONE;
+
+        SR_MATH_NS::UVector2 targetResolution;
+        if (m_useFixedSize) {
+            targetResolution = m_fixedSize;
+        }
+        else {
+            targetResolution = m_viewportSize;
+        }
+
+        if (m_viewportSizeInternal == targetResolution) {
+            return;
+        }
+        m_viewportSizeInternal = targetResolution;
+
         m_isInverseDirty = true;
 
-        if (m_viewportSize.HasZero()) {
+        if (m_viewportSizeInternal.HasZero()) {
             m_aspect = 0.f;
         }
         else {
-            m_aspect = static_cast<float_t>(m_viewportSize.x) / static_cast<float_t>(m_viewportSize.y);
+            m_aspect = static_cast<float_t>(m_viewportSizeInternal.x) / static_cast<float_t>(m_viewportSizeInternal.y);
         }
 
         m_projection = SR_MATH_NS::Matrix4x4::Perspective(SR_RAD(m_FOV), m_aspect, m_near, m_far);
@@ -212,18 +226,18 @@ namespace SR_GTYPES_NS {
         m_orthogonal[3][2] = m_near / (m_far - m_near);
     #endif
 
-        if (!m_viewportSize.HasZero()) {
+        if (!m_viewportSizeInternal.HasZero()) {
             m_pixelOrthogonal = SR_MATH_NS::Matrix4x4::Identity();
-            m_pixelOrthogonal[0][0] =  2.0f / m_viewportSize.x;  // масштабируем X в [-1,1]
+            m_pixelOrthogonal[0][0] =  2.0f / m_viewportSizeInternal.x;  // масштабируем X в [-1,1]
             m_pixelOrthogonal[2][2] = 1.f / (m_far - m_near);
             m_pixelOrthogonal[3][0] = -1.0f; // смещение X
 
         #ifdef SR_EMSCRIPTEN
-            m_pixelOrthogonal[1][1] =  2.0f / m_viewportSize.y;
+            m_pixelOrthogonal[1][1] =  2.0f / m_viewportSizeInternal.y;
             m_pixelOrthogonal[3][2] = 0.0f;
             m_pixelOrthogonal[3][1] = -1.0f;
         #else
-            m_pixelOrthogonal[1][1] = -2.0f / m_viewportSize.y;  // масштабируем Y в [-1,1] и переворачиваем, чтобы (0,0) был в верхнем левом
+            m_pixelOrthogonal[1][1] = -2.0f / m_viewportSizeInternal.y;  // масштабируем Y в [-1,1] и переворачиваем, чтобы (0,0) был в верхнем левом
             m_pixelOrthogonal[3][2] = 0.0f;
             m_pixelOrthogonal[3][1] = 1.0f; // смещение Y
         #endif
@@ -231,47 +245,48 @@ namespace SR_GTYPES_NS {
 
         //////////////////////////////////////////////////////////////////////////////////////////////
 
+        UpdateView();
+
         if (m_renderTechnique.pTechnique) {
             if (nonResized) {
                 m_renderTechnique.pTechnique->OnCameraParamsChanged();
             }
             else {
-                m_renderTechnique.pTechnique->OnResize(m_viewportSize);
+                m_renderTechnique.pTechnique->OnResize(m_viewportSizeInternal);
             }
         }
     }
 
+    void Camera::OnResizedInternal() {
+        UpdateProjectionInternal(false);
+    }
+
     void Camera::UpdateProjection(uint32_t w, uint32_t h) {
-        if (m_viewportSize.x == w && m_viewportSize.y == h) {
-            return;
-        }
-
         m_viewportSize = SR_MATH_NS::UVector2(w, h);
-
-        UpdateProjection(false);
+        UpdateProjectionInternal(false);
     }
 
     void Camera::SetFar(float_t value) {
         m_far = value;
 
-        if (!m_viewportSize.HasZero()) {
-            UpdateProjection(true);
+        if (!m_viewportSizeInternal.HasZero()) {
+            UpdateProjectionInternal(true);
         }
     }
 
     void Camera::SetNear(float_t value) {
         m_near = value;
 
-        if (!m_viewportSize.HasZero()) {
-            UpdateProjection(true);
+        if (!m_viewportSizeInternal.HasZero()) {
+            UpdateProjectionInternal(true);
         }
     }
 
     void Camera::SetFOV(float_t value) {
         m_FOV = value;
 
-        if (!m_viewportSize.HasZero()) {
-            UpdateProjection(true);
+        if (!m_viewportSizeInternal.HasZero()) {
+            UpdateProjectionInternal(true);
         }
     }
 
@@ -380,6 +395,12 @@ namespace SR_GTYPES_NS {
         }
     }
 
+    void Camera::SetFixedSize(const SR_UTILS_NS::Optional<SR_MATH_NS::UVector2>& size) {
+        m_fixedSize = size ? *size : SR_MATH_NS::UVector2();
+        m_useFixedSize = size.has_value();
+        UpdateProjectionInternal(false);
+    }
+
     void Camera::Start() {
         Super::Start();
     }
@@ -478,10 +499,10 @@ namespace SR_GTYPES_NS {
         if (m_viewportRect) {
             return *m_viewportRect;
         }
-        return SR_MATH_NS::FRect(0.f, 0.f, m_viewportSize.CastToFloat());
+        return SR_MATH_NS::FRect(0.f, 0.f, m_viewportSizeInternal.CastToFloat());
     }
 
-    const RenderTechniqueData &Camera::GetRenderTechniqueData() const {
+    const RenderTechniqueData& Camera::GetRenderTechniqueData() const {
         if (!m_renderTechnique.pTechnique) {
             static const RenderTechniqueData emptyData;
             return emptyData;

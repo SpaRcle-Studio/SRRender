@@ -1159,6 +1159,10 @@ namespace SR_GRAPH_NS {
     int32_t VulkanPipeline::AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) {
         SR_TRACY_ZONE;
 
+        m_tmpFormatBuffer.clear();
+        SR_UTILS_NS::FormatTo(m_tmpFormatBuffer, "{}: {}x{}", createInfo.name, createInfo.size.x, createInfo.size.y);
+        SR_TRACY_ZONE_TEXT_VIEW(m_tmpFormatBuffer);
+
         if (!m_memory) {
             SR_ERROR("VulkanPipeline::AllocateFrameBuffer() : memory manager is nullptr!");
             return SR_ID_INVALID;
@@ -1172,6 +1176,7 @@ namespace SR_GRAPH_NS {
         for (auto&& color : (*createInfo.colors)) {
             for (const auto textureId : color.texture) {
                 for (auto&& [type, pOverlay] : m_overlays) {
+                    SR_TRACY_ZONE_N("OnTextureFreed")
                     pOverlay->OnTextureFreed(textureId);
                 }
             }

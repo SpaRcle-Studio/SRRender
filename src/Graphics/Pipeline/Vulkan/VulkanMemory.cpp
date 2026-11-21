@@ -76,6 +76,8 @@ namespace SR_GRAPH_NS::VulkanTools {
     }
 
     bool SR_GRAPH_NS::VulkanTools::MemoryManager::ReAllocateFBO(const VulkanFrameBufferAllocInfo& info) {
+        SR_TRACY_ZONE;
+
         auto&& vkImageAspect = VulkanTools::AbstractImageAspectToVkAspect(info.pDepth->aspect);
 
         auto&& pFBO = m_fboPool.At(info.FBO);

@@ -72,7 +72,7 @@ namespace SR_GTYPES_NS {
             return nullptr;
         }
 
-        pFBO->SetSize(size);
+        pFBO->m_size = size;
         pFBO->m_depth.format = depth;
         pFBO->m_depth.aspect = depthAspect;
         pFBO->m_sampleCount = samples;
@@ -108,6 +108,7 @@ namespace SR_GTYPES_NS {
 
     bool Framebuffer::Update() {
         if (!m_dirty) {
+            SRAssert(m_hasErrors || !m_frameBuffer.empty());
             return true;
         }
 
@@ -137,6 +138,7 @@ namespace SR_GTYPES_NS {
         else {
             m_currentSampleCount = SR_MIN(m_currentSampleCount, GetPipeline()->GetSupportedSamples());
         }
+        SRAssert(m_currentSampleCount > 0);
 
         if (m_frameBuffer.empty()) {
             if (m_forEachSwapchainImage) {
@@ -149,6 +151,7 @@ namespace SR_GTYPES_NS {
         }
 
         SRFrameBufferCreateInfo createInfo;
+        createInfo.name = m_name;
         createInfo.size = m_size;
         createInfo.pFBO = &m_frameBuffer;
         createInfo.pDepth = &m_depth;
@@ -206,8 +209,12 @@ namespace SR_GTYPES_NS {
     }
 
     void Framebuffer::SetSize(const SR_MATH_NS::IVector2 &size) {
-        m_size = size;
+        if (m_size == size) {
+            return;
+        }
         SetDirty();
+        SR_DEBUG_LOG("Framebuffer::SetSize() : resize framebuffer \"{}\" from {}x{} to {}x{}", m_name, m_size.x, m_size.y, size.x, size.y);
+        m_size = size;
     }
 
     bool Framebuffer::ClearBuffers(const ClearColors& clearColors, std::optional<float_t> depth) {
@@ -292,13 +299,19 @@ namespace SR_GTYPES_NS {
     }
 
     void Framebuffer::SetDepthEnabled(bool depthEnabled) {
+        if (m_depthEnabled == depthEnabled) {
+            return;
+        }
         m_depthEnabled = depthEnabled;
-        m_dirty = true;
+        SetDirty();
     }
 
     void Framebuffer::SetSampleCount(uint8_t samples) {
+        if (m_sampleCount == samples) {
+            return;
+        }
         m_sampleCount = samples;
-        m_dirty = true;
+        SetDirty();
     }
 
     int32_t Framebuffer::GetDepthTexture(int32_t layer, uint8_t frame) {
@@ -334,7 +347,14 @@ namespace SR_GTYPES_NS {
         return m_currentSampleCount;
     }
 
+    void Framebuffer::ResetDirty() {
+        m_dirty = false;
+    }
+
     void Framebuffer::SetDirty() {
+        if (m_dirty) {
+            return;
+        }
         m_dirty = true;
 
         if (GetPipeline()) {
@@ -343,18 +363,27 @@ namespace SR_GTYPES_NS {
     }
 
     void Framebuffer::SetLayersCount(uint32_t layersCount) {
+        if (m_layersCount == layersCount) {
+            return;
+        }
         m_layersCount = layersCount;
-        m_dirty = true;
+        SetDirty();
     }
 
     void Framebuffer::SetArrayLayersCount(uint32_t arrayLayersCount) {
+        if (m_arrayLayersCount == arrayLayersCount) {
+            return;
+        }
         m_arrayLayersCount = arrayLayersCount;
-        m_dirty = true;
+        SetDirty();
     }
 
     void Framebuffer::SetDepthAspect(ImageAspect depthAspect) {
+        if (m_depth.aspect == depthAspect) {
+            return;
+        }
         m_depth.aspect = depthAspect;
-        m_dirty = true;
+        SetDirty();
     }
 
     void Framebuffer::SetViewportScissor() {
@@ -363,8 +392,11 @@ namespace SR_GTYPES_NS {
     }
 
     void Framebuffer::SetFeatures(const FrameBufferFeatures& features) {
+        if (m_features == features) {
+            return;
+        }
         m_features = features;
-        m_dirty = true;
+        SetDirty();
     }
 
     void Framebuffer::SetAccessMode(FrameBufferAccessMode accessMode) {
