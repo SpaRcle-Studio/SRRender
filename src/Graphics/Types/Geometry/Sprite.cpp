@@ -35,6 +35,11 @@ namespace SR_GTYPES_NS {
         return SR_MATH_NS::FVector2();
     }
 
+    bool Sprite::IsTextureReady() const {
+        auto&& pTexture = m_texture.GetResource();
+        return pTexture && pTexture->IsLoaded() && pTexture->CanBeUsed();
+    }
+
     void Sprite::OnTextureChanged() {
         m_textureReloadSubscription.Reset();
         if (auto pTexture = m_texture.GetResource()) {
