@@ -32,6 +32,7 @@ namespace SR_GRAPH_NS {
     };
 
     namespace TextureContainer {
+        inline constexpr SR_UTILS_NS::StringView SourcePlaceholder = "SREngine::CompressedTextureSource:v1";
         SR_GRAPHICS_DLL_API TextureBlockInfo GetBlockInfo(TextureCompression compression, ImageFormat format);
         SR_GRAPHICS_DLL_API uint64_t GetLevelSize(uint32_t width, uint32_t height, TextureCompression compression, ImageFormat format);
         SR_GRAPHICS_DLL_API uint32_t GetNativeFormat(TextureCompression compression, ImageFormat format);

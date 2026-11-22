@@ -204,6 +204,13 @@ namespace SR_GRAPH_NS {
 
     TextureData::Ptr TextureLoader::LoadSource(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringView buffer, TextureLoadInfo info) {
         SR_TRACY_ZONE;
+        if (buffer == TextureContainer::SourcePlaceholder) {
+            if (!info.preparedVariants.empty()) {
+                return LoadPrepared(path, info);
+            }
+            SR_ERROR("TextureLoader::LoadSource() : compressed texture placeholder has no prepared variant manifest: {}", path);
+            return nullptr;
+        }
         const auto fullPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
         if (!IsAllowedChannelsCount(info.channels)) {
             return nullptr;
