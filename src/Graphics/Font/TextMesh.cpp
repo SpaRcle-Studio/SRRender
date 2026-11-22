@@ -369,6 +369,12 @@ namespace SR_GTYPES_NS {
         }
     }
 
+    uint32_t TextMesh::GetLoadedGlyphCount() {
+        SR_TRACY_ZONE;
+        auto&& pFont = m_font.GetResource();
+        return pFont ? pFont->GetLoadedGlyphCount(m_text) : 0;
+    }
+
     uint32_t TextMesh::GetGraphemeCount() {
         return UpdateGraphemes() ? m_graphemeCount : 0;
     }

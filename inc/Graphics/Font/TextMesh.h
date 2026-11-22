@@ -61,6 +61,8 @@ namespace SR_GTYPES_NS {
         void SetVisibleGraphemeCount(uint32_t count);
         /// @method @evaluate
         uint32_t GetGraphemeCount();
+        /// @method @evaluate
+        uint32_t GetLoadedGlyphCount();
         /// @method
         void AddStyle(const TextStyle& style);
         /// @method

@@ -36,6 +36,8 @@ namespace SR_GRAPH_NS {
         SR_CLASS()
     public:
         bool BuildText(SR_UTILS_NS::StringView text, float_t fontSize, SR_UTILS_NS::Vector<PositionedGlyph>& glyphs);
+        /// Counts text occurrences whose bitmap is ready, including glyphs with empty outlines.
+        SR_NODISCARD uint32_t GetLoadedGlyphCount(SR_UTILS_NS::StringView text);
 
         /// Разрешение генерации atlas (pixels per em baseline); масштаб экранного размера: fontSize / GetSamplingPointSize().
         SR_NODISCARD float_t GetSamplingPointSize() const noexcept { return m_samplingPointSize; }

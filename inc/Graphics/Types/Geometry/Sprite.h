@@ -84,15 +84,15 @@ namespace SR_GTYPES_NS {
 
     protected:
         void OnTextureChanged();
-        SR_MATH_NS::FVector2 m_preferredSize;
-        SR_UTILS_NS::Subscription m_textureReloadSubscription;
-        /// @property @onChanged(OnTextureChanged)
-        SR_UTILS_NS::ResourceRef<Texture> m_texture;
         void Draw() override;
         void ApplyFillModeParams(Shader* pShader);
         void ApplySliceModeParams(Shader* pShader);
 
     protected:
+        /// @property @onChanged(OnTextureChanged)
+        /// @customArgs(pick: enabled, filter name: Image, relative: resources)
+        /// @customArg(filter value: png,jpg,jpeg)
+        SR_UTILS_NS::ResourceRef<Texture> m_texture;
         /// @property @setter(SetSpriteMode)
         SpriteMode m_spriteMode = SpriteMode::Sliced;
 
@@ -116,6 +116,9 @@ namespace SR_GTYPES_NS {
         SR_MATH_NS::FRect m_textureBorder;
         /// @property @setter(SetWindowBorder) @drag(0.01f) @condition(This.m_sliceMode == SR_GTYPES_NS::SliceMode::Manual && SR_MATH_NS::IsMaskIncludedSubMask(This.m_spriteMode, SR_GTYPES_NS::SpriteMode::Sliced))
         SR_MATH_NS::FRect m_windowBorder;
+
+        SR_MATH_NS::FVector2 m_preferredSize;
+        SR_UTILS_NS::Subscription m_textureReloadSubscription;
 
     };
 }

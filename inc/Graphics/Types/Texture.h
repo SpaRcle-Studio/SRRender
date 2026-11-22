@@ -48,6 +48,8 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD const ImageMetaInfo& GetImageMetaInfo() const noexcept { return m_imageMetaInfo; }
 
         SR_NODISCARD bool IsAllowedToRevive() const override { return true; }
+
+        /// @method @evaluate
         SR_NODISCARD bool CanBeUsed() const;
 
         void FreeVMemory() override;

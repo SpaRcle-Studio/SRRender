@@ -156,6 +156,32 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
+    uint32_t FontAsset::GetLoadedGlyphCount(SR_UTILS_NS::StringView text) {
+        SR_TRACY_ZONE;
+        SR_LOCK_GUARD;
+
+        uint32_t loaded = 0;
+        GlyphKey key;
+        for (uint64_t i = 0; i < text.size(); ) {
+            if (text[i] == '\n') {
+                ++loaded;
+                ++i;
+                continue;
+            }
+            if (!GlyphKey::NextGlyphKey(text, i, key)) {
+                ++i;
+                continue;
+            }
+            if (auto&& pIt = m_glyphs.find(key); pIt != m_glyphs.end()) {
+                const FontDetails::Glyph& glyph = pIt->second;
+                if (glyph.metrics.size.x == 0 || glyph.metrics.size.y == 0 || !glyph.bitmap.data.empty()) {
+                    ++loaded;
+                }
+            }
+        }
+        return loaded;
+    }
+
     FontDetails::Glyph* FontAsset::LoadGlyph(SR_GTYPES_NS::Font* pFont, const GlyphKey& key) {
         SR_TRACY_ZONE;
         const std::lock_guard<std::recursive_mutex> faceLock(pFont->GetFaceMutex());
