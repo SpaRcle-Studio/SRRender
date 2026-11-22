@@ -268,6 +268,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD virtual int32_t AllocateSSBO(uint32_t ssboSize, SSBOUsage usage) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) { return SR_ID_INVALID; }
         SR_NODISCARD virtual int32_t AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) { return SR_ID_INVALID; };
+        SR_NODISCARD virtual bool SupportsTextureFormat(uint32_t nativeFormat) const { return false; }
+        SR_NODISCARD virtual bool RequiresBlockAlignedTextures() const { return false; }
         SR_NODISCARD virtual int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) { return SR_ID_INVALID; };
         SR_NODISCARD virtual int32_t AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) { return SR_ID_INVALID; };
         SR_NODISCARD virtual int32_t AllocateCubeMap(const SRCubeMapCreateInfo& createInfo) { return SR_ID_INVALID; };

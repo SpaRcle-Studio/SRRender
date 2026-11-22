@@ -15,6 +15,9 @@ namespace SR_GRAPH_NS {
         ~HeadlessPipeline() override;
 
         SR_NODISCARD PipelineType GetType() const noexcept override;
+        bool SupportsTextureFormat(uint32_t nativeFormat) const override {
+            return nativeFormat == 37 || nativeFormat == 43 || nativeFormat == 97;
+        }
 
         SR_NODISCARD int32_t AllocateVBO(int32_t VBO, uint64_t size, const void* pData) override;
         SR_NODISCARD int32_t AllocateIBO(const void* pIndices, uint32_t indexSize, size_t count, int32_t VBO) override;

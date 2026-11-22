@@ -48,6 +48,7 @@ namespace SR_GRAPH_NS {
         uint64_t imageSize = 0;
         uint8_t mipLevels = 0;
         bool alpha = false;
+        bool preparedMipChain = false;
         bool cpuUsage = false;
         bool async = false;
         int32_t replaceId = SR_ID_INVALID;

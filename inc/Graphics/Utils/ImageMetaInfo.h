@@ -26,20 +26,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_UTILS_NS::ResourceLoadMode GetLoadMode() const noexcept { return loadMode; }
         SR_NODISCARD bool GetDisableAlphaChannel() const noexcept { return disableAlphaChannel; }
 
-        bool operator==(const ImageMetaInfo& lrs) const {
-            return format == lrs.format
-                   && loadMode == lrs.loadMode
-                   && imageType == lrs.imageType
-                   && filter == lrs.filter
-                   && addressMode == lrs.addressMode
-                   && compression == lrs.compression
-                   && mipLevels == lrs.mipLevels
-                   && m_border == lrs.m_border
-                   && SR_EQUALS_T(m_pixelsPerUnit, lrs.m_pixelsPerUnit, SR_SCALAR_EPSILON)
-                   && cpuUsage == lrs.cpuUsage
-                   && disableAlphaChannel == lrs.disableAlphaChannel;
-        }
-
+        bool operator==(const ImageMetaInfo& lrs) const;
         bool operator!=(const ImageMetaInfo& lrs) const {
             return !(*this == lrs);
         }
@@ -57,6 +44,24 @@ namespace SR_GRAPH_NS {
         AddressMode addressMode = AddressMode::Repeat;
         /// @property
         TextureCompression compression = TextureCompression::None;
+        /// @property
+        TextureCompressionPolicy compressionPolicy = TextureCompressionPolicy::Auto;
+        /// @property
+        TextureContent content = TextureContent::Auto;
+        /// @property
+        TextureQualityValidation qualityValidation = TextureQualityValidation::Warn;
+        /// @property
+        float_t compressionQuality = 0.5f;
+        /// @property
+        bool preserveAlphaCoverage = false;
+        /// @property
+        float_t alphaCutoff = 0.5f;
+        /// @property @hidden
+        bool compressed = false;
+        /// @property @hidden
+        SR_UTILS_NS::Vector<SR_UTILS_NS::Path> preparedVariants;
+        /// @property @hidden
+        SR_UTILS_NS::Vector<uint64_t> preparedHashes;
         /// @property
         float_t m_pixelsPerUnit = 100.f;
         /// @property

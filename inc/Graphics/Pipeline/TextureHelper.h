@@ -8,6 +8,7 @@
 #include <Graphics/stdInclude.h>
 
 #include <Utils/Common/Enumerations.h>
+#include <Utils/FileSystem/Path.h>
 
 namespace SR_UTILS_NS {
     enum class TaskState : uint8_t;
@@ -25,7 +26,11 @@ namespace SR_GRAPH_NS {
         Height,
         Mask,
         SSS,
-        UI
+        UI,
+        ORM,
+        HDR,
+        MSDF,
+        PixelArt
     );
 
     SR_ENUM_NS_CLASS_T(Antialiasing, uint8_t,
@@ -92,15 +97,15 @@ namespace SR_GRAPH_NS {
     SR_GRAPHICS_DLL_API extern uint8_t GetChannelCount(ImageFormat format);
 
     struct ColorLayer {
-        std::vector<int32_t> texture;
+        SR_UTILS_NS::Vector<int32_t> texture;
         ImageFormat format = ImageFormat::Unknown;
     };
 
     struct DepthLayer {
-        std::vector<int32_t> texture;
+        SR_UTILS_NS::Vector<int32_t> texture;
         ImageFormat format = ImageFormat::Unknown;
         ImageAspect aspect = ImageAspect::DepthStencil;
-        std::vector<std::vector<int32_t>> subLayers;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::Vector<int32_t>> subLayers;
     };
 
     SR_ENUM_NS_CLASS(TextureFilter,
@@ -109,8 +114,17 @@ namespace SR_GRAPH_NS {
     );
 
     SR_ENUM_NS_CLASS(TextureCompression,
-        None = 0, BC1 = 1, BC2 = 2, BC3 = 3, BC4 = 4, BC5 = 5, BC6 = 6, BC7 = 7
+        None = 0, BC1 = 1, BC2 = 2, BC3 = 3, BC4 = 4, BC5 = 5, BC6 = 6, BC7 = 7,
+        ASTC4x4, ASTC6x6, ASTC8x8, ETC2RGB, ETC2RGBA, EACR11, EACRG11
     );
+
+    SR_ENUM_NS_CLASS(TextureCompressionPolicy, Disabled, Auto, Explicit, Lossless, HighQuality, Balanced, Aggressive);
+
+    SR_ENUM_NS_CLASS(TextureContent, Auto, Illustration, Interface);
+
+    SR_ENUM_NS_CLASS(TextureQualityValidation, Off, Warn, Strict);
+
+    SR_ENUM_NS_CLASS(TextureExportProfile, Desktop, Mobile, Universal);
 
     enum class TextureLoadMode : uint8_t {
         STBImage, LibsPNG
@@ -123,18 +137,23 @@ namespace SR_GRAPH_NS {
         TextureLoadMode loadMode = TextureLoadMode::STBImage;
         bool caching = false;
         bool disableAlphaChannel = false;
+        bool preparedMipChain = false;
+        bool requireAlignedBlocks = false;
+        ImageFormat format = ImageFormat::RGBA8_UNORM;
+        SR_UTILS_NS::Vector<SR_UTILS_NS::Path> preparedVariants;
+        SR_UTILS_NS::Vector<uint64_t> preparedHashes;
+        SR_UTILS_NS::Vector<uint32_t> supportedFormats;
     };
 
     uint32_t Find4(uint32_t i);
 
-    std::pair<uint32_t, uint32_t> MakeGoodSizes(uint32_t w, uint32_t h);
+    SR_UTILS_NS::Pair<uint32_t, uint32_t> MakeGoodSizes(uint32_t w, uint32_t h);
 
     uint8_t* ResizeToLess(uint32_t ow, uint32_t oh, uint32_t nw, uint32_t nh, const uint8_t* pixels);
 
     uint32_t GetPixelSize(ImageFormat format);
 
-    uint64_t GetCompressedImageSize(uint32_t w, uint32_t h, TextureLoadInfo info);
-    uint8_t* CompressImage(uint32_t w, uint32_t h, const uint8_t* pixels, TextureLoadInfo info, std::atomic<SR_UTILS_NS::TaskState>& state);
+    uint64_t GetCompressedImageSize(uint32_t w, uint32_t h, const TextureLoadInfo& info);
 }
 
 #endif //SR_ENGINE_TEXTUREHELPER_H

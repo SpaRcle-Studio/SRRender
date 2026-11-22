@@ -7,6 +7,7 @@
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/RenderTarget.h>
 #include <Graphics/Loaders/TextureLoader.h>
+#include <Graphics/Loaders/TextureContainer.h>
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Pipeline/Pipeline.h>
 
@@ -84,9 +85,6 @@ namespace SR_GTYPES_NS {
 
         RegisterGraphicsResource();
 
-        const bool compressionEnabled = GetRenderContext()->IsTextureCompressionEnabled();
-        const TextureCompression compression = compressionEnabled ? metaInfo.compression : TextureCompression::None;
-        SRAssert(compression >= TextureCompression::None && compression < TextureCompression::TextureCompressionMAX);
 
         m_format = metaInfo.format;
 
@@ -94,6 +92,7 @@ namespace SR_GTYPES_NS {
             const bool srbgEnabled = GetRenderContext()->IsSrgbEnabled();
             switch (m_activeImageMetaInfo.imageType) {
                 case ImageType::Albedo:
+                case ImageType::Emissive:
                     if (srbgEnabled) {
                         m_format = ImageFormat::RGBA8_SRGB;
                     }
@@ -103,6 +102,9 @@ namespace SR_GTYPES_NS {
                     break;
                 case ImageType::Direction:
                 case ImageType::UI:
+                case ImageType::ORM:
+                case ImageType::MSDF:
+                case ImageType::PixelArt:
                     m_format = ImageFormat::RGBA8_UNORM;
                     break;
                 case ImageType::Normal:
@@ -111,10 +113,12 @@ namespace SR_GTYPES_NS {
                 case ImageType::Roughness:
                 case ImageType::Metallic:
                 case ImageType::AmbientOcclusion:
-                case ImageType::Emissive:
                 case ImageType::SSS:
                 case ImageType::Mask:
                     m_format = ImageFormat::R8_UNORM;
+                    break;
+                case ImageType::HDR:
+                    m_format = ImageFormat::RGBA16_SFLOAT;
                     break;
                 case ImageType::Height:
                     m_format = ImageFormat::R16_UNORM;
@@ -137,10 +141,35 @@ namespace SR_GTYPES_NS {
         const bool asyncLoadSupport = SR_UTILS_NS::Features::Instance().Enabled("TextureAsyncLoad", true);
 
         TextureLoadInfo loadInfo;
-        loadInfo.compression = compression;
+        loadInfo.format = m_format;
+        loadInfo.preparedVariants = metaInfo.preparedVariants;
+        loadInfo.preparedHashes = metaInfo.preparedHashes;
+        loadInfo.requireAlignedBlocks = GetPipeline()->RequiresBlockAlignedTextures();
+        if (!loadInfo.preparedVariants.empty()) {
+            bool hasLosslessFallback = false;
+            for (auto&& variant : loadInfo.preparedVariants) {
+                const auto extension = variant.GetExtensionView();
+                hasLosslessFallback |= variant == GetResourcePath() || extension == "rgba8" || extension == "rgba16f";
+            }
+            // A compact export requires its native formats. A runtime compression toggle
+            // cannot select a lossless copy that was deliberately omitted from the package.
+            const bool compressedAllowed = !hasLosslessFallback || (GetRenderContext()->IsTextureCompressionEnabled()
+                && SR_UTILS_NS::Features::Instance().Enabled("TextureCompression", true));
+            for (uint32_t compression = 0; compression < static_cast<uint32_t>(TextureCompression::TextureCompressionMAX); ++compression) {
+                if (!compressedAllowed && compression != 0) {
+                    continue;
+                }
+                for (const ImageFormat format : { ImageFormat::RGBA8_UNORM, ImageFormat::RGBA8_SRGB, ImageFormat::RGBA16_SFLOAT }) {
+                    const uint32_t nativeFormat = TextureContainer::GetNativeFormat(static_cast<TextureCompression>(compression), format);
+                    if (nativeFormat && GetPipeline()->SupportsTextureFormat(nativeFormat)) {
+                        loadInfo.supportedFormats.emplace_back(nativeFormat);
+                    }
+                }
+            }
+        }
         loadInfo.caching = SR_UTILS_NS::Features::Instance().Enabled("TextureCaching", true) && GetRenderContext()->IsTextureCachingEnabled();
         loadInfo.mips = metaInfo.mipLevels;
-        loadInfo.channels = TextureLoader::GetAlignedChannels(m_format);
+        loadInfo.channels = loadInfo.preparedVariants.empty() ? TextureLoader::GetAlignedChannels(m_format) : 4;
         loadInfo.disableAlphaChannel = metaInfo.disableAlphaChannel;
 
         if (metaInfo.loadMode == SR_UTILS_NS::ResourceLoadMode::Async && asyncLoadSupport) {
@@ -212,7 +241,8 @@ namespace SR_GTYPES_NS {
         createInfo.width = m_textureData->GetWidth();
         createInfo.height = m_textureData->GetHeight();
         createInfo.compression = m_textureData->GetInfo().compression;
-        createInfo.format = m_format;
+        createInfo.preparedMipChain = m_textureData->GetInfo().preparedMipChain;
+        createInfo.format = createInfo.preparedMipChain ? m_textureData->GetInfo().format : m_format;
         createInfo.mipLevels = m_textureData->GetInfo().mips;
         createInfo.filter = m_activeImageMetaInfo.filter;
         createInfo.addressMode = m_activeImageMetaInfo.addressMode;
@@ -236,7 +266,7 @@ namespace SR_GTYPES_NS {
         }
         else {
             if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::High) {
-                SR_LOG("Texture::Calculate() : texture \"" + std::string(GetResourceId()) + "\" has " + std::to_string(m_id) + " id.");
+                SR_LOG("Texture::Calculate() : texture {} has id {}", GetResourceId(), m_id);
             }
         }
 
@@ -249,13 +279,13 @@ namespace SR_GTYPES_NS {
         SR_TRACY_ZONE;
 
         if (SR_UTILS_NS::Debug::Instance().GetLevel() >= SR_UTILS_NS::Debug::Level::Low) {
-            SR_LOG("Texture::FreeVMemory() : free \"" + std::string(GetResourceId()) + "\" texture's video memory...");
+            SR_LOG("Texture::FreeVMemory() : freeing video memory for {}", GetResourceId());
         }
 
         if (m_syncLoadTaskId) {
             SR_LOG("Texture::FreeVMemory() : the texture is still loading asynchronously! Waiting for the loading to finish...\n\tPath: {}", GetResourcePath());
             SR_UTILS_NS::TaskManager::Instance().Wait(*m_syncLoadTaskId);
-            m_syncLoadTaskId = std::nullopt;
+            m_syncLoadTaskId.Reset();
         }
 
         const bool isReference = m_impl && m_impl->IsReference();
@@ -314,7 +344,7 @@ namespace SR_GTYPES_NS {
         return m_id;
     }
 
-    Texture::Ptr Texture::LoadFromMemory(const std::string& data, const ImageMetaInfo& meta) {
+    Texture::Ptr Texture::LoadFromMemory(const SR_UTILS_NS::String& data, const ImageMetaInfo& meta) {
         SR_TRACY_ZONE;
 
         Texture::Ptr pTexture = new Texture();
@@ -415,7 +445,7 @@ namespace SR_GTYPES_NS {
             if (SR_UTILS_NS::TaskManager::Instance().IsActive(*m_syncLoadTaskId)) {
                 return;
             }
-            m_syncLoadTaskId = std::nullopt;
+            m_syncLoadTaskId.Reset();
         }
         else if (m_imageMetaInfo == m_activeImageMetaInfo) {
             return;

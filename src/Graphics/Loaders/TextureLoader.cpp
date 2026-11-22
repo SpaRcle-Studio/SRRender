@@ -6,23 +6,19 @@
 
 #include <Graphics/Loaders/TextureLoader.h>
 #include <Graphics/Types/Texture.h>
+#include <Graphics/Loaders/TextureContainer.h>
 
 #include <Utils/Common/StringUtils.h>
-#include <Utils/Common/ToString.h>
-#include <Utils/TaskManager/TaskManager.h>
 #include <Utils/Debug.h>
-#include <Utils/Common/Features.h>
 #include <Utils/Resources/ResourceManager.h>
-#include <Utils/Types/Marshal.h>
 #include <Utils/FileSystem/FileSystem.h>
 #include <Utils/FileSystem/VFS.h>
-#include <Utils/Common/CLIManager.h>
 
 #include <Enum/TextureCompression.hpp>
 #include <Enum/ImageFormat.hpp>
 
 #include <stbi/stb_image.c> /// NOLINT
-#include <stbi/stbi_image_write.c> /// NOLINT
+#include <stbi/stb_image_write.c> /// NOLINT
 
 #ifdef SR_RENDER_USE_LIBSPNG
     #include <spng.h>
@@ -45,7 +41,7 @@ namespace SR_GRAPH_NS {
             return 0;
         }
 
-        if (m_info.compression != TextureCompression::None) {
+        if (m_info.preparedMipChain) {
             return GetCompressedImageSize(m_width, m_height, m_info);
         }
 
@@ -54,7 +50,7 @@ namespace SR_GRAPH_NS {
             return 0;
         }
 
-        return m_width * m_height * m_info.channels;
+        return m_width * m_height * m_info.channels * (m_info.format == ImageFormat::RGBA16_SFLOAT ? 2 : 1);
     }
 
     bool TextureLoader::IsAllowedChannelsCount(uint8_t channels) {
@@ -103,190 +99,222 @@ namespace SR_GRAPH_NS {
         m_deleter = std::move(deleter);
     }
 
+    TextureData::Ptr TextureLoader::LoadHalf(SR_UTILS_NS::StringView buffer, TextureLoadInfo info) {
+        TextureSourceInfo sourceInfo;
+        SR_UTILS_NS::Vector<float_t> pixels;
+        if (!DecodeSource(buffer, sourceInfo, pixels)) {
+            return nullptr;
+        }
+        auto&& pBytes = static_cast<uint8_t*>(SRMalloc(pixels.size() * sizeof(uint16_t)));
+        if (!pBytes) {
+            return nullptr;
+        }
+        for (uint64_t i = 0; i < pixels.size(); ++i) {
+            const uint16_t half = TextureContainer::FloatToHalf(info.disableAlphaChannel && i % 4 == 3 ? 1.f : pixels[i]);
+            memcpy(pBytes + i * sizeof(half), &half, sizeof(half));
+        }
+        info.compression = TextureCompression::None;
+        auto pTextureData = TextureData::Create(sourceInfo.width, sourceInfo.height, pBytes, [](uint8_t* pData) {
+            SRFree(pData);
+        }, std::move(info));
+        return pTextureData;
+    }
+
+    TextureData::Ptr TextureLoader::LoadPrepared(const SR_UTILS_NS::Path& path, const TextureLoadInfo& info) {
+        SR_TRACY_ZONE;
+        const auto root = SR_UTILS_NS::ResourceManager::Instance().GetResPath();
+        if (info.preparedVariants.size() != info.preparedHashes.size()) {
+            SR_ERROR("TextureLoader::LoadPrepared() : incomplete variant manifest for {}", path);
+            return nullptr;
+        }
+        for (uint32_t index = 0; index < info.preparedVariants.size(); ++index) {
+            const auto variant = info.preparedVariants[index];
+            PreparedTexture texture;
+            SR_UTILS_NS::String bytes;
+            if (!SR_UTILS_NS::FileSystem::ReadFile(root.Concat(variant), bytes)
+                || TextureContainer::HashBytes(bytes) != info.preparedHashes[index]) {
+                SR_WARN("TextureLoader::LoadPrepared() : invalid prepared texture: {}", variant);
+                continue;
+            }
+            if (variant == path) {
+                TextureLoadInfo sourceInfo = info;
+                sourceInfo.preparedVariants.clear();
+                sourceInfo.preparedHashes.clear();
+                sourceInfo.channels = GetAlignedChannels(sourceInfo.format);
+                return LoadSource(path, bytes, std::move(sourceInfo));
+            }
+            if (!TextureContainer::Read(SR_UTILS_NS::StringView(bytes), texture)) {
+                SR_WARN("TextureLoader::LoadPrepared() : invalid KTX2 texture: {}", variant);
+                continue;
+            }
+            const uint32_t nativeFormat = TextureContainer::GetNativeFormat(texture.compression, texture.format);
+            const auto block = TextureContainer::GetBlockInfo(texture.compression, texture.format);
+            if (info.requireAlignedBlocks && (texture.width % block.width != 0 || texture.height % block.height != 0)) {
+                continue;
+            }
+            bool supported = false;
+            for (const uint32_t candidate : info.supportedFormats) {
+                supported |= candidate == nativeFormat;
+            }
+            if (!supported) {
+                continue;
+            }
+            uint64_t size = 0;
+            for (auto&& mip : texture.mips) {
+                size += mip.bytes.size();
+            }
+            auto&& pBytes = static_cast<uint8_t*>(SRMalloc(size));
+            if (!pBytes) {
+                return nullptr;
+            }
+            uint64_t offset = 0;
+            for (auto&& mip : texture.mips) {
+                memcpy(pBytes + offset, mip.bytes.data(), mip.bytes.size());
+                offset += mip.bytes.size();
+            }
+            TextureLoadInfo preparedInfo;
+            preparedInfo.compression = texture.compression;
+            preparedInfo.format = texture.format;
+            preparedInfo.channels = GetChannelCount(texture.format);
+            preparedInfo.mips = static_cast<uint32_t>(texture.mips.size());
+            preparedInfo.preparedMipChain = true;
+            auto pTextureData = TextureData::Create(texture.width, texture.height, pBytes, [](uint8_t* pData) {
+                SRFree(pData);
+            }, std::move(preparedInfo));
+            pTextureData->SetPath(path);
+            return pTextureData;
+        }
+        SR_ERROR("TextureLoader::LoadPrepared() : no valid supported variant for {}", path);
+        return nullptr;
+    }
+
     TextureData::Ptr TextureLoader::Load(const SR_UTILS_NS::Path& path, TextureLoadInfo info) {
         SR_TRACY_ZONE;
-        SR_TRACY_ZONE_TEXT(path);
-
-        const bool compressionEnabled = SR_UTILS_NS::Features::Instance().Enabled("TextureCompression", true);
-
-        auto&& resPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath();
-        SR_UTILS_NS::Path fullPath = resPath.Concat(path);
-        SR_UTILS_NS::Path compressedTexturePath = resPath.Concat(SR_UTILS_NS::Path("Packed").Concat(path).ConcatExt(SR_UTILS_NS::EnumReflector::ToStringAtom(info.compression)));
-
-        const bool isUnitTests = SR_UTILS_NS::CLIManager::Instance().IsFlagPresent(SR_UTILS_NS::CLIFlagsEnumWrappper::UnitTests);
-        const bool canCompress = info.compression != TextureCompression::None && !isUnitTests && compressionEnabled;
-        const bool compressedTextureExists = info.compression != TextureCompression::None && compressedTexturePath.IsFile();
-
-        auto&& cache = SR_UTILS_NS::ResourceManager::Instance().GetCachePath().Concat("Textures");
-        auto&& cacheHashPath = cache.Concat("Hashes").Concat(path).ConcatExt(".cache.hash");
-        auto&& cacheFilePath = cache.Concat("Dump").Concat(path).ConcatExt(".cache");
-
-        const bool isOnlyPackedMode = !fullPath.IsFile() && compressedTextureExists;
-
-        uint64_t fileHash = 0;
-
-        if (isOnlyPackedMode) {
-            if (auto&& pTextureData = LoadFromCache(compressedTexturePath)) {
-                return pTextureData;
-            }
-            SR_ERROR("TextureLoader::Load() : can not load packed texture \"{}\"!", compressedTexturePath);
-            return nullptr;
+        if (!info.preparedVariants.empty()) {
+            return LoadPrepared(path, info);
         }
-        else {
-            if (canCompress || info.caching) {
-                fileHash = fullPath.GetFileHash();
-                fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.channels));
-                fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.mips));
-                fileHash = SR_UTILS_NS::HashCombine(fileHash, static_cast<uint64_t>(info.disableAlphaChannel));
-            }
-
-            if (cacheHashPath.IsFile() && SR_UTILS_NS::FileSystem::ReadHashFromFile(cacheHashPath) == fileHash) {
-                if (compressedTextureExists) {
-                    if (auto&& pTextureData = LoadFromCache(compressedTexturePath)) {
-                        return pTextureData;
-                    }
-                }
-                if (info.caching && cacheFilePath.IsFile()) {
-                    if (auto&& pTextureData = LoadFromCache(cacheFilePath)) {
-                        if (canCompress) {
-                            AsyncCompressTexture(pTextureData, info.compression);
-                        }
-                        return pTextureData;
-                    }
-                }
-            }
-        }
-
+        const auto fullPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
         SR_UTILS_NS::String buffer;
-        if (!SR_UTILS_NS::FileSystem::ReadFile(fullPath, buffer)) {
-            SR_ERROR("TextureLoader::Load() : can not read \"{}\" file!", path);
+        if (!SR_UTILS_NS::FileSystem::ReadFile(fullPath, buffer) || !IsAllowedChannelsCount(info.channels)) {
+            SR_ERROR("TextureLoader::Load() : failed to read source texture: {}", path);
             return nullptr;
         }
+        return LoadSource(path, buffer, std::move(info));
+    }
 
-        if (!TextureLoader::IsAllowedChannelsCount(info.channels)) {
-            SRHalt("TextureLoader::Load() : wrong channels count! Channels: {}, path: {}", info.channels, path);
+    TextureData::Ptr TextureLoader::LoadSource(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringView buffer, TextureLoadInfo info) {
+        SR_TRACY_ZONE;
+        const auto fullPath = SR_UTILS_NS::ResourceManager::Instance().GetResPath().Concat(path);
+        if (!IsAllowedChannelsCount(info.channels)) {
             return nullptr;
         }
-
-    #ifdef SR_RENDER_USE_LIBSPNG
-        if (SR_UTILS_NS::StringUtils::Instance().CompareAnyCase(fullPath.GetExtensionView(), "png")) {
-            info.loadMode = TextureLoadMode::LibsPNG;
+        if (info.format == ImageFormat::RGBA16_SFLOAT) {
+            auto pTextureData = LoadHalf(buffer, info);
+            if (pTextureData) {
+                pTextureData->SetPath(path);
+            }
+            return pTextureData;
         }
-    #endif
-
-        uint32_t width = 0, height = 0;
+        uint32_t width = 0;
+        uint32_t height = 0;
         uint8_t channels = 0;
-        uint8_t* pImgDataOriginal = LoadRaw(buffer, width, height, channels, fullPath, info.loadMode);
-        if (!pImgDataOriginal) {
-            SR_ERROR("TextureLoader::Load() : failed to load raw texture data!\n\tPath: {}", path);
+        auto&& pSource = LoadRaw(buffer, width, height, channels, fullPath, info.loadMode);
+        if (!pSource) {
             return nullptr;
         }
-
-        uint8_t* pImgData = pImgDataOriginal;
-
-        if (info.channels != 4) {
-            pImgData = (uint8_t*)SRMalloc(width * height * info.channels * sizeof(uint8_t));
+        const uint64_t pixelCount = uint64_t(width) * height;
+        auto&& pPixels = static_cast<uint8_t*>(SRMalloc(pixelCount * info.channels));
+        if (!pPixels) {
+            Free(pSource, info.loadMode);
+            return nullptr;
         }
-
-        uint8_t* src = pImgDataOriginal;
-        uint8_t* dst = pImgData;
-        const int pixelCount = width * height;
-
-        {
-            SR_TRACY_ZONE_N("Convert channels");
-            switch (info.channels) {
-                case 1:
-                    for (int i = 0; i < pixelCount; ++i) {
-                        dst[i] = src[i * 4];
-                    }
-                    break;
-                case 2:
-                    for (int i = 0; i < pixelCount; ++i) {
-                        dst[i * 2 + 0] = src[i * 4 + 0];
-                        dst[i * 2 + 1] = src[i * 4 + 1];
-                    }
-                    break;
-                default:
-                    break;
+        for (uint64_t pixel = 0; pixel < pixelCount; ++pixel) {
+            for (uint32_t channel = 0; channel < info.channels; ++channel) {
+                pPixels[pixel * info.channels + channel] = pSource[pixel * 4 + channel];
+            }
+            if (info.disableAlphaChannel && info.channels == 4) {
+                pPixels[pixel * 4 + 3] = 255;
             }
         }
-
-        if (info.channels != 4) {
-            TextureLoader::Free(pImgDataOriginal, info.loadMode);
+        Free(pSource, info.loadMode);
+        uint32_t maxMips = 1;
+        for (uint32_t dimension = std::max(width, height); dimension > 1; dimension /= 2) {
+            ++maxMips;
         }
+        info.mips = info.mips == 0 ? maxMips : std::min(info.mips, maxMips);
+        info.compression = TextureCompression::None;
+        auto pTextureData = TextureData::Create(width, height, pPixels, [](uint8_t* pData) {
+            SRFree(pData);
+        }, std::move(info));
+        pTextureData->SetPath(path);
+        return pTextureData;
+    }
 
-        if (info.disableAlphaChannel) {
-            for (int i = 0; i < pixelCount; ++i) {
-                dst[i * info.channels + 3] = 255;
+    bool TextureLoader::ReadSourceInfo(SR_UTILS_NS::StringView bytes, TextureSourceInfo& info) {
+        if (bytes.empty() || bytes.size() > SR_INT32_MAX) {
+            return false;
+        }
+        const auto&& pBytes = reinterpret_cast<const stbi_uc*>(bytes.data());
+        int32_t width = 0;
+        int32_t height = 0;
+        int32_t channels = 0;
+        if (!stbi_info_from_memory(pBytes, static_cast<int32_t>(bytes.size()), &width, &height, &channels)
+            || width <= 0 || height <= 0 || width > 32768 || height > 32768
+            || uint64_t(width) * height * 16 > SR_UINT32_MAX) {
+            return false;
+        }
+        info.width = width;
+        info.height = height;
+        info.channels = channels;
+        info.hdr = stbi_is_hdr_from_memory(pBytes, static_cast<int32_t>(bytes.size())) != 0;
+        info.sixteenBit = stbi_is_16_bit_from_memory(pBytes, static_cast<int32_t>(bytes.size())) != 0;
+        return true;
+    }
+
+    bool TextureLoader::DecodeSource(SR_UTILS_NS::StringView bytes, TextureSourceInfo& info, SR_UTILS_NS::Vector<float_t>& pixels) {
+        SR_TRACY_ZONE;
+        if (!ReadSourceInfo(bytes, info)) {
+            return false;
+        }
+        const auto&& pBytes = reinterpret_cast<const stbi_uc*>(bytes.data());
+        int32_t width = 0;
+        int32_t height = 0;
+        int32_t channels = 0;
+        pixels.resize(uint64_t(info.width) * info.height * 4);
+        if (info.hdr) {
+            auto&& pPixels = stbi_loadf_from_memory(pBytes, static_cast<int32_t>(bytes.size()), &width, &height, &channels, 4);
+            if (!pPixels) {
+                return false;
             }
+            memcpy(pixels.data(), pPixels, pixels.size() * sizeof(float_t));
+            stbi_image_free(pPixels);
         }
-
-        const uint32_t autoMips = std::floor(std::log2(std::max(width, height))) + 1;
-        if (info.mips > autoMips) {
-            SR_WARN("TextureLoader::Load() : requested mip levels count is greater than possible! Requested: {}, possible: {}. Path: {}", info.mips, autoMips, path);
-            info.mips = autoMips;
+        else if (info.sixteenBit) {
+            auto&& pPixels = stbi_load_16_from_memory(pBytes, static_cast<int32_t>(bytes.size()), &width, &height, &channels, 4);
+            if (!pPixels) {
+                return false;
+            }
+            for (uint64_t i = 0; i < pixels.size(); ++i) {
+                pixels[i] = pPixels[i] / 65535.f;
+            }
+            stbi_image_free(pPixels);
         }
         else {
-            info.mips = info.mips > 0 ? info.mips : autoMips;
+            auto&& pPixels = stbi_load_from_memory(pBytes, static_cast<int32_t>(bytes.size()), &width, &height, &channels, 4);
+            if (!pPixels) {
+                return false;
+            }
+            for (uint64_t i = 0; i < pixels.size(); ++i) {
+                pixels[i] = pPixels[i] / 255.f;
+            }
+            stbi_image_free(pPixels);
         }
-
-        if (!SR_UTILS_NS::FileSystem::WriteHashToFile(cacheHashPath, fileHash)) {
-            SR_ERROR("TextureLoader::Load() : failed to write hash to file \"{}\"!", cacheHashPath);
-        }
-
-        if (info.caching) {
-            SRAssert2(!path.empty(), "TextureLoader::Load() : path is empty!");
-            SR_LOG("TextureLoader::Load() : save texture to cache...\n\tPath: {}", path);
-
-            auto&& marshal = SR_HTYPES_NS::Marshal();
-
-            marshal.Reserve(
-                1024 + // overhead
-                path.ToStringRef().size() + // path
-                width * height * info.channels * sizeof(uint8_t) // data
-            );
-
-            marshal.Write<uint64_t>(TextureLoader::VERSION);
-            marshal.Write<std::string>(path.ToStringRef());
-            marshal.Write<uint32_t>(width);
-            marshal.Write<uint32_t>(height);
-            marshal.Write<uint32_t>(info.mips);
-            marshal.Write<uint8_t>(info.channels);
-            marshal.Write<bool>(info.disableAlphaChannel);
-            marshal.Write(static_cast<uint8_t>(TextureCompression::None));
-            marshal.WriteBlock(pImgData, width * height * info.channels * sizeof(uint8_t));
-
-            if (!marshal.Save(cacheFilePath)) {
-                SR_ERROR("TextureLoader::Load() : failed to save marshal to file \"{}\"!", cacheFilePath);
+        for (const float_t value : pixels) {
+            if (!std::isfinite(value)) {
+                return false;
             }
         }
-
-        TextureLoadInfo infoCopy = info;
-        if (!compressedTextureExists || canCompress) { /// текстура еще не сжата, отключаем компрессию чтобы формат не сломался
-            infoCopy.compression = TextureCompression::None;
-        }
-
-        auto&& pTextureData = TextureData::Create(width, height, pImgData, [info](uint8_t* pData) {
-            if (info.channels != 4) {
-                SRFree(pData);
-            }
-            else {
-                TextureLoader::Free(pData, info.loadMode);
-            }
-        }, infoCopy);
-
-        if (!pTextureData) {
-            SR_ERROR("TextureLoader::Load() : failed to create TextureData for path \"{}\"!", path);
-            return nullptr;
-        }
-
-        pTextureData->SetPath(path);
-
-        if (canCompress) {
-            AsyncCompressTexture(pTextureData, info.compression);
-        }
-
-        return pTextureData;
+        return true;
     }
 
     bool TextureLoader::Free(uint8_t* data, TextureLoadMode mode) {
@@ -312,9 +340,17 @@ namespace SR_GRAPH_NS {
         return true;
     }
 
-    TextureData::Ptr TextureLoader::LoadFromMemory(const std::string& data, const ImageMetaInfo& config) {
+    TextureData::Ptr TextureLoader::LoadFromMemory(const SR_UTILS_NS::String& data, const ImageMetaInfo& config) {
         SR_TRACY_ZONE;
 
+        if (config.format == ImageFormat::RGBA16_SFLOAT) {
+            TextureLoadInfo info;
+            info.format = config.format;
+            info.channels = 4;
+            info.mips = config.mipLevels;
+            info.disableAlphaChannel = config.disableAlphaChannel;
+            return LoadHalf(data, std::move(info));
+        }
         int32_t width = 0, height = 0, channels = 0;
 
         const uint8_t requireChannels = GetAlignedChannels(config.format);
@@ -331,7 +367,7 @@ namespace SR_GRAPH_NS {
         );
 
         if (!pImgData) {
-            std::string reason;
+            SR_UTILS_NS::String reason;
 
             if (stbi_failure_reason()) {
                 reason = stbi_failure_reason();
@@ -344,139 +380,14 @@ namespace SR_GRAPH_NS {
 
         TextureLoadInfo info;
         info.channels = requireChannels;
+        info.format = config.format;
+        info.mips = config.mipLevels;
 
         auto&& pTextureData = TextureData::Create(width, height, pImgData, [](uint8_t* pData) {
             TextureLoader::Free(pData, TextureLoadMode::STBImage);
         }, info);
 
         return pTextureData;
-    }
-
-    TextureData::Ptr TextureLoader::LoadFromCache(const SR_UTILS_NS::Path& path) {
-        SR_TRACY_ZONE;
-        SR_TRACY_ZONE_TEXT(path);
-
-        SR_UTILS_NS::File mappedFile = SR_UTILS_NS::VFS::Instance().OpenFile(path, SR_UTILS_NS::FileMode::ReadMap);
-        if (!mappedFile) {
-            SR_ERROR("TextureLoader::LoadFromCache() : failed to load file from path \"{}\"!", path);
-            return nullptr;
-        }
-
-        SR_HTYPES_NS::Marshal marshal(mappedFile);
-        auto&& version = marshal.Read<uint64_t>();
-        if (version != TextureLoader::VERSION) {
-            return nullptr;
-        }
-
-        auto&& sourcePath = marshal.Read<std::string>();
-        auto&& width = marshal.Read<uint32_t>();
-        auto&& height = marshal.Read<uint32_t>();
-
-        TextureLoadInfo info;
-        info.mips = marshal.Read<uint32_t>();
-        info.channels = marshal.Read<uint8_t>();
-        info.disableAlphaChannel = marshal.Read<bool>();
-        info.compression = static_cast<TextureCompression>(marshal.Read<uint8_t>());
-        SRAssert(info.compression >= TextureCompression::None && info.compression < TextureCompression::TextureCompressionMAX);
-
-        auto&& size = marshal.Read<uint64_t>();
-        if (size == 0) {
-            SR_ERROR("TextureLoader::LoadFromCache() : size is zero!");
-            return nullptr;
-        }
-
-        const uint64_t offset = marshal.GetPosition();
-
-        uint8_t* pOriginData = (uint8_t*)mappedFile.Data().data();
-        uint8_t* pData = pOriginData + offset;
-
-        SR_UTILS_NS::File* pMappedFile = new SR_UTILS_NS::File(std::move(mappedFile));
-        auto&& pTextureData = TextureData::Create(width, height, pData, [pMappedFile](uint8_t*) {
-            delete pMappedFile;
-        }, info);
-
-        pTextureData->SetPath(sourcePath);
-
-        return pTextureData;
-    }
-
-    void TextureLoader::AsyncCompressTexture(const TextureData::Ptr& pData, TextureCompression compression) {
-        SR_TRACY_ZONE;
-
-        if (compression == TextureCompression::None) {
-            SRHalt("TextureLoader::AsyncCompressTexture() : compression is None!");
-            return;
-        }
-
-        auto&& id = SR_UTILS_NS::TaskManager::Instance().ExecuteAsync([pCopyData = pData, compression](auto&& state) {
-            CompressTexture(pCopyData, compression, state);
-        }, SR_UTILS_NS::TaskPriority::Discardable);
-        SR_UTILS_NS::TaskManager::Instance().SetDescription(id, pData->GetPath());
-    }
-
-    void TextureLoader::CompressTexture(const TextureData::Ptr& pData, TextureCompression compression, std::atomic<SR_UTILS_NS::TaskState>& state) {
-        SR_TRACY_ZONE;
-
-        SR_LOG("TextureLoader::CompressTexture() : compress texture...\n\tPath: {}", pData->GetPath());
-
-        uint64_t compressedSize = 0;
-        uint8* pCompressedData = nullptr;
-
-        TextureLoadInfo info = pData->GetInfo();
-        info.compression = compression;
-        SRAssert(compression >= TextureCompression::None && compression < TextureCompression::TextureCompressionMAX);
-
-    #ifdef SR_USE_CMP_CORE
-        compressedSize = GetCompressedImageSize(pData->GetWidth(), pData->GetHeight(), info);
-        pCompressedData = CompressImage(pData->GetWidth(), pData->GetHeight(), pData->GetData(), info, state);
-    #else
-        return;
-    #endif
-
-        if (state.load() == SR_UTILS_NS::TaskState::Stopped) {
-            SR_LOG("TextureLoader::CompressTexture() : compression task was stopped! Path: {}", pData->GetPath());
-            return;
-        }
-
-        if (!pCompressedData || compressedSize == 0) {
-            SR_ERROR("TextureLoader::AsyncCompressTexture() : failed to compress texture!");
-            return;
-        }
-
-        const SR_UTILS_NS::Path& resFolder = SR_UTILS_NS::ResourceManager::Instance().GetResPathRef();
-        const SR_UTILS_NS::Path relativePath = pData->GetPath().RemoveSubPath(resFolder);
-
-        auto&& compressedTexturePath = resFolder.Concat("Packed").Concat(relativePath).ConcatExt(SR_UTILS_NS::EnumReflector::ToStringAtom(info.compression));
-
-        auto&& marshal = SR_HTYPES_NS::Marshal();
-
-        marshal.Reserve(
-            1024 + // overhead
-            pData->GetPath().ToStringRef().size() + // path
-            compressedSize // data
-        );
-
-        marshal.Write<uint64_t>(TextureLoader::VERSION);
-        marshal.Write<std::string>(pData->GetPath().ToStringRef());
-        marshal.Write<uint32_t>(pData->GetWidth());
-        marshal.Write<uint32_t>(pData->GetHeight());
-        marshal.Write<uint32_t>(info.mips);
-        marshal.Write<uint8_t>(info.channels);
-        marshal.Write<bool>(info.disableAlphaChannel);
-        marshal.Write(static_cast<uint8_t>(info.compression));
-        marshal.WriteBlock(pCompressedData, compressedSize);
-
-        SRFree(pCompressedData);
-
-        if (!marshal.Save(compressedTexturePath)) {
-            SR_ERROR("TextureLoader::AsyncCompressTexture() : failed to save marshal to file \"{}\"!", compressedTexturePath);
-            return;
-        }
-
-        SR_LOG("TextureLoader::CompressTexture() : compressed texture saved to cache.\n\tPath: {}", compressedTexturePath);
-
-        SR_UTILS_NS::StringAtom resourceId = relativePath.View();
-        SR_UTILS_NS::ResourceManager::Instance().ReloadResource(resourceId, SR_GTYPES_NS::Texture::GetClassStaticName());
     }
 
     int TextureLoader::GetAlignedChannels(ImageFormat format) {

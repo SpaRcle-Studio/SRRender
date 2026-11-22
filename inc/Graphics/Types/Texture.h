@@ -9,6 +9,7 @@
 #include <Graphics/Memory/IGraphicsResource.h>
 
 #include <Utils/Resources/IResource.h>
+#include <Utils/Types/Optional.h>
 
 namespace SR_GRAPH_NS {
     class TextureLoader;
@@ -21,7 +22,7 @@ namespace SR_GRAPH_NS {
 namespace SR_GTYPES_NS {
     class TextureImpl;
     
-    /// @extension(png, jpg, jpeg, tga, bmp)
+    /// @extension(png, jpg, jpeg, tga, bmp, hdr)
     class SR_GRAPHICS_DLL_API Texture : public SR_UTILS_NS::IResource, public Memory::IGraphicsResource {
         SR_CLASS()
         friend class TextureImpl;
@@ -34,7 +35,7 @@ namespace SR_GTYPES_NS {
         ~Texture() override;
 
     public:
-        static Texture::Ptr LoadFromMemory(const std::string& data, const ImageMetaInfo& config);
+        static Texture::Ptr LoadFromMemory(const SR_UTILS_NS::String& data, const ImageMetaInfo& config);
 
     public:
         SR_NODISCARD SR_MATH_NS::FRect GetBorder() const noexcept;
@@ -76,7 +77,7 @@ namespace SR_GTYPES_NS {
         std::atomic<bool> m_hasErrors = false;
         std::atomic<bool> m_isDirty = true;
 
-        std::optional<uint64_t> m_syncLoadTaskId;
+        SR_UTILS_NS::Optional<uint64_t> m_syncLoadTaskId;
 
         ImageFormat m_format = ImageFormat::Unknown;
         ImageMetaInfo m_imageMetaInfo;

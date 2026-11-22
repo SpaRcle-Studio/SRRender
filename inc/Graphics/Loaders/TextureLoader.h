@@ -12,6 +12,14 @@
 #include <Utils/FileSystem/Path.h>
 
 namespace SR_GRAPH_NS {
+    struct TextureSourceInfo {
+        uint32_t width = 0;
+        uint32_t height = 0;
+        uint32_t channels = 0;
+        bool hdr = false;
+        bool sixteenBit = false;
+    };
+
     class TextureData : public SR_HTYPES_NS::SharedPtr<TextureData>, SR_UTILS_NS::NonCopyable {
         using Super = SR_HTYPES_NS::SharedPtr<TextureData>;
         using DeleterFn = SR_HTYPES_NS::Function<void(uint8_t*)>;
@@ -51,8 +59,7 @@ namespace SR_GRAPH_NS {
         DeleterFn m_deleter;
     };
 
-    class TextureLoader {
-        static constexpr uint64_t VERSION = 1005;
+    class SR_GRAPHICS_DLL_API TextureLoader {
     public:
         TextureLoader() = delete;
         TextureLoader(const TextureLoader&) = delete;
@@ -61,7 +68,9 @@ namespace SR_GRAPH_NS {
 
     public:
         static TextureData::Ptr Load(const SR_UTILS_NS::Path& path, TextureLoadInfo info);
-        static TextureData::Ptr LoadFromMemory(const std::string& data, const ImageMetaInfo& meta);
+        static TextureData::Ptr LoadFromMemory(const SR_UTILS_NS::String& data, const ImageMetaInfo& meta);
+        static bool ReadSourceInfo(SR_UTILS_NS::StringView bytes, TextureSourceInfo& info);
+        static bool DecodeSource(SR_UTILS_NS::StringView bytes, TextureSourceInfo& info, SR_UTILS_NS::Vector<float_t>& pixels);
 
         static bool Free(uint8_t* data, TextureLoadMode mode);
         static uint8_t* LoadRaw(SR_UTILS_NS::StringView buffer, uint32_t& width, uint32_t& height, uint8_t& channels, const SR_UTILS_NS::Path& path, TextureLoadMode mode);
@@ -69,9 +78,9 @@ namespace SR_GRAPH_NS {
         static bool IsAllowedChannelsCount(uint8_t channels);
 
     private:
-        static void AsyncCompressTexture(const TextureData::Ptr& pData, TextureCompression compression);
-        static void CompressTexture(const TextureData::Ptr& pData, TextureCompression compression, std::atomic<SR_UTILS_NS::TaskState>& state);
-        static TextureData::Ptr LoadFromCache(const SR_UTILS_NS::Path& path);
+        static TextureData::Ptr LoadSource(const SR_UTILS_NS::Path& path, SR_UTILS_NS::StringView bytes, TextureLoadInfo info);
+        static TextureData::Ptr LoadPrepared(const SR_UTILS_NS::Path& path, const TextureLoadInfo& info);
+        static TextureData::Ptr LoadHalf(SR_UTILS_NS::StringView bytes, TextureLoadInfo info);
 
     };
 }

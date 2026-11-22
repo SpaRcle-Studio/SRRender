@@ -38,6 +38,7 @@ namespace SR_GRAPH_NS {
 
     public:
         bool InitOverlay() override;
+        bool SupportsTextureFormat(uint32_t nativeFormat) const override;
 
         bool PreInit(const PipelinePreInitInfo& info) override;
         bool Init() override;

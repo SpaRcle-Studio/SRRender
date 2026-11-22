@@ -45,6 +45,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD int32_t AllocDescriptorSet(const SR_UTILS_NS::Vector<DescriptorType>& types) override;
         SR_NODISCARD int32_t AllocateShaderProgram(const SRShaderCreateInfo& createInfo, int32_t fbo) override;
         SR_NODISCARD int32_t AllocateTexture(const SRTextureCreateInfo& createInfo) override;
+        bool SupportsTextureFormat(uint32_t nativeFormat) const override;
+        bool RequiresBlockAlignedTextures() const override { return true; }
         SR_NODISCARD int32_t AllocateFrameBuffer(const SRFrameBufferCreateInfo& createInfo) override;
         SR_NODISCARD int32_t AllocateCubeMap(const SRCubeMapCreateInfo& createInfo) override;
         SR_NODISCARD int32_t AllocateCmdBuffer() override;

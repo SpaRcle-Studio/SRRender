@@ -6,6 +6,7 @@
 #include <Graphics/Overlay/WebGPUImGuiOverlay.h>
 #include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Pipeline/TextureHelper.h>
+#include <Graphics/Loaders/TextureContainer.h>
 #include <Graphics/Types/Framebuffer.h>
 #include <Graphics/Types/Shader.h>
 
@@ -977,8 +978,10 @@ namespace SR_GRAPH_NS {
                 return;
             }
             deviceDesc.requiredLimits = &requiredLimits;
-            std::array<wgpu::FeatureName, 2> optionalFeatures = {
-                wgpu::FeatureName::Depth32FloatStencil8, wgpu::FeatureName::Float32Filterable};
+            std::array<wgpu::FeatureName, 5> optionalFeatures = {
+                wgpu::FeatureName::Depth32FloatStencil8, wgpu::FeatureName::Float32Filterable,
+                wgpu::FeatureName::TextureCompressionBC, wgpu::FeatureName::TextureCompressionASTC,
+                wgpu::FeatureName::TextureCompressionETC2 };
             SR_UTILS_NS::Vector<wgpu::FeatureName> features;
             for (const auto feature : optionalFeatures) {
                 if (adapter.HasFeature(feature)) { features.emplace_back(feature); }
@@ -2889,6 +2892,54 @@ namespace SR_GRAPH_NS {
     // Texture allocation
     // ----------------------------------------------------------------------------------------------------------------
 
+    static wgpu::TextureFormat PreparedFormatToWGPU(uint32_t nativeFormat) {
+        switch (nativeFormat) {
+            case 37: return wgpu::TextureFormat::RGBA8Unorm;
+            case 43: return wgpu::TextureFormat::RGBA8UnormSrgb;
+            case 97: return wgpu::TextureFormat::RGBA16Float;
+            case 133: return wgpu::TextureFormat::BC1RGBAUnorm;
+            case 134: return wgpu::TextureFormat::BC1RGBAUnormSrgb;
+            case 135: return wgpu::TextureFormat::BC2RGBAUnorm;
+            case 136: return wgpu::TextureFormat::BC2RGBAUnormSrgb;
+            case 137: return wgpu::TextureFormat::BC3RGBAUnorm;
+            case 138: return wgpu::TextureFormat::BC3RGBAUnormSrgb;
+            case 139: return wgpu::TextureFormat::BC4RUnorm;
+            case 141: return wgpu::TextureFormat::BC5RGUnorm;
+            case 144: return wgpu::TextureFormat::BC6HRGBFloat;
+            case 145: return wgpu::TextureFormat::BC7RGBAUnorm;
+            case 146: return wgpu::TextureFormat::BC7RGBAUnormSrgb;
+            case 147: return wgpu::TextureFormat::ETC2RGB8Unorm;
+            case 148: return wgpu::TextureFormat::ETC2RGB8UnormSrgb;
+            case 151: return wgpu::TextureFormat::ETC2RGBA8Unorm;
+            case 152: return wgpu::TextureFormat::ETC2RGBA8UnormSrgb;
+            case 153: return wgpu::TextureFormat::EACR11Unorm;
+            case 155: return wgpu::TextureFormat::EACRG11Unorm;
+            case 157: return wgpu::TextureFormat::ASTC4x4Unorm;
+            case 158: return wgpu::TextureFormat::ASTC4x4UnormSrgb;
+            case 165: return wgpu::TextureFormat::ASTC6x6Unorm;
+            case 166: return wgpu::TextureFormat::ASTC6x6UnormSrgb;
+            case 171: return wgpu::TextureFormat::ASTC8x8Unorm;
+            case 172: return wgpu::TextureFormat::ASTC8x8UnormSrgb;
+            default: return wgpu::TextureFormat::Undefined;
+        }
+    }
+
+    bool WebGPUPipeline::SupportsTextureFormat(uint32_t nativeFormat) const {
+        if (!m_internalData->device || PreparedFormatToWGPU(nativeFormat) == wgpu::TextureFormat::Undefined) {
+            return false;
+        }
+        if (nativeFormat >= 131 && nativeFormat <= 146) {
+            return m_internalData->device.HasFeature(wgpu::FeatureName::TextureCompressionBC);
+        }
+        if (nativeFormat >= 147 && nativeFormat <= 156) {
+            return m_internalData->device.HasFeature(wgpu::FeatureName::TextureCompressionETC2);
+        }
+        if (nativeFormat >= 157 && nativeFormat <= 184) {
+            return m_internalData->device.HasFeature(wgpu::FeatureName::TextureCompressionASTC);
+        }
+        return true;
+    }
+
     SR_NODISCARD int32_t WebGPUPipeline::AllocateTexture(const SRTextureCreateInfo& createInfo) {
         if (!m_internalData->device) {
             SR_ERROR("WebGPUPipeline::AllocateTexture() : device is null!");
@@ -2900,14 +2951,19 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        wgpu::TextureFormat format = ImageFormatToWGPU(createInfo.format);
+        const uint32_t nativeFormat = TextureContainer::GetNativeFormat(createInfo.compression, createInfo.format);
+        if (createInfo.preparedMipChain && !SupportsTextureFormat(nativeFormat)) {
+            return SR_ID_INVALID;
+        }
+        wgpu::TextureFormat format = createInfo.preparedMipChain
+            ? PreparedFormatToWGPU(nativeFormat) : ImageFormatToWGPU(createInfo.format);
         bool isDepth = IsDepthFormat(format);
         if (format == wgpu::TextureFormat::Undefined || createInfo.width > m_internalData->limits.maxTextureDimension2D
             || createInfo.height > m_internalData->limits.maxTextureDimension2D) { return SR_ID_INVALID; }
         SR_UTILS_NS::Vector<uint8_t> converted;
         const uint8_t* uploadData = nullptr;
         uint64_t uploadSize = 0;
-        if (!isDepth && !ConvertTextureUpload(createInfo, format, converted, uploadData, uploadSize)) {
+        if (!createInfo.preparedMipChain && !isDepth && !ConvertTextureUpload(createInfo, format, converted, uploadData, uploadSize)) {
             SR_ERROR("Texture upload data does not match its dimensions/format.");
             return SR_ID_INVALID;
         }
@@ -2932,7 +2988,7 @@ namespace SR_GRAPH_NS {
         }
         const uint32_t channelBytes = channelCount ? TexelBytes(format) / channelCount : 0;
         const uint64_t baseLevelSize = static_cast<uint64_t>(createInfo.width) * createInfo.height * TexelBytes(format);
-        const bool canGenerateMipmaps = !isDepth && uploadData
+        const bool canGenerateMipmaps = !createInfo.preparedMipChain && !isDepth && uploadData
             && channelCount > 0 && uploadSize >= baseLevelSize;
         uint32_t maxMipLevelCount = 1;
         for (uint32_t maxDimension = std::max(createInfo.width, createInfo.height); maxDimension > 1; maxDimension /= 2) {
@@ -2942,7 +2998,24 @@ namespace SR_GRAPH_NS {
         const uint32_t requestedMipLevelCount = createInfo.mipLevels == 0
             ? maxMipLevelCount
             : std::min<uint32_t>(createInfo.mipLevels, maxMipLevelCount);
-        const uint32_t mipLevelCount = canGenerateMipmaps ? requestedMipLevelCount : 1;
+        const uint32_t mipLevelCount = (createInfo.preparedMipChain || canGenerateMipmaps) ? requestedMipLevelCount : 1;
+        if (createInfo.preparedMipChain) {
+            uint64_t expectedSize = 0;
+            uint32_t width = createInfo.width;
+            uint32_t height = createInfo.height;
+            const auto block = TextureContainer::GetBlockInfo(createInfo.compression, createInfo.format);
+            if (width % block.width || height % block.height || !createInfo.pData || createInfo.mipLevels != mipLevelCount) {
+                return SR_ID_INVALID;
+            }
+            for (uint32_t level = 0; level < mipLevelCount; ++level) {
+                expectedSize += TextureContainer::GetLevelSize(width, height, createInfo.compression, createInfo.format);
+                width = std::max(1u, width / 2);
+                height = std::max(1u, height / 2);
+            }
+            if (expectedSize != createInfo.imageSize) {
+                return SR_ID_INVALID;
+            }
+        }
 
         wgpu::TextureUsage usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst | wgpu::TextureUsage::CopySrc;
         if (isDepth) {
@@ -2961,6 +3034,30 @@ namespace SR_GRAPH_NS {
         if (!texture) {
             SR_ERROR("WebGPUPipeline::AllocateTexture() : failed to create texture!");
             return SR_ID_INVALID;
+        }
+
+        if (createInfo.preparedMipChain) {
+            uint32_t width = createInfo.width;
+            uint32_t height = createInfo.height;
+            uint64_t offset = 0;
+            const auto block = TextureContainer::GetBlockInfo(createInfo.compression, createInfo.format);
+            for (uint32_t level = 0; level < mipLevelCount; ++level) {
+                const uint64_t size = TextureContainer::GetLevelSize(width, height, createInfo.compression, createInfo.format);
+                wgpu::TexelCopyTextureInfo destination{};
+                destination.texture = texture;
+                destination.mipLevel = level;
+                destination.aspect = wgpu::TextureAspect::All;
+                wgpu::TexelCopyBufferLayout layout{};
+                layout.bytesPerRow = ((width + block.width - 1) / block.width) * block.bytes;
+                layout.rowsPerImage = ((height + block.height - 1) / block.height) * block.height;
+                const wgpu::Extent3D extent {
+                    ((width + block.width - 1) / block.width) * block.width,
+                    ((height + block.height - 1) / block.height) * block.height, 1 };
+                m_internalData->queue.WriteTexture(&destination, createInfo.pData + offset, size, &layout, &extent);
+                offset += size;
+                width = std::max(1u, width / 2);
+                height = std::max(1u, height / 2);
+            }
         }
 
         // Upload data if provided

@@ -25,3 +25,9 @@
 [submodule "libs/libspng"]
 	path = libs/libspng
 	url = https://github.com/SpaRcle-Studio/libspng
+[submodule "libs/KTX-Software"]
+	path = libs/KTX-Software
+	url = https://github.com/SpaRcle-Studio/KTX-Software
+[submodule "libs/etc2comp"]
+	path = libs/etc2comp
+	url = https://github.com/SpaRcle-Studio/etc2comp

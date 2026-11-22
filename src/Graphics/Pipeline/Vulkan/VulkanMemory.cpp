@@ -425,6 +425,7 @@ namespace SR_GRAPH_NS::VulkanTools {
         info.format = format;
         info.mipLevels = createInfo.mipLevels;
         info.imageSize = createInfo.imageSize;
+        info.preparedMipChain = createInfo.preparedMipChain;
         info.cpuUsage = createInfo.cpuUsage;
         info.filter = filter;
         info.addressMode = addressMode;

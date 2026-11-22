@@ -7,6 +7,7 @@
 #include <Graphics/Types/Shader.h>
 #include <Graphics/Window/Window.h>
 #include <Graphics/Pipeline/Vulkan/VulkanPipeline.h>
+#include <Graphics/Loaders/TextureContainer.h>
 #include <Graphics/Pipeline/Vulkan/VulkanKernel.h>
 #include <Graphics/Pipeline/Vulkan/AbstractCasts.h>
 #include <Graphics/Pipeline/Vulkan/VulkanTracy.h>
@@ -914,6 +915,17 @@ namespace SR_GRAPH_NS {
         return GetSamplesCount();
     }
 
+    bool VulkanPipeline::SupportsTextureFormat(uint32_t nativeFormat) const {
+        if (!m_kernel || !m_kernel->GetDevice() || nativeFormat == 0) {
+            return false;
+        }
+        VkFormatProperties properties{};
+        vkGetPhysicalDeviceFormatProperties(static_cast<VkPhysicalDevice>(*m_kernel->GetDevice()),
+            static_cast<VkFormat>(nativeFormat), &properties);
+        const VkFormatFeatureFlags required = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+        return (properties.optimalTilingFeatures & required) == required;
+    }
+
     int32_t VulkanPipeline::AllocateTexture(const SRTextureCreateInfo& createInfo) {
         SR_TRACY_ZONE;
 
@@ -943,7 +955,15 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        if (textureCreateInfo.compression != TextureCompression::None) {
+        if (textureCreateInfo.preparedMipChain) {
+            const uint32_t nativeFormat = TextureContainer::GetNativeFormat(textureCreateInfo.compression, textureCreateInfo.format);
+            if (!SupportsTextureFormat(nativeFormat)) {
+                SR_ERROR("VulkanPipeline::AllocateTexture() : unsupported prepared format {}", nativeFormat);
+                return SR_ID_INVALID;
+            }
+            vkFormat = static_cast<VkFormat>(nativeFormat);
+        }
+        else if (textureCreateInfo.compression != TextureCompression::None) {
             vkFormat = VulkanTools::AbstractTextureCompToVkFormat(textureCreateInfo.compression, vkFormat);
             if (vkFormat == VK_FORMAT_MAX_ENUM) {
                 SRHalt("VulkanPipeline::AllocateTexture() : unsupported format with compression!");
