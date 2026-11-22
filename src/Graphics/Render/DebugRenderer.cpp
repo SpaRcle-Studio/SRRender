@@ -15,6 +15,8 @@
 
 #include <Codegen/DebugRenderer.generated.hpp>
 
+#include "Utils/FileSystem/VFS.h"
+
 namespace SR_GRAPH_NS {
     DebugRenderer::~DebugRenderer() {
         SRAssert2(m_timedObjects.IsEmpty(), "DebugRenderer::~DebugRenderer() : timed objects are not empty!");
@@ -24,10 +26,18 @@ namespace SR_GRAPH_NS {
         SR_INFO("DebugRenderer::Init() : initializing debug renderer...");
 
         if (SR_UTILS_NS::Features::Instance().Enabled("DebugRendererMeshes", true)) {
-            m_meshes.emplace_back().rawMesh = "Engine/Models/cubeWireframe.obj";
-            m_meshes.emplace_back().rawMesh = "Engine/Models/planeWireframe.obj";
-            m_meshes.emplace_back().rawMesh = "Engine/Models/sphere_circle.obj";
-            m_meshes.emplace_back().rawMesh = "Engine/Models/capsule_circle.obj";
+            static std::array<SR_UTILS_NS::StringView, 4> models = {
+                "Engine/Models/cubeWireframe.obj",
+                "Engine/Models/planeWireframe.obj",
+                "Engine/Models/sphere_circle.obj",
+                "Engine/Models/capsule_circle.obj"
+            };
+
+            for (auto&& model : models) {
+                if (SR_UTILS_NS::VFS::Instance().IsFileExists(CoreResLoader::GetResPath().Concat(model))) {
+                    m_meshes.emplace_back().rawMesh = model;
+                }
+            }
 
             for (auto&& mesh : m_meshes) {
                 mesh.rawMesh.ForceLoad();
