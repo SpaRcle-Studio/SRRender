@@ -190,8 +190,16 @@ namespace SR_GRAPH_NS {
         /// Асинхронный запрос диапазона пикселей
         SR_NODISCARD virtual uint64_t RequestPixelRange(uint64_t workId, uint32_t textureId, uint32_t x, uint32_t y, uint32_t width, uint32_t height) { return SR_ID_INVALID; }
         SR_NODISCARD virtual bool IsPixelRangeReady(uint64_t workId) const { return false; }
-        virtual bool GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height) { return false; }
+        /// Normalized color readback leaves the default numeric picking contract unchanged.
+        virtual bool GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height, bool normalized = false) { return false; }
         virtual void ReleasePixelRangeRequest(uint64_t workId) { }
+
+        /// A null framebuffer selects the presented surface.
+        SR_NODISCARD uint64_t RequestFrameCapture(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& pFramebuffer, uint32_t width, uint32_t height);
+        SR_NODISCARD bool IsFrameCaptureReady(uint64_t request) const;
+        bool GetFrameCaptureResult(uint64_t request, SR_MATH_NS::FColor* pixels);
+        void ReleaseFrameCapture(uint64_t request);
+        void ProcessFrameCaptures();
         SR_NODISCARD virtual uint16_t GetSwapchainImagesCount() const { return 0; }
         SR_NODISCARD virtual uint16_t GetMaxFramesInFlight() const { return 3; }
 
@@ -359,6 +367,15 @@ namespace SR_GRAPH_NS {
 
     protected:
         Memory::UBOManager* m_uboManager = nullptr;
+        struct FrameCaptureRequest {
+            SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer> pFramebuffer;
+            uint32_t width = 0;
+            uint32_t height = 0;
+            uint64_t readback = SR_ID_INVALID;
+            bool submitted = false;
+        };
+        SR_UTILS_NS::Map<uint64_t, FrameCaptureRequest> m_frameCaptures;
+        uint64_t m_nextFrameCapture = 0;
         DescriptorManager* m_descriptorManager = nullptr;
 
         SR_UTILS_NS::Map<OverlayType, SR_HTYPES_NS::SharedPtr<Overlay>> m_overlays;

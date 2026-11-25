@@ -17,6 +17,22 @@
 #include <Codegen/Sprite.generated.hpp>
 
 namespace SR_GTYPES_NS {
+    bool Sprite::SetTextureData(const SR_UTILS_NS::String& encodedImage) {
+        SR_TRACY_ZONE;
+        SR_GRAPH_NS::ImageMetaInfo meta;
+        meta.imageType = SR_GRAPH_NS::ImageType::UI;
+        meta.format = SR_GRAPH_NS::ImageFormat::RGBA8_UNORM;
+        meta.mipLevels = 1;
+        meta.loadMode = SR_UTILS_NS::ResourceLoadMode::Sync;
+        auto pTexture = Texture::LoadFromMemory(encodedImage, meta);
+        if (!pTexture) {
+            return false;
+        }
+        m_texture = SR_UTILS_NS::ResourceRef<Texture>(pTexture);
+        OnTextureChanged();
+        return true;
+    }
+
     bool Sprite::SetTexturePath(const SR_UTILS_NS::Path& path) {
         SR_UTILS_NS::ResourceRef<Texture> texture(path);
         if (!texture.GetResource()) {

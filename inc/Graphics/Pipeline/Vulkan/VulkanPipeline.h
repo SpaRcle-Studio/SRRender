@@ -69,7 +69,7 @@ namespace SR_GRAPH_NS {
         
         /// Получает результат запроса. Возвращает true если данные готовы и скопированы в pixels
         /// pixels должен быть достаточно большим для хранения width * height пикселей
-        bool GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height);
+        bool GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height, bool normalized = false) override;
         
         /// Освобождает ресурсы запроса
         void ReleasePixelRangeRequest(uint64_t workId);

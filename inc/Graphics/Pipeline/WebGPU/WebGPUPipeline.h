@@ -118,7 +118,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_MATH_NS::FColor GetPixelColor(uint32_t textureId, uint32_t x, uint32_t y) override;
         SR_NODISCARD uint64_t RequestPixelRange(uint64_t workId, uint32_t textureId, uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
         SR_NODISCARD bool IsPixelRangeReady(uint64_t workId) const override;
-        bool GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height) override;
+        bool GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height, bool normalized = false) override;
         void ReleasePixelRangeRequest(uint64_t workId) override;
 
 

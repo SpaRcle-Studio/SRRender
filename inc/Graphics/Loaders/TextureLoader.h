@@ -71,6 +71,7 @@ namespace SR_GRAPH_NS {
         static TextureData::Ptr LoadFromMemory(const SR_UTILS_NS::String& data, const ImageMetaInfo& meta);
         static bool ReadSourceInfo(SR_UTILS_NS::StringView bytes, TextureSourceInfo& info);
         static bool DecodeSource(SR_UTILS_NS::StringView bytes, TextureSourceInfo& info, SR_UTILS_NS::Vector<float_t>& pixels);
+        static SR_UTILS_NS::String EncodeRgbPng(const uint8_t* pPixels, uint32_t width, uint32_t height);
 
         static bool Free(uint8_t* data, TextureLoadMode mode);
         static uint8_t* LoadRaw(SR_UTILS_NS::StringView buffer, uint32_t& width, uint32_t& height, uint8_t& channels, const SR_UTILS_NS::Path& path, TextureLoadMode mode);

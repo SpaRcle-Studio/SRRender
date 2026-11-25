@@ -360,7 +360,9 @@ namespace SR_GTYPES_NS {
         pTexture->m_format = meta.format;
 
         pTexture->SetImageMetaInfoInternal(meta);
-        pTexture->SetId("TextureFromMemory");
+        static std::atomic<uint64_t> sequence = 0;
+        pTexture->SetId("TextureFromMemory_{}"_format(sequence.fetch_add(1)));
+        pTexture->IResource::Load();
 
         return pTexture;
     }

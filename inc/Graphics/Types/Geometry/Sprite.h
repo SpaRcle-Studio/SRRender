@@ -7,10 +7,10 @@
 
 #include <Graphics/Types/Mesh.h>
 #include <Graphics/UI/Canvas.h>
+#include <Graphics/Types/Texture.h>
 
 #include <Utils/Math/Rect.h>
 #include <Utils/UI/ILayoutElement.h>
-#include <Graphics/Types/Texture.h>
 #include <Utils/Common/Subscription.h>
 
 namespace SR_GTYPES_NS {
@@ -48,6 +48,8 @@ namespace SR_GTYPES_NS {
     public:
         /// @method
         bool SetTexturePath(const SR_UTILS_NS::Path& path);
+        /// @method
+        bool SetTextureData(const SR_UTILS_NS::String& encodedImage);
         /// @method @evaluate
         SR_MATH_NS::FVector2 GetTextureSize() const;
         /// @method @evaluate

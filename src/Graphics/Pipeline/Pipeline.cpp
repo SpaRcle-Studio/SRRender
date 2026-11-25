@@ -58,6 +58,61 @@ namespace SR_GRAPH_NS {
         }
     }
 
+    uint64_t Pipeline::RequestFrameCapture(const SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& pFramebuffer, uint32_t width, uint32_t height) {
+        if (!width || !height) {
+            return SR_ID_INVALID;
+        }
+        const uint64_t id = m_nextFrameCapture++;
+        auto& request = m_frameCaptures[id];
+        request.pFramebuffer = pFramebuffer;
+        request.width = width;
+        request.height = height;
+        return id;
+    }
+
+    void Pipeline::ProcessFrameCaptures() {
+        for (auto& [id, request] : m_frameCaptures) {
+            if (!request.submitted) {
+                request.submitted = true;
+                uint32_t texture = SR_ID_INVALID;
+                if (request.pFramebuffer) {
+                    if (request.pFramebuffer->IsFramebufferDead() || request.pFramebuffer->GetWidth() != request.width ||
+                        request.pFramebuffer->GetHeight() != request.height) {
+                        continue;
+                    }
+                    texture = request.pFramebuffer->GetColorTexture(0, GetCurrentImageIndex());
+                    if (texture == uint32_t(SR_ID_INVALID)) {
+                        continue;
+                    }
+                }
+                request.readback = RequestPixelRange(SR_ID_INVALID, texture, 0, 0, request.width, request.height);
+            }
+        }
+    }
+
+    bool Pipeline::IsFrameCaptureReady(uint64_t id) const {
+        auto it = m_frameCaptures.find(id);
+        return it != m_frameCaptures.end() && it->second.submitted &&
+            (it->second.readback == SR_ID_INVALID || IsPixelRangeReady(it->second.readback));
+    }
+
+    bool Pipeline::GetFrameCaptureResult(uint64_t id, SR_MATH_NS::FColor* pixels) {
+        auto it = m_frameCaptures.find(id);
+        return it != m_frameCaptures.end() && it->second.readback != SR_ID_INVALID &&
+            GetPixelRangeResult(it->second.readback, pixels, it->second.width, it->second.height, true);
+    }
+
+    void Pipeline::ReleaseFrameCapture(uint64_t id) {
+        auto it = m_frameCaptures.find(id);
+        if (it == m_frameCaptures.end()) {
+            return;
+        }
+        if (it->second.readback != SR_ID_INVALID) {
+            ReleasePixelRangeRequest(it->second.readback);
+        }
+        m_frameCaptures.erase(it);
+    }
+
     bool Pipeline::BeginRender() {
         SR_TRACY_ZONE;
 

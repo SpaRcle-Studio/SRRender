@@ -658,6 +658,8 @@ namespace SR_GRAPH_NS {
             return;
         }
 
+        ProcessFrameCaptures();
+
         // ---- ImGui pass into swapchain ----
         // All scene geometry has already been rendered into FBOs via BeginRender/EndRender.
         // Here we open a final swapchain pass to render the ImGui UI on top.
@@ -2057,11 +2059,11 @@ namespace SR_GRAPH_NS {
         }
 
         const auto id = static_cast<int32_t>(textureId);
-        if (id < 0 || !m_internalData->textures.IsAlive(id)) {
+        if (textureId != uint32_t(SR_ID_INVALID) && (id < 0 || !m_internalData->textures.IsAlive(id))) {
             return SR_ID_INVALID;
         }
 
-        auto& source = m_internalData->textures.At(id).texture;
+        auto source = textureId == uint32_t(SR_ID_INVALID) ? m_internalData->surfaceColorTexture : m_internalData->textures.At(id).texture;
         if (!source) {
             return SR_ID_INVALID;
         }
@@ -2144,7 +2146,7 @@ namespace SR_GRAPH_NS {
         return false;
     }
 
-    bool WebGPUPipeline::GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height) {
+    bool WebGPUPipeline::GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height, bool normalized) {
         if (!m_internalData || !pixels) return false;
         for (auto& request : m_internalData->pixelReadbacks) {
             if (request.id != workId || !request.ready || request.failed
@@ -2175,6 +2177,9 @@ namespace SR_GRAPH_NS {
                         for (uint32_t c = 0; c < stride; ++c) { channels[c] = static_cast<float_t>(pixel[c]); }
                         if (request.format == wgpu::TextureFormat::BGRA8Unorm || request.format == wgpu::TextureFormat::BGRA8UnormSrgb) {
                             std::swap(channels[0], channels[2]);
+                        }
+                        if (normalized) {
+                            for (auto& channel : channels) { channel /= 255.f; }
                         }
                     }
                     pixels[row * width + column] = SR_MATH_NS::FColor(channels[0], channels[1], channels[2], channels[3]);

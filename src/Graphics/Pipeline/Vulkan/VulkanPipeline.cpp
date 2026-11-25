@@ -16,6 +16,7 @@
 
 #include <EvoVulkan/Types/CmdBuffer.h>
 #include <EvoVulkan/Types/VmaBuffer.h>
+#include <EvoVulkan/Types/Surface.h>
 #include <EvoVulkan/Tools/VulkanTools.h>
 #include <EvoVulkan/Complexes/Shader.h>
 
@@ -67,7 +68,9 @@ namespace SR_GRAPH_NS {
         EvoVulkan::Types::VmaBuffer* pBuffer = nullptr;
         EvoVulkan::Types::CmdBuffer* pCmdBuffer = nullptr;
         VkImageLayout originalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        VkFormat format = VK_FORMAT_UNDEFINED;
         bool isReady = false;
+        bool submitted = false;
     };
 
     struct VulkanPipelineInternalData {
@@ -196,7 +199,7 @@ namespace SR_GRAPH_NS {
         if (m_kernel && m_kernel->GetDevice()) {
             for (auto&& [workId, request] : m_internalData->pixelRequests) {
                 // Ждем завершения операции перед освобождением ресурсов
-                if (!request.isReady && request.fence != VK_NULL_HANDLE) {
+                if (request.submitted && !request.isReady && request.fence != VK_NULL_HANDLE) {
                     vkWaitForFences(*m_kernel->GetDevice(), 1, &request.fence, VK_TRUE, UINT64_MAX);
                 }
 
@@ -238,6 +241,17 @@ namespace SR_GRAPH_NS {
 
     bool VulkanPipeline::PreInit(const PipelinePreInitInfo& info) {
         SR_TRACY_ZONE;
+
+    #if defined(SR_VULKAN_LAYER_PATH)
+        if (SR_PLATFORM_NS::IsFileExists(SR_UTILS_NS::Path(SR_VULKAN_LAYER_PATH).Concat("/VkLayer_khronos_validation.json"))) {
+            SR_INFO("VulkanPipeline::PreInit() : found built-in vulkan sdk: {}", SR_VULKAN_LAYER_PATH);
+        #if defined(_WIN32)
+            SetEnvironmentVariableA("VK_ADD_LAYER_PATH", SR_VULKAN_LAYER_PATH);
+        #else
+            setenv("VK_ADD_LAYER_PATH", SR_VULKAN_LAYER_PATH, 1);
+        #endif
+        }
+    #endif
 
     #ifdef SR_RENDER_USE_GLSL_LANG_LIB
         if (!m_isGlslLangInit) {
@@ -1248,7 +1262,7 @@ namespace SR_GRAPH_NS {
             info.features.depthLoad = createInfo.features.depthLoad;
             info.features.colorLoad = createInfo.features.colorLoad;
             info.features.depthTransferSrc = createInfo.features.depthTransferSrc;
-            info.features.colorTransferSrc = createInfo.features.colorTransferSrc;
+            info.features.colorTransferSrc = true;
             info.features.depthTransferDst = createInfo.features.depthTransferDst;
             info.features.colorTransferDst = createInfo.features.colorTransferDst;
             info.features.depthShaderRead = createInfo.features.depthShaderRead;
@@ -1301,15 +1315,21 @@ namespace SR_GRAPH_NS {
 
         ++m_state.operations;
 
-        auto&& pTexture = m_memory->GetTexture(textureId);
-        if (!pTexture) {
+        const bool surface = textureId == uint32_t(SR_ID_INVALID);
+        auto pTexture = surface ? nullptr : m_memory->GetTexture(textureId);
+        if (!surface && !pTexture) {
             PipelineError("VulkanPipeline::RequestPixelRange() : invalid texture id!");
             return SR_ID_INVALID;
         }
 
-        auto&& image = pTexture->GetImage();
-        const VkImageLayout originalLayout = image.GetLayout();
-        const VkFormat format = image.GetFormat();
+        auto pSwapchain = m_kernel->GetSwapchain();
+        if (surface && (!static_cast<VulkanKernel*>(m_kernel)->HasAcquiredImage() ||
+            x + width > pSwapchain->GetSurfaceWidth() || y + height > pSwapchain->GetSurfaceHeight())) {
+            return SR_ID_INVALID;
+        }
+        const VkImageLayout originalLayout = surface ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : pTexture->GetImage().GetLayout();
+        const VkFormat format = surface ? pSwapchain->GetColorFormat() : pTexture->GetImage().GetFormat();
+        const VkImage image = surface ? pSwapchain->GetSwapchainImages()[GetCurrentImageIndex()] : static_cast<VkImage>(pTexture->GetImage());
         const uint8_t channels = EvoVulkan::Tools::GetPixelChannelsCount(format);
         const uint8_t pixelTypeSize = EvoVulkan::Tools::GetPixelTypeSize(format);
 
@@ -1318,12 +1338,20 @@ namespace SR_GRAPH_NS {
             return SR_ID_INVALID;
         }
 
-        if (!(image.GetInfo().usage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) {
+        if (surface) {
+            VkSurfaceCapabilitiesKHR capabilities{};
+            if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(*m_kernel->GetDevice(), *m_kernel->GetSurface(), &capabilities) != VK_SUCCESS ||
+                !(capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) {
+                return SR_ID_INVALID;
+            }
+        }
+
+        if (!surface && !(pTexture->GetImage().GetInfo().usage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) {
             PipelineError("VulkanPipeline::RequestPixelRange() : image does not support VK_IMAGE_USAGE_TRANSFER_SRC_BIT!");
             return SR_ID_INVALID;
         }
 
-        if (x + width > image.GetInfo().width || y + height > image.GetInfo().height) {
+        if (!surface && (x + width > pTexture->GetImage().GetInfo().width || y + height > pTexture->GetImage().GetInfo().height)) {
             PipelineError("VulkanPipeline::RequestPixelRange() : incorrect pixel range!");
             return SR_ID_INVALID;
         }
@@ -1332,7 +1360,8 @@ namespace SR_GRAPH_NS {
             workId = m_nextWorkId.fetch_add(1);
         }
 
-        const uint64_t bufferSize = uint64_t(width) * height * channels * pixelTypeSize;
+        const uint32_t pixelStride = format == VK_FORMAT_B10G11R11_UFLOAT_PACK32 ? sizeof(uint32_t) : channels * pixelTypeSize;
+        const uint64_t bufferSize = uint64_t(width) * height * pixelStride;
 
         PixelRangeRequest* pRequest = nullptr;
 
@@ -1351,6 +1380,8 @@ namespace SR_GRAPH_NS {
 
         /* ---------- buffer ---------- */
 
+        pRequest->submitted = false;
+
         if (!pRequest->pBuffer || pRequest->pBuffer->GetSize() < bufferSize) {
             delete pRequest->pBuffer;
 
@@ -1363,6 +1394,7 @@ namespace SR_GRAPH_NS {
 
             if (!pRequest->pBuffer) {
                 PipelineError("VulkanPipeline::RequestPixelRange() : buffer alloc failed!");
+                ReleasePixelRangeRequest(workId);
                 return SR_ID_INVALID;
             }
         }
@@ -1373,6 +1405,7 @@ namespace SR_GRAPH_NS {
             pRequest->fence = EvoVulkan::Tools::CreateVulkanFence(*m_kernel->GetDevice(), 0);
             if (!pRequest->fence) {
                 PipelineError("VulkanPipeline::RequestPixelRange() : fence create failed!");
+                ReleasePixelRangeRequest(workId);
                 return SR_ID_INVALID;
             }
         }
@@ -1391,6 +1424,7 @@ namespace SR_GRAPH_NS {
 
             if (!pRequest->pCmdBuffer) {
                 PipelineError("VulkanPipeline::RequestPixelRange() : cmd buffer create failed!");
+                ReleasePixelRangeRequest(workId);
                 return SR_ID_INVALID;
             }
         }
@@ -1402,10 +1436,21 @@ namespace SR_GRAPH_NS {
 
         if (!cmd->Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)) {
             PipelineError("VulkanPipeline::RequestPixelRange() : begin failed!");
+            ReleasePixelRangeRequest(workId);
             return SR_ID_INVALID;
         }
 
-        image.TransitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, cmd);
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier.oldLayout = originalLayout;
+        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = image;
+        barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+        vkCmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
         VkBufferImageCopy region = {};
         region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1422,7 +1467,16 @@ namespace SR_GRAPH_NS {
             &region
         );
 
-        image.TransitionImageLayout(originalLayout, cmd);
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        barrier.newLayout = originalLayout;
+        vkCmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+        VkMemoryBarrier hostBarrier{};
+        hostBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        hostBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        hostBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+        vkCmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &hostBarrier, 0, nullptr, 0, nullptr);
         cmd->End(false);
 
         VkSubmitInfo submitInfo = {};
@@ -1437,6 +1491,7 @@ namespace SR_GRAPH_NS {
             pRequest->fence
         ) != VK_SUCCESS) {
             PipelineError("VulkanPipeline::RequestPixelRange() : submit failed!");
+            ReleasePixelRangeRequest(workId);
             return SR_ID_INVALID;
         }
 
@@ -1446,7 +1501,15 @@ namespace SR_GRAPH_NS {
         pRequest->width = width;
         pRequest->height = height;
         pRequest->originalLayout = originalLayout;
+        pRequest->format = format;
         pRequest->isReady = false;
+        pRequest->submitted = true;
+
+        // The presentation semaphore belongs to the draw submission. Finish the
+        // surface copy before QueuePresent can hand this acquired image back.
+        if (surface) {
+            pRequest->isReady = vkWaitForFences(*m_kernel->GetDevice(), 1, &pRequest->fence, VK_TRUE, UINT64_MAX) == VK_SUCCESS;
+        }
 
         return workId;
     }
@@ -1485,7 +1548,7 @@ namespace SR_GRAPH_NS {
         }
     }
 
-    bool VulkanPipeline::GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height) {
+    bool VulkanPipeline::GetPixelRangeResult(uint64_t workId, SR_MATH_NS::FColor* pixels, uint32_t width, uint32_t height, bool normalized) {
         SR_TRACY_ZONE;
 
         if (!pixels) {
@@ -1523,13 +1586,7 @@ namespace SR_GRAPH_NS {
         }
 
         // Получаем информацию о формате текстуры
-        auto&& pTexture = m_memory->GetTexture(request.textureId);
-        if (!pTexture) {
-            PipelineError("VulkanPipeline::GetPixelRangeResult() : texture not found!");
-            return false;
-        }
-
-        const VkFormat format = pTexture->GetImage().GetFormat();
+        const VkFormat format = request.format;
         const uint8_t channels = EvoVulkan::Tools::GetPixelChannelsCount(format);
         const uint8_t pixelTypeSize = EvoVulkan::Tools::GetPixelTypeSize(format);
 
@@ -1545,13 +1602,67 @@ namespace SR_GRAPH_NS {
                 }
             };
 
-            const uint32_t pixelStride = channels * pixelTypeSize;
+            const bool packedFloat = format == VK_FORMAT_B10G11R11_UFLOAT_PACK32;
+            const uint32_t pixelStride = packedFloat ? sizeof(uint32_t) : channels * pixelTypeSize;
             const uint32_t rowStride = width * pixelStride;
+            const bool halfFloat = format == VK_FORMAT_R16_SFLOAT || format == VK_FORMAT_R16G16_SFLOAT ||
+                format == VK_FORMAT_R16G16B16_SFLOAT || format == VK_FORMAT_R16G16B16A16_SFLOAT;
+            const bool fullFloat = format == VK_FORMAT_R32_SFLOAT || format == VK_FORMAT_R32G32_SFLOAT ||
+                format == VK_FORMAT_R32G32B32_SFLOAT || format == VK_FORMAT_R32G32B32A32_SFLOAT;
+            const double_t maximum = std::ldexp(1.0, pixelTypeSize * 8) - 1.0;
 
             for (uint32_t py = 0; py < height; ++py) {
                 for (uint32_t px = 0; px < width; ++px) {
                     const uint32_t bufferOffset = py * rowStride + px * pixelStride;
                     uint8_t* pPixelData = static_cast<uint8_t*>(pData) + bufferOffset;
+
+                    if (normalized || packedFloat) {
+                        float_t values[4] = { 0.f, 0.f, 0.f, 1.f };
+                        uint32_t packedValue = 0;
+                        if (packedFloat) {
+                            std::memcpy(&packedValue, pPixelData, sizeof(packedValue));
+                        }
+                        for (uint8_t channel = 0; channel < channels; ++channel) {
+                            if (packedFloat) {
+                                const uint32_t mantissaBits = channel == 2 ? 5 : 6;
+                                const uint32_t shift = channel == 0 ? 0 : channel == 1 ? 11 : 22;
+                                const uint32_t component = (packedValue >> shift) & ((1u << (mantissaBits + 5)) - 1);
+                                const uint32_t exponent = component >> mantissaBits;
+                                const uint32_t mantissa = component & ((1u << mantissaBits) - 1);
+                                if (exponent == 0) {
+                                    values[channel] = std::ldexp(static_cast<float_t>(mantissa), -14 - static_cast<int32_t>(mantissaBits));
+                                }
+                                else if (exponent == 31) {
+                                    values[channel] = mantissa ? std::numeric_limits<float_t>::quiet_NaN() : std::numeric_limits<float_t>::infinity();
+                                }
+                                else {
+                                    values[channel] = std::ldexp(1.f + static_cast<float_t>(mantissa) / (1u << mantissaBits), static_cast<int32_t>(exponent) - 15);
+                                }
+                            }
+                            else if (halfFloat) {
+                                uint16_t half;
+                                std::memcpy(&half, pPixelData + channel * 2, 2);
+                                const uint32_t exponent = (half >> 10) & 31;
+                                const uint32_t mantissa = half & 1023;
+                                const float_t value = exponent == 0 ? std::ldexp(static_cast<float_t>(mantissa), -24)
+                                    : exponent == 31 ? 1.f
+                                    : std::ldexp(1.f + static_cast<float_t>(mantissa) / 1024.f, static_cast<int32_t>(exponent) - 15);
+                                values[channel] = half & 0x8000 ? -value : value;
+                            }
+                            else if (fullFloat) {
+                                std::memcpy(&values[channel], pPixelData + channel * 4, 4);
+                            }
+                            else {
+                                values[channel] = static_cast<float_t>(static_cast<double_t>(GetPixelValue(pPixelData, channel)) / maximum);
+                            }
+                        }
+                        if (format == VK_FORMAT_B8G8R8A8_UNORM || format == VK_FORMAT_B8G8R8A8_SRGB ||
+                            format == VK_FORMAT_B8G8R8_UNORM || format == VK_FORMAT_B8G8R8_SRGB) {
+                            std::swap(values[0], values[2]);
+                        }
+                        pixels[py * width + px] = SR_MATH_NS::FColor(values[0], values[1], values[2], values[3]);
+                        continue;
+                    }
 
                     uint64_t r = 0, g = 0, b = 0, a = 255;
                     if (channels >= 1) { r = GetPixelValue(pPixelData, 0); }
@@ -1589,7 +1700,7 @@ namespace SR_GRAPH_NS {
         auto&& request = it->second;
 
         // Ждем завершения операции перед освобождением ресурсов
-        if (!request.isReady) {
+        if (request.submitted && !request.isReady) {
             vkWaitForFences(*m_kernel->GetDevice(), 1, &request.fence, VK_TRUE, UINT64_MAX);
         }
 

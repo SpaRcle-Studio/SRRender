@@ -216,6 +216,8 @@ namespace SR_GRAPH_NS {
             }
         }
 
+        m_pipeline->ProcessFrameCaptures();
+
         const bool isSwapchainSuboptimal = m_isSwapchainSuboptimal;
         EvoVulkan::Core::FrameResult presentResult = QueuePresent();
         if (isSwapchainSuboptimal && presentResult == EvoVulkan::Core::FrameResult::Success) {
