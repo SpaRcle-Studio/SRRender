@@ -9,6 +9,8 @@
 #include <Graphics/Render/RenderContext.h>
 #include <Graphics/Pipeline/Pipeline.h>
 #include <Graphics/Loaders/TextureLoader.h>
+#include <Graphics/Window/Window.h>
+#include <Graphics/Window/BasicWindowImpl.h>
 
 #include <Utils/World/Scene.h>
 
@@ -49,9 +51,14 @@ namespace SR_GTYPES_NS {
             m_height = pFramebuffer->GetHeight();
         }
         else {
-            const auto size = pContext->GetWindowSize();
-            m_width = size.x;
-            m_height = size.y;
+            auto pWindow = pContext->GetWindow();
+            auto&& pWindowImpl = pWindow ? pWindow->GetBaseWindow() : nullptr;
+            if (!pWindowImpl) {
+                Cancel();
+                return false;
+            }
+            m_width = pWindowImpl->GetSurfaceWidth();
+            m_height = pWindowImpl->GetSurfaceHeight();
         }
         if (m_width == 0 || m_height == 0 || m_width > 8192 || m_height > 8192) {
             Cancel();
