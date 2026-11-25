@@ -153,8 +153,7 @@ namespace SR_GTYPES_NS {
             }
             // A compact export requires its native formats. A runtime compression toggle
             // cannot select a lossless copy that was deliberately omitted from the package.
-            const bool compressedAllowed = !hasLosslessFallback || (GetRenderContext()->IsTextureCompressionEnabled()
-                && SR_UTILS_NS::Features::Instance().Enabled("TextureCompression", true));
+            const bool compressedAllowed = !hasLosslessFallback || GetRenderContext()->IsTextureCompressionEnabled();
             for (uint32_t compression = 0; compression < static_cast<uint32_t>(TextureCompression::TextureCompressionMAX); ++compression) {
                 if (!compressedAllowed && compression != 0) {
                     continue;
