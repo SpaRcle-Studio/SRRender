@@ -16,23 +16,28 @@ namespace SR_GRAPH_NS {
         bool& dirtyMaterial, bool& hasErrors
     ) {
         auto&& pPipeline = pObject->GetPipeline();
-        if (dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
+        // Text batches share a UBO; refreshing one batch must not free buffers used by the others.
+        if (ubo == SR_INVALID_UBO) SR_UNLIKELY_ATTRIBUTE {
             ubo = pPipeline->GetUBOManager().AllocateUBO(ubo);
             if (ubo == SR_INVALID_UBO) SR_UNLIKELY_ATTRIBUTE {
                 hasErrors = true;
                 return;
             }
+        }
 
+        if (dirtyMaterial || descriptor == SR_ID_INVALID) SR_UNLIKELY_ATTRIBUTE {
             descriptor = pPipeline->GetDescriptorManager().AllocateDescriptorSet(descriptor);
         }
 
-        SRAssert(ubo != SR_INVALID_UBO);
-
-        pPipeline->GetUBOManager().BindUBO(ubo);
+        const auto uboResult = pPipeline->GetUBOManager().BindUBO(ubo);
+        if (uboResult == Memory::UBOManager::BindResult::Failed) SR_UNLIKELY_ATTRIBUTE {
+            return;
+        }
 
         const auto result = pPipeline->GetDescriptorManager().Bind(descriptor);
 
-        if (result == DescriptorManager::BindResult::Duplicated || dirtyMaterial) SR_UNLIKELY_ATTRIBUTE {
+        if (result == DescriptorManager::BindResult::Duplicated || dirtyMaterial
+            || uboResult == Memory::UBOManager::BindResult::Duplicated) SR_UNLIKELY_ATTRIBUTE {
             pObject->UseSamplers(*pPipeline->GetCurrentShader());
             pObject->UseSSBO();
             pObject->MarkUniformsDirty();
