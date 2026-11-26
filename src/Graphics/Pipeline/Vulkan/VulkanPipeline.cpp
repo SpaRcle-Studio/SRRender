@@ -1330,11 +1330,12 @@ namespace SR_GRAPH_NS {
         const VkImageLayout originalLayout = surface ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : pTexture->GetImage().GetLayout();
         const VkFormat format = surface ? pSwapchain->GetColorFormat() : pTexture->GetImage().GetFormat();
         const VkImage image = surface ? pSwapchain->GetSwapchainImages()[GetCurrentImageIndex()] : static_cast<VkImage>(pTexture->GetImage());
-        const uint8_t channels = EvoVulkan::Tools::GetPixelChannelsCount(format);
-        const uint8_t pixelTypeSize = EvoVulkan::Tools::GetPixelTypeSize(format);
+        const bool packedUnorm = format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+        const uint8_t channels = packedUnorm ? 4 : EvoVulkan::Tools::GetPixelChannelsCount(format);
+        const uint8_t pixelTypeSize = packedUnorm ? sizeof(uint32_t) : EvoVulkan::Tools::GetPixelTypeSize(format);
 
         if (!channels || !pixelTypeSize) {
-            PipelineError("VulkanPipeline::RequestPixelRange() : unsupported format!");
+            PipelineError(SR_FORMAT("VulkanPipeline::RequestPixelRange() : unsupported format {}!", static_cast<int32_t>(format)));
             return SR_ID_INVALID;
         }
 
@@ -1360,7 +1361,7 @@ namespace SR_GRAPH_NS {
             workId = m_nextWorkId.fetch_add(1);
         }
 
-        const uint32_t pixelStride = format == VK_FORMAT_B10G11R11_UFLOAT_PACK32 ? sizeof(uint32_t) : channels * pixelTypeSize;
+        const uint32_t pixelStride = packedUnorm || format == VK_FORMAT_B10G11R11_UFLOAT_PACK32 ? sizeof(uint32_t) : channels * pixelTypeSize;
         const uint64_t bufferSize = uint64_t(width) * height * pixelStride;
 
         PixelRangeRequest* pRequest = nullptr;
@@ -1587,8 +1588,9 @@ namespace SR_GRAPH_NS {
 
         // Получаем информацию о формате текстуры
         const VkFormat format = request.format;
-        const uint8_t channels = EvoVulkan::Tools::GetPixelChannelsCount(format);
-        const uint8_t pixelTypeSize = EvoVulkan::Tools::GetPixelTypeSize(format);
+        const bool packedUnorm = format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+        const uint8_t channels = packedUnorm ? 4 : EvoVulkan::Tools::GetPixelChannelsCount(format);
+        const uint8_t pixelTypeSize = packedUnorm ? sizeof(uint32_t) : EvoVulkan::Tools::GetPixelTypeSize(format);
 
         // Маппим буфер и копируем данные
         if (auto&& pData = request.pBuffer->MapData()) {
@@ -1603,7 +1605,7 @@ namespace SR_GRAPH_NS {
             };
 
             const bool packedFloat = format == VK_FORMAT_B10G11R11_UFLOAT_PACK32;
-            const uint32_t pixelStride = packedFloat ? sizeof(uint32_t) : channels * pixelTypeSize;
+            const uint32_t pixelStride = packedFloat || packedUnorm ? sizeof(uint32_t) : channels * pixelTypeSize;
             const uint32_t rowStride = width * pixelStride;
             const bool halfFloat = format == VK_FORMAT_R16_SFLOAT || format == VK_FORMAT_R16G16_SFLOAT ||
                 format == VK_FORMAT_R16G16B16_SFLOAT || format == VK_FORMAT_R16G16B16A16_SFLOAT;
@@ -1615,6 +1617,23 @@ namespace SR_GRAPH_NS {
                 for (uint32_t px = 0; px < width; ++px) {
                     const uint32_t bufferOffset = py * rowStride + px * pixelStride;
                     uint8_t* pPixelData = static_cast<uint8_t*>(pData) + bufferOffset;
+
+                    if (packedUnorm) {
+                        uint32_t packedValue = 0;
+                        std::memcpy(&packedValue, pPixelData, sizeof(packedValue));
+                        const bool redFirst = format == VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+                        const uint32_t red = (packedValue >> (redFirst ? 0 : 20)) & 1023u;
+                        const uint32_t green = (packedValue >> 10) & 1023u;
+                        const uint32_t blue = (packedValue >> (redFirst ? 20 : 0)) & 1023u;
+                        const uint32_t alpha = (packedValue >> 30) & 3u;
+                        pixels[py * width + px] = SR_MATH_NS::FColor(
+                            normalized ? static_cast<float_t>(red) / 1023.f : static_cast<float_t>(red),
+                            normalized ? static_cast<float_t>(green) / 1023.f : static_cast<float_t>(green),
+                            normalized ? static_cast<float_t>(blue) / 1023.f : static_cast<float_t>(blue),
+                            normalized ? static_cast<float_t>(alpha) / 3.f : static_cast<float_t>(alpha)
+                        );
+                        continue;
+                    }
 
                     if (normalized || packedFloat) {
                         float_t values[4] = { 0.f, 0.f, 0.f, 1.f };
