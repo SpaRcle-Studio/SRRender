@@ -49,6 +49,10 @@ namespace SR_GRAPH_NS {
     }
 
     void RenderScene::Init() {
+        if (auto&& pWindow = GetWindow()) {
+            m_surfaceSize = pWindow->GetSize();
+        }
+
         m_renderStrategy = new RenderStrategy(this);
         m_lightSystem = new LightSystem(GetThis());
 
