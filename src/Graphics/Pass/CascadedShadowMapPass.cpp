@@ -237,7 +237,7 @@ namespace SR_GRAPH_NS {
             float radius = 0.0f;
             for (uint32_t j = 0; j < 8; ++j) {
                 SR_MATH_NS::FVector3 p = (lightView * SR_MATH_NS::FVector4(frustumCornersWS[j], 1.0f)).XYZ();
-                radius = glm::max(radius, (p - frustumCenter).Length());
+                radius = SR_MATH_NS::Max(radius, (p - frustumCenter).Length());
             }
 
             // 5. Snap к texel grid
@@ -248,7 +248,7 @@ namespace SR_GRAPH_NS {
             frustumCenter.y = std::floor((frustumCenter.y - m_lastCascadeData[i].center.y) / shadowMapTexelSize) * shadowMapTexelSize + m_lastCascadeData[i].center.y;
 
             // Радиус выравниваем по texel и не уменьшаем
-            radius = glm::max(radius, m_lastCascadeData[i].radius);
+            radius = SR_MATH_NS::Max(radius, m_lastCascadeData[i].radius);
             radius = std::ceil(radius / shadowMapTexelSize) * shadowMapTexelSize;
 
             m_lastCascadeData[i].center = frustumCenter;
