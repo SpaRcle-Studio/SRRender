@@ -350,7 +350,9 @@ namespace SR_GRAPH_NS {
             if (info.vbo != currentVBO) SR_UNLIKELY_ATTRIBUTE {
                 if (!info.pObject->Bind()) SR_UNLIKELY_ATTRIBUTE {
                     pElement->state = QUEUE_STATE_VBO_ERROR;
-                    pElement = FindNextVBO(queue, pElement);
+                    /// Не пропускаем соседей по закешированному VBO: у динамических объектов (TextMesh) он пустой
+                    /// или устаревший, и ошибка бинда одного объекта (например, пустого текста) скрывала остальные.
+                    ++pElement;
                     continue;
                 }
                 currentVBO = info.vbo.value_or(SR_INVALID_VBO);
