@@ -5,7 +5,9 @@
     #include <Utils/macros.h>
 #endif
 
-#ifdef SR_GRAPHICS_DLL_EXPORTS
+#if defined(SR_GRAPHICS_STATIC_LIBRARY)
+    #define SR_GRAPHICS_DLL_API
+#elif defined(SR_GRAPHICS_DLL_EXPORTS)
     #define SR_GRAPHICS_DLL_API SR_DLL_API_EXPORT
 #else
     #define SR_GRAPHICS_DLL_API SR_DLL_API_IMPORT
