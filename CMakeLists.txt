@@ -119,7 +119,10 @@ if (SR_RENDER_USE_HARFBUZZ)
     set(HB_HAVE_UNISCRIBE OFF)
     set(HB_HAVE_GDI OFF)
     set(HB_HAVE_DIRECTWRITE OFF)
+    set(SR_HARFBUZZ_SAVED_MODULE_PATH ${CMAKE_MODULE_PATH})
+    list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/harfbuzz)
     add_subdirectory(libs/harfbuzz)
+    set(CMAKE_MODULE_PATH ${SR_HARFBUZZ_SAVED_MODULE_PATH})
     set_target_properties(harfbuzz PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_compile_definitions(harfbuzz PRIVATE
         HB_NO_AAT

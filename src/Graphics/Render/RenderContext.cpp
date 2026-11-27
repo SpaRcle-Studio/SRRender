@@ -199,7 +199,7 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
-        SR_INFO("Active graphics pipeline:\n"
+        SR_INFO("RenderContext::Init() : active graphics pipeline:\n"
             "  Backend:                 {}\n"
             "  Render preset:           {}\n"
             "  VSync:                   {}\n"
