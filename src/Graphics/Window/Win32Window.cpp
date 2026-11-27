@@ -44,6 +44,8 @@ namespace SR_GRAPH_NS {
                     }
                     m_windowedStyle = GetWindowLongPtr(hwnd, GWL_STYLE);
                     m_windowedHeaderEnabled = m_headerEnabled;
+                    /// Флаг выставляется до снятия заголовка: другие потоки не должны видеть окно без заголовка как оконное.
+                    m_fullscreen = true;
                     m_headerEnabled = false;
                     SetWindowLongPtr(hwnd, GWL_STYLE, m_windowedStyle & ~WS_OVERLAPPEDWINDOW);
                     SetWindowPos(hwnd, HWND_TOP, monitor.rcMonitor.left, monitor.rcMonitor.top,
@@ -209,6 +211,22 @@ namespace SR_GRAPH_NS {
             case WM_STYLECHANGED: {
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }
+            case WM_SYSCOMMAND: {
+                /// Alt не должен переводить окно в режим системного меню: оно забирает фокус клавиатуры (Alt+Enter и т.п.).
+                if ((wParam & 0xFFF0) == SC_KEYMENU) {
+                    return 0;
+                }
+
+                return DefWindowProc(hwnd, msg, wParam, lParam);
+            }
+            case WM_SYSCHAR: {
+                /// Alt+Enter is application input: without this the window has no menu for the mnemonic and Windows beeps.
+                if (wParam == VK_RETURN) {
+                    return 0;
+                }
+
+                return DefWindowProc(hwnd, msg, wParam, lParam);
+            }
             case WM_DESTROY: {
                 PostQuitMessage(0);
                 m_isValid = false;
@@ -234,7 +252,8 @@ namespace SR_GRAPH_NS {
     }
 
     void Win32Window::Move(int32_t x, int32_t y) {
-        if (m_maximize) {
+        /// В полноэкранном режиме окно занимает монитор; оконная позиция восстановится из m_windowedPlacement.
+        if (m_maximize || m_fullscreen.load()) {
             return;
         }
 
@@ -250,10 +269,20 @@ namespace SR_GRAPH_NS {
     }
 
     void Win32Window::Maximize() {
+        if (m_fullscreen.load()) {
+            m_windowedPlacement.showCmd = SW_SHOWMAXIMIZED;
+            return;
+        }
+
         ShowWindow(m_hWnd, SW_MAXIMIZE);
     }
 
     void Win32Window::Restore() {
+        if (m_fullscreen.load()) {
+            m_windowedPlacement.showCmd = SW_SHOWNORMAL;
+            return;
+        }
+
         ShowWindow(m_hWnd, SW_RESTORE);
     }
 
@@ -267,6 +296,11 @@ namespace SR_GRAPH_NS {
 
     void Win32Window::SetHeaderEnabled(bool enable) {
         if (m_headerEnabled == enable) {
+            return;
+        }
+
+        if (m_fullscreen.load()) {
+            m_windowedHeaderEnabled = enable;
             return;
         }
 
@@ -320,6 +354,11 @@ namespace SR_GRAPH_NS {
         SR_TRACY_ZONE;
 
         SR_LOG("Win32Window::Resize() : set new sizes {}x{}", w, h);
+
+        /// Иначе восстановление размера окна при старте выводит его из полноэкранного режима, а флаг остаётся true.
+        if (m_fullscreen.load()) {
+            return;
+        }
 
         RECT newRect = RECT{
                 .left = 0L,
