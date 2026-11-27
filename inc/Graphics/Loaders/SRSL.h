@@ -42,7 +42,7 @@ namespace SR_SRSL_NS {
         static const ShaderParams& GetDefault();
 
         SR_NODISCARD SR_UTILS_NS::SRHashType GetHash() const override;
-        SR_NODISCARD std::string GetHashStr() const;
+        SR_NODISCARD SR_UTILS_NS::String GetHashStr() const;
         SR_NODISCARD const std::string& GetBuffer() const { return m_buffer; }
         SR_NODISCARD bool empty() const { return m_params.empty(); }
         SR_NODISCARD const SR_UTILS_NS::SortedVector<Entry>& GetParams() const { return m_params; }

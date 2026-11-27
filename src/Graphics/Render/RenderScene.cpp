@@ -22,6 +22,7 @@
 #include <Utils/Common/SubscriptionMessage.h>
 #include <Utils/Resources/Yaml.h>
 #include <Utils/ECS/GameObject.h>
+#include <Utils/Debug.h>
 #include <Utils/TypeTraits/Factory.h>
 #include <Utils/TypeTraits/SRClassMeta.h>
 #include <Utils/Events/Broadcaster.h>

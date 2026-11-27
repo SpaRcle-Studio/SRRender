@@ -1884,7 +1884,7 @@ namespace SR_GRAPH_NS {
 
                 // Compile the shader
                 SR_UTILS_NS::String shaderSourceStr;
-                if (!SR_UTILS_NS::FileSystem::ReadFile(input, shaderSourceStr)) {
+                if (!SR_UTILS_NS::FileSystem::ReadFile(SR_UTILS_NS::Path(std::string_view(input)), shaderSourceStr)) {
                     SR_ERROR("VulkanPipeline::CompileGLSLtoSPIRV() : failed to read shader file: {}", input);
                     return {};
                 }
@@ -1996,18 +1996,18 @@ namespace SR_GRAPH_NS {
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().ReadHash = [](const std::string& path) -> uint64_t {
-            return SR_UTILS_NS::FileSystem::ReadHashFromFile(SR_UTILS_NS::Path(path));
+            return SR_UTILS_NS::FileSystem::ReadHashFromFile(SR_UTILS_NS::Path(std::string_view(path)));
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().GetFileHash = [](const std::string& path) -> uint64_t {
             if (!SR_UTILS_NS::VFS::Instance().IsFileExists(path)) {
                 return 0;
             }
-            return SR_UTILS_NS::FileSystem::GetFileHash(SR_UTILS_NS::Path(path));
+            return SR_UTILS_NS::FileSystem::GetFileHash(SR_UTILS_NS::Path(std::string_view(path)));
         };
 
         EvoVulkan::Tools::VkFunctionsHolder::Instance().WriteHash = [](const std::string& path, uint64_t hash) -> bool {
-            SR_UTILS_NS::FileSystem::WriteHashToFile(SR_UTILS_NS::Path(path), hash);
+            SR_UTILS_NS::FileSystem::WriteHashToFile(SR_UTILS_NS::Path(std::string_view(path)), hash);
             return true;
         };
 

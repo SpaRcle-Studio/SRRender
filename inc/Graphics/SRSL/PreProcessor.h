@@ -42,7 +42,7 @@ namespace SR_SRSL_NS {
         SR_UTILS_NS::Vector<SR_UTILS_NS::LexerDetails::Lexem> m_lexems;
         int64_t m_currentLexem = 0;
 
-        std::string m_include;
+        SR_UTILS_NS::String m_include;
         Includes m_includes;
 
         SR_UTILS_NS::Vector<bool> m_ifStack;

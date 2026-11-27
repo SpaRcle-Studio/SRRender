@@ -33,9 +33,8 @@ namespace SR_SRSL_NS {
         return params;
     }
 
-    std::string ShaderParams::GetHashStr() const {
-        std::string hashStr = SR_UTILS_NS::ToString(GetHash());
-        return hashStr;
+    SR_UTILS_NS::String ShaderParams::GetHashStr() const {
+        return SR_UTILS_NS::ToString(GetHash());
     }
 
     void ShaderParams::SetParam(SR_UTILS_NS::StringAtom key, std::string_view value) {

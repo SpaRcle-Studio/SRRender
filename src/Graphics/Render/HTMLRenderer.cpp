@@ -192,7 +192,7 @@ namespace SR_GRAPH_NS {
             return reinterpret_cast<litehtml::uint_ptr>(pIt->pTextBuilder);
         }
 
-        std::vector<std::string_view> fonts = SR_UTILS_NS::StringUtils::SplitView(faceName, ",");
+        SR_UTILS_NS::Vector<std::string_view> fonts = SR_UTILS_NS::StringUtils::SplitView(faceName, ",");
 
         std::vector<SR_UTILS_NS::Path> candidates;
 

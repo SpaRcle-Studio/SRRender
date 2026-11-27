@@ -13,7 +13,7 @@
 #include <Utils/Math/Vector2.h>
 #include <Utils/Types/Function.h>
 #include <Utils/Types/Time.h>
-#include <Utils/Resources/Xml.h>
+#include <Utils/Debug.h>
 #include <Utils/Resources/ResourceContainer.h>
 
 namespace SR_GTYPES_NS {

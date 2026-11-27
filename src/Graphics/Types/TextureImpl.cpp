@@ -67,7 +67,7 @@ namespace SR_GTYPES_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    TextureImplRenderTarget::TextureImplRenderTarget(Texture& texture, std::vector<std::string_view>& parts)
+    TextureImplRenderTarget::TextureImplRenderTarget(Texture& texture, SR_UTILS_NS::Vector<std::string_view>& parts)
         : Super(texture)
     {
         m_name = parts[1];
@@ -117,7 +117,7 @@ namespace SR_GTYPES_NS {
 
     /// ----------------------------------------------------------------------------------------------------------------
 
-    TextureImplFontAtlas::TextureImplFontAtlas(Texture& texture, std::vector<std::string_view>& parts)
+    TextureImplFontAtlas::TextureImplFontAtlas(Texture& texture, SR_UTILS_NS::Vector<std::string_view>& parts)
         : Super(texture)
     {
         m_fontIndex = SR_UTILS_NS::LexicalCast<uint32_t>(parts[1]);

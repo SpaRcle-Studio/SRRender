@@ -15,7 +15,7 @@ namespace SR_GRAPH_NS {
     struct AtlasBuilderData {
         SR_UTILS_NS::Path source;
         SR_UTILS_NS::Path destination;
-        std::string extension = "png";
+        SR_UTILS_NS::String extension = "png";
         bool saveInCache = false;
         SR_MATH_NS::UVector2 quantityOnAxes;
         SR_MATH_NS::UVector2 step;

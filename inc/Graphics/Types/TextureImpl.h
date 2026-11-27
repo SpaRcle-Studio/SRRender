@@ -49,7 +49,7 @@ namespace SR_GTYPES_NS {
     class TextureImplRenderTarget final : public TextureImpl {
         using Super = TextureImpl;
     public:
-        explicit TextureImplRenderTarget(Texture& texture, std::vector<std::string_view>& parts);
+        explicit TextureImplRenderTarget(Texture& texture, SR_UTILS_NS::Vector<std::string_view>& parts);
 
         void PrepareFrame() override;
 
@@ -67,7 +67,7 @@ namespace SR_GTYPES_NS {
     class TextureImplFontAtlas final : public TextureImpl {
         using Super = TextureImpl;
     public:
-        explicit TextureImplFontAtlas(Texture& texture, std::vector<std::string_view>& parts);
+        explicit TextureImplFontAtlas(Texture& texture, SR_UTILS_NS::Vector<std::string_view>& parts);
 
         void PrepareFrame() override;
 
