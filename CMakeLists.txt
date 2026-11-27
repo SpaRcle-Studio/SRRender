@@ -180,7 +180,7 @@ endif()
 
 if (SR_GRAPHICS_DLL_EXPORTS)
     message(STATUS "[SpaRcle Engine] Graphics will be using DLL exports")
-    target_compile_definitions(Graphics PUBLIC SR_GRAPHICS_DLL_EXPORTS)
+    target_compile_definitions(Graphics PRIVATE SR_GRAPHICS_DLL_EXPORTS)
 endif()
 
 if (SR_RENDER_USE_GLSL_LANG_LIB)

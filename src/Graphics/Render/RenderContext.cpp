@@ -37,6 +37,10 @@
 #include <Utils/Serialization/SRASerialization.h>
 #include <Utils/Platform/Platform.h>
 
+#ifdef SR_ENGINE_USE_MODULAR_BUILD
+    template class SR_GRAPHICS_DLL_API SR_HTYPES_NS::SharedPtr<SR_GRAPH_NS::RenderContext>;
+#endif
+
 namespace SR_GRAPH_NS {
     template<typename T> bool UpdateRenderResource(T& resourceList) noexcept {
         SR_TRACY_ZONE;
