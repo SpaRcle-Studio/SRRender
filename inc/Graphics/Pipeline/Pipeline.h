@@ -52,7 +52,8 @@ namespace SR_GRAPH_NS {
 
     SR_ENUM_NS_CLASS_T(MemoryBarrierType, uint8_t,
         ReadAttachmentToCompute,
-        ComputeToReadAttachment
+        ComputeToReadAttachment,
+        ComputeToCompute
     );
 
     SR_ENUM_NS_CLASS_T(VertexInputRate, uint8_t,
@@ -134,6 +135,19 @@ namespace SR_GRAPH_NS {
         virtual void WaitDeviceIdle();
         virtual void WaitComputeIdle();
         virtual void WaitRenderIdle();
+
+        /// ------------------------------------- Асинхронные вычисления -----------------------------------------------
+        /// Между BeginAsyncCompute и SubmitAsyncCompute все BeginCompute/EndCompute пишут в один отдельный командный буфер,
+        /// который отправляется без ожидания. Готовность проверяется IsAsyncComputeComplete, после чего задачу нужно
+        /// освободить ReleaseAsyncCompute. Ресурсы, которые читает/пишет задача (SSBO, дескрипторы), нельзя менять до её завершения.
+        /// Между зависимыми диспатчами одной задачи нужен WriteMemoryBarrier(ComputeToCompute).
+        /// SR_ID_INVALID - API не поддерживает асинхронные вычисления, вызывающий работает синхронно (как без BeginAsyncCompute).
+        virtual int32_t BeginAsyncCompute() { return SR_ID_INVALID; }
+        virtual bool SubmitAsyncCompute() { return false; }
+        SR_NODISCARD virtual bool IsAsyncComputeRecording() const noexcept { return false; }
+        SR_NODISCARD virtual bool IsAsyncComputeComplete(int32_t taskId) const { return true; }
+        virtual void WaitAsyncCompute(int32_t taskId) { }
+        virtual void ReleaseAsyncCompute(int32_t taskId) { }
 
         virtual void OnFrameBuildEnd();
         virtual void OnFrameBuildBegin();

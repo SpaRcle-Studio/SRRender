@@ -78,6 +78,7 @@ namespace SR_GTYPES_NS {
         SR_NODISCARD bool IsSamplersValid() const;
         SR_NODISCARD bool HasSharedUBO() const noexcept { return m_uniformSharedBlock.Valid(); }
         SR_NODISCARD bool HasSSBOBindings() const noexcept { return !m_ssboBindings.empty(); }
+        SR_NODISCARD uint32_t GetSSBOBindingsCount() const noexcept { return static_cast<uint32_t>(m_ssboBindings.size()); }
         SR_NODISCARD SR_SRSL_NS::ShaderType GetType() const noexcept;
         SR_NODISCARD const SR_MATH_NS::UVector3& GetComputeWorkGroupSize() const noexcept { return m_computeWorkGroupSize; }
         SR_NODISCARD const SR_SRSL_NS::ShaderParams& GetMacros() const noexcept { return m_params; }

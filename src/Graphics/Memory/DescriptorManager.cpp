@@ -140,10 +140,15 @@ namespace SR_GRAPH_NS {
         if (pShader->GetUBOBlockSize() > 0) SR_LIKELY_ATTRIBUTE {
             m_allocationTypesCache.emplace_back(DescriptorType::Uniform);
         }
-        if (pShader->GetSamplersCount() > 0) {
+        /// Тип повторяется по числу дескрипторов: по количеству повторов пул выделяет место под сеты этой раскладки.
+        /// Иначе пул рассчитан на фиксированное число дескрипторов на сет, и у шейдеров с большим числом сэмплеров
+        /// (террейн, standard с тенями) заканчивается раньше, чем сеты (VK_ERROR_OUT_OF_POOL_MEMORY)
+        const uint32_t samplersCount = pShader->GetSamplersCount();
+        for (uint32_t i = 0; i < samplersCount; ++i) {
             m_allocationTypesCache.emplace_back(DescriptorType::CombinedImage);
         }
-        if (pShader->HasSSBOBindings()) {
+        const uint32_t ssboCount = pShader->GetSSBOBindingsCount();
+        for (uint32_t i = 0; i < ssboCount; ++i) {
             m_allocationTypesCache.emplace_back(DescriptorType::Storage);
         }
 

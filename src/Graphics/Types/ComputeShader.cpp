@@ -186,6 +186,10 @@ namespace SR_GTYPES_NS {
         m_isComputeState = false;
 
         GetPipeline()->EndCompute();
-        GetPipeline()->WaitComputeIdle();
+
+        /// В асинхронной задаче команды отправятся вместе в SubmitAsyncCompute, готовность проверяет вызывающий
+        if (!GetPipeline()->IsAsyncComputeRecording()) {
+            GetPipeline()->WaitComputeIdle();
+        }
     }
 }

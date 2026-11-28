@@ -15,6 +15,7 @@
 #include <Graphics/Overlay/Overlay.h>
 
 #include <EvoVulkan/Types/CmdBuffer.h>
+#include <EvoVulkan/Types/CmdPool.h>
 #include <EvoVulkan/Types/VmaBuffer.h>
 #include <EvoVulkan/Types/Surface.h>
 #include <EvoVulkan/Tools/VulkanTools.h>
@@ -115,6 +116,19 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Vector<VkWriteDescriptorSet> writeDescriptorSets;
         mutable SR_HTYPES_NS::FlatHashMap<uint64_t, PixelRangeRequest> pixelRequests;
         SR_UTILS_NS::Vector<VkClearValue> clearValues;
+
+        /// Асинхронная задача вычислений: свой командный буфер и фенс, переиспользуется после ReleaseAsyncCompute
+        struct AsyncCompute {
+            VkCommandBuffer cmd = VK_NULL_HANDLE;
+            VkFence fence = VK_NULL_HANDLE;
+            bool isBusy = false;
+            bool isSubmitted = false;
+        };
+        SR_UTILS_NS::Vector<AsyncCompute> asyncComputes;
+        /// Отдельный пул семейства compute с поштучным сбросом: пул kernel'а сбрасывается целиком в каждом BeginCompute
+        EvoVulkan::Types::CmdPool* pAsyncComputePool = nullptr;
+        /// Командный буфер, который был текущим до BeginAsyncCompute (восстанавливается в SubmitAsyncCompute)
+        VkCommandBuffer cmdBeforeAsyncCompute = VK_NULL_HANDLE;
     };
 
     namespace Details {
@@ -215,6 +229,8 @@ namespace SR_GRAPH_NS {
             }
             m_internalData->pixelRequests.clear();
         }
+
+        DestroyAsyncComputes();
 
         DestroyOverlay();
 
@@ -3367,6 +3383,23 @@ namespace SR_GRAPH_NS {
                     0, nullptr
                 );
                 break;
+            case MemoryBarrierType::ComputeToCompute: {
+                /// Результат одного диспатча (SSBO) читает следующий в том же командном буфере
+                VkMemoryBarrier computeBarrier = { };
+                computeBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+                computeBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+                computeBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+                vkCmdPipelineBarrier(
+                    m_internalData->currentCmd,
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                    0,
+                    1, &computeBarrier,
+                    0, nullptr,
+                    0, nullptr
+                );
+                break;
+            }
             default:
                 SRHalt("VulkanPipeline::WriteMemoryBarrier() : unsupported memory barrier type!");
                 return;
@@ -3467,7 +3500,11 @@ namespace SR_GRAPH_NS {
         m_lastVkShader = nullptr;
         m_isShaderChanged = true;
 
-        if (m_isCmdState) {
+        if (m_asyncComputeRecording != SR_ID_INVALID) {
+            /// команды пишутся в буфер асинхронной задачи, он начат в BeginAsyncCompute
+            m_internalData->currentCmd = m_internalData->asyncComputes[m_asyncComputeRecording].cmd;
+        }
+        else if (m_isCmdState) {
             /// nothing to do, just continue using current command buffer
         }
         else {
@@ -3490,13 +3527,195 @@ namespace SR_GRAPH_NS {
             m_internalData->tracyComputeZone = false;
         }
 	#endif
-        if (m_isCmdState) {
+        if (m_isCmdState || m_asyncComputeRecording != SR_ID_INVALID) {
             /// nothing to do, just continue using current command buffer
         }
         else {
             vkEndCommandBuffer(m_internalData->currentCmd);
         }
         Super::EndCompute();
+    }
+
+    int32_t VulkanPipeline::BeginAsyncCompute() {
+        SR_TRACY_ZONE;
+
+        if (m_asyncComputeRecording != SR_ID_INVALID) {
+            SRHalt("VulkanPipeline::BeginAsyncCompute() : previous async compute is not submitted!");
+            return SR_ID_INVALID;
+        }
+
+        if (m_isComputeState || m_isRenderState) {
+            SRHalt("VulkanPipeline::BeginAsyncCompute() : compute or render state is active!");
+            return SR_ID_INVALID;
+        }
+
+        auto&& pDevice = m_kernel ? m_kernel->GetDevice() : nullptr;
+        if (!pDevice) {
+            return SR_ID_INVALID;
+        }
+
+        if (!m_internalData->pAsyncComputePool) {
+            m_internalData->pAsyncComputePool = EvoVulkan::Types::CmdPool::Create(pDevice, pDevice->GetQueues()->GetComputeIndex(), true);
+            if (!m_internalData->pAsyncComputePool) {
+                PipelineError("VulkanPipeline::BeginAsyncCompute() : failed to create command pool!");
+                return SR_ID_INVALID;
+            }
+        }
+
+        auto&& asyncComputes = m_internalData->asyncComputes;
+
+        int32_t taskId = SR_ID_INVALID;
+        for (uint32_t i = 0; i < asyncComputes.size(); ++i) {
+            if (!asyncComputes[i].isBusy) {
+                taskId = static_cast<int32_t>(i);
+                break;
+            }
+        }
+
+        if (taskId == SR_ID_INVALID) {
+            VulkanPipelineInternalData::AsyncCompute asyncCompute;
+
+            VkCommandBufferAllocateInfo allocateInfo = { };
+            allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            allocateInfo.commandPool = *m_internalData->pAsyncComputePool;
+            allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            allocateInfo.commandBufferCount = 1;
+            if (vkAllocateCommandBuffers(*pDevice, &allocateInfo, &asyncCompute.cmd) != VK_SUCCESS) {
+                PipelineError("VulkanPipeline::BeginAsyncCompute() : failed to allocate command buffer!");
+                return SR_ID_INVALID;
+            }
+
+            asyncCompute.fence = EvoVulkan::Tools::CreateVulkanFence(*pDevice, 0);
+            if (!asyncCompute.fence) {
+                vkFreeCommandBuffers(*pDevice, *m_internalData->pAsyncComputePool, 1, &asyncCompute.cmd);
+                PipelineError("VulkanPipeline::BeginAsyncCompute() : failed to create fence!");
+                return SR_ID_INVALID;
+            }
+
+            taskId = static_cast<int32_t>(asyncComputes.size());
+            asyncComputes.emplace_back(asyncCompute);
+        }
+
+        auto&& asyncCompute = asyncComputes[taskId];
+
+        vkResetCommandBuffer(asyncCompute.cmd, 0);
+
+        VkCommandBufferBeginInfo beginInfo = { };
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        if (vkBeginCommandBuffer(asyncCompute.cmd, &beginInfo) != VK_SUCCESS) {
+            PipelineError("VulkanPipeline::BeginAsyncCompute() : failed to begin command buffer!");
+            return SR_ID_INVALID;
+        }
+
+        asyncCompute.isBusy = true;
+        asyncCompute.isSubmitted = false;
+
+        m_internalData->cmdBeforeAsyncCompute = m_internalData->currentCmd;
+        m_internalData->currentCmd = asyncCompute.cmd;
+        m_asyncComputeRecording = taskId;
+
+        return taskId;
+    }
+
+    bool VulkanPipeline::SubmitAsyncCompute() {
+        SR_TRACY_ZONE;
+
+        if (m_asyncComputeRecording == SR_ID_INVALID) {
+            SRHalt("VulkanPipeline::SubmitAsyncCompute() : async compute is not recording!");
+            return false;
+        }
+
+        auto&& asyncCompute = m_internalData->asyncComputes[m_asyncComputeRecording];
+        m_asyncComputeRecording = SR_ID_INVALID;
+        m_internalData->currentCmd = m_internalData->cmdBeforeAsyncCompute;
+        m_internalData->cmdBeforeAsyncCompute = VK_NULL_HANDLE;
+
+        vkEndCommandBuffer(asyncCompute.cmd);
+
+        VkSubmitInfo submitInfo = { };
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &asyncCompute.cmd;
+
+        vkResetFences(*m_kernel->GetDevice(), 1, &asyncCompute.fence);
+
+        const VkResult result = vkQueueSubmit(m_kernel->GetDevice()->GetQueues()->GetComputeQueue(), 1, &submitInfo, asyncCompute.fence);
+        if (result != VK_SUCCESS) {
+            PipelineError("VulkanPipeline::SubmitAsyncCompute() : failed to submit command buffer!");
+            return false;
+        }
+
+        asyncCompute.isSubmitted = true;
+        return true;
+    }
+
+    bool VulkanPipeline::IsAsyncComputeComplete(int32_t taskId) const {
+        if (taskId < 0 || static_cast<uint32_t>(taskId) >= m_internalData->asyncComputes.size()) {
+            return true;
+        }
+
+        auto&& asyncCompute = m_internalData->asyncComputes[taskId];
+        if (!asyncCompute.isSubmitted) {
+            /// не отправленная (запись прервана ошибкой) задача ничего не выполнит
+            return true;
+        }
+
+        return vkGetFenceStatus(*m_kernel->GetDevice(), asyncCompute.fence) == VK_SUCCESS;
+    }
+
+    void VulkanPipeline::WaitAsyncCompute(int32_t taskId) {
+        SR_TRACY_ZONE;
+
+        if (taskId < 0 || static_cast<uint32_t>(taskId) >= m_internalData->asyncComputes.size()) {
+            return;
+        }
+
+        auto&& asyncCompute = m_internalData->asyncComputes[taskId];
+        if (asyncCompute.isSubmitted) {
+            vkWaitForFences(*m_kernel->GetDevice(), 1, &asyncCompute.fence, VK_TRUE, UINT64_MAX);
+        }
+    }
+
+    void VulkanPipeline::ReleaseAsyncCompute(int32_t taskId) {
+        if (taskId < 0 || static_cast<uint32_t>(taskId) >= m_internalData->asyncComputes.size()) {
+            return;
+        }
+
+        if (taskId == m_asyncComputeRecording) {
+            SRHalt("VulkanPipeline::ReleaseAsyncCompute() : async compute is still recording!");
+            return;
+        }
+
+        /// Командный буфер нельзя сбрасывать, пока GPU его выполняет
+        WaitAsyncCompute(taskId);
+
+        auto&& asyncCompute = m_internalData->asyncComputes[taskId];
+        asyncCompute.isBusy = false;
+        asyncCompute.isSubmitted = false;
+    }
+
+    void VulkanPipeline::DestroyAsyncComputes() {
+        if (!m_kernel || !m_kernel->GetDevice()) {
+            return;
+        }
+
+        auto&& pDevice = m_kernel->GetDevice();
+
+        for (auto&& asyncCompute : m_internalData->asyncComputes) {
+            if (asyncCompute.isSubmitted) {
+                vkWaitForFences(*pDevice, 1, &asyncCompute.fence, VK_TRUE, UINT64_MAX);
+            }
+            if (asyncCompute.fence != VK_NULL_HANDLE) {
+                EvoVulkan::Tools::DestroyVulkanFence(*pDevice, &asyncCompute.fence);
+            }
+            if (asyncCompute.cmd != VK_NULL_HANDLE && m_internalData->pAsyncComputePool) {
+                vkFreeCommandBuffers(*pDevice, *m_internalData->pAsyncComputePool, 1, &asyncCompute.cmd);
+            }
+        }
+        m_internalData->asyncComputes.clear();
+
+        SR_SAFE_DELETE_PTR(m_internalData->pAsyncComputePool);
     }
 
     bool VulkanPipeline::MapSSBO(uint32_t SSBO, void **ppData) {

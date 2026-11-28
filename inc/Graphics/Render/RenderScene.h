@@ -121,6 +121,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD WindowPtr GetWindow() const;
         SR_NODISCARD const WidgetManagers& GetWidgetManagers() const;
         SR_NODISCARD CameraPtr GetMainCamera() const;
+        /// Главная камера без учёта редакторных (GetMainCamera отдаёт редакторную, если она есть)
+        SR_NODISCARD CameraPtr GetGameCamera() const;
         SR_NODISCARD RenderStrategy* GetRenderStrategy() { return m_renderStrategy.Get(); }
         SR_NODISCARD CameraPtr GetFirstOffScreenCamera() const;
         SR_NODISCARD SR_MATH_NS::UVector2 GetSurfaceSize() const;

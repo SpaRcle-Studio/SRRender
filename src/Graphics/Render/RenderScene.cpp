@@ -470,6 +470,32 @@ namespace SR_GRAPH_NS {
         return m_mainCamera ? m_mainCamera : GetFirstOffScreenCamera();
     }
 
+    RenderScene::CameraPtr RenderScene::GetGameCamera() const {
+        /// Как в SortCameras, но без редакторных: главная может оказаться редакторной с большим приоритетом
+        CameraPtr pBest;
+        for (auto&& cameraInfo : m_cameras) {
+            auto&& pCamera = cameraInfo.pCamera;
+            if (!pCamera || !pCamera->IsCameraActive() || pCamera->IsEditorCamera() || pCamera->GetPriority() < 0) {
+                continue;
+            }
+            if (!pBest || pCamera->GetPriority() > pBest->GetPriority()) {
+                pBest = pCamera;
+            }
+        }
+
+        if (pBest) {
+            return pBest;
+        }
+
+        for (auto&& pCamera : m_offScreenCameras) {
+            if (!pCamera->IsEditorCamera()) {
+                return pCamera;
+            }
+        }
+
+        return nullptr;
+    }
+
     RenderScene::CameraPtr RenderScene::GetFirstOffScreenCamera() const {
         if (m_offScreenCameras.empty()) {
             return nullptr;

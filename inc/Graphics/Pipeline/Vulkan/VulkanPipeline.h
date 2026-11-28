@@ -20,6 +20,7 @@ namespace EvoVulkan::Core {
 namespace EvoVulkan::Types {
     class VmaBuffer;
     class CmdBuffer;
+    class CmdPool;
 }
 
 namespace EvoVulkan::Complexes {
@@ -128,6 +129,13 @@ namespace SR_GRAPH_NS {
         bool BeginCompute() override;
         void EndCompute() override;
 
+        int32_t BeginAsyncCompute() override;
+        bool SubmitAsyncCompute() override;
+        SR_NODISCARD bool IsAsyncComputeRecording() const noexcept override { return m_asyncComputeRecording != SR_ID_INVALID; }
+        SR_NODISCARD bool IsAsyncComputeComplete(int32_t taskId) const override;
+        void WaitAsyncCompute(int32_t taskId) override;
+        void ReleaseAsyncCompute(int32_t taskId) override;
+
         bool BeginCmdBuffer() override;
         void EndCmdBuffer() override;
 
@@ -194,8 +202,12 @@ namespace SR_GRAPH_NS {
         void FlushVBOBuffers();
 
         void CleanupCompletedRequests();
+        void DestroyAsyncComputes();
 
     private:
+        /// Задача, в которую сейчас пишутся команды вычислений (см. BeginAsyncCompute), SR_ID_INVALID - нет
+        int32_t m_asyncComputeRecording = SR_ID_INVALID;
+
         bool m_isGlslLangInit = false;
         bool m_isGlslLangCached = false;
         uint64_t m_glslLangInitTaskId = SR_ID_INVALID;
