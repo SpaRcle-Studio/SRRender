@@ -27,6 +27,7 @@
 #include <Utils/TypeTraits/SRClassMeta.h>
 #include <Utils/Events/Broadcaster.h>
 #include <Utils/World/WorldShape.h>
+#include <Utils/World/FloatingOrigin.h>
 
 namespace SR_GRAPH_NS {
     RenderScene::RenderScene(const ScenePtr& scene, RenderContext* pContext)
@@ -190,6 +191,13 @@ namespace SR_GRAPH_NS {
 
     SR_MATH_NS::FVector4 RenderScene::GetWorldShapeParams(const SR_MATH_NS::FVector3& viewPosition) const {
         return SR_UTILS_NS::WorldShape::FindShaderParams(m_scene.Get(), viewPosition);
+    }
+
+    SR_MATH_NS::FVector3 RenderScene::GetWorldOrigin() const {
+        if (auto&& pFloatingOrigin = SR_UTILS_NS::FloatingOrigin::Find(m_scene.Get())) {
+            return pFloatingOrigin->GetOriginApprox();
+        }
+        return SR_MATH_NS::FVector3();
     }
 
     void RenderScene::PostUpdate() {

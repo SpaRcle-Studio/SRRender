@@ -58,6 +58,7 @@ namespace SR_SRSL_NS {
         { "PRIMARY_DISK_PARAMS",            "vec4"          },
         { "SECONDARY_DISK_PARAMS",          "vec4"          },
         { "WORLD_SHAPE",                    "vec4"          },
+        { "WORLD_ORIGIN",                   "vec3"          },
     };
 
     const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom>& GetDefaultUniforms() {

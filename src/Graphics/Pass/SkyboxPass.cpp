@@ -132,6 +132,7 @@ namespace SR_GRAPH_NS {
             pShader->SetFloat(SHADER_TIME, static_cast<float_t>(SR_HTYPES_NS::Time::Instance().Clock()));
             pShader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
             pShader->SetVec4(SHADER_WORLD_SHAPE, GetRenderScene()->GetWorldShapeParams(pCamera->GetPosition()));
+            pShader->SetVec3(SHADER_WORLD_ORIGIN, GetRenderScene()->GetWorldOrigin());
             pShader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
             pShader->SetMat4(SHADER_INVERSE_PROJECTION_MATRIX, pCamera->GetInverseProjection());
             pShader->SetMat4(SHADER_INVERSE_VIEW_MATRIX, pCamera->GetInverseViewTranslate());

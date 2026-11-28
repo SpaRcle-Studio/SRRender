@@ -116,6 +116,8 @@ namespace SR_GRAPH_NS {
         void SetVolumetricFog(VolumetricFog* pFog) { m_volumetricFog = pFog; }
         /// Параметры формы мира для шейдеров (WORLD_SHAPE) относительно точки наблюдения
         SR_NODISCARD SR_MATH_NS::FVector4 GetWorldShapeParams(const SR_MATH_NS::FVector3& viewPosition) const;
+        /// Абсолютное начало координат для шейдеров (WORLD_ORIGIN), без FloatingOrigin - ноль
+        SR_NODISCARD SR_MATH_NS::FVector3 GetWorldOrigin() const;
         SR_NODISCARD SR_ANIMATIONS_NS::Skeleton* GetCurrentSkeleton() const { return m_currentSkeleton; }
         SR_NODISCARD const RenderScene::PipelinePtr& GetPipelineRef() const;
         SR_NODISCARD const RenderScene::PipelinePtr& GetPipeline() const;

@@ -97,6 +97,8 @@ namespace SR_GRAPH_NS {
 
     /// Форма мира (SR_UTILS_NS::WorldShape::GetShaderParams, Common/world-shape.srsl)
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_WORLD_SHAPE = "WORLD_SHAPE";
+    /// Абсолютное начало координат (SR_UTILS_NS::FloatingOrigin), для процедурики в абсолютных координатах
+    SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_WORLD_ORIGIN = "WORLD_ORIGIN";
 
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_SECONDARY_LIGHT_DIRECTION = "SECONDARY_LIGHT_DIRECTION";
     SR_INLINE_STATIC SR_UTILS_NS::StringAtom SHADER_PRIMARY_SKY_ILLUMINANCE = "PRIMARY_SKY_ILLUMINANCE";
