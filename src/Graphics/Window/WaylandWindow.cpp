@@ -165,14 +165,33 @@ namespace SR_GRAPH_NS {
                 return;
             }
 
-            char* map = (char*)mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+            /// wl_seat v7+ требует MAP_PRIVATE, для старых версий он тоже корректен
+            char* map = (char*)mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+            if (map == MAP_FAILED) {
+                SR_ERROR("keyboard_keymap() : failed to map keymap! Error: {}", Details::GetErrnoDescription(errno));
+                close(fd);
+                return;
+            }
 
-            xkb_keymap* pXkbKeymap = xkb_keymap_new_from_string(
+            xkb_keymap* pXkbKeymap = pWindow->GetXkbContext() ? xkb_keymap_new_from_string(
                 pWindow->GetXkbContext(), map, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS
-            );
+            ) : nullptr;
 
             munmap(map, size);
             close(fd);
+
+            if (!pXkbKeymap) {
+                SR_ERROR("keyboard_keymap() : failed to compile keymap!");
+                return;
+            }
+
+            /// keymap может прийти повторно (смена раскладки/устройства)
+            if (pWindow->GetXkbState()) {
+                xkb_state_unref(pWindow->GetXkbState());
+            }
+            if (pWindow->GetXkbKeymap()) {
+                xkb_keymap_unref(pWindow->GetXkbKeymap());
+            }
 
             pWindow->SetXkbKeymap(pXkbKeymap);
             pWindow->SetXkbState(xkb_state_new(pXkbKeymap));
@@ -183,6 +202,10 @@ namespace SR_GRAPH_NS {
             uint32_t group
         ) {
             auto&& pWindow = static_cast<WaylandWindow*>(pData);
+
+            if (!pWindow->GetXkbState()) {
+                return;
+            }
 
             xkb_state_update_mask(pWindow->GetXkbState(), depressed, latched, locked, 0, 0, group);
 
@@ -241,13 +264,15 @@ namespace SR_GRAPH_NS {
 
             const uint32_t xkbKey = key + 8;
 
-            xkb_state_update_key(pWindow->GetXkbState(), xkbKey, pressed ? XKB_KEY_DOWN : XKB_KEY_UP);
+            if (pWindow->GetXkbState()) {
+                xkb_state_update_key(pWindow->GetXkbState(), xkbKey, pressed ? XKB_KEY_DOWN : XKB_KEY_UP);
+            }
 
             if (auto keyCode = SR_UTILS_NS::KeyCodeFromEvdev(key); keyCode != SR_UTILS_NS::KeyCode::None) {
                 keyboardState->Set(keyCode, pressed);
             }
 
-            if (pressed) {
+            if (pressed && pWindow->GetXkbState()) {
                 char utf8[64] = {};
                 if (const int n = xkb_state_key_get_utf8(pWindow->GetXkbState(), xkbKey, utf8, sizeof(utf8)); n > 0) {
                     SR_UTILS_NS::InputTextEvent event;
@@ -292,7 +317,10 @@ namespace SR_GRAPH_NS {
                 );
             } else if (!strcmp(interface, wl_compositor_interface.name)) {
                 pWindow->SetCompositor(
-                    static_cast<wl_compositor*>(wl_registry_bind(registry, name, &wl_compositor_interface, 1))
+                    /// wl_surface.set_buffer_scale требует wl_compositor версии 3+
+                    static_cast<wl_compositor*>(
+                        wl_registry_bind(registry, name, &wl_compositor_interface, std::min(version, 4U))
+                    )
                 );
             } else if (strcmp(interface, wl_subcompositor_interface.name) == 0) {
                 pWindow->SetSubCompositor(
@@ -380,7 +408,15 @@ namespace SR_GRAPH_NS {
                 pWindow->SetCursorTheme(wl_cursor_theme_load(NULL, 24, pWindow->GetShm()));
             }
 
+            if (!pWindow->GetCursorTheme()) {
+                return;
+            }
+
             wl_cursor* cursor = wl_cursor_theme_get_cursor(pWindow->GetCursorTheme(), "left_ptr");
+            if (!cursor || cursor->image_count == 0) {
+                return;
+            }
+
             wl_cursor_image* image = cursor->images[0];
             wl_buffer* buffer = wl_cursor_image_get_buffer(image);
 
@@ -398,15 +434,18 @@ namespace SR_GRAPH_NS {
         void pointer_motion(void* pData, wl_pointer* pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy) {
             SR_TRACY_ZONE;
 
+            auto&& pWindow = static_cast<WaylandWindow*>(pData);
+
             const float_t x = wl_fixed_to_double(sx);
             const float_t y = wl_fixed_to_double(sy);
-            static_cast<WaylandWindow*>(pData)->SetPointerPosition(x, y);
+            pWindow->SetPointerPosition(x, y);
 
             auto&& mouseState = SR_PLATFORM_NS::GetOverriddenMouseState();
             if (!mouseState) {
                 mouseState = SR_PLATFORM_NS::GetMouseState();
             }
-            mouseState->position = {x, y};
+            /// Движок работает в пикселях буфера (как Win32/X11), Wayland присылает логические координаты
+            mouseState->position = pWindow->PointerToClientPosition(SR_MATH_NS::FVector2(x, y));
             SR_PLATFORM_NS::SetOverriddenMouseState(mouseState);
         }
 
@@ -526,14 +565,15 @@ namespace SR_GRAPH_NS {
                 }
             }
 
-            // manage maximized state
-            int currentMaximized = pWindow->IsMaximized();
-            if (!pWindow->IsMaximized() && maximized) {
-                pWindow->SetMaximized(true);
-                SR_LOG("xdg_toplevel_handle_configure() : window maximized");
-            } else if (pWindow->IsMaximized() && floating) {
-                pWindow->SetMaximized(false);
-                SR_LOG("xdg_toplevel_handle_configure() : window unmaximized");
+            /// configure всегда содержит полный набор состояний окна
+            if (pWindow->IsMaximized() != static_cast<bool>(maximized)) {
+                pWindow->SetMaximized(maximized);
+                SR_LOG("xdg_toplevel_handle_configure() : window {}", maximized ? "maximized" : "unmaximized");
+            }
+
+            if (pWindow->IsFullScreen() != static_cast<bool>(fullscreen)) {
+                pWindow->SetFullScreenState(fullscreen);
+                SR_LOG("xdg_toplevel_handle_configure() : fullscreen {}", fullscreen ? "enabled" : "disabled");
             }
 
             pWindow->SetPendingSize({width, height});
@@ -628,36 +668,35 @@ namespace SR_GRAPH_NS {
             }
             buffer->poolCapacity = poolCapacity;
 
-            // alloc name if needed
-            if (name) {
-                if (buffer->name) {
-                    free(buffer->name);
-                }
-                size_t nameSize = strlen(name);
-                buffer->name = (char*)malloc(nameSize);
-                memcpy(buffer->name, name, nameSize);
-            }
-
-            // only create new file if needed
+            /// only create new file if needed
             if (buffer->fd < 0) {
-                buffer->fd = shm_open(buffer->name, O_RDWR | O_CREAT | O_TRUNC, 0600);
-                if (buffer->fd < 0 || errno == EEXIST) {
-                    SR_ERROR("WaylandWindow::CreateSurfaceBuffer() : failed to create shm file!");
+                buffer->fd = memfd_create(name ? name : "SREngineWaylandBuffer", MFD_CLOEXEC);
+                if (buffer->fd < 0) {
+                    SR_ERROR(
+                        "WaylandWindow::CreateSurfaceBuffer() : failed to create shm file! Error: {}",
+                        GetErrnoDescription(errno)
+                    );
                     return false;
                 }
             }
 
-            int result = ftruncate(buffer->fd, buffer->poolCapacity);
-            if (result < 0 || errno == EINTR) {
-                SR_ERROR("WaylandWindow::CreateSurfaceBuffer() : failed to set shm file size!");
+            if (ftruncate(buffer->fd, buffer->poolCapacity) < 0) {
+                SR_ERROR(
+                    "WaylandWindow::CreateSurfaceBuffer() : failed to set shm file size! Error: {}",
+                    GetErrnoDescription(errno)
+                );
                 return false;
             }
 
-            buffer->pixels =
-                (uint32_t*)mmap(NULL, buffer->poolCapacity, PROT_READ | PROT_WRITE, MAP_SHARED, buffer->fd, 0);
-            if (buffer->name) {
-                shm_unlink(buffer->name);
+            void* pPixels = mmap(NULL, buffer->poolCapacity, PROT_READ | PROT_WRITE, MAP_SHARED, buffer->fd, 0);
+            if (pPixels == MAP_FAILED) {
+                SR_ERROR(
+                    "WaylandWindow::CreateSurfaceBuffer() : failed to map shm file! Error: {}",
+                    GetErrnoDescription(errno)
+                );
+                return false;
             }
+            buffer->pixels = static_cast<uint32_t*>(pPixels);
 
             for (int i = 0; i < buffer->width * buffer->height; ++i) {
                 buffer->pixels[i] = color;
@@ -717,16 +756,19 @@ namespace SR_GRAPH_NS {
     void WaylandWindow::InternalSetWindowSize(int width, int height) {
         SR_TRACY_ZONE;
 
+        /// width/height - размер области рендера в пикселях буфера,
+        /// композитный размер и прямоугольники CSD - в логических координатах поверхности
         m_internalWidth = width;
         m_internalHeight = height;
 
+        const int32_t logicalWidth = width / m_bufferScale;
+        const int32_t logicalHeight = height / m_bufferScale;
+
         if (m_useClientDecorations) {
-            m_compositeWidth = m_internalWidth + (DECORATIONS_BAR_SIZE * 2);
-            m_compositeHeight = m_internalHeight + (DECORATIONS_BAR_SIZE + DECORATIONS_TOPBAR_SIZE);
-            m_surfaceBuffer.width = m_compositeWidth;
-            m_surfaceBuffer.height = m_compositeHeight;
-            m_clientSurfaceBuffer.width = width;
-            m_clientSurfaceBuffer.height = height;
+            m_compositeWidth = logicalWidth + (DECORATIONS_BAR_SIZE * 2);
+            m_compositeHeight = logicalHeight + (DECORATIONS_BAR_SIZE + DECORATIONS_TOPBAR_SIZE);
+            m_surfaceBuffer.width = m_compositeWidth * m_bufferScale;
+            m_surfaceBuffer.height = m_compositeHeight * m_bufferScale;
 
             // CSD rects
             m_clientRectDragTopBar = SR_MATH_NS::IRect(0, 0, m_compositeWidth, DECORATIONS_TOPBAR_SIZE);
@@ -757,19 +799,14 @@ namespace SR_GRAPH_NS {
             x -= 24 + 4;
             m_clientRectButtonMin = SR_MATH_NS::IRect(x, 4, 24, 24);
         } else {
-            m_compositeWidth = width;
-            m_compositeHeight = height;
-            m_surfaceBuffer.width = width;
-            m_surfaceBuffer.height = height;
-            m_clientSurfaceBuffer.width = -1;
-            m_clientSurfaceBuffer.height = -1;
+            m_compositeWidth = logicalWidth;
+            m_compositeHeight = logicalHeight;
         }
 
         SR_LOG(
             "WaylandWindow::InternalSetWindowSize() : \n\tInternal size set to {}x{}\n\tComposite size set to {}x{}"
-            "\n\tClient surface buffer size set to {}x{}\n\tSurface buffer size set to {}x{}\n\tDecorations: {}",
-            m_internalWidth, m_internalHeight, m_compositeWidth, m_compositeHeight, m_clientSurfaceBuffer.width,
-            m_clientSurfaceBuffer.height, m_surfaceBuffer.width, m_surfaceBuffer.height,
+            "\n\tBuffer scale: {}\n\tDecorations: {}",
+            m_internalWidth, m_internalHeight, m_compositeWidth, m_compositeHeight, m_bufferScale,
             m_useClientDecorations ? "enabled" : "disabled"
         );
     }
@@ -777,54 +814,61 @@ namespace SR_GRAPH_NS {
     bool WaylandWindow::ResizeSurfaceBuffer(SurfaceBuffer* pBuffer, wl_surface* pSurface) {
         SR_TRACY_ZONE;
 
-        // SR_LOG(
-        //     "WaylandWindow::ResizeSurfaceBuffer() : resizing surface buffer to {}x{} (poolCapacity={})",
-        //     pBuffer->width, pBuffer->height, pBuffer->poolCapacity
-        // );
+        if (!pBuffer->pool || pBuffer->fd < 0) {
+            SR_ERROR("WaylandWindow::ResizeSurfaceBuffer() : surface buffer is not created!");
+            return false;
+        }
 
         const int newStride = pBuffer->width * static_cast<int>(sizeof(uint32_t));
         const int newSize = pBuffer->height * newStride;
-        wl_buffer* oldBuffer = pBuffer->buffer;
 
-        if (newSize <= pBuffer->poolCapacity) {
-            // fast path: existing pool is large enough, just create a new wl_buffer
-            pBuffer->stride = newStride;
-            pBuffer->size = newSize;
-            pBuffer->pool = wl_shm_create_pool(m_shm, pBuffer->fd, pBuffer->poolCapacity);
-            pBuffer->buffer = wl_shm_pool_create_buffer(
-                pBuffer->pool, 0, pBuffer->width, pBuffer->height, pBuffer->stride, WL_SHM_FORMAT_XRGB8888
-            );
-        } else {
-            // slow path: need to grow the underlying pool
-            const int newPoolCapacity = ((pBuffer->width * 2) * (pBuffer->height * 2)
-                                         * static_cast<int>(sizeof(uint32_t)) + 4095) & ~4095;
-            const int cappedCapacity = std::max(newPoolCapacity, newSize);
+        if (newSize > pBuffer->poolCapacity) {
+            /// wl_shm_pool can only grow, reserve some space for further resizes
+            const int newPoolCapacity = (newSize * 2 + 4095) & ~4095;
 
             munmap(pBuffer->pixels, pBuffer->poolCapacity);
-            ftruncate(pBuffer->fd, cappedCapacity);
-            pBuffer->pixels =
-                (uint32_t*)mmap(NULL, cappedCapacity, PROT_READ | PROT_WRITE, MAP_SHARED, pBuffer->fd, 0);
-            pBuffer->poolCapacity = cappedCapacity;
-            pBuffer->stride = newStride;
-            pBuffer->size = newSize;
+            pBuffer->pixels = nullptr;
 
-            wl_shm_pool_destroy(pBuffer->pool);
-            pBuffer->pool = wl_shm_create_pool(m_shm, pBuffer->fd, pBuffer->poolCapacity);
-            pBuffer->buffer = wl_shm_pool_create_buffer(
-                pBuffer->pool, 0, pBuffer->width, pBuffer->height, pBuffer->stride, WL_SHM_FORMAT_XRGB8888
-            );
+            if (ftruncate(pBuffer->fd, newPoolCapacity) < 0) {
+                SR_ERROR(
+                    "WaylandWindow::ResizeSurfaceBuffer() : failed to grow shm file! Error: {}",
+                    Details::GetErrnoDescription(errno)
+                );
+                return false;
+            }
 
-            // SR_LOG(
-            //     "WaylandWindow::ResizeSurfaceBuffer() : pool grown to {}", pBuffer->poolCapacity
-            // );
+            void* pPixels = mmap(NULL, newPoolCapacity, PROT_READ | PROT_WRITE, MAP_SHARED, pBuffer->fd, 0);
+            if (pPixels == MAP_FAILED) {
+                SR_ERROR(
+                    "WaylandWindow::ResizeSurfaceBuffer() : failed to map shm file! Error: {}",
+                    Details::GetErrnoDescription(errno)
+                );
+                return false;
+            }
+
+            pBuffer->pixels = static_cast<uint32_t*>(pPixels);
+            pBuffer->poolCapacity = newPoolCapacity;
+            wl_shm_pool_resize(pBuffer->pool, pBuffer->poolCapacity);
         }
 
-        wl_buffer_destroy(oldBuffer);
+        pBuffer->stride = newStride;
+        pBuffer->size = newSize;
+
+        for (int32_t i = 0; i < pBuffer->width * pBuffer->height; ++i) {
+            pBuffer->pixels[i] = pBuffer->color;
+        }
+
+        wl_buffer* pOldBuffer = pBuffer->buffer;
+
+        pBuffer->buffer = wl_shm_pool_create_buffer(
+            pBuffer->pool, 0, pBuffer->width, pBuffer->height, pBuffer->stride, WL_SHM_FORMAT_XRGB8888
+        );
+
+        if (pOldBuffer) {
+            wl_buffer_destroy(pOldBuffer);
+        }
+
         wl_surface_attach(pSurface, pBuffer->buffer, 0, 0);
-
-        if (m_resizeCallback && pSurface == (m_useClientDecorations ? m_clientSurface : m_surface)) {
-            m_resizeCallback(this, pBuffer->width, pBuffer->height);
-        }
 
         return true;
     }
@@ -876,11 +920,29 @@ namespace SR_GRAPH_NS {
     bool WaylandWindow::DoWaylandPollEvents() {
         SR_TRACY_ZONE;
 
-        while (wl_display_prepare_read(m_display) != 0)
-            wl_display_dispatch_pending(m_display);
+        while (wl_display_prepare_read(m_display) != 0) {
+            if (wl_display_dispatch_pending(m_display) < 0) {
+                SR_ERROR(
+                    "WaylandWindow::DoWaylandPollEvents() : failed to dispatch events, display error: {}",
+                    Details::GetErrnoDescription(wl_display_get_error(m_display))
+                );
+                m_isClosed = true;
+                m_isValid = false;
+                return false;
+            }
+        }
+
         wl_display_flush(m_display);
-        wl_display_read_events(m_display);
-        wl_display_dispatch_pending(m_display);
+
+        if (wl_display_read_events(m_display) < 0 || wl_display_dispatch_pending(m_display) < 0) {
+            SR_ERROR(
+                "WaylandWindow::DoWaylandPollEvents() : failed to read events, display error: {}",
+                Details::GetErrnoDescription(wl_display_get_error(m_display))
+            );
+            m_isClosed = true;
+            m_isValid = false;
+            return false;
+        }
 
         /*bool isEagain = false;
         if (const int ret = wl_display_prepare_read(m_display); ret != 0) {
@@ -955,6 +1017,9 @@ namespace SR_GRAPH_NS {
             return false;
         }
 
+        /// keymap может прийти уже во время roundtrip-ов реестра
+        m_xkbContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+
         /// que registry
         wl_registry* pRegistry = wl_display_get_registry(m_display);
         wl_registry_add_listener(pRegistry, &Details::registry_listener, this);
@@ -967,7 +1032,15 @@ namespace SR_GRAPH_NS {
             SR_LOG("WaylandWindow::Initialize() : using server-side decorations.");
         }
 
-        m_xkbContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+        if (!m_compositor || !m_xdgWMBase || !m_shm) {
+            SR_ERROR("WaylandWindow::Initialize() : compositor does not provide required globals (wl_compositor, xdg_wm_base, wl_shm)!");
+            return false;
+        }
+
+        if (m_useClientDecorations && !m_subCompositor) {
+            SR_ERROR("WaylandWindow::Initialize() : client-side decorations require wl_subcompositor!");
+            return false;
+        }
 
         /// create window
         m_surfaceBuffer.fd = -1;
@@ -995,6 +1068,10 @@ namespace SR_GRAPH_NS {
         xdg_toplevel_set_app_id(m_xdgToplevel, "SREngine");
         xdg_toplevel_set_min_size(m_xdgToplevel, 300, 300);
 
+        if (fullScreen) {
+            xdg_toplevel_set_fullscreen(m_xdgToplevel, nullptr);
+        }
+
         /// get server-side decorations
         if (!m_useClientDecorations && m_decorationManager) {
             m_decoration = zxdg_decoration_manager_v1_get_toplevel_decoration(m_decorationManager, m_xdgToplevel);
@@ -1013,42 +1090,28 @@ namespace SR_GRAPH_NS {
         }
         SR_LOG("WaylandWindow::Initialize() : initial Wayland configuration acknowledged.");
 
-        // surface buffers
-        uint32_t color =
-            m_useClientDecorations ? Details::ToColor(127, 127, 127, 255) : Details::ToColor(50, 50, 50, 255);
-        const SR_MATH_NS::IVector2 maxRes = GetMaxOutputResolution();
-        const int poolCapacity = maxRes.x * maxRes.y * static_cast<int>(sizeof(uint32_t));
-        if (Details::CreateSurfaceBuffer(
-                &m_surfaceBuffer, GetShm(), m_surface, "WaylandClientWindow_Decorations", color, poolCapacity
-            ) != 1) {
-            SR_ERROR("WaylandWindow::Initialize() : failed to create surface buffer!");
-            return false;
-        }
-
-        wl_surface_commit(m_surface);
-
+        /// Поверхностью рендера владеет свопчейн Vulkan, прикрепление к ней wl_buffer ломает WSI
+        /// (VK_ERROR_OUT_OF_DATE_KHR при present). shm-буфер нужен только поверхности клиентских декораций.
         if (m_useClientDecorations) {
+            const SR_MATH_NS::IVector2 maxRes = GetMaxOutputResolution();
+            const int poolCapacity = maxRes.x * maxRes.y * static_cast<int>(sizeof(uint32_t));
+            if (!Details::CreateSurfaceBuffer(
+                    &m_surfaceBuffer, GetShm(), m_surface, "WaylandClientWindow_Decorations",
+                    Details::ToColor(127, 127, 127, 255), poolCapacity
+                )) {
+                SR_ERROR("WaylandWindow::Initialize() : failed to create surface buffer!");
+                return false;
+            }
+
             m_clientSurface = wl_compositor_create_surface(m_compositor);
             m_clientSubSurface = wl_subcompositor_get_subsurface(m_subCompositor, m_clientSurface, m_surface);
             wl_subsurface_set_desync(m_clientSubSurface);
             wl_subsurface_set_position(m_clientSubSurface, DECORATIONS_BAR_SIZE, DECORATIONS_TOPBAR_SIZE);
-            if (Details::CreateSurfaceBuffer(
-                    &m_clientSurfaceBuffer, GetShm(), m_clientSurface, "WaylandClientWindow_Client",
-                    Details::ToColor(255, 255, 255, 255), poolCapacity
-                ) != 1) {
-                SR_ERROR("WaylandWindow::Initialize() : failed to create client surface buffer!");
-                return false;
-            }
             /// TODO: DrawButtons();
+
+            wl_surface_damage(m_surface, 0, 0, m_compositeWidth, m_compositeHeight);
         }
 
-        // finalize surfaces
-        if (m_useClientDecorations) {
-            wl_surface_damage(m_clientSurface, 0, 0, m_clientSurfaceBuffer.width, m_clientSurfaceBuffer.height);
-            wl_surface_commit(m_clientSurface);
-        }
-
-        wl_surface_damage(m_surface, 0, 0, m_surfaceBuffer.width, m_surfaceBuffer.height);
         wl_surface_commit(m_surface);
         wl_display_flush(m_display);
 
@@ -1181,6 +1244,67 @@ namespace SR_GRAPH_NS {
         SR_LOG("WaylandWindow::UnlockPointer() : pointer unlocked");
     }
 
+    SR_MATH_NS::FVector2 WaylandWindow::PointerToClientPosition(const SR_MATH_NS::FVector2& position) const {
+        SR_MATH_NS::FVector2 clientPosition = position;
+
+        /// Над рамкой CSD указатель приходит в координатах поверхности декораций, смещаем в координаты клиента
+        if (m_useClientDecorations && m_pointerSurface == m_surface) {
+            clientPosition.x -= static_cast<float_t>(DECORATIONS_BAR_SIZE);
+            clientPosition.y -= static_cast<float_t>(DECORATIONS_TOPBAR_SIZE);
+        }
+
+        const float_t scale = static_cast<float_t>(m_bufferScale);
+
+        return SR_MATH_NS::FVector2(clientPosition.x * scale, clientPosition.y * scale);
+    }
+
+    void WaylandWindow::Maximize() {
+        if (!m_xdgToplevel) {
+            return;
+        }
+
+        xdg_toplevel_set_maximized(m_xdgToplevel);
+        wl_display_flush(m_display);
+    }
+
+    void WaylandWindow::Restore() {
+        if (!m_xdgToplevel) {
+            return;
+        }
+
+        if (m_isFullScreen) {
+            xdg_toplevel_unset_fullscreen(m_xdgToplevel);
+        }
+
+        xdg_toplevel_unset_maximized(m_xdgToplevel);
+        wl_display_flush(m_display);
+    }
+
+    void WaylandWindow::Collapse() {
+        if (!m_xdgToplevel) {
+            return;
+        }
+
+        xdg_toplevel_set_minimized(m_xdgToplevel);
+        wl_display_flush(m_display);
+    }
+
+    void WaylandWindow::SetFullScreen(bool value) {
+        if (!m_xdgToplevel) {
+            return;
+        }
+
+        /// Реальное состояние придет в xdg_toplevel.configure
+        if (value) {
+            xdg_toplevel_set_fullscreen(m_xdgToplevel, nullptr);
+        }
+        else {
+            xdg_toplevel_unset_fullscreen(m_xdgToplevel);
+        }
+
+        wl_display_flush(m_display);
+    }
+
     void WaylandWindow::PollEvents() {
         SR_TRACY_ZONE;
 
@@ -1196,36 +1320,53 @@ namespace SR_GRAPH_NS {
             UnlockPointer();
         }
 
-        if (m_pendingSize && !m_pendingSize->HasZero() && !m_pendingSize->HasNegative() &&
-            m_lastSize != *m_pendingSize) {
+        /// Размер из configure - логический (вместе с CSD), размер свопчейна - логический * масштаб буфера
+        const bool hasNewSize = m_pendingSize && !m_pendingSize->HasZero() && !m_pendingSize->HasNegative() &&
+                                m_lastSize != *m_pendingSize;
+        if (hasNewSize) {
             m_lastSize = *m_pendingSize;
-            m_pendingSize.reset();
+        }
+        m_pendingSize.reset();
 
-            const SR_MATH_NS::IVector2 surfaceSize = m_lastSize * GetScale();
+        const int32_t bufferScale = std::max(1, m_scale);
+        if (!hasNewSize && bufferScale == m_bufferScale) {
+            return;
+        }
 
-            SR_LOG(
-                "WaylandWindow::PollEvents() : applying pending configure with size {}x{}...", surfaceSize.x,
-                surfaceSize.y
-            );
+        /// Композитор не задавал размер (0x0 в configure), сохраняем текущий логический размер окна
+        if (m_lastSize.HasZero()) {
+            m_lastSize = SR_MATH_NS::IVector2(m_compositeWidth, m_compositeHeight);
+        }
 
-            const int32_t clientWidth = m_useClientDecorations ? surfaceSize.x - DECORATIONS_BAR_SIZE * 2 : surfaceSize.x;
-            const int32_t clientHeight = m_useClientDecorations ? surfaceSize.y - DECORATIONS_TOPBAR_SIZE - DECORATIONS_BAR_SIZE : surfaceSize.y;
-            if (clientWidth <= 0 || clientHeight <= 0) {
-                return;
-            }
-            InternalSetWindowSize(clientWidth, clientHeight);
+        const int32_t clientWidth = m_useClientDecorations ? m_lastSize.x - DECORATIONS_BAR_SIZE * 2 : m_lastSize.x;
+        const int32_t clientHeight =
+            m_useClientDecorations ? m_lastSize.y - DECORATIONS_TOPBAR_SIZE - DECORATIONS_BAR_SIZE : m_lastSize.y;
+        if (clientWidth <= 0 || clientHeight <= 0) {
+            return;
+        }
 
-            if (m_useClientDecorations) {
-                ResizeSurfaceBuffer(&m_clientSurfaceBuffer, m_clientSurface);
-                wl_surface_damage(m_clientSurface, 0, 0, m_clientSurfaceBuffer.width, m_clientSurfaceBuffer.height);
-                wl_surface_commit(m_clientSurface);
-            }
+        m_bufferScale = bufferScale;
 
+        SR_LOG(
+            "WaylandWindow::PollEvents() : applying window size {}x{} (logical), buffer scale {}...", m_lastSize.x,
+            m_lastSize.y, m_bufferScale
+        );
+
+        InternalSetWindowSize(clientWidth * m_bufferScale, clientHeight * m_bufferScale);
+
+        if (m_useClientDecorations) {
+            wl_surface_set_buffer_scale(m_surface, m_bufferScale);
             ResizeSurfaceBuffer(&m_surfaceBuffer, m_surface);
-
-            wl_surface_damage(m_surface, 0, 0, m_surfaceBuffer.width, m_surfaceBuffer.height);
+            wl_surface_damage(m_surface, 0, 0, m_compositeWidth, m_compositeHeight);
             wl_surface_commit(m_surface);
-            wl_display_flush(m_display);
+        }
+
+        /// Масштаб поверхности рендера применится вместе с ближайшим present свопчейна
+        wl_surface_set_buffer_scale(GetRenderSurface(), m_bufferScale);
+        wl_display_flush(m_display);
+
+        if (m_resizeCallback) {
+            m_resizeCallback(this, m_internalWidth, m_internalHeight);
         }
     }
 
@@ -1284,6 +1425,10 @@ namespace SR_GRAPH_NS {
                 munmap(pBuffer->pixels, pBuffer->poolCapacity);
             }
             pBuffer->pixels = nullptr;
+            if (pBuffer->fd >= 0) {
+                close(pBuffer->fd);
+                pBuffer->fd = -1;
+            }
         }
 
         if (m_decoration) {

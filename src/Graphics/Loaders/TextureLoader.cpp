@@ -40,6 +40,21 @@ namespace SR_GRAPH_NS {
         return result;
     }
 
+    SR_UTILS_NS::String TextureLoader::EncodeRgbaPng(const uint8_t* pPixels, uint32_t width, uint32_t height) {
+        SR_TRACY_ZONE;
+        SR_UTILS_NS::String result;
+        if (!pPixels || width == 0 || height == 0 || width > 8192 || height > 8192) {
+            return result;
+        }
+        const bool encoded = stbi_write_png_to_func([](void* pContext, void* pData, int size) {
+            static_cast<SR_UTILS_NS::String*>(pContext)->append(static_cast<const char*>(pData), size);
+        }, &result, width, height, 4, pPixels, width * 4) != 0;
+        if (!encoded) {
+            result.clear();
+        }
+        return result;
+    }
+
     TextureData::TextureData()
         : Super(this, SR_UTILS_NS::SharedPtrPolicy::Automatic)
     { }

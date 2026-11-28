@@ -441,12 +441,15 @@ namespace SR_GRAPH_NS {
         wndClass.cbClsExtra = 0;
         wndClass.cbWndExtra = 0;
         wndClass.hInstance = m_hInst;
-        wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+        /// Exported games store their icon group with id 1 in the executable resources.
+        HICON hExecutableIcon = LoadIcon(m_hInst, MAKEINTRESOURCE(1));
+
+        wndClass.hIcon = hExecutableIcon ? hExecutableIcon : LoadIcon(NULL, IDI_APPLICATION);
         wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
         wndClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
         wndClass.lpszMenuName = NULL;
         wndClass.lpszClassName = className.c_str();
-        wndClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
+        wndClass.hIconSm = hExecutableIcon ? hExecutableIcon : LoadIcon(NULL, IDI_WINLOGO);
 
         auto&& registerResult = RegisterClassEx(&wndClass);
 

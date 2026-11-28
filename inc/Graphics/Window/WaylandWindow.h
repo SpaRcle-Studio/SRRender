@@ -9,6 +9,7 @@
     #include <Graphics/Window/BasicWindowImpl.h>
 
     #include <Utils/Math/Rect.h>
+    #include <Utils/Types/Optional.h>
     #include <Utils/Types/Thread.h>
 
     #include <linux/input.h>
@@ -68,10 +69,16 @@ namespace SR_GRAPH_NS {
         uint32_t GetSurfaceHeight() const override { return static_cast<uint32_t>(m_internalHeight); }
         uint32_t GetWidth() const override { return static_cast<uint32_t>(m_internalWidth); }
         uint32_t GetHeight() const override { return static_cast<uint32_t>(m_internalHeight); }
-        float GetScale() const { return m_fractionalScale ? m_fractionalScaleValue : static_cast<float>(m_scale); }
+        /// Целочисленный масштаб буфера (wl_surface.set_buffer_scale): размер поверхности в пикселях = логический размер * масштаб
+        float GetScale() const { return static_cast<float>(m_bufferScale); }
 
         void PollEvents() override;
         void Close() override;
+        void Maximize() override;
+        void Restore() override;
+        void Collapse() override;
+        void SetFullScreen(bool value) override;
+        bool IsFullScreen() override { return m_isFullScreen; }
 
     public:
         /// ========= INTERNAL FUNCTIONS =========
@@ -80,6 +87,7 @@ namespace SR_GRAPH_NS {
 
         void SetPendingSize(const SR_MATH_NS::IVector2& size) { m_pendingSize = size; }
         void SetMaximized(bool isMaximized) { m_isMaximized = isMaximized; }
+        void SetFullScreenState(bool isFullScreen) { m_isFullScreen = isFullScreen; }
 
         void SetCompositor(struct wl_compositor* pCompositor) { m_compositor = pCompositor; }
         void SetSubCompositor(struct wl_subcompositor* pSubCompositor) { m_subCompositor = pSubCompositor; }
@@ -124,6 +132,8 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD zxdg_toplevel_decoration_v1* GetDecoration() const { return m_decoration; }
         SR_NODISCARD wl_surface* GetSurface() const { return m_surface; }
         SR_NODISCARD wl_surface* GetClientSurface() const { return m_clientSurface; }
+        /// Поверхность, которой владеет свопчейн Vulkan: к ней нельзя прикреплять shm-буферы
+        SR_NODISCARD wl_surface* GetRenderSurface() const { return m_useClientDecorations ? m_clientSurface : m_surface; }
         SR_NODISCARD bool IsUseClientDecorations() const { return m_useClientDecorations; }
         SR_NODISCARD bool IsMaximized() const { return m_isMaximized; }
         SR_NODISCARD int GetCompositeWidth() const { return m_compositeWidth; }
@@ -141,6 +151,8 @@ namespace SR_GRAPH_NS {
         }
         SR_NODISCARD uint32_t GetPointerEnterSerial() const { return m_pointerEnterSerial; }
         SR_NODISCARD bool IsCursorLocked() const { return m_cursorLocked; }
+        /// Логическая позиция указателя на текущей поверхности -> пиксели буфера области рендера
+        SR_NODISCARD SR_MATH_NS::FVector2 PointerToClientPosition(const SR_MATH_NS::FVector2& position) const;
 
         SR_MATH_NS::IVector2 GetMaxOutputResolution() const;
 
@@ -159,7 +171,7 @@ namespace SR_GRAPH_NS {
         void UnlockPointer();
 
     private:
-        std::optional<SR_MATH_NS::IVector2> m_pendingSize;
+        SR_UTILS_NS::Optional<SR_MATH_NS::IVector2> m_pendingSize;
         SR_MATH_NS::IVector2 m_lastSize;
 
         int m_internalWidth = 0;
@@ -168,6 +180,7 @@ namespace SR_GRAPH_NS {
         int m_compositeHeight = 0;
         bool m_useClientDecorations = false;
         bool m_isMaximized = false;
+        std::atomic<bool> m_isFullScreen = false;
 
         std::atomic<bool> m_waitingForConfigure = false;
         std::atomic<bool> m_configured = false;
@@ -217,6 +230,7 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Vector<Output> m_outputs;
         SR_UTILS_NS::Set<wl_output*> m_enteredOutputs;
         int m_scale = 1;
+        int m_bufferScale = 1;
         float m_fractionalScaleValue = 1.f;
 
         xdg_surface* m_xdgSurface = nullptr;
