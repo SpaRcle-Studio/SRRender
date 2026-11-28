@@ -37,6 +37,7 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD SR_HTYPES_NS::SharedPtr<SR_GTYPES_NS::Framebuffer>& GetFramebuffer() noexcept { return m_framebuffer; }
         SR_NODISCARD uint8_t GetLayersCount() const noexcept { return m_layersCount; }
         SR_NODISCARD SR_UTILS_NS::StringAtom GetName() const noexcept { return m_name; }
+        SR_NODISCARD const SR_MATH_NS::FVector2& GetPreScale() const noexcept { return m_preScale; }
         SR_NODISCARD FrameBufferFeatures& GetFeatures() noexcept { return m_features; }
 
         bool InitializeFramebuffer(RenderContext* pContext);

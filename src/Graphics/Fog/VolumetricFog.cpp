@@ -108,5 +108,13 @@ namespace SR_GRAPH_NS {
             static_cast<float_t>(SR_MATH_NS::Clamp<uint32_t>(m_steps, 8, 64)),
             0.f
         ));
+
+        static const SR_UTILS_NS::StringAtom aerialParams = "fogAerialParams";
+        shader.SetVec4(aerialParams, SR_MATH_NS::FVector4(
+            SR_MATH_NS::Max(m_airDensity, 0.f),
+            SR_MATH_NS::Max(m_airHeightScale, 0.001f),
+            0.f,
+            0.f
+        ));
     }
 }

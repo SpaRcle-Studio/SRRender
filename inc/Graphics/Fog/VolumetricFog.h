@@ -79,6 +79,11 @@ namespace SR_GRAPH_NS {
         /// @property @group(Quality)
         uint32_t m_steps = 24;
 
+        /// @property @group(AerialPerspective) @drag(0.05f) @tooltip(Air between the camera and distant surfaces, same model as the sky. 1 = Earth air, 0 = off)
+        float_t m_airDensity = 0.f;
+        /// @property @group(AerialPerspective) @drag(0.05f) @tooltip(Air layer height multiplier: 1 = Earth, 8 km Rayleigh and 1.2 km Mie. Lower - haze stays closer to the ground)
+        float_t m_airHeightScale = 1.f;
+
         bool m_isRegistered = false;
         mutable RenderScenePtr m_renderScene;
 

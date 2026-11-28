@@ -123,16 +123,12 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::StringAtom m_SSAOBlurname = "SSAOBlur";
     };
 
+    /// Облака и туман рисуются одним общим проходом VolumetricsPass (буфер "Volumetrics"), интеграции только
+    /// включают свою часть: проход создает первая из них, качество (разрешение) - наибольшее из двух
     class RenderTechniquePresetIntegrationVolumetricClouds : public RenderTechniquePresetIntegrationBase {
         SR_CLASS()
     public:
         void Integrate(const Technique& technique, const Params& params) const override;
-
-    public:
-        /// @property
-        SR_UTILS_NS::StringAtom cloudsControllerName = "VolumetricClouds";
-        /// @property
-        SR_UTILS_NS::StringAtom shaderVariableName = "cloudsMap";
 
     };
 
@@ -140,12 +136,6 @@ namespace SR_GRAPH_NS {
         SR_CLASS()
     public:
         void Integrate(const Technique& technique, const Params& params) const override;
-
-    public:
-        /// @property
-        SR_UTILS_NS::StringAtom fogControllerName = "VolumetricFog";
-        /// @property
-        SR_UTILS_NS::StringAtom shaderVariableName = "fogMap";
 
     };
 
