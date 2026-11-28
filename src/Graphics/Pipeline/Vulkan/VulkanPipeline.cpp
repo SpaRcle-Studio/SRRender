@@ -914,7 +914,7 @@ namespace SR_GRAPH_NS {
                 if (!pShaderProgram->Compile(
                     VulkanTools::AbstractPolygonModeToVk(createInfo.polygonMode),
                     VulkanTools::AbstractCullModeToVk(cullMode),
-                    VulkanTools::AbstractDepthOpToVk(createInfo.depthCompare),
+                    VulkanTools::AbstractDepthOpToVk(ResolveDepthCompare(createInfo.depthCompare)),
                     createInfo.blendEnabled && depthEnabled,
                     createInfo.depthWrite,
                     createInfo.depthTest,
@@ -2328,8 +2328,20 @@ namespace SR_GRAPH_NS {
         }
         else if (m_state.frameBufferId > 0) {
             int32_t fbo = m_state.frameBufferId - 1;
-            m_internalData->renderPassBI.clearValueCount = m_memory->GetFBO(fbo)->GetCountClearValues();
-            m_internalData->renderPassBI.pClearValues = m_memory->GetFBO(fbo)->GetClearValues();
+            auto&& pFrameBuffer = m_memory->GetFBO(fbo);
+            m_internalData->renderPassBI.clearValueCount = pFrameBuffer->GetCountClearValues();
+            m_internalData->renderPassBI.pClearValues = pFrameBuffer->GetClearValues();
+
+            /// Значения по умолчанию у кадрового буфера - обычная глубина (1), при reverse-Z дальняя - 0
+            if (IsReverseDepth() && pFrameBuffer->IsDepthEnabled() && pFrameBuffer->GetCountClearValues() > 0) {
+                const uint32_t count = pFrameBuffer->GetCountClearValues();
+                m_internalData->clearValues.resize(count);
+                for (uint32_t i = 0; i < count; ++i) {
+                    m_internalData->clearValues[i] = pFrameBuffer->GetClearValues()[i];
+                }
+                m_internalData->clearValues[count - 1].depthStencil.depth = ResolveDepthValue(m_internalData->clearValues[count - 1].depthStencil.depth);
+                m_internalData->renderPassBI.pClearValues = m_internalData->clearValues.data();
+            }
         }
         else {
             /// в какой ситуации это может случиться?
@@ -2355,7 +2367,7 @@ namespace SR_GRAPH_NS {
             depth = std::clamp(depth, 0.0f, 1.0f);
         }
 
-        m_internalData->clearValues[colorCount] = VkClearValue { .depthStencil = { depth, 0 } };
+        m_internalData->clearValues[colorCount] = VkClearValue { .depthStencil = { ResolveDepthValue(depth), 0 } };
 
         m_internalData->renderPassBI.clearValueCount = colorCount + 1;
         m_internalData->renderPassBI.pClearValues    = m_internalData->clearValues.data();
@@ -2388,7 +2400,7 @@ namespace SR_GRAPH_NS {
         }
 
         if (hasDepth) {
-            m_internalData->clearValues[colorCount] = VkClearValue { .depthStencil = { depth.value(), 0 } };
+            m_internalData->clearValues[colorCount] = VkClearValue { .depthStencil = { ResolveDepthValue(depth.value()), 0 } };
         }
 
         m_internalData->renderPassBI.clearValueCount = colorCount + static_cast<uint8_t>(hasDepth);
@@ -3075,7 +3087,7 @@ namespace SR_GRAPH_NS {
         }
 
         VkClearDepthStencilValue depthStencilValue;
-        depthStencilValue.depth = depth;
+        depthStencilValue.depth = ResolveDepthValue(depth);
         depthStencilValue.stencil = 0;
 
         vkCmdClearDepthStencilImage(
@@ -3251,7 +3263,7 @@ namespace SR_GRAPH_NS {
         // Works for both framebuffers and swapchain (when m_currentVkFrameBuffer is nullptr)
         VkClearAttachment clearAttachment = {};
         clearAttachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        clearAttachment.clearValue.depthStencil.depth = depth;
+        clearAttachment.clearValue.depthStencil.depth = ResolveDepthValue(depth);
         clearAttachment.clearValue.depthStencil.stencil = 0;
 
         // Clear the entire render area

@@ -516,6 +516,25 @@ namespace SR_GRAPH_NS {
         ++m_state.operations;
     }
 
+    DepthCompare Pipeline::ResolveDepthCompare(DepthCompare depthCompare) const noexcept {
+        if (!m_reverseDepth) {
+            return depthCompare;
+        }
+
+        switch (depthCompare) {
+            case DepthCompare::Less:
+                return DepthCompare::Greater;
+            case DepthCompare::LessOrEqual:
+                return DepthCompare::GreaterOrEqual;
+            case DepthCompare::Greater:
+                return DepthCompare::Less;
+            case DepthCompare::GreaterOrEqual:
+                return DepthCompare::LessOrEqual;
+            default:
+                return depthCompare;
+        }
+    }
+
     bool Pipeline::Init() {
         return true;
     }

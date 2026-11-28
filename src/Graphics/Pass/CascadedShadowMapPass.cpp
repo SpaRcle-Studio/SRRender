@@ -271,6 +271,14 @@ namespace SR_GRAPH_NS {
                 m_lightFrustums[i] = ExtractFrustum(m_cascadeMatrices[i]);
             }
         }
+
+        /// Фрустумы отсечения - по обычной глубине, в шейдеры - с глубиной конвейера.
+        /// Читающие shadow map шейдеры переводят глубину обратно (SR_REVERSE_DEPTH).
+        if (GetPipeline()->IsReverseDepth()) {
+            for (uint32_t i = 0; i < m_cascadeCount; i++) {
+                m_cascadeMatrices[i] = SR_MATH_NS::Matrix4x4::ReverseDepth() * m_cascadeMatrices[i];
+            }
+        }
     }
 
     void CascadedShadowMapPass::UpdateCascades(SR_GTYPES_NS::Camera* pCamera) {
@@ -293,6 +301,8 @@ namespace SR_GRAPH_NS {
         const SR_MATH_NS::FVector3& cameraPos = pCamera->GetPosition();
         const SR_MATH_NS::FVector3 lightDir = m_directionalLightDirection.Normalized();
         const SR_MATH_NS::FVector3 viewDir = pCamera->GetViewDirection().Normalized();
+        /// опорный вектор вида света не должен быть параллелен свету (солнце в зените), иначе LookAt вырождается
+        const SR_MATH_NS::FVector3 lightViewUp = SR_MATH_NS::Abs(lightDir.y) > 0.99f ? SR_MATH_NS::FVector3::UnitZ() : SR_MATH_NS::FVector3::Up();
 
         auto&& invCamera = (pCamera->GetProjection() * pCamera->GetViewTranslate()).Inverse();
 
@@ -326,7 +336,7 @@ namespace SR_GRAPH_NS {
             const SR_MATH_NS::FVector3 cascadeCenterWSTmp = cameraPos + offset;
 
             const SR_MATH_NS::FVector3 lightPosTmp = cascadeCenterWSTmp - lightDir * m_cascadeRadii[i] * 2.0f;
-            auto&& lightViewTmp  = SR_MATH_NS::Matrix4x4::LookAt(lightPosTmp, cascadeCenterWSTmp, SR_MATH_NS::FVector3::Up());
+            auto&& lightViewTmp  = SR_MATH_NS::Matrix4x4::LookAt(lightPosTmp, cascadeCenterWSTmp, lightViewUp);
 
             const float_t texelSize = (m_cascadeRadii[i] * 2.0f) / shadowMapSize;
             SR_MATH_NS::FVector3 centerLS = (lightViewTmp * SR_MATH_NS::FVector4(cascadeCenterWSTmp, 1.0f)).XYZ();
@@ -340,7 +350,7 @@ namespace SR_GRAPH_NS {
 
             const SR_MATH_NS::FVector3 cascadeCenterWS = (lightViewTmp.Inverse() * SR_MATH_NS::FVector4(centerLS, 1.0f)).XYZ();
             SR_MATH_NS::FVector3 lightPos = cascadeCenterWS - lightDir * m_cascadeRadii[i] * 2.0f;
-            auto&& lightView = SR_MATH_NS::Matrix4x4::LookAt(lightPos, cascadeCenterWS, SR_MATH_NS::FVector3::Up());
+            auto&& lightView = SR_MATH_NS::Matrix4x4::LookAt(lightPos, cascadeCenterWS, lightViewUp);
 
             float zMult = 100.f;
             const auto lightProj = SR_MATH_NS::Matrix4x4::Ortho(
@@ -355,6 +365,14 @@ namespace SR_GRAPH_NS {
         for (uint32_t i = 0; i < m_cascadeCount; i++) {
             if (i < m_lightFrustumCount) {
                 m_lightFrustums[i] = ExtractFrustum(m_cascadeMatrices[i]);
+            }
+        }
+
+        /// Фрустумы отсечения - по обычной глубине, в шейдеры - с глубиной конвейера.
+        /// Читающие shadow map шейдеры переводят глубину обратно (SR_REVERSE_DEPTH).
+        if (GetPipeline()->IsReverseDepth()) {
+            for (uint32_t i = 0; i < m_cascadeCount; i++) {
+                m_cascadeMatrices[i] = SR_MATH_NS::Matrix4x4::ReverseDepth() * m_cascadeMatrices[i];
             }
         }
     }

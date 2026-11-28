@@ -77,6 +77,20 @@ namespace SR_GTYPES_NS {
         return m_type == CameraType::Editor || m_type == CameraType::EditorPrefab;
     }
 
+    bool Camera::QueryReverseDepth() const {
+        auto&& pRenderScene = TryGetRenderScene();
+        if (!pRenderScene) {
+            return false;
+        }
+
+        auto&& pContext = pRenderScene->GetContext();
+        if (!pContext || !pContext->GetPipeline()) {
+            return false;
+        }
+
+        return pContext->GetPipeline()->IsReverseDepth();
+    }
+
     IRenderTechnique* Camera::GetRenderTechnique() {
         if (m_renderTechnique.pTechnique || m_hasErrors) {
             return m_renderTechnique.pTechnique.Get();
@@ -176,7 +190,7 @@ namespace SR_GTYPES_NS {
 
         m_viewTranslateMat = m_viewMat.Translate(m_position.Inverse());
         m_viewDirection = m_rotation * SR_MATH_NS::FVector3(0, 0, 1);
-        m_frustum = ExtractFrustum(m_projection * m_viewTranslateMat);
+        m_frustum = ExtractFrustum(m_cullingProjection * m_viewTranslateMat);
     }
 
     void Camera::UpdateProjectionInternal(bool nonResized) {
@@ -190,7 +204,8 @@ namespace SR_GTYPES_NS {
             targetResolution = m_viewportSize;
         }
 
-        if (m_viewportSizeInternal == targetResolution) {
+        /// Смена far/near/FOV при том же размере тоже должна пересчитать проекцию
+        if (!nonResized && m_viewportSizeInternal == targetResolution) {
             return;
         }
         m_viewportSizeInternal = targetResolution;
@@ -204,12 +219,24 @@ namespace SR_GTYPES_NS {
             m_aspect = static_cast<float_t>(m_viewportSizeInternal.x) / static_cast<float_t>(m_viewportSizeInternal.y);
         }
 
-        m_projection = SR_MATH_NS::Matrix4x4::Perspective(SR_RAD(m_FOV), m_aspect, m_near, m_far);
-        m_projectionNoFOV = SR_MATH_NS::Matrix4x4::Perspective(SR_RAD(45.f), m_aspect, m_near, m_far);
+        m_reverseDepth = QueryReverseDepth();
+
+        /// Отсечение всегда по обычной проекции: при reverse-Z проекция бесконечная, а far - дистанция отрисовки
+        m_cullingProjection = SR_MATH_NS::Matrix4x4::Perspective(SR_RAD(m_FOV), m_aspect, m_near, m_far);
+
+        if (m_reverseDepth) {
+            m_projection = SR_MATH_NS::Matrix4x4::PerspectiveReverseInfinite(SR_RAD(m_FOV), m_aspect, m_near);
+            m_projectionNoFOV = SR_MATH_NS::Matrix4x4::PerspectiveReverseInfinite(SR_RAD(45.f), m_aspect, m_near);
+        }
+        else {
+            m_projection = m_cullingProjection;
+            m_projectionNoFOV = SR_MATH_NS::Matrix4x4::Perspective(SR_RAD(45.f), m_aspect, m_near, m_far);
+        }
 
 	#ifdef SR_EMSCRIPTEN
         m_projection[0][0] = -m_projection[0][0];
         m_projectionNoFOV[0][0] = -m_projectionNoFOV[0][0];
+        m_cullingProjection[0][0] = -m_cullingProjection[0][0];
 	#endif
 
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -241,6 +268,14 @@ namespace SR_GTYPES_NS {
             m_pixelOrthogonal[3][2] = 0.0f;
             m_pixelOrthogonal[3][1] = 1.0f; // смещение Y
         #endif
+
+            if (m_reverseDepth) {
+                m_pixelOrthogonal = SR_MATH_NS::Matrix4x4::ReverseDepth() * m_pixelOrthogonal;
+            }
+        }
+
+        if (m_reverseDepth) {
+            m_orthogonal = SR_MATH_NS::Matrix4x4::ReverseDepth() * m_orthogonal;
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -433,8 +468,9 @@ namespace SR_GTYPES_NS {
         const float_t y = 2.0f * screenPos.y - 1.0f;
     #endif
 
-        const float_t zNear = 0.f;
-        const float_t zFar = 1.f - SR_FLT_EPSILON;
+        /// При reverse-Z ближняя плоскость - 1, а 0 - бесконечность (w = 0), поэтому второй точкой луча берётся середина
+        const float_t zNear = m_reverseDepth ? 1.f : 0.f;
+        const float_t zFar = m_reverseDepth ? 0.5f : 1.f - SR_FLT_EPSILON;
 
         auto&& origin = viewProjInverse.TransformVector(SR_MATH_NS::FVector4(x, y, zNear, 1.0f));
         ray.origin = origin.XYZ() / origin.w;

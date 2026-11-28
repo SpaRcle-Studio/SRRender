@@ -94,6 +94,26 @@ namespace SR_GRAPH_NS {
         m_renderScene->SetDirty();
     }
 
+    void LightSystem::SetObserverUp(const SR_MATH_NS::FVector3& up) {
+        /// ~0.25 градуса: на планете 20 км это ~90 м пути, высота солнца меняется незаметно
+        constexpr float_t minChangeCos = 0.99999f;
+        if (SR_MATH_NS::Dot(m_observerUp, up) > minChangeCos) {
+            return;
+        }
+
+        SR_TRACY_ZONE;
+
+        m_observerUp = up;
+
+        /// параметры направленного света (цвет, яркость, сумерки) зависят от высоты над горизонтом наблюдателя
+        for (ILightComponent* pLight : m_lights[SR_UTILS_NS::EnumReflector::AsInt(LightType::Directional)]) {
+            pLight->UpdateLightParams();
+        }
+
+        UpdateDirectionalLights();
+        m_renderScene->SetDirty();
+    }
+
     const DirectionalLightParams& LightSystem::GetDirectionalLightParams() const noexcept {
         return m_directionalLightParams;
     }
@@ -164,7 +184,7 @@ namespace SR_GRAPH_NS {
         for (ILightComponent* pLight : lights) {
             auto&& params = static_cast<const DirectionalLight*>(pLight)->GetParams();
             if (params.shading == CelestialBodyShading::Emission) {
-                emitterHeight = SR_MATH_NS::Max(emitterHeight, -params.direction.y);
+                emitterHeight = SR_MATH_NS::Max(emitterHeight, SR_MATH_NS::Dot(-params.direction, m_observerUp));
             }
         }
         m_directionalLightParams.starsIntensity = 1.f - SR_MATH_NS::Curve::SmoothStep(-0.12f, 0.05f, emitterHeight);

@@ -39,6 +39,11 @@ namespace SR_GRAPH_NS {
         /// параметры неба: второй источник, диски светил, звезды
         void UseSkyUniforms(SR_GTYPES_NS::Shader& shader) const;
 
+        /// Верх под наблюдателем (SR_UTILS_NS::WorldShape), от него считается высота светил.
+        /// Заметный поворот пересчитывает направленные источники.
+        void SetObserverUp(const SR_MATH_NS::FVector3& up);
+        SR_NODISCARD const SR_MATH_NS::FVector3& GetObserverUp() const noexcept { return m_observerUp; }
+
     private:
         void UpdateDirectionalLights();
 
@@ -51,6 +56,7 @@ namespace SR_GRAPH_NS {
         DirectionalLightParams m_directionalLightParams;
         DirectionalLightParams m_secondaryDirectionalLightParams;
         bool m_hasSecondaryDirectionalLight = false;
+        SR_MATH_NS::FVector3 m_observerUp = SR_MATH_NS::FVector3::Up();
 
     };
 }

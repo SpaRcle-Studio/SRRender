@@ -7,6 +7,7 @@
 
 #include <Graphics/Pipeline/PipelineState.h>
 #include <Graphics/Pipeline/FrameBufferQueue.h>
+#include <Graphics/Pipeline/ShaderUtils.h>
 #include <Graphics/Overlay/OverlayType.h>
 #include <Graphics/Memory/SSBOUsage.h>
 #include <Graphics/Utils/FrameBufferAccessMode.h>
@@ -264,6 +265,16 @@ namespace SR_GRAPH_NS {
 
         virtual void SetVSyncEnabled(bool enabled) { }
 
+        /// ------------------------------------------------ Глубина ---------------------------------------------------
+
+        /// Reverse-Z: ближняя плоскость в глубине 1, дальняя (бесконечность) в 0. Движок везде мыслит обычной
+        /// глубиной (1 - дальняя, сравнение Less), конвейер сам переводит значения очистки и сравнения.
+        /// Меняется до создания шейдерных программ, иначе нужна их перезагрузка.
+        void SetReverseDepth(bool enabled) noexcept { m_reverseDepth = enabled; }
+        SR_NODISCARD bool IsReverseDepth() const noexcept { return m_reverseDepth; }
+        SR_NODISCARD float_t ResolveDepthValue(float_t depth) const noexcept { return m_reverseDepth ? 1.f - depth : depth; }
+        SR_NODISCARD DepthCompare ResolveDepthCompare(DepthCompare depthCompare) const noexcept;
+
         SR_NODISCARD uint32_t GetFramesPerSecond() const noexcept { return m_framesPerSecond; }
         SR_NODISCARD const PipelineState& GetPreviousState() const { return m_previousState; }
         SR_NODISCARD const PipelineState& GetBuildState(uint8_t frameIndex) const;
@@ -447,6 +458,7 @@ namespace SR_GRAPH_NS {
         int32_t m_noneTextureId = SR_ID_INVALID;
 
         bool m_isShaderChanged = true;
+        bool m_reverseDepth = false;
 
         SR_UTILS_NS::Vector<SR_MATH_NS::IRect> m_scissorsStack;
 

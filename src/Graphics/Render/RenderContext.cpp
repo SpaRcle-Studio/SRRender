@@ -799,6 +799,8 @@ namespace SR_GRAPH_NS {
             return false;
         }
         m_renderSettings->AddUsePoint();
+        /// Только при старте: шейдерные программы и проекции камер должны совпадать с режимом глубины конвейера
+        m_pipeline->SetReverseDepth(m_renderSettings->reverseDepth);
         ReloadGraphicsSettings(false);
         m_onSettingsReloaded = m_renderSettings->Subscribe(SR_UTILS_NS::IResource::RELOAD_DONE_EVENT, [this](auto&&) {
             ReloadShaders();
@@ -914,6 +916,7 @@ namespace SR_GRAPH_NS {
         SwitchMacro("SR_SSR", m_activeGraphicsSettings.SSR != Quality::None && m_activeGraphicsSettings.postProcess);
         SwitchMacro("SR_SHADOWS_QUALITY_EXTREME", m_activeGraphicsSettings.shadowsQuality == Quality::Extreme);
         SwitchMacro("SR_CASCADE_SPHERICAL_SELECTION", GetSettings().GetShadowQualityPreset(m_activeGraphicsSettings.shadowsQuality).sphericalCascadeSelection);
+        SwitchMacro("SR_REVERSE_DEPTH", m_pipeline && m_pipeline->IsReverseDepth());
 
         if (!reload) {
             return;

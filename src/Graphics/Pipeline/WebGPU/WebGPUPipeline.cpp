@@ -1180,7 +1180,7 @@ namespace SR_GRAPH_NS {
                 }
                 depthAtt.depthLoadOp       = m_internalData->hasClearDepth ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
                 depthAtt.depthStoreOp      = wgpu::StoreOp::Store;
-                depthAtt.depthClearValue   = m_internalData->hasClearDepth ? m_internalData->clearDepth : 1.0f;
+                depthAtt.depthClearValue   = ResolveDepthValue(m_internalData->hasClearDepth ? m_internalData->clearDepth : 1.0f);
                 // Stencil ops must be Undefined for depth-only formats (no stencil component).
                 depthAtt.stencilLoadOp     = hasStencil ? (m_internalData->hasClearDepth ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load) : wgpu::LoadOp::Undefined;
                 depthAtt.stencilStoreOp    = hasStencil ? wgpu::StoreOp::Store : wgpu::StoreOp::Undefined;
@@ -1220,7 +1220,7 @@ namespace SR_GRAPH_NS {
             depth.view            = m_internalData->surfaceDepthTextureView;
             depth.depthLoadOp     = m_internalData->hasClearDepth ? wgpu::LoadOp::Clear : wgpu::LoadOp::Load;
             depth.depthStoreOp    = wgpu::StoreOp::Store;
-            depth.depthClearValue = m_internalData->hasClearDepth ? m_internalData->clearDepth : 1.0f;
+            depth.depthClearValue = ResolveDepthValue(m_internalData->hasClearDepth ? m_internalData->clearDepth : 1.0f);
             depth.stencilLoadOp   = wgpu::LoadOp::Undefined;
             depth.stencilStoreOp  = wgpu::StoreOp::Undefined;
             passDesc.depthStencilAttachment = &depth;
@@ -2845,7 +2845,7 @@ namespace SR_GRAPH_NS {
                 depthStencilState.format              = depthFormat;
                 depthStencilState.depthWriteEnabled   = createInfo.depthWrite;
                 depthStencilState.depthCompare        = createInfo.depthTest
-                    ? DepthCompareToWGPU(createInfo.depthCompare)
+                    ? DepthCompareToWGPU(ResolveDepthCompare(createInfo.depthCompare))
                     : wgpu::CompareFunction::Always;
             }
 

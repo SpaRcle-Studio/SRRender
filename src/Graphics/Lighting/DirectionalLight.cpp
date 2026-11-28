@@ -3,6 +3,8 @@
 //
 
 #include <Graphics/Lighting/DirectionalLight.h>
+#include <Graphics/Lighting/LightSystem.h>
+#include <Graphics/Render/RenderScene.h>
 
 #include <Utils/ECS/Transform.h>
 #include <Utils/Math/Curve.h>
@@ -35,8 +37,11 @@ namespace SR_GRAPH_NS {
         // ------------------------------------------------------------
         m_params.direction = GetTransform()->Forward().Normalize();
 
+        /// высота над горизонтом наблюдателя: на сферическом мире верх зависит от того, где он стоит
+        const SR_MATH_NS::FVector3 observerUp = m_renderScene ? m_renderScene->GetLightSystem()->GetObserverUp() : SR_MATH_NS::FVector3::Up();
+
         const float_t sunHeight = SR_MATH_NS::Clamp(
-            SR_MATH_NS::Dot(-m_params.direction, SR_MATH_NS::FVector3::Up()),
+            SR_MATH_NS::Dot(-m_params.direction, observerUp),
             0.0f,
             1.0f
         ) + m_skyHeightOffset;
@@ -88,7 +93,7 @@ namespace SR_GRAPH_NS {
         // Intensity (SOFTER curve, Unity-like)
         // ------------------------------------------------------------
         /// сумерки: свет под горизонтом плавно гаснет (0..-10 градусов), а не обрывается
-        const float_t rawHeight = SR_MATH_NS::Dot(-m_params.direction, SR_MATH_NS::FVector3::Up());
+        const float_t rawHeight = SR_MATH_NS::Dot(-m_params.direction, observerUp);
         const float_t twilight = SR_MATH_NS::Curve::SmoothStep(-0.17f, 0.02f, rawHeight);
 
         /// у горизонта прямой свет не обрывается в ноль, а затухает вместе с сумерками

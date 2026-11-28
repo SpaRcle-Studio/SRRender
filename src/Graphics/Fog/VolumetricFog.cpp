@@ -81,10 +81,15 @@ namespace SR_GRAPH_NS {
         const float_t windLength = m_windDirection.Length();
         const SR_MATH_NS::FVector2 wind = windLength > 0.0001f ? m_windDirection / windLength : SR_MATH_NS::FVector2(1.f, 0.f);
 
+        /// Свойства - множители к базовым значениям (1 - прежний вид по умолчанию), иначе реальные значения для
+        /// больших миров (1e-4 на метр) редактор показывает нулями
+        constexpr float_t baseDensity = 0.005f;
+        constexpr float_t baseHeightFalloff = 0.08f;
+
         shader.SetVec4(densityParams, SR_MATH_NS::FVector4(
-            SR_MATH_NS::Max(m_density, 0.f),
+            SR_MATH_NS::Max(m_density, 0.f) * baseDensity,
             m_baseHeight,
-            SR_MATH_NS::Max(m_heightFalloff, 0.0001f),
+            baseHeightFalloff / SR_MATH_NS::Max(m_heightScale, 0.001f),
             SR_MATH_NS::Max(m_maxDistance, 1.f)
         ));
         shader.SetVec4(colorParams, SR_MATH_NS::FVector4(m_albedo.r, m_albedo.g, m_albedo.b, m_ambientStrength));

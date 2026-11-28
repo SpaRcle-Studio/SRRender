@@ -26,6 +26,7 @@
 #include <Utils/TypeTraits/Factory.h>
 #include <Utils/TypeTraits/SRClassMeta.h>
 #include <Utils/Events/Broadcaster.h>
+#include <Utils/World/WorldShape.h>
 
 namespace SR_GRAPH_NS {
     RenderScene::RenderScene(const ScenePtr& scene, RenderContext* pContext)
@@ -179,7 +180,16 @@ namespace SR_GRAPH_NS {
 
         m_particleUpdater.Update(SR_HTYPES_NS::Time::Instance().DeltaTime());
 
+        /// Высота светил считается от верха под главной камерой (на сферическом мире он меняется с позицией)
+        if (auto&& pCamera = GetMainCamera()) {
+            m_lightSystem->SetObserverUp(SR_UTILS_NS::WorldShape::FindUp(m_scene.Get(), pCamera->GetPosition()));
+        }
+
         SR_RENDER_TECHNIQUES_CALL(Update)
+    }
+
+    SR_MATH_NS::FVector4 RenderScene::GetWorldShapeParams(const SR_MATH_NS::FVector3& viewPosition) const {
+        return SR_UTILS_NS::WorldShape::FindShaderParams(m_scene.Get(), viewPosition);
     }
 
     void RenderScene::PostUpdate() {

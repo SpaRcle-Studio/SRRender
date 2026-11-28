@@ -78,6 +78,8 @@ namespace SR_GTYPES_NS {
 
         SR_NODISCARD bool IsEditorCamera() const;
         SR_NODISCARD bool IsCameraActive() const;
+        /// Reverse-Z конвейера: проекция бесконечная, ближняя плоскость в глубине 1, far - только отсечение
+        SR_NODISCARD bool IsReverseDepth() const noexcept { return m_reverseDepth; }
         SR_NODISCARD CameraType GetCameraType() const { return m_type; }
         SR_NODISCARD const SR_MATH_NS::FVector3& GetViewDirection() const;
         SR_NODISCARD SR_MATH_NS::FVector3 GetViewDirection(const SR_MATH_NS::FVector3& pos) const noexcept;
@@ -124,6 +126,7 @@ namespace SR_GTYPES_NS {
 
     private:
         void RemoveTechnique();
+        SR_NODISCARD bool QueryReverseDepth() const;
 
     private:
         /// @property @onChanged(RemoveTechnique)
@@ -161,10 +164,12 @@ namespace SR_GTYPES_NS {
         float_t m_aspect = 1.f;
         bool m_hasErrors = false;
         bool m_isRegistered = false;
+        bool m_reverseDepth = false;
 
         SR_UTILS_NS::Subscription m_onRenderSettingsChanged;
 
         SR_MATH_NS::Matrix4x4 m_projection;
+        SR_MATH_NS::Matrix4x4 m_cullingProjection;
         SR_MATH_NS::Matrix4x4 m_projectionNoFOV;
         SR_MATH_NS::Matrix4x4 m_viewTranslateMat;
         SR_MATH_NS::Matrix4x4 m_viewMat;

@@ -42,12 +42,12 @@ namespace SR_GRAPH_NS {
         SR_NODISCARD RenderScenePtr TryGetRenderScene() const;
 
     private:
-        /// @property @group(Density)
-        float_t m_density = 0.005f;
+        /// @property @group(Density) @drag(0.01f) @tooltip(Density multiplier. 1 = 0.005 per meter at base height)
+        float_t m_density = 1.f;
         /// @property @group(Density)
         float_t m_baseHeight = 0.f;
-        /// @property @group(Density)
-        float_t m_heightFalloff = 0.08f;
+        /// @property @group(Density) @drag(0.1f) @tooltip(Fog layer height multiplier. 1 = density halves every ~9 m above base height, 100 = every ~870 m)
+        float_t m_heightScale = 1.f;
         /// @property @group(Density)
         float_t m_maxDistance = 300.f;
         /// @property @group(Density)

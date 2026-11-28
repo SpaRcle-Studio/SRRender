@@ -57,6 +57,7 @@ namespace SR_SRSL_NS {
         { "SECONDARY_DISK_COLOR",           "vec3"          },
         { "PRIMARY_DISK_PARAMS",            "vec4"          },
         { "SECONDARY_DISK_PARAMS",          "vec4"          },
+        { "WORLD_SHAPE",                    "vec4"          },
     };
 
     const SR_UTILS_NS::Map<SR_UTILS_NS::StringAtom, SR_UTILS_NS::StringAtom>& GetDefaultUniforms() {

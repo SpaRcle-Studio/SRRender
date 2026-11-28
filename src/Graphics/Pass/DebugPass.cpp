@@ -379,6 +379,8 @@ namespace SR_GRAPH_NS {
         if (shaderInfo.pShader->BeginSharedUBO()) {
             shaderInfo.pShader->SetMat4(SHADER_VIEW_MATRIX, GetCamera()->GetViewTranslate());
             shaderInfo.pShader->SetMat4(SHADER_PROJECTION_MATRIX, GetCamera()->GetProjection());
+            /// G-buffer хранит позицию относительно камеры
+            shaderInfo.pShader->SetVec3(SHADER_VIEW_POSITION, GetCamera()->GetPosition());
             shaderInfo.pShader->EndSharedUBO();
         }
 

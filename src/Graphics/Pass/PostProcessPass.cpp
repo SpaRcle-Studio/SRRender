@@ -143,6 +143,7 @@ namespace SR_GRAPH_NS {
 
             if (auto&& pCamera = GetCamera()) {
                 pShader->SetVec3(SHADER_VIEW_POSITION, pCamera->GetPosition());
+                pShader->SetVec4(SHADER_WORLD_SHAPE, GetRenderScene()->GetWorldShapeParams(pCamera->GetPosition()));
                 pShader->SetVec3(SHADER_VIEW_DIRECTION, pCamera->GetViewDirection());
                 pShader->SetMat4(SHADER_PROJECTION_MATRIX, pCamera->GetProjection());
                 pShader->SetMat4(SHADER_VIEW_MATRIX, pCamera->GetViewTranslate());

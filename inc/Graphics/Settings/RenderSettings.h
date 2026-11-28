@@ -179,6 +179,8 @@ namespace SR_GRAPH_NS {
         SR_UTILS_NS::Path defaultMaterial = "Engine/Materials/default.mat";
         /// @property
         SR_UTILS_NS::StringAtom editorSceneImageName = "SceneView";
+        /// @property @tooltip(Reverse-Z with infinite far plane for big worlds. Camera far becomes culling distance only. Applied on restart)
+        bool reverseDepth = false;
 
         /// @property
         SR_UTILS_NS::Vector<RenderSettingsPreset> presets;
