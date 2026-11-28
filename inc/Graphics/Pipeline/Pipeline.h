@@ -389,6 +389,9 @@ namespace SR_GRAPH_NS {
 
         void SetDrawInstancesCount(uint32_t count, uint32_t start = 0);
         void ResetDrawInstancesCount();
+        /// Текущее число инстансов draw call. Не 1 - проход рисует объекты инстансингом сам (например, несколько каскадов теней)
+        SR_NODISCARD uint32_t GetDrawInstancesCount() const noexcept { return m_drawInstancesCount; }
+        SR_NODISCARD uint32_t GetDrawInstancesStart() const noexcept { return m_drawInstancesStart; }
 
     protected:
         Memory::UBOManager* m_uboManager = nullptr;
